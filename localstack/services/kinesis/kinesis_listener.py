@@ -184,7 +184,8 @@ class ProxyListenerKinesis(ProxyListener):
                     tmp = base64.b64decode(record['Data'])
                     if len(tmp) >= 2 and tmp[0] == tmp[-1] == b'"'[0]:
                         tmp = tmp[1:-1]
-                    record['Data'] = to_str(base64.b64encode(tmp))
+
+                record['Data'] = to_str(base64.b64encode(tmp))
 
             response._content = cbor2.dumps(results) if encoding_type == APPLICATION_CBOR else json.dumps(results)
             return response
