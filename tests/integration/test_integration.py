@@ -320,7 +320,7 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(num_error_invocations, 1)
 
         # Lambda invocations are running asynchronously, hence sleep some time here to wait for results
-        retry(check_cw_invocations, retries=5, sleep=2)
+        retry(check_cw_invocations, retries=10, sleep=2)
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_STREAM)
