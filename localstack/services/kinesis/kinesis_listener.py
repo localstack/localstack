@@ -4,7 +4,6 @@ import time
 import base64
 import random
 import cbor2
-import base64
 from requests.models import Response
 from localstack import config
 from localstack.constants import APPLICATION_JSON, APPLICATION_CBOR
