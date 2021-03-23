@@ -41,6 +41,8 @@ install:
   - nohup docker pull lambci/lambda:python3.8 > /dev/null &
 
 script:
+  # docker repository login
+  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
   - set -e # fail fast
   # check if the build environment contains a special command via $CUSTOM_CMD
   - if [ "$CUSTOM_CMD" = rebuild-base-image ]; then make docker-build-base-ci; exit; fi
