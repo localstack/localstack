@@ -1524,7 +1524,7 @@ class TestS3(unittest.TestCase):
             config=Config(signature_version='s3v4'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
 
-        OBJECT_KEY = 'temp.txt'
+        OBJECT_KEY = 'temp 1.txt'
         OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
         BUCKET = 'test'
         EXPIRES = 4
@@ -1555,6 +1555,7 @@ class TestS3(unittest.TestCase):
 
         client.put_object(Key=OBJECT_KEY, Bucket=BUCKET, Body='123')
 
+        # GET requests
         presign_get_url = client.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
@@ -1720,6 +1721,12 @@ class TestS3(unittest.TestCase):
 
         response = requests.delete(presign_delete_url_v4)
         self.assertEqual(response.status_code, 403)
+
+        # Multipart uploading
+        response = self._perform_multipart_upload_with_presign(BUCKET, OBJECT_KEY, client)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = self._perform_multipart_upload_with_presign(BUCKET, OBJECT_KEY, client_v4)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
         client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
         client.delete_bucket(Bucket=BUCKET)
@@ -1937,6 +1944,12 @@ class TestS3(unittest.TestCase):
         response = requests.delete(presign_delete_url_v4)
         self.assertEqual(response.status_code, 403)
 
+        # Multipart uploading
+        response = self._perform_multipart_upload_with_presign(BUCKET, OBJECT_KEY, client)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = self._perform_multipart_upload_with_presign(BUCKET, OBJECT_KEY, client_v4)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
         client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
         client.delete_bucket(Bucket=BUCKET)
 
@@ -2138,6 +2151,33 @@ class TestS3(unittest.TestCase):
         multipart_upload_parts = [{'ETag': response['ETag'], 'PartNumber': 1}]
 
         return self.s3_client.complete_multipart_upload(
+            Bucket=bucket, Key=key, MultipartUpload={'Parts': multipart_upload_parts}, UploadId=upload_id
+        )
+
+    def _perform_multipart_upload_with_presign(self, bucket, key, s3_client=None, data=None, zip=False, acl=None):
+        if not s3_client:
+            s3_client = self.s3_client
+
+        kwargs = {'ACL': acl} if acl else {}
+        multipart_upload_dict = self.s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
+        upload_id = multipart_upload_dict['UploadId']
+
+        # Write contents to memory rather than a file.
+        data = data or (5 * short_uid())
+        data = to_bytes(data)
+        upload_file_object = BytesIO(data)
+        if zip:
+            upload_file_object = BytesIO()
+            with gzip.GzipFile(fileobj=upload_file_object, mode='w') as filestream:
+                filestream.write(data)
+
+        signed_url = s3_client.generate_presigned_url(ClientMethod='upload_part',
+            Params={'Bucket': bucket, 'Key': key, 'UploadId': upload_id, 'PartNumber': 1})
+        response = requests.put(signed_url, data=upload_file_object)
+
+        multipart_upload_parts = [{'ETag': response.headers['ETag'], 'PartNumber': 1}]
+
+        return s3_client.complete_multipart_upload(
             Bucket=bucket, Key=key, MultipartUpload={'Parts': multipart_upload_parts}, UploadId=upload_id
         )
 
