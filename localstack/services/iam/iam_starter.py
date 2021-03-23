@@ -244,7 +244,7 @@ def apply_patches():
     if not hasattr(IamResponse, 'create_service_linked_role'):
         @property
         def role_arn(self):
-            return getattr(self, 'service_linked_role_arn', None) or role_arn_orig(self)
+            return getattr(self, 'service_linked_role_arn', None) or role_arn_orig.__get__(self)
 
         role_arn_orig = Role.arn
         Role.arn = role_arn
