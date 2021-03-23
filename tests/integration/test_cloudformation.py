@@ -1418,7 +1418,7 @@ class CloudFormationTest(unittest.TestCase):
         response = iam.create_role(
             RoleName=role_name,
             AssumeRolePolicyDocument='{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {'
-                                     '"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]} '
+                                     '"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]}'
         )
         self.assertEqual(role_name, response['Role']['RoleName'])
 
