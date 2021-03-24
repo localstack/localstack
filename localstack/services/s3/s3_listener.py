@@ -79,7 +79,7 @@ OBJECT_METADATA_KEY_PREFIX = 'x-amz-meta-'
 
 # STS policy expiration date format
 POLICY_EXPIRATION_FORMAT1 = '%Y-%m-%dT%H:%M:%SZ'
-POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%IZ'
+POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 # ignored_headers_lower conatins headers which don't get involved in signature calculations process
 # these headers are being sent by the localstack by default.
