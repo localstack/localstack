@@ -17,7 +17,7 @@ from urllib.parse import parse_qs
 from botocore.client import ClientError
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
-from localstack import config, constants
+from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
@@ -501,6 +501,7 @@ def fix_range_content_type(bucket_name, path, headers, response):
     s3_client = aws_stack.connect_to_service('s3')
     path = urlparse.urlparse(urlparse.unquote(path)).path
     key_name = extract_key_name(headers, path)
+    # print('--------- fix_range_content_type.key_name:', bucket_name, key_name)
     result = s3_client.head_object(Bucket=bucket_name, Key=key_name)
     content_type = result['ContentType']
     if response.headers.get('Content-Type') == 'text/html; charset=utf-8':
@@ -1016,6 +1017,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
     def forward_request(self, method, path, data, headers):
         # Create list of query parameteres from the url
+        # print('method {}, path {}, headers {}'.format(method, path, headers.get('host', 'Null')))
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
         path_orig = path
@@ -1163,18 +1165,19 @@ class ProxyListenerS3(PersistingProxyListener):
             return Request(url=path_orig_escaped, data=data_to_return, headers=headers, method=method)
         return True
 
-    def get_forward_url(self, method, path, data, headers):
-        def sub(match):
-            # make sure to convert any bucket names to lower case
-            bucket_name = normalize_bucket_name(match.group(1))
-            return '/%s%s' % (bucket_name, match.group(2) or '')
+    # def get_forward_url(self, method, path, data, headers):
+    #     def sub(match):
+    #         # make sure to convert any bucket names to lower case
+    #         bucket_name = extract_bucket_name(headers, path)
+    #         return '/%s%s' % (bucket_name, match.group(2) or '')
 
-        path_new = re.sub(r'/([^?/]+)([?/].*)?', sub, path)
-        if path == path_new:
-            return
+    #     path_new = re.sub(r'/([^?/]+)([?/].*)?', sub, path)
+    #     print('============= path_new', path_new)
+    #     if path == path_new:
+    #         return
 
-        url = 'http://%s:%s%s' % (constants.LOCALHOST, PORT_S3_BACKEND, path_new)
-        return url
+    #     url = 'http://%s:%s%s' % (constants.LOCALHOST, PORT_S3_BACKEND, path_new)
+    #     return url
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
         path = to_str(path)
