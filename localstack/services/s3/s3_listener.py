@@ -79,7 +79,7 @@ OBJECT_METADATA_KEY_PREFIX = 'x-amz-meta-'
 
 # STS policy expiration date format
 POLICY_EXPIRATION_FORMAT1 = '%Y-%m-%dT%H:%M:%SZ'
-POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%IZ'
+POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 # ignored_headers_lower conatins headers which don't get involved in signature calculations process
 # these headers are being sent by the localstack by default.
@@ -483,7 +483,7 @@ def fix_location_constraint(response):
         content = to_str(response.content or '') or ''
     except Exception:
         content = ''
-    if aws_stack.get_region() != 'us-east-1' and 'LocationConstraint' in content:
+    if 'LocationConstraint' in content:
         pattern = r'<LocationConstraint([^>]*)>\s*</LocationConstraint>'
         replace = r'<LocationConstraint\1>%s</LocationConstraint>' % aws_stack.get_region()
         response._content = re.sub(pattern, replace, content)
@@ -1054,6 +1054,14 @@ class ProxyListenerS3(PersistingProxyListener):
                 return response
 
         modified_data = None
+
+        # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
+        to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
+        to_find2 = to_bytes('<CreateBucketConfiguration')
+        if data and data.startswith(to_bytes('<')) and to_find1 in data and to_find2 in data:
+            # Note: with the latest version, <CreateBucketConfiguration> must either
+            # contain a valid <LocationConstraint>, or not be present at all in the body.
+            modified_data = b''
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98

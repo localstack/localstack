@@ -19,7 +19,7 @@ if __name__ == '__main__':
 # flake8: noqa: E402
 from localstack.utils.common import (
     download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf,
-    chmod_r, is_alpine, in_docker, get_arch)
+    chmod_r, is_alpine, in_docker, get_arch, new_tmp_file)
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -274,25 +274,32 @@ def log_install_msg(component, verbatim=False):
     LOG.info('Downloading and installing %s. This may take some time.' % component)
 
 
-def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
+def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
 
-    def download_and_extract():
-        if not os.path.exists(tmp_archive):
-            # create temporary placeholder file, to avoid duplicate parallel downloads
-            save_file(tmp_archive, '')
-            download(archive_url, tmp_archive)
+    tmp_archive = tmp_archive or new_tmp_file()
+    if not os.path.exists(tmp_archive):
+        # create temporary placeholder file, to avoid duplicate parallel downloads
+        save_file(tmp_archive, '')
+        for i in range(retries + 1):
+            try:
+                download(archive_url, tmp_archive)
+                break
+            except Exception:
+                time.sleep(sleep)
 
-        _, ext = os.path.splitext(tmp_archive)
-        if ext == '.zip':
-            unzip(tmp_archive, target_dir)
-        elif ext == '.gz' or ext == '.bz2':
-            untar(tmp_archive, target_dir)
-        else:
-            raise Exception('Unsupported archive format: %s' % ext)
+    _, ext = os.path.splitext(tmp_archive)
+    if ext == '.zip':
+        unzip(tmp_archive, target_dir)
+    elif ext == '.gz' or ext == '.bz2':
+        untar(tmp_archive, target_dir)
+    else:
+        raise Exception('Unsupported archive format: %s' % ext)
 
+
+def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
     try:
-        download_and_extract()
+        download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
     except Exception as e:
         # try deleting and re-downloading the zip file
         LOG.info('Unable to extract file, re-downloading ZIP archive %s: %s' % (tmp_archive, e))
