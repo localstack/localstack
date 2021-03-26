@@ -367,6 +367,8 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
 
     elif integration_type == 'AWS':
         if 'kinesis:action/' in uri:
+            if uri.endswith('kinesis:action/PutRecord'):
+                target = kinesis_listener.ACTION_PUT_RECORD
             if uri.endswith('kinesis:action/PutRecords'):
                 target = kinesis_listener.ACTION_PUT_RECORDS
             if uri.endswith('kinesis:action/ListStreams'):
