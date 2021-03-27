@@ -616,6 +616,7 @@ def start_infra_in_docker():
         def run(self):
             self.process = run(self.cmd, asynchronous=True)
 
+    # keep this print output here for debugging purposes
     print(docker_cmd)
     t = ShellRunnerThread(docker_cmd)
     t.start()
