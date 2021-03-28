@@ -2,7 +2,7 @@ import types
 import logging
 import traceback
 from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
-from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys
+from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys, S3_ALL_MULTIPARTS
 from moto.s3.exceptions import S3ClientError
 from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
@@ -305,3 +305,35 @@ def apply_patches():
 
     s3_responses.S3ResponseInstance.subdomain_based_buckets = types.MethodType(
         subdomain_based_buckets, s3_responses.S3ResponseInstance)
+
+    s3_responses_bucket_response_get_orig = s3_responses.S3ResponseInstance._bucket_response_get
+
+    def s3_bucket_response_get(self, bucket_name, querystring):
+        if 'uploads' not in querystring:
+            return s3_responses_bucket_response_get_orig(bucket_name, querystring)
+
+        self._set_action('BUCKET', 'GET', querystring)
+        self._authenticate_and_authorize_s3_action()
+
+        multiparts = list(self.backend.get_all_multiparts(bucket_name).values())
+        if 'prefix' in querystring:
+            prefix = querystring.get('prefix', [None])[0]
+            multiparts = [
+                upload
+                for upload in multiparts
+                if upload.key_name.startswith(prefix)
+            ]
+
+        if 'uploads' in querystring:
+            upload_ids = [upload_id for upload_id in querystring.get('uploads') if upload_id]
+            multiparts = [
+                upload
+                for upload in multiparts
+                if upload.id in upload_ids
+            ]
+
+        template = self.response_template(S3_ALL_MULTIPARTS)
+        return template.render(bucket_name=bucket_name, uploads=multiparts)
+
+    s3_responses.S3ResponseInstance._bucket_response_get = types.MethodType(
+        s3_bucket_response_get, s3_responses.S3ResponseInstance)
