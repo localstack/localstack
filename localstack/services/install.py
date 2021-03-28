@@ -304,7 +304,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         # try deleting and re-downloading the zip file
         LOG.info('Unable to extract file, re-downloading ZIP archive %s: %s' % (tmp_archive, e))
         rm_rf(tmp_archive)
-        download_and_extract()
+        download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
 
 
 if __name__ == '__main__':
