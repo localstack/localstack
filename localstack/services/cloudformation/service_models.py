@@ -1394,9 +1394,12 @@ class EC2VPC(GenericBaseModel):
         return 'AWS::EC2::VPC'
 
     def fetch_state(self, stack_name, resources):
+        vpc_id = self.physical_resource_id
+        if not vpc_id:
+            return None
+
         client = aws_stack.connect_to_service('ec2')
-        filters = [{'Name': 'cidr', 'Values': [self.props['CidrBlock']]}]
-        vpcs = client.describe_vpcs(Filters=filters)['Vpcs']
+        vpcs = client.describe_vpcs(VpcIds=[vpc_id])['Vpcs']
         return (vpcs or [None])[0]
 
     @staticmethod
@@ -1449,3 +1452,18 @@ class InstanceProfile(GenericBaseModel):
                 }
             }
         }
+
+
+class EC2RouteTable(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::RouteTable'
+
+    def fetch_state(self, stack_name, resources):
+        route_table_id = self.physical_resource_id
+        if not route_table_id:
+            return None
+
+        client = aws_stack.connect_to_service('ec2')
+        route_tables = client.describe_route_tables(RouteTableIds=[route_table_id])['RouteTables']
+        return (route_tables or [None])[0]

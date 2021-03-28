@@ -5,10 +5,13 @@ import base64
 import logging
 import traceback
 from urllib.parse import urlparse
+
+from moto.ec2.utils import generate_route_id
 from six import iteritems
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.cloudformation import parsing
 from moto.cloudformation.models import cloudformation_backends
+from moto.ec2.models import ec2_backends
 from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
@@ -514,6 +517,52 @@ RESOURCE_TO_FUNCTION = {
             'function': 'terminate_instances',
             'parameters': {
                 'InstanceIds': lambda params, **kw: [kw['resources'][kw['resource_id']]['PhysicalResourceId']]
+            }
+        }
+    },
+    'EC2::VPC': {
+        'create': {
+            'function': 'create_vpc',
+            'parameters': {
+                'CidrBlock': 'CidrBlock'
+            }
+        },
+        'delete': {
+            'function': 'delete_vpc',
+            'parameters': {
+                'VpcId': 'PhysicalResourceId'
+            }
+        }
+    },
+    'EC2::RouteTable': {
+        'create': {
+            'function': 'create_route_table',
+            'parameters': {
+                'VpcId': 'VpcId'
+            }
+        },
+        'delete': {
+            'function': 'delete_route_table',
+            'parameters': {
+                'RouteTableId': 'PhysicalResourceId'
+            }
+        }
+    },
+    'EC2::Route': {
+        'create': {
+            'function': 'create_route',
+            'parameters': {
+                'DestinationCidrBlock': 'DestinationCidrBlock',
+                'DestinationIpv6CidrBlock': 'DestinationIpv6CidrBlock',
+                'RouteTableId': 'RouteTableId'
+            }
+        },
+        'delete': {
+            'function': 'delete_route',
+            'parameters': {
+                'DestinationCidrBlock': 'DestinationCidrBlock',
+                'DestinationIpv6CidrBlock': 'DestinationIpv6CidrBlock',
+                'RouteTableId': 'RouteTableId'
             }
         }
     }
@@ -1125,6 +1174,14 @@ def delete_resource(resource_id, resources, stack_name):
             if 'NoSuchEntity' not in str(e):
                 raise
 
+    if res_type == 'AWS::EC2::VPC':
+        ec2_backend = ec2_backends[aws_stack.get_region()]
+        route_tables = ec2_backend.get_all_route_tables(filters={'vpc-id': res['PhysicalResourceId']})
+        for rt in route_tables:
+            route_table = ec2_backend.get_route_table(rt.id)
+            route_table.associations = {}
+            ec2_backend.delete_route_table(route_table.id)
+
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
 
@@ -1529,6 +1586,19 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == 'ApiGateway::Model':
         stack.resources[resource_id]['PhysicalResourceId'] = details['id']
+
+    if resource_type == 'EC2::VPC':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['Vpc']['VpcId']
+
+    if resource_type == 'EC2::RouteTable':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['RouteTable']['RouteTableId']
+
+    if resource_type == 'EC2::Route':
+        stack.resources[resource_id]['PhysicalResourceId'] = generate_route_id(
+            resource_props['RouteTableId'],
+            resource_props.get('DestinationCidrBlock', ''),
+            resource_props.get('DestinationIpv6CidrBlock')
+        )
 
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
