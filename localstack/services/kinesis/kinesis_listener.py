@@ -16,6 +16,7 @@ from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
 
 # action headers (should be left here - imported/required by other files)
 ACTION_PREFIX = 'Kinesis_20131202'
+ACTION_PUT_RECORD = '%s.PutRecord' % ACTION_PREFIX
 ACTION_PUT_RECORDS = '%s.PutRecords' % ACTION_PREFIX
 ACTION_LIST_STREAMS = '%s.ListStreams' % ACTION_PREFIX
 

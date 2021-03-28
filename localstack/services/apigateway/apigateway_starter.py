@@ -26,7 +26,7 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True):
         try:
             return apply_patch(subject, [operation], in_place=in_place)
         except Exception as e:
-            if operation['op'] == 'replace' and 'replace a non-existent object' in str(e):
+            if operation['op'] == 'replace' and 'non-existent object' in str(e):
                 # fall back to an ADD operation if the REPLACE fails
                 operation['op'] = 'add'
                 return apply_patch(subject, [operation], in_place=in_place)

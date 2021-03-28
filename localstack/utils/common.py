@@ -446,6 +446,22 @@ def get_docker_container_names():
     return bootstrap.get_docker_container_names()
 
 
+def get_docker_image_names(strip_latest=True):
+    cmd = "%s images --format '{{.Repository}}:{{.Tag}}'" % config.DOCKER_CMD
+    try:
+        output = to_str(run(cmd))
+        image_names = re.split(r'\s+', output.strip().replace('\n', ' '))
+        if strip_latest:
+            suffix = ':latest'
+            for image in list(image_names):
+                if image.endswith(suffix):
+                    image_names.append(image[:-len(suffix)])
+        return image_names
+    except Exception as e:
+        LOG.info('Unable to list Docker images via "%s": %s' % (cmd, e))
+        return []
+
+
 def path_from_url(url):
     return '/%s' % str(url).partition('://')[2].partition('/')[2] if '://' in url else url
 

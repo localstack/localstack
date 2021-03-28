@@ -1348,6 +1348,7 @@ def serve_static_website(headers, path, bucket_name):
 
     try:
         if path != '/':
+            path = path.lstrip('/')
             content = s3_client.get_object(Bucket=bucket_name, Key=path)['Body'].read()
             return requests_response(status_code=200, content=content)
     except ClientError:
