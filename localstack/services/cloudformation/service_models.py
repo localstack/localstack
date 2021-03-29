@@ -1,6 +1,8 @@
 import re
 import json
 import logging
+
+from moto.ec2.utils import generate_route_id
 from moto.s3.models import FakeBucket
 from moto.sqs.models import Queue as MotoQueue
 from moto.iam.models import Role as MotoRole
@@ -1394,13 +1396,11 @@ class EC2VPC(GenericBaseModel):
         return 'AWS::EC2::VPC'
 
     def fetch_state(self, stack_name, resources):
-        vpc_id = self.physical_resource_id
-        if not vpc_id:
-            return None
-
         client = aws_stack.connect_to_service('ec2')
-        vpcs = client.describe_vpcs(VpcIds=[vpc_id])['Vpcs']
-        return (vpcs or [None])[0]
+        resp = client.describe_vpcs(
+            Filters=[{'Name': 'cidr', 'Values': [self.props['CidrBlock']]}]
+        )
+        return (resp['Vpcs'] or [None])[0]
 
     @staticmethod
     def get_deploy_templates():
@@ -1412,11 +1412,17 @@ class EC2VPC(GenericBaseModel):
                     'InstanceTenancy': 'InstanceTenancy'
                     # TODO: add TagSpecifications
                 }
+            },
+            'delete': {
+                'function': 'delete_vpc',
+                'parameters': {
+                    'VpcId': 'PhysicalResourceId'
+                }
             }
         }
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get('VpcId')
+        return self.physical_resource_id or self.props.get('VpcId')
 
 
 class InstanceProfile(GenericBaseModel):
@@ -1460,10 +1466,71 @@ class EC2RouteTable(GenericBaseModel):
         return 'AWS::EC2::RouteTable'
 
     def fetch_state(self, stack_name, resources):
-        route_table_id = self.physical_resource_id
-        if not route_table_id:
-            return None
-
         client = aws_stack.connect_to_service('ec2')
-        route_tables = client.describe_route_tables(RouteTableIds=[route_table_id])['RouteTables']
+        route_tables = client.describe_route_tables(
+            Filters=[
+                {'Name': 'vpc-id', 'Values': [self.props['VpcId']]},
+                {'Name': 'association.main', 'Values': ['false']}
+            ]
+        )['RouteTables']
         return (route_tables or [None])[0]
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.physical_resource_id or self.props.get('RouteTableId')
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_route_table',
+                'parameters': {
+                    'VpcId': 'VpcId',
+                    'TagSpecifications': lambda params, **kwargs: [
+                        {
+                            'ResourceType': 'route-table',
+                            'Tags': params.get('Tags')
+                        }
+                    ]
+                }
+            },
+            'delete': {
+                'function': 'delete_route_table',
+                'parameters': {
+                    'RouteTableId': 'RouteTableId'
+                }
+            }
+        }
+
+
+class EC2Route(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::Route'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return generate_route_id(
+            self.props.get('RouteTableId'),
+            self.props.get('DestinationCidrBlock'),
+            self.props.get('DestinationIpv6CidrBlock')
+        )
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_route',
+                'parameters': {
+                    'DestinationCidrBlock': 'DestinationCidrBlock',
+                    'DestinationIpv6CidrBlock': 'DestinationIpv6CidrBlock',
+                    'RouteTableId': 'RouteTableId'
+                }
+            },
+            'delete': {
+                'function': 'delete_route',
+                'parameters': {
+                    'DestinationCidrBlock': 'DestinationCidrBlock',
+                    'DestinationIpv6CidrBlock': 'DestinationIpv6CidrBlock',
+                    'RouteTableId': 'RouteTableId'
+                }
+            }
+        }

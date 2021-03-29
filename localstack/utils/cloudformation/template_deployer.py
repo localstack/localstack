@@ -11,7 +11,6 @@ from six import iteritems
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.cloudformation import parsing
 from moto.cloudformation.models import cloudformation_backends
-from moto.ec2.models import ec2_backends
 from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
@@ -517,52 +516,6 @@ RESOURCE_TO_FUNCTION = {
             'function': 'terminate_instances',
             'parameters': {
                 'InstanceIds': lambda params, **kw: [kw['resources'][kw['resource_id']]['PhysicalResourceId']]
-            }
-        }
-    },
-    'EC2::VPC': {
-        'create': {
-            'function': 'create_vpc',
-            'parameters': {
-                'CidrBlock': 'CidrBlock'
-            }
-        },
-        'delete': {
-            'function': 'delete_vpc',
-            'parameters': {
-                'VpcId': 'PhysicalResourceId'
-            }
-        }
-    },
-    'EC2::RouteTable': {
-        'create': {
-            'function': 'create_route_table',
-            'parameters': {
-                'VpcId': 'VpcId'
-            }
-        },
-        'delete': {
-            'function': 'delete_route_table',
-            'parameters': {
-                'RouteTableId': 'PhysicalResourceId'
-            }
-        }
-    },
-    'EC2::Route': {
-        'create': {
-            'function': 'create_route',
-            'parameters': {
-                'DestinationCidrBlock': 'DestinationCidrBlock',
-                'DestinationIpv6CidrBlock': 'DestinationIpv6CidrBlock',
-                'RouteTableId': 'RouteTableId'
-            }
-        },
-        'delete': {
-            'function': 'delete_route',
-            'parameters': {
-                'DestinationCidrBlock': 'DestinationCidrBlock',
-                'DestinationIpv6CidrBlock': 'DestinationIpv6CidrBlock',
-                'RouteTableId': 'RouteTableId'
             }
         }
     }
@@ -1175,12 +1128,25 @@ def delete_resource(resource_id, resources, stack_name):
                 raise
 
     if res_type == 'AWS::EC2::VPC':
-        ec2_backend = ec2_backends[aws_stack.get_region()]
-        route_tables = ec2_backend.get_all_route_tables(filters={'vpc-id': res['PhysicalResourceId']})
-        for rt in route_tables:
-            route_table = ec2_backend.get_route_table(rt.id)
-            route_table.associations = {}
-            ec2_backend.delete_route_table(route_table.id)
+        ec2_client = aws_stack.connect_to_service('ec2')
+        resp = ec2_client.describe_route_tables(
+            Filters=[
+                {'Name': 'vpc-id', 'Values': [res['PhysicalResourceId']]},
+                {'Name': 'association.main', 'Values': ['false']}
+            ]
+        )
+        for rt in resp['RouteTables']:
+            ec2_client.delete_route_table(RouteTableId=rt['RouteTableId'])
+
+    if res_type == 'AWS::EC2::RouteTable':
+        ec2_client = aws_stack.connect_to_service('ec2')
+        resp = ec2_client.describe_vpcs()
+        vpcs = [vpc['VpcId'] for vpc in resp['Vpcs']]
+
+        vpc_id = res.get('Properties', {}).get('VpcId')
+        if vpc_id not in vpcs:
+            # VPC already deleted before
+            return
 
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
