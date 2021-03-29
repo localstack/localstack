@@ -1006,7 +1006,8 @@ class ProxyListenerS3(PersistingProxyListener):
         contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
         # nodejs sdk putObjectCommand is adding x-id=putobject in the query
         extra_allowed_headers = 'x-id' in query
-        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key or extra_allowed_headers:
+        if (method == 'POST' and query.startswith('uploadId')) \
+                or contains_cred or contains_key or extra_allowed_headers:
             return True
 
     @staticmethod
