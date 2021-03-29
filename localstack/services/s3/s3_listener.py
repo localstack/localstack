@@ -1252,7 +1252,8 @@ class ProxyListenerS3(PersistingProxyListener):
                 if aws_stack.get_region() == 'us-east-1':
                     response.headers['Location'] = '/{}'.format(bucket_name)
                 else:
-                    response.headers['Location'] = 'http://{}.{}/'.format(bucket_name, constants.S3_VIRTUAL_HOSTNAME)
+                    response.headers['Location'] = 'http://{}.{}:{}/'.format(
+                        bucket_name, constants.S3_VIRTUAL_HOSTNAME, config.EDGE_PORT)
 
         if response is not None:
             reset_content_length = False
