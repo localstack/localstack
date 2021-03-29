@@ -1129,14 +1129,16 @@ def delete_resource(resource_id, resources, stack_name):
 
     if res_type == 'AWS::EC2::VPC':
         ec2_client = aws_stack.connect_to_service('ec2')
-        resp = ec2_client.describe_route_tables(
-            Filters=[
-                {'Name': 'vpc-id', 'Values': [res['PhysicalResourceId']]},
-                {'Name': 'association.main', 'Values': ['false']}
-            ]
-        )
-        for rt in resp['RouteTables']:
-            ec2_client.delete_route_table(RouteTableId=rt['RouteTableId'])
+        state = res['_state_']
+        if state.get('VpcId'):
+            resp = ec2_client.describe_route_tables(
+                Filters=[
+                    {'Name': 'vpc-id', 'Values': [state.get('VpcId')]},
+                    {'Name': 'association.main', 'Values': ['false']}
+                ]
+            )
+            for rt in resp['RouteTables']:
+                ec2_client.delete_route_table(RouteTableId=rt['RouteTableId'])
 
     if res_type == 'AWS::EC2::RouteTable':
         ec2_client = aws_stack.connect_to_service('ec2')
