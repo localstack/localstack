@@ -1004,7 +1004,10 @@ class ProxyListenerS3(PersistingProxyListener):
         # Except we do want to notify on multipart and presigned url upload completion
         contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
         contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
-        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
+        # nodejs sdk putObjectCommand is adding x-id=putobject in the query
+        allowed_query = 'x-id=' in query.lower()
+        if (method == 'POST' and query.startswith('uploadId')) \
+                or contains_cred or contains_key or allowed_query:
             return True
 
     @staticmethod
@@ -1230,7 +1233,7 @@ class ProxyListenerS3(PersistingProxyListener):
             # if we already have a good key, use it, otherwise examine the path
             if key:
                 object_path = '/' + key
-            elif uses_host_addressing(headers):
+            elif bucket_name_in_host:
                 object_path = parsed.path
             else:
                 parts = parsed.path[1:].split('/', 1)
