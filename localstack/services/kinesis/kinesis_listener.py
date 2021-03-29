@@ -28,24 +28,27 @@ class ProxyListenerKinesis(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
         global STREAM_CONSUMERS
-        data = self.decode_content(data or '{}')
+        data, encoding_type = self.decode_content(data or '{}', True)
         action = headers.get('X-Amz-Target', '').split('.')[-1]
-
         if action == 'RegisterStreamConsumer':
             prev_consumer = find_consumer(data.get('ConsumerARN', ''),
                 data.get('ConsumerName', ''), data.get('StreamARN', ''))
 
             if prev_consumer:
                 msg = 'Consumer %s already exists' % prev_consumer.get('ConsumerARN')
-                return simple_error_response(msg, 400, 'ResourceAlreadyExists')
+                return simple_error_response(msg, 400, 'ResourceAlreadyExists', encoding_type)
 
             consumer = clone(data)
             consumer['ConsumerStatus'] = 'ACTIVE'
             consumer['ConsumerARN'] = '%s/consumer/%s' % (data['StreamARN'], data['ConsumerName'])
-            consumer['ConsumerCreationTimestamp'] = float(now_utc())
+            consumer['ConsumerCreationTimestamp'] = now_utc()
             consumer = json_safe(consumer)
             STREAM_CONSUMERS.append(consumer)
-            return {'Consumer': consumer}
+
+            result = {'Consumer': consumer}
+
+            return encoded_response(result, encoding_type)
+
         elif action == 'DeregisterStreamConsumer':
             def consumer_matches(c):
                 stream_arn = data.get('StreamARN')
@@ -55,50 +58,53 @@ class ProxyListenerKinesis(ProxyListener):
                     (c.get('StreamARN') == stream_arn and c.get('ConsumerName') == cons_name))
             STREAM_CONSUMERS = [c for c in STREAM_CONSUMERS if not consumer_matches(c)]
             return {}
+
         elif action == 'ListStreamConsumers':
             result = {
                 'Consumers': [c for c in STREAM_CONSUMERS if c.get('StreamARN') == data.get('StreamARN')]
             }
-            return result
+            return encoded_response(result, encoding_type)
+
         elif action == 'DescribeStreamConsumer':
             consumer_arn = data.get('ConsumerARN', '')
             consumer_name = data.get('ConsumerName', '')
             stream_arn = data.get('StreamArn', '')
 
-            creation_timestamp = data.get('ConsumerCreationTimestamp')
-
             consumer_to_locate = find_consumer(consumer_arn, consumer_name, stream_arn)
-
             if(not consumer_to_locate):
                 error_msg = 'Consumer %s not found.' % (consumer_arn or consumer_name)
+                return simple_error_response(error_msg, 400, 'ResourceNotFoundException', encoding_type)
 
-                return simple_error_response(error_msg, 400, 'ResourceNotFoundException')
+            creation_timestamp = consumer_to_locate.get('ConsumerCreationTimestamp')
+            time_formated = int(creation_timestamp) if encoding_type is not APPLICATION_JSON else creation_timestamp
 
             result = {
                 'ConsumerDescription': {
                     'ConsumerARN': consumer_to_locate.get('ConsumerArn'),
-                    'ConsumerCreationTimestamp': creation_timestamp,
+                    'ConsumerCreationTimestamp': time_formated,
                     'ConsumerName': consumer_to_locate.get('ConsumerName'),
                     'ConsumerStatus': 'ACTIVE',
                     'StreamARN': data.get('StreamARN')
                 }
             }
-            return result
+
+            return encoded_response(result, encoding_type)
+
         elif action == 'SubscribeToShard':
-            result = subscribe_to_shard(data)
+            result = subscribe_to_shard(data, headers)
             return result
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
             if action in ['PutRecord', 'PutRecords']:
                 return kinesis_error_response(data, action)
+
         return True
 
     def return_response(self, method, path, data, headers, response):
         action = headers.get('X-Amz-Target', '').split('.')[-1]
-        data = self.decode_content(data or '{}')
+        data, encoding_type = self.decode_content(data or '{}', True)
         response._content = self.replace_in_encoded(response.content or '')
         records = []
-
         if action in ('CreateStream', 'DeleteStream'):
             event_type = (event_publisher.EVENT_KINESIS_CREATE_STREAM if action == 'CreateStream'
                           else event_publisher.EVENT_KINESIS_DELETE_STREAM)
@@ -178,7 +184,8 @@ class ProxyListenerKinesis(ProxyListener):
                     tmp = base64.b64decode(record['Data'])
                     if len(tmp) >= 2 and tmp[0] == tmp[-1] == b'"'[0]:
                         tmp = tmp[1:-1]
-                    record['Data'] = to_str(base64.b64encode(tmp))
+
+                record['Data'] = to_str(base64.b64encode(tmp))
 
             response._content = cbor2.dumps(results) if encoding_type == APPLICATION_CBOR else json.dumps(results)
             return response
@@ -218,12 +225,29 @@ class ProxyListenerKinesis(ProxyListener):
         return decoded
 
 
-def subscribe_to_shard(data):
+def encode_data(data, encoding_type):
+    if encoding_type == APPLICATION_CBOR:
+        return cbor2.dumps(data)
+    return json.dumps(data)
+
+
+def encoded_response(data, encoding_type=APPLICATION_JSON, status_code=200):
+    response = Response()
+    response.status_code = status_code
+    response.headers.update({'content-type': encoding_type})
+    response._content = encode_data(data, encoding_type)
+    return response
+
+
+def subscribe_to_shard(data, headers):
     kinesis = aws_stack.connect_to_service('kinesis')
     stream_name = find_stream_for_consumer(data['ConsumerARN'])
     iter_type = data['StartingPosition']['Type']
     iterator = kinesis.get_shard_iterator(StreamName=stream_name,
         ShardId=data['ShardId'], ShardIteratorType=iter_type)['ShardIterator']
+    data_needs_encoding = False
+    if 'java' in headers.get('User-Agent', '').split(' ')[0]:
+        data_needs_encoding = True
 
     def send_events():
         yield convert_to_binary_event_payload('', event_type='initial-response')
@@ -235,11 +259,14 @@ def subscribe_to_shard(data):
             records = result.get('Records', [])
             for record in records:
                 record['ApproximateArrivalTimestamp'] = record['ApproximateArrivalTimestamp'].timestamp()
+                if data_needs_encoding:
+                    record['Data'] = base64.b64encode(record['Data'])
                 record['Data'] = to_str(record['Data'])
             if not records:
                 time.sleep(1)
                 continue
-            result = json.dumps({'Records': records})
+
+            result = json.dumps({'Records': json_safe(records)})
             yield convert_to_binary_event_payload(result, event_type='SubscribeToShardEvent')
 
     headers = {}
@@ -264,12 +291,10 @@ def find_stream_for_consumer(consumer_arn):
     raise Exception('Unable to find stream for stream consumer %s' % consumer_arn)
 
 
-def simple_error_response(msg, code, type_error):
-    error_response = Response()
-    error_response.status_code = code
-    error_response._content = json.dumps({'message': msg,
-        '__type': type_error})
-    return error_response
+def simple_error_response(msg, code, type_error, encoding_type=APPLICATION_JSON):
+    body = {'message': msg,
+        '__type': type_error}
+    return encoded_response(body, encoding_type, code)
 
 
 def kinesis_error_response(data, action):
