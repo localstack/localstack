@@ -1214,8 +1214,12 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'
                 return response
-        if method == 'GET' and response.status_code == 416:
-            return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
+        if response.status_code == 416:
+            if method == 'GET':
+                return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
+            elif method == 'HEAD':
+                response.status_code = 200
+                return response
 
         parsed = urlparse.urlparse(path)
         bucket_name_in_host = uses_host_addressing(headers)
