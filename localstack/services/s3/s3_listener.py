@@ -1005,9 +1005,9 @@ class ProxyListenerS3(PersistingProxyListener):
         contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
         contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
         # nodejs sdk putObjectCommand is adding x-id=putobject in the query
-        extra_allowed_headers = 'x-id' in query
+        allowed_query = 'x-id=' in query.lower()
         if (method == 'POST' and query.startswith('uploadId')) \
-                or contains_cred or contains_key or extra_allowed_headers:
+                or contains_cred or contains_key or allowed_query:
             return True
 
     @staticmethod
@@ -1217,8 +1217,6 @@ class ProxyListenerS3(PersistingProxyListener):
         if method == 'GET' and response.status_code == 416:
             return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
 
-        # if key is None:
-        #     key = extract_key_name(headers, path)
         parsed = urlparse.urlparse(path)
         bucket_name_in_host = uses_host_addressing(headers)
         should_send_notifications = all([
