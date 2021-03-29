@@ -1004,7 +1004,9 @@ class ProxyListenerS3(PersistingProxyListener):
         # Except we do want to notify on multipart and presigned url upload completion
         contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
         contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
-        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
+        # in nodejs sdk putObjectCommand is adding x-id=putobject in the query
+        extra_allowed_headers = 'x-id' in query
+        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key or extra_allowed_headers:
             return True
 
     @staticmethod
@@ -1214,8 +1216,17 @@ class ProxyListenerS3(PersistingProxyListener):
         if method == 'GET' and response.status_code == 416:
             return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
 
+        if key is None:
+            key = extract_key_name(headers, path)
         parsed = urlparse.urlparse(path)
         bucket_name_in_host = uses_host_addressing(headers)
+        print('\n\n--------------')
+        print(method, path, headers.get('host'))
+        print('1', method in ('PUT', 'POST', 'DELETE'))
+        print('2', '/' in path[1:] or bucket_name_in_host or key)
+        print('3', bucket_name_in_host or key or (len(path[1:].split('/')) > 1 and len(path[1:].split('/')[1]) > 0))
+        print('4', self.is_query_allowable(method, parsed.query))
+        print('--------------')
         should_send_notifications = all([
             method in ('PUT', 'POST', 'DELETE'),
             '/' in path[1:] or bucket_name_in_host or key,
@@ -1230,7 +1241,7 @@ class ProxyListenerS3(PersistingProxyListener):
             # if we already have a good key, use it, otherwise examine the path
             if key:
                 object_path = '/' + key
-            elif uses_host_addressing(headers):
+            elif bucket_name_in_host:
                 object_path = parsed.path
             else:
                 parts = parsed.path[1:].split('/', 1)
