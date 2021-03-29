@@ -1216,8 +1216,8 @@ class ProxyListenerS3(PersistingProxyListener):
         if method == 'GET' and response.status_code == 416:
             return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
 
-        if key is None:
-            key = extract_key_name(headers, path)
+        # if key is None:
+        #     key = extract_key_name(headers, path)
         parsed = urlparse.urlparse(path)
         bucket_name_in_host = uses_host_addressing(headers)
         should_send_notifications = all([
