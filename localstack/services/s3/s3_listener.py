@@ -79,7 +79,7 @@ OBJECT_METADATA_KEY_PREFIX = 'x-amz-meta-'
 
 # STS policy expiration date format
 POLICY_EXPIRATION_FORMAT1 = '%Y-%m-%dT%H:%M:%SZ'
-POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%IZ'
+POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 # ignored_headers_lower conatins headers which don't get involved in signature calculations process
 # these headers are being sent by the localstack by default.
@@ -483,7 +483,7 @@ def fix_location_constraint(response):
         content = to_str(response.content or '') or ''
     except Exception:
         content = ''
-    if aws_stack.get_region() != 'us-east-1' and 'LocationConstraint' in content:
+    if 'LocationConstraint' in content:
         pattern = r'<LocationConstraint([^>]*)>\s*</LocationConstraint>'
         replace = r'<LocationConstraint\1>%s</LocationConstraint>' % aws_stack.get_region()
         response._content = re.sub(pattern, replace, content)
@@ -1004,7 +1004,10 @@ class ProxyListenerS3(PersistingProxyListener):
         # Except we do want to notify on multipart and presigned url upload completion
         contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
         contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
-        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
+        # nodejs sdk putObjectCommand is adding x-id=putobject in the query
+        allowed_query = 'x-id=' in query.lower()
+        if (method == 'POST' and query.startswith('uploadId')) \
+                or contains_cred or contains_key or allowed_query:
             return True
 
     @staticmethod
@@ -1054,6 +1057,14 @@ class ProxyListenerS3(PersistingProxyListener):
                 return response
 
         modified_data = None
+
+        # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
+        to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
+        to_find2 = to_bytes('<CreateBucketConfiguration')
+        if data and data.startswith(to_bytes('<')) and to_find1 in data and to_find2 in data:
+            # Note: with the latest version, <CreateBucketConfiguration> must either
+            # contain a valid <LocationConstraint>, or not be present at all in the body.
+            modified_data = b''
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98
@@ -1203,8 +1214,12 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'
                 return response
-        if method == 'GET' and response.status_code == 416:
-            return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
+        if response.status_code == 416:
+            if method == 'GET':
+                return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
+            elif method == 'HEAD':
+                response.status_code = 200
+                return response
 
         parsed = urlparse.urlparse(path)
         bucket_name_in_host = uses_host_addressing(headers)
@@ -1222,7 +1237,7 @@ class ProxyListenerS3(PersistingProxyListener):
             # if we already have a good key, use it, otherwise examine the path
             if key:
                 object_path = '/' + key
-            elif uses_host_addressing(headers):
+            elif bucket_name_in_host:
                 object_path = parsed.path
             else:
                 parts = parsed.path[1:].split('/', 1)
@@ -1340,6 +1355,7 @@ def serve_static_website(headers, path, bucket_name):
 
     try:
         if path != '/':
+            path = path.lstrip('/')
             content = s3_client.get_object(Bucket=bucket_name, Key=path)['Body'].read()
             return requests_response(status_code=200, content=content)
     except ClientError:
