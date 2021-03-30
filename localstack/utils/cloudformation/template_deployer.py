@@ -1128,9 +1128,12 @@ def delete_resource(resource_id, resources, stack_name):
                 raise
 
     if res_type == 'AWS::EC2::VPC':
-        ec2_client = aws_stack.connect_to_service('ec2')
         state = res['_state_']
+        physical_resource_id = resources[resource_id]['PhysicalResourceId'] or state.get('VpcId')
+        resources[resource_id]['PhysicalResourceId'] = physical_resource_id
+
         if state.get('VpcId'):
+            ec2_client = aws_stack.connect_to_service('ec2')
             resp = ec2_client.describe_route_tables(
                 Filters=[
                     {'Name': 'vpc-id', 'Values': [state.get('VpcId')]},
@@ -1139,6 +1142,11 @@ def delete_resource(resource_id, resources, stack_name):
             )
             for rt in resp['RouteTables']:
                 ec2_client.delete_route_table(RouteTableId=rt['RouteTableId'])
+
+    if res_type == 'AWS::EC2::Subnet':
+        state = res['_state_']
+        physical_resource_id = resources[resource_id]['PhysicalResourceId'] or state['SubnetId']
+        resources[resource_id]['PhysicalResourceId'] = physical_resource_id
 
     if res_type == 'AWS::EC2::RouteTable':
         ec2_client = aws_stack.connect_to_service('ec2')
@@ -1557,6 +1565,9 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == 'EC2::VPC':
         stack.resources[resource_id]['PhysicalResourceId'] = details['Vpc']['VpcId']
+
+    if resource_type == 'EC2::Subnet':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['Subnet']['SubnetId']
 
     if resource_type == 'EC2::RouteTable':
         stack.resources[resource_id]['PhysicalResourceId'] = details['RouteTable']['RouteTableId']

@@ -1383,6 +1383,12 @@ class EC2Subnet(GenericBaseModel):
                     'AvailabilityZone': 'AvailabilityZone'
                     # TODO: add TagSpecifications
                 }
+            },
+            'delete': {
+                'function': 'delete_subnet',
+                'parameters': {
+                    'SubnetId': 'PhysicalResourceId'
+                }
             }
         }
 
