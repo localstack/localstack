@@ -173,7 +173,7 @@ def apply_patches():
         def __init__(self, *args, **kwargs):
             super(InvalidObjectState, self).__init__(
                 'InvalidObjectState',
-                'The operation is not valid for the object\"s storage class.',
+                "The operation is not valid for the object's storage class.",
                 *args,
                 **kwargs
             )

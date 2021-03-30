@@ -357,10 +357,13 @@ def get_sqs_queue_url(queue_arn):
     return sqs_queue_url_for_arn(queue_arn)
 
 
-def extract_region_from_auth_header(headers):
+def extract_region_from_auth_header(headers, use_default=True):
     auth = headers.get('Authorization') or ''
     region = re.sub(r'.*Credential=[^/]+/[^/]+/([^/]+)/.*', r'\1', auth)
-    region = region or get_region()
+    if region == auth:
+        region = None
+    if use_default:
+        region = region or get_region()
     return region
 
 
