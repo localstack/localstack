@@ -17,7 +17,7 @@ from urllib.parse import parse_qs
 from botocore.client import ClientError
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
-from localstack import config, constants
+from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
@@ -1165,19 +1165,6 @@ class ProxyListenerS3(PersistingProxyListener):
                 headers['Content-Length'] = str(len(data_to_return or ''))
             return Request(url=path_orig_escaped, data=data_to_return, headers=headers, method=method)
         return True
-
-    def get_forward_url(self, method, path, data, headers):
-        def sub(match):
-            # make sure to convert any bucket names to lower case
-            bucket_name = normalize_bucket_name(match.group(1))
-            return '/%s%s' % (bucket_name, match.group(2) or '')
-
-        path_new = re.sub(r'/([^?/]+)([?/].*)?', sub, path)
-        if path == path_new:
-            return
-
-        url = 'http://%s:%s%s' % (constants.LOCALHOST, PORT_S3_BACKEND, path_new)
-        return url
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
         path = to_str(path)
