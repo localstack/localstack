@@ -17,7 +17,7 @@ from urllib.parse import parse_qs
 from botocore.client import ClientError
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
-from localstack import config
+from localstack import config, constants
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
