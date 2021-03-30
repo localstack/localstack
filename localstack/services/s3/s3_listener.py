@@ -1047,8 +1047,6 @@ class ProxyListenerS3(PersistingProxyListener):
         if is_static_website(headers) and method == 'GET':
             return serve_static_website(headers=headers, path=path, bucket_name=bucket_name)
 
-        # parse path and query params
-
         # check content md5 hash integrity if not a copy request or multipart initialization
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
                 and not self.is_create_multipart_request(parsed_path.query):
@@ -1174,11 +1172,7 @@ class ProxyListenerS3(PersistingProxyListener):
         # persist this API call to disk
         super(ProxyListenerS3, self).return_response(method, path, data, headers, response, request_handler)
 
-        # No path-name based bucket name? Try host-based
         bucket_name = extract_bucket_name(headers, path)
-        hostname_parts = headers['host'].split('.')
-        if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
-            bucket_name = hostname_parts[0]
 
         # POST requests to S3 may include a success_action_redirect or
         # success_action_status field, which should be used to redirect a
@@ -1240,10 +1234,20 @@ class ProxyListenerS3(PersistingProxyListener):
             event_publisher.fire_event(event_type, payload={'n': event_publisher.get_hash(bucket_name)})
 
         # fix an upstream issue in moto S3 (see https://github.com/localstack/localstack/issues/382)
-        if method == 'PUT' and parsed.query == 'policy':
-            response._content = ''
-            response.status_code = 204
-            return response
+        if method == 'PUT':
+            if parsed.query == 'policy':
+                response._content = ''
+                response.status_code = 204
+                return response
+            # when creating s3 bucket using aws s3api the return header contains 'Location' param
+            if key is None:
+                # if the bucket is created in 'us-east-1' the location header contains bucket as path
+                # else the the header contains bucket url
+                if aws_stack.get_region() == 'us-east-1':
+                    response.headers['Location'] = '/{}'.format(bucket_name)
+                else:
+                    response.headers['Location'] = 'http://{}.{}:{}/'.format(
+                        bucket_name, constants.S3_VIRTUAL_HOSTNAME, config.EDGE_PORT)
 
         if response is not None:
             reset_content_length = False
