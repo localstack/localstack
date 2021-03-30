@@ -2066,3 +2066,64 @@ class CloudFormationTest(unittest.TestCase):
 
         # clean up
         self.cleanup(stack_name)
+
+    def test_cfn_with_route_table(self):
+        ec2_client = aws_stack.connect_to_service('ec2')
+
+        resp = ec2_client.describe_vpcs()
+        vpcs_before = [
+            vpc['VpcId'] for vpc in resp['Vpcs']
+        ]
+
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template33.yaml'))
+
+        stack_name = 'stack-%s' % short_uid()
+        create_and_await_stack(
+            StackName=stack_name,
+            TemplateBody=template
+        )
+        resp = ec2_client.describe_vpcs()
+        vpcs = [
+            vpc['VpcId'] for vpc in resp['Vpcs'] if vpc['VpcId'] not in vpcs_before
+        ]
+        self.assertEqual(len(vpcs), 1)
+
+        resp = ec2_client.describe_route_tables(
+            Filters=[
+                {
+                    'Name': 'vpc-id',
+                    'Values': [vpcs[0]]
+                }
+            ]
+        )
+        # Each VPC always have 1 default RouteTable
+        self.assertEqual(len(resp['RouteTables']), 2)
+
+        # The 2nd RouteTable was created by cfn template
+        route_table_id = resp['RouteTables'][1]['RouteTableId']
+        routes = resp['RouteTables'][1]['Routes']
+
+        # Each RouteTable have 1 default route
+        self.assertEqual(len(routes), 2)
+
+        self.assertEqual(routes[0]['DestinationCidrBlock'], '100.0.0.0/20')
+
+        # The 2nd Route was created by cfn template
+        self.assertEqual(routes[1]['DestinationCidrBlock'], '0.0.0.0/0')
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        exports = cloudformation.list_exports()['Exports']
+        export_values = {
+            ex['Name']: ex['Value'] for ex in exports
+        }
+        self.assertIn('publicRoute-identify', export_values)
+        self.assertEqual(export_values['publicRoute-identify'], '{}~0.0.0.0/0'.format(route_table_id))
+
+        # clean up
+        self.cleanup(stack_name)
+
+        resp = ec2_client.describe_vpcs()
+        vpcs = [
+            vpc['VpcId'] for vpc in resp['Vpcs'] if vpc['VpcId'] not in vpcs_before
+        ]
+        self.assertEqual(len(vpcs), 0)

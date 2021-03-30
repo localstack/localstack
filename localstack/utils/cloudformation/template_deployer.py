@@ -5,6 +5,8 @@ import base64
 import logging
 import traceback
 from urllib.parse import urlparse
+
+from moto.ec2.utils import generate_route_id
 from six import iteritems
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.cloudformation import parsing
@@ -1125,6 +1127,37 @@ def delete_resource(resource_id, resources, stack_name):
             if 'NoSuchEntity' not in str(e):
                 raise
 
+    if res_type == 'AWS::EC2::VPC':
+        state = res['_state_']
+        physical_resource_id = resources[resource_id]['PhysicalResourceId'] or state.get('VpcId')
+        resources[resource_id]['PhysicalResourceId'] = physical_resource_id
+
+        if state.get('VpcId'):
+            ec2_client = aws_stack.connect_to_service('ec2')
+            resp = ec2_client.describe_route_tables(
+                Filters=[
+                    {'Name': 'vpc-id', 'Values': [state.get('VpcId')]},
+                    {'Name': 'association.main', 'Values': ['false']}
+                ]
+            )
+            for rt in resp['RouteTables']:
+                ec2_client.delete_route_table(RouteTableId=rt['RouteTableId'])
+
+    if res_type == 'AWS::EC2::Subnet':
+        state = res['_state_']
+        physical_resource_id = resources[resource_id]['PhysicalResourceId'] or state['SubnetId']
+        resources[resource_id]['PhysicalResourceId'] = physical_resource_id
+
+    if res_type == 'AWS::EC2::RouteTable':
+        ec2_client = aws_stack.connect_to_service('ec2')
+        resp = ec2_client.describe_vpcs()
+        vpcs = [vpc['VpcId'] for vpc in resp['Vpcs']]
+
+        vpc_id = res.get('Properties', {}).get('VpcId')
+        if vpc_id not in vpcs:
+            # VPC already deleted before
+            return
+
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
 
@@ -1529,6 +1562,22 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == 'ApiGateway::Model':
         stack.resources[resource_id]['PhysicalResourceId'] = details['id']
+
+    if resource_type == 'EC2::VPC':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['Vpc']['VpcId']
+
+    if resource_type == 'EC2::Subnet':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['Subnet']['SubnetId']
+
+    if resource_type == 'EC2::RouteTable':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['RouteTable']['RouteTableId']
+
+    if resource_type == 'EC2::Route':
+        stack.resources[resource_id]['PhysicalResourceId'] = generate_route_id(
+            resource_props['RouteTableId'],
+            resource_props.get('DestinationCidrBlock', ''),
+            resource_props.get('DestinationIpv6CidrBlock')
+        )
 
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
