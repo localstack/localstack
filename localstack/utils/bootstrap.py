@@ -274,9 +274,9 @@ def setup_logging(log_level=None):
 
     # overriding the log level if LS_LOG has been set
     if config.LS_LOG:
-        LS_LOG = str(config.LS_LOG).upper()
-        LS_LOG = 'WARNING' if LS_LOG == 'WARN' else LS_LOG
-        log_level = getattr(logging, LS_LOG)
+        log_level = str(config.LS_LOG).upper()
+        log_level = 'WARNING' if log_level == 'WARN' else 'DEBUG' if log_level == 'TRACE' else log_level
+        log_level = getattr(logging, log_level)
         logging.getLogger('').setLevel(log_level)
         logging.getLogger('localstack').setLevel(log_level)
 

@@ -62,6 +62,10 @@ class ProxyListenerEdge(ProxyListener):
         # extract API details
         api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
 
+        if api and config.LS_LOG:
+            # print request trace for debugging, if enabled
+            LOG.debug('IN(%s): "%s %s" - headers: %s - data: %s' % (api, method, path, dict(headers), data))
+
         set_default_region_in_headers(headers)
 
         if port and int(port) < 0:
@@ -108,6 +112,14 @@ class ProxyListenerEdge(ProxyListener):
             return do_forward_request(api, method, path, data, headers, port=port)
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
+
+        if config.LS_LOG:
+            # print response trace for debugging, if enabled
+            api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
+            if api and api != '_unknown_':
+                LOG.debug('OUT(%s): "%s %s" - status: %s - response: %s' %
+                    (api, method, path, response.status_code, response.content))
+
         if headers.get('Accept-Encoding') == 'gzip' and response._content:
             response._content = gzip.compress(to_bytes(response._content))
             response.headers['Content-Length'] = str(len(response._content))
