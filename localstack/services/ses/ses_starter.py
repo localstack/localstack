@@ -17,6 +17,27 @@ DELETE_IDENTITY_RESPONSE = """<DeleteTemplateResponse xmlns="http://ses.amazonaw
     </ResponseMetadata>
 </DeleteTemplateResponse>"""
 
+GET_IDENTITY_VERIFICATION_ATTRIBUTES_RESPONSE = """<GetIdentityVerificationAttributesResponse xmlns="http://ses.amazon aws.com/doc/2010-12-01/">
+    <GetIdentityVerificationAttributesResult>
+    <VerificationAttributes>
+    {% for resource in resources %}
+        <entry>
+            <key>{{ resource }}</key>
+            <value>
+                <VerificationStatus>Success</VerificationStatus>
+                {% if '@' not in resource %}
+                    <VerificationToken>QTKknzFg2J4ygwa+XvHAxUl1hyHoY0gVfZdfjIedHZ0=</VerificationToken>
+                {% endif %}
+            </value>
+        </entry>
+    {% endfor %}
+    </VerificationAttributes>
+    </GetIdentityVerificationAttributesResult>
+    <ResponseMetadata>
+        <RequestId>1d0c29f1-9bf3-11e1-8ee7-c98a0037a2b6</RequestId>
+    </ResponseMetadata>
+</GetIdentityVerificationAttributesResponse>"""
+
 
 def apply_patches():
     def get_source_from_raw(raw_data):
@@ -98,6 +119,14 @@ def apply_patches():
         return template.render()
 
     email_responses.delete_template = delete_template
+
+    def get_identity_verification_attributes(self):
+        resources = [self.querystring[identity][0] for identity
+          in self.querystring.keys() if 'Identities.member' in identity]
+        template = self.response_template(GET_IDENTITY_VERIFICATION_ATTRIBUTES_RESPONSE)
+        return template.render(resources=resources)
+
+    email_responses.get_identity_verification_attributes = get_identity_verification_attributes
 
 
 def start_ses(port=None, backend_port=None, asynchronous=None, update_listener=None):
