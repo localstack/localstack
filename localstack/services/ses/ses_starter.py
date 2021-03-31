@@ -121,7 +121,8 @@ def apply_patches():
     email_responses.delete_template = delete_template
 
     def get_identity_verification_attributes(self):
-        resources = [self.querystring[identity][0] for identity in self.querystring.keys() if 'Identities.member' in identity]
+        resources = [self.querystring[identity][0] for identity
+          in self.querystring.keys() if 'Identities.member' in identity]
         template = self.response_template(GET_IDENTITY_VERIFICATION_ATTRIBUTES_RESPONSE)
         return template.render(resources=resources)
 
