@@ -21,8 +21,9 @@ REGION_REGEX = r'[a-z]{2}-[a-z]+-[0-9]{1,}'
 PORT_REGEX = r'(:[\d]{0,6})?'
 S3_STATIC_WEBSITE_HOST_REGEX = r'^([^.]+)\.s3-website\.localhost\.localstack\.cloud(:[\d]{0,6})?$'
 S3_VIRTUAL_HOSTNAME_REGEX = (r'^(http(s)?://)?([^\.]+)\.s3((-website)|(-external-1))?[\.-](dualstack\.)?'
-                             r'((localhost\.localstack\.cloud)|'
-                             r'(({}\.)?amazonaws\.com(.cn)?)){}$'.format(REGION_REGEX, PORT_REGEX))
+                             r'((localhost\.localstack\.cloud)|({})|'
+                             r'(({}\.)?amazonaws\.com(.cn)?)){}$'
+                             .format(config.HOSTNAME_EXTERNAL, REGION_REGEX, PORT_REGEX))
 BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
 
