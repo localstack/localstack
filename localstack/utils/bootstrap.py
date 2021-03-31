@@ -385,24 +385,29 @@ def validate_localstack_config(name):
         return False
 
     # validating docker-compose variable
-    import yaml
+    import yaml  # keep import here to avoid issues in test Lambdas
     with open(compose_file_name) as file:
         compose_content = yaml.full_load(file)
-    localstack_service = [service for service in compose_content['services']
-        if compose_content['services'][service]['image'] in constants.OFFICIAL_IMAGES]
-    if len(localstack_service) > 0:
-        localstack_service = localstack_service[0]
-    else:
-        raise Exception('No official docker image found. Please use one of this image: %s'
-            % (constants.OFFICIAL_IMAGES))
+    services_config = compose_content.get('services', {})
+    ls_service_name = [name for name, svc in services_config.items() if 'localstack' in svc.get('image', '')]
+    if not ls_service_name:
+        raise Exception('No LocalStack service found in config (looking for image names containing "localstack")')
+    if len(ls_service_name) > 1:
+        LOG.warning('Multiple candidates found for LocalStack service: %s' % ls_service_name)
+    ls_service_name = ls_service_name[0]
+    ls_service_details = services_config[ls_service_name]
+    image_name = ls_service_details.get('image', '')
+    if image_name.split(':')[0] not in constants.OFFICIAL_IMAGES:
+        LOG.info('Using custom image "%s", we recommend using an official image: %s' %
+            (image_name, constants.OFFICIAL_IMAGES))
 
     # prepare config options
-    network_mode = compose_content['services'][localstack_service].get('network_mode')
-    image_name = compose_content['services'][localstack_service]['image']
-    container_name = compose_content['services'][localstack_service].get('container_name') or ''
-    docker_ports = (port.split(':')[0] for port in compose_content['services'][localstack_service].get('ports', []))
+    network_mode = ls_service_details.get('network_mode')
+    image_name = ls_service_details.get('image')
+    container_name = ls_service_details.get('container_name') or ''
+    docker_ports = (port.split(':')[0] for port in ls_service_details.get('ports', []))
     docker_env = dict((env.split('=')[0], env.split('=')[1])
-        for env in compose_content['services'][localstack_service]['environment'])
+        for env in ls_service_details.get('environment', {}))
     edge_port = str(docker_env.get('EDGE_PORT') or config.EDGE_PORT)
     main_container = config.MAIN_CONTAINER_NAME
 
@@ -421,7 +426,12 @@ def validate_localstack_config(name):
         warns.append('Please use "container_name: %s" or add "MAIN_CONTAINER_NAME" in "environment".' %
             main_container)
 
-    if edge_port not in docker_ports:
+    def port_exposed(port):
+        for exposed in docker_ports:
+            if re.match(r'^([0-9]+-)?%s(-[0-9]+)?$' % port, exposed):
+                return True
+
+    if not port_exposed(edge_port):
         warns.append(('Edge port %s is not exposed. You may have to add the entry '
                     'to the "ports" section of the docker-compose file.') % edge_port)
 
