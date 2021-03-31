@@ -438,7 +438,10 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         # ensure that all infra components are up and running
         check_infra(apis=apis)
         # restore persisted data
+        record_service_health('features:persistence', 'initializing' if config.DATA_DIR else 'disabled')
         persistence.restore_persisted_data(apis=apis)
+        if config.DATA_DIR:
+            record_service_health('features:persistence', 'initialized')
         return thread
 
     prepare_environment()
