@@ -117,8 +117,8 @@ class ProxyListenerEdge(ProxyListener):
             # print response trace for debugging, if enabled
             api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
             if api and api != '_unknown_':
-                LOG.debug('OUT(%s): "%s %s" - status: %s - response: %s' %
-                    (api, method, path, response.status_code, response.content))
+                LOG.debug('OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s' %
+                    (api, method, path, response.status_code, dict(response.headers), response.content))
 
         if headers.get('Accept-Encoding') == 'gzip' and response._content:
             response._content = gzip.compress(to_bytes(response._content))

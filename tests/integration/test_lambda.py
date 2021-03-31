@@ -901,13 +901,8 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # create lambda function
         response = self.lambda_client.create_function(
-            FunctionName=lambda_name, Handler='handler.handler',
-            Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1',
-            Code={
-                'S3Bucket': bucket_name,
-                'S3Key': bucket_key
-            },
-            Publish=True
+            FunctionName=lambda_name, Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1', Publish=True,
+            Handler='handler.handler', Code={'S3Bucket': bucket_name, 'S3Key': bucket_key}
         )
         self.assertIn('Version', response)
 
@@ -923,7 +918,11 @@ class TestPythonRuntimes(LambdaTestBase):
 
         context = data_after['context']
         self.assertEqual(response['Version'], context['function_version'])
+        self.assertTrue(context.get('aws_request_id'))
         self.assertEqual(lambda_name, context['function_name'])
+        self.assertEqual('/aws/lambda/%s' % lambda_name, context['log_group_name'])
+        self.assertTrue(context.get('log_stream_name'))
+        self.assertTrue(context.get('memory_limit_in_mb'))
 
         # assert that logs are present
         expected = ['Lambda log message - print function']

@@ -22,7 +22,7 @@ from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
     to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
     mkdir, unzip, is_zip_file, run, run_safe, first_char_to_lower, run_for_max_seconds, parse_request_data,
-    timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
+    timestamp_millis, timestamp, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
 from localstack.services.awslambda import lambda_executors
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.awslambda.lambda_utils import (
@@ -123,6 +123,7 @@ class ClientError(Exception):
 
 
 class LambdaContext(object):
+    DEFAULT_MEMORY_LIMIT = 1536
 
     def __init__(self, func_details, qualifier=None, context=None):
         self.function_name = func_details.name()
@@ -133,6 +134,9 @@ class LambdaContext(object):
             self.invoked_function_arn += ':' + qualifier
         self.cognito_identity = context.get('identity')
         self.aws_request_id = str(uuid.uuid4())
+        self.memory_limit_in_mb = func_details.memory_size or self.DEFAULT_MEMORY_LIMIT
+        self.log_group_name = '/aws/lambda/%s' % self.function_name
+        self.log_stream_name = '%s/[1]%s' % (timestamp(format='%Y/%m/%d'), short_uid())
 
     def get_remaining_time_in_millis(self):
         # TODO implement!
