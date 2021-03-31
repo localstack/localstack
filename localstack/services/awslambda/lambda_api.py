@@ -132,6 +132,7 @@ class LambdaContext(object):
         if qualifier:
             self.invoked_function_arn += ':' + qualifier
         self.cognito_identity = context.get('identity')
+        self.aws_request_id = str(uuid.uuid4())
 
     def get_remaining_time_in_millis(self):
         # TODO implement!

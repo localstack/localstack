@@ -47,3 +47,5 @@ requirements.copy.txt
 *tfplan
 
 .python-version
+
+venv
