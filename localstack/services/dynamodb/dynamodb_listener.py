@@ -468,7 +468,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     return keys
                 updated_item = find_existing_item(update_request, table_name)
                 if not updated_item:
-                    return
+                    return []
                 new_record = clone(record)
                 new_record['eventName'] = 'MODIFY'
                 new_record['dynamodb']['Keys'] = keys
