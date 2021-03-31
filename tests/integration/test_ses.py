@@ -45,9 +45,7 @@ class SESTest(unittest.TestCase):
         test_values = [domain, email]
         response = client.get_identity_verification_attributes(Identities=test_values)['VerificationAttributes']
         self.assertEqual(2, len(response))
-        
         for value in test_values:
             self.assertEqual('Success', response[value]['VerificationStatus'])
-
         self.assertIn('VerificationToken', response[domain])
         self.assertNotIn('VerificationToken', response[email])
