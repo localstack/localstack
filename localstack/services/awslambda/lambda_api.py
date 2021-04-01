@@ -17,7 +17,7 @@ from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
     to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
@@ -945,14 +945,17 @@ def forward_to_fallback_url(func_arn, data):
         item = {
             'id': {'S': short_uid()},
             'timestamp': {'N': str(now_utc())},
-            'payload': {'S': str(data)},
+            'payload': {'S': data},
             'function_name': {'S': lambda_name}
         }
         aws_stack.create_dynamodb_table(table_name, partition_key='id')
         dynamodb.put_item(TableName=table_name, Item=item)
         return ''
     if re.match(r'^https?://.+', config.LAMBDA_FALLBACK_URL):
-        headers = {'lambda-function-name': lambda_name}
+        headers = {
+            'lambda-function-name': lambda_name,
+            'Content-Type': APPLICATION_JSON
+        }
         response = safe_requests.post(config.LAMBDA_FALLBACK_URL, data, headers=headers)
         content = response.content
         try:
@@ -1453,7 +1456,7 @@ def invoke_function(function):
         not_found = not_found_error('{0}:{1}'.format(arn, qualifier))
 
     if not_found:
-        forward_result = forward_to_fallback_url(arn, data)
+        forward_result = forward_to_fallback_url(arn, json.dumps(data))
         if forward_result is not None:
             return _create_response(forward_result)
         return not_found
