@@ -68,7 +68,7 @@ class ProxyListenerKinesis(ProxyListener):
         elif action == 'DescribeStreamConsumer':
             consumer_arn = data.get('ConsumerARN', '')
             consumer_name = data.get('ConsumerName', '')
-            stream_arn = data.get('StreamArn', '')
+            stream_arn = data.get('StreamARN', '')
 
             consumer_to_locate = find_consumer(consumer_arn, consumer_name, stream_arn)
             if(not consumer_to_locate):
@@ -80,7 +80,7 @@ class ProxyListenerKinesis(ProxyListener):
 
             result = {
                 'ConsumerDescription': {
-                    'ConsumerARN': consumer_to_locate.get('ConsumerArn'),
+                    'ConsumerARN': consumer_to_locate.get('ConsumerARN'),
                     'ConsumerCreationTimestamp': time_formated,
                     'ConsumerName': consumer_to_locate.get('ConsumerName'),
                     'ConsumerStatus': 'ACTIVE',
@@ -277,7 +277,7 @@ def find_consumer(consumer_arn='', consumer_name='', stream_arn=''):
     for consumer in STREAM_CONSUMERS:
         if consumer_arn and consumer_arn == consumer.get('ConsumerARN'):
             return consumer
-        elif consumer_name == consumer.get('ConsumerName') and stream_arn == consumer.get('StreamArn'):
+        elif consumer_name == consumer.get('ConsumerName') and stream_arn == consumer.get('StreamARN'):
             return consumer
 
 
