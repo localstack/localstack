@@ -192,6 +192,7 @@ def set_service_status(data):
         update_config_variable(port_variable, port)
         new_service_list = ','.join(services)
         os.environ['SERVICES'] = new_service_list
+        # TODO: expensive operation - check if we need to do this here for each service, should be optimized!
         config.populate_configs()
         LOG.info('Starting service %s on port %s' % (service, port))
         SERVICE_PLUGINS[service].start(asynchronous=True)

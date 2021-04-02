@@ -1240,12 +1240,14 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.status_code = 204
                 return response
             # when creating s3 bucket using aws s3api the return header contains 'Location' param
-            if key is None:
+            # TODO: temporarily disabled!
+            if False and key is None:
                 # if the bucket is created in 'us-east-1' the location header contains bucket as path
                 # else the the header contains bucket url
                 if aws_stack.get_region() == 'us-east-1':
                     response.headers['Location'] = '/{}'.format(bucket_name)
                 else:
+                    # TODO: we need to set the correct protocol here!
                     response.headers['Location'] = 'http://{}.{}:{}/'.format(
                         bucket_name, constants.S3_VIRTUAL_HOSTNAME, config.EDGE_PORT)
 
