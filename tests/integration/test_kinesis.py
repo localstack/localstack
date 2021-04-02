@@ -30,9 +30,24 @@ class TestKinesis(unittest.TestCase):
         # boto3 converts the timestamp to datetime
         self.assertTrue(isinstance(response['Consumer']['ConsumerCreationTimestamp'], datetime))
         consumers = assert_consumers(1)
+        consumer_arn = consumers[0]['ConsumerARN']
         self.assertEqual(consumers[0]['ConsumerName'], consumer_name)
-        self.assertIn('/%s' % consumer_name, consumers[0]['ConsumerARN'])
+        self.assertIn('/%s' % consumer_name, consumer_arn)
         self.assertTrue(isinstance(consumers[0]['ConsumerCreationTimestamp'], datetime))
+
+        # lookup stream consumer by describe calls, assert response
+        consumer_description_by_arn = client.describe_stream_consumer(
+            StreamARN=stream_arn,
+            ConsumerARN=consumer_arn)['ConsumerDescription']
+        self.assertEqual(consumer_description_by_arn['ConsumerName'], consumer_name)
+        self.assertEqual(consumer_description_by_arn['ConsumerARN'], consumer_arn)
+        self.assertEqual(consumer_description_by_arn['StreamARN'], stream_arn)
+        self.assertEqual(consumer_description_by_arn['ConsumerStatus'], 'ACTIVE')
+        self.assertTrue(isinstance(consumer_description_by_arn['ConsumerCreationTimestamp'], datetime))
+        consumer_description_by_name = client.describe_stream_consumer(
+            StreamARN=stream_arn,
+            ConsumerName=consumer_name)['ConsumerDescription']
+        self.assertEqual(consumer_description_by_arn, consumer_description_by_name)
 
         # delete non-existing consumer and assert 1 consumer
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='_invalid_')
