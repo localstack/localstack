@@ -29,7 +29,7 @@ KINESIS_RECENT_EVENTS_TIME_DIFF_SECS = 60
 LOG = logging.getLogger(__name__)
 
 
-def run_cached(cmd, cmd_params, cache_duration_secs=None):
+def run_cached(cmd, cmd_params=None, cache_duration_secs=None):
     if cache_duration_secs is None:
         cache_duration_secs = AWS_CACHE_TIMEOUT
     env_vars = os.environ.copy()
@@ -41,7 +41,10 @@ def run_cached(cmd, cmd_params, cache_duration_secs=None):
     })
     error = None
     try:
-        return cmd.__call__(cmd_params)
+        if cmd_params:
+            return cmd.__call__(cmd_params)
+        else:
+            return cmd.__call__()
     except Exception as e:
         error = e
     if error:
@@ -52,15 +55,13 @@ def run_cached(cmd, cmd_params, cache_duration_secs=None):
 def run_aws_cmd(service, cmd_method, cmd_params=None, env=None, cache_duration_secs=None):
     client = aws_client(service, env)
     method = getattr(client, cmd_method)
-
-    cmd = method
     if not is_api_enabled(service):
         return '{}'
-    return run_cached(cmd, cmd_params, cache_duration_secs=cache_duration_secs)
+    return run_cached(method, cmd_params, cache_duration_secs=cache_duration_secs)
 
 
 def cmd_s3api(cmd_method, cmd_params=None, env=None):
-    return run_aws_cmd('s3api', cmd_method, cmd_params, env=env)
+    return run_aws_cmd('s3', cmd_method, cmd_params, env=env)
 
 
 def cmd_es(cmd_method, cmd_params=None, env=None):
@@ -101,8 +102,7 @@ def aws_client(service, env):
             raise socket.error()
         if endpoint_url.startswith('https://'):
             use_ssl = True
-    client = boto3.client(service_name=service, use_ssl=use_ssl, verify=verify_ssl, endpoint_url=endpoint_url)
-    return client
+    return boto3.client(service_name=service, use_ssl=use_ssl, verify=verify_ssl, endpoint_url=endpoint_url)
 
 
 def get_kinesis_streams(filter='.*', pool={}, env=None):
