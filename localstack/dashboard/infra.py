@@ -1,21 +1,19 @@
 import re
 import os
 import json
-import logging
+import boto3
 import socket
+import logging
 import tempfile
 from six import iteritems
 from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (short_uid, parallelize, is_port_open, new_tmp_file,
-    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, run, md5)
+from localstack.utils.common import (short_uid, parallelize, is_port_open,
+    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, md5)
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     EventSource, DynamoDB, DynamoDBStream, FirehoseStream, S3Bucket, SqsQueue,
     KinesisShard, KinesisStream, LambdaFunction)
-
-# TODO: CLI commands in this file need to be replaced with SDK calls!
-
 
 AWS_CACHE_TIMEOUT = 5  # 5 seconds
 AWS_LAMBDA_CODE_CACHE_TIMEOUT = 5 * 60  # 5 minutes
@@ -31,7 +29,7 @@ KINESIS_RECENT_EVENTS_TIME_DIFF_SECS = 60
 LOG = logging.getLogger(__name__)
 
 
-def run_cached(cmd, cache_duration_secs=None):
+def run_cached(cmd, cmd_params, cache_duration_secs=None):
     if cache_duration_secs is None:
         cache_duration_secs = AWS_CACHE_TIMEOUT
     env_vars = os.environ.copy()
@@ -41,59 +39,59 @@ def run_cached(cmd, cache_duration_secs=None):
         'AWS_DEFAULT_REGION': DEFAULT_REGION or os.environ.get('AWS_DEFAULT_REGION'),
         'PYTHONWARNINGS': 'ignore:Unverified HTTPS request'
     })
-    tmp_file_path = new_tmp_file()
     error = None
-    with open(tmp_file_path, 'w') as err_file:
-        try:
-            return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars, stderr=err_file)
-        except Exception as e:
-            error = e
+    try:
+        return cmd.__call__(cmd_params)
+    except Exception as e:
+        error = e
     if error:
-        LOG.warning('Error running command: %s %s %s' % (cmd, error, load_file(tmp_file_path)))
+        LOG.warning('Error running command: %s %s' % (cmd, error))
         raise error
 
 
-def run_aws_cmd(service, cmd_params, env=None, cache_duration_secs=None):
-    cmd = '%s %s' % (aws_cmd(service, env), cmd_params)
+def run_aws_cmd(service, cmd_method, cmd_params=None, env=None, cache_duration_secs=None):
+    client = aws_client(service, env)
+    method = getattr(client, cmd_method)
+
+    cmd = method
     if not is_api_enabled(service):
         return '{}'
-    return run_cached(cmd, cache_duration_secs=cache_duration_secs)
+    return run_cached(cmd, cmd_params, cache_duration_secs=cache_duration_secs)
 
 
-def cmd_s3api(cmd_params, env):
-    return run_aws_cmd('s3api', cmd_params, env)
+def cmd_s3api(cmd_method, cmd_params=None, env=None):
+    return run_aws_cmd('s3api', cmd_method, cmd_params, env=env)
 
 
-def cmd_es(cmd_params, env):
-    return run_aws_cmd('es', cmd_params, env)
+def cmd_es(cmd_method, cmd_params=None, env=None):
+    return run_aws_cmd('es', cmd_method, cmd_params, env=env)
 
 
-def cmd_kinesis(cmd_params, env, cache_duration_secs=None):
-    return run_aws_cmd('kinesis', cmd_params, env,
+def cmd_kinesis(cmd_method, cmd_params=None, env=None, cache_duration_secs=None):
+    return run_aws_cmd('kinesis', cmd_method, cmd_params, env,
         cache_duration_secs=cache_duration_secs)
 
 
-def cmd_dynamodb(cmd_params, env):
-    return run_aws_cmd('dynamodb', cmd_params, env)
+def cmd_dynamodb(cmd_method, cmd_params=None, env=None):
+    return run_aws_cmd('dynamodb', cmd_method, cmd_params, env=env)
 
 
-def cmd_firehose(cmd_params, env):
-    return run_aws_cmd('firehose', cmd_params, env)
+def cmd_firehose(cmd_method, cmd_params=None, env=None):
+    return run_aws_cmd('firehose', cmd_method, cmd_params, env=env)
 
 
-def cmd_sqs(cmd_params, env):
-    return run_aws_cmd('sqs', cmd_params, env)
+def cmd_sqs(cmd_method, cmd_params=None, env=None):
+    return run_aws_cmd('sqs', cmd_method, cmd_params, env=env)
 
 
-def cmd_lambda(cmd_params, env, cache_duration_secs=None):
-    return run_aws_cmd('lambda', cmd_params, env,
+def cmd_lambda(cmd_method, cmd_params=None, env=None, cache_duration_secs=None):
+    return run_aws_cmd('lambda', cmd_method, cmd_params, env,
         cache_duration_secs=cache_duration_secs)
 
 
-def aws_cmd(service, env):
-    # TODO: use boto3 instead of running aws-cli commands here!
-
-    cmd = '{ test `which aws` || . .venv/bin/activate; }; aws'
+def aws_client(service, env):
+    use_ssl = False
+    verify_ssl = False
     endpoint_url = None
     env = aws_stack.get_environment(env)
     if aws_stack.is_local_env(env):
@@ -102,10 +100,9 @@ def aws_cmd(service, env):
         if not is_port_open(endpoint_url):
             raise socket.error()
         if endpoint_url.startswith('https://'):
-            cmd += ' --no-verify-ssl'
-        cmd = '%s --endpoint-url="%s"' % (cmd, endpoint_url)
-    cmd = '%s %s' % (cmd, service)
-    return cmd
+            use_ssl = True
+    client = boto3.client(service_name=service, use_ssl=use_ssl, verify=verify_ssl, endpoint_url=endpoint_url)
+    return client
 
 
 def get_kinesis_streams(filter='.*', pool={}, env=None):
@@ -113,11 +110,11 @@ def get_kinesis_streams(filter='.*', pool={}, env=None):
         return []
     result = []
     try:
-        out = cmd_kinesis('list-streams', env)
+        out = cmd_kinesis('list_streams', env=env)
         out = json.loads(out)
         for name in out['StreamNames']:
             if re.match(filter, name):
-                details = cmd_kinesis('describe-stream --stream-name %s' % name, env=env)
+                details = cmd_kinesis('describe_stream', 'StreamArn=%s, Limit=1000' % name, env=env)
                 details = json.loads(details)
                 arn = details['StreamDescription']['StreamARN']
                 stream = KinesisStream(arn)
@@ -131,7 +128,7 @@ def get_kinesis_streams(filter='.*', pool={}, env=None):
 
 def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
     if not stream_details:
-        out = cmd_kinesis('describe-stream --stream-name %s' % stream_name, env)
+        out = cmd_kinesis('describe_stream', 'StreamArn=%s, Limit=1000' % stream_name, env=env)
         stream_details = json.loads(out)
     shards = stream_details['StreamDescription']['Shards']
     result = []
@@ -146,7 +143,7 @@ def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
 def get_sqs_queues(filter='.*', pool={}, env=None):
     result = []
     try:
-        out = cmd_sqs('list-queues', env)
+        out = cmd_sqs('list_queues', env=env)
         if not out.strip():
             return result
         queues = json.loads(out)['QueueUrls']
@@ -237,7 +234,7 @@ def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
                     LOG.warning("Unable to get code for lambda '%s'" % func_name)
 
     try:
-        out = cmd_lambda('list-functions', env)
+        out = cmd_lambda('list_functions', env=env)
         out = json.loads(out)
         parallelize(handle, out['Functions'])
     except Exception:
@@ -249,10 +246,11 @@ def get_lambda_event_sources(func_name=None, env=None):
     if MOCK_OBJ:
         return {}
 
-    cmd = 'list-event-source-mappings'
+    cmd = 'list_event_source_mappings'
     if func_name:
-        cmd = '%s --function-name %s' % (cmd, func_name)
-    out = cmd_lambda(cmd, env=env)
+        out = cmd_lambda(cmd, 'FunctionName=%s' % func_name, env=env)
+    else:
+        out = cmd_lambda(cmd, env=env)
     out = json.loads(out)
     result = out['EventSourceMappings']
     return result
@@ -264,7 +262,7 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     env = aws_stack.get_environment(env)
     if cache_time is None and not aws_stack.is_local_env(env):
         cache_time = AWS_LAMBDA_CODE_CACHE_TIMEOUT
-    out = cmd_lambda('get-function --function-name %s' % func_name, env, cache_time)
+    out = cmd_lambda('get_function', 'FunctionName=%s' % func_name, env=env, cache_duration_secs=cache_time)
     out = json.loads(out)
     loc = out['Code']['Location']
     hash = md5(loc)
@@ -309,13 +307,13 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
 def get_elasticsearch_domains(filter='.*', pool={}, env=None):
     result = []
     try:
-        out = cmd_es('list-domain-names', env)
+        out = cmd_es('list_domain_names', env)
         out = json.loads(out)
 
         def handle(domain):
             domain = domain['DomainName']
             if re.match(filter, domain):
-                details = cmd_es('describe-elasticsearch-domain --domain-name %s' % domain, env)
+                details = cmd_es('describe_elasticsearch_domain', 'DomainName=%s' % domain, env=env)
                 details = json.loads(details)['DomainStatus']
                 arn = details['ARN']
                 es = ElasticSearch(arn)
@@ -332,12 +330,12 @@ def get_elasticsearch_domains(filter='.*', pool={}, env=None):
 def get_dynamo_dbs(filter='.*', pool={}, env=None):
     result = []
     try:
-        out = cmd_dynamodb('list-tables', env)
+        out = cmd_dynamodb('list_tables', env)
         out = json.loads(out)
 
         def handle(table):
             if re.match(filter, table):
-                details = cmd_dynamodb('describe-table --table-name %s' % table, env)
+                details = cmd_dynamodb('describe_table', 'TableName=%s' % table, env=env)
                 details = json.loads(details)['Table']
                 arn = details['TableArn']
                 db = DynamoDB(arn)
@@ -364,7 +362,7 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
             pool[arn] = bucket
             if details:
                 try:
-                    out = cmd_s3api('get-bucket-notification-configuration --bucket %s' % bucket_name, env=env)
+                    out = cmd_s3api('get_bucket_notification', 'Bucket=%s' % bucket_name, env=env)
                     if out:
                         out = json.loads(out)
                         if 'CloudFunctionConfiguration' in out:
@@ -377,7 +375,7 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
                     print('WARNING: Unable to get details for bucket: %s' % e)
 
     try:
-        out = cmd_s3api('list-buckets', env)
+        out = cmd_s3api('list_buckets', env=env)
         out = json.loads(out)
         parallelize(handle, out['Buckets'])
     except Exception:
@@ -388,12 +386,12 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
 def get_firehose_streams(filter='.*', pool={}, env=None):
     result = []
     try:
-        out = cmd_firehose('list-delivery-streams', env)
+        out = cmd_firehose('list_delivery_streams', env=env)
         out = json.loads(out)
         for stream_name in out['DeliveryStreamNames']:
             if re.match(filter, stream_name):
                 details = cmd_firehose(
-                    'describe-delivery-stream --delivery-stream-name %s' % stream_name, env)
+                    'describe_delivery_stream', 'DeliveryStreamName=%s, Limit=1000' % stream_name, env=env)
                 details = json.loads(details)['DeliveryStreamDescription']
                 arn = details['DeliveryStreamARN']
                 s = FirehoseStream(arn)
@@ -408,8 +406,8 @@ def get_firehose_streams(filter='.*', pool={}, env=None):
 
 
 def read_kinesis_iterator(shard_iterator, max_results=10, env=None):
-    data = cmd_kinesis('get-records --shard-iterator %s --limit %s' %
-        (shard_iterator, max_results), env, cache_duration_secs=0)
+    data = cmd_kinesis('get_records', 'ShardIterator=%s, Limit=%s'
+        (shard_iterator, max_results), env=env, cache_duration_secs=0)
     data = json.loads(to_str(data))
     result = data
     return result
