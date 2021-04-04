@@ -24,6 +24,7 @@ import six
 import shutil
 import requests
 import dns.resolver
+import platform
 from io import BytesIO
 from datetime import datetime, date
 from contextlib import closing
@@ -878,6 +879,10 @@ def is_linux():
     return bootstrap.is_linux()
 
 
+def is_windows():
+    return platform.system().lower() == 'windows'
+
+
 def is_alpine():
     try:
         with MUTEX_CLEAN:
@@ -899,6 +904,8 @@ def get_arch():
         return 'alpine'
     if is_linux():
         return 'linux'
+    if is_windows():
+        return 'windows'
     raise Exception('Unable to determine system architecture')
 
 
