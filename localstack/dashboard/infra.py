@@ -406,7 +406,7 @@ def get_firehose_streams(filter='.*', pool={}, env=None):
 
 
 def read_kinesis_iterator(shard_iterator, max_results=10, env=None):
-    data = cmd_kinesis('get_records', 'ShardIterator=%s, Limit=%s'
+    data = cmd_kinesis('get_records', 'ShardIterator=%s, Limit=%s' %
         (shard_iterator, max_results), env=env, cache_duration_secs=0)
     data = json.loads(to_str(data))
     result = data
