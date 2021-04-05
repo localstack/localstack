@@ -7,7 +7,7 @@ import boto3
 import moto.cloudformation.utils
 from six.moves.urllib import parse as urlparse
 from samtranslator.translator.transform import transform as transform_sam
-from localstack import config
+from localstack import config, constants
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import to_str, safe_requests, run_safe, clone_safe
@@ -146,8 +146,14 @@ def template_to_json(template):
 
 
 def is_local_service_url(url):
-    candidates = ('localhost', config.LOCALSTACK_HOSTNAME, config.HOSTNAME_EXTERNAL, config.HOSTNAME)
-    return url and any('://%s:' % host in url for host in candidates)
+    if not url:
+        return False
+    candidates = (constants.LOCALHOST, constants.LOCALHOST_HOSTNAME, config.LOCALSTACK_HOSTNAME,
+        config.HOSTNAME_EXTERNAL, config.HOSTNAME)
+    if any(re.match(r'^[^:]+://[^:/]*%s([:/]|$)' % host, url) for host in candidates):
+        return True
+    host = url.split('://')[-1].split('/')[0]
+    return 'localhost' in host
 
 
 def is_real_s3_url(url):

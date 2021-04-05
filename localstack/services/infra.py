@@ -25,7 +25,7 @@ from localstack.services import generic_proxy, install
 from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, check_infra
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener, start_proxy_server
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.cloudformation import cloudformation_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.utils.analytics.profiler import log_duration
@@ -79,7 +79,7 @@ class ConfigUpdateProxyListener(ProxyListener):
         return response
 
 
-GenericProxyHandler.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
+ProxyListener.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
 
 
 # -----------------
