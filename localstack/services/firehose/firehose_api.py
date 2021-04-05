@@ -110,15 +110,13 @@ def put_records(stream_name, records):
             for record in records:
                 data = record.get('Data') or record.get('data')
                 record_to_send['records'].append({'data': data})
-            record_to_send_json = json.dumps(record_to_send)
             headers = {
                 'Content-Type': 'application/json',
-                'Content-Length': str(len(record_to_send_json))
             }
             try:
                 requests.post(url, json=record_to_send, headers=headers)
             except Exception as e:
-                LOG.error('Unable to put record to HttpEndpoint: %s %s' % (e, traceback.format_exc()))
+                LOG.info('Unable to put Firehose records to HTTP endpoint %s: %s %s' % (url, e, traceback.format_exc()))
                 raise e
     return {
         'RecordId': str(uuid.uuid4())
@@ -164,8 +162,7 @@ def update_destination(stream_name, destination_id,
     if http_update:
         if 'HttpEndpointDestinationDescription' not in dest:
             dest['HttpEndpointDestinationDescription'] = {}
-        for k, v in iteritems(http_update):
-            dest['HttpEndpointDestinationDescription'][k] = v
+        dest['HttpEndpointDestinationDescription'].update(http_update)
     return dest
 
 
@@ -307,7 +304,7 @@ def post_request():
         es_update = data['ESDestinationUpdate'] if 'ESDestinationUpdate' in data else None
         update_destination(stream_name=stream_name, destination_id=destination_id,
                            elasticsearch_update=es_update, version_id=version_id)
-        http_update = data['HttpEndpointDestinationUpdate'] if 'HttpEndpointDestinationUpdate' in data else None
+        http_update = data.get('HttpEndpointDestinationUpdate')
         update_destination(stream_name=stream_name, destination_id=destination_id,
                            http_update=http_update, version_id=version_id)
         response = {}
