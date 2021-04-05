@@ -468,6 +468,8 @@ def path_from_url(url):
 
 def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=['tcp']):
     port = port_or_url
+    if is_number(port):
+        port = int(port)
     host = 'localhost'
     protocol = 'http'
     protocols = protocols if isinstance(protocols, list) else [protocols]
