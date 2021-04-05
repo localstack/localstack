@@ -1,16 +1,11 @@
 import re
 import os
 import json
-import boto3
-import socket
 import logging
 import tempfile
-from six import iteritems
-from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (short_uid, parallelize, is_port_open,
-    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, md5)
-from localstack.utils.bootstrap import is_api_enabled
+from localstack.utils.common import (short_uid, parallelize,
+    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, md5, extract_endpoints)
 from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     EventSource, DynamoDB, DynamoDBStream, FirehoseStream, S3Bucket, SqsQueue,
     KinesisShard, KinesisStream, LambdaFunction)
@@ -29,92 +24,17 @@ KINESIS_RECENT_EVENTS_TIME_DIFF_SECS = 60
 LOG = logging.getLogger(__name__)
 
 
-def run_cached(cmd, cmd_params=None, cache_duration_secs=None):
-    if cache_duration_secs is None:
-        cache_duration_secs = AWS_CACHE_TIMEOUT
-    env_vars = os.environ.copy()
-    env_vars.update({
-        'AWS_ACCESS_KEY_ID': os.environ.get('AWS_ACCESS_KEY_ID') or 'test',
-        'AWS_SECRET_ACCESS_KEY': os.environ.get('AWS_SECRET_ACCESS_KEY') or 'test',
-        'AWS_DEFAULT_REGION': DEFAULT_REGION or os.environ.get('AWS_DEFAULT_REGION'),
-        'PYTHONWARNINGS': 'ignore:Unverified HTTPS request'
-    })
-    error = None
-    try:
-        if cmd_params:
-            return cmd.__call__(cmd_params)
-        else:
-            return cmd.__call__()
-    except Exception as e:
-        error = e
-    if error:
-        LOG.warning('Error running command: %s %s' % (cmd, error))
-        raise error
-
-
-def run_aws_cmd(service, cmd_method, cmd_params=None, env=None, cache_duration_secs=None):
-    client = aws_client(service, env)
-    method = getattr(client, cmd_method)
-    if not is_api_enabled(service):
-        return '{}'
-    return run_cached(method, cmd_params, cache_duration_secs=cache_duration_secs)
-
-
-def cmd_s3api(cmd_method, cmd_params=None, env=None):
-    return run_aws_cmd('s3', cmd_method, cmd_params, env=env)
-
-
-def cmd_es(cmd_method, cmd_params=None, env=None):
-    return run_aws_cmd('es', cmd_method, cmd_params, env=env)
-
-
-def cmd_kinesis(cmd_method, cmd_params=None, env=None, cache_duration_secs=None):
-    return run_aws_cmd('kinesis', cmd_method, cmd_params, env,
-        cache_duration_secs=cache_duration_secs)
-
-
-def cmd_dynamodb(cmd_method, cmd_params=None, env=None):
-    return run_aws_cmd('dynamodb', cmd_method, cmd_params, env=env)
-
-
-def cmd_firehose(cmd_method, cmd_params=None, env=None):
-    return run_aws_cmd('firehose', cmd_method, cmd_params, env=env)
-
-
-def cmd_sqs(cmd_method, cmd_params=None, env=None):
-    return run_aws_cmd('sqs', cmd_method, cmd_params, env=env)
-
-
-def cmd_lambda(cmd_method, cmd_params=None, env=None, cache_duration_secs=None):
-    return run_aws_cmd('lambda', cmd_method, cmd_params, env,
-        cache_duration_secs=cache_duration_secs)
-
-
-def aws_client(service, env):
-    use_ssl = False
-    verify_ssl = False
-    endpoint_url = None
-    env = aws_stack.get_environment(env)
-    if aws_stack.is_local_env(env):
-        endpoint_url = aws_stack.get_local_service_url(service)
-    if endpoint_url:
-        if not is_port_open(endpoint_url):
-            raise socket.error()
-        if endpoint_url.startswith('https://'):
-            use_ssl = True
-    return boto3.client(service_name=service, use_ssl=use_ssl, verify=verify_ssl, endpoint_url=endpoint_url)
-
-
 def get_kinesis_streams(filter='.*', pool={}, env=None):
     if MOCK_OBJ:
         return []
     result = []
     try:
-        out = cmd_kinesis('list_streams', env=env)
+        kinesis_client = aws_stack.connect_to_service('kinesis')
+        out = kinesis_client.list_streams()
         out = json.loads(out)
         for name in out['StreamNames']:
             if re.match(filter, name):
-                details = cmd_kinesis('describe_stream', 'StreamArn=%s, Limit=1000' % name, env=env)
+                details = kinesis_client.describe_stream('StreamArn=%s' % name)
                 details = json.loads(details)
                 arn = details['StreamDescription']['StreamARN']
                 stream = KinesisStream(arn)
@@ -128,7 +48,8 @@ def get_kinesis_streams(filter='.*', pool={}, env=None):
 
 def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
     if not stream_details:
-        out = cmd_kinesis('describe_stream', 'StreamArn=%s, Limit=1000' % stream_name, env=env)
+        kinesis_client = aws_stack.connect_to_service('kinesis')
+        out = kinesis_client.describe_stream('StreamArn=%s' % stream_name)
         stream_details = json.loads(out)
     shards = stream_details['StreamDescription']['Shards']
     result = []
@@ -143,7 +64,8 @@ def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
 def get_sqs_queues(filter='.*', pool={}, env=None):
     result = []
     try:
-        out = cmd_sqs('list_queues', env=env)
+        sqs_client = aws_stack.connect_to_service('sqs')
+        out = sqs_client.list_queues()
         if not out.strip():
             return result
         queues = json.loads(out)['QueueUrls']
@@ -155,57 +77,6 @@ def get_sqs_queues(filter='.*', pool={}, env=None):
                 result.append(queue)
     except Exception:
         pass
-    return result
-
-
-# TODO move to util
-def resolve_string_or_variable(string, code_map):
-    if re.match(r'^["\'].*["\']$', string):
-        return string.replace('"', '').replace("'", '')
-    LOG.warning('Variable resolution not implemented')
-    return None
-
-
-# TODO move to util
-def extract_endpoints(code_map, pool={}):
-    result = []
-    identifiers = []
-    for key, code in iteritems(code_map):
-        # Elasticsearch references
-        pattern = r'[\'"](.*\.es\.amazonaws\.com)[\'"]'
-        for es in re.findall(pattern, code):
-            if es not in identifiers:
-                identifiers.append(es)
-                es = EventSource.get(es, pool=pool, type=ElasticSearch)
-                if es:
-                    result.append(es)
-        # Elasticsearch references
-        pattern = r'\.put_record_batch\([^,]+,\s*([^,\s]+)\s*,'
-        for firehose in re.findall(pattern, code):
-            if firehose not in identifiers:
-                identifiers.append(firehose)
-                firehose = EventSource.get(firehose, pool=pool, type=FirehoseStream)
-                if firehose:
-                    result.append(firehose)
-        # DynamoDB references
-        # TODO fix pattern to be generic
-        pattern = r'\.(insert|get)_document\s*\([^,]+,\s*([^,\s]+)\s*,'
-        for (op, dynamo) in re.findall(pattern, code):
-            dynamo = resolve_string_or_variable(dynamo, code_map)
-            if dynamo not in identifiers:
-                identifiers.append(dynamo)
-                dynamo = EventSource.get(dynamo, pool=pool, type=DynamoDB)
-                if dynamo:
-                    result.append(dynamo)
-        # S3 references
-        pattern = r'\.upload_file\([^,]+,\s*([^,\s]+)\s*,'
-        for s3 in re.findall(pattern, code):
-            s3 = resolve_string_or_variable(s3, code_map)
-            if s3 not in identifiers:
-                identifiers.append(s3)
-                s3 = EventSource.get(s3, pool=pool, type=S3Bucket)
-                if s3:
-                    result.append(s3)
     return result
 
 
@@ -234,7 +105,8 @@ def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
                     LOG.warning("Unable to get code for lambda '%s'" % func_name)
 
     try:
-        out = cmd_lambda('list_functions', env=env)
+        lambda_client = aws_stack.connect_to_service('lambda')
+        out = lambda_client.list_functions()
         out = json.loads(out)
         parallelize(handle, out['Functions'])
     except Exception:
@@ -246,11 +118,11 @@ def get_lambda_event_sources(func_name=None, env=None):
     if MOCK_OBJ:
         return {}
 
-    cmd = 'list_event_source_mappings'
+    lambda_client = aws_stack.connect_to_service('lambda')
     if func_name:
-        out = cmd_lambda(cmd, 'FunctionName=%s' % func_name, env=env)
+        out = lambda_client.list_event_source_mappings('FunctionName=%s' % func_name)
     else:
-        out = cmd_lambda(cmd, env=env)
+        out = lambda_client.list_event_source_mappings()
     out = json.loads(out)
     result = out['EventSourceMappings']
     return result
@@ -262,7 +134,8 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     env = aws_stack.get_environment(env)
     if cache_time is None and not aws_stack.is_local_env(env):
         cache_time = AWS_LAMBDA_CODE_CACHE_TIMEOUT
-    out = cmd_lambda('get_function', 'FunctionName=%s' % func_name, env=env, cache_duration_secs=cache_time)
+    lambda_client = aws_stack.connect_to_service('lambda')
+    out = lambda_client.get_function('FunctionName=%s' % func_name)
     out = json.loads(out)
     loc = out['Code']['Location']
     hash = md5(loc)
@@ -307,13 +180,14 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
 def get_elasticsearch_domains(filter='.*', pool={}, env=None):
     result = []
     try:
-        out = cmd_es('list_domain_names', env)
+        es_client = aws_stack.connect_to_service('es')
+        out = es_client.list_domain_names()
         out = json.loads(out)
 
         def handle(domain):
             domain = domain['DomainName']
             if re.match(filter, domain):
-                details = cmd_es('describe_elasticsearch_domain', 'DomainName=%s' % domain, env=env)
+                details = es_client.describe_elasticsearch_domain('DomainName=%s' % domain)
                 details = json.loads(details)['DomainStatus']
                 arn = details['ARN']
                 es = ElasticSearch(arn)
@@ -330,12 +204,13 @@ def get_elasticsearch_domains(filter='.*', pool={}, env=None):
 def get_dynamo_dbs(filter='.*', pool={}, env=None):
     result = []
     try:
-        out = cmd_dynamodb('list_tables', env)
+        dynamodb_client = aws_stack.connect_to_service('dynamodb')
+        out = dynamodb_client.list_tables()
         out = json.loads(out)
 
         def handle(table):
             if re.match(filter, table):
-                details = cmd_dynamodb('describe_table', 'TableName=%s' % table, env=env)
+                details = dynamodb_client.describe_table('TableName=%s' % table)
                 details = json.loads(details)['Table']
                 arn = details['TableArn']
                 db = DynamoDB(arn)
@@ -362,7 +237,8 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
             pool[arn] = bucket
             if details:
                 try:
-                    out = cmd_s3api('get_bucket_notification', 'Bucket=%s' % bucket_name, env=env)
+                    s3_client = aws_stack.connect_to_service('s3')
+                    out = s3_client.get_bucket_notification('Bucket=%s' % bucket_name)
                     if out:
                         out = json.loads(out)
                         if 'CloudFunctionConfiguration' in out:
@@ -375,7 +251,8 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
                     print('WARNING: Unable to get details for bucket: %s' % e)
 
     try:
-        out = cmd_s3api('list_buckets', env=env)
+        s3_client = aws_stack.connect_to_service('s3')
+        out = s3_client.list_buckets()
         out = json.loads(out)
         parallelize(handle, out['Buckets'])
     except Exception:
@@ -386,12 +263,13 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
 def get_firehose_streams(filter='.*', pool={}, env=None):
     result = []
     try:
-        out = cmd_firehose('list_delivery_streams', env=env)
+        firehose_client = aws_stack.connect_to_service('firehose')
+        out = firehose_client.list_delivery_streams()
         out = json.loads(out)
         for stream_name in out['DeliveryStreamNames']:
             if re.match(filter, stream_name):
-                details = cmd_firehose(
-                    'describe_delivery_stream', 'DeliveryStreamName=%s, Limit=1000' % stream_name, env=env)
+                details = firehose_client.describe_delivery_stream(
+                    'DeliveryStreamName=%s' % stream_name)
                 details = json.loads(details)['DeliveryStreamDescription']
                 arn = details['DeliveryStreamARN']
                 s = FirehoseStream(arn)
@@ -406,8 +284,9 @@ def get_firehose_streams(filter='.*', pool={}, env=None):
 
 
 def read_kinesis_iterator(shard_iterator, max_results=10, env=None):
-    data = cmd_kinesis('get_records', 'ShardIterator=%s, Limit=%s' %
-        (shard_iterator, max_results), env=env, cache_duration_secs=0)
+    kinesis_client = aws_stack.connect_to_service('kinesis')
+    data = kinesis_client.get_records('ShardIterator=%s, Limit=%s' %
+        (shard_iterator, max_results))
     data = json.loads(to_str(data))
     result = data
     return result
