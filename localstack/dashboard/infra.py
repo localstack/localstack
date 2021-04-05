@@ -5,7 +5,7 @@ import tempfile
 from six import iteritems
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (short_uid, parallelize,
-    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, md5)
+    rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, md5)
 from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     EventSource, DynamoDB, DynamoDBStream, FirehoseStream, S3Bucket, SqsQueue,
     KinesisShard, KinesisStream, LambdaFunction)
