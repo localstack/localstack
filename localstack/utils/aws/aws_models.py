@@ -1,8 +1,8 @@
-from localstack.utils.common import timestamp_millis
 import time
 import json
 import six
 from datetime import datetime
+from localstack.utils.common import timestamp_millis
 
 if six.PY3:
     long = int
