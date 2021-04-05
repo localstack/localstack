@@ -15,7 +15,7 @@ from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEAD
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.utils.aws import aws_stack
 from localstack.utils.server import http2_server
-from localstack.utils.common import generate_ssl_cert, json_safe, path_from_url, Mock
+from localstack.utils.common import generate_ssl_cert, json_safe, path_from_url, Mock, FuncThread
 from localstack.utils.aws.aws_responses import LambdaResponse
 
 # set up logger
@@ -303,7 +303,7 @@ class DuplexSocket(ssl.SSLSocket):
 ssl.SSLContext.sslsocket_class = DuplexSocket
 
 
-class GenericProxy(object):
+class GenericProxy(FuncThread):
     # TODO: move methods to different class?
     @classmethod
     def create_ssl_cert(cls, serial_number=None):

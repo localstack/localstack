@@ -133,6 +133,10 @@ def get_forwarded_for_host(headers):
     return host
 
 
+def is_real_s3_url(url):
+    return re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url or '')
+
+
 def authenticate_presign_url(method, path, headers, data=None):
 
     url = '{}{}'.format(config.get_edge_url(), path)
