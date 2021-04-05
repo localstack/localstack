@@ -3,9 +3,10 @@ import os
 import json
 import logging
 import tempfile
+from six import iteritems
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (short_uid, parallelize,
-    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, md5, extract_endpoints)
+    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, md5)
 from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     EventSource, DynamoDB, DynamoDBStream, FirehoseStream, S3Bucket, SqsQueue,
     KinesisShard, KinesisStream, LambdaFunction)
@@ -374,3 +375,54 @@ def get_graph(name_filter='.*', env=None, **kwargs):
             result['edges'].append({'source': src_uid, 'target': tgt_uid})
 
     return result
+
+
+# TODO: Move to utils.common
+def extract_endpoints(code_map, pool={}):
+    result = []
+    identifiers = []
+    for key, code in iteritems(code_map):
+        # Elasticsearch references
+        pattern = r'[\'"](.*\.es\.amazonaws\.com)[\'"]'
+        for es in re.findall(pattern, code):
+            if es not in identifiers:
+                identifiers.append(es)
+                es = EventSource.get(es, pool=pool, type=ElasticSearch)
+                if es:
+                    result.append(es)
+        # Elasticsearch references
+        pattern = r'\.put_record_batch\([^,]+,\s*([^,\s]+)\s*,'
+        for firehose in re.findall(pattern, code):
+            if firehose not in identifiers:
+                identifiers.append(firehose)
+                firehose = EventSource.get(firehose, pool=pool, type=FirehoseStream)
+                if firehose:
+                    result.append(firehose)
+        # DynamoDB references
+        # TODO fix pattern to be generic
+        pattern = r'\.(insert|get)_document\s*\([^,]+,\s*([^,\s]+)\s*,'
+        for (op, dynamo) in re.findall(pattern, code):
+            dynamo = resolve_string_or_variable(dynamo, code_map)
+            if dynamo not in identifiers:
+                identifiers.append(dynamo)
+                dynamo = EventSource.get(dynamo, pool=pool, type=DynamoDB)
+                if dynamo:
+                    result.append(dynamo)
+        # S3 references
+        pattern = r'\.upload_file\([^,]+,\s*([^,\s]+)\s*,'
+        for s3 in re.findall(pattern, code):
+            s3 = resolve_string_or_variable(s3, code_map)
+            if s3 not in identifiers:
+                identifiers.append(s3)
+                s3 = EventSource.get(s3, pool=pool, type=S3Bucket)
+                if s3:
+                    result.append(s3)
+    return result
+
+
+# TODO: Move to utils.common
+def resolve_string_or_variable(string, code_map):
+    if re.match(r'^["\'].*["\']$', string):
+        return string.replace('"', '').replace("'", '')
+    LOG.warning('Variable resolution not implemented')
+    return None
