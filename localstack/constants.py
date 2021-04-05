@@ -12,6 +12,7 @@ ENV_DEV = 'dev'
 
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = 'x-localstack-edge'
+HEADER_LOCALSTACK_REQUEST_URL = 'x-localstack-request-url'
 HEADER_LOCALSTACK_TARGET = 'x-localstack-target'
 
 # backend service ports, for services that are behind a proxy (counting down from 4566)

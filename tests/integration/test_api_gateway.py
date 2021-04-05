@@ -15,7 +15,8 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import (
     to_str, json_safe, clone, short_uid, get_free_tcp_port,
     load_file, select_attributes, safe_requests as requests)
-from localstack.services.generic_proxy import GenericProxy, ProxyListener
+from localstack.services.infra import start_proxy
+from localstack.services.generic_proxy import ProxyListener
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs, gateway_request_url)
 from localstack.services.awslambda.lambda_api import add_event_source
@@ -1065,8 +1066,7 @@ class TestAPIGateway(unittest.TestCase):
                 response._content = json.dumps(json_safe(result))
                 return response
 
-        proxy = GenericProxy(test_port, update_listener=TestListener())
-        proxy.start()
+        proxy = start_proxy(test_port, update_listener=TestListener())
         return proxy
 
     @staticmethod

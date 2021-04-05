@@ -161,6 +161,11 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                     response.headers['Content-Length'] = str(len(response_data or ''))
                 if 'Connection' not in response.headers:
                     response.headers['Connection'] = 'close'
+                # fix headers for OPTIONS requests (possible fix for Firefox requests)
+                if request.method == 'OPTIONS':
+                    response.headers.pop('Content-Type', None)
+                    if not response.headers.get('Cache-Control'):
+                        response.headers['Cache-Control'] = 'no-cache'
         return response
 
     def run_app_sync(*args, loop=None, shutdown_event=None):

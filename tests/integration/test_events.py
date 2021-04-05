@@ -345,7 +345,7 @@ class EventsTest(unittest.TestCase):
                 return 200
 
         local_port = get_free_tcp_port()
-        proxy = start_proxy(local_port, backend_url=None, update_listener=HttpEndpointListener())
+        proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
         wait_for_port_open(local_port)
 
         topic_name = 'topic-{}'.format(short_uid())

@@ -655,7 +655,7 @@ def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME)
 
 
 def error_response(msg, code=500, error_type='InternalFailure'):
-    LOG.info(msg)
+    LOG.debug(msg)
     return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
 
 
