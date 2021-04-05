@@ -35,7 +35,7 @@ def get_kinesis_streams(filter='.*', pool={}, env=None):
         out = json.loads(out)
         for name in out['StreamNames']:
             if re.match(filter, name):
-                details = kinesis_client.describe_stream('StreamArn=%s' % name)
+                details = kinesis_client.describe_stream(StreamArn=name)
                 details = json.loads(details)
                 arn = details['StreamDescription']['StreamARN']
                 stream = KinesisStream(arn)
@@ -50,7 +50,7 @@ def get_kinesis_streams(filter='.*', pool={}, env=None):
 def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
     if not stream_details:
         kinesis_client = aws_stack.connect_to_service('kinesis')
-        out = kinesis_client.describe_stream('StreamArn=%s' % stream_name)
+        out = kinesis_client.describe_stream(StreamArn=stream_name)
         stream_details = json.loads(out)
     shards = stream_details['StreamDescription']['Shards']
     result = []
@@ -121,7 +121,7 @@ def get_lambda_event_sources(func_name=None, env=None):
 
     lambda_client = aws_stack.connect_to_service('lambda')
     if func_name:
-        out = lambda_client.list_event_source_mappings('FunctionName=%s' % func_name)
+        out = lambda_client.list_event_source_mappings(FunctionName=func_name)
     else:
         out = lambda_client.list_event_source_mappings()
     out = json.loads(out)
@@ -136,7 +136,7 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     if cache_time is None and not aws_stack.is_local_env(env):
         cache_time = AWS_LAMBDA_CODE_CACHE_TIMEOUT
     lambda_client = aws_stack.connect_to_service('lambda')
-    out = lambda_client.get_function('FunctionName=%s' % func_name)
+    out = lambda_client.get_function(FunctionName=func_name)
     out = json.loads(out)
     loc = out['Code']['Location']
     hash = md5(loc)
@@ -188,7 +188,7 @@ def get_elasticsearch_domains(filter='.*', pool={}, env=None):
         def handle(domain):
             domain = domain['DomainName']
             if re.match(filter, domain):
-                details = es_client.describe_elasticsearch_domain('DomainName=%s' % domain)
+                details = es_client.describe_elasticsearch_domain(DomainName=domain)
                 details = json.loads(details)['DomainStatus']
                 arn = details['ARN']
                 es = ElasticSearch(arn)
@@ -211,7 +211,7 @@ def get_dynamo_dbs(filter='.*', pool={}, env=None):
 
         def handle(table):
             if re.match(filter, table):
-                details = dynamodb_client.describe_table('TableName=%s' % table)
+                details = dynamodb_client.describe_table(TableName=table)
                 details = json.loads(details)['Table']
                 arn = details['TableArn']
                 db = DynamoDB(arn)
@@ -239,7 +239,7 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
             if details:
                 try:
                     s3_client = aws_stack.connect_to_service('s3')
-                    out = s3_client.get_bucket_notification('Bucket=%s' % bucket_name)
+                    out = s3_client.get_bucket_notification(Bucket=bucket_name)
                     if out:
                         out = json.loads(out)
                         if 'CloudFunctionConfiguration' in out:
@@ -270,7 +270,7 @@ def get_firehose_streams(filter='.*', pool={}, env=None):
         for stream_name in out['DeliveryStreamNames']:
             if re.match(filter, stream_name):
                 details = firehose_client.describe_delivery_stream(
-                    'DeliveryStreamName=%s' % stream_name)
+                    DeliveryStreamName=stream_name)
                 details = json.loads(details)['DeliveryStreamDescription']
                 arn = details['DeliveryStreamARN']
                 s = FirehoseStream(arn)
@@ -286,8 +286,7 @@ def get_firehose_streams(filter='.*', pool={}, env=None):
 
 def read_kinesis_iterator(shard_iterator, max_results=10, env=None):
     kinesis_client = aws_stack.connect_to_service('kinesis')
-    data = kinesis_client.get_records('ShardIterator=%s, Limit=%s' %
-        (shard_iterator, max_results))
+    data = kinesis_client.get_records(ShardIterator=shard_iterator, Limit=max_results)
     data = json.loads(to_str(data))
     result = data
     return result
