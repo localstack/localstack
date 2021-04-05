@@ -1,6 +1,5 @@
 import re
 import os
-import json
 import logging
 import tempfile
 from six import iteritems
@@ -32,11 +31,9 @@ def get_kinesis_streams(filter='.*', pool={}, env=None):
     try:
         kinesis_client = aws_stack.connect_to_service('kinesis')
         out = kinesis_client.list_streams()
-        out = json.loads(out)
         for name in out['StreamNames']:
             if re.match(filter, name):
                 details = kinesis_client.describe_stream(StreamArn=name)
-                details = json.loads(details)
                 arn = details['StreamDescription']['StreamARN']
                 stream = KinesisStream(arn)
                 pool[arn] = stream
@@ -51,8 +48,7 @@ def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
     if not stream_details:
         kinesis_client = aws_stack.connect_to_service('kinesis')
         out = kinesis_client.describe_stream(StreamArn=stream_name)
-        stream_details = json.loads(out)
-    shards = stream_details['StreamDescription']['Shards']
+    shards = out['StreamDescription']['Shards']
     result = []
     for s in shards:
         shard = KinesisShard(s['ShardId'])
@@ -69,7 +65,7 @@ def get_sqs_queues(filter='.*', pool={}, env=None):
         out = sqs_client.list_queues()
         if not out.strip():
             return result
-        queues = json.loads(out)['QueueUrls']
+        queues = out['QueueUrls']
         for q in queues:
             name = q.split('/')[-1]
             arn = aws_stack.sqs_queue_arn(name)
@@ -108,7 +104,6 @@ def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
     try:
         lambda_client = aws_stack.connect_to_service('lambda')
         out = lambda_client.list_functions()
-        out = json.loads(out)
         parallelize(handle, out['Functions'])
     except Exception:
         pass
@@ -124,7 +119,6 @@ def get_lambda_event_sources(func_name=None, env=None):
         out = lambda_client.list_event_source_mappings(FunctionName=func_name)
     else:
         out = lambda_client.list_event_source_mappings()
-    out = json.loads(out)
     result = out['EventSourceMappings']
     return result
 
@@ -137,7 +131,6 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
         cache_time = AWS_LAMBDA_CODE_CACHE_TIMEOUT
     lambda_client = aws_stack.connect_to_service('lambda')
     out = lambda_client.get_function(FunctionName=func_name)
-    out = json.loads(out)
     loc = out['Code']['Location']
     hash = md5(loc)
     folder = TMP_DOWNLOAD_FILE_PATTERN.replace('*', hash)
@@ -183,13 +176,12 @@ def get_elasticsearch_domains(filter='.*', pool={}, env=None):
     try:
         es_client = aws_stack.connect_to_service('es')
         out = es_client.list_domain_names()
-        out = json.loads(out)
 
         def handle(domain):
             domain = domain['DomainName']
             if re.match(filter, domain):
                 details = es_client.describe_elasticsearch_domain(DomainName=domain)
-                details = json.loads(details)['DomainStatus']
+                details = details['DomainStatus']
                 arn = details['ARN']
                 es = ElasticSearch(arn)
                 es.endpoint = details.get('Endpoint', 'n/a')
@@ -207,12 +199,11 @@ def get_dynamo_dbs(filter='.*', pool={}, env=None):
     try:
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
         out = dynamodb_client.list_tables()
-        out = json.loads(out)
 
         def handle(table):
             if re.match(filter, table):
                 details = dynamodb_client.describe_table(TableName=table)
-                details = json.loads(details)['Table']
+                details = details['Table']
                 arn = details['TableArn']
                 db = DynamoDB(arn)
                 db.count = details['ItemCount']
@@ -241,7 +232,6 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
                     s3_client = aws_stack.connect_to_service('s3')
                     out = s3_client.get_bucket_notification(Bucket=bucket_name)
                     if out:
-                        out = json.loads(out)
                         if 'CloudFunctionConfiguration' in out:
                             func = out['CloudFunctionConfiguration']['CloudFunction']
                             func = EventSource.get(func, pool=pool)
@@ -254,7 +244,6 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
     try:
         s3_client = aws_stack.connect_to_service('s3')
         out = s3_client.list_buckets()
-        out = json.loads(out)
         parallelize(handle, out['Buckets'])
     except Exception:
         pass
@@ -266,12 +255,11 @@ def get_firehose_streams(filter='.*', pool={}, env=None):
     try:
         firehose_client = aws_stack.connect_to_service('firehose')
         out = firehose_client.list_delivery_streams()
-        out = json.loads(out)
         for stream_name in out['DeliveryStreamNames']:
             if re.match(filter, stream_name):
                 details = firehose_client.describe_delivery_stream(
                     DeliveryStreamName=stream_name)
-                details = json.loads(details)['DeliveryStreamDescription']
+                details = details['DeliveryStreamDescription']
                 arn = details['DeliveryStreamARN']
                 s = FirehoseStream(arn)
                 for dest in details['Destinations']:
@@ -286,9 +274,7 @@ def get_firehose_streams(filter='.*', pool={}, env=None):
 
 def read_kinesis_iterator(shard_iterator, max_results=10, env=None):
     kinesis_client = aws_stack.connect_to_service('kinesis')
-    data = kinesis_client.get_records(ShardIterator=shard_iterator, Limit=max_results)
-    data = json.loads(to_str(data))
-    result = data
+    result = kinesis_client.get_records(ShardIterator=shard_iterator, Limit=max_results)
     return result
 
 
