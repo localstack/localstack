@@ -20,6 +20,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.sns import sns_listener
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
+from localstack.services.install import SQS_BACKEND_IMPL
 
 TEST_TOPIC_NAME = 'TestTopic_snsTest'
 TEST_QUEUE_NAME = 'TestQueue_snsTest'
@@ -791,6 +792,8 @@ class SNSTest(unittest.TestCase):
             'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1'
 
     def test_publish_sqs_from_sns_with_xray_propagation(self):
+        if SQS_BACKEND_IMPL != 'elasticmq':
+            return
 
         self.sns_client.meta.events.register('before-send.sns.Publish', self.add_xray_header)
 

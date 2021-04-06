@@ -142,8 +142,6 @@ web:
 
 ## Run automated tests
 test:
-	# elasticmq is required as SQS backend for X-Ray testing
-	export SQS_PROVIDER=elasticmq; \
 	make lint && \
 		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests $(NOSE_ARGS) --with-timer --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' $(TEST_PATH))
 
