@@ -187,7 +187,6 @@ def get_auth_string(method, path, headers, data=None):
        &X-Amz-Credential=test%2F20210313%2Fus-east-1%2Fsqs%2Faws4_request\
        &X-Amz-Date=20210313T011059Z&X-Amz-Expires=86400000&X-Amz-SignedHeaders=host\
        &X-Amz-Signature=2c652c7bc9a3b75579db3d987d1e6dd056f0ac776c1e1d4ec91e2ce84e5ad3ae
-
     """
 
     auth_header = headers.get('authorization', '')

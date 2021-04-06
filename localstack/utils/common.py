@@ -844,11 +844,17 @@ def download(url, path, verify_ssl=True):
         s.close()
 
 
-def parse_request_data(method, path, data):
+def parse_request_data(method, path, data, headers={}):
     """ Extract request data either from query string (for GET) or request body (for POST). """
     result = {}
-    if method in ['POST', 'PUT', 'PATCH']:
-        result = parse_qs(to_str(data or ''))
+    headers = headers or {}
+    content_type = headers.get('Content-Type', '')
+    if method in ['POST', 'PUT', 'PATCH'] and (not content_type or 'form-' in content_type):
+        # content-type could be either "application/x-www-form-urlencoded" or "multipart/form-data"
+        try:
+            result = parse_qs(to_str(data or ''))
+        except Exception:
+            pass  # probably binary / JSON / non-URL encoded payload - ignore
     if not result:
         parsed_path = urlparse(path)
         result = parse_qs(parsed_path.query)
