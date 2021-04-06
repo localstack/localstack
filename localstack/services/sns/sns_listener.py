@@ -176,6 +176,7 @@ class ProxyListenerSNS(PersistingProxyListener):
     def _extract_tags(topic_arn, req_data, is_create_topic_request):
         tags = []
         req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
+        # TODO: use aws_responses.extract_tags(...) here!
         for i in range(int(len(req_tags.keys()) / 2)):
             key = req_tags['Tags.member.' + str(i + 1) + '.Key'][0]
             value = req_tags['Tags.member.' + str(i + 1) + '.Value'][0]

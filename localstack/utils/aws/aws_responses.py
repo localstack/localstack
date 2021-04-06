@@ -168,6 +168,30 @@ def make_error(*args, **kwargs):
     return flask_error_response_xml(*args, **kwargs)
 
 
+def extract_tags(req_data):
+    keys = []
+    values = []
+    for param_name in ['Tag', 'member']:
+        keys = extract_url_encoded_param_list(req_data, 'Tags.{}.%s.Key'.format(param_name))
+        values = extract_url_encoded_param_list(req_data, 'Tags.{}.%s.Value'.format(param_name))
+        if keys and values:
+            break
+    entries = zip(keys, values)
+    tags = [{'Key': entry[0], 'Value': entry[1]} for entry in entries]
+    return tags
+
+
+def extract_url_encoded_param_list(req_data, pattern):
+    result = []
+    for i in range(1, 200):
+        key = pattern % i
+        value = req_data.get(key)
+        if value is None:
+            break
+        result.append(value)
+    return result
+
+
 def calculate_crc32(content):
     return crc32(to_bytes(content)) & 0xffffffff
 
