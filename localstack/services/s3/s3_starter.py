@@ -309,31 +309,29 @@ def apply_patches():
     s3_responses_bucket_response_get_orig = s3_responses.S3ResponseInstance._bucket_response_get
 
     def s3_bucket_response_get(self, bucket_name, querystring):
-        if 'uploads' not in querystring:
+        try:
             return s3_responses_bucket_response_get_orig(bucket_name, querystring)
+        except NotImplementedError:
+            if 'uploads' not in querystring:
+                raise
 
-        self._set_action('BUCKET', 'GET', querystring)
-        self._authenticate_and_authorize_s3_action()
+            multiparts = list(self.backend.get_all_multiparts(bucket_name).values())
+            if 'prefix' in querystring:
+                prefix = querystring.get('prefix', [None])[0]
+                multiparts = [
+                    upload
+                    for upload in multiparts if upload.key_name.startswith(prefix)
+                ]
 
-        multiparts = list(self.backend.get_all_multiparts(bucket_name).values())
-        if 'prefix' in querystring:
-            prefix = querystring.get('prefix', [None])[0]
-            multiparts = [
-                upload
-                for upload in multiparts
-                if upload.key_name.startswith(prefix)
-            ]
-
-        if 'uploads' in querystring:
             upload_ids = [upload_id for upload_id in querystring.get('uploads') if upload_id]
-            multiparts = [
-                upload
-                for upload in multiparts
-                if upload.id in upload_ids
-            ]
+            if upload_ids:
+                multiparts = [
+                    upload
+                    for upload in multiparts if upload.id in upload_ids
+                ]
 
-        template = self.response_template(S3_ALL_MULTIPARTS)
-        return template.render(bucket_name=bucket_name, uploads=multiparts)
+            template = self.response_template(S3_ALL_MULTIPARTS)
+            return template.render(bucket_name=bucket_name, uploads=multiparts)
 
     s3_responses.S3ResponseInstance._bucket_response_get = types.MethodType(
         s3_bucket_response_get, s3_responses.S3ResponseInstance)
