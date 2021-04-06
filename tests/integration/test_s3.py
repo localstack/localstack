@@ -558,7 +558,8 @@ class TestS3(unittest.TestCase):
         self.assertIn('x-amz-id-2', resp['ResponseMetadata']['HTTPHeaders'])
         self.assertIn('content-language', resp['ResponseMetadata']['HTTPHeaders'])
         self.assertIn('cache-control', resp['ResponseMetadata']['HTTPHeaders'])
-        self.assertIn('content-encoding', resp['ResponseMetadata']['HTTPHeaders'])
+        # Do not send a content-encoding header as discussed in Issue #3608
+        self.assertNotIn('content-encoding', resp['ResponseMetadata']['HTTPHeaders'])
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
