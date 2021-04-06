@@ -1,8 +1,13 @@
 import re
 import logging
 import xmltodict
+from moto.core import ACCOUNT_ID
 from moto.ec2 import models as ec2_models
 from moto.ec2.responses import security_groups, vpcs
+from moto.ec2.responses.security_groups import (
+    SecurityGroups as security_groups_backend, AUTHORIZE_SECURITY_GROUP_EGRESS_RESPONSE, try_parse_int
+)
+
 from moto.ec2.exceptions import InvalidPermissionNotFoundError
 from moto.ec2.responses.reserved_instances import ReservedInstances
 from localstack import config
@@ -37,11 +42,43 @@ def patch_ec2():
             gateway = backend.nat_gateways.get(nat_gateway_id)
             if gateway:
                 gateway.state = 'deleted'
+
         return delete_nat_gateway
+
+    def patch_authorize_security_group_ingress(backend):
+        authorize_security_group_ingress_orig = backend.authorize_security_group_ingress
+
+        def authorize_security_group_ingress(*args, **kwargs):
+            (
+                group_name_or_id,
+                ip_protocol,
+                from_port,
+                to_port,
+                ip_ranges,
+                ipv6_ranges,
+                source_group_names,
+                source_group_ids
+            ) = args
+
+            authorize_security_group_ingress_orig(
+                group_name_or_id,
+                ip_protocol,
+                from_port,
+                to_port,
+                ip_ranges,
+                source_group_names,
+                source_group_ids
+            )
+            group = backend.get_security_group_by_name_or_id(group_name_or_id, None)
+            rule = group.ingress_rules[-1]
+            rule.ipv6_ranges = ipv6_ranges
+
+        return authorize_security_group_ingress
 
     for region, backend in ec2_models.ec2_backends.items():
         backend.revoke_security_group_egress = patch_revoke_security_group_egress(backend)
         backend.delete_nat_gateway = patch_delete_nat_gateway(backend)
+        backend.authorize_security_group_ingress = patch_authorize_security_group_ingress(backend)
 
     # TODO Implement Reserved Instance backend
     # https://github.com/localstack/localstack/issues/2435
@@ -64,8 +101,11 @@ def patch_ec2():
     # make sure we report groupName only for default VPCs (i.e., omit for custom VPCs with vpc_id)
     search = r'</groupId>\s*<groupName>\{\{\s*source_group.name\s*\}\}</groupName>'
     replace = r'</groupId>{% if not group.vpc_id %}<groupName>{{ source_group.name }}</groupName>{% endif %}'
-    security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE = re.sub(search, replace,
-        security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE, flags=REGEX_FLAGS)
+
+    security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE = DESCRIBE_SECURITY_GROUPS_RESPONSE
+
+    security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE = \
+        re.sub(search, replace, security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE, flags=REGEX_FLAGS)
 
     # bootstrap default VPC endpoint services
     def describe_vpc_endpoint_services(self):
@@ -136,7 +176,7 @@ def patch_ec2():
                 region = self.ec2_backend.region_name
                 service_name = 'com.amazonaws.%s.%s' % (region, service_id)
                 entry = {'prefixListName': service_name, 'prefixListId': 'pl-%s' % short_uid(),
-                    'cidrSet': {'item': ['52.219.80.0/20']}}
+                         'cidrSet': {'item': ['52.219.80.0/20']}}
                 entries.append(entry)
         entries = self.ec2_backend._prefix_lists
         search_filters = self._parse_search_filters()
@@ -207,6 +247,116 @@ def patch_ec2():
         return result
 
     vpcs.VPCs.modify_vpc_endpoint = modify_vpc_endpoint
+
+    security_groups_parse_sg_attributes_from_dict_org = security_groups.parse_sg_attributes_from_dict
+
+    def security_groups_parse_sg_attributes_from_dict(sg_attributes):
+        ip_protocol, from_port, to_port, ip_ranges, source_groups, source_group_ids = \
+            security_groups_parse_sg_attributes_from_dict_org(sg_attributes)
+
+        ipv6_ranges = []
+        ip_ranges_tree = sg_attributes.get('Ipv6Ranges') or {}
+        for ip_range_idx in sorted(ip_ranges_tree.keys()):
+            ip_range = {'CidrIp': ip_ranges_tree[ip_range_idx]['CidrIpv6'][0]}
+            if ip_ranges_tree[ip_range_idx].get('Description'):
+                ip_range['Description'] = ip_ranges_tree[ip_range_idx].get('Description')[0]
+
+            ipv6_ranges.append(ip_range)
+
+        return ip_protocol, from_port, to_port, ip_ranges, ipv6_ranges, source_groups, source_group_ids
+
+    def sg_backend_process_rules_from_querystring(self):
+        group_name_or_id = self._get_param('GroupName') or self._get_param('GroupId')
+
+        querytree = {}
+        for key, value in self.querystring.items():
+            key_splitted = key.split('.')
+            key_splitted = [try_parse_int(e, e) for e in key_splitted]
+
+            d = querytree
+            for subkey in key_splitted[:-1]:
+                if subkey not in d:
+                    d[subkey] = {}
+                d = d[subkey]
+            d[key_splitted[-1]] = value
+
+        if 'IpPermissions' not in querytree:
+            # Handle single rule syntax
+            (
+                ip_protocol,
+                from_port,
+                to_port,
+                ip_ranges,
+                ipv6_ranges,
+                source_groups,
+                source_group_ids,
+            ) = security_groups_parse_sg_attributes_from_dict(querytree)
+
+            yield (
+                group_name_or_id,
+                ip_protocol,
+                from_port,
+                to_port,
+                ip_ranges,
+                ipv6_ranges,
+                source_groups,
+                source_group_ids,
+            )
+
+        ip_permissions = querytree.get('IpPermissions') or {}
+        for ip_permission_idx in sorted(ip_permissions.keys()):
+            ip_permission = ip_permissions[ip_permission_idx]
+
+            (
+                ip_protocol,
+                from_port,
+                to_port,
+                ip_ranges,
+                ipv6_ranges,
+                source_groups,
+                source_group_ids,
+            ) = security_groups_parse_sg_attributes_from_dict(ip_permission)
+
+            yield (
+                group_name_or_id,
+                ip_protocol,
+                from_port,
+                to_port,
+                ip_ranges,
+                ipv6_ranges,
+                source_groups,
+                source_group_ids,
+            )
+
+    security_groups_backend._process_rules_from_querystring = sg_backend_process_rules_from_querystring
+
+    def sg_backend_revoke_security_group_egress(self):
+        if self.is_not_dryrun('GrantSecurityGroupEgress'):
+            for args in self._process_rules_from_querystring():
+                (
+                    group_name_or_id,
+                    ip_protocol,
+                    from_port,
+                    to_port,
+                    ip_ranges,
+                    ipv6_ranges,
+                    source_groups,
+                    source_group_ids
+                ) = args
+
+                self.ec2_backend.authorize_security_group_egress(
+                    group_name_or_id,
+                    ip_protocol,
+                    from_port,
+                    to_port,
+                    ip_ranges,
+                    source_groups,
+                    source_group_ids
+                )
+
+            return AUTHORIZE_SECURITY_GROUP_EGRESS_RESPONSE
+
+    security_groups_backend.revoke_security_group_egress = sg_backend_revoke_security_group_egress
 
 
 def start_ec2(port=None, asynchronous=False, update_listener=None):
@@ -286,3 +436,105 @@ DESCRIBE_RESERVED_INSTANCES_RESPONSE = """
       </item>
    </reservedInstancesSet>
 </DescribeReservedInstancesResponse>""" % XMLNS_EC2
+
+DESCRIBE_SECURITY_GROUPS_RESPONSE = (
+    """<DescribeSecurityGroupsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
+       <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
+       <securityGroupInfo>
+          {% for group in groups %}
+              <item>
+                 <ownerId>""" + ACCOUNT_ID + """</ownerId>
+             <groupId>{{ group.id }}</groupId>
+             <groupName>{{ group.name }}</groupName>
+             <groupDescription>{{ group.description }}</groupDescription>
+             {% if group.vpc_id %}
+             <vpcId>{{ group.vpc_id }}</vpcId>
+             {% endif %}
+             <ipPermissions>
+               {% for rule in group.ingress_rules %}
+                    <item>
+                       <ipProtocol>{{ rule.ip_protocol }}</ipProtocol>
+                       {% if rule.from_port %}
+                       <fromPort>{{ rule.from_port }}</fromPort>
+                       {% endif %}
+                       {% if rule.to_port %}
+                       <toPort>{{ rule.to_port }}</toPort>
+                       {% endif %}
+                       <groups>
+                          {% for source_group in rule.source_groups %}
+                              <item>
+                                 <userId>""" + ACCOUNT_ID + """</userId>
+                                 <groupId>{{ source_group.id }}</groupId>
+                                 <groupName>{{ source_group.name }}</groupName>
+                              </item>
+                          {% endfor %}
+                       </groups>
+                       <ipRanges>
+                          {% for ip_range in rule.ip_ranges %}
+                              <item>
+                                 <cidrIp>{{ ip_range['CidrIp'] }}</cidrIp>
+                                    {% if ip_range['Description'] %}
+                                        <description>{{ ip_range['Description'] }}</description>
+                                    {% endif %}
+                              </item>
+                          {% endfor %}
+                       </ipRanges>
+                       <ipv6Ranges>
+                          {% for ip_range in rule.ipv6_ranges %}
+                              <item>
+                                 <cidrIpv6>{{ ip_range['CidrIp'] }}</cidrIpv6>
+                                    {% if ip_range['Description'] %}
+                                        <description>{{ ip_range['Description'] }}</description>
+                                    {% endif %}
+                              </item>
+                          {% endfor %}
+                       </ipv6Ranges>
+                    </item>
+                {% endfor %}
+             </ipPermissions>
+             <ipPermissionsEgress>
+               {% for rule in group.egress_rules %}
+                    <item>
+                       <ipProtocol>{{ rule.ip_protocol }}</ipProtocol>
+                       {% if rule.from_port %}
+                       <fromPort>{{ rule.from_port }}</fromPort>
+                       {% endif %}
+                       {% if rule.to_port %}
+                       <toPort>{{ rule.to_port }}</toPort>
+                       {% endif %}
+                       <groups>
+                          {% for source_group in rule.source_groups %}
+                              <item>
+                                 <userId>""" + ACCOUNT_ID + """</userId>
+                                 <groupId>{{ source_group.id }}</groupId>
+                                 <groupName>{{ source_group.name }}</groupName>
+                              </item>
+                          {% endfor %}
+                       </groups>
+                       <ipRanges>
+                          {% for ip_range in rule.ip_ranges %}
+                              <item>
+                                 <cidrIp>{{ ip_range['CidrIp'] }}</cidrIp>
+                                    {% if ip_range['Description'] %}
+                                        <description>{{ ip_range['Description'] }}</description>
+                                    {% endif %}
+                              </item>
+                          {% endfor %}
+                       </ipRanges>
+                    </item>
+               {% endfor %}
+             </ipPermissionsEgress>
+             <tagSet>
+               {% for tag in group.get_tags() %}
+                 <item>
+                   <resourceId>{{ tag.resource_id }}</resourceId>
+                   <resourceType>{{ tag.resource_type }}</resourceType>
+                   <key>{{ tag.key }}</key>
+                   <value>{{ tag.value }}</value>
+                 </item>
+               {% endfor %}
+             </tagSet>
+          </item>
+      {% endfor %}
+    </securityGroupInfo>
+</DescribeSecurityGroupsResponse>""")
