@@ -278,7 +278,6 @@ def apply_patches():
     # Patch utils_is_delete_keys
     # https://github.com/localstack/localstack/issues/2866
     # https://github.com/localstack/localstack/issues/2850
-
     utils_is_delete_keys_orig = s3bucket_path_utils.is_delete_keys
 
     def utils_is_delete_keys(request, path, bucket_name):
