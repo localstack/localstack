@@ -87,6 +87,7 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		echo "Skipping docker push as no credentials are provided.") || \
 	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
 		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
+		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
 		echo "This is a fork and not the main repo.") || \
 	( \
 		which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
