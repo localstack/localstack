@@ -344,7 +344,7 @@ def patch_ec2():
                     source_group_ids
                 ) = args
 
-                self.ec2_backend.authorize_security_group_egress(
+                self.ec2_backend.revoke_security_group_egress(
                     group_name_or_id,
                     ip_protocol,
                     from_port,
