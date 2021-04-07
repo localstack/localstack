@@ -177,16 +177,17 @@ def install_stepfunctions_local():
 def install_dynamodb_local():
     if OVERWRITE_DDB_FILES_IN_DOCKER and in_docker():
         rm_rf(INSTALL_DIR_DDB)
+    is_in_alpine = is_alpine()
     if not os.path.exists(INSTALL_PATH_DDB_JAR):
         log_install_msg('DynamoDB')
         # download and extract archive
         tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
-        dynamodb_url = DYNAMODB_JAR_URL_ALPINE if in_docker() else DYNAMODB_JAR_URL
+        dynamodb_url = DYNAMODB_JAR_URL_ALPINE if is_in_alpine else DYNAMODB_JAR_URL
         download_and_extract_with_retry(dynamodb_url, tmp_archive, INSTALL_DIR_DDB)
 
     # fix for Alpine, otherwise DynamoDBLocal fails with:
     # DynamoDBLocal_lib/libsqlite4java-linux-amd64.so: __memcpy_chk: symbol not found
-    if is_alpine():
+    if is_in_alpine:
         ddb_libs_dir = '%s/DynamoDBLocal_lib' % INSTALL_DIR_DDB
         patched_marker = '%s/alpine_fix_applied' % ddb_libs_dir
         if APPLY_DDB_ALPINE_FIX and not os.path.exists(patched_marker):
