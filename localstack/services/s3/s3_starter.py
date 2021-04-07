@@ -319,15 +319,13 @@ def apply_patches():
             if 'prefix' in querystring:
                 prefix = querystring.get('prefix', [None])[0]
                 multiparts = [
-                    upload
-                    for upload in multiparts if upload.key_name.startswith(prefix)
+                    upload for upload in multiparts if upload.key_name.startswith(prefix)
                 ]
 
             upload_ids = [upload_id for upload_id in querystring.get('uploads') if upload_id]
             if upload_ids:
                 multiparts = [
-                    upload
-                    for upload in multiparts if upload.id in upload_ids
+                    upload for upload in multiparts if upload.id in upload_ids
                 ]
 
             template = self.response_template(S3_ALL_MULTIPARTS)
