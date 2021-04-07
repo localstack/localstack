@@ -896,7 +896,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'State': 'Active',
         'LastUpdateStatus': 'Successful',
         'PackageType': func_details.package_type,
-        'ImageConfig': func_details.image_config
+        'ImageConfig': getattr(func_details, 'image_config', None)
     }
     if func_details.dead_letter_config:
         result['DeadLetterConfig'] = func_details.dead_letter_config
