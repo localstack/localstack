@@ -154,6 +154,41 @@ test-docker-mount-code:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); \
 	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/ -e TEST_PATH=$(TEST_PATH) -e NOSE_ARGS=-v -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
 
+# Note: the ci-* targets below should only be used in CI builds!
+
+ci-build-prepare:
+	sudo useradd localstack -s /bin/bash
+	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
+	make init
+	nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-python2.7 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-python3.6 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null &
+	nohup docker pull lambci/lambda:dotnetcore3.1 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-provided > /dev/null &
+	nohup docker pull lambci/lambda:java8 > /dev/null &
+	nohup docker pull lambci/lambda:python3.8 > /dev/null &
+
+ci-build-test:
+	# check if the build environment contains a special command via $$CUSTOM_CMD
+	if [ "$$CUSTOM_CMD" = rebuild-base-image ]; then make docker-build-base-ci; exit; fi
+	# run tests using Python 3 (limit the set of tests to reduce test duration)
+	DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+	# start pulling Docker base image in the background
+	nohup docker pull localstack/java-maven-node-python > /dev/null &
+	LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+
+ci-build-push:
+	# build Docker image
+	make docker-build
+	# extract .coverage details from created image
+	make docker-cp-coverage
+	sed -i 's:/opt/code/localstack:/home/travis/build/localstack/localstack:g' .coverage
+	# push Docker image (if on master branch)
+	make docker-push-master
+	make coveralls || true
+
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
 	rm -rf $(VENV_DIR)
 	PIP_CMD=pip2 VENV_OPTS="-p '`which python2`'" make install
