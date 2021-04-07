@@ -9,6 +9,7 @@ import shutil
 import logging
 import tempfile
 from localstack import config
+from localstack.utils.common import is_windows
 from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_URLS, ELASTICSEARCH_DEFAULT_VERSION, ELASTICSEARCH_PLUGIN_LIST,
@@ -226,6 +227,9 @@ def install_amazon_kinesis_client_libs():
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
     classpath = kclipy_helper.get_kcl_classpath()
+    
+    if is_windows():
+        classpath = re.sub(r':([^\\])', r';\1', classpath)
     java_files = '%s/utils/kinesis/java/cloud/localstack/*.java' % ROOT_PATH
     class_files = '%s/utils/kinesis/java/cloud/localstack/*.class' % ROOT_PATH
     if not glob.glob(class_files):
