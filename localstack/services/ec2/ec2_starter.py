@@ -70,6 +70,8 @@ def patch_ec2():
                 source_group_ids
             )
             group = backend.get_security_group_by_name_or_id(group_name_or_id, None)
+
+            # Get the rule just added and set ipv6_ranges
             rule = group.ingress_rules[-1]
             rule.ipv6_ranges = ipv6_ranges
 
