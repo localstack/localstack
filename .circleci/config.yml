@@ -5,13 +5,21 @@ orbs:
 
 jobs:
   build-test-push:
-    executor: python/default
+    executor:
+      name: python/default
+      tag: "3.8"
     steps:
       - checkout
       - setup_remote_docker:
           version: 19.03.13
       - run:
-          command: make ci-build-prepare
+          command: |
+            sudo apt install -y openjdk-11-jdk-headless libsasl2-dev
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+            . $HOME/.nvm/nvm.sh; nvm install 8; nvm alias default node
+          name: Install prerequisites
+      - run:
+          command: . $HOME/.nvm/nvm.sh; make ci-build-prepare
           name: Setup environment
       - run:
           command: make ci-build-test
