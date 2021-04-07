@@ -474,21 +474,6 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
-    'KMS::Key': {
-        'create': {
-            'function': 'create_key',
-            'parameters': {
-                'Policy': 'KeyPolicy'
-            }
-        },
-        'delete': {
-            # TODO Key need to be deleted in KMS backend
-            'function': 'schedule_key_deletion',
-            'parameters': {
-                'KeyId': 'PhysicalResourceId'
-            }
-        }
-    },
     'EC2::Instance': {
         'create': {
             'function': 'create_instances',
