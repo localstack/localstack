@@ -373,12 +373,6 @@ def start_infra(asynchronous=False, apis=None):
         # with plugins loaded, now start the infrastructure
         thread = do_start_infra(asynchronous, apis, is_in_docker)
 
-        # print(run('docker network ls'))  # TODO remove!
-        # print(run('docker ps -a'))  # TODO remove!
-        # print(run('docker network inspect bridge'))  # TODO remove!
-        # print(run('docker network inspect host'))  # TODO remove!
-        # print(run('docker network inspect none || true'))  # TODO remove!
-
         if not asynchronous and thread:
             # this is a bit of an ugly hack, but we need to make sure that we
             # stay in the execution context of the main thread, otherwise our

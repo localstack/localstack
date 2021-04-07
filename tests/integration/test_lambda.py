@@ -343,7 +343,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             sqs_client.delete_queue(QueueUrl=queue_url)
             lambda_client.delete_function(FunctionName=lambda_name)
 
-        # TODO fix!!
+        # TODO fix!! (currently failing in Circle-CI!)
         # test_destination(success=True)
         # test_destination(success=False)
 

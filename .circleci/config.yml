@@ -1,48 +1,23 @@
 version: 2.1
 
-# orbs:
-#   python: circleci/python@0.2.1
-
 jobs:
   build-test-push:
-    # executor:
-    #   name: python/default
-    #   tag: "3.8"
-    # docker:
-    #   - image: localstack/java-maven-node-python
     machine:
       image: ubuntu-2004:202101-01
-
     steps:
       - checkout
-      # - setup_remote_docker:
-      #     version: 19.03.13
-
       - run:
           command: |
             sudo apt-get update
             sudo apt install -y python3.8 libsasl2-dev
-            # cat /etc/environment
-            # curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
-            # . /opt/circleci/.nvm/nvm.sh
+            node --version
             nvm install 8; nvm alias default node
-            pip install virtualenv
           name: Install prerequisites
-
       - run:
-          # command: . /opt/circleci/.nvm/nvm.sh; make ci-build-prepare
-          # command: pyenv global 3.8.7; make ci-build-prepare
           command: virtualenv --python=`which python3.8` .venv; make ci-build-prepare
           name: Setup environment
-
-      # - run:
-      #     command: make install
-      #     name: Install dependencies
-
       - run:
           command: . /opt/circleci/.nvm/nvm.sh; make ci-build-test
-          # command: . $HOME/.nvm/nvm.sh; make ci-build-test
-          # command: export DOCKER_HOST=tcp://docker:2375; make ci-build-test
           name: Run integration tests
       - run:
           command: make ci-build-push
