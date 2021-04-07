@@ -140,7 +140,8 @@ docker-cp-coverage:
 web:
 	($(VENV_RUN); bin/localstack web)
 
-test:              ## Run automated tests
+## Run automated tests
+test:
 	make lint && \
 		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests $(NOSE_ARGS) --with-timer --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' $(TEST_PATH))
 
@@ -175,6 +176,7 @@ ci-build-test:
 	if [ "$$CUSTOM_CMD" = rebuild-base-image ]; then make docker-build-base-ci; exit; fi
 	# run tests using Python 3 (limit the set of tests to reduce test duration)
 	DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+	DEBUG=1 SQS_PROVIDER=elasticmq TEST_PATH="tests/integration/test_sns.py:SNSTest.test_publish_sqs_from_sns_with_xray_propagation" make test
 	# start pulling Docker base image in the background
 	nohup docker pull localstack/java-maven-node-python > /dev/null &
 	LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test

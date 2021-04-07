@@ -127,7 +127,7 @@ class ProxyListenerSNS(PersistingProxyListener):
                     if topic_arn not in SNS_SUBSCRIPTIONS:
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
 
-                message_id = publish_message(topic_arn, req_data)
+                message_id = publish_message(topic_arn, req_data, headers)
 
                 # return response here because we do not want the request to be forwarded to SNS backend
                 return make_response(req_action, message_id=message_id)
@@ -269,7 +269,8 @@ def unsubscribe_sqs_queue(queue_url):
                 subscriptions.remove(subscriber)
 
 
-def message_to_subscribers(message_id, message, topic_arn, req_data, subscription_arn=None, skip_checks=False):
+def message_to_subscribers(message_id, message, topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
+
     subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
     for subscriber in list(subscriptions):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
@@ -313,6 +314,7 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, subscriptio
                     QueueUrl=queue_url,
                     MessageBody=create_sns_message_body(subscriber, req_data, message_id),
                     MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes),
+                    MessageSystemAttributes=create_sqs_system_attributes(headers),
                     **kwargs
                 )
             except Exception as exc:
@@ -394,7 +396,7 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, subscriptio
             LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
 
-def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=False):
+def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
     message = req_data['Message'][0]
     message_id = str(uuid.uuid4())
 
@@ -405,7 +407,8 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
 
     LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
     start_thread(
-        lambda _: message_to_subscribers(message_id, message, topic_arn, req_data, subscription_arn, skip_checks))
+        lambda _: message_to_subscribers(
+            message_id, message, topic_arn, req_data, headers, subscription_arn, skip_checks))
     return message_id
 
 
@@ -461,7 +464,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
                         'To confirm the subscription, visit the SubscribeURL included in this message.'],
             'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
         }
-        publish_message(topic_arn, confirmation, subscription_arn, skip_checks=True)
+        publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
 
 
 def do_unsubscribe(subscription_arn):
@@ -611,6 +614,17 @@ def create_sqs_message_attributes(subscriber, attributes):
         message_attributes[key] = attribute
 
     return message_attributes
+
+
+def create_sqs_system_attributes(headers):
+
+    system_attributes = {}
+    if 'X-Amzn-Trace-Id' in headers:
+        system_attributes['AWSTraceHeader'] = {
+            'DataType': 'String',
+            'StringValue': str(headers['X-Amzn-Trace-Id'])
+        }
+    return system_attributes
 
 
 def get_message_attributes(req_data):
