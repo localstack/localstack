@@ -10,8 +10,6 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt install -y python3.8 libsasl2-dev
-            node --version
-            nvm install 8; nvm alias default node
           name: Install prerequisites
       - run:
           command: virtualenv --python=`which python3.8` .venv; make ci-build-prepare
