@@ -972,17 +972,3 @@ def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2):
 def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None):
     statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
     return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
-
-
-# TODO: move to aws_responses.py?
-def extract_tags(req_data):
-    tags = []
-    for i in range(1, 200):
-        k1 = 'Tags.member.%s.Key' % i
-        k2 = 'Tags.member.%s.Value' % i
-        key = req_data.get(k1)
-        value = req_data.get(k2, '')
-        if key is None:
-            break
-        tags.append({'Key': key, 'Value': value})
-    return tags
