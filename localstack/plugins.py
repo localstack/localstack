@@ -212,7 +212,6 @@ def do_register_localstack_plugins():
             'support',
             start=support_starter.start_support))
 
-
     except Exception as e:
         if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
             print('Unable to register plugins: %s' % e)

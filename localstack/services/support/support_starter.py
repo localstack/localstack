@@ -1,4 +1,3 @@
-from moto.support import responses as support_responses
 from localstack.services.infra import start_moto_server
 
 
