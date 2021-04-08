@@ -13,8 +13,8 @@ from localstack.services import plugins
 from localstack.dashboard import infra as dashboard_infra
 from localstack.utils.aws import aws_stack
 from localstack.constants import (
-    HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER,
-    PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
+    HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, HEADER_LOCALSTACK_REQUEST_URL,
+    LOCALSTACK_ROOT_FOLDER, PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
 from localstack.utils.common import (
     empty_context_manager, run, is_root, TMP_THREADS, to_bytes, truncate, to_str,
     get_service_protocol, in_docker, safe_requests as requests, parse_request_data)
@@ -57,7 +57,9 @@ class ProxyListenerEdge(ProxyListener):
         if auth_header and not headers.get('authorization'):
             headers['authorization'] = auth_header
         host = headers.get('host', '')
-        headers[HEADER_LOCALSTACK_EDGE_URL] = 'https://%s' % host
+        orig_req_url = headers.pop(HEADER_LOCALSTACK_REQUEST_URL, '')
+        headers[HEADER_LOCALSTACK_EDGE_URL] = (
+            re.sub(r'^([^:]+://[^/]+).*', r'\1', orig_req_url) or 'http://%s' % host)
 
         # extract API details
         api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
@@ -76,6 +78,9 @@ class ProxyListenerEdge(ProxyListener):
 
         if not port:
             if method == 'OPTIONS':
+                if api and config.LS_LOG:
+                    # print request trace for debugging, if enabled
+                    LOG.debug('OUT(%s): "%s %s" - status: %s' % (api, method, path, 200))
                 return 200
 
             if api in ['', None, '_unknown_']:
@@ -182,7 +187,6 @@ def get_auth_string(method, path, headers, data=None):
        &X-Amz-Credential=test%2F20210313%2Fus-east-1%2Fsqs%2Faws4_request\
        &X-Amz-Date=20210313T011059Z&X-Amz-Expires=86400000&X-Amz-SignedHeaders=host\
        &X-Amz-Signature=2c652c7bc9a3b75579db3d987d1e6dd056f0ac776c1e1d4ec91e2ce84e5ad3ae
-
     """
 
     auth_header = headers.get('authorization', '')

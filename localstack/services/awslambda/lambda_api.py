@@ -655,7 +655,7 @@ def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME)
 
 
 def error_response(msg, code=500, error_type='InternalFailure'):
-    LOG.info(msg)
+    LOG.debug(msg)
     return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
 
 
@@ -896,7 +896,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'State': 'Active',
         'LastUpdateStatus': 'Successful',
         'PackageType': func_details.package_type,
-        'ImageConfig': func_details.image_config
+        'ImageConfig': getattr(func_details, 'image_config', None)
     }
     if func_details.dead_letter_config:
         result['DeadLetterConfig'] = func_details.dead_letter_config

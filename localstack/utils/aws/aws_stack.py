@@ -246,8 +246,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         # configure S3 path style addressing
         if service_name == 's3':
             if re.match(r'https?://localhost(:[0-9]+)?', endpoint_url):
-                endpoint_url = endpoint_url.replace('localhost', S3_VIRTUAL_HOSTNAME)
-                config.s3 = {'addressing_style': 'auto'}
+                endpoint_url = endpoint_url.replace('://localhost', '://%s' % S3_VIRTUAL_HOSTNAME)
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         config.max_pool_connections = MAX_POOL_CONNECTIONS
@@ -973,17 +972,3 @@ def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2):
 def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None):
     statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
     return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
-
-
-# TODO: move to aws_responses.py?
-def extract_tags(req_data):
-    tags = []
-    for i in range(1, 200):
-        k1 = 'Tags.member.%s.Key' % i
-        k2 = 'Tags.member.%s.Value' % i
-        key = req_data.get(k1)
-        value = req_data.get(k2, '')
-        if key is None:
-            break
-        tags.append({'Key': key, 'Value': value})
-    return tags

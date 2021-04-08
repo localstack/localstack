@@ -1,31 +1,21 @@
 import re
 import os
-import sys
 import ssl
 import json
 import socket
 import inspect
 import logging
-import traceback
 import requests
-from ssl import SSLError
 from asyncio.selector_events import BaseSelectorEventLoop
-from six import iteritems
 from flask_cors import CORS
 from requests.models import Response, Request
-from requests.structures import CaseInsensitiveDict
-from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
-from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack import config
 from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
-from localstack.constants import APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.utils.aws import aws_stack
 from localstack.utils.server import http2_server
-from localstack.utils.common import (
-    FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS, path_from_url, Mock)
-from localstack.utils.testutil import is_local_test_mode
-from localstack.utils.http_utils import uses_chunked_encoding, create_chunked_data
+from localstack.utils.common import generate_ssl_cert, json_safe, path_from_url, Mock
 from localstack.utils.aws.aws_responses import LambdaResponse
 
 # set up logger
@@ -33,9 +23,6 @@ LOG = logging.getLogger(__name__)
 
 # path for test certificate
 SERVER_CERT_PEM_FILE = 'server.test.pem'
-
-# whether to use a proxy server with HTTP/2 support
-USE_HTTP2_SERVER = config.USE_HTTP2_SERVER
 
 # CORS constants
 CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-length', 'content-md5', 'cache-control',
@@ -55,12 +42,10 @@ ALLOWED_CORS_RESPONSE_HEADERS = ['Access-Control-Allow-Origin', 'Access-Control-
     'Access-Control-Expose-Headers']
 
 
-class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
-    """Handle each request in a separate thread."""
-    daemon_threads = True
-
-
 class ProxyListener(object):
+
+    # List of `ProxyListener` instances that are enabled by default for all requests
+    DEFAULT_LISTENERS = []
 
     def forward_request(self, method, path, data, headers):
         """ This interceptor method is called by the proxy when receiving a new request
@@ -129,194 +114,6 @@ class RegionBackend(object):
 # PROXY LISTENER UTILS
 # ---------------------
 
-# TODO deprecated - should be removed
-class GenericProxyHandler(BaseHTTPRequestHandler):
-
-    # List of `ProxyListener` instances that are enabled by default for all requests
-    DEFAULT_LISTENERS = []
-
-    def __init__(self, request, client_address, server):
-        self.request = request
-        self.client_address = client_address
-        self.server = server
-        self.proxy = server.my_object
-        self.data_bytes = None
-        self.protocol_version = self.proxy.protocol_version
-        try:
-            BaseHTTPRequestHandler.__init__(self, request, client_address, server)
-        except SSLError as e:
-            LOG.warning('SSL error when handling request: %s' % e)
-        except Exception as e:
-            if 'cannot read from timed out object' not in str(e):
-                LOG.warning('Unknown error: %s' % e)
-
-    def parse_request(self):
-        result = BaseHTTPRequestHandler.parse_request(self)
-        if not result:
-            return result
-        if sys.version_info[0] >= 3:
-            return result
-        # Required fix for Python 2 (otherwise S3 uploads are hanging), based on the Python 3 code:
-        # https://sourcecodebrowser.com/python3.2/3.2.3/http_2server_8py_source.html#l00332
-        expect = self.headers.get('Expect', '')
-        if (expect.lower() == '100-continue' and
-                self.protocol_version >= 'HTTP/1.1' and
-                self.request_version >= 'HTTP/1.1'):
-            if self.request_version != 'HTTP/0.9':
-                self.wfile.write(('%s %d %s\r\n' %
-                    (self.protocol_version, 100, 'Continue')).encode('latin1', 'strict'))
-                self.end_headers()
-        return result
-
-    def do_GET(self):
-        self.method = requests.get
-        self.read_content()
-        self.forward('GET')
-
-    def do_PUT(self):
-        self.method = requests.put
-        self.read_content()
-        self.forward('PUT')
-
-    def do_POST(self):
-        self.method = requests.post
-        self.read_content()
-        self.forward('POST')
-
-    def do_DELETE(self):
-        self.data_bytes = None
-        self.method = requests.delete
-        self.forward('DELETE')
-
-    def do_HEAD(self):
-        self.data_bytes = None
-        self.method = requests.head
-        self.forward('HEAD')
-
-    def do_PATCH(self):
-        self.method = requests.patch
-        self.read_content()
-        self.forward('PATCH')
-
-    def do_OPTIONS(self):
-        self.data_bytes = None
-        self.method = requests.options
-        self.forward('OPTIONS')
-
-    def do_CONNECT(self):
-        self.method = None
-        self.headers['Connection'] = self.headers.get('Connection') or 'keep-alive'
-        self.forward('CONNECT')
-
-    def read_content(self):
-        content_length = self.headers.get('Content-Length')
-        if content_length:
-            self.data_bytes = self.rfile.read(int(content_length))
-            return
-
-        self.data_bytes = None
-        if self.method in (requests.post, requests.put):
-            LOG.warning('Expected Content-Length header not found in POST/PUT request')
-
-            # If the Content-Length header is missing, try to read
-            # content from the socket using a socket timeout.
-            socket_timeout_secs = 0.5
-            self.request.settimeout(socket_timeout_secs)
-            block_length = 1
-            while True:
-                try:
-                    # TODO find a more efficient way to do this!
-                    tmp = self.rfile.read(block_length)
-                    if self.data_bytes is None:
-                        self.data_bytes = tmp
-                    else:
-                        self.data_bytes += tmp
-                except socket.timeout:
-                    break
-
-    def forward(self, method):
-        data = self.data_bytes
-        path = self.path
-        forward_headers = CaseInsensitiveDict(self.headers)
-
-        # force close connection
-        connection_header = forward_headers.get('Connection') or ''
-        if connection_header.lower() not in ['keep-alive', '']:
-            self.close_connection = 1
-
-        client_address = self.client_address[0]
-        server_address = ':'.join(map(str, self.server.server_address))
-
-        try:
-            # run the actual response forwarding
-            response = modify_and_forward(method=method, path=path, data_bytes=data,
-                headers=forward_headers, forward_base_url=self.proxy.forward_base_url,
-                listeners=self._listeners(), request_handler=self,
-                client_address=client_address, server_address=server_address)
-
-            # copy headers and return response
-            self.send_response(response.status_code)
-
-            # set content for chunked encoding
-            is_chunked = uses_chunked_encoding(response)
-            if is_chunked:
-                response._content = create_chunked_data(response._content)
-
-            # send headers
-            content_length_sent = False
-            for header_key, header_value in iteritems(response.headers):
-                # filter out certain headers that we don't want to transmit
-                if header_key.lower() not in ('transfer-encoding', 'date', 'server'):
-                    self.send_header(header_key, header_value)
-                    content_length_sent = content_length_sent or header_key.lower() == 'content-length'
-
-            # fix content-type header if needed
-            if not content_length_sent and not is_chunked:
-                self.send_header('Content-Length', '%s' % len(response.content) if response.content else 0)
-
-            if isinstance(response, LambdaResponse):
-                self.send_multi_value_headers(response.multi_value_headers)
-
-            self.end_headers()
-            if response.content and len(response.content):
-                self.wfile.write(to_bytes(response.content))
-        except Exception as e:
-            trace = str(traceback.format_exc())
-            conn_errors = ('ConnectionRefusedError', 'NewConnectionError',
-                           'Connection aborted', 'Unexpected EOF', 'Connection reset by peer',
-                           'cannot read from timed out object')
-            conn_error = any(e in trace for e in conn_errors)
-            error_msg = 'Error forwarding request: %s %s' % (e, trace)
-            if 'Broken pipe' in trace:
-                LOG.warn('Connection prematurely closed by client (broken pipe).')
-            elif not self.proxy.quiet or not conn_error:
-                LOG.error(error_msg)
-                if is_local_test_mode():
-                    # During a test run, we also want to print error messages, because
-                    # log messages are delayed until the entire test run is over, and
-                    # hence we are missing messages if the test hangs for some reason.
-                    print('ERROR: %s' % error_msg)
-            self.send_response(502)  # bad gateway
-            self.end_headers()
-            # force close connection
-            self.close_connection = 1
-        finally:
-            try:
-                self.wfile.flush()
-            except Exception as e:
-                LOG.warning('Unable to flush write file: %s' % e)
-
-    def _listeners(self):
-        return self.DEFAULT_LISTENERS + [self.proxy.update_listener]
-
-    def log_message(self, format, *args):
-        return
-
-    def send_multi_value_headers(self, multi_value_headers):
-        for key, values in multi_value_headers.items():
-            for value in values:
-                self.send_header(key, value)
-
 
 def append_cors_headers(response=None):
     # Note: Use "response is not None" here instead of "not response"!
@@ -339,7 +136,10 @@ def append_cors_headers(response=None):
 
 def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
         listeners=None, request_handler=None, client_address=None, server_address=None):
-    listeners = GenericProxyHandler.DEFAULT_LISTENERS + (listeners or [])
+    """ This is the central function that coordinates the incoming/outgoing messages
+        with the proxy listeners (message interceptors). """
+
+    listeners = ProxyListener.DEFAULT_LISTENERS + (listeners or [])
     listeners = [lis for lis in listeners if lis]
     data = data_bytes
 
@@ -361,8 +161,6 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
     # update original "Host" header (moto s3 relies on this behavior)
     if not headers.get('Host'):
         headers['host'] = urlparse(target_url).netloc
-    if 'localhost.atlassian.io' in headers.get('Host'):
-        headers['host'] = 'localhost'
     headers['X-Forwarded-For'] = build_x_forwarded_for(headers, client_address, server_address)
 
     response = None
@@ -505,6 +303,21 @@ class DuplexSocket(ssl.SSLSocket):
 ssl.SSLContext.sslsocket_class = DuplexSocket
 
 
+class GenericProxy(object):
+    # TODO: move methods to different class?
+    @classmethod
+    def create_ssl_cert(cls, serial_number=None):
+        cert_pem_file = get_cert_pem_file_path()
+        return generate_ssl_cert(cert_pem_file, serial_number=serial_number)
+
+    @classmethod
+    def get_flask_ssl_context(cls, serial_number=None):
+        if config.USE_SSL:
+            _, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
+            return (cert_file_name, key_file_name)
+        return None
+
+
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
     is_ssl_socket = DuplexSocket.is_ssl_socket(conn)
     if is_ssl_socket is False:
@@ -520,92 +333,24 @@ if hasattr(BaseSelectorEventLoop, '_accept_connection2') and not hasattr(BaseSel
     BaseSelectorEventLoop._ls_patched = True
 
 
-# TODO: deprecated, as we're now using the HTTP2 server by default - remove!
-class GenericProxy(FuncThread):
-    def __init__(self, port, forward_url=None, ssl=False, host=None, update_listener=None, quiet=False, params={}):
-        FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
-        self.httpd = None
-        self.port = port
-        self.ssl = ssl
-        self.quiet = quiet
-        if forward_url:
-            if '://' not in forward_url:
-                forward_url = 'http://%s' % forward_url
-            forward_url = forward_url.rstrip('/')
-        self.forward_base_url = forward_url
-        self.update_listener = update_listener
-        self.server_stopped = False
-        # Required to enable 'Connection: keep-alive' for S3 uploads
-        self.protocol_version = params.get('protocol_version') or 'HTTP/1.1'
-        self.listen_host = host or ''
-
-    def run_cmd(self, params):
-        try:
-            self.httpd = ThreadedHTTPServer((self.listen_host, self.port), GenericProxyHandler)
-            if self.ssl:
-                # make sure we have a cert generated
-                combined_file, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=self.port)
-                self.httpd.socket = ssl.wrap_socket(self.httpd.socket,
-                    server_side=True, certfile=combined_file)
-            self.httpd.my_object = self
-            self.httpd.serve_forever()
-        except Exception as e:
-            if not self.quiet or not self.server_stopped:
-                LOG.error('Exception running proxy on port %s: %s %s' % (self.port, e, traceback.format_exc()))
-
-    def stop(self, quiet=False):
-        self.quiet = quiet
-        if self.httpd:
-            self.httpd.server_close()
-            self.server_stopped = True
-
-    @classmethod
-    def create_ssl_cert(cls, serial_number=None):
-        cert_pem_file = get_cert_pem_file_path()
-        return generate_ssl_cert(cert_pem_file, serial_number=serial_number)
-
-    @classmethod
-    def get_flask_ssl_context(cls, serial_number=None):
-        if config.USE_SSL:
-            _, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
-            return (cert_file_name, key_file_name)
-        return None
-
-
 def get_cert_pem_file_path():
     return os.path.join(config.TMP_FOLDER, SERVER_CERT_PEM_FILE)
 
 
-# TODO deprecated - remove
-def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
-    if USE_HTTP2_SERVER:
-        return start_proxy_server_http2(port=port, forward_url=forward_url,
-            use_ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
-    proxy_thread = GenericProxy(port=port, forward_url=forward_url,
-        ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
-    proxy_thread.start()
-    TMP_THREADS.append(proxy_thread)
-    return proxy_thread
-
-
-def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
-    proxy_thread = run_proxy_server_http2(port=port, use_ssl=use_ssl,
-        listener=update_listener, forward_url=forward_url, asynchronous=True)
-    return proxy_thread
-
-
-def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=True, use_ssl=None):
+def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=None,
+        quiet=False, params={}, asynchronous=True):
     def handler(request, data):
         parsed_url = urlparse(request.url)
         path_with_params = path_from_url(request.url)
         method = request.method
         headers = request.headers
+        headers[HEADER_LOCALSTACK_REQUEST_URL] = str(request.url)
 
         request_handler = Mock()
         request_handler.proxy = Mock()
         request_handler.proxy.port = port
         response = modify_and_forward(method=method, path=path_with_params, data_bytes=data, headers=headers,
-            forward_base_url=forward_url, listeners=[listener], request_handler=None,
+            forward_base_url=forward_url, listeners=[update_listener], request_handler=None,
             client_address=request.remote_addr, server_address=parsed_url.netloc)
 
         return response

@@ -6,10 +6,11 @@ import logging
 import boto3
 import moto.cloudformation.utils
 from six.moves.urllib import parse as urlparse
+from requests.structures import CaseInsensitiveDict
 from samtranslator.translator.transform import transform as transform_sam
-from localstack import config
+from localstack import config, constants
 from localstack.utils.aws import aws_stack
-from localstack.services.s3 import s3_listener
+from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.common import to_str, safe_requests, run_safe, clone_safe
 
 LOG = logging.getLogger(__name__)
@@ -51,9 +52,9 @@ def transform_template(req_data):
 
 
 def prepare_template_body(req_data):
-    do_replace_url = is_real_s3_url(req_data.get('TemplateURL'))
-    if do_replace_url:
-        req_data['TemplateURL'] = convert_s3_to_local_url(req_data['TemplateURL'])
+    template_url = req_data.get('TemplateURL')
+    if template_url:
+        req_data['TemplateURL'] = convert_s3_to_local_url(template_url)
     url = req_data.get('TemplateURL', '')
     if is_local_service_url(url):
         modified_template_body = get_template_body(req_data)
@@ -63,7 +64,7 @@ def prepare_template_body(req_data):
     modified_template_body = transform_template(req_data)
     if modified_template_body:
         req_data['TemplateBody'] = modified_template_body
-    return modified_template_body or do_replace_url
+    return modified_template_body
 
 
 def validate_template(req_data):
@@ -146,21 +147,25 @@ def template_to_json(template):
 
 
 def is_local_service_url(url):
-    candidates = ('localhost', config.LOCALSTACK_HOSTNAME, config.HOSTNAME_EXTERNAL, config.HOSTNAME)
-    return url and any('://%s:' % host in url for host in candidates)
-
-
-def is_real_s3_url(url):
-    return re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url or '')
+    if not url:
+        return False
+    candidates = (constants.LOCALHOST, constants.LOCALHOST_HOSTNAME, config.LOCALSTACK_HOSTNAME,
+        config.HOSTNAME_EXTERNAL, config.HOSTNAME)
+    if any(re.match(r'^[^:]+://[^:/]*%s([:/]|$)' % host, url) for host in candidates):
+        return True
+    host = url.split('://')[-1].split('/')[0]
+    return 'localhost' in host
 
 
 def convert_s3_to_local_url(url):
-    if not is_real_s3_url(url):
-        return url
     url_parsed = urlparse.urlparse(url)
     path = url_parsed.path
-    bucket_name, _, key = path.lstrip('/').replace('//', '/').partition('/')
+
+    headers = CaseInsensitiveDict({'Host': url_parsed.netloc})
+    bucket_name = s3_utils.extract_bucket_name(headers, path)
+    key_name = s3_utils.extract_key_name(headers, path)
+
     # note: make sure to normalize the bucket name here!
     bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-    local_url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, key)
+    local_url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, key_name)
     return local_url

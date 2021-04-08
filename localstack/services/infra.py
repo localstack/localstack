@@ -25,7 +25,7 @@ from localstack.services import generic_proxy, install
 from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, check_infra
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener, start_proxy_server
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.cloudformation import cloudformation_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.utils.analytics.profiler import log_duration
@@ -79,7 +79,7 @@ class ConfigUpdateProxyListener(ProxyListener):
         return response
 
 
-GenericProxyHandler.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
+ProxyListener.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
 
 
 # -----------------
@@ -261,7 +261,7 @@ def start_proxy_for_service(service_name, port, backend_port, update_listener, q
     return start_proxy(port, backend_url=backend_url, update_listener=update_listener, quiet=quiet, params=params)
 
 
-def start_proxy(port, backend_url, update_listener=None, quiet=False, params={}, use_ssl=None):
+def start_proxy(port, backend_url=None, update_listener=None, quiet=False, params={}, use_ssl=None):
     use_ssl = config.USE_SSL if use_ssl is None else use_ssl
     proxy_thread = start_proxy_server(port=port, forward_url=backend_url,
         use_ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
