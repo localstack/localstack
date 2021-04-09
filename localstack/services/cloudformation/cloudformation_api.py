@@ -26,6 +26,8 @@ class CloudFormationRegion(RegionBackend):
     def __init__(self):
         # maps stack ID to stack details
         self.stacks = {}
+        # maps stack set ID to stack set details
+        self.stack_sets = {}
 
     @property
     def exports(self):
@@ -48,6 +50,28 @@ class CloudFormationRegion(RegionBackend):
                 exports.append(entry)
                 output_keys[export_name] = stack.stack_id
         return exports
+
+
+class StackSet(object):
+    """ A stack set contains multiple stack instances. """
+    def __init__(self, metadata={}):
+        self.metadata = metadata
+        # list of stack instances
+        self.stack_instances = []
+        # maps operation ID to stack set operation details
+        self.operations = {}
+
+    @property
+    def stack_set_name(self):
+        return self.metadata.get('StackSetName')
+
+
+class StackInstance(object):
+    """ A stack instance belongs to a stack set and is specific to a region / account ID. """
+    def __init__(self, metadata={}):
+        self.metadata = metadata
+        # reference to the deployed stack belonging to this stack instance
+        self.stack = None
 
 
 class Stack(object):
@@ -101,6 +125,7 @@ class Stack(object):
 
     def set_stack_status(self, status):
         self.metadata['StackStatus'] = status
+        self.metadata['StackStatusReason'] = 'Deployment %s' % ('failed' if 'FAILED' in status else 'succeeded')
         self.add_stack_event(self.stack_name, self.stack_id, status)
 
     def add_stack_event(self, resource_id, physical_res_id, status):
@@ -338,6 +363,49 @@ def create_stack(req_params):
     return result
 
 
+def create_stack_set(req_params):
+    state = CloudFormationRegion.get()
+    stack_set = StackSet(req_params)
+    stack_set_id = short_uid()
+    stack_set.metadata['StackSetId'] = stack_set_id
+    state.stack_sets[stack_set_id] = stack_set
+    result = {'StackSetId': stack_set_id}
+    return result
+
+
+def create_stack_instances(req_params):
+    state = CloudFormationRegion.get()
+    set_name = req_params.get('StackSetName')
+    stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
+    if not stack_set:
+        return not_found_error('Stack set named "%s" does not exist' % set_name)
+    stack_set = stack_set[0]
+    op_id = req_params.get('OperationId') or short_uid()
+    accounts = req_params.get('Accounts', req_params.get('DeploymentTargets', {}).get('Accounts')) or []
+    for account in accounts:
+        for region in req_params.get('Regions', []):
+            instance = {
+                'StackSetId': stack_set.metadata['StackSetId'],
+                'OperationId': op_id,
+                'Account': account,
+                'Region': region,
+                'Status': 'CURRENT',
+                'StackInstanceStatus': {'DetailedStatus': 'SUCCEEDED'}
+            }
+            # TODO deploy instance!
+            instance = StackInstance(instance)
+            stack_set.stack_instances.append(instance)
+    operation = {
+        'OperationId': op_id,
+        'StackSetId': stack_set.metadata['StackSetId'],
+        'Action': 'UPDATE',
+        'Status': 'SUCCEEDED'
+    }
+    stack_set.operations[op_id] = operation
+    result = {'OperationId': op_id}
+    return result
+
+
 def delete_stack(req_params):
     stack_name = req_params.get('StackName')
     stack = find_stack(stack_name)
@@ -346,12 +414,23 @@ def delete_stack(req_params):
     return {}
 
 
+def delete_stack_set(req_params):
+    state = CloudFormationRegion.get()
+    set_name = req_params.get('StackSetName')
+    stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
+    if not stack_set:
+        return not_found_error('Stack set named "%s" does not exist' % set_name)
+    for instance in stack_set[0].stack_instances:
+        deployer = template_deployer.TemplateDeployer(instance.stack)
+        deployer.delete_stack()
+    return {}
+
+
 def update_stack(req_params):
     stack_name = req_params.get('StackName')
     stack = find_stack(stack_name)
     if not stack:
-        return error_response('Unable to update non-existing stack "%s"' % stack_name,
-            code=404, code_string='ValidationError')
+        return not_found_error('Unable to update non-existing stack "%s"' % stack_name)
     template_preparer.prepare_template_body(req_params)
     template = template_preparer.parse_template(req_params['TemplateBody'])
     new_stack = Stack(req_params, template)
@@ -365,6 +444,25 @@ def update_stack(req_params):
         return error_response(msg, code=400, code_string='ValidationError')
     result = {'StackId': stack.stack_id}
     return result
+
+
+def update_stack_set(req_params):
+    state = CloudFormationRegion.get()
+    set_name = req_params.get('StackSetName')
+    stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
+    if not stack_set:
+        return not_found_error('Stack set named "%s" does not exist' % set_name)
+    stack_set = stack_set[0]
+    stack_set.metadata.update(req_params)
+    op_id = req_params.get('OperationId') or short_uid()
+    operation = {
+        'OperationId': op_id,
+        'StackSetId': stack_set.metadata['StackSetId'],
+        'Action': 'UPDATE',
+        'Status': 'SUCCEEDED'
+    }
+    stack_set.operations[op_id] = operation
+    return {'OperationId': op_id}
 
 
 def describe_stacks(req_params):
@@ -405,7 +503,7 @@ def describe_stack_resources(req_params):
     resource_id = req_params.get('LogicalResourceId')
     phys_resource_id = req_params.get('PhysicalResourceId')
     if phys_resource_id and stack_name:
-        return error_response('Cannot specify both StackName and PhysicalResourceId')
+        return error_response('Cannot specify both StackName and PhysicalResourceId', code=400)
     # TODO: filter stack by PhysicalResourceId!
     stack = find_stack(stack_name)
     if not stack:
@@ -420,6 +518,18 @@ def list_stack_resources(req_params):
     if not isinstance(result, dict):
         return result
     result = {'StackResourceSummaries': result.pop('StackResources')}
+    return result
+
+
+def list_stack_instances(req_params):
+    state = CloudFormationRegion.get()
+    set_name = req_params.get('StackSetName')
+    stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
+    if not stack_set:
+        return not_found_error('Stack set named "%s" does not exist' % set_name)
+    stack_set = stack_set[0]
+    result = [inst.metadata for inst in stack_set.stack_instances]
+    result = {'Summaries': {'member': result}}
     return result
 
 
@@ -444,6 +554,8 @@ def create_change_set(req_params):
     deployer.construct_changes(stack, change_set, change_set_id=change_set.change_set_id, append_to_changeset=True)
     stack.change_sets.append(change_set)
     change_set.metadata['Status'] = 'CREATE_COMPLETE'
+    change_set.metadata['ExecutionStatus'] = 'AVAILABLE'
+    change_set.metadata['StatusReason'] = 'Changeset created'
     return {'StackId': change_set.stack_id, 'Id': change_set.change_set_id}
 
 
@@ -452,7 +564,7 @@ def execute_change_set(req_params):
     cs_name = req_params.get('ChangeSetName')
     change_set = find_change_set(cs_name, stack_name=stack_name)
     if not change_set:
-        return error_response('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
+        return not_found_error('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
     LOG.debug('Executing change set "%s" for stack "%s" with %s resources ...' % (
         cs_name, stack_name, len(change_set.template_resources)))
     deployer = template_deployer.TemplateDeployer(change_set.stack)
@@ -465,8 +577,15 @@ def list_change_sets(req_params):
     stack_name = req_params.get('StackName')
     stack = find_stack(stack_name)
     if not stack:
-        return error_response('Unable to find stack "%s"' % stack_name)
+        return not_found_error('Unable to find stack "%s"' % stack_name)
     result = [cs.metadata for cs in stack.change_sets]
+    result = {'Summaries': {'member': result}}
+    return result
+
+
+def list_stack_sets(req_params):
+    state = CloudFormationRegion.get()
+    result = [sset.metadata for sset in state.stack_sets]
     result = {'Summaries': {'member': result}}
     return result
 
@@ -476,8 +595,35 @@ def describe_change_set(req_params):
     cs_name = req_params.get('ChangeSetName')
     change_set = find_change_set(cs_name, stack_name=stack_name)
     if not change_set:
-        return error_response('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
+        return not_found_error('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
     return change_set.metadata
+
+
+def describe_stack_set(req_params):
+    state = CloudFormationRegion.get()
+    set_name = req_params.get('StackSetName')
+    result = [sset.metadata for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
+    if not result:
+        return not_found_error('Unable to find stack set "%s"' % set_name)
+    result = {'StackSet': result[0]}
+    return result
+
+
+def describe_stack_set_operation(req_params):
+    state = CloudFormationRegion.get()
+    set_name = req_params.get('StackSetName')
+    stack_set = [sset for sset in state.stack_sets.values() if sset.stack_set_name == set_name]
+    if not stack_set:
+        return not_found_error('Unable to find stack set "%s"' % set_name)
+    stack_set = stack_set[0]
+    op_id = req_params.get('OperationId')
+    result = stack_set.operations.get(op_id)
+    if not result:
+        LOG.debug('Unable to find operation ID "%s" for stack set "%s" in list: %s' % (
+            op_id, set_name, list(stack_set.operations.keys())))
+        return not_found_error('Unable to find operation ID "%s" for stack set "%s"' % (op_id, set_name))
+    result = {'StackSetOperation': result}
+    return result
 
 
 def list_exports(req_params):
@@ -522,7 +668,7 @@ def delete_change_set(req_params):
     cs_name = req_params.get('ChangeSetName')
     change_set = find_change_set(cs_name, stack_name=stack_name)
     if not change_set:
-        return error_response('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
+        return not_found_error('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
     change_set.stack.change_sets = [cs for cs in change_set.stack.change_sets if cs.change_set_name != cs_name]
     return {}
 
@@ -585,22 +731,30 @@ def handle_request():
 ENDPOINTS = {
     'CreateChangeSet': create_change_set,
     'CreateStack': create_stack,
+    'CreateStackInstances': create_stack_instances,
+    'CreateStackSet': create_stack_set,
     'DeleteChangeSet': delete_change_set,
     'DeleteStack': delete_stack,
+    'DeleteStackSet': delete_stack_set,
     'DescribeChangeSet': describe_change_set,
     'DescribeStackEvents': describe_stack_events,
     'DescribeStackResource': describe_stack_resource,
     'DescribeStackResources': describe_stack_resources,
     'DescribeStacks': describe_stacks,
+    'DescribeStackSet': describe_stack_set,
+    'DescribeStackSetOperation': describe_stack_set_operation,
     'ExecuteChangeSet': execute_change_set,
     'GetTemplate': get_template,
     'GetTemplateSummary': get_template_summary,
     'ListChangeSets': list_change_sets,
     'ListExports': list_exports,
     'ListImports': list_imports,
+    'ListStackInstances': list_stack_instances,
     'ListStacks': list_stacks,
     'ListStackResources': list_stack_resources,
+    'ListStackSets': list_stack_sets,
     'UpdateStack': update_stack,
+    'UpdateStackSet': update_stack_set,
     'ValidateTemplate': validate_template
 }
 
@@ -614,9 +768,12 @@ def error_response(*args, **kwargs):
     return flask_error_response_xml(*args, **kwargs)
 
 
+def not_found_error(message):
+    return error_response(message, code=404, code_string='ResourceNotFoundException')
+
+
 def stack_not_found_error(stack_name):
-    return error_response('Unable to find stack named "%s"' % stack_name,
-        code=404, code_string='ResourceNotFoundException')
+    return not_found_error('Unable to find stack named "%s"' % stack_name)
 
 
 def clone_stack_params(stack_params):

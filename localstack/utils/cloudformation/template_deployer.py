@@ -5,9 +5,8 @@ import base64
 import logging
 import traceback
 from urllib.parse import urlparse
-
-from moto.ec2.utils import generate_route_id
 from six import iteritems
+from moto.ec2.utils import generate_route_id
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.cloudformation import parsing
 from moto.cloudformation.models import cloudformation_backends
@@ -703,6 +702,7 @@ def extract_resource_attribute(resource_type, resource_state, attribute, resourc
             result = param_value.get(attribute)
         if result is not None:
             return result
+        return ''
     elif resource_type == 'Lambda::Function':
         func_configs = resource_state.get('Configuration') or {}
         if is_ref_attr_or_arn:
@@ -1943,6 +1943,10 @@ class TemplateDeployer(object):
             stack.set_stack_status(status)
             if isinstance(new_stack, StackChangeSet):
                 new_stack.metadata['Status'] = status
+                new_stack.metadata['ExecutionStatus'] = (
+                    'EXECUTE_FAILED' if 'FAILED' in status else 'EXECUTE_COMPLETE')
+                new_stack.metadata['StatusReason'] = 'Deployment %s' % (
+                    'failed' if 'FAILED' in status else 'succeeded')
 
         # run deployment in background loop, to avoid client network timeouts
         return start_worker_thread(_run)
