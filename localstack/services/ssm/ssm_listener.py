@@ -14,7 +14,7 @@ ACTION_GET_PARAMS = 'AmazonSSM.GetParameters'
 ACTION_GET_PARAMS_BY_PATH = 'AmazonSSM.GetParametersByPath'
 
 # logger
-LOG = logging.getLogger('ssm_api')
+LOG = logging.getLogger(__name__)
 
 
 def normalize_name(param_name):
@@ -79,7 +79,7 @@ def get_params_by_path_with_labels(path='', param_filters=None, labels_to_filter
     if recursive:
         filters[0]['Option'] = 'Recursive'
 
-    def filter_by_label(param=None, labels=None):
+    def filter_by_label(param, labels):
         for label in param['Labels']:
             if label in labels:
                 return param
@@ -102,7 +102,7 @@ def get_params_by_path_with_labels(path='', param_filters=None, labels_to_filter
             filtered_params))
         result['Parameters'].extend(details_of_filtered_params)
     except Exception as e:
-        LOG.info('Unable to get ssm parameters by path and filter by labels : %s %s' % (e,
+        LOG.info('Unable to get SSM parameters by path and filter by labels : %s %s' % (e,
             traceback.format_exc()))
         raise e
     return result
