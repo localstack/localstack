@@ -864,7 +864,11 @@ def parse_request_data(method, path, data, headers={}):
 
 
 def first_char_to_lower(s):
-    return '%s%s' % (s[0].lower(), s[1:])
+    return s and '%s%s' % (s[0].lower(), s[1:])
+
+
+def first_char_to_upper(s):
+    return s and '%s%s' % (s[0].upper(), s[1:])
 
 
 def format_number(number, decimals=2):
