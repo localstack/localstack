@@ -41,7 +41,7 @@ KINESIS_LATENCY = os.environ.get('KINESIS_LATENCY', '').strip() or '500'
 
 # default AWS region
 if 'DEFAULT_REGION' not in os.environ:
-    os.environ['DEFAULT_REGION'] = AWS_REGION_US_EAST_1
+    os.environ['DEFAULT_REGION'] = os.environ.get('AWS_DEFAULT_REGION') or AWS_REGION_US_EAST_1
 DEFAULT_REGION = os.environ['DEFAULT_REGION']
 
 # Whether or not to handle lambda event sources as synchronous invocations

@@ -138,7 +138,11 @@ def parse_template(template):
         try:
             return clone_safe(yaml.safe_load(template))
         except Exception:
-            return clone_safe(yaml.load(template, Loader=NoDatesSafeLoader))
+            try:
+                return clone_safe(yaml.load(template, Loader=NoDatesSafeLoader))
+            except Exception as e:
+                LOG.debug('Unable to parse CloudFormation template (%s): %s' % (e, template))
+                raise
 
 
 def template_to_json(template):

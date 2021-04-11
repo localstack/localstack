@@ -369,7 +369,7 @@ def send_dynamodb_request(path, action, request_body):
     headers = {
         'Host': 'dynamodb.amazonaws.com',
         'x-amz-target': 'DynamoDB_20120810.{}'.format(action),
-        'authorization': 'some_token'
+        'Authorization': aws_stack.mock_aws_request_headers('dynamodb')['Authorization']
     }
     url = '{}/{}'.format(os.getenv('TEST_DYNAMODB_URL'), path)
     return requests.put(url, data=request_body, headers=headers, verify=False)
