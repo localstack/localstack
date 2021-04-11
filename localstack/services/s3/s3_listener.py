@@ -29,7 +29,6 @@ from localstack.utils.common import (
     short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc, is_base64
 )
 from localstack.utils.analytics import event_publisher
-from localstack.utils.http_utils import uses_chunked_encoding
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.services.cloudformation.service_models import S3Bucket
@@ -424,9 +423,6 @@ def add_response_metadata_headers(response):
         response.headers['content-language'] = 'en-US'
     if response.headers.get('cache-control') is None:
         response.headers['cache-control'] = 'no-cache'
-    if response.headers.get('content-encoding') is None:
-        if not uses_chunked_encoding(response):
-            response.headers['content-encoding'] = 'identity'
 
 
 def append_last_modified_headers(response, content=None):

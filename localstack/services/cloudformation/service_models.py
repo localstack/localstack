@@ -76,6 +76,8 @@ class GenericBaseModel(CloudFormationModel):
     # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
     def update_resource(self, new_resource, stack_name, resources):
         """ Update the deployment of this resource, using the updated properties (implemented by subclasses). """
+        # TODO: evaluate if we can add a generic implementation here, using "update" parameters from
+        # get_deploy_templates() responses, and based on checking whether resource attributes have changed
         pass
 
     @classmethod
@@ -1270,22 +1272,46 @@ class KMSKey(GenericBaseModel):
         return 'AWS::KMS::Key'
 
     def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('kms')
         physical_res_id = self.physical_resource_id
+        props = self.props
+        res_tags = props.get('Tags', [])
         if not physical_res_id:
-            return None
-        return aws_stack.connect_to_service('kms').describe_key(KeyId=physical_res_id)
+            # TODO: find a more efficient approach for this?
+            for key in client.list_keys()['Keys']:
+                details = client.describe_key(KeyId=key['KeyId'])['KeyMetadata']
+                tags = client.list_resource_tags(KeyId=key['KeyId']).get('Tags', [])
+                tags = [{'Key': tag['TagKey'], 'Value': tag['TagValue']} for tag in tags]
+                if (tags == res_tags and details.get('Description') == props.get('Description') and
+                        props.get('KeyUsage') in [None, details.get('KeyUsage')]):
+                    physical_res_id = key['KeyId']
+                    # TODO should this be removed from here? It seems that somewhere along the execution
+                    # chain the 'PhysicalResourceId' gets overwritten with None, hence setting it here
+                    self.resource_json['PhysicalResourceId'] = physical_res_id
+                    break
+        if not physical_res_id:
+            return
+        return client.describe_key(KeyId=physical_res_id)
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute in REF_ID_ATTRS:
+            return self.physical_resource_id
+        return self.physical_resource_id and aws_stack.kms_key_arn(self.physical_resource_id)
 
     @staticmethod
     def get_deploy_templates():
+        def create_params(params, **kwargs):
+            return {
+                'Policy': params.get('KeyPolicy'),
+                'Tags': [{'TagKey': tag['Key'], 'TagValue': tag['Value']} for tag in params.get('Tags', [])]
+            }
         return {
             'create': {
                 'function': 'create_key',
-                'parameters': {
-                    'Policy': 'KeyPolicy'
-                }
+                'parameters': create_params
             },
             'delete': {
-                # TODO Key need to be deleted in KMS backend
+                # TODO Key needs to be deleted in KMS backend
                 'function': 'schedule_key_deletion',
                 'parameters': {
                     'KeyId': 'PhysicalResourceId'
@@ -1359,7 +1385,6 @@ class EC2Instance(GenericBaseModel):
                 instance_id
             ]
         )
-
         return resp['Reservations'][0]['Instances'][0]
 
 

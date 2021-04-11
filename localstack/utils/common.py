@@ -428,6 +428,7 @@ def md5(string):
 
 
 def select_attributes(object, attributes):
+    attributes = attributes if isinstance(attributes, list) else [attributes]
     return dict([(k, v) for k, v in object.items() if k in attributes])
 
 
@@ -864,7 +865,11 @@ def parse_request_data(method, path, data, headers={}):
 
 
 def first_char_to_lower(s):
-    return '%s%s' % (s[0].lower(), s[1:])
+    return s and '%s%s' % (s[0].lower(), s[1:])
+
+
+def first_char_to_upper(s):
+    return s and '%s%s' % (s[0].upper(), s[1:])
 
 
 def format_number(number, decimals=2):
@@ -1493,6 +1498,16 @@ def escape_html(string, quote=False):
         return cgi.escape(string, quote=quote)
     import html
     return html.escape(string, quote=quote)
+
+
+def get_all_subclasses(clazz):
+    """ Recursively get all subclasses of the given class. """
+    result = set()
+    subs = clazz.__subclasses__()
+    for sub in subs:
+        result.add(sub)
+        result.update(get_all_subclasses(sub))
+    return result
 
 
 def parallelize(func, list, size=None):
