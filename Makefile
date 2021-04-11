@@ -187,7 +187,7 @@ ci-build-push:
 	make docker-build
 	# extract .coverage details from created image
 	make docker-cp-coverage
-	sed -i 's:/opt/code/localstack:/home/travis/build/localstack/localstack:g' .coverage
+	sed -i "s:/opt/code/localstack:`pwd`/localstack:g" .coverage
 	# push Docker image (if on master branch)
 	make docker-push-master
 	make coveralls || true

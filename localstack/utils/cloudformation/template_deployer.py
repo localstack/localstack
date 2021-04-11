@@ -17,7 +17,7 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download,
-    mkdir, cp_r, prevent_stack_overflow, start_worker_thread)
+    mkdir, cp_r, prevent_stack_overflow, start_worker_thread, get_all_subclasses)
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
@@ -43,7 +43,7 @@ UPDATEABLE_RESOURCES = [
 STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName', 'AWS::AccountId']
 
 # maps resource type string to model class
-RESOURCE_MODELS = {model.cloudformation_type(): model for model in GenericBaseModel.__subclasses__()}
+RESOURCE_MODELS = {model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)}
 
 CFN_RESPONSE_MODULE_URL = 'https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js'
 
@@ -445,12 +445,6 @@ RESOURCE_TO_FUNCTION = {
                 'roleArn': lambda params, **kwargs: get_role_arn(params.get('RoleArn'), **kwargs)
             }
         },
-        'update': {
-            'function': 'update_state_machine',
-            'parameters': {
-                'definition': 'DefinitionString'
-            }
-        },
         'delete': {
             'function': 'delete_state_machine',
             'parameters': {
@@ -485,15 +479,6 @@ RESOURCE_TO_FUNCTION = {
             'defaults': {
                 'MinCount': 1,
                 'MaxCount': 1
-            }
-        },
-        'update': {
-            'function': 'modify_instance_attribute',
-            'parameters': {
-                'InstanceType': 'InstanceType',
-                'SecurityGroups': 'SecurityGroups',
-                'KeyName': 'KeyName',
-                'ImageId': 'ImageId'
             }
         },
         'delete': {
@@ -1114,8 +1099,8 @@ def delete_resource(resource_id, resources, stack_name):
 
     if res_type == 'AWS::EC2::VPC':
         state = res['_state_']
-        physical_resource_id = resources[resource_id]['PhysicalResourceId'] or state.get('VpcId')
-        resources[resource_id]['PhysicalResourceId'] = physical_resource_id
+        physical_resource_id = res['PhysicalResourceId'] or state.get('VpcId')
+        res['PhysicalResourceId'] = physical_resource_id
 
         if state.get('VpcId'):
             ec2_client = aws_stack.connect_to_service('ec2')
@@ -1130,8 +1115,8 @@ def delete_resource(resource_id, resources, stack_name):
 
     if res_type == 'AWS::EC2::Subnet':
         state = res['_state_']
-        physical_resource_id = resources[resource_id]['PhysicalResourceId'] or state['SubnetId']
-        resources[resource_id]['PhysicalResourceId'] = physical_resource_id
+        physical_resource_id = res['PhysicalResourceId'] or state['SubnetId']
+        res['PhysicalResourceId'] = physical_resource_id
 
     if res_type == 'AWS::EC2::RouteTable':
         ec2_client = aws_stack.connect_to_service('ec2')
@@ -1531,34 +1516,34 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == 'EC2::Instance':
         if action == 'CREATE':
-            stack.resources[resource_id]['PhysicalResourceId'] = details[0].id
+            resource['PhysicalResourceId'] = details[0].id
 
     if resource_type == 'EC2::SecurityGroup':
-        stack.resources[resource_id]['PhysicalResourceId'] = details['GroupId']
+        resource['PhysicalResourceId'] = details['GroupId']
 
     if resource_type == 'IAM::InstanceProfile':
-        stack.resources[resource_id]['PhysicalResourceId'] = details['InstanceProfile']['InstanceProfileName']
+        resource['PhysicalResourceId'] = details['InstanceProfile']['InstanceProfileName']
 
     if resource_type == 'Events::EventBus':
-        stack.resources[resource_id]['PhysicalResourceId'] = details['EventBusArn']
+        resource['PhysicalResourceId'] = details['EventBusArn']
 
     if resource_type == 'StepFunctions::Activity':
-        stack.resources[resource_id]['PhysicalResourceId'] = details['activityArn']
+        resource['PhysicalResourceId'] = details['activityArn']
 
     if resource_type == 'ApiGateway::Model':
-        stack.resources[resource_id]['PhysicalResourceId'] = details['id']
+        resource['PhysicalResourceId'] = details['id']
 
     if resource_type == 'EC2::VPC':
-        stack.resources[resource_id]['PhysicalResourceId'] = details['Vpc']['VpcId']
+        resource['PhysicalResourceId'] = details['Vpc']['VpcId']
 
     if resource_type == 'EC2::Subnet':
-        stack.resources[resource_id]['PhysicalResourceId'] = details['Subnet']['SubnetId']
+        resource['PhysicalResourceId'] = details['Subnet']['SubnetId']
 
     if resource_type == 'EC2::RouteTable':
-        stack.resources[resource_id]['PhysicalResourceId'] = details['RouteTable']['RouteTableId']
+        resource['PhysicalResourceId'] = details['RouteTable']['RouteTableId']
 
     if resource_type == 'EC2::Route':
-        stack.resources[resource_id]['PhysicalResourceId'] = generate_route_id(
+        resource['PhysicalResourceId'] = generate_route_id(
             resource_props['RouteTableId'],
             resource_props.get('DestinationCidrBlock', ''),
             resource_props.get('DestinationIpv6CidrBlock')
@@ -1638,6 +1623,13 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
 
     elif res_type == 'AWS::IAM::InstanceProfile':
         props['InstanceProfileName'] = props.get('InstanceProfileName') or _generate_res_name()
+
+    elif res_type == 'AWS::KMS::Key':
+        tags = props['Tags'] = props.get('Tags', [])
+        existing = [t for t in tags if t['Key'] == 'localstack-key-id']
+        if not existing:
+            # append tags, to allow us to determine in service_models.py whether this key is already deployed
+            tags.append({'Key': 'localstack-key-id', 'Value': short_uid()})
 
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
