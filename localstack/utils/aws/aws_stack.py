@@ -535,6 +535,11 @@ def es_domain_arn(domain_name, account_id=None, region_name=None):
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def kms_key_arn(key_id, account_id=None, region_name=None):
+    pattern = 'arn:aws:kms:%s:%s:key/%s'
+    return _resource_arn(key_id, pattern, account_id=account_id, region_name=region_name)
+
+
 def code_signing_arn(code_signing_id, account_id=None, region_name=None):
     pattern = 'arn:aws:lambda:%s:%s:code-signing-config:%s'
     return _resource_arn(code_signing_id, pattern, account_id=account_id, region_name=region_name)
@@ -942,8 +947,8 @@ def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None):
     return result
 
 
-def get_stack_details(stack_name):
-    cloudformation = connect_to_service('cloudformation')
+def get_stack_details(stack_name, region_name=None):
+    cloudformation = connect_to_service('cloudformation', region_name=region_name)
     stacks = cloudformation.describe_stacks(StackName=stack_name)
     for stack in stacks['Stacks']:
         if stack['StackName'] == stack_name:
@@ -957,9 +962,9 @@ def deploy_cf_stack(stack_name, template_body):
     return await_stack_completion(stack_name)
 
 
-def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2):
+def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2, region_name=None):
     def check_stack():
-        stack = get_stack_details(stack_name)
+        stack = get_stack_details(stack_name, region_name=region_name)
         if stack['StackStatus'] not in expected_statuses:
             raise Exception('Status "%s" for stack "%s" not in expected list: %s' % (
                 stack['StackStatus'], stack_name, expected_statuses))
@@ -969,6 +974,6 @@ def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2):
     return retry(check_stack, retries, sleep)
 
 
-def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None):
+def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None, region_name=None):
     statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
-    return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
+    return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep, region_name=region_name)

@@ -11,7 +11,7 @@ from localstack.utils.common import (
 from localstack.utils.cloudformation import template_deployer, template_preparer
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws.aws_responses import (
-    requests_response_xml, requests_to_flask_response, flask_error_response_xml)
+    requests_response_xml, requests_to_flask_response, flask_error_response_xml, extract_url_encoded_param_list)
 
 APP_NAME = 'cloudformation_api'
 app = Flask(APP_NAME)
@@ -381,24 +381,40 @@ def create_stack_instances(req_params):
         return not_found_error('Stack set named "%s" does not exist' % set_name)
     stack_set = stack_set[0]
     op_id = req_params.get('OperationId') or short_uid()
-    accounts = req_params.get('Accounts', req_params.get('DeploymentTargets', {}).get('Accounts')) or []
+    sset_meta = stack_set.metadata
+    accounts = extract_url_encoded_param_list(req_params, 'Accounts.member.%s')
+    accounts = accounts or extract_url_encoded_param_list(req_params, 'DeploymentTargets.Accounts.member.%s')
+    regions = extract_url_encoded_param_list(req_params, 'Regions.member.%s')
+    stacks_to_await = []
     for account in accounts:
-        for region in req_params.get('Regions', []):
+        for region in regions:
+            # deploy new stack
+            LOG.debug('Deploying instance for stack set "%s" in region "%s"' % (set_name, region))
+            cf_client = aws_stack.connect_to_service('cloudformation', region_name=region)
+            kwargs = select_attributes(sset_meta, 'TemplateBody') or select_attributes(sset_meta, 'TemplateURL')
+            stack_name = 'sset-%s-%s' % (set_name, account)
+            result = cf_client.create_stack(StackName=stack_name, **kwargs)
+            stacks_to_await.append((stack_name, region))
+            # store stack instance
             instance = {
-                'StackSetId': stack_set.metadata['StackSetId'],
+                'StackSetId': sset_meta['StackSetId'],
                 'OperationId': op_id,
                 'Account': account,
                 'Region': region,
+                'StackId': result['StackId'],
                 'Status': 'CURRENT',
                 'StackInstanceStatus': {'DetailedStatus': 'SUCCEEDED'}
             }
-            # TODO deploy instance!
             instance = StackInstance(instance)
             stack_set.stack_instances.append(instance)
+    # wait for completion of stack
+    for stack in stacks_to_await:
+        aws_stack.await_stack_completion(stack[0], region_name=stack[1])
+    # record operation
     operation = {
         'OperationId': op_id,
         'StackSetId': stack_set.metadata['StackSetId'],
-        'Action': 'UPDATE',
+        'Action': 'CREATE',
         'Status': 'SUCCEEDED'
     }
     stack_set.operations[op_id] = operation
@@ -585,7 +601,7 @@ def list_change_sets(req_params):
 
 def list_stack_sets(req_params):
     state = CloudFormationRegion.get()
-    result = [sset.metadata for sset in state.stack_sets]
+    result = [sset.metadata for sset in state.stack_sets.values()]
     result = {'Summaries': {'member': result}}
     return result
 
