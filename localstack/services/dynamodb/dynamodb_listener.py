@@ -29,7 +29,7 @@ TABLE_DEFINITIONS = {}
 TABLE_TAGS = {}
 
 # action header prefix
-ACTION_PREFIX = 'DynamoDB_20120810'
+ACTION_PREFIX = 'DynamoDB_20120810.'
 
 # maps global table names to configurations
 GLOBAL_TABLES = {}
@@ -65,7 +65,7 @@ class ProxyListenerDynamoDB(ProxyListener):
         return False
 
     def action_should_throttle(self, action, actions):
-        throttled = ['%s.%s' % (ACTION_PREFIX, a) for a in actions]
+        throttled = ['%s%s' % (ACTION_PREFIX, a) for a in actions]
         return action in throttled
 
     def should_throttle(self, action):
@@ -94,32 +94,33 @@ class ProxyListenerDynamoDB(ProxyListener):
         data = data or '{}'
         data = json.loads(to_str(data))
         ddb_client = aws_stack.connect_to_service('dynamodb')
-        action = headers.get('X-Amz-Target')
+        action = headers.get('X-Amz-Target', '')
+        action = action.replace(ACTION_PREFIX, '')
 
         if self.should_throttle(action):
             return error_response_throughput()
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
 
-        if action == '%s.CreateTable' % ACTION_PREFIX:
+        if action == 'CreateTable':
             # Check if table exists, to avoid error log output from DynamoDBLocal
             if self.table_exists(ddb_client, data['TableName']):
                 return error_response(message='Table already created',
                                       error_type='ResourceInUseException', code=400)
 
-        if action == '%s.CreateGlobalTable' % ACTION_PREFIX:
+        elif action == 'CreateGlobalTable':
             return create_global_table(data)
 
-        elif action == '%s.DescribeGlobalTable' % ACTION_PREFIX:
+        elif action == 'DescribeGlobalTable':
             return describe_global_table(data)
 
-        elif action == '%s.ListGlobalTables' % ACTION_PREFIX:
+        elif action == 'ListGlobalTables':
             return list_global_tables(data)
 
-        elif action == '%s.UpdateGlobalTable' % ACTION_PREFIX:
+        elif action == 'UpdateGlobalTable':
             return update_global_table(data)
 
-        elif action in ('%s.PutItem' % ACTION_PREFIX, '%s.UpdateItem' % ACTION_PREFIX, '%s.DeleteItem' % ACTION_PREFIX):
+        elif action in ('PutItem', 'UpdateItem', 'DeleteItem'):
             # find an existing item and store it in a thread-local, so we can access it in return_response,
             # in order to determine whether an item already existed (MODIFY) or not (INSERT)
             try:
@@ -137,17 +138,17 @@ class ProxyListenerDynamoDB(ProxyListener):
                 data['ReturnConsumedCapacity'] = 'TOTAL'
                 return Request(data=json.dumps(data), method=method, headers=headers)
 
-        elif action == '%s.DescribeTable' % ACTION_PREFIX:
+        elif action == 'DescribeTable':
             # Check if table exists, to avoid error log output from DynamoDBLocal
             if not self.table_exists(ddb_client, data['TableName']):
                 return get_table_not_found_error()
 
-        elif action == '%s.DeleteTable' % ACTION_PREFIX:
+        elif action == 'DeleteTable':
             # Check if table exists, to avoid error log output from DynamoDBLocal
             if not self.table_exists(ddb_client, data['TableName']):
                 return get_table_not_found_error()
 
-        elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
+        elif action == 'BatchWriteItem':
             existing_items = []
             for table_name in sorted(data['RequestItems'].keys()):
                 for request in data['RequestItems'][table_name]:
@@ -157,7 +158,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                             existing_items.append(find_existing_item(inner_request, table_name))
             ProxyListenerDynamoDB.thread_local.existing_items = existing_items
 
-        elif action == '%s.Query' % ACTION_PREFIX:
+        elif action == 'Query':
             if data.get('IndexName'):
                 if not is_index_query_valid(to_str(data['TableName']), data.get('Select')):
                     return error_response(
@@ -165,7 +166,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                                 'is not supported for global secondary index id-index because its projection '
                                 'type is not ALL', error_type='ValidationException', code=400)
 
-        elif action == '%s.TransactWriteItems' % ACTION_PREFIX:
+        elif action == 'TransactWriteItems':
             existing_items = []
             for item in data['TransactItems']:
                 for key in ['Put', 'Update', 'Delete']:
@@ -174,7 +175,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                         existing_items.append(find_existing_item(inner_item))
             ProxyListenerDynamoDB.thread_local.existing_items = existing_items
 
-        elif action == '%s.UpdateTimeToLive' % ACTION_PREFIX:
+        elif action == 'UpdateTimeToLive':
             # TODO: TTL status is maintained/mocked but no real expiry is happening for items
             response = Response()
             response.status_code = 200
@@ -186,7 +187,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             fix_headers_for_updated_response(response)
             return response
 
-        elif action == '%s.DescribeTimeToLive' % ACTION_PREFIX:
+        elif action == 'DescribeTimeToLive':
             response = Response()
             response.status_code = 200
             if data['TableName'] in self._table_ttl_map:
@@ -206,14 +207,14 @@ class ProxyListenerDynamoDB(ProxyListener):
             fix_headers_for_updated_response(response)
             return response
 
-        elif action == '%s.TagResource' % ACTION_PREFIX or action == '%s.UntagResource' % ACTION_PREFIX:
+        elif action in ('TagResource', 'UntagResource'):
             response = Response()
             response.status_code = 200
             response._content = ''  # returns an empty body on success.
             fix_headers_for_updated_response(response)
             return response
 
-        elif action == '%s.ListTagsOfResource' % ACTION_PREFIX:
+        elif action == 'ListTagsOfResource':
             response = Response()
             response.status_code = 200
             response._content = json.dumps({
@@ -248,7 +249,8 @@ class ProxyListenerDynamoDB(ProxyListener):
                 response._content = content_replaced
                 fix_headers_for_updated_response(response)
 
-        action = headers.get('X-Amz-Target')
+        action = headers.get('X-Amz-Target', '')
+        action = action.replace(ACTION_PREFIX, '')
         if not action:
             return
 
@@ -270,7 +272,7 @@ class ProxyListenerDynamoDB(ProxyListener):
         table_name = data.get('TableName')
         event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name, streams_enabled_cache)
 
-        if action == '%s.UpdateItem' % ACTION_PREFIX:
+        if action == 'UpdateItem':
             if response.status_code == 200 and event_sources_or_streams_enabled:
                 existing_item = self._thread_local('existing_item')
                 record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
@@ -284,19 +286,19 @@ class ProxyListenerDynamoDB(ProxyListener):
                 record['dynamodb']['NewImage'] = updated_item
                 record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
 
-        elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
+        elif action == 'BatchWriteItem':
             records = self.prepare_batch_write_item_records(record, data)
             for record in records:
                 event_sources_or_streams_enabled = (event_sources_or_streams_enabled or
                     has_event_sources_or_streams_enabled(record['eventSourceARN'], streams_enabled_cache))
 
-        elif action == '%s.TransactWriteItems' % ACTION_PREFIX:
+        elif action == 'TransactWriteItems':
             records = self.prepare_transact_write_item_records(record, data)
             for record in records:
                 event_sources_or_streams_enabled = (event_sources_or_streams_enabled or
                     has_event_sources_or_streams_enabled(record['eventSourceARN'], streams_enabled_cache))
 
-        elif action == '%s.PutItem' % ACTION_PREFIX:
+        elif action == 'PutItem':
             if response.status_code == 200:
                 keys = dynamodb_extract_keys(item=data['Item'], table_name=table_name)
                 if isinstance(keys, Response):
@@ -315,7 +317,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     if existing_item:
                         record['dynamodb']['OldImage'] = existing_item
 
-        elif action in ['%s.GetItem' % ACTION_PREFIX, '%s.Query' % ACTION_PREFIX]:
+        elif action in ('GetItem', 'Query'):
             if response.status_code == 200:
                 content = json.loads(to_str(response.content))
                 # make sure we append 'ConsumedCapacity', which is properly
@@ -330,14 +332,14 @@ class ProxyListenerDynamoDB(ProxyListener):
                     response._content = json.dumps(content)
                     fix_headers_for_updated_response(response)
 
-        elif action == '%s.DeleteItem' % ACTION_PREFIX:
+        elif action == 'DeleteItem':
             if response.status_code == 200 and event_sources_or_streams_enabled:
                 old_item = self._thread_local('existing_item')
                 record['eventName'] = 'REMOVE'
                 record['dynamodb']['Keys'] = data['Key']
                 record['dynamodb']['OldImage'] = old_item
 
-        elif action == '%s.CreateTable' % ACTION_PREFIX:
+        elif action == 'CreateTable':
             if 'StreamSpecification' in data:
                 if response.status_code == 200:
                     content = json.loads(to_str(response._content))
@@ -352,7 +354,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
             return
 
-        elif action == '%s.DeleteTable' % ACTION_PREFIX:
+        elif action == 'DeleteTable':
             if response.status_code == 200:
                 table_arn = json.loads(response._content).get('TableDescription', {}).get('TableArn')
                 event_publisher.fire_event(
@@ -364,21 +366,21 @@ class ProxyListenerDynamoDB(ProxyListener):
                 TABLE_TAGS.pop(table_arn, None)
             return
 
-        elif action == '%s.UpdateTable' % ACTION_PREFIX:
+        elif action == 'UpdateTable':
             if 'StreamSpecification' in data:
                 if response.status_code == 200:
                     content = json.loads(to_str(response._content))
                     create_dynamodb_stream(data, content['TableDescription'].get('LatestStreamLabel'))
             return
 
-        elif action == '%s.TagResource' % ACTION_PREFIX:
+        elif action == 'TagResource':
             table_arn = data['ResourceArn']
             if table_arn not in TABLE_TAGS:
                 TABLE_TAGS[table_arn] = {}
             TABLE_TAGS[table_arn].update({tag['Key']: tag['Value'] for tag in data.get('Tags', [])})
             return
 
-        elif action == '%s.UntagResource' % ACTION_PREFIX:
+        elif action == 'UntagResource':
             table_arn = data['ResourceArn']
             for tag_key in data.get('TagKeys', []):
                 TABLE_TAGS.get(table_arn, {}).pop(tag_key, None)
