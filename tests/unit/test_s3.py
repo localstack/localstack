@@ -246,6 +246,7 @@ class S3UtilsTest (unittest.TestCase):
             ('/', {'host': 'bucket.s3.us-west-1.amazonaws.com'}, 'bucket'),
             ('/', {'host': 'bucket.s3.us-west-2.amazonaws.com'}, 'bucket'),
             ('/', {'host': 'bucket.s3.localhost.localstack.cloud'}, 'bucket'),
+            ('/', {'host': 'bucket-1.s3-website.localhost.localstack.cloud'}, 'bucket-1'),
             ('/', {'host': 'bucket.localhost.localstack.cloud'}, 'bucket'),
             ('/', {'host': 'localhost.localstack.cloud'}, None),
             ('/', {'host': 'test.dynamodb.amazonaws.com'}, None),
