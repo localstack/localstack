@@ -147,8 +147,7 @@ class SNSTests(unittest.TestCase):
             'Message': ['{"default": {"message": "abc"}}'],
             'MessageStructure': ['json']
         }
-        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
-        result = json.loads(result_str)
+        result = sns_listener.create_sns_message_body(self.subscriber, action)
 
         self.assertEqual(result, {'message': 'abc'})
 
@@ -177,8 +176,7 @@ class SNSTests(unittest.TestCase):
             'Message': ['{"default": {"message": "default version"}, "sqs": {"message": "sqs version"}}'],
             'MessageStructure': ['json']
         }
-        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
-        result = json.loads(result_str)
+        result = sns_listener.create_sns_message_body(self.subscriber, action)
 
         self.assertEqual(result, {'message': 'sqs version'})
 
