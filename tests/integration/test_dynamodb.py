@@ -365,17 +365,10 @@ class TestDynamoDB(unittest.TestCase):
         self.assertIn('ShardIterator', response)
 
     def test_dynamodb_stream_stream_view_type(self):
-        def wait_for_stream_created(table_name):
-            stream_name = get_kinesis_stream_name(table_name)
-            stream = KinesisStream(id=stream_name, num_shards=1)
-            kinesis = aws_stack.connect_to_service('kinesis', env=get_environment(None))
-            stream.connect(kinesis)
-            stream.wait_for()
-
         dynamodb = aws_stack.connect_to_service('dynamodb')
         ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
-
         table_name = 'table_with_stream-%s' % short_uid()
+        # create table
         table = dynamodb.create_table(
             TableName=table_name,
             KeySchema=[{'AttributeName': 'Username', 'KeyType': 'HASH'}],
@@ -388,8 +381,6 @@ class TestDynamoDB(unittest.TestCase):
                 'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
             },
         )
-
-        wait_for_stream_created(table_name)
         stream_arn = table['TableDescription']['LatestStreamArn']
         # put item in table
         dynamodb.put_item(TableName=table_name, Item={'Username': {'S': 'Fred'}})

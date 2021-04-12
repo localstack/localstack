@@ -300,8 +300,6 @@ class ProxyListenerDynamoDB(ProxyListener):
         elif action == '%s.PutItem' % ACTION_PREFIX:
             if response.status_code == 200:
                 keys = dynamodb_extract_keys(item=data['Item'], table_name=table_name)
-                # Get stream specifications details for the table
-                stream_spec = dynamodb_get_table_stream_specification(table_name=table_name)
                 if isinstance(keys, Response):
                     return keys
                 # fix response
@@ -310,6 +308,8 @@ class ProxyListenerDynamoDB(ProxyListener):
                     fix_headers_for_updated_response(response)
                 if event_sources_or_streams_enabled:
                     existing_item = self._thread_local('existing_item')
+                    # Get stream specifications details for the table
+                    stream_spec = dynamodb_get_table_stream_specification(table_name=table_name)
                     record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
                     # prepare record keys
                     record['dynamodb']['Keys'] = keys
@@ -397,27 +397,9 @@ class ProxyListenerDynamoDB(ProxyListener):
         if event_sources_or_streams_enabled and records and 'eventName' in records[0]:
             if 'TableName' in data:
                 records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
-            # StreamViewType determines what information is written to the stream for the table
-            # When an item in the table is modified
-            for record in records:
-                if record['eventName'] == 'MODIFY':
-                    # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
-                    if record['dynamodb']['StreamViewType'] == 'KEYS_ONLY':
-                        del record['dynamodb']['OldImage']
-                        del record['dynamodb']['NewImage']
-                    # NEW_IMAGE - The entire item, as it appears after it was modified, is written to the stream
-                    elif record['dynamodb']['StreamViewType'] == 'NEW_IMAGE':
-                        del record['dynamodb']['OldImage']
-                        del record['dynamodb']['Keys']
-                    # OLD_IMAGE - The entire item, as it appeared before it was modified, is written to the stream
-                    elif record['dynamodb']['StreamViewType'] == 'OLD_IMAGE':
-                        del record['dynamodb']['NewImage']
-                        del record['dynamodb']['Keys']
-                    # NEW_AND_OLD_IMAGES - Both the new and the old item images of the item are
-                    # written to the stream.
-                    elif record['dynamodb']['StreamViewType'] == 'NEW_AND_OLD_IMAGES':
-                        del record['dynamodb']['Keys']
+
             forward_to_lambda(records)
+            records = self.prepare_records_to_forward_to_ddb_stream(records)
             forward_to_ddb_stream(records)
 
     # -------------
@@ -515,6 +497,29 @@ class ProxyListenerDynamoDB(ProxyListener):
                 new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                 records.append(new_record)
                 i += 1
+        return records
+
+    def prepare_records_to_forward_to_ddb_stream(self, records):
+        # StreamViewType determines what information is written to the stream for the table
+        # When an item in the table is modified
+        for record in records:
+            if record['eventName'] == 'MODIFY':
+                # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
+                if record['dynamodb']['StreamViewType'] == 'KEYS_ONLY':
+                    del record['dynamodb']['OldImage']
+                    del record['dynamodb']['NewImage']
+                # NEW_IMAGE - The entire item, as it appears after it was modified, is written to the stream
+                elif record['dynamodb']['StreamViewType'] == 'NEW_IMAGE':
+                    del record['dynamodb']['OldImage']
+                    del record['dynamodb']['Keys']
+                # OLD_IMAGE - The entire item, as it appeared before it was modified, is written to the stream
+                elif record['dynamodb']['StreamViewType'] == 'OLD_IMAGE':
+                    del record['dynamodb']['NewImage']
+                    del record['dynamodb']['Keys']
+                # NEW_AND_OLD_IMAGES - Both the new and the old item images of the item are
+                # written to the stream.
+                elif record['dynamodb']['StreamViewType'] == 'NEW_AND_OLD_IMAGES':
+                    del record['dynamodb']['Keys']
         return records
 
     def delete_all_event_source_mappings(self, table_arn):
@@ -754,14 +759,12 @@ def dynamodb_extract_keys(item, table_name):
 
 
 def dynamodb_get_table_stream_specification(table_name):
-    stream_specification = {}
-    ddb_client = aws_stack.connect_to_service('dynamodb')
     try:
-        stream_specification = ddb_client.describe_table(TableName=table_name)['Table'].get('StreamSpecification')
+        return get_table_schema(table_name)['Table'].get('StreamSpecification')
     except Exception as e:
-        LOGGER.info('Unable to get  %s information : %s %s' % (table_name, e, traceback.format_exc()))
+        LOGGER.info('Unable to get stream specification for table %s : %s %s' % (table_name, e,
+            traceback.format_exc()))
         raise e
-    return stream_specification
 
 
 def error_response(message=None, error_type=None, code=400):
