@@ -94,7 +94,7 @@ class TestDynamoDB(unittest.TestCase):
         for k, item in items.items():
             table.put_item(Item=item)
 
-        # Describe TTL when still unset.
+        # Describe TTL when still unset
         response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'], 'DISABLED')
