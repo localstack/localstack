@@ -1,3 +1,4 @@
+import base64
 import logging
 import unittest
 from time import sleep
@@ -67,7 +68,7 @@ class TestKinesis(unittest.TestCase):
 
         # create stream and consumer
         result = client.create_stream(StreamName=stream_name, ShardCount=1)
-        sleep(2)
+        sleep(1)
         result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')['Consumer']
 
         # subscribe to shard
@@ -79,8 +80,10 @@ class TestKinesis(unittest.TestCase):
 
         # put records
         num_records = 5
+        msg = b'Hello world'
+        msg_b64 = base64.b64encode(msg)
         for i in range(num_records):
-            client.put_records(StreamName=stream_name, Records=[{'Data': 'SGVsbG8gd29ybGQ=', 'PartitionKey': '1'}])
+            client.put_records(StreamName=stream_name, Records=[{'Data': msg_b64, 'PartitionKey': '1'}])
 
         # assert results
         results = []
@@ -93,7 +96,7 @@ class TestKinesis(unittest.TestCase):
         # assert results
         self.assertEqual(len(results), num_records)
         for record in results:
-            self.assertEqual(record['Data'], b'Hello world')
+            self.assertEqual(record['Data'], msg)
 
         # clean up
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')
