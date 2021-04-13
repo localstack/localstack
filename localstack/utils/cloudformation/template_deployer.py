@@ -13,17 +13,17 @@ from moto.cloudformation.models import cloudformation_backends
 from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS, INSTALL_DIR_INFRA
+from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
-    json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download,
+    json_safe, md5, canonical_json, short_uid, to_str, to_bytes,
     mkdir, cp_r, prevent_stack_overflow, start_worker_thread, get_all_subclasses)
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.service_models import GenericBaseModel, DependencyNotYetSatisfied
 from localstack.services.cloudformation.deployment_utils import (
-    dump_json_params, select_parameters, param_defaults, remove_none_values,
+    dump_json_params, select_parameters, param_defaults, remove_none_values, get_cfn_response_mod_file,
     lambda_keys_to_lower, PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
 
 ACTION_CREATE = 'create'
@@ -44,9 +44,6 @@ STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName', 'AWS::AccountI
 
 # maps resource type string to model class
 RESOURCE_MODELS = {model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)}
-
-# URL to "cfn-response" module which is required in some CF Lambdas
-CFN_RESPONSE_MODULE_URL = 'https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js'
 
 
 class NoStackUpdates(Exception):
@@ -88,13 +85,6 @@ def get_lambda_code_param(params, **kwargs):
         code['ZipFile'] = zip_file
         common.rm_rf(tmp_dir)
     return code
-
-
-def get_cfn_response_mod_file():
-    cfn_response_tmp_file = os.path.join(INSTALL_DIR_INFRA, 'lambda.cfn-response.js')
-    if not os.path.exists(cfn_response_tmp_file):
-        download(CFN_RESPONSE_MODULE_URL, cfn_response_tmp_file)
-    return cfn_response_tmp_file
 
 
 def events_put_rule_params(params, **kwargs):

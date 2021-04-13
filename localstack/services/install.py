@@ -242,9 +242,9 @@ def install_lambda_java_libs():
 
 
 def install_cloudformation_libs():
-    from localstack.utils.cloudformation import template_deployer
+    from localstack.services.cloudformation import deployment_utils
     # trigger download of CF module file
-    template_deployer.get_cfn_response_mod_file()
+    deployment_utils.get_cfn_response_mod_file()
 
 
 def install_component(name):
