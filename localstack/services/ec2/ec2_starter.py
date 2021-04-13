@@ -1,7 +1,6 @@
 import re
 import logging
 import xmltodict
-from moto.core import ACCOUNT_ID
 from moto.ec2 import models as ec2_models
 from moto.ec2.responses import security_groups, vpcs
 from moto.ec2.responses.security_groups import (
@@ -104,10 +103,29 @@ def patch_ec2():
     search = r'</groupId>\s*<groupName>\{\{\s*source_group.name\s*\}\}</groupName>'
     replace = r'</groupId>{% if not group.vpc_id %}<groupName>{{ source_group.name }}</groupName>{% endif %}'
 
-    security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE = DESCRIBE_SECURITY_GROUPS_RESPONSE
-
     security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE = \
         re.sub(search, replace, security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE, flags=REGEX_FLAGS)
+
+    if 'ipv6Ranges' not in security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE:
+        security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE = re.sub(
+            r'</ipRanges>',
+            r"""
+            </ipRanges>
+            <ipv6Ranges>
+                {% for ip_range in rule.ipv6_ranges %}
+                  <item>
+                     <cidrIpv6>{{ ip_range['CidrIp'] }}</cidrIpv6>
+                        {% if ip_range['Description'] %}
+                            <description>{{ ip_range['Description'] }}</description>
+                        {% endif %}
+                  </item>
+                {% endfor %}
+           </ipv6Ranges>""",
+            security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE,
+            flags=REGEX_FLAGS
+        )
+
+        LOG.warning('.. {}'.format(security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE))
 
     # bootstrap default VPC endpoint services
     def describe_vpc_endpoint_services(self):
@@ -438,105 +456,3 @@ DESCRIBE_RESERVED_INSTANCES_RESPONSE = """
       </item>
    </reservedInstancesSet>
 </DescribeReservedInstancesResponse>""" % XMLNS_EC2
-
-DESCRIBE_SECURITY_GROUPS_RESPONSE = (
-    """<DescribeSecurityGroupsResponse xmlns="http://ec2.amazonaws.com/doc/2013-10-15/">
-       <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
-       <securityGroupInfo>
-          {% for group in groups %}
-              <item>
-                 <ownerId>""" + ACCOUNT_ID + """</ownerId>
-             <groupId>{{ group.id }}</groupId>
-             <groupName>{{ group.name }}</groupName>
-             <groupDescription>{{ group.description }}</groupDescription>
-             {% if group.vpc_id %}
-             <vpcId>{{ group.vpc_id }}</vpcId>
-             {% endif %}
-             <ipPermissions>
-               {% for rule in group.ingress_rules %}
-                    <item>
-                       <ipProtocol>{{ rule.ip_protocol }}</ipProtocol>
-                       {% if rule.from_port %}
-                       <fromPort>{{ rule.from_port }}</fromPort>
-                       {% endif %}
-                       {% if rule.to_port %}
-                       <toPort>{{ rule.to_port }}</toPort>
-                       {% endif %}
-                       <groups>
-                          {% for source_group in rule.source_groups %}
-                              <item>
-                                 <userId>""" + ACCOUNT_ID + """</userId>
-                                 <groupId>{{ source_group.id }}</groupId>
-                                 <groupName>{{ source_group.name }}</groupName>
-                              </item>
-                          {% endfor %}
-                       </groups>
-                       <ipRanges>
-                          {% for ip_range in rule.ip_ranges %}
-                              <item>
-                                 <cidrIp>{{ ip_range['CidrIp'] }}</cidrIp>
-                                    {% if ip_range['Description'] %}
-                                        <description>{{ ip_range['Description'] }}</description>
-                                    {% endif %}
-                              </item>
-                          {% endfor %}
-                       </ipRanges>
-                       <ipv6Ranges>
-                          {% for ip_range in rule.ipv6_ranges %}
-                              <item>
-                                 <cidrIpv6>{{ ip_range['CidrIp'] }}</cidrIpv6>
-                                    {% if ip_range['Description'] %}
-                                        <description>{{ ip_range['Description'] }}</description>
-                                    {% endif %}
-                              </item>
-                          {% endfor %}
-                       </ipv6Ranges>
-                    </item>
-                {% endfor %}
-             </ipPermissions>
-             <ipPermissionsEgress>
-               {% for rule in group.egress_rules %}
-                    <item>
-                       <ipProtocol>{{ rule.ip_protocol }}</ipProtocol>
-                       {% if rule.from_port %}
-                       <fromPort>{{ rule.from_port }}</fromPort>
-                       {% endif %}
-                       {% if rule.to_port %}
-                       <toPort>{{ rule.to_port }}</toPort>
-                       {% endif %}
-                       <groups>
-                          {% for source_group in rule.source_groups %}
-                              <item>
-                                 <userId>""" + ACCOUNT_ID + """</userId>
-                                 <groupId>{{ source_group.id }}</groupId>
-                                 <groupName>{{ source_group.name }}</groupName>
-                              </item>
-                          {% endfor %}
-                       </groups>
-                       <ipRanges>
-                          {% for ip_range in rule.ip_ranges %}
-                              <item>
-                                 <cidrIp>{{ ip_range['CidrIp'] }}</cidrIp>
-                                    {% if ip_range['Description'] %}
-                                        <description>{{ ip_range['Description'] }}</description>
-                                    {% endif %}
-                              </item>
-                          {% endfor %}
-                       </ipRanges>
-                    </item>
-               {% endfor %}
-             </ipPermissionsEgress>
-             <tagSet>
-               {% for tag in group.get_tags() %}
-                 <item>
-                   <resourceId>{{ tag.resource_id }}</resourceId>
-                   <resourceType>{{ tag.resource_type }}</resourceType>
-                   <key>{{ tag.key }}</key>
-                   <value>{{ tag.value }}</value>
-                 </item>
-               {% endfor %}
-             </tagSet>
-          </item>
-      {% endfor %}
-    </securityGroupInfo>
-</DescribeSecurityGroupsResponse>""")
