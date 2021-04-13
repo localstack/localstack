@@ -13,7 +13,7 @@ from moto.cloudformation.models import cloudformation_backends
 from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS
+from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS, INSTALL_DIR_INFRA
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download,
@@ -45,6 +45,7 @@ STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName', 'AWS::AccountI
 # maps resource type string to model class
 RESOURCE_MODELS = {model.cloudformation_type(): model for model in get_all_subclasses(GenericBaseModel)}
 
+# URL to "cfn-response" module which is required in some CF Lambdas
 CFN_RESPONSE_MODULE_URL = 'https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js'
 
 
@@ -77,9 +78,7 @@ def get_lambda_code_param(params, **kwargs):
 
         # add 'cfn-response' module to archive - see:
         # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
-        cfn_response_tmp_file = os.path.join(config.TMP_FOLDER, 'lambda.cfn-response.js')
-        if not os.path.exists(cfn_response_tmp_file):
-            download(CFN_RESPONSE_MODULE_URL, cfn_response_tmp_file)
+        cfn_response_tmp_file = get_cfn_response_mod_file()
         cfn_response_mod_dir = os.path.join(tmp_dir, 'node_modules', 'cfn-response')
         mkdir(cfn_response_mod_dir)
         cp_r(cfn_response_tmp_file, os.path.join(cfn_response_mod_dir, 'index.js'))
@@ -89,6 +88,13 @@ def get_lambda_code_param(params, **kwargs):
         code['ZipFile'] = zip_file
         common.rm_rf(tmp_dir)
     return code
+
+
+def get_cfn_response_mod_file():
+    cfn_response_tmp_file = os.path.join(INSTALL_DIR_INFRA, 'lambda.cfn-response.js')
+    if not os.path.exists(cfn_response_tmp_file):
+        download(CFN_RESPONSE_MODULE_URL, cfn_response_tmp_file)
+    return cfn_response_tmp_file
 
 
 def events_put_rule_params(params, **kwargs):

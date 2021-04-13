@@ -1,11 +1,11 @@
 import logging
 import traceback
 from localstack import config
+from localstack.constants import MODULE_MAIN_PATH
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import mkdir, get_free_tcp_port
 from localstack.services import install
 from localstack.services.infra import start_proxy_for_service, do_run, log_startup_message
-from localstack.services.install import ROOT_PATH
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
         '%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s'
         ' --createStreamMs %s --deleteStreamMs %s --updateStreamMs %s %s'
     ) % (
-        ROOT_PATH, config.KINESIS_SHARD_LIMIT, backend_port,
+        MODULE_MAIN_PATH, config.KINESIS_SHARD_LIMIT, backend_port,
         latency, latency, latency, kinesis_data_dir_param
     )
     log_startup_message('Kinesis')

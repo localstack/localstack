@@ -9,6 +9,7 @@ import shutil
 import logging
 import tempfile
 from localstack import config
+from localstack.constants import MODULE_MAIN_PATH, INSTALL_DIR_INFRA
 from localstack.utils.common import is_windows
 from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
@@ -22,11 +23,7 @@ from localstack.utils.common import (
     download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf,
     chmod_r, is_alpine, in_docker, get_arch, new_tmp_file)
 
-THIS_PATH = os.path.dirname(os.path.realpath(__file__))
-ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
-
-INSTALL_DIR_INFRA = '%s/infra' % ROOT_PATH
-INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
+INSTALL_DIR_NPM = '%s/node_modules' % MODULE_MAIN_PATH
 INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
 INSTALL_DIR_KCL = '%s/amazon-kinesis-client' % INSTALL_DIR_INFRA
 INSTALL_DIR_STEPFUNCTIONS = '%s/stepfunctions' % INSTALL_DIR_INFRA
@@ -145,7 +142,7 @@ def install_elasticmq():
 def install_kinesalite():
     if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
         log_install_msg('Kinesis')
-        run('cd "%s" && npm install' % ROOT_PATH)
+        run('cd "%s" && npm install' % MODULE_MAIN_PATH)
 
 
 def install_local_kms():
@@ -227,11 +224,11 @@ def install_amazon_kinesis_client_libs():
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
     classpath = kclipy_helper.get_kcl_classpath()
-    
+
     if is_windows():
         classpath = re.sub(r':([^\\])', r';\1', classpath)
-    java_files = '%s/utils/kinesis/java/cloud/localstack/*.java' % ROOT_PATH
-    class_files = '%s/utils/kinesis/java/cloud/localstack/*.class' % ROOT_PATH
+    java_files = '%s/utils/kinesis/java/cloud/localstack/*.java' % MODULE_MAIN_PATH
+    class_files = '%s/utils/kinesis/java/cloud/localstack/*.class' % MODULE_MAIN_PATH
     if not glob.glob(class_files):
         run('javac -source %s -target %s -cp "%s" %s' % (
             JAVAC_TARGET_VERSION, JAVAC_TARGET_VERSION, classpath, java_files))
@@ -244,13 +241,20 @@ def install_lambda_java_libs():
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
 
 
+def install_cloudformation_libs():
+    from localstack.utils.cloudformation import template_deployer
+    # trigger download of CF module file
+    template_deployer.get_cfn_response_mod_file()
+
+
 def install_component(name):
     installers = {
-        'kinesis': install_kinesalite,
+        'cloudformation': install_cloudformation_libs,
         'dynamodb': install_dynamodb_local,
+        'kinesis': install_kinesalite,
+        'kms': install_local_kms,
         'sqs': install_elasticmq,
         'stepfunctions': install_stepfunctions_local,
-        'kms': install_local_kms
     }
     installer = installers.get(name)
     if installer:
