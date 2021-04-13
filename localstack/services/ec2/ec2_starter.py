@@ -125,8 +125,6 @@ def patch_ec2():
             flags=REGEX_FLAGS
         )
 
-        LOG.warning('.. {}'.format(security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE))
-
     # bootstrap default VPC endpoint services
     def describe_vpc_endpoint_services(self):
         if not hasattr(self.ec2_backend, '_vpc_endpoint_services'):
