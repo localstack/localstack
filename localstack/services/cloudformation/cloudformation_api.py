@@ -4,7 +4,7 @@ import traceback
 import xmltodict
 from flask import Flask, request
 from requests.models import Response
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
     parse_request_data, short_uid, long_uid, clone, clone_safe, select_attributes,
     timestamp_millis, recurse_object)
@@ -177,7 +177,7 @@ class Stack(object):
 
     @property
     def tags(self):
-        return aws_stack.extract_tags(self.metadata)
+        return aws_responses.extract_tags(self.metadata)
 
     @property
     def imports(self):

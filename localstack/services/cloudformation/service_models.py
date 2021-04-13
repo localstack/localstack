@@ -1275,6 +1275,57 @@ class KMSKey(GenericBaseModel):
             return None
         return aws_stack.connect_to_service('kms').describe_key(KeyId=physical_res_id)
 
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_key',
+                'parameters': {
+                    'Policy': 'KeyPolicy'
+                }
+            },
+            'delete': {
+                # TODO Key need to be deleted in KMS backend
+                'function': 'schedule_key_deletion',
+                'parameters': {
+                    'KeyId': 'PhysicalResourceId'
+                }
+            }
+        }
+
+
+class KMSAlias(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::KMS::Alias'
+
+    def fetch_state(self, stack_name, resources):
+        kms = aws_stack.connect_to_service('kms')
+        aliases = kms.list_aliases()['Aliases']
+        for alias in aliases:
+            if alias['AliasName'] == self.props.get('AliasName'):
+                return alias
+
+        return None
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_alias',
+                'parameters': {
+                    'AliasName': 'AliasName',
+                    'TargetKeyId': 'TargetKeyId'
+                }
+            },
+            'delete': {
+                'function': 'delete_alias',
+                'parameters': {
+                    'AliasName': 'AliasName'
+                }
+            },
+        }
+
 
 class EC2Instance(GenericBaseModel):
     @staticmethod

@@ -2127,3 +2127,30 @@ class CloudFormationTest(unittest.TestCase):
             vpc['VpcId'] for vpc in resp['Vpcs'] if vpc['VpcId'] not in vpcs_before
         ]
         self.assertEqual(len(vpcs), 0)
+
+    def test_cfn_with_kms_resources(self):
+        kms = aws_stack.connect_to_service('kms')
+        aliases_before = kms.list_aliases()['Aliases']
+
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template34.yaml'))
+
+        stack_name = 'stack-%s' % short_uid()
+        create_and_await_stack(
+            StackName=stack_name,
+            TemplateBody=template
+        )
+
+        aliases = kms.list_aliases()['Aliases']
+        self.assertEqual(len(aliases_before) + 1, len(aliases))
+
+        alias_names = [alias['AliasName'] for alias in aliases]
+        self.assertIn('alias/sample-kms-alias', alias_names)
+
+        # clean up
+        self.cleanup(stack_name)
+
+        aliases = kms.list_aliases()['Aliases']
+        self.assertEqual(len(aliases_before), len(aliases))
+
+        alias_names = [alias['AliasName'] for alias in aliases]
+        self.assertNotIn('alias/sample-kms-alias', alias_names)
