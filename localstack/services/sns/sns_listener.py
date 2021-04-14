@@ -563,15 +563,15 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
         # fix non-ascii unicode characters under Python 2
         message = message.encode('raw-unicode-escape')
 
-    if is_raw_message_delivery(subscriber):
-        return message
-
     if req_data.get('MessageStructure') == ['json']:
         message = json.loads(message)
         try:
             message = message.get(protocol, message['default'])
         except KeyError:
             raise Exception("Unable to find 'default' key in message payload")
+
+    if is_raw_message_delivery(subscriber):
+        return message
 
     data = {
         'Type': req_data.get('Type', ['Notification'])[0],

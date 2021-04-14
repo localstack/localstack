@@ -388,6 +388,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             if uri.endswith('states:action/StartExecution'):
                 action = 'StartExecution'
             decoded_data = data.decode()
+            payload = {}
             if 'stateMachineArn' in decoded_data and 'input' in decoded_data:
                 payload = json.loads(decoded_data)
             elif APPLICATION_JSON in integration.get('requestTemplates', {}):

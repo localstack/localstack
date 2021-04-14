@@ -3,6 +3,7 @@ import json
 import time
 import base64
 import random
+import logging
 import cbor2
 from requests.models import Response
 from localstack import config
@@ -13,6 +14,8 @@ from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
+
+LOG = logging.getLogger(__name__)
 
 # action headers (should be left here - imported/required by other files)
 ACTION_PREFIX = 'Kinesis_20131202'
@@ -254,7 +257,14 @@ def subscribe_to_shard(data, headers):
         iter = iterator
         # TODO: find better way to run loop up to max 5 minutes (until connection terminates)!
         for i in range(5 * 60):
-            result = kinesis.get_records(ShardIterator=iter)
+            result = None
+            try:
+                result = kinesis.get_records(ShardIterator=iter)
+            except Exception as e:
+                if 'ResourceNotFoundException' in str(e):
+                    LOG.debug('Kinesis stream "%s" has been deleted, closing shard subscriber' % stream_name)
+                    return
+                raise
             iter = result.get('NextShardIterator')
             records = result.get('Records', [])
             for record in records:

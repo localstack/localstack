@@ -364,6 +364,58 @@ class TestDynamoDB(unittest.TestCase):
                                                  get('SequenceNumberRange').get('StartingSequenceNumber'))
         self.assertIn('ShardIterator', response)
 
+    def test_dynamodb_stream_stream_view_type(self):
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
+        table_name = 'table_with_stream-%s' % short_uid()
+        # create table
+        table = dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{'AttributeName': 'Username', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'Username', 'AttributeType': 'S'}],
+            StreamSpecification={
+                'StreamEnabled': True,
+                'StreamViewType': 'KEYS_ONLY',
+            },
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+        )
+        stream_arn = table['TableDescription']['LatestStreamArn']
+        # put item in table
+        dynamodb.put_item(TableName=table_name, Item={'Username': {'S': 'Fred'}})
+        result = ddbstreams.describe_stream(StreamArn=stream_arn)
+
+        # get shard iterator
+        response = ddbstreams.get_shard_iterator(StreamArn=stream_arn,
+            ShardId=result['StreamDescription']['Shards'][0]['ShardId'],
+            ShardIteratorType='AT_SEQUENCE_NUMBER',
+            SequenceNumber=result['StreamDescription']['Shards'][0].
+            get('SequenceNumberRange').get('StartingSequenceNumber')
+        )
+
+        # get records
+        record = ddbstreams.get_records(ShardIterator=response['ShardIterator'])
+        # assert stream_view_type of the table
+        dynamodb.update_item(TableName=table_name,
+            Key={'Username': {'S': 'Fred'}},
+            UpdateExpression='set S=:r',
+            ExpressionAttributeValues={
+                ':r': {'S': 'Fred_Modified'}
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+        self.assertEquals('KEYS_ONLY', result['StreamDescription']['StreamViewType'])
+        # assert stream_view_type of records inserted into the table
+        self.assertEquals('KEYS_ONLY', record['Records'][0]['dynamodb']['StreamViewType'])
+        updated_record = ddbstreams.get_records(ShardIterator=response['ShardIterator'])
+        # assert oldImage not in the updated record info written into the stream
+        self.assertNotIn('OldImage', updated_record['Records'][1]['dynamodb'])
+        # assert newImage not in the updated record info written into the stream
+        self.assertNotIn('NewImage', updated_record['Records'][1]['dynamodb'])
+        # clean up
+        delete_table(table_name)
+
     def test_global_tables(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         dynamodb = aws_stack.connect_to_service('dynamodb')
