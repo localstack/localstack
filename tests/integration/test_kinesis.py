@@ -102,6 +102,47 @@ class TestKinesis(unittest.TestCase):
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')
         client.delete_stream(StreamName=stream_name)
 
+    def test_subscribe_to_shard_with_sequence_number_as_iterator(self):
+        client = aws_stack.connect_to_service('kinesis')
+        stream_name = 'test-%s' % short_uid()
+        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+
+        # create stream and consumer
+        result = client.create_stream(StreamName=stream_name, ShardCount=1)
+        sleep(1)
+        result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')['Consumer']
+        # get starting sequence number
+        response = client.describe_stream(StreamName=stream_name)
+        sequence_number = response.get('StreamDescription').get('Shards')[0].get('SequenceNumberRange'). \
+            get('StartingSequenceNumber')
+        # subscribe to shard with iterator type as AT_SEQUENCE_NUMBER
+        response = client.describe_stream(StreamName=stream_name)
+        shard_id = response.get('StreamDescription').get('Shards')[0].get('ShardId')
+        result = client.subscribe_to_shard(ConsumerARN=result['ConsumerARN'],
+            ShardId=shard_id, StartingPosition={'Type': 'AT_SEQUENCE_NUMBER',
+            'SequenceNumber': sequence_number})
+        stream = result['EventStream']
+        # put records
+        num_records = 5
+        for i in range(num_records):
+            client.put_records(StreamName=stream_name, Records=[{'Data': 'SGVsbG8gd29ybGQ=', 'PartitionKey': '1'}])
+
+        results = []
+        for entry in stream:
+            records = entry['SubscribeToShardEvent']['Records']
+            results.extend(records)
+            if len(results) >= num_records:
+                break
+
+        # assert results
+        self.assertEqual(len(results), num_records)
+        for record in results:
+            self.assertEqual(record['Data'], b'Hello world')
+
+        # clean up
+        client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')
+        client.delete_stream(StreamName=stream_name)
+
     def test_get_records(self):
         client = aws_stack.connect_to_service('kinesis')
         stream_name = 'test-%s' % short_uid()

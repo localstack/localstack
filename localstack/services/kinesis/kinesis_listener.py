@@ -246,8 +246,20 @@ def subscribe_to_shard(data, headers):
     kinesis = aws_stack.connect_to_service('kinesis')
     stream_name = find_stream_for_consumer(data['ConsumerARN'])
     iter_type = data['StartingPosition']['Type']
-    iterator = kinesis.get_shard_iterator(StreamName=stream_name,
+    if iter_type in ['TRIM_HORIZON', 'LATEST']:
+        iterator = kinesis.get_shard_iterator(StreamName=stream_name,
         ShardId=data['ShardId'], ShardIteratorType=iter_type)['ShardIterator']
+    elif iter_type in ['AFTER_SEQUENCE_NUMBER', 'AT_SEQUENCE_NUMBER']:
+        starting_sequence_number = data['StartingPosition'].get('SequenceNumber') or '0'
+        iterator = kinesis.get_shard_iterator(StreamName=stream_name,
+            ShardId=data['ShardId'], ShardIteratorType=iter_type,
+            StartingSequenceNumber=starting_sequence_number)['ShardIterator']
+    elif iter_type in ['AT_TIMESTAMP']:
+        # or value is just an example timestamp from aws docs
+        timestamp = data['StartingPosition'].get('Timestamp') or 1459799926.480
+        iterator = kinesis.get_shard_iterator(StreamName=stream_name,
+            ShardId=data['ShardId'], ShardIteratorType=iter_type,
+            Timestamp=timestamp)['ShardIterator']
     data_needs_encoding = False
     if 'java' in headers.get('User-Agent', '').split(' ')[0]:
         data_needs_encoding = True
