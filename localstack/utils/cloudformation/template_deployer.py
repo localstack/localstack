@@ -850,7 +850,9 @@ def resolve_refs_recursively(stack_name, value, resources):
             return ref
 
         if stripped_fn_lower == 'getatt':
-            return resolve_ref(stack_name, value[keys_list[0]][0], resources, attribute=value[keys_list[0]][1])
+            attr_ref = value[keys_list[0]]
+            attr_ref = attr_ref.split('.') if isinstance(attr_ref, str) else attr_ref
+            return resolve_ref(stack_name, attr_ref[0], resources, attribute=attr_ref[1])
 
         if stripped_fn_lower == 'join':
             join_values = value[keys_list[0]][1]
