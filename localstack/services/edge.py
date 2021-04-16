@@ -314,7 +314,8 @@ def terminate_all_processes_in_docker():
 def serve_resource_graph(data):
     data = json.loads(to_str(data or '{}'))
     env = Environment.from_string(data.get('awsEnvironment'))
-    graph = dashboard_infra.get_graph(name_filter=data.get('nameFilter') or '.*', env=env, region=data.get('awsRegion'))
+    graph = dashboard_infra.get_graph(name_filter=data.get('nameFilter') or '.*',
+        env=env, region=data.get('awsRegion'))
     return graph
 
 
