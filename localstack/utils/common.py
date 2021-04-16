@@ -736,6 +736,8 @@ def chown_r(path, user):
 
 def chmod_r(path, mode):
     """ Recursive chmod """
+    if not os.path.exists(path):
+        return
     os.chmod(path, mode)
     for root, dirnames, filenames in os.walk(path):
         for dirname in dirnames:

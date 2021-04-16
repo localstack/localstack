@@ -730,7 +730,7 @@ class GatewayDeployment(GenericBaseModel):
         return 'AWS::ApiGateway::Deployment'
 
     def fetch_state(self, stack_name, resources):
-        api_id = self.props['RestApiId'] or self.resource_id
+        api_id = self.props.get('RestApiId') or self.resource_id
         api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
         if not api_id:
             return None
@@ -1672,7 +1672,8 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
                 'function': 'associate_route_table',
                 'parameters': {
                     'GatewayId': 'GatewayId',
-                    'RouteTableId': 'RouteTableId'
+                    'RouteTableId': 'RouteTableId',
+                    'SubnetId': 'SubnetId'
                 }
             }
         }

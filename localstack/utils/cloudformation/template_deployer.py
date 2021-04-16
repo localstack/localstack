@@ -365,6 +365,7 @@ RESOURCE_TO_FUNCTION = {
                 'resourceId': 'ResourceId',
                 'httpMethod': 'HttpMethod',
                 'authorizationType': 'AuthorizationType',
+                'authorizerId': 'AuthorizerId',
                 'requestParameters': 'RequestParameters'
             }
         }
@@ -842,14 +843,16 @@ def resolve_refs_recursively(stack_name, value, resources):
         if keys_list == ['Ref']:
             ref = resolve_ref(stack_name, value['Ref'], resources, attribute='Ref')
             if ref is None:
-                msg = 'Unable to resolve Ref for resource %s' % value['Ref']
-                LOG.info('%s - existing: %s %s' % (msg, set(resources.keys()), resources.get(value['Ref'])))
+                msg = 'Unable to resolve Ref for resource "%s" (yet)' % value['Ref']
+                LOG.debug('%s - %s' % (msg, resources.get(value['Ref']) or set(resources.keys())))
                 raise DependencyNotYetSatisfied(resource_ids=value['Ref'], message=msg)
             ref = resolve_refs_recursively(stack_name, ref, resources)
             return ref
 
         if stripped_fn_lower == 'getatt':
-            return resolve_ref(stack_name, value[keys_list[0]][0], resources, attribute=value[keys_list[0]][1])
+            attr_ref = value[keys_list[0]]
+            attr_ref = attr_ref.split('.') if isinstance(attr_ref, str) else attr_ref
+            return resolve_ref(stack_name, attr_ref[0], resources, attribute=attr_ref[1])
 
         if stripped_fn_lower == 'join':
             join_values = value[keys_list[0]][1]
@@ -1210,6 +1213,16 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     if callable(params):
         params = params(resource_props, stack_name=stack_name, resources=resources, resource_id=resource_id)
     else:
+        # it could be a list ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
+        if isinstance(params, list):
+            _params = {}
+            for param in params:
+                if isinstance(param, dict):
+                    _params.update(param)
+                else:
+                    _params[param] = param
+            params = _params
+
         params = dict(params)
         for param_key, prop_keys in dict(params).items():
             params.pop(param_key, None)

@@ -413,14 +413,13 @@ def validate_localstack_config(name):
 
     # docker-compose file validation cases
 
-    if (docker_env.get('LAMBDA_REMOTE_DOCKER') in constants.FALSE_STRINGS and
-            docker_env.get('HOST_TMP_FOLDER') in ['${TMPDIR}', None, '']):
-        warns.append('Make sure to properly set the "HOST_TMP_FOLDER" environment variable for the '
-                    'LocalStack container when using "LAMBDA_REMOTE_DOCKER=false"')
-
     if docker_env.get('PORT_WEB_UI') not in ['${PORT_WEB_UI- }', None, ''] and image_name == 'localstack/localstack':
         warns.append('"PORT_WEB_UI" Web UI is now deprecated, '
                     'and requires to use the "localstack/localstack-full" image.')
+
+    if not docker_env.get('HOST_TMP_FOLDER'):
+        warns.append('Please configure the "HOST_TMP_FOLDER" environment variable to point to the ' +
+            'absolute path of a temp folder on your host system (e.g., HOST_TMP_FOLDER=${TMPDIR})')
 
     if (main_container not in container_name) and not docker_env.get('MAIN_CONTAINER_NAME'):
         warns.append('Please use "container_name: %s" or add "MAIN_CONTAINER_NAME" in "environment".' %
