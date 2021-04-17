@@ -786,7 +786,6 @@ class SNSTest(unittest.TestCase):
             VisibilityTimeout=2,
             WaitTimeSeconds=2,
         )
-        
         self.assertEqual(len(response['Messages']), 1)
         self.assertEqual(response['Messages'][0]['MessageAttributes'],
                          {'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
