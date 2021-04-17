@@ -718,7 +718,7 @@ class EventsTest(unittest.TestCase):
         pattern = {
             'Source': [{'exists': True}],
             'detail-type': [{'prefix': 'core.app'}],
-            'Detail': json.dumps({
+            'Detail': {
                 'decription': ['this-is-event-details'],
                 'amount': [200],
                 'salary': [2000, 4000],
@@ -737,7 +737,7 @@ class EventsTest(unittest.TestCase):
                 'num-test5': [{'numeric': ['>=', 200, '<=', 500]}],
                 'num-test6': [{'numeric': ['>', 200, '<', 500]}],
                 'num-test7': [{'numeric': ['>=', 200, '<', 500]}]
-            })
+            }
         }
 
         event = {
