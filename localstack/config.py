@@ -1,6 +1,7 @@
 import re
 import os
 import json
+import time
 import socket
 import logging
 import platform
@@ -12,6 +13,9 @@ from boto3 import Session
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS, LOCALHOST, LOCALHOST_IP, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1, LOG_LEVELS)
+
+# keep track of start time, for performance debugging
+load_start_time = time.time()
 
 
 def is_env_true(env_var_name):
@@ -229,8 +233,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER',
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
-                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS',
-                   'USE_MOTO_CF']
+                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -426,9 +429,6 @@ BUNDLE_API_PROCESSES = True
 # whether to use a CPU/memory profiler when running the integration tests
 USE_PROFILER = is_env_true('USE_PROFILER')
 
-# whether to use the legacy CF deployment based on moto (TODO: remove in a future release)
-USE_MOTO_CF = is_env_true('USE_MOTO_CF')
-
 
 def load_config_file(config_file=None):
     from localstack.utils.common import get_or_create_file, to_str
@@ -440,3 +440,9 @@ def load_config_file(config_file=None):
         print('Unable to load local config file %s as JSON: %s' % (config_file, e))
         return {}
     return configs
+
+
+if LS_LOG == 'trace':
+    load_end_time = time.time()
+    LOG = logging.getLogger(__name__)
+    LOG.debug('Initializing the configuration took %s ms' % int((load_end_time - load_start_time) * 1000))
