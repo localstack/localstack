@@ -9,8 +9,6 @@ from six import iteritems
 from moto.ec2.utils import generate_route_id
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.cloudformation import parsing
-from moto.cloudformation.models import cloudformation_backends
-from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS
@@ -893,10 +891,6 @@ def resolve_refs_recursively(stack_name, value, resources):
 
         if stripped_fn_lower == 'importvalue':
             import_value_key = resolve_refs_recursively(stack_name, value[keys_list[0]], resources)
-            if config.USE_MOTO_CF:
-                exports = cloudformation_backends[aws_stack.get_region()].exports
-                export = exports[import_value_key]
-                return export.value
             stack = find_stack(stack_name)
             return stack.exports_map[import_value_key]['Value']
 

@@ -232,6 +232,7 @@ class Stack(object):
                 LOG.debug('Unable to resolve references in stack outputs: %s - %s' % (details, e))
             exports = details.get('Export') or {}
             export = exports.get('Name')
+            export = template_deployer.resolve_refs_recursively(self.stack_name, export, self.resources)
             description = details.get('Description')
             entry = {'OutputKey': k, 'OutputValue': value, 'Description': description, 'ExportName': export}
             result.append(entry)
@@ -484,7 +485,8 @@ def update_stack_set(req_params):
 def describe_stacks(req_params):
     state = CloudFormationRegion.get()
     stack_name = req_params.get('StackName')
-    stacks = [s.describe_details() for s in state.stacks.values() if stack_name in [None, s.stack_name, s.stack_id]]
+    stack_list = list(state.stacks.values())
+    stacks = [s.describe_details() for s in stack_list if stack_name in [None, s.stack_name, s.stack_id]]
     if stack_name and not stacks:
         return error_response('Stack with id %s does not exist' % stack_name,
             code=400, code_string='ValidationError')
@@ -495,7 +497,8 @@ def describe_stacks(req_params):
 def list_stacks(req_params):
     state = CloudFormationRegion.get()
     filter = req_params.get('StackStatusFilter')
-    stacks = [s.describe_details() for s in state.stacks.values() if filter in [None, s.status]]
+    stack_list = list(state.stacks.values())
+    stacks = [s.describe_details() for s in stack_list if filter in [None, s.status]]
     attrs = ['StackId', 'StackName', 'TemplateDescription', 'CreationTime', 'LastUpdatedTime', 'DeletionTime',
         'StackStatus', 'StackStatusReason', 'ParentId', 'RootId', 'DriftInformation']
     stacks = [select_attributes(stack, attrs) for stack in stacks]
