@@ -401,6 +401,10 @@ def get_api_from_custom_rules(method, path, data, headers):
     if auth_header.startswith('AWS '):
         return 's3', config.PORT_S3
 
+    # certain EC2 requests from Java SDK contain no Auth headers (issue #3805)
+    if b'Version=2016-11-15' in data_bytes:
+        return 'ec2', config.PORT_EC2
+
 
 def get_service_port_for_account(service, headers):
     # assume we're only using a single account, hence return the static port mapping from config.py
