@@ -434,14 +434,14 @@ class ProxyListenerDynamoDB(ProxyListener):
             if 'TableName' in data:
                 records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
 
-            # forward to kinesis data stream if stream is active
-            if TABLE_DEFINITIONS[data['TableName']].get('KinesisDataStreamDestinationStatus') == 'ACTIVE':
-                stream_name = TABLE_DEFINITIONS[data['TableName']]['KinesisDataStreamDestinations'][-1]['StreamArn'] \
-                    .split('/', 1)[-1]
-                partition_key = list(filter(lambda key: key['KeyType'] == 'HASH',
-                    TABLE_DEFINITIONS[data['TableName']]['KeySchema']))[0]['AttributeName']
-                # forward to kinesis stream
-                forward_to_kinesis_stream(records, stream_name, partition_key)
+                # forward to kinesis data stream if stream is active
+                if TABLE_DEFINITIONS[data['TableName']].get('KinesisDataStreamDestinationStatus') == 'ACTIVE':
+                    stream_name = (TABLE_DEFINITIONS[data['TableName']]['KinesisDataStreamDestinations'][-1]
+                    ['StreamArn'].split('/', 1)[-1])
+                    partition_key = list(filter(lambda key: key['KeyType'] == 'HASH',
+                        TABLE_DEFINITIONS[data['TableName']]['KeySchema']))[0]['AttributeName']
+                    # forward to kinesis stream
+                    forward_to_kinesis_stream(records, stream_name, partition_key)
             # forward to lambda and ddb_streams
             forward_to_lambda(records)
             records = self.prepare_records_to_forward_to_ddb_stream(records)
