@@ -496,11 +496,10 @@ def describe_stacks(req_params):
 
 def list_stacks(req_params):
     state = CloudFormationRegion.get()
-    filter = req_params.get('StackStatusFilter')
-    stack_list = list(state.stacks.values())
-    stacks = [s.describe_details() for s in stack_list if filter in [None, s.status]]
+    stack_status_filter = req_params.get('StackStatusFilter.member.1')
+    stacks = [s.describe_details() for s in state.stacks.values() if stack_status_filter in [None, s.status]]
     attrs = ['StackId', 'StackName', 'TemplateDescription', 'CreationTime', 'LastUpdatedTime', 'DeletionTime',
-        'StackStatus', 'StackStatusReason', 'ParentId', 'RootId', 'DriftInformation']
+             'StackStatus', 'StackStatusReason', 'ParentId', 'RootId', 'DriftInformation']
     stacks = [select_attributes(stack, attrs) for stack in stacks]
     result = {'StackSummaries': {'member': stacks}}
     return result
