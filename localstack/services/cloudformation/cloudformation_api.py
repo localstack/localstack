@@ -855,5 +855,5 @@ def _get_status_filter_members(req_params):
     return {
         value
         for param, value in req_params.items()
-        if param.startswith("StackStatusFilter.member")
+        if param.startswith('StackStatusFilter.member')
     }
