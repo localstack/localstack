@@ -254,13 +254,10 @@ class ProxyListenerDynamoDB(ProxyListener):
             # Check if table exists, to avoid error log output from DynamoDBLocal
             if not self.table_exists(ddb_client, data['TableName']):
                 return get_table_not_found_error()
-            response = Response()
-            response.status_code = 200
-            response._content = json.dumps({
+            response = aws_responses.requests_response({
                 'KinesisDataStreamDestinations': table_def.get('KinesisDataStreamDestinations') or [],
                 'TableName': data['TableName']
             })
-            fix_headers_for_updated_response(response)
             return response
 
         return Request(data=data_orig, method=method, headers=headers)
@@ -558,20 +555,20 @@ class ProxyListenerDynamoDB(ProxyListener):
             if record['dynamodb'].get('StreamViewType'):
                 # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
                 if record['dynamodb']['StreamViewType'] == 'KEYS_ONLY':
-                    del record['dynamodb']['OldImage']
-                    del record['dynamodb']['NewImage']
+                    record['dynamodb'].pop('OldImage', None)
+                    record['dynamodb'].pop('NewImage', None)
                 # NEW_IMAGE - The entire item, as it appears after it was modified, is written to the stream
                 elif record['dynamodb']['StreamViewType'] == 'NEW_IMAGE':
-                    del record['dynamodb']['OldImage']
-                    del record['dynamodb']['Keys']
+                    record['dynamodb'].pop('OldImage', None)
+                    record['dynamodb'].pop('Keys', None)
                 # OLD_IMAGE - The entire item, as it appeared before it was modified, is written to the stream
                 elif record['dynamodb']['StreamViewType'] == 'OLD_IMAGE':
-                    del record['dynamodb']['NewImage']
-                    del record['dynamodb']['Keys']
+                    record['dynamodb'].pop('NewImage', None)
+                    record['dynamodb'].pop('Keys', None)
                 # NEW_AND_OLD_IMAGES - Both the new and the old item images of the item are
                 # written to the stream.
                 elif record['dynamodb']['StreamViewType'] == 'NEW_AND_OLD_IMAGES':
-                    del record['dynamodb']['Keys']
+                    record['dynamodb'].pop('Keys', None)
         return records
 
     def delete_all_event_source_mappings(self, table_arn):
@@ -799,15 +796,15 @@ def forward_to_ddb_stream(records):
 
 
 def forward_to_kinesis_stream(records):
-    if records[0].get('eventSourceARN'):
-        table_name = records[0]['eventSourceARN'].split('/', 1)[-1]
-        table_def = TABLE_DEFINITIONS.get(table_name) or {}
-        if table_def.get('KinesisDataStreamDestinationStatus') == 'ACTIVE':
-            stream_name = table_def['KinesisDataStreamDestinations'][-1]['StreamArn'].split('/', 1)[-1]
-            partition_key = list(filter(lambda key: key['KeyType'] == 'HASH',
-                table_def['KeySchema']))[0]['AttributeName']
-            kinesis = aws_stack.connect_to_service('kinesis')
-            for record in records:
+    kinesis = aws_stack.connect_to_service('kinesis')
+    for record in records:
+        if record.get('eventSourceARN'):
+            table_name = record['eventSourceARN'].split('/', 1)[-1]
+            table_def = TABLE_DEFINITIONS.get(table_name) or {}
+            if table_def.get('KinesisDataStreamDestinationStatus') == 'ACTIVE':
+                stream_name = table_def['KinesisDataStreamDestinations'][-1]['StreamArn'].split('/', 1)[-1]
+                partition_key = list(filter(lambda key: key['KeyType'] == 'HASH',
+                    table_def['KeySchema']))[0]['AttributeName']
                 kinesis.put_record(StreamName=stream_name, Data=json.dumps(record), PartitionKey=partition_key)
 
 
@@ -842,37 +839,31 @@ def dynamodb_get_table_stream_specification(table_name):
 def is_kinesis_stream_exists(stream_arn):
     # connect to kinesis
     kinesis = aws_stack.connect_to_service('kinesis')
+    stream_name_from_arn = stream_arn.split('/', 1)[1]
     # check if the stream exists in kinesis for the user
-    filtered = list(filter(lambda stream_name: stream_name == stream_arn.split('/', 1)[1],
+    filtered = list(filter(lambda stream_name: stream_name == stream_name_from_arn,
         kinesis.list_streams()['StreamNames']))
-    if filtered:
-        return True
-    return False
+    return bool(filtered)
 
 
 def dynamodb_enable_kinesis_streaming_destination(data, table_def):
     if (table_def.get('KinesisDataStreamDestinationStatus') in ['DISABLED', 'ENABLE_FAILED', None]):
         table_def['KinesisDataStreamDestinations'] = table_def.get('KinesisDataStreamDestinations') or []
-        # remove the destination if already present
-        for dest in table_def['KinesisDataStreamDestinations']:
-            if dest['StreamArn'] == data['StreamArn']:
-                table_def['KinesisDataStreamDestinations'].remove(dest)
-        # Add the destination on the top of the stack
-        # so that the active destination is always present at the top
+        # remove the stream destination if already present
+        table_def['KinesisDataStreamDestinations'] = [t for t in table_def['KinesisDataStreamDestinations']
+            if t['StreamArn'] != data['StreamArn']]
+        # append the active stream destination at the end of the list
         table_def['KinesisDataStreamDestinations'].append({
             'DestinationStatus': 'ACTIVE',
             'DestinationStatusDescription': 'Stream is active',
             'StreamArn': data['StreamArn']
         })
         table_def['KinesisDataStreamDestinationStatus'] = 'ACTIVE'
-        response = Response()
-        response.status_code = 200
-        response._content = json.dumps({
+        response = aws_responses.requests_response({
             'DestinationStatus': 'ACTIVE',
             'StreamArn': data['StreamArn'],
             'TableName': data['TableName']
         })
-        fix_headers_for_updated_response(response)
         return response
 
     return error_response(
@@ -893,14 +884,11 @@ def dynamodb_disable_kinesis_streaming_destination(data, table_def):
                     dest['DestinationStatusDescription'] = 'Stream is disabled',
 
                     table_def['KinesisDataStreamDestinationStatus'] = 'DISABLED'
-                    response = Response()
-                    response.status_code = 200
-                    response._content = json.dumps({
+                    response = aws_responses.requests_response({
                         'DestinationStatus': 'DISABLED',
                         'StreamArn': data['StreamArn'],
                         'TableName': data['TableName']
                     })
-                    fix_headers_for_updated_response(response)
                     return response
     return error_response(
         error_type='ValidationException',

@@ -423,8 +423,8 @@ class TestDynamoDB(unittest.TestCase):
 
         # create kinesis datastream
         kinesis.create_stream(StreamName='kinesis_dest_stream', ShardCount=1)
-        # wait 60 seconds for the stream to be created
-        sleep(60)
+        # wait for the stream to be created
+        sleep(1)
         # Get stream description
         stream_description = kinesis.describe_stream(StreamName='kinesis_dest_stream')['StreamDescription']
         table_name = 'table_with_kinesis_stream-%s' % short_uid()
