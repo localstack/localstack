@@ -3,6 +3,7 @@ import json
 import time
 import base64
 import random
+import logging
 import cbor2
 from requests.models import Response
 from localstack import config
@@ -13,6 +14,8 @@ from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
+
+LOG = logging.getLogger(__name__)
 
 # action headers (should be left here - imported/required by other files)
 ACTION_PREFIX = 'Kinesis_20131202'
@@ -243,8 +246,16 @@ def subscribe_to_shard(data, headers):
     kinesis = aws_stack.connect_to_service('kinesis')
     stream_name = find_stream_for_consumer(data['ConsumerARN'])
     iter_type = data['StartingPosition']['Type']
+    kwargs = {}
+    if iter_type in ['AT_SEQUENCE_NUMBER', 'AFTER_SEQUENCE_NUMBER']:
+        starting_sequence_number = data['StartingPosition'].get('SequenceNumber') or '0'
+        kwargs['StartingSequenceNumber'] = starting_sequence_number
+    elif iter_type in ['AT_TIMESTAMP']:
+        # or value is just an example timestamp from aws docs
+        timestamp = data['StartingPosition'].get('Timestamp') or 1459799926.480
+        kwargs['Timestamp'] = timestamp
     iterator = kinesis.get_shard_iterator(StreamName=stream_name,
-        ShardId=data['ShardId'], ShardIteratorType=iter_type)['ShardIterator']
+        ShardId=data['ShardId'], ShardIteratorType=iter_type, **kwargs)['ShardIterator']
     data_needs_encoding = False
     if 'java' in headers.get('User-Agent', '').split(' ')[0]:
         data_needs_encoding = True
@@ -254,7 +265,14 @@ def subscribe_to_shard(data, headers):
         iter = iterator
         # TODO: find better way to run loop up to max 5 minutes (until connection terminates)!
         for i in range(5 * 60):
-            result = kinesis.get_records(ShardIterator=iter)
+            result = None
+            try:
+                result = kinesis.get_records(ShardIterator=iter)
+            except Exception as e:
+                if 'ResourceNotFoundException' in str(e):
+                    LOG.debug('Kinesis stream "%s" has been deleted, closing shard subscriber' % stream_name)
+                    return
+                raise
             iter = result.get('NextShardIterator')
             records = result.get('Records', [])
             for record in records:
@@ -266,7 +284,14 @@ def subscribe_to_shard(data, headers):
                 time.sleep(1)
                 continue
 
-            result = json.dumps({'Records': json_safe(records)})
+            response = {
+                'ChildShards': [],
+                'ContinuationSequenceNumber': iter,
+                'MillisBehindLatest': 0,
+                'Records': json_safe(records),
+            }
+
+            result = json.dumps(response)
             yield convert_to_binary_event_payload(result, event_type='SubscribeToShardEvent')
 
     headers = {}

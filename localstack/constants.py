@@ -39,7 +39,10 @@ if 'TEST_AWS_ACCOUNT_ID' not in os.environ:
 TEST_AWS_ACCOUNT_ID = os.environ['TEST_AWS_ACCOUNT_ID']
 
 # root code folder
-LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
+# TODO rename to "ROOT_FOLDER"!
+LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(MODULE_MAIN_PATH, '..'))
+INSTALL_DIR_INFRA = os.path.join(MODULE_MAIN_PATH, 'infra')
 
 # virtualenv folder
 LOCALSTACK_VENV_FOLDER = os.path.join(LOCALSTACK_ROOT_FOLDER, '.venv')

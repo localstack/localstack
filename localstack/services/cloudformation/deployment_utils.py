@@ -1,5 +1,10 @@
+import os
 import json
 from localstack.utils import common
+from localstack.constants import INSTALL_DIR_INFRA
+
+# URL to "cfn-response" module which is required in some CF Lambdas
+CFN_RESPONSE_MODULE_URL = 'https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js'
 
 # placeholders
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
@@ -99,3 +104,10 @@ def param_json_to_str(name):
             result = json.dumps(result)
         return result
     return _convert
+
+
+def get_cfn_response_mod_file():
+    cfn_response_tmp_file = os.path.join(INSTALL_DIR_INFRA, 'lambda.cfn-response.js')
+    if not os.path.exists(cfn_response_tmp_file):
+        common.download(CFN_RESPONSE_MODULE_URL, cfn_response_tmp_file)
+    return cfn_response_tmp_file

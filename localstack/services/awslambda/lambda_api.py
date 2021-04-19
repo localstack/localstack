@@ -573,6 +573,7 @@ def run_lambda(func_arn, event, context={}, version=None,
         func_arn = aws_stack.fix_arn(func_arn)
         func_details = region.lambdas.get(func_arn)
         if not func_details:
+            LOG.debug('Unable to find details for Lambda %s in region %s' % (func_arn, region_name))
             result = not_found_error(msg='The resource specified in the request does not exist.')
             return lambda_executors.InvocationResult(result)
 
@@ -704,7 +705,8 @@ def get_java_handler(zip_file_content, main_file, func_details=None):
             return result
         return execute
     raise ClientError(error_response(
-        'Unable to extract Java Lambda handler - file is not a valid zip/jar file', 400, error_type='ValidationError'))
+        'Unable to extract Java Lambda handler - file is not a valid zip/jar file (%s, %s bytes)' %
+        (main_file, len(zip_file_content or '')), 400, error_type='ValidationError'))
 
 
 def set_archive_code(code, lambda_name, zip_file_content=None):

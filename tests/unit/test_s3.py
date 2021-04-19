@@ -244,11 +244,17 @@ class S3UtilsTest (unittest.TestCase):
             ('/', {'host': 'bucket.s3.us-east-1.amazonaws.com'}, 'bucket'),
             ('/', {'host': 'bucket.s3.us-east-2.amazonaws.com'}, 'bucket'),
             ('/', {'host': 'bucket.s3.us-west-1.amazonaws.com'}, 'bucket'),
-            ('/', {'host': 'bucket.s3.us-west-2.amazonaws.com'}, 'bucket')
+            ('/', {'host': 'bucket.s3.us-west-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.localhost.localstack.cloud'}, 'bucket'),
+            ('/', {'host': 'bucket-1.s3-website.localhost.localstack.cloud'}, 'bucket-1'),
+            ('/', {'host': 'bucket.localhost.localstack.cloud'}, 'bucket'),
+            ('/', {'host': 'localhost.localstack.cloud'}, None),
+            ('/', {'host': 'test.dynamodb.amazonaws.com'}, None),
+            ('/', {'host': 'dynamodb.amazonaws.com'}, None)
         ]
 
         for path, headers, expected_result in bucket_names:
-            self.assertEqual(expected_result, s3_utils.extract_bucket_name(headers, path))
+            self.assertEqual(expected_result, s3_utils.extract_bucket_name(headers, path), headers)
 
     def test_s3_keyname_name(self):
         # array description : 'path', 'header', 'expected_ouput'

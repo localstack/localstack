@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import unittest
+from datetime import datetime, timedelta
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.utils.aws import aws_stack
 from localstack.utils import testutil
@@ -19,14 +20,10 @@ class CloudWatchLogsTest(unittest.TestCase):
 
         groups_before = len(self.logs_client.describe_log_groups()['logGroups'])
 
-        response = self.logs_client.create_log_group(logGroupName=group)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = self.create_log_group_and_stream(group, stream)
 
         groups_after = len(self.logs_client.describe_log_groups()['logGroups'])
         self.assertEqual(groups_after, groups_before + 1)
-
-        response = self.logs_client.create_log_stream(logGroupName=group, logStreamName=stream)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
         # send message with non-ASCII (multi-byte) chars
         body_msg = '🙀 - 参よ - 日本語'
@@ -49,8 +46,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         group = 'lg-%s' % short_uid()
         stream = 'ls-%s' % short_uid()
 
-        self.logs_client.create_log_group(logGroupName=group)
-        self.logs_client.create_log_stream(logGroupName=group, logStreamName=stream)
+        self.create_log_group_and_stream(group, stream)
 
         events = [
             {'timestamp': 1585902800, 'message': 'log message 1'},
@@ -78,7 +74,6 @@ class CloudWatchLogsTest(unittest.TestCase):
                 'env': 'testing1'
             }
         )
-
         rs = self.logs_client.list_tags_log_group(
             logGroupName=group
         )
@@ -150,13 +145,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         )
         firehose_arn = response['DeliveryStreamARN']
 
-        self.logs_client.create_log_group(
-            logGroupName=log_group
-        )
-        self.logs_client.create_log_stream(
-            logGroupName=log_group,
-            logStreamName=log_stream
-        )
+        self.create_log_group_and_stream(log_group, log_stream)
 
         self.logs_client.put_subscription_filter(
             logGroupName=log_group,
@@ -208,13 +197,7 @@ class CloudWatchLogsTest(unittest.TestCase):
 
         kinesis_client = aws_stack.connect_to_service('kinesis')
 
-        self.logs_client.create_log_group(
-            logGroupName=log_group
-        )
-        self.logs_client.create_log_stream(
-            logGroupName=log_group,
-            logStreamName=log_stream
-        )
+        self.create_log_group_and_stream(log_group, log_stream)
 
         kinesis_client.create_stream(
             StreamName=kinesis,
@@ -267,3 +250,59 @@ class CloudWatchLogsTest(unittest.TestCase):
             StreamName=kinesis,
             EnforceConsumerDeletion=True
         )
+
+    def test_metric_filters(self):
+        log_group = 'g-%s' % short_uid()
+        log_stream = 's-%s' % short_uid()
+        filter_name = 'f-%s' % short_uid()
+        metric_ns = 'ns-%s' % short_uid()
+        metric_name = 'metric1'
+        transforms = {
+            'metricNamespace': metric_ns,
+            'metricName': metric_name,
+            'metricValue': '1',
+            'defaultValue': 123
+        }
+        result = self.logs_client.put_metric_filter(logGroupName=log_group,
+            filterName=filter_name, filterPattern='*', metricTransformations=[transforms])
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        result = self.logs_client.describe_metric_filters(logGroupName=log_group, filterNamePrefix='f-')
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        result = [mf for mf in result['metricFilters'] if mf['filterName'] == filter_name]
+        self.assertEqual(len(result), 1)
+
+        # put log events and assert metrics being published
+        events = [
+            {'timestamp': 1585902800, 'message': 'log message 1'},
+            {'timestamp': 1585902961, 'message': 'log message 2'}
+        ]
+        self.create_log_group_and_stream(log_group, log_stream)
+        self.logs_client.put_log_events(logGroupName=log_group, logStreamName=log_stream, logEvents=events)
+
+        # Get metric data
+        cw_client = aws_stack.connect_to_service('cloudwatch')
+        metric_data = cw_client.get_metric_data(
+            MetricDataQueries=[{'Id': 'q1', 'MetricStat': {'Metric':
+                {'Namespace': metric_ns, 'MetricName': metric_name}, 'Period': 60, 'Stat': 'Sum'}}],
+            StartTime=datetime.utcnow() - timedelta(hours=1),
+            EndTime=datetime.utcnow(),
+        )['MetricDataResults']
+        self.assertEquals(len(metric_data), 1)
+        self.assertEquals(metric_data[0]['Values'], [1])
+        self.assertEquals(metric_data[0]['StatusCode'], 'Complete')
+
+        # delete filters
+        result = self.logs_client.delete_metric_filter(logGroupName=log_group, filterName=filter_name)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        result = self.logs_client.describe_metric_filters(logGroupName=log_group, filterNamePrefix='f-')
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        result = [mf for mf in result['metricFilters'] if mf['filterName'] == filter_name]
+        self.assertEqual(len(result), 0)
+
+    def create_log_group_and_stream(self, log_group, log_stream):
+        response = self.logs_client.create_log_group(logGroupName=log_group)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = self.logs_client.create_log_stream(logGroupName=log_group, logStreamName=log_stream)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)

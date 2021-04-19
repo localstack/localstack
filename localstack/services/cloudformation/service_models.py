@@ -1,7 +1,6 @@
 import re
 import json
 import logging
-
 from moto.ec2.utils import generate_route_id
 from moto.s3.models import FakeBucket
 from moto.sqs.models import Queue as MotoQueue
@@ -76,6 +75,8 @@ class GenericBaseModel(CloudFormationModel):
     # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
     def update_resource(self, new_resource, stack_name, resources):
         """ Update the deployment of this resource, using the updated properties (implemented by subclasses). """
+        # TODO: evaluate if we can add a generic implementation here, using "update" parameters from
+        # get_deploy_templates() responses, and based on checking whether resource attributes have changed
         pass
 
     @classmethod
@@ -728,7 +729,7 @@ class GatewayDeployment(GenericBaseModel):
         return 'AWS::ApiGateway::Deployment'
 
     def fetch_state(self, stack_name, resources):
-        api_id = self.props['RestApiId'] or self.resource_id
+        api_id = self.props.get('RestApiId') or self.resource_id
         api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
         if not api_id:
             return None
@@ -1270,22 +1271,46 @@ class KMSKey(GenericBaseModel):
         return 'AWS::KMS::Key'
 
     def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('kms')
         physical_res_id = self.physical_resource_id
+        props = self.props
+        res_tags = props.get('Tags', [])
         if not physical_res_id:
-            return None
-        return aws_stack.connect_to_service('kms').describe_key(KeyId=physical_res_id)
+            # TODO: find a more efficient approach for this?
+            for key in client.list_keys()['Keys']:
+                details = client.describe_key(KeyId=key['KeyId'])['KeyMetadata']
+                tags = client.list_resource_tags(KeyId=key['KeyId']).get('Tags', [])
+                tags = [{'Key': tag['TagKey'], 'Value': tag['TagValue']} for tag in tags]
+                if (tags == res_tags and details.get('Description') == props.get('Description') and
+                        props.get('KeyUsage') in [None, details.get('KeyUsage')]):
+                    physical_res_id = key['KeyId']
+                    # TODO should this be removed from here? It seems that somewhere along the execution
+                    # chain the 'PhysicalResourceId' gets overwritten with None, hence setting it here
+                    self.resource_json['PhysicalResourceId'] = physical_res_id
+                    break
+        if not physical_res_id:
+            return
+        return client.describe_key(KeyId=physical_res_id)
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute in REF_ID_ATTRS:
+            return self.physical_resource_id
+        return self.physical_resource_id and aws_stack.kms_key_arn(self.physical_resource_id)
 
     @staticmethod
     def get_deploy_templates():
+        def create_params(params, **kwargs):
+            return {
+                'Policy': params.get('KeyPolicy'),
+                'Tags': [{'TagKey': tag['Key'], 'TagValue': tag['Value']} for tag in params.get('Tags', [])]
+            }
         return {
             'create': {
                 'function': 'create_key',
-                'parameters': {
-                    'Policy': 'KeyPolicy'
-                }
+                'parameters': create_params
             },
             'delete': {
-                # TODO Key need to be deleted in KMS backend
+                # TODO Key needs to be deleted in KMS backend
                 'function': 'schedule_key_deletion',
                 'parameters': {
                     'KeyId': 'PhysicalResourceId'
@@ -1359,7 +1384,6 @@ class EC2Instance(GenericBaseModel):
                 instance_id
             ]
         )
-
         return resp['Reservations'][0]['Instances'][0]
 
 
@@ -1412,14 +1436,17 @@ class EC2Subnet(GenericBaseModel):
         return 'AWS::EC2::Subnet'
 
     def fetch_state(self, stack_name, resources):
-        props = self.props
         client = aws_stack.connect_to_service('ec2')
+        props = self.props
         filters = [
             {'Name': 'cidr-block', 'Values': [props['CidrBlock']]},
             {'Name': 'vpc-id', 'Values': [props['VpcId']]}
         ]
         subnets = client.describe_subnets(Filters=filters)['Subnets']
         return (subnets or [None])[0]
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('SubnetId')
 
     @staticmethod
     def get_deploy_templates():
@@ -1442,9 +1469,6 @@ class EC2Subnet(GenericBaseModel):
                 }
             }
         }
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get('SubnetId')
 
 
 class EC2VPC(GenericBaseModel):
@@ -1565,10 +1589,11 @@ class EC2Route(GenericBaseModel):
         return 'AWS::EC2::Route'
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
+        props = self.props
         return generate_route_id(
-            self.props.get('RouteTableId'),
-            self.props.get('DestinationCidrBlock'),
-            self.props.get('DestinationIpv6CidrBlock')
+            props.get('RouteTableId'),
+            props.get('DestinationCidrBlock'),
+            props.get('DestinationIpv6CidrBlock')
         )
 
     @staticmethod
@@ -1589,5 +1614,106 @@ class EC2Route(GenericBaseModel):
                     'DestinationIpv6CidrBlock': 'DestinationIpv6CidrBlock',
                     'RouteTableId': 'RouteTableId'
                 }
+            }
+        }
+
+
+class EC2InternetGateway(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::InternetGateway'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('ec2')
+        gateways = client.describe_internet_gateways()['InternetGateways']
+        tags = self.props.get('Tags')
+        gateway = [g for g in gateways if g.get('Tags') == tags]
+        return (gateway or [None])[0]
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('InternetGatewayId')
+
+    @staticmethod
+    def get_deploy_templates():
+        def _create_params(params, **kwargs):
+            return {'TagSpecifications': [{'ResourceType': 'internet-gateway', 'Tags': params.get('Tags', [])}]}
+        return {
+            'create': {
+                'function': 'create_internet_gateway',
+                'parameters': _create_params
+            }
+        }
+
+
+class EC2SubnetRouteTableAssociation(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::SubnetRouteTableAssociation'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('ec2')
+        table_id = self.resolve_refs_recursively(stack_name, self.props.get('RouteTableId'), resources)
+        gw_id = self.resolve_refs_recursively(stack_name, self.props.get('GatewayId'), resources)
+        route_tables = client.describe_route_tables()['RouteTables']
+        route_table = ([t for t in route_tables if t['RouteTableId'] == table_id] or [None])[0]
+        if route_table:
+            associations = route_table.get('Associations', [])
+            association = [a for a in associations if a.get('GatewayId') == gw_id]
+            return (association or [None])[0]
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('RouteTableAssociationId')
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'associate_route_table',
+                'parameters': {
+                    'GatewayId': 'GatewayId',
+                    'RouteTableId': 'RouteTableId',
+                    'SubnetId': 'SubnetId'
+                }
+            }
+        }
+
+
+class EC2VPCGatewayAttachment(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::VPCGatewayAttachment'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('ec2')
+        igw_id = self.resolve_refs_recursively(stack_name, self.props.get('InternetGatewayId'), resources)
+        vpngw_id = self.resolve_refs_recursively(stack_name, self.props.get('VpnGatewayId'), resources)
+        gateways = []
+        if igw_id:
+            gateways = client.describe_internet_gateways()['InternetGateways']
+            gateways = [g for g in gateways if g['InternetGatewayId'] == igw_id]
+        elif vpngw_id:
+            gateways = client.describe_vpn_gateways()['VpnGateways']
+            gateways = [g for g in gateways if g['VpnGatewayId'] == vpngw_id]
+        return (gateways or [None])[0]
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('RouteTableAssociationId')
+
+    @staticmethod
+    def get_deploy_templates():
+        def _attach_gateway(resource_id, resources, *args, **kwargs):
+            client = aws_stack.connect_to_service('ec2')
+            resource = resources[resource_id]
+            resource_props = resource.get('Properties')
+            igw_id = resource_props.get('InternetGatewayId')
+            vpngw_id = resource_props.get('VpnGatewayId')
+            vpc_id = resource_props.get('VpcId')
+            if igw_id:
+                client.attach_internet_gateway(VpcId=vpc_id, InternetGatewayId=igw_id)
+            elif vpngw_id:
+                client.attach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=vpngw_id)
+        return {
+            'create': {
+                'function': _attach_gateway
             }
         }
