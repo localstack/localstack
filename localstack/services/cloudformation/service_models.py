@@ -1,7 +1,6 @@
 import re
 import json
 import logging
-
 from moto.ec2.utils import generate_route_id
 from moto.s3.models import FakeBucket
 from moto.sqs.models import Queue as MotoQueue
