@@ -314,7 +314,8 @@ def terminate_all_processes_in_docker():
 def serve_resource_graph(data):
     data = json.loads(to_str(data or '{}'))
     env = Environment.from_string(data.get('awsEnvironment'))
-    graph = dashboard_infra.get_graph(name_filter=data.get('nameFilter') or '.*', env=env, region=data.get('awsRegion'))
+    graph = dashboard_infra.get_graph(name_filter=data.get('nameFilter') or '.*',
+        env=env, region=data.get('awsRegion'))
     return graph
 
 
@@ -399,6 +400,10 @@ def get_api_from_custom_rules(method, path, data, headers):
     # detect S3 requests with "AWS id:key" Auth headers
     if auth_header.startswith('AWS '):
         return 's3', config.PORT_S3
+
+    # certain EC2 requests from Java SDK contain no Auth headers (issue #3805)
+    if b'Version=2016-11-15' in data_bytes:
+        return 'ec2', config.PORT_EC2
 
 
 def get_service_port_for_account(service, headers):

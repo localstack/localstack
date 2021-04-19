@@ -56,10 +56,10 @@ def filter_event_based_on_event_format(self, rule, event):
                 if not filter_event_with_content_base_parameter(value, event_value):
                     return False
 
-            elif isinstance(value, (str, int)):
+            elif isinstance(value, (str, dict)):
                 try:
-                    if isinstance(json.loads(value), dict) and \
-                       not filter_event(json.loads(value), event_value):
+                    value = json.loads(value) if isinstance(value, str) else value
+                    if isinstance(value, dict) and not filter_event(value, event_value):
                         return False
                 except json.decoder.JSONDecodeError:
                     return False
@@ -67,8 +67,8 @@ def filter_event_based_on_event_format(self, rule, event):
 
     rule_information = self.events_backend.describe_rule(rule)
     if rule_information.event_pattern:
-        event_pattern = json.loads(rule_information.event_pattern)
-        if not filter_event(event_pattern, event):
+        event_pattern = rule_information.event_pattern._filter
+        if event_pattern and not filter_event(event_pattern, event):
             return False
     return True
 

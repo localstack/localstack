@@ -284,7 +284,14 @@ def subscribe_to_shard(data, headers):
                 time.sleep(1)
                 continue
 
-            result = json.dumps({'Records': json_safe(records)})
+            response = {
+                'ChildShards': [],
+                'ContinuationSequenceNumber': iter,
+                'MillisBehindLatest': 0,
+                'Records': json_safe(records),
+            }
+
+            result = json.dumps(response)
             yield convert_to_binary_event_payload(result, event_type='SubscribeToShardEvent')
 
     headers = {}

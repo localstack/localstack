@@ -636,7 +636,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         been inactive for longer than MAX_CONTAINER_IDLE_TIME_MS.
         :return: None
         """
-        LOG.info('Checking if there are idle containers.')
+        LOG.debug('Checking if there are idle containers ...')
         current_time = int(time.time() * 1000)
         for func_arn, last_run_time in dict(self.function_invoke_times).items():
             duration = current_time - last_run_time

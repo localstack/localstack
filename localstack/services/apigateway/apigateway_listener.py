@@ -309,7 +309,6 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             func_arn = uri
             if ':lambda:path' in uri:
                 func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
-            data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
 
             try:
                 path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
@@ -317,8 +316,13 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                 path_params = {}
 
             # apply custom request template
-            data_str = apply_template(integration, 'request', data_str, path_params=path_params,
-                query_params=query_string_params, headers=headers)
+            data_str = data
+            try:
+                data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
+                data_str = apply_template(integration, 'request', data_str, path_params=path_params,
+                    query_params=query_string_params, headers=headers)
+            except Exception:
+                pass
 
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test

@@ -24,31 +24,35 @@ KINESIS_RECENT_EVENTS_TIME_DIFF_SECS = 60
 LOG = logging.getLogger(__name__)
 
 
-def get_kinesis_streams(filter='.*', pool={}, env=None):
+def _connect(service, env=None, region=None):
+    return aws_stack.connect_to_service(service, region_name=region)
+
+
+def get_kinesis_streams(filter='.*', pool={}, env=None, region=None):
     if MOCK_OBJ:
         return []
     result = []
     try:
-        kinesis_client = aws_stack.connect_to_service('kinesis')
+        kinesis_client = _connect('kinesis', region=region)
         out = kinesis_client.list_streams()
         for name in out['StreamNames']:
             if re.match(filter, name):
-                details = kinesis_client.describe_stream(StreamArn=name)
+                details = kinesis_client.describe_stream(StreamName=name)
                 arn = details['StreamDescription']['StreamARN']
                 stream = KinesisStream(arn)
                 pool[arn] = stream
-                stream.shards = get_kinesis_shards(stream_details=details, env=env)
+                stream.shards = get_kinesis_shards(stream_details=details, env=env, region=region)
                 result.append(stream)
     except Exception:
         pass
     return result
 
 
-def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
+def get_kinesis_shards(stream_name=None, stream_details=None, env=None, region=None):
     if not stream_details:
-        kinesis_client = aws_stack.connect_to_service('kinesis')
-        out = kinesis_client.describe_stream(StreamArn=stream_name)
-    shards = out['StreamDescription']['Shards']
+        kinesis_client = _connect('kinesis', env=env, region=region)
+        stream_details = kinesis_client.describe_stream(StreamName=stream_name)
+    shards = stream_details['StreamDescription']['Shards']
     result = []
     for s in shards:
         shard = KinesisShard(s['ShardId'])
@@ -58,13 +62,11 @@ def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
     return result
 
 
-def get_sqs_queues(filter='.*', pool={}, env=None):
+def get_sqs_queues(filter='.*', pool={}, env=None, region=None):
     result = []
     try:
-        sqs_client = aws_stack.connect_to_service('sqs')
+        sqs_client = _connect('sqs', env=env, region=region)
         out = sqs_client.list_queues()
-        if not out.strip():
-            return result
         queues = out['QueueUrls']
         for q in queues:
             name = q.split('/')[-1]
@@ -77,7 +79,7 @@ def get_sqs_queues(filter='.*', pool={}, env=None):
     return result
 
 
-def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
+def get_lambda_functions(filter='.*', details=False, pool={}, env=None, region=None):
     if MOCK_OBJ:
         return []
 
@@ -102,7 +104,7 @@ def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
                     LOG.warning("Unable to get code for lambda '%s'" % func_name)
 
     try:
-        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client = _connect('lambda', env=env, region=region)
         out = lambda_client.list_functions()
         parallelize(handle, out['Functions'])
     except Exception:
@@ -110,11 +112,11 @@ def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
     return result
 
 
-def get_lambda_event_sources(func_name=None, env=None):
+def get_lambda_event_sources(func_name=None, env=None, region=None):
     if MOCK_OBJ:
         return {}
 
-    lambda_client = aws_stack.connect_to_service('lambda')
+    lambda_client = _connect('lambda', env=env, region=region)
     if func_name:
         out = lambda_client.list_event_source_mappings(FunctionName=func_name)
     else:
@@ -123,13 +125,13 @@ def get_lambda_event_sources(func_name=None, env=None):
     return result
 
 
-def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
+def get_lambda_code(func_name, retries=1, cache_time=None, env=None, region=None):
     if MOCK_OBJ:
         return ''
     env = aws_stack.get_environment(env)
     if cache_time is None and not aws_stack.is_local_env(env):
         cache_time = AWS_LAMBDA_CODE_CACHE_TIMEOUT
-    lambda_client = aws_stack.connect_to_service('lambda')
+    lambda_client = _connect('lambda', env=env, region=region)
     out = lambda_client.get_function(FunctionName=func_name)
     loc = out['Code']['Location']
     hash = md5(loc)
@@ -171,10 +173,10 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     return result
 
 
-def get_elasticsearch_domains(filter='.*', pool={}, env=None):
+def get_elasticsearch_domains(filter='.*', pool={}, env=None, region=None):
     result = []
     try:
-        es_client = aws_stack.connect_to_service('es')
+        es_client = _connect('es', env=env, region=region)
         out = es_client.list_domain_names()
 
         def handle(domain):
@@ -194,10 +196,10 @@ def get_elasticsearch_domains(filter='.*', pool={}, env=None):
     return result
 
 
-def get_dynamo_dbs(filter='.*', pool={}, env=None):
+def get_dynamo_dbs(filter='.*', pool={}, env=None, region=None):
     result = []
     try:
-        dynamodb_client = aws_stack.connect_to_service('dynamodb')
+        dynamodb_client = _connect('dynamodb', env=env, region=region)
         out = dynamodb_client.list_tables()
 
         def handle(table):
@@ -217,8 +219,9 @@ def get_dynamo_dbs(filter='.*', pool={}, env=None):
     return result
 
 
-def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
+def get_s3_buckets(filter='.*', pool={}, details=False, env=None, region=None):
     result = []
+    s3_client = _connect('s3', env=env, region=region)
 
     def handle(bucket):
         bucket_name = bucket['Name']
@@ -229,7 +232,6 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
             pool[arn] = bucket
             if details:
                 try:
-                    s3_client = aws_stack.connect_to_service('s3')
                     out = s3_client.get_bucket_notification(Bucket=bucket_name)
                     if out:
                         if 'CloudFunctionConfiguration' in out:
@@ -242,7 +244,6 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
                     print('WARNING: Unable to get details for bucket: %s' % e)
 
     try:
-        s3_client = aws_stack.connect_to_service('s3')
         out = s3_client.list_buckets()
         parallelize(handle, out['Buckets'])
     except Exception:
@@ -250,15 +251,14 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
     return result
 
 
-def get_firehose_streams(filter='.*', pool={}, env=None):
+def get_firehose_streams(filter='.*', pool={}, env=None, region=None):
     result = []
     try:
-        firehose_client = aws_stack.connect_to_service('firehose')
+        firehose_client = _connect('firehose', env=env, region=region)
         out = firehose_client.list_delivery_streams()
         for stream_name in out['DeliveryStreamNames']:
             if re.match(filter, stream_name):
-                details = firehose_client.describe_delivery_stream(
-                    DeliveryStreamName=stream_name)
+                details = firehose_client.describe_delivery_stream(DeliveryStreamName=stream_name)
                 details = details['DeliveryStreamDescription']
                 arn = details['DeliveryStreamARN']
                 s = FirehoseStream(arn)
@@ -272,8 +272,8 @@ def get_firehose_streams(filter='.*', pool={}, env=None):
     return result
 
 
-def read_kinesis_iterator(shard_iterator, max_results=10, env=None):
-    kinesis_client = aws_stack.connect_to_service('kinesis')
+def read_kinesis_iterator(shard_iterator, max_results=10, env=None, region=None):
+    kinesis_client = _connect('kinesis', env=env, region=region)
     result = kinesis_client.get_records(ShardIterator=shard_iterator, Limit=max_results)
     return result
 
@@ -299,16 +299,17 @@ def get_graph(name_filter='.*', env=None, **kwargs):
 
     pool = {}
     node_ids = {}
+    region = kwargs.get('region')
 
     # Make sure we load components in the right order:
     # (ES,DynamoDB,S3) -> (Kinesis,Lambda)
-    domains = get_elasticsearch_domains(name_filter, pool=pool, env=env)
-    dbs = get_dynamo_dbs(name_filter, pool=pool, env=env)
-    buckets = get_s3_buckets(name_filter, details=True, pool=pool, env=env)
-    streams = get_kinesis_streams(name_filter, pool=pool, env=env)
-    firehoses = get_firehose_streams(name_filter, pool=pool, env=env)
-    lambdas = get_lambda_functions(name_filter, details=True, pool=pool, env=env)
-    queues = get_sqs_queues(name_filter, pool=pool, env=env)
+    domains = get_elasticsearch_domains(name_filter, pool=pool, env=env, region=region)
+    dbs = get_dynamo_dbs(name_filter, pool=pool, env=env, region=region)
+    buckets = get_s3_buckets(name_filter, details=True, pool=pool, env=env, region=region)
+    streams = get_kinesis_streams(name_filter, pool=pool, env=env, region=region)
+    firehoses = get_firehose_streams(name_filter, pool=pool, env=env, region=region)
+    lambdas = get_lambda_functions(name_filter, details=True, pool=pool, env=env, region=region)
+    queues = get_sqs_queues(name_filter, pool=pool, env=env, region=region)
 
     for es in domains:
         uid = short_uid()
