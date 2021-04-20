@@ -1510,6 +1510,44 @@ class EC2VPC(GenericBaseModel):
         return self.physical_resource_id or self.props.get('VpcId')
 
 
+class EC2NatGateway(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::NatGateway'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('ec2')
+        props = self.props
+        subnet_id = self.resolve_refs_recursively(stack_name, props.get('SubnetId'), resources)
+        assoc_id = self.resolve_refs_recursively(stack_name, props.get('AllocationId'), resources)
+        result = client.describe_nat_gateways(Filters=[{'Name': 'subnet-id', 'Values': [subnet_id]}])
+        result = result['NatGateways']
+        result = [gw for gw in result if assoc_id in [ga['AllocationId'] for ga in gw['NatGatewayAddresses']]]
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_nat_gateway',
+                'parameters': {
+                    'SubnetId': 'SubnetId',
+                    'AllocationId': 'AllocationId'
+                    # TODO: add TagSpecifications
+                }
+            },
+            'delete': {
+                'function': 'delete_nat_gateway',
+                'parameters': {
+                    'NatGatewayId': 'PhysicalResourceId'
+                }
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.physical_resource_id or self.props.get('NatGatewayId')
+
+
 class InstanceProfile(GenericBaseModel):
     @staticmethod
     def cloudformation_type():

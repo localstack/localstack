@@ -23,7 +23,7 @@ LOGGER = logging.getLogger(__name__)
 # cache schema definitions
 SCHEMA_CACHE = TTLCache(maxsize=50, ttl=20)
 
-# cache table definitions - used for testing
+# maps table names to cached table definitions (TODO: make region-aware!)
 TABLE_DEFINITIONS = {}
 
 # cache table taggings
