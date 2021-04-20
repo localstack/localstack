@@ -500,7 +500,9 @@ def apply_patches():
             resource_props = res_details['Properties']
             if hasattr(resource, 'get_cfn_attribute') and not resource_props.get('PhysicalResourceId'):
                 try:
-                    resource_props['PhysicalResourceId'] = resource.get_cfn_attribute('Ref')
+                    phys_res_id = resource.get_cfn_attribute('Ref')
+                    if phys_res_id:
+                        resource_props['PhysicalResourceId'] = phys_res_id
                 except Exception:
                     # ignore this error here if the "Ref" attribute is not (yet) available
                     pass

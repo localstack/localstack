@@ -39,7 +39,6 @@ def do_register_localstack_plugins():
         )
         from localstack.services.acm import acm_starter
         from localstack.services.apigateway import apigateway_listener, apigateway_starter
-        from localstack.services.cloudformation import cloudformation_starter, cloudformation_listener
         from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
         from localstack.services.ec2 import ec2_starter, ec2_listener
@@ -59,6 +58,7 @@ def do_register_localstack_plugins():
         from localstack.services.ssm import ssm_listener
         from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
         from localstack.services.sts import sts_starter, sts_listener
+        from localstack.services.support import support_starter
 
         register_plugin(Plugin(
             'edge',
@@ -74,18 +74,10 @@ def do_register_localstack_plugins():
             start=apigateway_starter.start_apigateway,
             listener=apigateway_listener.UPDATE_APIGATEWAY))
 
-        if config.USE_MOTO_CF:
-            # TODO: deprecated - remove in a future iteration
-            register_plugin(Plugin(
-                'cloudformation',
-                start=cloudformation_starter.start_cloudformation,
-                listener=cloudformation_listener.UPDATE_CLOUDFORMATION
-            ))
-        else:
-            register_plugin(Plugin(
-                'cloudformation',
-                start=start_cloudformation
-            ))
+        register_plugin(Plugin(
+            'cloudformation',
+            start=start_cloudformation
+        ))
 
         register_plugin(Plugin(
             'cloudwatch',
@@ -206,6 +198,10 @@ def do_register_localstack_plugins():
             start=swf_starter.start_swf,
             check=swf_starter.check_swf,
             listener=swf_listener.UPDATE_SWF))
+
+        register_plugin(Plugin(
+            'support',
+            start=support_starter.start_support))
 
     except Exception as e:
         if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
