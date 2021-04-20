@@ -2047,4 +2047,3 @@ class TemplateDeployer(object):
         self.update_resource_details(resource_id, result, stack=old_stack, action=stack_action)
 
         return result
-

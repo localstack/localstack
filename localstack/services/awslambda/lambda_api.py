@@ -1966,4 +1966,3 @@ def serve(port, quiet=True):
     LAMBDA_EXECUTOR.startup()
 
     generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
-

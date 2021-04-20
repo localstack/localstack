@@ -1721,4 +1721,3 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
                 'function': _attach_gateway
             }
         }
-
