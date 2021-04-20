@@ -657,6 +657,10 @@ def extract_resource_attribute(resource_type, resource_state, attribute, resourc
 
     if not resource_state:
         resource_state = retrieve_resource_details(resource_id, {}, resources, stack_name) or {}
+        if not resource_state:
+            raise DependencyNotYetSatisfied(resource_ids=resource_id,
+                message='Unable to fetch details for resource "%s" (attribute "%s")' % (resource_id, attribute))
+
     if isinstance(resource_state, MotoCloudFormationModel):
         if is_ref_attribute:
             res_phys_id = getattr(resource_state, 'physical_resource_id', None)
@@ -2043,3 +2047,4 @@ class TemplateDeployer(object):
         self.update_resource_details(resource_id, result, stack=old_stack, action=stack_action)
 
         return result
+
