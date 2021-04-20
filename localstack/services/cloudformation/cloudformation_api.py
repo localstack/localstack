@@ -499,11 +499,8 @@ def list_stacks(req_params):
 
     stack_status_filters = _get_status_filter_members(req_params)
 
-    stack_list = list(state.stacks.values())
-    if stack_status_filters:
-        stacks = [s.describe_details() for s in stack_list if s.status in stack_status_filters]
-    else:
-        stacks = [s.describe_details() for s in stack_list]
+    stacks = [s.describe_details() for s in state.stacks.values() if
+        not stack_status_filters or s.status in stack_status_filters]
 
     attrs = ['StackId', 'StackName', 'TemplateDescription', 'CreationTime', 'LastUpdatedTime', 'DeletionTime',
              'StackStatus', 'StackStatusReason', 'ParentId', 'RootId', 'DriftInformation']

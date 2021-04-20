@@ -1383,8 +1383,8 @@ def invoke_function(function):
         qualifier = request.args.get('Qualifier')
     data = request.get_data()
     if data:
-        data = to_str(data)
         try:
+            data = to_str(data)
             data = json.loads(data)
         except Exception:
             try:
@@ -1458,9 +1458,12 @@ def invoke_function(function):
         not_found = not_found_error('{0}:{1}'.format(arn, qualifier))
 
     if not_found:
-        forward_result = forward_to_fallback_url(arn, json.dumps(data))
-        if forward_result is not None:
-            return _create_response(forward_result)
+        try:
+            forward_result = forward_to_fallback_url(arn, json.dumps(data))
+            if forward_result is not None:
+                return _create_response(forward_result)
+        except Exception as e:
+            LOG.debug('Unable to forward Lambda invocation to fallback URL: "%s" - %s' % (data, e))
         return not_found
 
     if invocation_type == 'RequestResponse':
