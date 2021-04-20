@@ -67,7 +67,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
     def action_should_throttle(self, action, actions):
         throttled = ['%s%s' % (ACTION_PREFIX, a) for a in actions]
-        return action in throttled
+        return (action in throttled) or (action in actions)
 
     def should_throttle(self, action):
         rand = random.random()
@@ -98,7 +98,7 @@ class ProxyListenerDynamoDB(ProxyListener):
         action = headers.get('X-Amz-Target', '')
         action = action.replace(ACTION_PREFIX, '')
 
-        if self.should_throttle(action):
+        if self.should_throttle(action) and (not action == 'BatchWriteItem'):
             return error_response_throughput()
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
@@ -151,13 +151,19 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         elif action == 'BatchWriteItem':
             existing_items = []
+            unprocessed_items = []
             for table_name in sorted(data['RequestItems'].keys()):
                 for request in data['RequestItems'][table_name]:
                     for key in ['PutRequest', 'DeleteRequest']:
                         inner_request = request.get(key)
                         if inner_request:
-                            existing_items.append(find_existing_item(inner_request, table_name))
+                            if self.should_throttle(action):
+                                unprocessed_items.append(inner_request)
+                            else:
+                                item = find_existing_item(inner_request, table_name)
+                                existing_items.append(item)
             ProxyListenerDynamoDB.thread_local.existing_items = existing_items
+            ProxyListenerDynamoDB.thread_local.unprocessed_items = unprocessed_items
 
         elif action == 'Query':
             if data.get('IndexName'):
@@ -271,6 +277,7 @@ class ProxyListenerDynamoDB(ProxyListener):
         streams_enabled_cache = {}
         table_name = data.get('TableName')
         event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name, streams_enabled_cache)
+
         if action == 'UpdateItem':
             if response.status_code == 200 and event_sources_or_streams_enabled:
                 existing_item = self._thread_local('existing_item')
@@ -287,11 +294,21 @@ class ProxyListenerDynamoDB(ProxyListener):
                 stream_spec = dynamodb_get_table_stream_specification(table_name=table_name)
                 if stream_spec:
                     record['dynamodb']['StreamViewType'] = stream_spec['StreamViewType']
+
         elif action == 'BatchWriteItem':
-            records = self.prepare_batch_write_item_records(record, data)
+            records, unprocessed_items = self.prepare_batch_write_item_records(record, data)
             for record in records:
                 event_sources_or_streams_enabled = (event_sources_or_streams_enabled or
                     has_event_sources_or_streams_enabled(record['eventSourceARN'], streams_enabled_cache))
+            if response.status_code == 200 and len(unprocessed_items) > 0:
+                content = json.loads(to_str(response.content))
+                table_name = list(data['RequestItems'].keys())[0]
+                if table_name not in content['UnprocessedItems']:
+                    content['UnprocessedItems'][table_name] = []
+                for unprocessed_item in unprocessed_items:
+                    content['UnprocessedItems'][table_name].append(unprocessed_item)
+                response._content = json.dumps(content)
+                fix_headers_for_updated_response(response)
 
         elif action == 'TransactWriteItems':
             records = self.prepare_transact_write_item_records(record, data)
@@ -399,7 +416,6 @@ class ProxyListenerDynamoDB(ProxyListener):
         if event_sources_or_streams_enabled and records and 'eventName' in records[0]:
             if 'TableName' in data:
                 records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
-
             forward_to_lambda(records)
             records = self.prepare_records_to_forward_to_ddb_stream(records)
             forward_to_ddb_stream(records)
@@ -416,36 +432,51 @@ class ProxyListenerDynamoDB(ProxyListener):
 
     def prepare_batch_write_item_records(self, record, data):
         records = []
+        unprocessed_items = []
         i = 0
         for table_name in sorted(data['RequestItems'].keys()):
             for request in data['RequestItems'][table_name]:
                 put_request = request.get('PutRequest')
+
                 if put_request:
-                    existing_item = self._thread_local('existing_items')[i]
-                    keys = dynamodb_extract_keys(item=put_request['Item'], table_name=table_name)
-                    if isinstance(keys, Response):
-                        return keys
-                    new_record = clone(record)
-                    new_record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
-                    new_record['dynamodb']['Keys'] = keys
-                    new_record['dynamodb']['NewImage'] = put_request['Item']
-                    if existing_item:
-                        new_record['dynamodb']['OldImage'] = existing_item
-                    new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
-                    records.append(new_record)
+                    if len(self._thread_local('existing_items')) > i:
+                        existing_item = self._thread_local('existing_items')[i]
+                        keys = dynamodb_extract_keys(item=put_request['Item'], table_name=table_name)
+                        if isinstance(keys, Response):
+                            return keys
+                        new_record = clone(record)
+                        new_record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
+                        new_record['dynamodb']['Keys'] = keys
+                        new_record['dynamodb']['NewImage'] = put_request['Item']
+                        if existing_item:
+                            new_record['dynamodb']['OldImage'] = existing_item
+                        new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                        records.append(new_record)
+                    if len(self._thread_local('unprocessed_items')) > i:
+                        unprocessed_item = self._thread_local('unprocessed_items')[i]
+                        if unprocessed_item:
+                            unprocessed_item = json.loads(json.dumps({'PutRequest': unprocessed_item}))
+                            unprocessed_items.append(unprocessed_item)
+
                 delete_request = request.get('DeleteRequest')
                 if delete_request:
-                    keys = delete_request['Key']
-                    if isinstance(keys, Response):
-                        return keys
-                    new_record = clone(record)
-                    new_record['eventName'] = 'REMOVE'
-                    new_record['dynamodb']['Keys'] = keys
-                    new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
-                    new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
-                    records.append(new_record)
+                    if len(self._thread_local('existing_items')) > i:
+                        keys = delete_request['Key']
+                        if isinstance(keys, Response):
+                            return keys
+                        new_record = clone(record)
+                        new_record['eventName'] = 'REMOVE'
+                        new_record['dynamodb']['Keys'] = keys
+                        new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
+                        new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                        records.append(new_record)
+                    if len(self._thread_local('unprocessed_items')) > i:
+                        unprocessed_item = self._thread_local('unprocessed_items')[i]
+                        if unprocessed_item:
+                            unprocessed_item = json.loads(json.dumps({'DeleteRequest': unprocessed_item}))
+                            unprocessed_items.append(unprocessed_item)
                 i += 1
-        return records
+        return records, unprocessed_items
 
     def prepare_transact_write_item_records(self, record, data):
         records = []
