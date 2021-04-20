@@ -99,6 +99,13 @@ def test_dynamodb_write_error_injection():
     config.DYNAMODB_WRITE_ERROR_PROBABILITY = 1.0
     assert_raises(ClientError, table.put_item, Item={PARTITION_KEY: short_uid(), 'data': 'foobar123'})
 
+    # with a probability of 1, BatchWriteItem does not throw errors but logs UnprocessedItems
+    response = dynamodb.batch_write_item(RequestItems={table: [
+            {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}},
+            {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar456'}}},
+        ]})
+    self.assertTrue(len(response['UnprocessedItems']) > 0)
+
     # reset probability to zero
     config.DYNAMODB_WRITE_ERROR_PROBABILITY = 0.0
 
