@@ -43,4 +43,5 @@ def check_kinesis(expect_shutdown=False, print_error=False):
     if expect_shutdown:
         assert out is None
     else:
-        assert isinstance(out['StreamNames'], list)
+        if out:
+            assert isinstance(out['StreamNames'], list)

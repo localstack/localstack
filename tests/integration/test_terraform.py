@@ -35,11 +35,14 @@ class TestTerraform(unittest.TestCase):
         def _run(*args):
             with(INIT_LOCK):
                 base_dir = cls.get_base_dir()
-                # if not os.path.exists(os.path.join(base_dir, '.terraform', 'plugins')):
-                run('cd %s; terraform init -input=false' % base_dir)
+
                 # remove any cache files from previous runs
                 for tf_file in ['tfplan', 'terraform.tfstate', 'terraform.tfstate.backup']:
                     rm_rf(os.path.join(base_dir, tf_file))
+
+                # if not os.path.exists(os.path.join(base_dir, '.terraform', 'plugins')):
+                run('cd %s; terraform init -input=false' % base_dir)
+
                 # create TF plan
                 run('cd %s; terraform plan -out=tfplan -input=false' % base_dir)
         start_worker_thread(_run)

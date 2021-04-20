@@ -716,9 +716,9 @@ class EventsTest(unittest.TestCase):
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
         pattern = {
-            'Source': [{'exists': True}],
+            'source': [{'exists': True}],
             'detail-type': [{'prefix': 'core.app'}],
-            'Detail': json.dumps({
+            'detail': json.dumps({
                 'decription': ['this-is-event-details'],
                 'amount': [200],
                 'salary': [2000, 4000],

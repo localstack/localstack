@@ -4,8 +4,8 @@ import xmltodict
 from moto.ec2 import models as ec2_models
 from moto.ec2.responses import security_groups, vpcs
 from moto.ec2.responses.security_groups import (
-    SecurityGroups as security_groups_backend, AUTHORIZE_SECURITY_GROUP_EGRESS_RESPONSE, try_parse_int
-)
+    SecurityGroups as security_groups_backend, AUTHORIZE_SECURITY_GROUP_EGRESS_RESPONSE, try_parse_int,
+    REVOKE_SECURITY_GROUP_INGRESS_RESPONSE)
 
 from moto.ec2.exceptions import InvalidPermissionNotFoundError
 from moto.ec2.responses.reserved_instances import ReservedInstances
@@ -375,6 +375,34 @@ def patch_ec2():
             return AUTHORIZE_SECURITY_GROUP_EGRESS_RESPONSE
 
     security_groups_backend.revoke_security_group_egress = sg_backend_revoke_security_group_egress
+
+    def sg_backend_revoke_security_group_ingress(self):
+        if self.is_not_dryrun('RevokeSecurityGroupIngress'):
+            for args in self._process_rules_from_querystring():
+                (
+                    group_name_or_id,
+                    ip_protocol,
+                    from_port,
+                    to_port,
+                    ip_ranges,
+                    ipv6_ranges,
+                    source_groups,
+                    source_group_ids
+                ) = args
+
+                self.ec2_backend.revoke_security_group_ingress(
+                    group_name_or_id,
+                    ip_protocol,
+                    from_port,
+                    to_port,
+                    ip_ranges,
+                    source_groups,
+                    source_group_ids
+                )
+
+            return REVOKE_SECURITY_GROUP_INGRESS_RESPONSE
+
+    security_groups_backend.revoke_security_group_ingress = sg_backend_revoke_security_group_ingress
 
 
 def start_ec2(port=None, asynchronous=False, update_listener=None):

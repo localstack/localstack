@@ -67,9 +67,10 @@ def filter_event_based_on_event_format(self, rule, event):
 
     rule_information = self.events_backend.describe_rule(rule)
     if rule_information.event_pattern:
-        event_pattern = json.loads(rule_information.event_pattern)
-        if not filter_event(event_pattern, event):
-            return False
+        event_pattern = json.loads(str(rule_information.event_pattern))
+        if event_pattern:
+            if not filter_event(event_pattern, event):
+                return False
     return True
 
 
