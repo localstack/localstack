@@ -70,7 +70,7 @@ def filter_event_based_on_event_format(self, rule, event):
         event_pattern = rule_information.event_pattern._filter
         if event_pattern and not filter_event(event_pattern, event):
             return False
-    
+
     return True
 
 
