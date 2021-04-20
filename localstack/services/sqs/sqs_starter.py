@@ -3,10 +3,11 @@ import types
 import logging
 import traceback
 from moto.sqs import responses as sqs_responses
-from moto.sqs.models import Queue
-from moto.core.utils import camelcase_to_underscores
+from moto.sqs.models import Queue, SQSBackend, _filter_message_attributes
+from moto.core.utils import (camelcase_to_underscores, unix_time)
 from moto.sqs.exceptions import QueueDoesNotExist
 from localstack import config
+from copy import deepcopy
 from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -120,6 +121,85 @@ def patch_moto():
         return queue_name
 
     sqs_responses.SQSResponse._get_queue_name = sqs_responses_get_queue_name
+
+    def new_receive_messages(
+        self,
+        queue_name,
+        count,
+        wait_seconds_timeout,
+        visibility_timeout,
+        message_attribute_names=None,
+    ):
+        # print('---DEBUG---')
+        # queue = self.get_queue(queue_name)
+        # print(len(queue.messages))
+
+        if message_attribute_names is None:
+            message_attribute_names = []
+        queue = self.get_queue(queue_name)
+        result = []
+        previous_result_count = len(result)
+
+        polling_end = unix_time() + wait_seconds_timeout
+        currently_pending_groups = deepcopy(queue.pending_message_groups)
+
+        # queue.messages only contains visible messages
+        while True:
+
+            if result or (wait_seconds_timeout and unix_time() > polling_end):
+                break
+
+            messages_to_dlq = []
+
+            for message in queue.messages:
+                if not message.visible:
+                    continue
+
+                if message in queue.pending_messages:
+                    # The message is pending but is visible again, so the
+                    # consumer must have timed out.
+                    queue.pending_messages.remove(message)
+                    currently_pending_groups = deepcopy(queue.pending_message_groups)
+
+                if message.group_id and queue.fifo_queue:
+                    if message.group_id in currently_pending_groups:
+                        # A previous call is still processing messages in this group, so we cannot deliver this one.
+                        continue
+
+                if (
+                    queue.dead_letter_queue is not None
+                    and message.approximate_receive_count
+                    >= queue.redrive_policy["maxReceiveCount"]
+                ):
+                    messages_to_dlq.append(message)
+                    continue
+
+                queue.pending_messages.add(message)
+                message.mark_received(visibility_timeout=visibility_timeout)
+                _filter_message_attributes(message, message_attribute_names)
+                result.append(message)
+                if len(result) >= count:
+                    break
+
+            for message in messages_to_dlq:
+                queue._messages.remove(message)
+                queue.dead_letter_queue.add_message(message)
+
+            if previous_result_count == len(result):
+                if wait_seconds_timeout == 0:
+                    # There is timeout and we have added no additional results,
+                    # so break to avoid an infinite loop.
+                    break
+
+                import time
+
+                time.sleep(0.01)
+                continue
+
+            previous_result_count = len(result)
+
+        return result
+    SQSBackend.receive_messages = new_receive_messages
 
 
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None):
