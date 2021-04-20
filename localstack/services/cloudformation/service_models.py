@@ -9,7 +9,7 @@ from moto.core.models import CloudFormationModel
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import camel_to_snake_case, select_attributes
+from localstack.utils.common import camel_to_snake_case, select_attributes, canonical_json, md5
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower,
     merge_parameters, params_dict_to_list, select_parameters, params_select_attributes)
@@ -1045,6 +1045,10 @@ class S3BucketPolicy(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::S3::BucketPolicy'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        policy = self.props.get('Policy')
+        return policy and md5(canonical_json(json.loads(policy)))
 
     def fetch_state(self, stack_name, resources):
         bucket_name = self.props.get('Bucket') or self.resource_id
