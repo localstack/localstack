@@ -1,5 +1,5 @@
 import os
-from nose.tools import assert_raises, assert_equal, assertTrue
+from nose.tools import assert_raises, assert_equal, assert_true
 from botocore.exceptions import ClientError
 from localstack import config
 from localstack.utils.common import short_uid
@@ -104,7 +104,7 @@ def test_dynamodb_write_error_injection():
         {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}},
         {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar456'}}}
     ]})
-    assertTrue(len(response['UnprocessedItems']) > 0)
+    assert_true(len(response['UnprocessedItems']) > 0)
 
     # reset probability to zero
     config.DYNAMODB_WRITE_ERROR_PROBABILITY = 0.0
