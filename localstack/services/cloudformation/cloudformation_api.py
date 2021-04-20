@@ -496,11 +496,17 @@ def describe_stacks(req_params):
 
 def list_stacks(req_params):
     state = CloudFormationRegion.get()
-    filter = req_params.get('StackStatusFilter')
+
+    stack_status_filters = _get_status_filter_members(req_params)
+
     stack_list = list(state.stacks.values())
-    stacks = [s.describe_details() for s in stack_list if filter in [None, s.status]]
+    if stack_status_filters:
+        stacks = [s.describe_details() for s in stack_list if s.status in stack_status_filters]
+    else:
+        stacks = [s.describe_details() for s in stack_list]
+
     attrs = ['StackId', 'StackName', 'TemplateDescription', 'CreationTime', 'LastUpdatedTime', 'DeletionTime',
-        'StackStatus', 'StackStatusReason', 'ParentId', 'RootId', 'DriftInformation']
+             'StackStatus', 'StackStatusReason', 'ParentId', 'RootId', 'DriftInformation']
     stacks = [select_attributes(stack, attrs) for stack in stacks]
     result = {'StackSummaries': {'member': stacks}}
     return result
@@ -827,3 +833,27 @@ def _response(action, result):
 def serve(port, quiet=True):
     from localstack.services import generic_proxy  # moved here to fix circular import errors
     return generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
+
+
+def _get_status_filter_members(req_params):
+    """
+    Creates a set of status from the requests parameters
+
+    The API request params specify two parameters of the endpoint:
+       - NextToken: Token for next page
+       - StackStatusFilter.member.N: Status to use as a filter (it conforms a list)
+
+    StackStatusFilter.member.N abstracts the list of status in the request, and it is sent
+    as different parameters, as the N suggests.
+
+    Docs:
+         https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_ListStacks.html
+
+    Returns:
+        set: set of status to filter upon
+    """
+    return {
+        value
+        for param, value in req_params.items()
+        if param.startswith('StackStatusFilter.member')
+    }
