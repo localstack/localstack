@@ -111,3 +111,9 @@ def get_cfn_response_mod_file():
     if not os.path.exists(cfn_response_tmp_file):
         common.download(CFN_RESPONSE_MODULE_URL, cfn_response_tmp_file)
     return cfn_response_tmp_file
+
+
+def lambda_select_params(*selected):
+    def do_select(params, **kwargs):
+        return dict([(k, v) for k, v in params.items() if k in selected])
+    return do_select
