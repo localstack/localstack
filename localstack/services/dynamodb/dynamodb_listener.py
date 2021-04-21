@@ -373,9 +373,15 @@ class ProxyListenerDynamoDB(ProxyListener):
         elif action == 'DeleteItem':
             if response.status_code == 200 and event_sources_or_streams_enabled:
                 old_item = self._thread_local('existing_item')
+                record['eventID'] = short_uid()
                 record['eventName'] = 'REMOVE'
                 record['dynamodb']['Keys'] = data['Key']
                 record['dynamodb']['OldImage'] = old_item
+                record['dynamodb']['SizeBytes'] = len(json.dumps(old_item))
+                # Get stream specifications details for the table
+                stream_spec = dynamodb_get_table_stream_specification(table_name=table_name)
+                if stream_spec:
+                    record['dynamodb']['StreamViewType'] = stream_spec['StreamViewType']
 
         elif action == 'CreateTable':
             if 'StreamSpecification' in data:
@@ -463,6 +469,8 @@ class ProxyListenerDynamoDB(ProxyListener):
                     if isinstance(keys, Response):
                         return keys
                     new_record = clone(record)
+                    new_record['eventID'] = short_uid()
+                    new_record['dynamodb']['SizeBytes'] = len(json.dumps(put_request['Item']))
                     new_record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
                     new_record['dynamodb']['Keys'] = keys
                     new_record['dynamodb']['NewImage'] = put_request['Item']
@@ -473,12 +481,15 @@ class ProxyListenerDynamoDB(ProxyListener):
                 delete_request = request.get('DeleteRequest')
                 if delete_request:
                     keys = delete_request['Key']
+                    existing_item = self._thread_local('existing_items')[i]
                     if isinstance(keys, Response):
                         return keys
                     new_record = clone(record)
+                    new_record['eventID'] = short_uid()
                     new_record['eventName'] = 'REMOVE'
                     new_record['dynamodb']['Keys'] = keys
-                    new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
+                    new_record['dynamodb']['OldImage'] = existing_item
+                    new_record['dynamodb']['SizeBytes'] = len(json.dumps(existing_item))
                     new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                     records.append(new_record)
                 i += 1
@@ -502,12 +513,14 @@ class ProxyListenerDynamoDB(ProxyListener):
                 if stream_spec:
                     record['dynamodb']['StreamViewType'] = stream_spec['StreamViewType']
                 new_record = clone(record)
+                new_record['eventID'] = short_uid()
                 new_record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
                 new_record['dynamodb']['Keys'] = keys
                 new_record['dynamodb']['NewImage'] = put_request['Item']
                 if existing_item:
                     new_record['dynamodb']['OldImage'] = existing_item
                 new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                new_record['dynamodb']['SizeBytes'] = len(json.dumps(put_request['Item']))
                 records.append(new_record)
                 i += 1
             update_request = request.get('Update')
@@ -523,26 +536,31 @@ class ProxyListenerDynamoDB(ProxyListener):
                 if stream_spec:
                     record['dynamodb']['StreamViewType'] = stream_spec['StreamViewType']
                 new_record = clone(record)
+                new_record['eventID'] = short_uid()
                 new_record['eventName'] = 'MODIFY'
                 new_record['dynamodb']['Keys'] = keys
                 new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
                 new_record['dynamodb']['NewImage'] = updated_item
                 new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                new_record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
                 records.append(new_record)
                 i += 1
             delete_request = request.get('Delete')
             if delete_request:
                 table_name = delete_request['TableName']
                 keys = delete_request['Key']
+                existing_item = self._thread_local('existing_items')[i]
                 if isinstance(keys, Response):
                     return keys
                 stream_spec = dynamodb_get_table_stream_specification(table_name=table_name)
                 if stream_spec:
                     record['dynamodb']['StreamViewType'] = stream_spec['StreamViewType']
                 new_record = clone(record)
+                new_record['eventID'] = short_uid()
                 new_record['eventName'] = 'REMOVE'
                 new_record['dynamodb']['Keys'] = keys
-                new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
+                new_record['dynamodb']['OldImage'] = existing_item
+                new_record['dynamodb']['SizeBytes'] = len(json.dumps(existing_item))
                 new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                 records.append(new_record)
                 i += 1
@@ -550,7 +568,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
     def prepare_records_to_forward_to_ddb_stream(self, records):
         # StreamViewType determines what information is written to the stream for the table
-        # When an item in the table is modified
+        # When an item in the table is inserted, updated or deleted
         for record in records:
             if record['dynamodb'].get('StreamViewType'):
                 # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
@@ -560,15 +578,9 @@ class ProxyListenerDynamoDB(ProxyListener):
                 # NEW_IMAGE - The entire item, as it appears after it was modified, is written to the stream
                 elif record['dynamodb']['StreamViewType'] == 'NEW_IMAGE':
                     record['dynamodb'].pop('OldImage', None)
-                    record['dynamodb'].pop('Keys', None)
                 # OLD_IMAGE - The entire item, as it appeared before it was modified, is written to the stream
                 elif record['dynamodb']['StreamViewType'] == 'OLD_IMAGE':
                     record['dynamodb'].pop('NewImage', None)
-                    record['dynamodb'].pop('Keys', None)
-                # NEW_AND_OLD_IMAGES - Both the new and the old item images of the item are
-                # written to the stream.
-                elif record['dynamodb']['StreamViewType'] == 'NEW_AND_OLD_IMAGES':
-                    record['dynamodb'].pop('Keys', None)
         return records
 
     def delete_all_event_source_mappings(self, table_arn):
