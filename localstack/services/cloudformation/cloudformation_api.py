@@ -232,6 +232,7 @@ class Stack(object):
                 LOG.debug('Unable to resolve references in stack outputs: %s - %s' % (details, e))
             exports = details.get('Export') or {}
             export = exports.get('Name')
+            export = template_deployer.resolve_refs_recursively(self.stack_name, export, self.resources)
             description = details.get('Description')
             entry = {'OutputKey': k, 'OutputValue': value, 'Description': description, 'ExportName': export}
             result.append(entry)
@@ -484,7 +485,8 @@ def update_stack_set(req_params):
 def describe_stacks(req_params):
     state = CloudFormationRegion.get()
     stack_name = req_params.get('StackName')
-    stacks = [s.describe_details() for s in state.stacks.values() if stack_name in [None, s.stack_name, s.stack_id]]
+    stack_list = list(state.stacks.values())
+    stacks = [s.describe_details() for s in stack_list if stack_name in [None, s.stack_name, s.stack_id]]
     if stack_name and not stacks:
         return error_response('Stack with id %s does not exist' % stack_name,
             code=400, code_string='ValidationError')
@@ -494,10 +496,14 @@ def describe_stacks(req_params):
 
 def list_stacks(req_params):
     state = CloudFormationRegion.get()
-    filter = req_params.get('StackStatusFilter')
-    stacks = [s.describe_details() for s in state.stacks.values() if filter in [None, s.status]]
+
+    stack_status_filters = _get_status_filter_members(req_params)
+
+    stacks = [s.describe_details() for s in state.stacks.values() if
+        not stack_status_filters or s.status in stack_status_filters]
+
     attrs = ['StackId', 'StackName', 'TemplateDescription', 'CreationTime', 'LastUpdatedTime', 'DeletionTime',
-        'StackStatus', 'StackStatusReason', 'ParentId', 'RootId', 'DriftInformation']
+             'StackStatus', 'StackStatusReason', 'ParentId', 'RootId', 'DriftInformation']
     stacks = [select_attributes(stack, attrs) for stack in stacks]
     result = {'StackSummaries': {'member': stacks}}
     return result
@@ -824,3 +830,27 @@ def _response(action, result):
 def serve(port, quiet=True):
     from localstack.services import generic_proxy  # moved here to fix circular import errors
     return generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
+
+
+def _get_status_filter_members(req_params):
+    """
+    Creates a set of status from the requests parameters
+
+    The API request params specify two parameters of the endpoint:
+       - NextToken: Token for next page
+       - StackStatusFilter.member.N: Status to use as a filter (it conforms a list)
+
+    StackStatusFilter.member.N abstracts the list of status in the request, and it is sent
+    as different parameters, as the N suggests.
+
+    Docs:
+         https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_ListStacks.html
+
+    Returns:
+        set: set of status to filter upon
+    """
+    return {
+        value
+        for param, value in req_params.items()
+        if param.startswith('StackStatusFilter.member')
+    }

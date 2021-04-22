@@ -22,15 +22,21 @@ REST_API_ATTRIBUTES = ['disableExecuteApiEndpoint', 'apiKeySource', 'minimumComp
 
 
 def apply_json_patch_safe(subject, patch_operations, in_place=True):
+    results = []
     for operation in patch_operations:
         try:
-            return apply_patch(subject, [operation], in_place=in_place)
+            if not operation.get('value'):
+                LOG.info('Missing "value" in JSONPatch operation for %s: %s' % (subject, operation))
+                continue
+            result = apply_patch(subject, [operation], in_place=in_place)
+            results.append(result)
         except Exception as e:
             if operation['op'] == 'replace' and 'non-existent object' in str(e):
                 # fall back to an ADD operation if the REPLACE fails
                 operation['op'] = 'add'
                 return apply_patch(subject, [operation], in_place=in_place)
             raise
+    return results
 
 
 def apply_patches():

@@ -9,8 +9,6 @@ from six import iteritems
 from moto.ec2.utils import generate_route_id
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.cloudformation import parsing
-from moto.cloudformation.models import cloudformation_backends
-from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS
@@ -165,18 +163,6 @@ RESOURCE_TO_FUNCTION = {
         'create': {
             'function': 'put_bucket_policy',
             'parameters': rename_params(dump_json_params(None, 'PolicyDocument'), {'PolicyDocument': 'Policy'})
-        }
-    },
-    'SecretsManager::Secret': {
-        'create': {
-            'function': 'create_secret',
-            'parameters': select_parameters('Name', 'Description', 'SecretString', 'KmsKeyId', 'Tags')
-        },
-        'delete': {
-            'function': 'delete_secret',
-            'parameters': {
-                'SecretId': 'Name'
-            }
         }
     },
     'KinesisFirehose::DeliveryStream': {
@@ -659,6 +645,10 @@ def extract_resource_attribute(resource_type, resource_state, attribute, resourc
 
     if not resource_state:
         resource_state = retrieve_resource_details(resource_id, {}, resources, stack_name) or {}
+        if not resource_state:
+            raise DependencyNotYetSatisfied(resource_ids=resource_id,
+                message='Unable to fetch details for resource "%s" (attribute "%s")' % (resource_id, attribute))
+
     if isinstance(resource_state, MotoCloudFormationModel):
         if is_ref_attribute:
             res_phys_id = getattr(resource_state, 'physical_resource_id', None)
@@ -893,10 +883,6 @@ def resolve_refs_recursively(stack_name, value, resources):
 
         if stripped_fn_lower == 'importvalue':
             import_value_key = resolve_refs_recursively(stack_name, value[keys_list[0]], resources)
-            if config.USE_MOTO_CF:
-                exports = cloudformation_backends[aws_stack.get_region()].exports
-                export = exports[import_value_key]
-                return export.value
             stack = find_stack(stack_name)
             return stack.exports_map[import_value_key]['Value']
 
@@ -1615,6 +1601,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
     elif res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource)
         props['TableName'] = props.get('TableName') or _generate_res_name()
+
+    elif res_type == 'AWS::SecretsManager::Secret':
+        props['Name'] = props.get('Name') or _generate_res_name()
 
     elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
         existing_bucket = existing_resources.get(resource_id) or {}
