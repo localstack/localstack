@@ -577,7 +577,7 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
     elif ':sqs:' in arn:
         sqs_client = connect_to_service('sqs', region_name=region)
         queue_url = get_sqs_queue_url(arn)
-        msg_group_id = (target_attributes or {}).get('MessageGroupId')
+        msg_group_id = dict_utils.get_safe(target_attributes, '$.SqsParameters.MessageGroupId')
         kwargs = {'MessageGroupId': msg_group_id} if msg_group_id else {}
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 

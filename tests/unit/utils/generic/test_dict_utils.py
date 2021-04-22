@@ -89,8 +89,5 @@ class GenericDictUtilsTest(unittest.TestCase):
                     'level_three_1': 'level_three_1_value'
                 },
             },
-            'random': {
-                'attribute': None
-            },
             'level_one_2': 'level_one_2_value'
         })

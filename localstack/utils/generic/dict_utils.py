@@ -100,6 +100,8 @@ def pick_attributes(dictionary, paths):
 
     for path in paths:
         value = get_safe(dictionary, path)
-        set_safe_mutable(new_dictionary, path, value)
+
+        if value is not None:
+            set_safe_mutable(new_dictionary, path, value)
 
     return new_dictionary
