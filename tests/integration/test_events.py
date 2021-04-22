@@ -202,7 +202,7 @@ class EventsTest(unittest.TestCase):
 
         def get_message(queue_url):
             resp = sqs_client.receive_message(QueueUrl=queue_url)
-            return resp['Messages']
+            return resp.get('Messages')
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
         self.assertEqual(len(messages), 1)
@@ -841,7 +841,7 @@ class EventsTest(unittest.TestCase):
                 'amount': 200,
                 'salary': 2000,
                 'env': 'prod',
-                'user': ['user4', 'user3'],
+                'user': 'user3',
                 'admins': 'admin',
                 'test1': 300,
                 'test2': 'test22',
@@ -885,9 +885,8 @@ class EventsTest(unittest.TestCase):
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
         self.assertEqual(len(messages), 1)
         self.assertEqual(json.loads(messages[0].get('Body')), json.loads(event['Detail']))
-
         event_details = json.loads(event['Detail'])
-        event_details['admins'] = 'not_admin'
+        event_details['admins'] = 'no'
         event['Detail'] = json.dumps(event_details)
 
         self.events_client.put_events(Entries=[event])
