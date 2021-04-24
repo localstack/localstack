@@ -677,6 +677,23 @@ class SNSTest(unittest.TestCase):
         # clean up
         self.sns_client.delete_topic(TopicArn=topic_arn)
 
+    def test_create_duplicate_topic_check_idempotentness(self):
+        topic_name = 'test-%s' % short_uid()
+        tags = [{'Key': 'a', 'Value': '1'}, {'Key': 'b', 'Value': '2'}]
+        kwargs = [{'Tags': tags},  # to create topic with two tags
+            {'Tags': tags},  # to create the same topic again with same tags
+            {'Tags': [tags[0]]},  # to create the same topic again with one of the tags from above
+            {'Tags': []}  # to create the same topic again with no tags
+        ]
+        responses = []
+        for arg in kwargs:
+            responses.append(self.sns_client.create_topic(Name=topic_name, **arg))
+        # assert TopicArn is returned by all the above create_topic calls
+        for i in range(len(responses)):
+            self.assertIn('TopicArn', responses[i])
+        # clean up
+        self.sns_client.delete_topic(TopicArn=responses[0]['TopicArn'])
+
     def test_publish_by_path_parameters(self):
         topic_name = 'topic-{}'.format(short_uid())
         queue_name = 'queue-{}'.format(short_uid())
