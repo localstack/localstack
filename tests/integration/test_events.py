@@ -619,18 +619,30 @@ class EventsTest(unittest.TestCase):
         queue_name = 'queue-{}'.format(short_uid())
         rule_name = 'rule-{}'.format(short_uid())
         target_id = 'target-{}'.format(short_uid())
+        bus_name = 'bus-{}'.format(short_uid())
 
         sqs_client = aws_stack.connect_to_service('sqs', region_name='eu-west-1')
         sqs_client.create_queue(QueueName=queue_name)
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
-        self.events_client.put_rule(Name=rule_name)
+        self.events_client.create_event_bus(
+            Name=bus_name
+        )
+
+        self.events_client.put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+        )
+
         self.events_client.put_targets(
             Rule=rule_name,
-            Targets=[{
-                'Id': target_id,
-                'Arn': queue_arn
-            }]
+            EventBusName=bus_name,
+            Targets=[
+                {
+                    'Id': target_id,
+                    'Arn': queue_arn
+                }
+            ]
         )
 
         response = self.events_client.put_events(
