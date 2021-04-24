@@ -422,9 +422,6 @@ class TestS3(unittest.TestCase):
         response = s3_listener.get_replication(bucket_name)
         self.assertRegexpMatches(response._content, r'The bucket does not exist')
 
-        response = s3_listener.get_encryption(bucket_name)
-        self.assertRegexpMatches(response._content, r'The bucket does not exist')
-
         response = s3_listener.get_object_lock(bucket_name)
         self.assertRegexpMatches(response._content, r'The bucket does not exist')
 
