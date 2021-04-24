@@ -400,7 +400,11 @@ def start_lambda_sqs_listener():
 
             sqs_client = aws_stack.connect_to_service('sqs')
             entries = [{'Id': r['receiptHandle'], 'ReceiptHandle': r['receiptHandle']} for r in records]
-            sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+            try:
+                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+            except Exception as e:
+                LOG.info('Unable to delete Lambda events from SQS queue ' +
+                    '(please check SQS visibility timeout settings): %s - %s' % (entries, e))
 
         records = []
         for msg in messages:
@@ -422,7 +426,11 @@ def start_lambda_sqs_listener():
         event = {'Records': records}
 
         # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
-        run_lambda(func_arn=lambda_arn, event=event, context={}, asynchronous=True, callback=delete_messages)
+        res = run_lambda(func_arn=lambda_arn, event=event, context={},
+            asynchronous=True, callback=delete_messages)
+        if isinstance(res, lambda_executors.InvocationResult) and getattr(res.result, 'status_code', 0) >= 400:
+            return False
+        return True
 
     def listener_loop(*args):
         while True:
@@ -435,6 +443,8 @@ def start_lambda_sqs_listener():
                     SQS_LISTENER_THREAD.pop('_thread_')
                     return
 
+                unprocessed_messages = {}
+
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for source in sources:
                     queue_arn = source['EventSourceArn']
@@ -444,16 +454,21 @@ def start_lambda_sqs_listener():
                     try:
                         region_name = queue_arn.split(':')[3]
                         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-                        result = sqs_client.receive_message(
-                            QueueUrl=queue_url,
-                            MessageAttributeNames=['All'],
-                            MaxNumberOfMessages=batch_size
-                        )
-                        messages = result.get('Messages')
+                        messages = unprocessed_messages.pop(queue_arn, None)
                         if not messages:
-                            continue
+                            result = sqs_client.receive_message(
+                                QueueUrl=queue_url,
+                                MessageAttributeNames=['All'],
+                                MaxNumberOfMessages=batch_size
+                            )
+                            messages = result.get('Messages')
+                            if not messages:
+                                continue
 
-                        send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
+                        LOG.debug('Sending event from event source %s to Lambda %s' % (queue_arn, lambda_arn))
+                        res = send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
+                        if not res:
+                            unprocessed_messages[queue_arn] = messages
 
                     except Exception as e:
                         LOG.debug('Unable to poll SQS messages for queue %s: %s' % (queue_arn, e))

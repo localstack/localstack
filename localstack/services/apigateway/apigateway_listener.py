@@ -302,7 +302,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get('type') or integration.get('integrationType') or ''
     integration_type = integration_type_orig.upper()
-    uri = integration.get('uri') or integration.get('integrationUri')
+    uri = integration.get('uri') or integration.get('integrationUri') or ''
 
     if (uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri) or uri.startswith('arn:aws:lambda'):
         if integration_type in ['AWS', 'AWS_PROXY']:
