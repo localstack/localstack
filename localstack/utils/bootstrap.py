@@ -58,6 +58,9 @@ API_COMPOSITES = {
     'cognito': ['cognito-idp', 'cognito-identity']
 }
 
+# main container name determined via "docker inspect"
+MAIN_CONTAINER_NAME_CACHED = None
+
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
@@ -235,11 +238,15 @@ def get_main_container_id():
 
 
 def get_main_container_name():
-    cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, config.HOSTNAME)
-    try:
-        return run(cmd, print_error=False).strip().lstrip('/')
-    except Exception:
-        return config.MAIN_CONTAINER_NAME
+    global MAIN_CONTAINER_NAME_CACHED
+    if MAIN_CONTAINER_NAME_CACHED is None:
+        hostname = os.environ.get('HOSTNAME')
+        cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, hostname)
+        try:
+            MAIN_CONTAINER_NAME_CACHED = run(cmd, print_error=False).strip().lstrip('/')
+        except Exception:
+            MAIN_CONTAINER_NAME_CACHED = config.MAIN_CONTAINER_NAME
+    return MAIN_CONTAINER_NAME_CACHED
 
 
 def get_server_version():
