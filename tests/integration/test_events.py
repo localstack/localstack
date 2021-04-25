@@ -27,8 +27,6 @@ TEST_EVENT_PATTERN = {
     'Detail': [EVENT_DETAIL]
 }
 
-TEST_EVENT_PATTERN_1 = {'detail': {'EventType': ['0', '1']}}
-
 
 class EventsTest(unittest.TestCase):
     def setUp(self):
@@ -171,7 +169,7 @@ class EventsTest(unittest.TestCase):
         self.events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
-            EventPattern=json.dumps(TEST_EVENT_PATTERN_1)
+            EventPattern=json.dumps({'detail': {'EventType': ['0', '1']}})
         )
 
         rs = self.events_client.put_targets(
@@ -227,22 +225,7 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(len(messages), 0)
 
         # clean up
-        sqs_client.delete_queue(QueueUrl=queue_url)
-
-        self.events_client.remove_targets(
-            Rule=rule_name,
-            EventBusName=bus_name,
-            Ids=[target_id],
-            Force=True
-        )
-        self.events_client.delete_rule(
-            Name=rule_name,
-            EventBusName=bus_name,
-            Force=True
-        )
-        self.events_client.delete_event_bus(
-            Name=bus_name
-        )
+        self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
 
     def test_put_events_with_target_sns(self):
         queue_name = 'test-%s' % short_uid()
