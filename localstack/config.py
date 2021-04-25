@@ -81,6 +81,9 @@ SQS_PORT_EXTERNAL = int(os.environ.get('SQS_PORT_EXTERNAL') or 0)
 # name of the host under which the LocalStack services are available
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
 
+# host under which the LocalStack services are available from Lambda Docker containers
+HOSTNAME_FROM_LAMBDA = os.environ.get('HOSTNAME_FROM_LAMBDA', '').strip()
+
 # whether to remotely copy the lambda code or locally mount a volume
 LAMBDA_REMOTE_DOCKER = is_env_true('LAMBDA_REMOTE_DOCKER')
 

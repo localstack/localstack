@@ -178,6 +178,7 @@ You can pass the following environment variables to LocalStack:
   started in different containers using docker-compose.
 * `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (default: `localhost`).
   This host is used, e.g., when returning queue URLs from the SQS service to the client.
+* `HOSTNAME_FROM_LAMBDA`: Endpoint host under which APIs are accessible from Lambda containers (optional). This can be useful in docker-compose stacks to use the local container hostname (e.g., `HOSTNAME_FROM_LAMBDA=localstack`) if neither IP address nor container name of the main container are available (e.g., in CI). Often used in combination with `LAMBDA_DOCKER_NETWORK`.
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.

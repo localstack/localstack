@@ -222,7 +222,7 @@ def get_main_container_ip():
     container_name = get_main_container_name()
     cmd = ("%s inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" %
         (config.DOCKER_CMD, container_name))
-    return run(cmd).strip()
+    return run(cmd, print_error=False).strip()
 
 
 def get_main_container_id():
