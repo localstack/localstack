@@ -50,8 +50,6 @@ package_data = {
         'dashboard/web/img/*',
         'dashboard/web/js/*',
         'dashboard/web/views/*',
-        'ext/java/*.*',
-        'ext/java/src/main/java/cloud/localstack/*.*',
         'utils/kinesis/java/cloud/localstack/*.*'
     ]}
 

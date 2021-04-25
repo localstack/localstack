@@ -94,7 +94,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 
 ## Requirements
 
-* `python` (both Python 2.x and 3.x supported)
+* `python` (Python 2.x up to 3.8 supported)
 * `pip` (python package manager)
 * `Docker`
 
