@@ -14,6 +14,7 @@ import six
 import botocore.config
 from pytz import timezone
 from urllib.parse import parse_qs
+from moto.s3.models import s3_backend
 from botocore.client import ClientError
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
@@ -40,25 +41,22 @@ STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
 PORT_S3_BACKEND = None
 
 # mappings for S3 bucket notifications
-S3_NOTIFICATIONS = {}
+S3_NOTIFICATIONS = s3_backend.S3_NOTIFICATIONS = getattr(s3_backend, 'S3_NOTIFICATIONS', {})
 
 # mappings for bucket CORS settings
-BUCKET_CORS = {}
+BUCKET_CORS = s3_backend.BUCKET_CORS = getattr(s3_backend, 'BUCKET_CORS', {})
 
 # maps bucket name to lifecycle settings
-BUCKET_LIFECYCLE = {}
+BUCKET_LIFECYCLE = s3_backend.BUCKET_LIFECYCLE = getattr(s3_backend, 'BUCKET_LIFECYCLE', {})
 
 # maps bucket name to replication settings
-BUCKET_REPLICATIONS = {}
-
-# maps bucket name to encryption settings
-BUCKET_ENCRYPTIONS = {}
+BUCKET_REPLICATIONS = s3_backend.BUCKET_REPLICATIONS = getattr(s3_backend, 'BUCKET_REPLICATIONS', {})
 
 # maps bucket name to object lock settings
-OBJECT_LOCK_CONFIGS = {}
+OBJECT_LOCK_CONFIGS = s3_backend.OBJECT_LOCK_CONFIGS = getattr(s3_backend, 'OBJECT_LOCK_CONFIGS', {})
 
 # map to store the s3 expiry dates
-OBJECT_EXPIRY = {}
+OBJECT_EXPIRY = s3_backend.OBJECT_EXPIRY = getattr(s3_backend, 'OBJECT_EXPIRY', {})
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -614,7 +612,7 @@ def remove_xml_preamble(response):
 
 # --------------
 # HELPER METHODS
-#   for lifecycle/replication/encryption/...
+#   for lifecycle/replication/...
 # --------------
 
 def get_lifecycle(bucket_name):
@@ -655,26 +653,6 @@ def get_replication(bucket_name):
         }
         status_code = 404
     body = xmltodict.unparse(replication)
-    return requests_response(body, status_code=status_code)
-
-
-def get_encryption(bucket_name):
-    bucket_name = normalize_bucket_name(bucket_name)
-    exists, code, body = is_bucket_available(bucket_name)
-    if not exists:
-        return requests_response(body, status_code=code)
-
-    encryption = BUCKET_ENCRYPTIONS.get(bucket_name)
-    status_code = 200
-    if not encryption:
-        encryption = {
-            'Error': {
-                'Code': 'ServerSideEncryptionConfigurationNotFoundError',
-                'Message': 'The server side encryption configuration was not found'
-            }
-        }
-        status_code = 404
-    body = xmltodict.unparse(encryption)
     return requests_response(body, status_code=status_code)
 
 
@@ -729,18 +707,6 @@ def set_replication(bucket_name, replication):
     if isinstance(to_str(replication), six.string_types):
         replication = xmltodict.parse(replication)
     BUCKET_REPLICATIONS[bucket_name] = replication
-    return 200
-
-
-def set_encryption(bucket_name, encryption):
-    bucket_name = normalize_bucket_name(bucket_name)
-    exists, code, body = is_bucket_available(bucket_name)
-    if not exists:
-        return requests_response(body, status_code=code)
-
-    if isinstance(to_str(encryption), six.string_types):
-        encryption = xmltodict.parse(encryption)
-    BUCKET_ENCRYPTIONS[bucket_name] = encryption
     return 200
 
 
@@ -1136,12 +1102,6 @@ class ProxyListenerS3(PersistingProxyListener):
                 return get_replication(bucket_name)
             if method == 'PUT':
                 return set_replication(bucket_name, data)
-
-        if query == 'encryption' or 'encryption' in query_map:
-            if method == 'GET':
-                return get_encryption(bucket_name)
-            if method == 'PUT':
-                return set_encryption(bucket_name, data)
 
         if query == 'object-lock' or 'object-lock' in query_map:
             if method == 'GET':

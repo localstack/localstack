@@ -15,6 +15,7 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 
 # Announcements
 
+* **2021-04-24**: **We're hiring!** - If you love what we're doing at LocalStack, check out our [jobs board](https://localstack.cloud/jobs) and shoot us an email with your CV/background/portfolio. We look forward to hearing from you!
 * **2020-12-28**: Check out the LocalStack Pro **feature roadmap** here: https://roadmap.localstack.cloud - please help us prioritize our backlog by creating and upvoting feature requests. Looking forward to getting your feedback!
 * **2020-09-15**: A major (breaking) change has been merged in PR #2905 - starting with releases after `v0.11.5`, all services are now exposed via the edge service (port 4566) only! Please update your client configurations to use this new endpoint.
 * **2019-10-09**: **LocalStack Pro is out!** We're incredibly excited to announce the launch of LocalStack Pro - the enterprise version of LocalStack with additional APIs and advanced features. Check out the free trial at https://localstack.cloud
@@ -93,7 +94,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 
 ## Requirements
 
-* `python` (both Python 2.x and 3.x supported)
+* `python` (Python 2.x up to 3.8 supported)
 * `pip` (python package manager)
 * `Docker`
 
@@ -177,6 +178,7 @@ You can pass the following environment variables to LocalStack:
   started in different containers using docker-compose.
 * `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (default: `localhost`).
   This host is used, e.g., when returning queue URLs from the SQS service to the client.
+* `HOSTNAME_FROM_LAMBDA`: Endpoint host under which APIs are accessible from Lambda containers (optional). This can be useful in docker-compose stacks to use the local container hostname (e.g., `HOSTNAME_FROM_LAMBDA=localstack`) if neither IP address nor container name of the main container are available (e.g., in CI). Often used in combination with `LAMBDA_DOCKER_NETWORK`.
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.
@@ -500,7 +502,6 @@ builder.withPathStyleAccessEnabled(true);
 
 * If you run into file permission issues on `pip install` under Mac OS (e.g., `Permission denied: '/Library/Python/2.7/site-packages/six.py'`), then you may have to re-install `pip` via Homebrew (see [this discussion thread](https://github.com/localstack/localstack/issues/260#issuecomment-334458631)). Alternatively, try installing
 with the `--user` flag: `pip install --user localstack`
-
 
 * If you are deploying within OpenShift, please be aware: the pod must run as `root`, and the user must have capabilities added to the running pod, in order to allow Elasticsearch to be run as the non-root `localstack` user.
 

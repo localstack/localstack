@@ -97,16 +97,18 @@ class TestTerraform(unittest.TestCase):
                 break
 
         self.assertTrue(rest_id)
-        resources = apigateway_client.get_resources(restApiId=rest_id)['items'][1:]
-        self.assertEqual(len(resources), 2)
+        resources = apigateway_client.get_resources(restApiId=rest_id)['items']
 
-        res1 = [r for r in resources if r['pathPart'] == 'mytestresource']
+        # We always have 1 default root resource (with path "/")
+        self.assertEqual(len(resources), 3)
+
+        res1 = [r for r in resources if r.get('pathPart') == 'mytestresource']
         self.assertTrue(res1)
         self.assertEqual(res1[0]['path'], '/mytestresource')
         self.assertEqual(len(res1[0]['resourceMethods']), 2)
         self.assertEqual(res1[0]['resourceMethods']['GET']['methodIntegration']['type'], 'MOCK')
 
-        res2 = [r for r in resources if r['pathPart'] == 'mytestresource1']
+        res2 = [r for r in resources if r.get('pathPart') == 'mytestresource1']
         self.assertTrue(res2)
         self.assertEqual(res2[0]['path'], '/mytestresource1')
         self.assertEqual(len(res2[0]['resourceMethods']), 2)

@@ -165,18 +165,6 @@ RESOURCE_TO_FUNCTION = {
             'parameters': rename_params(dump_json_params(None, 'PolicyDocument'), {'PolicyDocument': 'Policy'})
         }
     },
-    'SecretsManager::Secret': {
-        'create': {
-            'function': 'create_secret',
-            'parameters': select_parameters('Name', 'Description', 'SecretString', 'KmsKeyId', 'Tags')
-        },
-        'delete': {
-            'function': 'delete_secret',
-            'parameters': {
-                'SecretId': 'Name'
-            }
-        }
-    },
     'KinesisFirehose::DeliveryStream': {
         'create': {
             'function': 'create_delivery_stream',
@@ -1613,6 +1601,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
     elif res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource)
         props['TableName'] = props.get('TableName') or _generate_res_name()
+
+    elif res_type == 'AWS::SecretsManager::Secret':
+        props['Name'] = props.get('Name') or _generate_res_name()
 
     elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
         existing_bucket = existing_resources.get(resource_id) or {}

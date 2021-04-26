@@ -383,9 +383,24 @@ class TestDynamoDB(unittest.TestCase):
             },
         )
         stream_arn = table['TableDescription']['LatestStreamArn']
-        # put item in table
+        # wait for stream to be created
+        sleep(0.5)
+        # put item in table - Insert event
         dynamodb.put_item(TableName=table_name, Item={'Username': {'S': 'Fred'}})
+        # update item in table - Modify event
+        dynamodb.update_item(TableName=table_name,
+            Key={'Username': {'S': 'Fred'}},
+            UpdateExpression='set S=:r',
+            ExpressionAttributeValues={
+                ':r': {'S': 'Fred_Modified'}
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+        # delete item in table - Delete event
+        dynamodb.delete_item(TableName=table_name, Key={'Username': {'S': 'Fred'}})
         result = ddbstreams.describe_stream(StreamArn=stream_arn)
+        # assert stream_view_type of the table
+        self.assertEquals('KEYS_ONLY', result['StreamDescription']['StreamViewType'])
 
         # get shard iterator
         response = ddbstreams.get_shard_iterator(StreamArn=stream_arn,
@@ -397,23 +412,24 @@ class TestDynamoDB(unittest.TestCase):
 
         # get records
         record = ddbstreams.get_records(ShardIterator=response['ShardIterator'])
-        # assert stream_view_type of the table
-        dynamodb.update_item(TableName=table_name,
-            Key={'Username': {'S': 'Fred'}},
-            UpdateExpression='set S=:r',
-            ExpressionAttributeValues={
-                ':r': {'S': 'Fred_Modified'}
-            },
-            ReturnValues='UPDATED_NEW'
-        )
-        self.assertEquals('KEYS_ONLY', result['StreamDescription']['StreamViewType'])
-        # assert stream_view_type of records inserted into the table
+
+        # assert stream_view_type of records forwarded to the stream
         self.assertEquals('KEYS_ONLY', record['Records'][0]['dynamodb']['StreamViewType'])
-        updated_record = ddbstreams.get_records(ShardIterator=response['ShardIterator'])
-        # assert oldImage not in the updated record info written into the stream
-        self.assertNotIn('OldImage', updated_record['Records'][1]['dynamodb'])
-        # assert newImage not in the updated record info written into the stream
-        self.assertNotIn('NewImage', updated_record['Records'][1]['dynamodb'])
+        self.assertEquals('KEYS_ONLY', record['Records'][1]['dynamodb']['StreamViewType'])
+        self.assertEquals('KEYS_ONLY', record['Records'][2]['dynamodb']['StreamViewType'])
+        # assert Keys present in the record for all insert, modify and delete events
+        self.assertEquals({'Username': {'S': 'Fred'}}, record['Records'][0]['dynamodb']['Keys'])
+        self.assertEquals({'Username': {'S': 'Fred'}}, record['Records'][1]['dynamodb']['Keys'])
+        self.assertEquals({'Username': {'S': 'Fred'}}, record['Records'][2]['dynamodb']['Keys'])
+        # assert oldImage not in the records
+        self.assertNotIn('OldImage', record['Records'][0]['dynamodb'])
+        self.assertNotIn('OldImage', record['Records'][1]['dynamodb'])
+        self.assertNotIn('OldImage', record['Records'][2]['dynamodb'])
+        # assert newImage not in the record
+        self.assertNotIn('NewImage', record['Records'][0]['dynamodb'])
+        self.assertNotIn('NewImage', record['Records'][1]['dynamodb'])
+        self.assertNotIn('NewImage', record['Records'][2]['dynamodb'])
+
         # clean up
         delete_table(table_name)
 

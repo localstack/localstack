@@ -302,7 +302,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get('type') or integration.get('integrationType') or ''
     integration_type = integration_type_orig.upper()
-    uri = integration.get('uri') or integration.get('integrationUri')
+    uri = integration.get('uri') or integration.get('integrationUri') or ''
 
     if (uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri) or uri.startswith('arn:aws:lambda'):
         if integration_type in ['AWS', 'AWS_PROXY']:
@@ -510,6 +510,7 @@ def get_lambda_event_request_context(method, path, data, headers, integration_ur
         # adding stage to the request context path.
         # https://github.com/localstack/localstack/issues/2210
         'path': '/' + stage + relative_path,
+        'resourcePath': relative_path,
         'accountId': account_id,
         'resourceId': resource_id,
         'stage': stage,
