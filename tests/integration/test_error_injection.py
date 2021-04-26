@@ -1,5 +1,5 @@
 import os
-from nose.tools import assert_raises, assert_equal, assert_true
+from nose.tools import assert_raises, assert_equal
 from botocore.exceptions import ClientError
 from localstack import config
 from localstack.utils.common import short_uid
