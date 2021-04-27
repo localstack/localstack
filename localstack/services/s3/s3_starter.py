@@ -10,6 +10,7 @@ from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.server import multiserver
 from localstack.utils.common import wait_for_port_open, get_free_tcp_port
+from localstack.utils.generic.dict_utils import get_safe
 from localstack.services.infra import start_moto_server
 from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 from urllib.parse import urlparse
@@ -278,6 +279,7 @@ def apply_patches():
     # Patch utils_is_delete_keys
     # https://github.com/localstack/localstack/issues/2866
     # https://github.com/localstack/localstack/issues/2850
+    # https://github.com/localstack/localstack/issues/3931
     utils_is_delete_keys_orig = s3bucket_path_utils.is_delete_keys
 
     def utils_is_delete_keys(request, path, bucket_name):
@@ -285,7 +287,10 @@ def apply_patches():
 
     def s3_response_is_delete_keys(self, request, path, bucket_name):
         if self.subdomain_based_buckets(request):
-            return is_delete_keys(request, path, bucket_name)
+            # Temporary fix until moto supports x-id and DeleteObjects (#3931)
+            query = self._get_querystring(request.url)
+            is_delete_keys_v3 = (query and ('delete' in query) and get_safe(query, '$.x-id.0') == 'DeleteObjects')
+            return is_delete_keys_v3 or is_delete_keys(request, path, bucket_name)
         else:
             return utils_is_delete_keys(request, path, bucket_name)
 
