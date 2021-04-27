@@ -219,6 +219,7 @@ You can pass the following environment variables to LocalStack:
   Kinesis, DynamoDB, Elasticsearch, S3, Secretsmanager, SSM, SQS, SNS). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
+* `PERSISTENCE_SINGLE_FILE`: Specify if persistence files should be combined.  (default: `true`).
 * `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`). Note that the Web UI is now deprecated (needs to be activated with `START_WEB=1`), and requires to use the `localstack/localstack-full` Docker image.
 * `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
