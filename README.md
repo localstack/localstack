@@ -65,6 +65,7 @@ accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
 * **Amplify**
 * **API Gateway V2 (WebSockets support)**
+* **Application AutoScaling**
 * **AppSync**
 * **Athena**
 * **Batch**
@@ -73,6 +74,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Cognito**
 * **ECS/ECR/EKS**
 * **ElastiCache**
+* **ELB/ELBv2**
 * **EMR**
 * **Glacier** / **S3 Select**
 * **IAM Security Policy Enforcement**
@@ -94,7 +96,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 
 ## Requirements
 
-* `python` (both Python 2.x and 3.x supported)
+* `python` (Python 2.x up to 3.8 supported)
 * `pip` (python package manager)
 * `Docker`
 
@@ -178,6 +180,7 @@ You can pass the following environment variables to LocalStack:
   started in different containers using docker-compose.
 * `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (default: `localhost`).
   This host is used, e.g., when returning queue URLs from the SQS service to the client.
+* `HOSTNAME_FROM_LAMBDA`: Endpoint host under which APIs are accessible from Lambda containers (optional). This can be useful in docker-compose stacks to use the local container hostname (e.g., `HOSTNAME_FROM_LAMBDA=localstack`) if neither IP address nor container name of the main container are available (e.g., in CI). Often used in combination with `LAMBDA_DOCKER_NETWORK`.
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.
@@ -216,6 +219,7 @@ You can pass the following environment variables to LocalStack:
   Kinesis, DynamoDB, Elasticsearch, S3, Secretsmanager, SSM, SQS, SNS). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
+* `PERSISTENCE_SINGLE_FILE`: Specify if persistence files should be combined.  (default: `true`).
 * `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`). Note that the Web UI is now deprecated (needs to be activated with `START_WEB=1`), and requires to use the `localstack/localstack-full` Docker image.
 * `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,

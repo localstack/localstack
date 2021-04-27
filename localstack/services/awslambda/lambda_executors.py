@@ -92,7 +92,7 @@ def _store_logs(func_details, log_output, invocation_time=None, container_id=Non
 
 def get_main_endpoint_from_container():
     global DOCKER_MAIN_CONTAINER_IP
-    if DOCKER_MAIN_CONTAINER_IP is None:
+    if not config.HOSTNAME_FROM_LAMBDA and DOCKER_MAIN_CONTAINER_IP is None:
         DOCKER_MAIN_CONTAINER_IP = False
         try:
             if in_docker():
@@ -102,8 +102,8 @@ def get_main_endpoint_from_container():
             container_name = bootstrap.get_main_container_name()
             LOG.info('Unable to get IP address of main Docker container "%s": %s' %
                 (container_name, e))
-    # return main container IP, or fall back to Docker host (bridge IP, or host DNS address)
-    return DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
+    # return (1) predefined endpoint host, or (2) main container IP, or (3) Docker host (e.g., bridge IP)
+    return config.HOSTNAME_FROM_LAMBDA or DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
 
 
 class InvocationResult(object):

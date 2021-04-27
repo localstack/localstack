@@ -2,8 +2,7 @@ import unittest
 from moto.s3 import models as s3_models
 from localstack.services.s3 import s3_listener, s3_starter, multipart_content, s3_utils
 from requests.models import Response
-from localstack.config import HOSTNAME
-from localstack.constants import S3_VIRTUAL_HOSTNAME
+from localstack.constants import S3_VIRTUAL_HOSTNAME, LOCALHOST
 from localstack.services.infra import patch_instance_tracker_meta
 
 
@@ -192,8 +191,8 @@ class S3UtilsTest (unittest.TestCase):
     def test_bucket_name(self):
         # array description : 'path', 'header', 'expected_ouput'
         bucket_names = [
-            ('/bucket/keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
-            ('/bucket//keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
+            ('/bucket/keyname', {'host': f'https://{LOCALHOST}:4566'}, 'bucket'),
+            ('/bucket//keyname', {'host': f'https://{LOCALHOST}:4566'}, 'bucket'),
             ('/keyname', {'host': f'bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, 'bucket'),
             ('//keyname', {'host': f'bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, 'bucket'),
             ('/', {'host': f'{S3_VIRTUAL_HOSTNAME}:4566'}, None),
@@ -259,8 +258,8 @@ class S3UtilsTest (unittest.TestCase):
     def test_s3_keyname_name(self):
         # array description : 'path', 'header', 'expected_ouput'
         key_names = [
-            ('/bucket/keyname', {'host': f'https://{HOSTNAME}:4566'}, 'keyname'),
-            ('/bucket//keyname', {'host': f'https://{HOSTNAME}:4566'}, '/keyname'),
+            ('/bucket/keyname', {'host': f'https://{LOCALHOST}:4566'}, 'keyname'),
+            ('/bucket//keyname', {'host': f'https://{LOCALHOST}:4566'}, '/keyname'),
             ('/keyname', {'host': f'https://bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, 'keyname'),
             ('//keyname', {'host': f'https://bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, '/keyname'),
         ]
