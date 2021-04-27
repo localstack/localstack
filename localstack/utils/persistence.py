@@ -7,13 +7,13 @@ import requests
 import logging
 from six import add_metaclass
 from abc import ABCMeta, abstractmethod
-from localstack.config import DATA_DIR
+from localstack.config import DATA_DIR, is_env_not_false
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_bytes, to_str
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.services.generic_proxy import ProxyListener
 
-USE_SINGLE_DUMP_FILE = True
+USE_SINGLE_DUMP_FILE = is_env_not_false('PERSISTENCE_SINGLE_FILE')
 
 if USE_SINGLE_DUMP_FILE:
     API_FILE_PATTERN = '{data_dir}/recorded_api_calls.json'
