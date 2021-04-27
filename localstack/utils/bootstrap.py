@@ -441,9 +441,10 @@ def validate_localstack_config(name):
         warns.append(('Edge port %s is not exposed. You may have to add the entry '
                     'to the "ports" section of the docker-compose file.') % edge_port)
 
-    if network_mode != 'bridge':
+    if network_mode != 'bridge' and not docker_env.get('LAMBDA_DOCKER_NETWORK'):
         warns.append('Network mode is not set to "bridge" which may cause networking issues in Lambda containers. '
-                    'Consider adding "network_mode: bridge" to you docker-compose file.')
+                    'Consider adding "network_mode: bridge" to your docker-compose file, or configure '
+                    'LAMBDA_DOCKER_NETWORK with the name of the Docker network of your compose stack.')
 
     # print warning/info messages
     for warning in warns:
