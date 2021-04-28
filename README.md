@@ -134,7 +134,7 @@ localstack start
 You can also use docker directly and use the following command to get started with localstack
 
 ```
-docker run --rm -p 4566:4566 -p 4571:4571 localstack/localstack
+docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack
 ```
 
 to run a throw-away container without any external volumes. To start a subset of services use `-e "SERVICES=dynamodb,s3"`.
