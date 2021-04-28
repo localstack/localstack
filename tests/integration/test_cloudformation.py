@@ -648,8 +648,8 @@ class CloudFormationTest(unittest.TestCase):
         # assert that subscription attributes are added properly
         attrs = sns.get_subscription_attributes(SubscriptionArn=subs[0]['SubscriptionArn'])['Attributes']
         expected = {'Endpoint': subs[0]['Endpoint'], 'Protocol': 'sqs',
-            'SubscriptionArn': subs[0]['SubscriptionArn'], 'TopicArn': subs[0]['TopicArn'],
-            'FilterPolicy': json.dumps({'eventType': ['created']}), 'PendingConfirmation': 'false'}
+                    'SubscriptionArn': subs[0]['SubscriptionArn'], 'TopicArn': subs[0]['TopicArn'],
+                    'FilterPolicy': json.dumps({'eventType': ['created']}), 'PendingConfirmation': 'false'}
         self.assertEqual(attrs, expected)
 
         # assert that Gateway responses have been created
@@ -2154,3 +2154,34 @@ class CloudFormationTest(unittest.TestCase):
 
         alias_names = [alias['AliasName'] for alias in aliases]
         self.assertNotIn('alias/sample-kms-alias', alias_names)
+
+    def test_cfn_with_apigateway_resources(self):
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template35.yaml'))
+
+        stack_name = 'stack-%s' % short_uid()
+        create_and_await_stack(
+            StackName=stack_name,
+            TemplateBody=template
+        )
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        apis = [api for api in apigw_client.get_rest_apis()['items'] if api['name'] == 'celeste-Gateway-local']
+        self.assertEqual(len(apis), 1)
+        api_id = apis[0]['id']
+
+        resources = [res
+                     for res in apigw_client.get_resources(restApiId=api_id)['items']
+                     if res.get('pathPart') == 'account']
+
+        self.assertEqual(len(resources), 1)
+
+        models = [model
+                  for model in apigw_client.get_models(restApiId=api_id)['items']
+                  if stack_name in model['name']]
+
+        self.assertEqual(len(models), 2)
+
+        # clean up
+        self.cleanup(stack_name)
+
+        apis = [api for api in apigw_client.get_rest_apis()['items'] if api['name'] == 'celeste-Gateway-local']
+        self.assertEqual(len(apis), 0)

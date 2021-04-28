@@ -510,6 +510,7 @@ def get_lambda_event_request_context(method, path, data, headers, integration_ur
         # adding stage to the request context path.
         # https://github.com/localstack/localstack/issues/2210
         'path': '/' + stage + relative_path,
+        'resourcePath': relative_path,
         'accountId': account_id,
         'resourceId': resource_id,
         'stage': stage,

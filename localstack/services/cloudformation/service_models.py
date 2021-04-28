@@ -108,9 +108,9 @@ class GenericBaseModel(CloudFormationModel):
 
         raise UnformattedGetAttTemplateException()
 
-    # ----------------------
+    # ---------------------
     # GENERIC UTIL METHODS
-    # ----------------------
+    # ---------------------
 
     def fetch_and_update_state(self, *args, **kwargs):
         from localstack.utils.cloudformation import template_deployer
@@ -222,9 +222,15 @@ class LogsLogGroup(GenericBaseModel):
         return 'AWS::Logs::LogGroup'
 
     def get_cfn_attribute(self, attribute_name):
+        props = self.props
         if attribute_name == 'Arn':
-            return self.params.get('Arn') or aws_stack.log_group_arn(self.params.get('LogGroupName'))
+            return props.get('arn')
         return super(LogsLogGroup, self).get_cfn_attribute(attribute_name)
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute == 'Arn':
+            return self.get_cfn_attribute('Arn')
+        return self.props.get('LogGroupName')
 
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get('LogGroupName')
@@ -732,10 +738,13 @@ class GatewayDeployment(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         api_id = self.props.get('RestApiId') or self.resource_id
         api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
+
         if not api_id:
             return None
+
         result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
         # TODO possibly filter results by stage name or other criteria
+
         return result[0] if result else None
 
 
@@ -749,15 +758,18 @@ class GatewayResource(GenericBaseModel):
         api_id = props.get('RestApiId') or self.resource_id
         api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
         parent_id = self.resolve_refs_recursively(stack_name, props.get('ParentId'), resources)
+
         if not api_id or not parent_id:
             return None
+
         api_resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=api_id)['items']
         target_resource = list(filter(lambda res:
             res.get('parentId') == parent_id and res['pathPart'] == props['PathPart'], api_resources))
+
         if not target_resource:
             return None
-        path = aws_stack.get_apigateway_path_for_resource(api_id,
-            target_resource[0]['id'], resources=api_resources)
+
+        path = aws_stack.get_apigateway_path_for_resource(api_id, target_resource[0]['id'], resources=api_resources)
         result = list(filter(lambda res: res['path'] == path, api_resources))
         return result[0] if result else None
 
@@ -771,8 +783,10 @@ class GatewayMethod(GenericBaseModel):
         props = self.props
         api_id = self.resolve_refs_recursively(stack_name, props['RestApiId'], resources)
         res_id = self.resolve_refs_recursively(stack_name, props['ResourceId'], resources)
+
         if not api_id or not res_id:
             return None
+
         res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
         match = [v for (k, v) in res_obj.get('resourceMethods', {}).items()
                  if props['HttpMethod'] in (v.get('httpMethod'), k)]
@@ -929,6 +943,21 @@ class GatewayModel(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::ApiGateway::Model'
 
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('apigateway')
+        api_id = self.resolve_refs_recursively(stack_name, self.props['RestApiId'], resources)
+
+        items = client.get_models(restApiId=api_id)['items']
+        if not items:
+            return None
+
+        model_name = self.resolve_refs_recursively(stack_name, self.props['Name'], resources)
+        models = [item for item in items if item['name'] == model_name]
+        if models:
+            return models[0]
+
+        return None
+
 
 class GatewayAccount(GenericBaseModel):
     @staticmethod
@@ -949,7 +978,6 @@ class S3Bucket(GenericBaseModel, FakeBucket):
 
     @staticmethod
     def get_deploy_templates():
-
         def convert_acl_cf_to_s3(acl):
             """ Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read') """
             return re.sub('(?<!^)(?=[A-Z])', '-', acl).lower()

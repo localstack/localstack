@@ -66,10 +66,11 @@ def filter_event_based_on_event_format(self, rule, event):
         return True
 
     rule_information = self.events_backend.describe_rule(rule)
-    if rule_information.event_pattern:
-        event_pattern = rule_information.event_pattern._filter
-        if event_pattern and not filter_event(event_pattern, event):
-            return False
+    rule_event_pattern = json.loads(str(rule_information.event_pattern))
+
+    if rule_event_pattern and not filter_event(rule_event_pattern, event):
+        return False
+
     return True
 
 
@@ -77,7 +78,7 @@ def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
         changed_event = filter_event_with_target_input_path(target, event)
-        aws_stack.send_event_to_target(arn, changed_event)
+        aws_stack.send_event_to_target(arn, changed_event, aws_stack.get_events_target_attributes(target))
 
 
 def apply_patches():
