@@ -204,7 +204,10 @@ def handle_authorizers(method, path, data, headers):
 # -----------------------
 
 def get_domain_from_path(path):
-    return re.match(PATH_REGEX_PATH_MAPPING, path).group(1)
+    matched = re.match(PATH_REGEX_PATH_MAPPING, path)
+    if matched and len(matched.groups) >= 1:
+        return matched.group(1)
+    return None
 
 
 def get_base_path_from_path(path):

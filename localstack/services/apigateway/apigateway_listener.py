@@ -19,9 +19,9 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
-from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
-    handle_accounts, extract_query_string_params, extract_path_params, make_error_response, get_cors_response,
-    hande_base_path_mappings)
+from localstack.services.apigateway.helpers import (get_resource_for_path, get_domain_from_path, handle_authorizers,
+    handle_validators, handle_accounts, extract_query_string_params, extract_path_params, make_error_response,
+    get_cors_response, hande_base_path_mappings)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -506,11 +506,13 @@ def get_lambda_event_request_context(method, path, data, headers, integration_ur
     source_ip = headers.get('X-Forwarded-For', ',').split(',')[-2].strip()
     integration_uri = integration_uri or ''
     account_id = integration_uri.split(':lambda:path')[-1].split(':function:')[0].split(':')[-1]
+    domain_name = get_domain_from_path(path)
     request_context = {
         # adding stage to the request context path.
         # https://github.com/localstack/localstack/issues/2210
         'path': '/' + stage + relative_path,
         'resourcePath': relative_path,
+        'domainName': domain_name,
         'accountId': account_id,
         'resourceId': resource_id,
         'stage': stage,
