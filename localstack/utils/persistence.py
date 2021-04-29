@@ -18,7 +18,7 @@ USE_SINGLE_DUMP_FILE = is_env_not_false('PERSISTENCE_SINGLE_FILE')
 if USE_SINGLE_DUMP_FILE:
     API_FILE_PATTERN = '{data_dir}/recorded_api_calls.json'
 else:
-    API_FILE_PATTERN = '{data_dir}/{api}_api_calls.json'
+    API_FILE_PATTERN = '{data_dir}/api_calls_{api}.json'
 
 # Stack with flags to indicate whether we are currently re-playing API calls.
 # (We should not be re-playing and recording at the same time)

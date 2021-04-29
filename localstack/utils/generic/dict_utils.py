@@ -1,3 +1,6 @@
+import re
+
+
 def get_safe(dictionary, path, default_value=None):
     """
     Performs a safe navigation on a Dictionary object and
@@ -28,7 +31,13 @@ def get_safe(dictionary, path, default_value=None):
     for path_node in attribute_path:
         if path_node == '$':
             continue
-        elif isinstance(current_value, dict) and path_node in current_value:
+
+        if re.compile('^\\d+$').search(str(path_node)):
+            path_node = int(path_node)
+
+        if isinstance(current_value, dict) and path_node in current_value:
+            current_value = current_value[path_node]
+        elif isinstance(current_value, list) and path_node < len(current_value):
             current_value = current_value[path_node]
         else:
             current_value = None
