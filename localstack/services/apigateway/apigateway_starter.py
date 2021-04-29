@@ -172,6 +172,36 @@ def apply_patches():
 
         return 400, {}, ''
 
+    def apigateway_response_resource_individual(self, request, full_url, headers):
+        if request.method in ['GET', 'POST', 'DELETE']:
+            return apigateway_response_resource_individual_orig(self, request, full_url, headers)
+
+        self.setup_class(request, full_url, headers)
+        function_id = self.path.replace('/restapis/', '', 1).split('/')[0]
+
+        if self.method == 'PATCH':
+            not_supported_attributes = ['/id', '/region_name', '/create_date']
+
+            rest_api = self.backend.apis.get(function_id)
+            if not rest_api:
+                msg = 'Invalid API identifier specified %s:%s' % (TEST_AWS_ACCOUNT_ID, function_id)
+                return (404, {}, msg)
+
+            patch_operations = self._get_param('patchOperations')
+            for operation in patch_operations:
+                if operation['path'].strip('/') in REST_API_ATTRIBUTES:
+                    operation['path'] = camelcase_to_underscores(operation['path'])
+                if operation['path'] in not_supported_attributes:
+                    msg = 'Invalid patch path %s' % (operation['path'])
+                    return (400, {}, msg)
+
+            rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
+            apply_json_patch_safe(rest_api.__dict__, patch_operations, in_place=True)
+
+            return 200, {}, json.dumps(self.backend.get_rest_api(function_id).to_dict())
+
+        return 400, {}, ''
+
     def apigateway_response_resource_methods(self, request, *args, **kwargs):
         result = apigateway_response_resource_methods_orig(self, request, *args, **kwargs)
 
@@ -252,6 +282,8 @@ def apply_patches():
     if not hasattr(apigateway_models.APIGatewayBackend, 'put_rest_api'):
         apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
         APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
+        apigateway_response_resource_individual_orig = APIGatewayResponse.resource_individual
+        APIGatewayResponse.resource_individual = apigateway_response_resource_individual
         apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
 
     if not hasattr(apigateway_models.APIGatewayBackend, 'delete_method'):
