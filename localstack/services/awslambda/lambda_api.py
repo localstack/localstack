@@ -295,7 +295,7 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
                                   stage_variables={}, request_context={}, event_context={}):
     try:
         resource_path = resource_path or path
-        event = construct_invocation_event(method, resource_path, headers, payload, query_string_params)
+        event = construct_invocation_event(method, path, headers, payload, query_string_params)
         path_params = dict(path_params)
         fix_proxy_path_params(path_params)
         event['pathParameters'] = path_params

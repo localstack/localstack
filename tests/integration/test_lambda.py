@@ -15,7 +15,7 @@ from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDE
 from localstack.utils.aws import aws_stack, aws_models
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download, save_file,
-    run_safe, get_free_tcp_port, get_service_protocol, retry, to_bytes, cp_r
+    run_safe, get_free_tcp_port, get_service_protocol, retry, to_bytes, cp_r, safe_requests
 )
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.testutil import (
@@ -25,6 +25,7 @@ from localstack.services.infra import start_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
+from localstack.services.apigateway.helpers import gateway_request_url
 from localstack.services.awslambda.lambda_api import (
     use_docker, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION, LAMBDA_DEFAULT_HANDLER)
 from localstack.services.awslambda.lambda_utils import (
@@ -68,6 +69,7 @@ TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_
 
 TEST_LAMBDA_FUNCTION_PREFIX = 'lambda-function'
 TEST_SNS_TOPIC_NAME = 'sns-topic-1'
+TEST_STAGE_NAME = 'testing'
 
 MAVEN_BASE_URL = 'https://repo.maven.apache.org/maven2'
 
@@ -932,6 +934,38 @@ class TestPythonRuntimes(LambdaTestBase):
             # the logging module - hence we can only expect this when running in Docker
             expected.append('.*Lambda log message - logging module')
         self.check_lambda_logs(lambda_name, expected_lines=expected)
+
+        # clean up
+        testutil.delete_lambda_function(lambda_name)
+
+    def test_http_invocation_with_apigw_proxy(self):
+        lambda_name = 'test_lambda_%s' % short_uid()
+        lambda_resource = '/api/v1/{proxy+}'
+        lambda_path = '/api/v1/hello/world'
+        lambda_request_context_path = '/' + TEST_STAGE_NAME + lambda_path
+        lambda_request_context_resource_path = lambda_resource
+
+        # create lambda function
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=lambda_name)
+
+        # create API Gateway and connect it to the Lambda proxy backend
+        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        invocation_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations'
+        target_uri = invocation_uri % (aws_stack.get_region(), lambda_uri)
+
+        result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
+            'test_gateway2', target_uri, path=lambda_resource, stage_name=TEST_STAGE_NAME)
+
+        api_id = result['id']
+        url = gateway_request_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path=lambda_path)
+        result = safe_requests.post(url, data=b'{}', headers={'User-Agent': 'python-requests/testing'})
+        content = json.loads(result.content)
+
+        self.assertEqual(content['path'], lambda_path)
+        self.assertEqual(content['resource'], lambda_resource)
+        self.assertEqual(content['requestContext']['path'], lambda_request_context_path)
+        self.assertEqual(content['requestContext']['resourcePath'], lambda_request_context_resource_path)
 
         # clean up
         testutil.delete_lambda_function(lambda_name)

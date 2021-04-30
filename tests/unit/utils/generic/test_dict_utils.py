@@ -8,7 +8,8 @@ class GenericDictUtilsTest(unittest.TestCase):
         dictionary = {
             'level_one_1': {
                 'level_two_1': {
-                    'level_three_1': 'level_three_1_value'
+                    'level_three_1': 'level_three_1_value',
+                    'level_three_2': ['one', 'two']
                 },
                 'level_two_2': 'level_two_2_value'
             },
@@ -43,6 +44,16 @@ class GenericDictUtilsTest(unittest.TestCase):
         self.assertEqual(
             get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'random', 'value'], 'default_value'),
             'default_value'
+        )
+
+        self.assertEqual(
+            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'level_three_2', '0']),
+            'one'
+        )
+
+        self.assertEqual(
+            get_safe(dictionary, '$.level_one_1.level_two_1.level_three_2.1'),
+            'two'
         )
 
     def test_set_safe_mutable(self):

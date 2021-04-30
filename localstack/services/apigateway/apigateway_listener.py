@@ -327,7 +327,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
             request_context = get_lambda_event_request_context(method, path, data, headers,
-                integration_uri=uri, resource_id=resource_id)
+                integration_uri=uri, resource_id=resource_id, resource_path=resource_path)
             stage_variables = get_stage_variables(api_id, stage)
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
@@ -500,7 +500,8 @@ def get_stage_variables(api_id, stage):
     return response.get('variables', None)
 
 
-def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
+def get_lambda_event_request_context(method, path, data, headers,
+                                     integration_uri=None, resource_id=None, resource_path=None):
     _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
     relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
     source_ip = headers.get('X-Forwarded-For', ',').split(',')[-2].strip()
@@ -510,7 +511,7 @@ def get_lambda_event_request_context(method, path, data, headers, integration_ur
         # adding stage to the request context path.
         # https://github.com/localstack/localstack/issues/2210
         'path': '/' + stage + relative_path,
-        'resourcePath': relative_path,
+        'resourcePath': resource_path or relative_path,
         'accountId': account_id,
         'resourceId': resource_id,
         'stage': stage,
