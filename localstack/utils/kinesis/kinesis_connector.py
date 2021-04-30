@@ -10,8 +10,8 @@ from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
 from localstack import config
-from localstack.config import HOSTNAME, USE_SSL
-from localstack.constants import LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER
+from localstack.config import USE_SSL
+from localstack.constants import LOCALHOST, LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid, to_str,
@@ -271,7 +271,7 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
     # set local connection
     if aws_stack.is_local_env(env):
         stream_info['conn_kwargs'] = {
-            'host': HOSTNAME,
+            'host': LOCALHOST,
             'port': config.PORT_KINESIS,
             'is_secure': bool(USE_SSL)
         }
@@ -328,8 +328,8 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     }
     # set parameters for local connection
     if aws_stack.is_local_env(env):
-        kwargs['kinesisEndpoint'] = '%s:%s' % (HOSTNAME, config.PORT_KINESIS)
-        kwargs['dynamodbEndpoint'] = '%s:%s' % (HOSTNAME, config.PORT_DYNAMODB)
+        kwargs['kinesisEndpoint'] = '%s:%s' % (LOCALHOST, config.PORT_KINESIS)
+        kwargs['dynamodbEndpoint'] = '%s:%s' % (LOCALHOST, config.PORT_DYNAMODB)
         kwargs['kinesisProtocol'] = get_service_protocol()
         kwargs['dynamodbProtocol'] = get_service_protocol()
         kwargs['disableCertChecking'] = 'true'

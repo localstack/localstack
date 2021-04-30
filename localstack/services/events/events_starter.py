@@ -121,7 +121,7 @@ def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
         changed_event = filter_event_with_target_input_path(target, event)
-        aws_stack.send_event_to_target(arn, changed_event)
+        aws_stack.send_event_to_target(arn, changed_event, aws_stack.get_events_target_attributes(target))
 
 
 def apply_patches():

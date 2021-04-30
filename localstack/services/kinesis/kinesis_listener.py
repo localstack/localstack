@@ -34,8 +34,10 @@ class ProxyListenerKinesis(ProxyListener):
         data, encoding_type = self.decode_content(data or '{}', True)
         action = headers.get('X-Amz-Target', '').split('.')[-1]
         if action == 'RegisterStreamConsumer':
-            prev_consumer = find_consumer(data.get('ConsumerARN', ''),
-                data.get('ConsumerName', ''), data.get('StreamARN', ''))
+            stream_arn = data.get('StreamARN', '').strip('" ')
+            cons_arn = data.get('ConsumerARN', '').strip('" ')
+            cons_name = data.get('ConsumerName', '').strip('" ')
+            prev_consumer = find_consumer(cons_arn, cons_name, stream_arn)
 
             if prev_consumer:
                 msg = 'Consumer %s already exists' % prev_consumer.get('ConsumerARN')
@@ -43,7 +45,7 @@ class ProxyListenerKinesis(ProxyListener):
 
             consumer = clone(data)
             consumer['ConsumerStatus'] = 'ACTIVE'
-            consumer['ConsumerARN'] = '%s/consumer/%s' % (data['StreamARN'], data['ConsumerName'])
+            consumer['ConsumerARN'] = '%s/consumer/%s' % (stream_arn, cons_name)
             consumer['ConsumerCreationTimestamp'] = now_utc()
             consumer = json_safe(consumer)
             STREAM_CONSUMERS.append(consumer)
@@ -54,32 +56,33 @@ class ProxyListenerKinesis(ProxyListener):
 
         elif action == 'DeregisterStreamConsumer':
             def consumer_matches(c):
-                stream_arn = data.get('StreamARN')
-                cons_name = data.get('ConsumerName')
-                cons_arn = data.get('ConsumerARN')
+                stream_arn = data.get('StreamARN', '').strip('" ')
+                cons_name = data.get('ConsumerName', '').strip('" ')
+                cons_arn = data.get('ConsumerARN', '').strip('" ')
                 return (c.get('ConsumerARN') == cons_arn or
                     (c.get('StreamARN') == stream_arn and c.get('ConsumerName') == cons_name))
             STREAM_CONSUMERS = [c for c in STREAM_CONSUMERS if not consumer_matches(c)]
             return {}
 
         elif action == 'ListStreamConsumers':
+            stream_arn = data.get('StreamARN', '').strip('" ')
             result = {
-                'Consumers': [c for c in STREAM_CONSUMERS if c.get('StreamARN') == data.get('StreamARN')]
+                'Consumers': [c for c in STREAM_CONSUMERS if c.get('StreamARN') == stream_arn]
             }
             return encoded_response(result, encoding_type)
 
         elif action == 'DescribeStreamConsumer':
-            consumer_arn = data.get('ConsumerARN', '')
-            consumer_name = data.get('ConsumerName', '')
-            stream_arn = data.get('StreamARN', '')
+            consumer_arn = data.get('ConsumerARN', '').strip('" ')
+            consumer_name = data.get('ConsumerName', '').strip('" ')
+            stream_arn = data.get('StreamARN', '').strip('" ')
 
             consumer_to_locate = find_consumer(consumer_arn, consumer_name, stream_arn)
             if(not consumer_to_locate):
                 error_msg = 'Consumer %s not found.' % (consumer_arn or consumer_name)
                 return simple_error_response(error_msg, 400, 'ResourceNotFoundException', encoding_type)
 
-            creation_timestamp = consumer_to_locate.get('ConsumerCreationTimestamp')
-            time_formated = int(creation_timestamp) if encoding_type is not APPLICATION_JSON else creation_timestamp
+            create_timestamp = consumer_to_locate.get('ConsumerCreationTimestamp')
+            time_formated = int(create_timestamp) if encoding_type is not APPLICATION_JSON else create_timestamp
 
             result = {
                 'ConsumerDescription': {
@@ -90,7 +93,6 @@ class ProxyListenerKinesis(ProxyListener):
                     'StreamARN': data.get('StreamARN')
                 }
             }
-
             return encoded_response(result, encoding_type)
 
         elif action == 'SubscribeToShard':

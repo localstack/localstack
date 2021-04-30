@@ -12,6 +12,7 @@ from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
     MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, S3_VIRTUAL_HOSTNAME)
 from localstack.utils.aws import templating
+from localstack.utils.generic import dict_utils
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
     is_port_open, get_service_protocol, retry, to_bytes)
@@ -46,6 +47,9 @@ DEFAULT_TIMER_LOOP_SECONDS = 60 * 50
 
 # maps SQS queue ARNs to queue URLs
 SQS_ARN_TO_URL_CACHE = {}
+
+# List of parameters with additional event target parameters
+EVENT_TARGET_PARAMETERS = ['$.SqsParameters', '$.KinesisParameters']
 
 
 class Environment(object):
@@ -573,7 +577,7 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
     elif ':sqs:' in arn:
         sqs_client = connect_to_service('sqs', region_name=region)
         queue_url = get_sqs_queue_url(arn)
-        msg_group_id = (target_attributes or {}).get('MessageGroupId')
+        msg_group_id = dict_utils.get_safe(target_attributes, '$.SqsParameters.MessageGroupId')
         kwargs = {'MessageGroupId': msg_group_id} if msg_group_id else {}
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 
@@ -600,13 +604,29 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
             }]
         )
 
+    elif ':kinesis:' in arn:
+        partition_key_path = dict_utils.get_safe(
+            target_attributes,
+            '$.KinesisParameters.PartitionKeyPath',
+            default_value='$.id'
+        )
+
+        stream_name = arn.split('/')[-1]
+        partition_key = dict_utils.get_safe(event, partition_key_path, event['id'])
+        kinesis_client = connect_to_service('kinesis', region_name=region)
+
+        kinesis_client.put_record(
+            StreamName=stream_name,
+            Data=to_bytes(json.dumps(event)),
+            PartitionKey=partition_key
+        )
+
     else:
         LOG.warning('Unsupported Events rule target ARN: "%s"' % arn)
 
 
 def get_events_target_attributes(target):
-    # TODO: add support for other target types
-    return target.get('SqsParameters')
+    return dict_utils.pick_attributes(target, EVENT_TARGET_PARAMETERS)
 
 
 def get_or_create_bucket(bucket_name):

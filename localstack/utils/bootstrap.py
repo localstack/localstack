@@ -58,6 +58,9 @@ API_COMPOSITES = {
     'cognito': ['cognito-idp', 'cognito-identity']
 }
 
+# main container name determined via "docker inspect"
+MAIN_CONTAINER_NAME_CACHED = None
+
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
@@ -222,7 +225,7 @@ def get_main_container_ip():
     container_name = get_main_container_name()
     cmd = ("%s inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" %
         (config.DOCKER_CMD, container_name))
-    return run(cmd).strip()
+    return run(cmd, print_error=False).strip()
 
 
 def get_main_container_id():
@@ -235,11 +238,15 @@ def get_main_container_id():
 
 
 def get_main_container_name():
-    cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, config.HOSTNAME)
-    try:
-        return run(cmd, print_error=False).strip().lstrip('/')
-    except Exception:
-        return config.MAIN_CONTAINER_NAME
+    global MAIN_CONTAINER_NAME_CACHED
+    if MAIN_CONTAINER_NAME_CACHED is None:
+        hostname = os.environ.get('HOSTNAME')
+        cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, hostname)
+        try:
+            MAIN_CONTAINER_NAME_CACHED = run(cmd, print_error=False).strip().lstrip('/')
+        except Exception:
+            MAIN_CONTAINER_NAME_CACHED = config.MAIN_CONTAINER_NAME
+    return MAIN_CONTAINER_NAME_CACHED
 
 
 def get_server_version():
@@ -434,9 +441,10 @@ def validate_localstack_config(name):
         warns.append(('Edge port %s is not exposed. You may have to add the entry '
                     'to the "ports" section of the docker-compose file.') % edge_port)
 
-    if network_mode != 'bridge':
+    if network_mode != 'bridge' and not docker_env.get('LAMBDA_DOCKER_NETWORK'):
         warns.append('Network mode is not set to "bridge" which may cause networking issues in Lambda containers. '
-                    'Consider adding "network_mode: bridge" to you docker-compose file.')
+                    'Consider adding "network_mode: bridge" to your docker-compose file, or configure '
+                    'LAMBDA_DOCKER_NETWORK with the name of the Docker network of your compose stack.')
 
     # print warning/info messages
     for warning in warns:
