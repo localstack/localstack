@@ -42,6 +42,9 @@ def handler(event, context):
             body = json.loads(event['body'])
         except Exception:
             body = {}
+
+        body['path'] = event.get('path')
+        body['resource'] = event.get('resource')
         body['pathParameters'] = event.get('pathParameters')
         body['requestContext'] = event.get('requestContext')
         body['queryStringParameters'] = event.get('queryStringParameters')
