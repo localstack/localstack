@@ -36,14 +36,58 @@ def filter_event_with_target_input_path(target, event):
     return event
 
 
+def handle_prefix_filtering(event_pattern, value):
+    if isinstance(event_pattern, list):
+        for element in event_pattern:
+            if isinstance(element, (int, str)):
+                if str(element) == str(value):
+                    return True
+            elif isinstance(element, dict) and 'prefix' in element:
+                if value.startswith(element.get('prefix')):
+                    return True
+            elif isinstance(element, dict) and 'anything-but' in element:
+                if element.get('anything-but') != value:
+                    return True
+            elif 'numeric' in element:
+                return handle_numeric_conditions(element.get('numeric'), value)
+            elif isinstance(element, list):
+                if value in list:
+                    return True
+    return False
+
+
+def handle_numeric_conditions(conditions, value):
+    for i in range(0, len(conditions), 2):
+        if conditions[i] == '<' and not (value < conditions[i + 1]):
+            return False
+        if conditions[i] == '>' and not (value > conditions[i + 1]):
+            return False
+        if conditions[i] == '<=' and not (value <= conditions[i + 1]):
+            return False
+        if conditions[i] == '>=' and not (value >= conditions[i + 1]):
+            return False
+    return True
+
+
 def filter_event_based_on_event_format(self, rule, event):
-    def filter_event(event_pattern, event):
-        for key, value in event_pattern.items():
+    def filter_event(event_pattern_filter, event):
+        for key, value in event_pattern_filter.items():
             event_value = event.get(key.lower())
             if not event_value:
                 return False
 
-            if isinstance(value, list) and not identify_content_base_parameter_in_pattern(value):
+            if event_value and isinstance(event_value, dict):
+                for key_a, value_a in event_value.items():
+                    if key_a == 'ip':
+                        # TODO add IP-Address check here
+                        continue
+                    if isinstance(value.get(key_a), (int, str)):
+                        if value_a != value.get(key_a):
+                            return False
+                    if not handle_prefix_filtering(value.get(key_a), value_a):
+                        return False
+
+            elif isinstance(value, list) and not identify_content_base_parameter_in_pattern(value):
                 if isinstance(event_value, list) and \
                    get_two_lists_intersection(value, event_value) == []:
                     return False
@@ -66,11 +110,10 @@ def filter_event_based_on_event_format(self, rule, event):
         return True
 
     rule_information = self.events_backend.describe_rule(rule)
-    rule_event_pattern = json.loads(str(rule_information.event_pattern))
-
-    if rule_event_pattern and not filter_event(rule_event_pattern, event):
-        return False
-
+    if rule_information.event_pattern._filter:
+        event_pattern = rule_information.event_pattern._filter
+        if not filter_event(event_pattern, event):
+            return False
     return True
 
 
@@ -113,6 +156,34 @@ def apply_patches():
         rules_set.remove(name)
 
         return events_handler_delete_rule_orig(self)
+
+    # 2101 Events put-targets does not respond
+    def events_handler_put_targets(self):
+
+        def is_rule_present(rule_name):
+            if EVENT_RULES.get(event_bus):
+                for rule in EVENT_RULES.get(event_bus):
+                    if rule == rule_name:
+                        return True
+            return False
+
+        rule_name = self._get_param('Rule')
+        targets = self._get_param('Targets')
+        event_bus = self._get_param('EventBusName') or DEFAULT_EVENT_BUS_NAME
+
+        if not rule_name:
+            return self.error('ValidationException', 'Parameter Rule is required.')
+
+        if not targets:
+            return self.error('ValidationException', 'Parameter Targets is required.')
+
+        if not self.events_backend.put_targets(rule_name, event_bus, targets):
+            if not is_rule_present(rule_name):
+                return self.error(
+                    'ResourceNotFoundException', 'Rule ' + rule_name + ' does not exist.'
+                )
+
+        return json.dumps({'FailedEntryCount': 0, 'FailedEntries': []}), self.response_headers
 
     def events_handler_put_events(self):
         entries = self._get_param('Entries')
