@@ -419,8 +419,6 @@ def is_url_already_expired(expiry_timestamp):
 def add_response_metadata_headers(response):
     if response.headers.get('content-language') is None:
         response.headers['content-language'] = 'en-US'
-    if response.headers.get('cache-control') is None:
-        response.headers['cache-control'] = 'no-cache'
 
 
 def append_last_modified_headers(response, content=None):
