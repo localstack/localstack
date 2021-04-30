@@ -1576,7 +1576,8 @@ class TestS3(unittest.TestCase):
 
         presign_get_url = client.generate_presigned_url(
             'get_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain',
+                'ResponseContentDisposition': 'attachment;  filename=test.txt'},
             ExpiresIn=EXPIRES
         )
 
