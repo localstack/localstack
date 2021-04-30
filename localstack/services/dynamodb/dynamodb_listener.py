@@ -346,7 +346,6 @@ class ProxyListenerDynamoDB(ProxyListener):
                 for key in ['PutRequest', 'DeleteRequest']:
                     if any(unprocessed_items[key]):
                         content['UnprocessedItems'][table_name].append({key: unprocessed_items[key]})
-                print(content)
                 response._content = json.dumps(content)
                 fix_headers_for_updated_response(response)
 
