@@ -338,13 +338,15 @@ class ProxyListenerDynamoDB(ProxyListener):
             for record in records:
                 event_sources_or_streams_enabled = (event_sources_or_streams_enabled or
                     has_event_sources_or_streams_enabled(record['eventSourceARN'], streams_enabled_cache))
-            if response.status_code == 200 and len(unprocessed_items) > 0:
+            if response.status_code == 200 and any(unprocessed_items):
                 content = json.loads(to_str(response.content))
                 table_name = list(data['RequestItems'].keys())[0]
                 if table_name not in content['UnprocessedItems']:
-                    content['UnprocessedItems'][table_name] = {}
-                for unprocessed_item in unprocessed_items:
-                    content['UnprocessedItems'][table_name].update(unprocessed_item)
+                    content['UnprocessedItems'][table_name] = []
+                for key in ['PutRequest', 'DeleteRequest']:
+                    if any(unprocessed_items[key]):
+                        content['UnprocessedItems'][table_name].append({key: unprocessed_items[key]})
+                print(content)
                 response._content = json.dumps(content)
                 fix_headers_for_updated_response(response)
 
@@ -478,7 +480,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
     def prepare_batch_write_item_records(self, record, data):
         records = []
-        unprocessed_items = []
+        unprocessed_items = {'PutRequest': {}, 'DeleteRequest': {}}
         i = 0
         for table_name in sorted(data['RequestItems'].keys()):
             # Add stream view type to record if ddb stream is enabled
@@ -487,10 +489,10 @@ class ProxyListenerDynamoDB(ProxyListener):
                 record['dynamodb']['StreamViewType'] = stream_spec['StreamViewType']
             for request in data['RequestItems'][table_name]:
                 put_request = request.get('PutRequest')
-
+                existing_items = self._thread_local('existing_items')
                 if put_request:
-                    if len(self._thread_local('existing_items')) > i:
-                        existing_item = self._thread_local('existing_items')[i]
+                    if existing_items and len(existing_items) > i:
+                        existing_item = existing_items[i]
                         keys = dynamodb_extract_keys(item=put_request['Item'], table_name=table_name)
                         if isinstance(keys, Response):
                             return keys
@@ -504,14 +506,14 @@ class ProxyListenerDynamoDB(ProxyListener):
                             new_record['dynamodb']['OldImage'] = existing_item
                         new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                         records.append(new_record)
-                    if len(self._thread_local('unprocessed_put_items')) > i:
-                        unprocessed_item = self._thread_local('unprocessed_put_items')[i]
+                    unprocessed_put_items = self._thread_local('unprocessed_put_items')
+                    if unprocessed_put_items and len(unprocessed_put_items) > i:
+                        unprocessed_item = unprocessed_put_items[i]
                         if unprocessed_item:
-                            unprocessed_item = json.loads(json.dumps({'PutRequest': unprocessed_item}))
-                            unprocessed_items.append(unprocessed_item)
+                            unprocessed_items['PutRequest'].update(json.loads(json.dumps(unprocessed_item)))
                 delete_request = request.get('DeleteRequest')
                 if delete_request:
-                    if len(self._thread_local('existing_items')) > i:
+                    if existing_items and len(existing_items) > i:
                         keys = delete_request['Key']
                         if isinstance(keys, Response):
                             return keys
@@ -519,15 +521,15 @@ class ProxyListenerDynamoDB(ProxyListener):
                         new_record['eventID'] = short_uid()
                         new_record['eventName'] = 'REMOVE'
                         new_record['dynamodb']['Keys'] = keys
-                        new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
+                        new_record['dynamodb']['OldImage'] = existing_items[i]
                         new_record['dynamodb']['SizeBytes'] = len(json.dumps(existing_item))
                         new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                         records.append(new_record)
-                    if len(self._thread_local('unprocessed_delete_items')) > i:
-                        unprocessed_item = self._thread_local('unprocessed_delete_items')[i]
+                    unprocessed_delete_items = self._thread_local('unprocessed_delete_items')
+                    if unprocessed_delete_items and len(unprocessed_delete_items) > i:
+                        unprocessed_item = unprocessed_delete_items[i]
                         if unprocessed_item:
-                            unprocessed_item = json.loads(json.dumps({'DeleteRequest': unprocessed_item}))
-                            unprocessed_items.append(unprocessed_item)
+                            unprocessed_items['DeleteRequest'].update(json.loads(json.dumps(unprocessed_item)))
                 i += 1
         return records, unprocessed_items
 
