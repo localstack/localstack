@@ -176,18 +176,17 @@ class ProxyListenerSNS(PersistingProxyListener):
     def _extract_tags(topic_arn, req_data, is_create_topic_request):
         tags = []
         req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
+        existing_tags = SNS_TAGS.get(topic_arn, None)
         # TODO: use aws_responses.extract_tags(...) here!
         for i in range(int(len(req_tags.keys()) / 2)):
             key = req_tags['Tags.member.' + str(i + 1) + '.Key'][0]
             value = req_tags['Tags.member.' + str(i + 1) + '.Value'][0]
-            tags.append({'Key': key, 'Value': value})
-
+            tag = {'Key': key, 'Value': value}
+            tags.append(tag)
             # this means topic already created with empty tags and when we try to create it
             # again with other tag value then it should fail according to aws documentation.
-            existing_tags = SNS_TAGS.get(topic_arn, None)
-            if is_create_topic_request and existing_tags is not None and existing_tags != tags:
+            if is_create_topic_request and existing_tags is not None and tag not in existing_tags:
                 return False
-
         do_tag_resource(topic_arn, tags)
         return True
 

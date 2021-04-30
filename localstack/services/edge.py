@@ -152,7 +152,7 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
     # TODO determine client address..?
     client_address = LOCALHOST_IP
     server_address = headers.get('host') or LOCALHOST
-    forward_url = 'http://%s:%s' % (config.HOSTNAME, backend_port)
+    forward_url = 'http://%s:%s' % (LOCALHOST, backend_port)
     response = modify_and_forward(method=method, path=path, data_bytes=data, headers=headers,
         forward_base_url=forward_url, listeners=[listener], request_handler=None,
         client_address=client_address, server_address=server_address)
@@ -160,7 +160,8 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
 
 
 def do_forward_request_network(port, method, path, data, headers):
-    connect_host = '%s:%s' % (config.HOSTNAME, port)
+    # TODO: enable per-service endpoints, to allow deploying in distributed settings
+    connect_host = '%s:%s' % (LOCALHOST, port)
     url = '%s://%s%s' % (get_service_protocol(), connect_host, path)
     function = getattr(requests, method.lower())
     response = function(url, data=data, headers=headers, verify=False, stream=True)
@@ -400,6 +401,10 @@ def get_api_from_custom_rules(method, path, data, headers):
     # detect S3 requests with "AWS id:key" Auth headers
     if auth_header.startswith('AWS '):
         return 's3', config.PORT_S3
+
+    # certain EC2 requests from Java SDK contain no Auth headers (issue #3805)
+    if b'Version=2016-11-15' in data_bytes:
+        return 'ec2', config.PORT_EC2
 
 
 def get_service_port_for_account(service, headers):

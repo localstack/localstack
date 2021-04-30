@@ -1,7 +1,6 @@
 import re
 import json
 import logging
-
 from moto.ec2.utils import generate_route_id
 from moto.s3.models import FakeBucket
 from moto.sqs.models import Queue as MotoQueue
@@ -10,10 +9,11 @@ from moto.core.models import CloudFormationModel
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import camel_to_snake_case, select_attributes
+from localstack.utils.common import camel_to_snake_case, select_attributes, canonical_json, md5
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower,
-    merge_parameters, params_dict_to_list, select_parameters, params_select_attributes)
+    merge_parameters, params_dict_to_list, select_parameters, params_select_attributes,
+    lambda_select_params)
 
 LOG = logging.getLogger(__name__)
 
@@ -108,9 +108,9 @@ class GenericBaseModel(CloudFormationModel):
 
         raise UnformattedGetAttTemplateException()
 
-    # ----------------------
+    # ---------------------
     # GENERIC UTIL METHODS
-    # ----------------------
+    # ---------------------
 
     def fetch_and_update_state(self, *args, **kwargs):
         from localstack.utils.cloudformation import template_deployer
@@ -222,9 +222,15 @@ class LogsLogGroup(GenericBaseModel):
         return 'AWS::Logs::LogGroup'
 
     def get_cfn_attribute(self, attribute_name):
+        props = self.props
         if attribute_name == 'Arn':
-            return self.params.get('Arn') or aws_stack.log_group_arn(self.params.get('LogGroupName'))
+            return props.get('arn')
         return super(LogsLogGroup, self).get_cfn_attribute(attribute_name)
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute == 'Arn':
+            return self.get_cfn_attribute('Arn')
+        return self.props.get('LogGroupName')
 
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get('LogGroupName')
@@ -732,10 +738,13 @@ class GatewayDeployment(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         api_id = self.props.get('RestApiId') or self.resource_id
         api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
+
         if not api_id:
             return None
+
         result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
         # TODO possibly filter results by stage name or other criteria
+
         return result[0] if result else None
 
 
@@ -749,15 +758,18 @@ class GatewayResource(GenericBaseModel):
         api_id = props.get('RestApiId') or self.resource_id
         api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
         parent_id = self.resolve_refs_recursively(stack_name, props.get('ParentId'), resources)
+
         if not api_id or not parent_id:
             return None
+
         api_resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=api_id)['items']
         target_resource = list(filter(lambda res:
             res.get('parentId') == parent_id and res['pathPart'] == props['PathPart'], api_resources))
+
         if not target_resource:
             return None
-        path = aws_stack.get_apigateway_path_for_resource(api_id,
-            target_resource[0]['id'], resources=api_resources)
+
+        path = aws_stack.get_apigateway_path_for_resource(api_id, target_resource[0]['id'], resources=api_resources)
         result = list(filter(lambda res: res['path'] == path, api_resources))
         return result[0] if result else None
 
@@ -771,8 +783,10 @@ class GatewayMethod(GenericBaseModel):
         props = self.props
         api_id = self.resolve_refs_recursively(stack_name, props['RestApiId'], resources)
         res_id = self.resolve_refs_recursively(stack_name, props['ResourceId'], resources)
+
         if not api_id or not res_id:
             return None
+
         res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
         match = [v for (k, v) in res_obj.get('resourceMethods', {}).items()
                  if props['HttpMethod'] in (v.get('httpMethod'), k)]
@@ -929,6 +943,21 @@ class GatewayModel(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::ApiGateway::Model'
 
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('apigateway')
+        api_id = self.resolve_refs_recursively(stack_name, self.props['RestApiId'], resources)
+
+        items = client.get_models(restApiId=api_id)['items']
+        if not items:
+            return None
+
+        model_name = self.resolve_refs_recursively(stack_name, self.props['Name'], resources)
+        models = [item for item in items if item['name'] == model_name]
+        if models:
+            return models[0]
+
+        return None
+
 
 class GatewayAccount(GenericBaseModel):
     @staticmethod
@@ -949,7 +978,6 @@ class S3Bucket(GenericBaseModel, FakeBucket):
 
     @staticmethod
     def get_deploy_templates():
-
         def convert_acl_cf_to_s3(acl):
             """ Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read') """
             return re.sub('(?<!^)(?=[A-Z])', '-', acl).lower()
@@ -1046,6 +1074,10 @@ class S3BucketPolicy(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::S3::BucketPolicy'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        policy = self.props.get('Policy')
+        return policy and md5(canonical_json(json.loads(policy)))
 
     def fetch_state(self, stack_name, resources):
         bucket_name = self.props.get('Bucket') or self.resource_id
@@ -1259,11 +1291,97 @@ class SecretsManagerSecret(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::SecretsManager::Secret'
 
+    def get_physical_resource_id(self, attribute, **kwargs):
+        props = self.props
+        result = props.get('Arn') or aws_stack.secretsmanager_secret_arn(props['Name'])
+        return result
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name in (REF_ARN_ATTRS + REF_ID_ATTRS):
+            return self.get_physical_resource_id(attribute_name)
+        return super(SecretsManagerSecret, self).get_cfn_attribute(attribute_name)
+
     def fetch_state(self, stack_name, resources):
         secret_name = self.props.get('Name') or self.resource_id
         secret_name = self.resolve_refs_recursively(stack_name, secret_name, resources)
         result = aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=secret_name)
         return result
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_secret',
+                'parameters': lambda_select_params('Name', 'Description', 'KmsKeyId', 'SecretString', 'Tags')
+            },
+            'delete': {
+                'function': 'delete_secret',
+                'parameters': {
+                    'SecretId': 'Name'
+                }
+            }
+        }
+
+
+class SecretsManagerSecretTargetAttachment(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::SecretsManager::SecretTargetAttachment'
+
+    def get_physical_resource_id(self, attribute, **kwargs):
+        return aws_stack.secretsmanager_secret_arn(self.props.get('SecretId'))
+
+    def fetch_state(self, stack_name, resources):
+        # TODO implement?
+        return {'state': 'dummy'}
+
+
+class SecretsManagerRotationSchedule(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::SecretsManager::RotationSchedule'
+
+    def get_physical_resource_id(self, attribute, **kwargs):
+        return aws_stack.secretsmanager_secret_arn(self.props.get('SecretId'))
+
+    def fetch_state(self, stack_name, resources):
+        # TODO implement?
+        return {'state': 'dummy'}
+
+
+class SecretsManagerResourcePolicy(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::SecretsManager::ResourcePolicy'
+
+    def get_physical_resource_id(self, attribute, **kwargs):
+        return aws_stack.secretsmanager_secret_arn(self.props.get('SecretId'))
+
+    def fetch_state(self, stack_name, resources):
+        secret_id = self.resolve_refs_recursively(stack_name, self.props.get('SecretId'), resources)
+        result = aws_stack.connect_to_service('secretsmanager').get_resource_policy(SecretId=secret_id)
+        return result
+
+    @staticmethod
+    def get_deploy_templates():
+        def create_params(params, **kwargs):
+            return {
+                'SecretId': params['SecretId'].split(':')[-1],
+                'ResourcePolicy': json.dumps(params['ResourcePolicy']),
+                'BlockPublicPolicy': params.get('BlockPublicPolicy')
+            }
+        return {
+            'create': {
+                'function': 'put_resource_policy',
+                'parameters': create_params
+            },
+            'delete': {
+                'function': 'delete_resource_policy',
+                'parameters': {
+                    'SecretId': 'SecretId'
+                }
+            }
+        }
 
 
 class KMSKey(GenericBaseModel):
@@ -1505,6 +1623,44 @@ class EC2VPC(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get('VpcId')
+
+
+class EC2NatGateway(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::NatGateway'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('ec2')
+        props = self.props
+        subnet_id = self.resolve_refs_recursively(stack_name, props.get('SubnetId'), resources)
+        assoc_id = self.resolve_refs_recursively(stack_name, props.get('AllocationId'), resources)
+        result = client.describe_nat_gateways(Filters=[{'Name': 'subnet-id', 'Values': [subnet_id]}])
+        result = result['NatGateways']
+        result = [gw for gw in result if assoc_id in [ga['AllocationId'] for ga in gw['NatGatewayAddresses']]]
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_nat_gateway',
+                'parameters': {
+                    'SubnetId': 'SubnetId',
+                    'AllocationId': 'AllocationId'
+                    # TODO: add TagSpecifications
+                }
+            },
+            'delete': {
+                'function': 'delete_nat_gateway',
+                'parameters': {
+                    'NatGatewayId': 'PhysicalResourceId'
+                }
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.physical_resource_id or self.props.get('NatGatewayId')
 
 
 class InstanceProfile(GenericBaseModel):

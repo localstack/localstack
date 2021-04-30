@@ -295,7 +295,7 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
                                   stage_variables={}, request_context={}, event_context={}):
     try:
         resource_path = resource_path or path
-        event = construct_invocation_event(method, resource_path, headers, payload, query_string_params)
+        event = construct_invocation_event(method, path, headers, payload, query_string_params)
         path_params = dict(path_params)
         fix_proxy_path_params(path_params)
         event['pathParameters'] = path_params
@@ -400,7 +400,11 @@ def start_lambda_sqs_listener():
 
             sqs_client = aws_stack.connect_to_service('sqs')
             entries = [{'Id': r['receiptHandle'], 'ReceiptHandle': r['receiptHandle']} for r in records]
-            sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+            try:
+                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+            except Exception as e:
+                LOG.info('Unable to delete Lambda events from SQS queue ' +
+                    '(please check SQS visibility timeout settings): %s - %s' % (entries, e))
 
         records = []
         for msg in messages:
@@ -422,7 +426,11 @@ def start_lambda_sqs_listener():
         event = {'Records': records}
 
         # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
-        run_lambda(func_arn=lambda_arn, event=event, context={}, asynchronous=True, callback=delete_messages)
+        res = run_lambda(func_arn=lambda_arn, event=event, context={},
+            asynchronous=True, callback=delete_messages)
+        if isinstance(res, lambda_executors.InvocationResult) and getattr(res.result, 'status_code', 0) >= 400:
+            return False
+        return True
 
     def listener_loop(*args):
         while True:
@@ -435,6 +443,8 @@ def start_lambda_sqs_listener():
                     SQS_LISTENER_THREAD.pop('_thread_')
                     return
 
+                unprocessed_messages = {}
+
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for source in sources:
                     queue_arn = source['EventSourceArn']
@@ -444,16 +454,21 @@ def start_lambda_sqs_listener():
                     try:
                         region_name = queue_arn.split(':')[3]
                         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-                        result = sqs_client.receive_message(
-                            QueueUrl=queue_url,
-                            MessageAttributeNames=['All'],
-                            MaxNumberOfMessages=batch_size
-                        )
-                        messages = result.get('Messages')
+                        messages = unprocessed_messages.pop(queue_arn, None)
                         if not messages:
-                            continue
+                            result = sqs_client.receive_message(
+                                QueueUrl=queue_url,
+                                MessageAttributeNames=['All'],
+                                MaxNumberOfMessages=batch_size
+                            )
+                            messages = result.get('Messages')
+                            if not messages:
+                                continue
 
-                        send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
+                        LOG.debug('Sending event from event source %s to Lambda %s' % (queue_arn, lambda_arn))
+                        res = send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
+                        if not res:
+                            unprocessed_messages[queue_arn] = messages
 
                     except Exception as e:
                         LOG.debug('Unable to poll SQS messages for queue %s: %s' % (queue_arn, e))
@@ -573,6 +588,7 @@ def run_lambda(func_arn, event, context={}, version=None,
         func_arn = aws_stack.fix_arn(func_arn)
         func_details = region.lambdas.get(func_arn)
         if not func_details:
+            LOG.debug('Unable to find details for Lambda %s in region %s' % (func_arn, region_name))
             result = not_found_error(msg='The resource specified in the request does not exist.')
             return lambda_executors.InvocationResult(result)
 
@@ -704,7 +720,8 @@ def get_java_handler(zip_file_content, main_file, func_details=None):
             return result
         return execute
     raise ClientError(error_response(
-        'Unable to extract Java Lambda handler - file is not a valid zip/jar file', 400, error_type='ValidationError'))
+        'Unable to extract Java Lambda handler - file is not a valid zip/jar file (%s, %s bytes)' %
+        (main_file, len(zip_file_content or '')), 400, error_type='ValidationError'))
 
 
 def set_archive_code(code, lambda_name, zip_file_content=None):
@@ -1381,8 +1398,8 @@ def invoke_function(function):
         qualifier = request.args.get('Qualifier')
     data = request.get_data()
     if data:
-        data = to_str(data)
         try:
+            data = to_str(data)
             data = json.loads(data)
         except Exception:
             try:
@@ -1456,9 +1473,12 @@ def invoke_function(function):
         not_found = not_found_error('{0}:{1}'.format(arn, qualifier))
 
     if not_found:
-        forward_result = forward_to_fallback_url(arn, json.dumps(data))
-        if forward_result is not None:
-            return _create_response(forward_result)
+        try:
+            forward_result = forward_to_fallback_url(arn, json.dumps(data))
+            if forward_result is not None:
+                return _create_response(forward_result)
+        except Exception as e:
+            LOG.debug('Unable to forward Lambda invocation to fallback URL: "%s" - %s' % (data, e))
         return not_found
 
     if invocation_type == 'RequestResponse':

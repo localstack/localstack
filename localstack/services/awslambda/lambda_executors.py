@@ -92,7 +92,7 @@ def _store_logs(func_details, log_output, invocation_time=None, container_id=Non
 
 def get_main_endpoint_from_container():
     global DOCKER_MAIN_CONTAINER_IP
-    if DOCKER_MAIN_CONTAINER_IP is None:
+    if not config.HOSTNAME_FROM_LAMBDA and DOCKER_MAIN_CONTAINER_IP is None:
         DOCKER_MAIN_CONTAINER_IP = False
         try:
             if in_docker():
@@ -102,8 +102,8 @@ def get_main_endpoint_from_container():
             container_name = bootstrap.get_main_container_name()
             LOG.info('Unable to get IP address of main Docker container "%s": %s' %
                 (container_name, e))
-    # return main container IP, or fall back to Docker host (bridge IP, or host DNS address)
-    return DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
+    # return (1) predefined endpoint host, or (2) main container IP, or (3) Docker host (e.g., bridge IP)
+    return config.HOSTNAME_FROM_LAMBDA or DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
 
 
 class InvocationResult(object):
@@ -636,7 +636,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         been inactive for longer than MAX_CONTAINER_IDLE_TIME_MS.
         :return: None
         """
-        LOG.info('Checking if there are idle containers.')
+        LOG.debug('Checking if there are idle containers ...')
         current_time = int(time.time() * 1000)
         for func_arn, last_run_time in dict(self.function_invoke_times).items():
             duration = current_time - last_run_time

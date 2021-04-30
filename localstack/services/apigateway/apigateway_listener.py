@@ -302,14 +302,13 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get('type') or integration.get('integrationType') or ''
     integration_type = integration_type_orig.upper()
-    uri = integration.get('uri') or integration.get('integrationUri')
+    uri = integration.get('uri') or integration.get('integrationUri') or ''
 
     if (uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri) or uri.startswith('arn:aws:lambda'):
         if integration_type in ['AWS', 'AWS_PROXY']:
             func_arn = uri
             if ':lambda:path' in uri:
                 func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
-            data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
 
             try:
                 path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
@@ -317,13 +316,18 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                 path_params = {}
 
             # apply custom request template
-            data_str = apply_template(integration, 'request', data_str, path_params=path_params,
-                query_params=query_string_params, headers=headers)
+            data_str = data
+            try:
+                data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
+                data_str = apply_template(integration, 'request', data_str, path_params=path_params,
+                    query_params=query_string_params, headers=headers)
+            except Exception:
+                pass
 
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
             request_context = get_lambda_event_request_context(method, path, data, headers,
-                integration_uri=uri, resource_id=resource_id)
+                integration_uri=uri, resource_id=resource_id, resource_path=resource_path)
             stage_variables = get_stage_variables(api_id, stage)
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
@@ -496,7 +500,8 @@ def get_stage_variables(api_id, stage):
     return response.get('variables', None)
 
 
-def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
+def get_lambda_event_request_context(method, path, data, headers,
+                                     integration_uri=None, resource_id=None, resource_path=None):
     _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
     relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
     source_ip = headers.get('X-Forwarded-For', ',').split(',')[-2].strip()
@@ -506,6 +511,7 @@ def get_lambda_event_request_context(method, path, data, headers, integration_ur
         # adding stage to the request context path.
         # https://github.com/localstack/localstack/issues/2210
         'path': '/' + stage + relative_path,
+        'resourcePath': resource_path or relative_path,
         'accountId': account_id,
         'resourceId': resource_id,
         'stage': stage,

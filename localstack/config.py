@@ -1,6 +1,7 @@
 import re
 import os
 import json
+import time
 import socket
 import logging
 import platform
@@ -12,6 +13,9 @@ from boto3 import Session
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS, LOCALHOST, LOCALHOST_IP, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1, LOG_LEVELS)
+
+# keep track of start time, for performance debugging
+load_start_time = time.time()
 
 
 def is_env_true(env_var_name):
@@ -62,12 +66,6 @@ DYNAMODB_WRITE_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_WRITE_ERROR_PR
 # JAVA EE heap size for dynamodb
 DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'
 
-# expose services on a specific host internally
-# Note: This used to be os.environ['HOSTNAME'] but since this has caused several issues with hostnames
-# that could not be resolved, we're hardcoding this to 'localhost' (as its purpose is local invocations)
-# TODO: potentially remove this entirely in the future ?!
-HOSTNAME = LOCALHOST
-
 # expose services on a specific host externally
 HOSTNAME_EXTERNAL = os.environ.get('HOSTNAME_EXTERNAL', '').strip() or LOCALHOST
 
@@ -75,7 +73,10 @@ HOSTNAME_EXTERNAL = os.environ.get('HOSTNAME_EXTERNAL', '').strip() or LOCALHOST
 SQS_PORT_EXTERNAL = int(os.environ.get('SQS_PORT_EXTERNAL') or 0)
 
 # name of the host under which the LocalStack services are available
-LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
+LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or LOCALHOST
+
+# host under which the LocalStack services are available from Lambda Docker containers
+HOSTNAME_FROM_LAMBDA = os.environ.get('HOSTNAME_FROM_LAMBDA', '').strip()
 
 # whether to remotely copy the lambda code or locally mount a volume
 LAMBDA_REMOTE_DOCKER = is_env_true('LAMBDA_REMOTE_DOCKER')
@@ -170,9 +171,6 @@ STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get('STEPFUNCTIONS_LAMBDA_ENDPOINT', 
 # path prefix for windows volume mounting
 WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get('WINDOWS_DOCKER_MOUNT_PREFIX', '/host_mnt')
 
-# whether to use a proxy server with HTTP/2 support. TODO: remove in the future
-USE_HTTP2_SERVER = os.environ.get('USE_HTTP2_SERVER', '').strip() not in FALSE_STRINGS
-
 # name of the main Docker container
 MAIN_CONTAINER_NAME = os.environ.get('MAIN_CONTAINER_NAME', '').strip() or 'localstack_main'
 
@@ -223,14 +221,14 @@ LAMBDA_FORWARD_URL = os.environ.get('LAMBDA_FORWARD_URL', '').strip()
 CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME', 'LAMBDA_FALLBACK_URL',
                    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'LAMBDA_REMOVE_CONTAINERS',
                    'USE_SSL', 'DEBUG', 'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI',
-                   'START_WEB', 'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
+                   'DYNAMODB_READ_ERROR_PROBABILITY', 'DYNAMODB_WRITE_ERROR_PROBABILITY', 'START_WEB',
+                   'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
                    'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID', 'DISABLE_EVENTS', 'EDGE_PORT', 'LS_LOG',
                    'EDGE_PORT_HTTP', 'SKIP_INFRA_DOWNLOADS', 'STEPFUNCTIONS_LAMBDA_ENDPOINT',
-                   'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER',
+                   'WINDOWS_DOCKER_MOUNT_PREFIX', 'HOSTNAME_FROM_LAMBDA',
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
-                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS',
-                   'USE_MOTO_CF']
+                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS', 'PERSISTENCE_SINGLE_FILE']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -289,7 +287,7 @@ try:
     if not is_in_docker and not is_in_linux:
         # If we're running outside docker, and would like the Lambda containers to be able
         # to access services running on the local machine, set DOCKER_HOST_FROM_CONTAINER accordingly
-        if LOCALSTACK_HOSTNAME == HOSTNAME:
+        if LOCALSTACK_HOSTNAME == LOCALHOST:
             DOCKER_HOST_FROM_CONTAINER = 'host.docker.internal'
     # update LOCALSTACK_HOSTNAME if host.docker.internal is available
     if is_in_docker:
@@ -309,7 +307,7 @@ if not is_in_docker:
     CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
 
 # set variables no_proxy, i.e., run internal service calls directly
-no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, LOCALHOST_IP, '[::1]')))
+no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, '[::1]')))
 if os.environ.get('no_proxy'):
     os.environ['no_proxy'] += ',' + no_proxy
 elif os.environ.get('NO_PROXY'):
@@ -426,9 +424,6 @@ BUNDLE_API_PROCESSES = True
 # whether to use a CPU/memory profiler when running the integration tests
 USE_PROFILER = is_env_true('USE_PROFILER')
 
-# whether to use the legacy CF deployment based on moto (TODO: remove in a future release)
-USE_MOTO_CF = is_env_true('USE_MOTO_CF')
-
 
 def load_config_file(config_file=None):
     from localstack.utils.common import get_or_create_file, to_str
@@ -440,3 +435,9 @@ def load_config_file(config_file=None):
         print('Unable to load local config file %s as JSON: %s' % (config_file, e))
         return {}
     return configs
+
+
+if LS_LOG == 'trace':
+    load_end_time = time.time()
+    LOG = logging.getLogger(__name__)
+    LOG.debug('Initializing the configuration took %s ms' % int((load_end_time - load_start_time) * 1000))

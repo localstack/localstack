@@ -173,6 +173,11 @@ def update_physical_resource_id(resource):
     elif isinstance(resource, service_models.ElasticsearchDomain):
         resource.physical_resource_id = resource.params.get('DomainName')
 
+    elif isinstance(resource, service_models.SecretsManagerSecret):
+        secret = service_models.SecretsManagerSecret.fetch_details(resource.props['Name'])
+        if secret:
+            resource.props['ARN'] = resource.physical_resource_id = secret['ARN']
+
     elif isinstance(resource, dynamodb_models.Table):
         resource.physical_resource_id = resource.name
 

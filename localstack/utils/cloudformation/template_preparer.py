@@ -153,8 +153,8 @@ def template_to_json(template):
 def is_local_service_url(url):
     if not url:
         return False
-    candidates = (constants.LOCALHOST, constants.LOCALHOST_HOSTNAME, config.LOCALSTACK_HOSTNAME,
-        config.HOSTNAME_EXTERNAL, config.HOSTNAME)
+    candidates = (constants.LOCALHOST, constants.LOCALHOST_HOSTNAME,
+        config.LOCALSTACK_HOSTNAME, config.HOSTNAME_EXTERNAL)
     if any(re.match(r'^[^:]+://[^:/]*%s([:/]|$)' % host, url) for host in candidates):
         return True
     host = url.split('://')[-1].split('/')[0]
