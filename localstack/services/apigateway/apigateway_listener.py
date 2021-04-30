@@ -19,7 +19,7 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
-from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators, 
+from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
     handle_accounts, extract_query_string_params, extract_path_params, make_error_response,
     get_cors_response, hande_base_path_mappings)
 
