@@ -1498,9 +1498,8 @@ class TestS3(unittest.TestCase):
             'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1'
 
     def test_xray_header_to_sqs(self):
-
         key = 'test-data'
-        bucket_name = 'notif-enc-%s' % short_uid()
+        bucket_name = 'bucket-%s' % short_uid()
         self.s3_client.meta.events.register('before-send.s3.*', self.add_xray_header)
         queue_url = self.sqs_client.create_queue(QueueName='testQueue')['QueueUrl']
         queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
@@ -1514,7 +1513,6 @@ class TestS3(unittest.TestCase):
                                                    AttributeNames=['AWSTraceHeader'],
                                                    MessageAttributeNames=['All'])
 
-        self.assertEqual(json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'], key)
         self.assertEqual(response['Messages'][0]['Attributes']['AWSTraceHeader'],
                          'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1')
 
