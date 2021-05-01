@@ -560,6 +560,8 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
         return name
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
+    if len(pattern.split('%s')) == 3:
+        return pattern % (account_id, name)
     return pattern % (region_name, account_id, name)
 
 
