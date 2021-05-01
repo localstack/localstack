@@ -136,10 +136,7 @@ def apply_patches():
 
     # Implement import rest_api
     # https://github.com/localstack/localstack/issues/2763
-    def apigateway_response_restapis_individual(self, request, full_url, headers):
-        if request.method in ['GET', 'DELETE']:
-            return apigateway_response_restapis_individual_orig(self, request, full_url, headers)
-
+    def patch_api_gateway_response_individual(self, request, full_url, headers):
         self.setup_class(request, full_url, headers)
         function_id = self.path.replace('/restapis/', '', 1).split('/')[0]
 
@@ -164,7 +161,12 @@ def apply_patches():
 
             return 200, {}, json.dumps(self.backend.get_rest_api(function_id).to_dict())
 
-        # handle import rest_api via swagger file
+    def apigateway_response_restapis_individual(self, request, full_url, headers):
+        if request.method in ['GET', 'DELETE']:
+            return apigateway_response_restapis_individual_orig(self, request, full_url, headers)
+
+        patch_api_gateway_response_individual(self, request, full_url, headers)
+
         if self.method == 'PUT':
             body = json.loads(to_str(self.body))
             rest_api = self.backend.put_rest_api(function_id, body)
@@ -176,29 +178,7 @@ def apply_patches():
         if request.method in ['GET', 'POST', 'DELETE']:
             return apigateway_response_resource_individual_orig(self, request, full_url, headers)
 
-        self.setup_class(request, full_url, headers)
-        function_id = self.path.replace('/restapis/', '', 1).split('/')[0]
-
-        if self.method == 'PATCH':
-            not_supported_attributes = ['/id', '/region_name', '/create_date']
-
-            rest_api = self.backend.apis.get(function_id)
-            if not rest_api:
-                msg = 'Invalid API identifier specified %s:%s' % (TEST_AWS_ACCOUNT_ID, function_id)
-                return (404, {}, msg)
-
-            patch_operations = self._get_param('patchOperations')
-            for operation in patch_operations:
-                if operation['path'].strip('/') in REST_API_ATTRIBUTES:
-                    operation['path'] = camelcase_to_underscores(operation['path'])
-                if operation['path'] in not_supported_attributes:
-                    msg = 'Invalid patch path %s' % (operation['path'])
-                    return (400, {}, msg)
-
-            rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
-            apply_json_patch_safe(rest_api.__dict__, patch_operations, in_place=True)
-
-            return 200, {}, json.dumps(self.backend.get_rest_api(function_id).to_dict())
+        patch_api_gateway_response_individual(self, request, full_url, headers)
 
         return 400, {}, ''
 
