@@ -136,7 +136,7 @@ def apply_patches():
 
     # Implement import rest_api
     # https://github.com/localstack/localstack/issues/2763
-    def patch_api_gateway_response_individual(self, request, full_url, headers):
+    def patch_api_gateway_response_individual(self, request, full_url, headers, resource=None):
         self.setup_class(request, full_url, headers)
         function_id = self.path.replace('/restapis/', '', 1).split('/')[0]
 
@@ -157,15 +157,17 @@ def apply_patches():
                     return (400, {}, msg)
 
             rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
-            apply_json_patch_safe(rest_api.__dict__, patch_operations, in_place=True)
-
+            if resource:
+                apply_json_patch_safe(resource, patch_operations, in_place=True)
+            else:
+                apply_json_patch_safe(rest_api.__dict__, patch_operations, in_place=True)
             return 200, {}, json.dumps(self.backend.get_rest_api(function_id).to_dict())
 
     def apigateway_response_restapis_individual(self, request, full_url, headers):
         if request.method in ['GET', 'DELETE']:
             return apigateway_response_restapis_individual_orig(self, request, full_url, headers)
 
-        patch_api_gateway_response_individual(self, request, full_url, headers)
+        patch_api_gateway_response_individual(self, request, full_url, headers, apigateway_models.Resource)
 
         if self.method == 'PUT':
             function_id = self.path.replace('/restapis/', '', 1).split('/')[0]
