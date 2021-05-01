@@ -99,6 +99,10 @@ def test_dynamodb_write_error_injection():
     config.DYNAMODB_WRITE_ERROR_PROBABILITY = 1.0
     assert_raises(ClientError, table.put_item, Item={PARTITION_KEY: short_uid(), 'data': 'foobar123'})
 
+    # BatchWriteItem throws ProvisionedThroughputExceededException if ALL items in Batch are Throttled
+    assert_raises(ClientError, table.batch_write_item, RequestItems={table: [{
+        'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}}]})
+
     # reset probability to zero
     config.DYNAMODB_WRITE_ERROR_PROBABILITY = 0.0
 

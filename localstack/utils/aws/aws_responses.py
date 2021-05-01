@@ -145,6 +145,11 @@ def requests_to_flask_response(r):
     return Response(r.content, status=r.status_code, headers=dict(r.headers))
 
 
+def flask_not_found_error(msg=None):
+    msg = msg or 'The specified resource doesnt exist.'
+    return flask_error_response_json(msg, code=404, error_type='ResourceNotFoundException')
+
+
 def response_regex_replace(response, search, replace):
     content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
     set_response_content(response, content)

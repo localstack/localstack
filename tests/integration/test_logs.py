@@ -38,9 +38,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         self.assertEqual(events[0]['message'], body_msg)
 
         # clean up
-        self.logs_client.delete_log_group(
-            logGroupName=group
-        )
+        self.logs_client.delete_log_group(logGroupName=group)
 
     def test_filter_log_events_response_header(self):
         group = 'lg-%s' % short_uid()
@@ -54,17 +52,12 @@ class CloudWatchLogsTest(unittest.TestCase):
         ]
         self.logs_client.put_log_events(logGroupName=group, logStreamName=stream, logEvents=events)
 
-        rs = self.logs_client.filter_log_events(
-            logGroupName=group
-        )
-
+        rs = self.logs_client.filter_log_events(logGroupName=group)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ResponseMetadata']['HTTPHeaders']['content-type'], APPLICATION_AMZ_JSON_1_1)
 
         # clean up
-        self.logs_client.delete_log_group(
-            logGroupName=group
-        )
+        self.logs_client.delete_log_group(logGroupName=group)
 
     def test_list_tags_log_group(self):
         group = 'lg-%s' % short_uid()
@@ -82,9 +75,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         self.assertEqual(rs['tags']['env'], 'testing1')
 
         # clean up
-        self.logs_client.delete_log_group(
-            logGroupName=group
-        )
+        self.logs_client.delete_log_group(logGroupName=group)
 
     def test_put_subscription_filter_lambda(self):
         lambda_client = aws_stack.connect_to_service('lambda')
@@ -178,13 +169,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         self.assertEqual(len(response['Contents']), 2)
 
         # clean up
-        self.logs_client.delete_log_stream(
-            logGroupName=log_group,
-            logStreamName=log_stream
-        )
-        self.logs_client.delete_log_group(
-            logGroupName=log_group
-        )
+        self.cleanup(log_group, log_stream)
         firehose_client.delete_delivery_stream(
             DeliveryStreamName=firehose,
             AllowForceDelete=True
@@ -239,13 +224,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         self.assertEqual(len(response['Records']), 1)
 
         # clean up
-        self.logs_client.delete_log_stream(
-            logGroupName=log_group,
-            logStreamName=log_stream
-        )
-        self.logs_client.delete_log_group(
-            logGroupName=log_group
-        )
+        self.cleanup(log_group, log_stream)
         response = kinesis_client.delete_stream(
             StreamName=kinesis,
             EnforceConsumerDeletion=True
@@ -306,3 +285,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
         response = self.logs_client.create_log_stream(logGroupName=log_group, logStreamName=log_stream)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+    def cleanup(self, log_group, log_stream):
+        self.logs_client.delete_log_stream(logGroupName=log_group, logStreamName=log_stream)
+        self.logs_client.delete_log_group(logGroupName=log_group)

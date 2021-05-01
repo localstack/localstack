@@ -11,7 +11,9 @@ from six import iteritems
 from localstack.utils.aws import aws_stack
 from localstack.constants import (
     LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, ENV_INTERNAL_TEST_RUN)
-from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine, chmod_r
+from localstack.utils.common import (TMP_FILES, run, mkdir, to_str, load_file, save_file,
+    is_alpine, chmod_r, get_free_tcp_port)
+from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_utils import (
     get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 
@@ -142,8 +144,9 @@ def create_lambda_function(func_name, zip_file=None, event_source_arn=None, hand
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:
+        file_content = load_file(handler_file) if os.path.exists(handler_file) else handler_file
         if libs or not handler:
-            zip_file = create_lambda_archive(load_file(handler_file), libs=libs,
+            zip_file = create_lambda_archive(file_content, libs=libs,
                 get_content=True, runtime=runtime or LAMBDA_DEFAULT_RUNTIME)
         else:
             zip_file = create_zip_file(handler_file, get_content=True)
@@ -293,6 +296,20 @@ def find_recursive(key, value, obj):
                 return True
     else:
         return False
+
+
+def start_http_server(test_port=None, invocations=None):
+    from localstack.services.infra import start_proxy
+
+    class TestListener(ProxyListener):
+        def forward_request(self, **kwargs):
+            invocations.append(kwargs)
+            return 200
+
+    test_port = test_port or get_free_tcp_port()
+    invocations = invocations or []
+    proxy = start_proxy(test_port, update_listener=TestListener())
+    return test_port, invocations, proxy
 
 
 def list_all_s3_objects():

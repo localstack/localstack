@@ -65,6 +65,7 @@ accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
 * **Amplify**
 * **API Gateway V2 (WebSockets support)**
+* **Application AutoScaling**
 * **AppSync**
 * **Athena**
 * **Batch**
@@ -73,6 +74,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Cognito**
 * **ECS/ECR/EKS**
 * **ElastiCache**
+* **ELB/ELBv2**
 * **EMR**
 * **Glacier** / **S3 Select**
 * **IAM Security Policy Enforcement**
@@ -94,7 +96,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 
 ## Requirements
 
-* `python` (both Python 2.x and 3.x supported)
+* `python` (Python 2.x up to 3.8 supported)
 * `pip` (python package manager)
 * `Docker`
 
@@ -132,7 +134,7 @@ localstack start
 You can also use docker directly and use the following command to get started with localstack
 
 ```
-docker run --rm -p 4566:4566 -p 4571:4571 localstack/localstack
+docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack
 ```
 
 to run a throw-away container without any external volumes. To start a subset of services use `-e "SERVICES=dynamodb,s3"`.
@@ -217,6 +219,7 @@ You can pass the following environment variables to LocalStack:
   Kinesis, DynamoDB, Elasticsearch, S3, Secretsmanager, SSM, SQS, SNS). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
+* `PERSISTENCE_SINGLE_FILE`: Specify if persistence files should be combined.  (default: `true`).
 * `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`). Note that the Web UI is now deprecated (needs to be activated with `START_WEB=1`), and requires to use the `localstack/localstack-full` Docker image.
 * `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,

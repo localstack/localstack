@@ -108,9 +108,9 @@ class GenericBaseModel(CloudFormationModel):
 
         raise UnformattedGetAttTemplateException()
 
-    # ----------------------
+    # ---------------------
     # GENERIC UTIL METHODS
-    # ----------------------
+    # ---------------------
 
     def fetch_and_update_state(self, *args, **kwargs):
         from localstack.utils.cloudformation import template_deployer
@@ -222,9 +222,15 @@ class LogsLogGroup(GenericBaseModel):
         return 'AWS::Logs::LogGroup'
 
     def get_cfn_attribute(self, attribute_name):
+        props = self.props
         if attribute_name == 'Arn':
-            return self.params.get('Arn') or aws_stack.log_group_arn(self.params.get('LogGroupName'))
+            return props.get('arn')
         return super(LogsLogGroup, self).get_cfn_attribute(attribute_name)
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute == 'Arn':
+            return self.get_cfn_attribute('Arn')
+        return self.props.get('LogGroupName')
 
     def fetch_state(self, stack_name, resources):
         group_name = self.props.get('LogGroupName')

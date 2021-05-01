@@ -10,7 +10,7 @@ from six.moves.urllib_parse import urljoin
 from moto.apigateway.models import apigateway_backends
 from localstack.utils import common
 from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
-from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID, LOCALHOST_HOSTNAME
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import to_str, to_bytes
 from localstack.utils.analytics import event_publisher
@@ -20,8 +20,8 @@ from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
 from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
-    handle_accounts, extract_query_string_params, extract_path_params, make_error_response, get_cors_response,
-    hande_base_path_mappings)
+    handle_accounts, extract_query_string_params, extract_path_params, make_error_response,
+    get_cors_response, hande_base_path_mappings)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -327,7 +327,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
             request_context = get_lambda_event_request_context(method, path, data, headers,
-                integration_uri=uri, resource_id=resource_id)
+                integration_uri=uri, resource_id=resource_id, resource_path=resource_path)
             stage_variables = get_stage_variables(api_id, stage)
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
@@ -500,17 +500,22 @@ def get_stage_variables(api_id, stage):
     return response.get('variables', None)
 
 
-def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
-    _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
+def get_lambda_event_request_context(method, path, data, headers,
+                                     integration_uri=None, resource_id=None, resource_path=None):
+    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
     relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
     source_ip = headers.get('X-Forwarded-For', ',').split(',')[-2].strip()
     integration_uri = integration_uri or ''
     account_id = integration_uri.split(':lambda:path')[-1].split(':function:')[0].split(':')[-1]
+    domain_name = f'{api_id}.execute-api.{LOCALHOST_HOSTNAME}'
     request_context = {
         # adding stage to the request context path.
         # https://github.com/localstack/localstack/issues/2210
         'path': '/' + stage + relative_path,
-        'resourcePath': relative_path,
+        'resourcePath': resource_path or relative_path,
+        'apiId': api_id,
+        'domainPrefix': api_id,
+        'domainName': domain_name,
         'accountId': account_id,
         'resourceId': resource_id,
         'stage': stage,
