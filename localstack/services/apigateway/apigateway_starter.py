@@ -168,6 +168,7 @@ def apply_patches():
         patch_api_gateway_response_individual(self, request, full_url, headers)
 
         if self.method == 'PUT':
+            function_id = self.path.replace('/restapis/', '', 1).split('/')[0]
             body = json.loads(to_str(self.body))
             rest_api = self.backend.put_rest_api(function_id, body)
             return 200, {}, json.dumps(rest_api.to_dict())
