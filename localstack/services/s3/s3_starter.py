@@ -22,7 +22,7 @@ S3_MAX_FILE_SIZE_MB = 2048
 
 # temporary state
 TMP_STATE = {}
-TMP_TAG = []
+TMP_TAG = {}
 
 # Key for tracking patch applience
 PATCHES_APPLIED = 'S3_PATCHED'
@@ -134,16 +134,15 @@ def apply_patches():
         s3_update_acls(self, request, query, bucket_name, key_name)
         try:
             if query.get('uploadId'):
-                for tags in TMP_TAG:
-                    if tags.get((bucket_name, key_name), None) is not None:
-                        key = self.backend.get_object(bucket_name, key_name)
-                        self.backend.set_key_tags(key, tags.get((bucket_name, key_name), None), key_name)
-                        TMP_TAG.remove((bucket_name, key_name))
+                if (bucket_name, key_name) in TMP_TAG:
+                    key = self.backend.get_object(bucket_name, key_name)
+                    self.backend.set_key_tags(key, TMP_TAG.get((bucket_name, key_name), None), key_name)
+                    TMP_TAG.pop((bucket_name, key_name))
         except Exception:
             pass
         if query.get('uploads') and request.headers.get('X-Amz-Tagging'):
             tags = self._tagging_from_headers(request.headers)
-            TMP_TAG.append({(bucket_name, key_name): tags})
+            TMP_TAG[(bucket_name, key_name)] = tags
         return result
 
     s3_key_response_post_orig = s3_responses.S3ResponseInstance._key_response_post
