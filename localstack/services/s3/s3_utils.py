@@ -190,9 +190,10 @@ def authenticate_presign_url(method, path, headers, data=None):
 
     # Preparnig dictionary of request to build AWSRequest's object of the botocore
     request_url = '{}://{}{}'.format(parsed.scheme, parsed.netloc, urlparse.quote(parsed.path))
-    request_url = \
-        ('%s?%s' % (request_url, urlencode(query_string)) if query_string else request_url)
-
+    # Fix https://github.com/localstack/localstack/issues/3912
+    # urlencode method replaces white spaces with plus sign cause signature calculation to fail
+    request_url = ('%s?%s' % (request_url, urlencode(query_string, quote_via=urlparse.quote, safe=' '))
+        if query_string else request_url)
     if forwarded_for:
         request_url = re.sub('://[^/]+', '://%s' % forwarded_for, request_url)
 
