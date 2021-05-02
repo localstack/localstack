@@ -149,7 +149,7 @@ def print_version(in_docker=False):
     if in_docker:
         id = get_main_container_id()
         if id:
-            print('LocalStack Docker image id: %s' % id[:12])
+            print('LocalStack Docker container id: %s' % id[:12])
 
     if config.LOCALSTACK_BUILD_DATE:
         print('LocalStack build date: %s' % config.LOCALSTACK_BUILD_DATE)
