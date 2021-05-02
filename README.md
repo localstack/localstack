@@ -72,6 +72,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **CloudFront**
 * **CloudTrail**
 * **Cognito**
+* **CostExplorer**
 * **ECS/ECR/EKS**
 * **ElastiCache**
 * **ELB/ELBv2**
