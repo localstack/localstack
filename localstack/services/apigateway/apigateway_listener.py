@@ -30,6 +30,7 @@ LOGGER = logging.getLogger(__name__)
 PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 PATH_REGEX_VALIDATORS = r'^/restapis/([A-Za-z0-9_\-]+)/requestvalidators(\?.*)?'
 PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?'
+PATH_REGEX_RESOURCES = r'^/restapis/([A-Za-z0-9_\-]+)/resources(/[A-Za-z0-9_\-]+)?(\?.*)?'
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
 PATH_REGEX_PATH_MAPPINGS = r'/domainnames/([^/]+)/basepathmappings(/.*)?'
 HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
@@ -64,6 +65,13 @@ class ProxyListenerApiGateway(ProxyListener):
                     return get_gateway_response(api_id, response_type)
                 return get_gateway_responses(api_id)
             if method == 'PUT':
+                return put_gateway_response(api_id, response_type, data)
+
+        if re.match(PATH_REGEX_RESOURCES, path):
+            search_match = re.search(PATH_REGEX_RESOURCES, path)
+            api_id = search_match.group(1)
+            response_type = (search_match.group(2) or '').lstrip('/')
+            if method == 'PATCH':
                 return put_gateway_response(api_id, response_type, data)
 
         return True

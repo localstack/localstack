@@ -985,6 +985,33 @@ class TestAPIGateway(unittest.TestCase):
         sfn_client.delete_state_machine(stateMachineArn=sm_arn)
         client.delete_rest_api(restApiId=rest_api['id'])
 
+    def test_api_gateway_update_resource_path_part(self):
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        api = apigw_client.create_rest_api(name='test-api', description='')
+        api_id = api['id']
+        root_res_id = apigw_client.get_resources(restApiId=api_id)['items'][0]['id']
+        api_resource = apigw_client.create_resource(restApiId=api_id, parentId=root_res_id, pathPart='test')
+        api_resource_path_part = api_resource.get('pathPart')
+        print('api_id {}'.format(api_id))
+        print('resource_id {}'.format(api_resource.get('id')))
+        print('api_resource_path_part: {}'.format(api_resource_path_part))
+
+        response_update_resource = apigw_client.update_resource(
+            restApiId=api_id,
+            resourceId=api_resource.get('id'),
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': '/' + api_resource_path_part,
+                    'value': 'demo'
+                },
+            ]
+        )
+        update_resource_path_part = response_update_resource.get('pathPart')
+        print('update_resource_path_part {}'.format(update_resource_path_part))
+        self.assertNotEqual(api_resource_path_part, update_resource_path_part)
+        apigw_client.delete_rest_api(restApiId=api_id)
+
     # =====================================================================
     # Helper methods
     # =====================================================================
