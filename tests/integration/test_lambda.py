@@ -133,10 +133,31 @@ class LambdaTestBase(unittest.TestCase):
         client = aws_stack.connect_to_service('lambda')
         client.create_function(**kwargs)
 
+        # Get funtion by name
         rs = client.get_function(
             FunctionName=func_name
         )
 
+        self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
+        self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
+        self.assertEqual(rs['Tags'], tags)
+
+        # Get funtion by ARN
+        function_arn = rs['Configuration'].get('FunctionArn')
+        rs = client.get_function(
+            FunctionName=function_arn
+        )
+        self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
+        self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
+        self.assertEqual(rs['Tags'], tags)
+
+        # Get funtion by partial ARN
+        # us-east-1:000000000000:function:{function_name}
+        partial_function_arn = function_arn.split(':')[3:-1]
+        partial_function_arn = ':'.join(partial_function_arn)
+        rs = client.get_function(
+            FunctionName=function_arn
+        )
         self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
         self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
         self.assertEqual(rs['Tags'], tags)
