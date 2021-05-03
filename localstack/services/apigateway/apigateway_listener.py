@@ -410,6 +410,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                 },
                 headers=aws_stack.mock_aws_request_headers()
             )
+            response.headers['content-type'] = APPLICATION_JSON
             return response
 
         if method == 'POST':

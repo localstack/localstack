@@ -1339,6 +1339,9 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
             if integration.get('IntegrationHttpMethod'):
                 kwargs['integrationHttpMethod'] = integration['IntegrationHttpMethod']
 
+            if integration.get('RequestTemplates'):
+                kwargs['requestTemplates'] = integration['RequestTemplates']
+
             apigateway.put_integration(
                 restApiId=api_id,
                 resourceId=res_id,
