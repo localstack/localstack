@@ -152,8 +152,8 @@ class LambdaTestBase(unittest.TestCase):
         self.assertEqual(rs['Tags'], tags)
 
         # Get funtion by partial ARN
-        # us-east-1:000000000000:function:{function_name}
-        partial_function_arn = function_arn.split(':')[3:-1]
+        # i.e. us-east-1:000000000000:function:{function_name}
+        partial_function_arn = function_arn.split(':')[3:]
         partial_function_arn = ':'.join(partial_function_arn)
         rs = client.get_function(
             FunctionName=function_arn
