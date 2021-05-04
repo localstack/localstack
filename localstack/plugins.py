@@ -2,8 +2,8 @@ import os
 import sys
 from localstack import config
 from localstack.constants import TRUE_STRINGS
-from localstack.services.swf import swf_starter, swf_listener
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
+# Note: make sure not to add any additional imports at the global scope here!
 
 
 def register_localstack_plugins():
@@ -59,6 +59,7 @@ def do_register_localstack_plugins():
         from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
         from localstack.services.sts import sts_starter, sts_listener
         from localstack.services.support import support_starter
+        from localstack.services.swf import swf_starter, swf_listener
 
         register_plugin(Plugin(
             'edge',
