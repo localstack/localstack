@@ -133,34 +133,15 @@ class LambdaTestBase(unittest.TestCase):
         client = aws_stack.connect_to_service('lambda')
         client.create_function(**kwargs)
 
-        # Get funtion by name
-        rs = client.get_function(
-            FunctionName=func_name
-        )
-
-        self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
-        self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
-        self.assertEqual(rs['Tags'], tags)
-
-        # Get funtion by ARN
         function_arn = rs['Configuration'].get('FunctionArn')
-        rs = client.get_function(
-            FunctionName=function_arn
-        )
-        self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
-        self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
-        self.assertEqual(rs['Tags'], tags)
+        partial_function_arn = ':'.join(function_arn.split(':')[3:])
 
-        # Get funtion by partial ARN
-        # i.e. us-east-1:000000000000:function:{function_name}
-        partial_function_arn = function_arn.split(':')[3:]
-        partial_function_arn = ':'.join(partial_function_arn)
-        rs = client.get_function(
-            FunctionName=function_arn
-        )
-        self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
-        self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
-        self.assertEqual(rs['Tags'], tags)
+        # Get function by Name, ARN and partial ARN
+        for func_ref in [func_name, function_arn, partial_function_arn]:
+            rs = client.get_function(FunctionName=func_ref)
+            self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
+            self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
+            self.assertEqual(rs['Tags'], tags)
 
         client.delete_function(FunctionName=func_name)
 
