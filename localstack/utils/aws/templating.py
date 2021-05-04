@@ -3,7 +3,7 @@ import json
 import base64
 from six.moves.urllib.parse import quote_plus, unquote_plus
 from localstack import config
-from localstack.utils.common import recurse_object, extract_jsonpath
+from localstack.utils.common import recurse_object, extract_jsonpath, short_uid
 
 
 class VelocityInput(object):
@@ -14,6 +14,8 @@ class VelocityInput(object):
         self.value = value
 
     def path(self, path):
+        if not self.value:
+            return {}
         value = self.value if isinstance(self.value, dict) else json.loads(self.value)
         return extract_jsonpath(value, path)
 
@@ -123,10 +125,12 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     recurse_object(variables, apply)
 
     # prepare and render template
+    context_var = {'requestId': short_uid()}
     t = airspeed.Template(template)
     var_map = {
         'input': VelocityInput(context),
-        'util': VelocityUtil()
+        'util': VelocityUtil(),
+        'context': context_var
     }
     var_map.update(variables or {})
     replaced = t.merge(var_map)
