@@ -133,8 +133,7 @@ class LambdaTestBase(unittest.TestCase):
         client = aws_stack.connect_to_service('lambda')
         client.create_function(**kwargs)
 
-        rs = client.get_function(FunctionName=func_name)
-        function_arn = rs['Configuration'].get('FunctionArn')
+        function_arn = 'arn:aws:kms:us-east-1:000000000000:function:' + func_name
         partial_function_arn = ':'.join(function_arn.split(':')[3:])
 
         # Get function by Name, ARN and partial ARN
