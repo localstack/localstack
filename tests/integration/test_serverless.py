@@ -34,12 +34,17 @@ class TestServerless(unittest.TestCase):
     def test_event_rules_deployed(self):
         events = aws_stack.connect_to_service('events')
         rules = events.list_rules()['Rules']
+
         rule = ([r for r in rules if r['Name'] == 'sls-test-cf-event'] or [None])[0]
         self.assertTrue(rule)
         self.assertIn('Arn', rule)
         pattern = json.loads(rule['EventPattern'])
         self.assertEqual(pattern['source'], ['aws.cloudformation'])
         self.assertIn('detail-type', pattern)
+
+        rule = ([r for r in rules if r['EventBusName'] == 'customBus'] or [None])[0]
+        self.assertTrue(rule)
+        self.assertEqual(json.loads(rule['EventPattern']), {'source': ['customSource']})
 
     def test_dynamodb_stream_handler_deployed(self):
         function_name = 'sls-test-local-dynamodbStreamHandler'
