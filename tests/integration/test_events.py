@@ -153,6 +153,81 @@ class EventsTest(unittest.TestCase):
         # clean up
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
 
+    def test_put_events_with_target_sqs_event_detail_match(self):
+        queue_name = 'queue-{}'.format(short_uid())
+        rule_name = 'rule-{}'.format(short_uid())
+        target_id = 'target-{}'.format(short_uid())
+        bus_name = 'bus-{}'.format(short_uid())
+
+        sqs_client = aws_stack.connect_to_service('sqs')
+        queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        self.events_client.create_event_bus(
+            Name=bus_name
+        )
+
+        self.events_client.put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+            EventPattern=json.dumps({'detail': {'EventType': ['0', '1']}})
+        )
+
+        rs = self.events_client.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[
+                {
+                    'Id': target_id,
+                    'Arn': queue_arn,
+                    'InputPath': '$.detail'
+                }
+            ]
+        )
+
+        self.assertIn('FailedEntryCount', rs)
+        self.assertIn('FailedEntries', rs)
+        self.assertEqual(rs['FailedEntryCount'], 0)
+        self.assertEqual(rs['FailedEntries'], [])
+
+        self.events_client.put_events(
+            Entries=[{
+                'EventBusName': bus_name,
+                'Source': TEST_EVENT_PATTERN['Source'][0],
+                'DetailType': TEST_EVENT_PATTERN['detail-type'][0],
+                'Detail': json.dumps({'EventType': '1'})
+            }]
+        )
+
+        def get_message(queue_url):
+            resp = sqs_client.receive_message(QueueUrl=queue_url)
+            return resp.get('Messages')
+
+        messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
+        self.assertEqual(len(messages), 1)
+
+        actual_event = json.loads(messages[0]['Body'])
+        self.assertEqual(actual_event, {'EventType': '1'})
+
+        self.events_client.put_events(
+            Entries=[{
+                'EventBusName': bus_name,
+                'Source': TEST_EVENT_PATTERN['Source'][0],
+                'DetailType': TEST_EVENT_PATTERN['detail-type'][0],
+                'Detail': json.dumps({'EventType': '2'})
+            }]
+        )
+
+        def get_message(queue_url):
+            resp = sqs_client.receive_message(QueueUrl=queue_url)
+            return resp.get('Messages', [])
+
+        messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
+        self.assertEqual(len(messages), 0)
+
+        # clean up
+        self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
+
     def test_put_events_with_target_sns(self):
         queue_name = 'test-%s' % short_uid()
         rule_name = 'rule-{}'.format(short_uid())
@@ -528,18 +603,30 @@ class EventsTest(unittest.TestCase):
         queue_name = 'queue-{}'.format(short_uid())
         rule_name = 'rule-{}'.format(short_uid())
         target_id = 'target-{}'.format(short_uid())
+        bus_name = 'bus-{}'.format(short_uid())
 
         sqs_client = aws_stack.connect_to_service('sqs', region_name='eu-west-1')
         sqs_client.create_queue(QueueName=queue_name)
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
-        self.events_client.put_rule(Name=rule_name)
+        self.events_client.create_event_bus(
+            Name=bus_name
+        )
+
+        self.events_client.put_rule(
+            Name=rule_name,
+            EventBusName=bus_name,
+        )
+
         self.events_client.put_targets(
             Rule=rule_name,
-            Targets=[{
-                'Id': target_id,
-                'Arn': queue_arn
-            }]
+            EventBusName=bus_name,
+            Targets=[
+                {
+                    'Id': target_id,
+                    'Arn': queue_arn
+                }
+            ]
         )
 
         response = self.events_client.put_events(
@@ -818,7 +905,7 @@ class EventsTest(unittest.TestCase):
                 'amount': 200,
                 'salary': 2000,
                 'env': 'prod',
-                'user': ['user4', 'user3'],
+                'user': 'user3',
                 'admins': 'admin',
                 'test1': 300,
                 'test2': 'test22',
@@ -862,9 +949,8 @@ class EventsTest(unittest.TestCase):
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
         self.assertEqual(len(messages), 1)
         self.assertEqual(json.loads(messages[0].get('Body')), json.loads(event['Detail']))
-
         event_details = json.loads(event['Detail'])
-        event_details['admins'] = 'not_admin'
+        event_details['admins'] = 'no'
         event['Detail'] = json.dumps(event_details)
 
         self.events_client.put_events(Entries=[event])

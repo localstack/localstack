@@ -848,7 +848,7 @@ def download(url, path, verify_ssl=True):
         s.close()
 
 
-def parse_request_data(method, path, data, headers={}):
+def parse_request_data(method, path, data=None, headers={}):
     """ Extract request data either from query string (for GET) or request body (for POST). """
     result = {}
     headers = headers or {}

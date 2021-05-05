@@ -554,7 +554,10 @@ class TestS3(unittest.TestCase):
         self.assertIn('x-amz-request-id', resp['ResponseMetadata']['HTTPHeaders'])
         self.assertIn('x-amz-id-2', resp['ResponseMetadata']['HTTPHeaders'])
         self.assertIn('content-language', resp['ResponseMetadata']['HTTPHeaders'])
-        self.assertIn('cache-control', resp['ResponseMetadata']['HTTPHeaders'])
+        # We used to return `cache-control: no-cache` if the header wasn't set
+        # by the client, but this was a bug because s3 doesn't do that. It simply
+        # omits it.
+        self.assertNotIn('cache-control', resp['ResponseMetadata']['HTTPHeaders'])
         # Do not send a content-encoding header as discussed in Issue #3608
         self.assertNotIn('content-encoding', resp['ResponseMetadata']['HTTPHeaders'])
 
@@ -1576,7 +1579,8 @@ class TestS3(unittest.TestCase):
 
         presign_get_url = client.generate_presigned_url(
             'get_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain',
+                'ResponseContentDisposition': 'attachment;  filename=test.txt'},
             ExpiresIn=EXPIRES
         )
 

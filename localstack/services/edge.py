@@ -38,6 +38,7 @@ BOOTSTRAP_LOCK = threading.RLock()
 GZIP_ENCODING = 'GZIP'
 IDENTITY_ENCODING = 'IDENTITY'
 S3 = 's3'
+API_UNKNOWN = '_unknown_'
 
 
 class ProxyListenerEdge(ProxyListener):
@@ -83,7 +84,7 @@ class ProxyListenerEdge(ProxyListener):
                     LOG.debug('OUT(%s): "%s %s" - status: %s' % (api, method, path, 200))
                 return 200
 
-            if api in ['', None, '_unknown_']:
+            if api in ['', None, API_UNKNOWN]:
                 truncated = truncate(data)
                 if auth_header or target or data or path not in ['/', '/favicon.ico']:
                     LOG.info(('Unable to find forwarding rule for host "%s", path "%s %s", '
@@ -121,7 +122,7 @@ class ProxyListenerEdge(ProxyListener):
         if config.LS_LOG:
             # print response trace for debugging, if enabled
             api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
-            if api and api != '_unknown_':
+            if api and api != API_UNKNOWN:
                 LOG.debug('OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s' %
                     (api, method, path, response.status_code, dict(response.headers), response.content))
 
@@ -221,7 +222,7 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
     path = path or '/'
 
     # initialize result
-    result = '_unknown_', 0
+    result = API_UNKNOWN, 0
 
     # https://docs.aws.amazon.com/general/latest/gr/sigv4-signed-request-examples.html
     try:

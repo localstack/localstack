@@ -656,6 +656,52 @@ class TestDynamoDB(unittest.TestCase):
         # clean up
         dynamodb.delete_table(TableName=table_name)
 
+    def test_batch_write_items(self):
+        table_name = 'test-ddb-table-%s' % short_uid()
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{
+                'AttributeName': 'id', 'KeyType': 'HASH'
+            }],
+            AttributeDefinitions=[{
+                'AttributeName': 'id', 'AttributeType': 'S'
+            }],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+            Tags=TEST_DDB_TAGS
+        )
+        dynamodb.put_item(TableName=table_name, Item={'id': {'S': 'Fred'}})
+        response = dynamodb.batch_write_item(
+            RequestItems={
+                table_name: [
+                    {
+                        'DeleteRequest': {
+                            'Key': {
+                                'id': {
+                                    'S': 'Fred'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        'PutRequest': {
+                            'Item': {
+                                'id': {
+                                    'S': 'Bob'
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        )
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+        # clean up
+        dynamodb.delete_table(TableName=table_name)
+
     def test_dynamodb_stream_records_with_update_item(self):
         table_name = 'test-ddb-table-%s' % short_uid()
         dynamodb = aws_stack.connect_to_service('dynamodb')

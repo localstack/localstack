@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import logging
@@ -9,11 +10,15 @@ from moto.core.models import CloudFormationModel
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import camel_to_snake_case, select_attributes, canonical_json, md5
+from localstack.utils.common import (
+    camel_to_snake_case, select_attributes, canonical_json, md5, is_base64,
+    new_tmp_dir, save_file, rm_rf, mkdir, cp_r)
+from localstack.utils.testutil import create_zip_file
+from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower,
     merge_parameters, params_dict_to_list, select_parameters, params_select_attributes,
-    lambda_select_params)
+    lambda_select_params, get_cfn_response_mod_file)
 
 LOG = logging.getLogger(__name__)
 
@@ -310,6 +315,63 @@ class LambdaFunction(GenericBaseModel):
             environment_variables = update_props['Environment'].get('Variables', {})
             update_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
         return client.update_function_configuration(**update_props)
+
+    @staticmethod
+    def get_deploy_templates():
+        def get_lambda_code_param(params, **kwargs):
+            code = params.get('Code', {})
+            zip_file = code.get('ZipFile')
+            if zip_file and not is_base64(zip_file):
+                tmp_dir = new_tmp_dir()
+                handler_file = get_handler_file_from_name(params['Handler'], runtime=params['Runtime'])
+                tmp_file = os.path.join(tmp_dir, handler_file)
+                save_file(tmp_file, zip_file)
+
+                # add 'cfn-response' module to archive - see:
+                # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
+                cfn_response_tmp_file = get_cfn_response_mod_file()
+                cfn_response_mod_dir = os.path.join(tmp_dir, 'node_modules', 'cfn-response')
+                mkdir(cfn_response_mod_dir)
+                cp_r(cfn_response_tmp_file, os.path.join(cfn_response_mod_dir, 'index.js'))
+
+                # create zip file
+                zip_file = create_zip_file(tmp_dir, get_content=True)
+                code['ZipFile'] = zip_file
+                rm_rf(tmp_dir)
+            return code
+
+        def get_delete_params(params, **kwargs):
+            return {'FunctionName': params.get('FunctionName')}
+
+        return {
+            'create': {
+                'function': 'create_function',
+                'parameters': {
+                    'FunctionName': 'FunctionName',
+                    'Runtime': 'Runtime',
+                    'Role': 'Role',
+                    'Handler': 'Handler',
+                    'Code': get_lambda_code_param,
+                    'Description': 'Description',
+                    'Environment': 'Environment',
+                    'Timeout': 'Timeout',
+                    'MemorySize': 'MemorySize',
+                    'Layers': 'Layers'
+                    # TODO add missing fields
+                },
+                'defaults': {
+                    'Role': 'test_role'
+                },
+                'types': {
+                    'Timeout': int,
+                    'MemorySize': int
+                }
+            },
+            'delete': {
+                'function': 'delete_function',
+                'parameters': get_delete_params
+            }
+        }
 
 
 class LambdaFunctionVersion(GenericBaseModel):
