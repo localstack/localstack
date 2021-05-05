@@ -59,6 +59,7 @@ def do_register_localstack_plugins():
         from localstack.services.ssm import ssm_listener
         from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
         from localstack.services.sts import sts_starter, sts_listener
+        from localstack.services.resourcegroupstaggingapi import rgsa_starter, rgsa_listener
 
         register_plugin(Plugin(
             'edge',
@@ -206,6 +207,11 @@ def do_register_localstack_plugins():
             start=swf_starter.start_swf,
             check=swf_starter.check_swf,
             listener=swf_listener.UPDATE_SWF))
+
+        register_plugin(Plugin(
+            'resourcegroupstaggingapi',
+            start=rgsa_starter.start_rgsa,
+            listener=rgsa_listener.UPDATE_RGSA))
 
     except Exception as e:
         if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
