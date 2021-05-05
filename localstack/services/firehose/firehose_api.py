@@ -6,6 +6,7 @@ import time
 import logging
 import base64
 import traceback
+import requests
 from six import iteritems
 from flask import Flask, jsonify, request
 from boto3.dynamodb.types import TypeDeserializer
@@ -97,6 +98,26 @@ def put_records(stream_name, records):
             except Exception as e:
                 LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
                 raise e
+        if 'HttpEndpointDestinationDescription' in dest:
+            http_dest = dest['HttpEndpointDestinationDescription']
+            end_point = http_dest['EndpointConfiguration']
+            url = end_point['Url']
+            record_to_send = {
+                'requestId': str(uuid.uuid4()),
+                'timestamp': (int(time.time())),
+                'records': []
+            }
+            for record in records:
+                data = record.get('Data') or record.get('data')
+                record_to_send['records'].append({'data': data})
+            headers = {
+                'Content-Type': 'application/json',
+            }
+            try:
+                requests.post(url, json=record_to_send, headers=headers)
+            except Exception as e:
+                LOG.info('Unable to put Firehose records to HTTP endpoint %s: %s %s' % (url, e, traceback.format_exc()))
+                raise e
     return {
         'RecordId': str(uuid.uuid4())
     }
@@ -126,7 +147,7 @@ def get_destination(stream_name, destination_id):
 
 
 def update_destination(stream_name, destination_id,
-                       s3_update=None, elasticsearch_update=None, version_id=None):
+                       s3_update=None, elasticsearch_update=None, http_update=None, version_id=None):
     dest = get_destination(stream_name, destination_id)
     if elasticsearch_update:
         if 'ESDestinationDescription' not in dest:
@@ -138,6 +159,10 @@ def update_destination(stream_name, destination_id,
             dest['S3DestinationDescription'] = {}
         for k, v in iteritems(s3_update):
             dest['S3DestinationDescription'][k] = v
+    if http_update:
+        if 'HttpEndpointDestinationDescription' not in dest:
+            dest['HttpEndpointDestinationDescription'] = {}
+        dest['HttpEndpointDestinationDescription'].update(http_update)
     return dest
 
 
@@ -146,7 +171,8 @@ def process_records(records, shard_id, fh_d_stream):
 
 
 def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream_type_configuration=None,
-                  s3_destination=None, elasticsearch_destination=None, tags=None, region_name=None):
+                  s3_destination=None, elasticsearch_destination=None, http_destination=None, tags=None,
+                  region_name=None):
     tags = tags or {}
     stream = {
         'DeliveryStreamType': delivery_stream_type,
@@ -166,6 +192,8 @@ def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream
                            elasticsearch_update=elasticsearch_destination)
     if s3_destination:
         update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
+    if http_destination:
+        update_destination(stream_name=stream_name, destination_id=short_uid(), http_update=http_destination)
 
     # record event
     event_publisher.fire_event(event_publisher.EVENT_FIREHOSE_CREATE_STREAM,
@@ -221,7 +249,6 @@ def post_request():
     action = action.split('.')[-1]
     data = json.loads(to_str(request.data))
     response = None
-
     if action == 'ListDeliveryStreams':
         response = {
             'DeliveryStreamNames': get_delivery_stream_names(),
@@ -237,6 +264,7 @@ def post_request():
             delivery_stream_type_configuration=data.get('KinesisStreamSourceConfiguration'),
             s3_destination=_s3_destination,
             elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'),
+            http_destination=data.get('HttpEndpointDestinationConfiguration'),
             tags=data.get('Tags'),
             region_name=region_name
         )
@@ -276,6 +304,9 @@ def post_request():
         es_update = data['ESDestinationUpdate'] if 'ESDestinationUpdate' in data else None
         update_destination(stream_name=stream_name, destination_id=destination_id,
                            elasticsearch_update=es_update, version_id=version_id)
+        http_update = data.get('HttpEndpointDestinationUpdate')
+        update_destination(stream_name=stream_name, destination_id=destination_id,
+                           http_update=http_update, version_id=version_id)
         response = {}
     elif action == 'ListTagsForDeliveryStream':
         response = get_delivery_stream_tags(data['DeliveryStreamName'], data.get('ExclusiveStartTagKey'),

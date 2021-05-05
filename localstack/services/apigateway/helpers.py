@@ -13,12 +13,16 @@ from localstack.utils.aws.aws_responses import requests_response
 # regex path patterns
 PATH_REGEX_MAIN = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?'
 PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
+PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
 
 PATH_REGEX_AUTHORIZER = r'^/restapis/[A-Za-z0-9_\-]+/authorizers/(.*)'
-PATH_REGEX_VALIDATOR = r'^/restapis/[A-Za-z0-9_\-]+/requestvalidators/(.*)'
+PATH_REGEX_VALIDATOR = r'^/restapis/[A-Za-z0-9_\-]+/requestvalidators/?(.*)'
+PATH_REGEX_PATH_MAPPING = r'/domainnames/([^/]+)/basepathmappings/?(.*)'
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
+
+# TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 
 class APIGatewayRegion(RegionBackend):
@@ -27,6 +31,18 @@ class APIGatewayRegion(RegionBackend):
         self.authorizers = {}
         # maps (API id) -> [validators]
         self.validators = {}
+        # account details
+        self.account = {
+            'cloudwatchRoleArn': aws_stack.role_arn('api-gw-cw-role'),
+            'throttleSettings': {
+                'burstLimit': 1000,
+                'rateLimit': 500
+            },
+            'features': ['UsagePlans'],
+            'apiKeyVersion': '1'
+        }
+        # maps (domain_name) -> [path_mappings]
+        self.base_path_mappings = {}
 
 
 def make_json_response(message):
@@ -53,6 +69,29 @@ def get_api_id_from_path(path):
     return re.match(PATH_REGEX_MAIN, path).group(1)
 
 
+# -------------
+# ACCOUNT APIs
+# -------------
+
+def get_account():
+    region_details = APIGatewayRegion.get()
+    return to_account_response_json(region_details.account)
+
+
+def update_account(data):
+    region_details = APIGatewayRegion.get()
+    apply_patch(region_details.account, data['patchOperations'], in_place=True)
+    return to_account_response_json(region_details.account)
+
+
+def handle_accounts(method, path, data, headers):
+    if method == 'GET':
+        return get_account()
+    if method == 'PATCH':
+        return update_account(data)
+    return make_error_response('Not implemented for API Gateway accounts: %s' % method, 404)
+
+
 # -----------------
 # AUTHORIZERS APIs
 # -----------------
@@ -67,6 +106,13 @@ def _find_authorizer(api_id, authorizer_id):
     auth_list = region_details.authorizers.get(api_id) or []
     authorizer = ([a for a in auth_list if a['id'] == authorizer_id] or [None])[0]
     return authorizer
+
+
+def normalize_authorizer(data):
+    result = common.clone(data)
+    # terraform sends this as a string in patch, so convert to int
+    result['authorizerResultTtlInSeconds'] = int(result.get('authorizerResultTtlInSeconds') or 300)
+    return result
 
 
 def get_authorizers(path):
@@ -86,36 +132,6 @@ def get_authorizers(path):
 
     result = [to_authorizer_response_json(api_id, a) for a in auth_list]
     result = {'item': result}
-    return result
-
-
-def to_authorizer_response_json(api_id, data):
-    return to_response_json('authorizer', api_id, data)
-
-
-def to_validator_response_json(api_id, data):
-    return to_response_json('validator', api_id, data)
-
-
-def to_response_json(model_type, api_id, data):
-    result = common.clone(data)
-    self_link = '/restapis/%s/%ss/%s' % (api_id, model_type, data['id'])
-    if '_links' not in result:
-        result['_links'] = {}
-    result['_links']['self'] = {'href': self_link}
-    result['_links']['curies'] = {
-        'href': 'https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html',
-        'name': model_type,
-        'templated': True
-    }
-    result['_links']['%s:delete' % model_type] = {'href': self_link}
-    return result
-
-
-def normalize_authorizer(data):
-    result = common.clone(data)
-    # terraform sends this as a string in patch, so convert to int
-    result['authorizerResultTtlInSeconds'] = int(result.get('authorizerResultTtlInSeconds') or 300)
     return result
 
 
@@ -181,6 +197,103 @@ def handle_authorizers(method, path, data, headers):
     elif method == 'DELETE':
         return delete_authorizer(path)
     return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
+
+
+# -----------------------
+# BASE PATH MAPPING APIs
+# -----------------------
+
+def get_domain_from_path(path):
+    matched = re.match(PATH_REGEX_PATH_MAPPING, path)
+    return matched.group(1) if matched else None
+
+
+def get_base_path_from_path(path):
+    return re.match(PATH_REGEX_PATH_MAPPING, path).group(2)
+
+
+def get_base_path_mapping(path):
+    region_details = APIGatewayRegion.get()
+
+    # This function returns either a list or a single mapping (depending on the path)
+    domain_name = get_domain_from_path(path)
+    base_path = get_base_path_from_path(path)
+
+    mappings_list = region_details.base_path_mappings.get(domain_name) or []
+
+    if base_path:
+        mapping = ([m for m in mappings_list if m['basePath'] == base_path] or [None])[0]
+        if mapping is None:
+            return make_error_response('Not found: %s' % base_path, 404)
+        return to_base_mapping_response_json(domain_name, base_path, mapping)
+
+    result = [to_base_mapping_response_json(domain_name, m['basePath'], m) for m in mappings_list]
+    result = {'item': result}
+    return result
+
+
+def add_base_path_mapping(path, data):
+    region_details = APIGatewayRegion.get()
+
+    domain_name = get_domain_from_path(path)
+    # Note: "(none)" is a special value in API GW:
+    # https://docs.aws.amazon.com/apigateway/api-reference/link-relation/basepathmapping-by-base-path
+    base_path = data['basePath'] = data.get('basePath') or '(none)'
+    result = common.clone(data)
+
+    region_details.base_path_mappings[domain_name] = region_details.base_path_mappings.get(domain_name) or []
+    region_details.base_path_mappings[domain_name].append(result)
+
+    return make_json_response(to_base_mapping_response_json(domain_name, base_path, result))
+
+
+def update_base_path_mapping(path, data):
+    region_details = APIGatewayRegion.get()
+
+    domain_name = get_domain_from_path(path)
+    base_path = get_base_path_from_path(path)
+
+    mappings_list = region_details.base_path_mappings.get(domain_name) or []
+
+    mapping = ([m for m in mappings_list if m['basePath'] == base_path] or [None])[0]
+    if mapping is None:
+        return make_error_response('Not found: mapping for domain name %s, base path %s' %
+            (domain_name, base_path), 404)
+
+    result = apply_patch(mapping, data['patchOperations'])
+
+    for i in range(len(mappings_list)):
+        if mappings_list[i]['basePath'] == base_path:
+            mappings_list[i] = result
+
+    return make_json_response(to_base_mapping_response_json(domain_name, base_path, result))
+
+
+def delete_base_path_mapping(path):
+    region_details = APIGatewayRegion.get()
+
+    domain_name = get_domain_from_path(path)
+    base_path = get_base_path_from_path(path)
+
+    mappings_list = region_details.base_path_mappings.get(domain_name) or []
+    for i in range(len(mappings_list)):
+        if mappings_list[i]['basePath'] == base_path:
+            del mappings_list[i]
+            return make_accepted_response()
+
+    return make_error_response('Base path mapping %s for domain %s not found' % (base_path, domain_name), 404)
+
+
+def hande_base_path_mappings(method, path, data, headers):
+    if method == 'GET':
+        return get_base_path_mapping(path)
+    elif method == 'POST':
+        return add_base_path_mapping(path, data)
+    if method == 'PATCH':
+        return update_base_path_mapping(path, data)
+    elif method == 'DELETE':
+        return delete_base_path_mapping(path)
+    return make_error_response('Not implemented for API Gateway base path mappings: %s' % method, 404)
 
 
 # ----------------
@@ -277,12 +390,45 @@ def handle_validators(method, path, data, headers):
         return update_validator(path, data)
     elif method == 'DELETE':
         return delete_validator(path)
-    return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
+    return make_error_response('Not implemented for API Gateway validators: %s' % method, 404)
 
 
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
+
+def to_authorizer_response_json(api_id, data):
+    return to_response_json('authorizer', data, api_id=api_id)
+
+
+def to_validator_response_json(api_id, data):
+    return to_response_json('validator', data, api_id=api_id)
+
+
+def to_base_mapping_response_json(domain_name, base_path, data):
+    self_link = '/domainnames/%s/basepathmappings/%s' % (domain_name, base_path)
+    return to_response_json('basepathmapping', data, self_link=self_link)
+
+
+def to_account_response_json(data):
+    return to_response_json('account', data, self_link='/account')
+
+
+def to_response_json(model_type, data, api_id=None, self_link=None):
+    result = common.clone(data)
+    if not self_link:
+        self_link = '/restapis/%s/%ss/%s' % (api_id, model_type, data['id'])
+    if '_links' not in result:
+        result['_links'] = {}
+    result['_links']['self'] = {'href': self_link}
+    result['_links']['curies'] = {
+        'href': 'https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html',
+        'name': model_type,
+        'templated': True
+    }
+    result['_links']['%s:delete' % model_type] = {'href': self_link}
+    return result
+
 
 def gateway_request_url(api_id, stage_name, path):
     """ Return URL for inbound API gateway for given API ID, stage name, and path """
@@ -335,7 +481,7 @@ def get_cors_response(headers):
     response = Response()
     response.status_code = 200
     response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, PATCH'
     response.headers['Access-Control-Allow-Headers'] = '*'
     response._content = ''
     return response

@@ -18,7 +18,6 @@ addons:
 before_install:
   - "sudo apt-get purge python2.7"
   - "nvm install 6; nvm alias default node"
-  - "sudo useradd localstack -s /bin/bash"
 
 env:
   global:
@@ -26,39 +25,13 @@ env:
     - BOTO_CONFIG=/dev/null
 
 install:
-  - set -e
-  # install under python 3
-  - PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
-  - make init
-  - nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
-  - nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
-  - nohup docker pull lambci/lambda:20191117-python2.7 > /dev/null &
-  - nohup docker pull lambci/lambda:20191117-python3.6 > /dev/null &
-  - nohup docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null &
-  - nohup docker pull lambci/lambda:dotnetcore3.1 > /dev/null &
-  - nohup docker pull lambci/lambda:20191117-provided > /dev/null &
-  - nohup docker pull lambci/lambda:java8 > /dev/null &
-  - nohup docker pull lambci/lambda:python3.8 > /dev/null &
+  - set -e # fail fast
+  - make ci-build-prepare
 
 script:
-  - set -e # fail fast
-  # check if the build environment contains a special command via $CUSTOM_CMD
-  - if [ "$CUSTOM_CMD" = rebuild-base-image ]; then make docker-build-base-ci; exit; fi
-  # run tests using Python 3 (limit the set of tests to reduce test duration)
-  - DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
-  # start pulling Docker base image in the background
-  - nohup docker pull localstack/java-maven-node-python > /dev/null &
-  - LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
-  # build Docker image
-  - make docker-build
-  # extract .coverage details from created image
-  - make docker-cp-coverage
-  - sed -i 's:/opt/code/localstack:/home/travis/build/localstack/localstack:g' .coverage
-  # push Docker image (if on master branch)
-  - make docker-push-master
-
-after_success:
-  - make coveralls || true
+  - set -e
+  - make ci-build-test
+  - make ci-build-push
 
 notifications:
   email: false

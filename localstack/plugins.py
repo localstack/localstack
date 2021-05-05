@@ -2,8 +2,8 @@ import os
 import sys
 from localstack import config
 from localstack.constants import TRUE_STRINGS
-from localstack.services.swf import swf_starter, swf_listener
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
+# Note: make sure not to add any additional imports at the global scope here!
 
 
 def register_localstack_plugins():
@@ -39,7 +39,6 @@ def do_register_localstack_plugins():
         )
         from localstack.services.acm import acm_starter
         from localstack.services.apigateway import apigateway_listener, apigateway_starter
-        from localstack.services.cloudformation import cloudformation_starter, cloudformation_listener
         from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
         from localstack.services.ec2 import ec2_starter, ec2_listener
@@ -60,6 +59,8 @@ def do_register_localstack_plugins():
         from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
         from localstack.services.sts import sts_starter, sts_listener
         from localstack.services.resourcegroupstaggingapi import rgsa_starter, rgsa_listener
+        from localstack.services.support import support_starter
+        from localstack.services.swf import swf_starter, swf_listener
 
         register_plugin(Plugin(
             'edge',
@@ -75,18 +76,10 @@ def do_register_localstack_plugins():
             start=apigateway_starter.start_apigateway,
             listener=apigateway_listener.UPDATE_APIGATEWAY))
 
-        if config.USE_MOTO_CF:
-            # TODO: deprecated - remove in a future iteration
-            register_plugin(Plugin(
-                'cloudformation',
-                start=cloudformation_starter.start_cloudformation,
-                listener=cloudformation_listener.UPDATE_CLOUDFORMATION
-            ))
-        else:
-            register_plugin(Plugin(
-                'cloudformation',
-                start=start_cloudformation
-            ))
+        register_plugin(Plugin(
+            'cloudformation',
+            start=start_cloudformation
+        ))
 
         register_plugin(Plugin(
             'cloudwatch',
@@ -212,6 +205,10 @@ def do_register_localstack_plugins():
             'resourcegroupstaggingapi',
             start=rgsa_starter.start_rgsa,
             listener=rgsa_listener.UPDATE_RGSA))
+
+        register_plugin(Plugin(
+            'support',
+            start=support_starter.start_support))
 
     except Exception as e:
         if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):

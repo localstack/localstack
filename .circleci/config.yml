@@ -1,0 +1,27 @@
+version: 2.1
+
+jobs:
+  build-test-push:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
+      - checkout
+      - run:
+          command: |
+            sudo apt-get update
+            sudo apt install -y python3.8 libsasl2-dev
+          name: Install prerequisites
+      - run:
+          command: virtualenv --python=`which python3.8` .venv; make ci-build-prepare
+          name: Setup environment
+      - run:
+          command: . /opt/circleci/.nvm/nvm.sh; make ci-build-test
+          name: Run integration tests
+      - run:
+          command: make ci-build-push
+          name: Build and push Docker image
+
+workflows:
+  main:
+    jobs:
+      - build-test-push

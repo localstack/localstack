@@ -7,6 +7,10 @@ if [[ ! $INIT_SCRIPTS_PATH ]]
 then
   INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
 fi
+if [[ ! $EDGE_PORT ]]
+then
+  EDGE_PORT=4566
+fi
 
 # This stores the PID of supervisord for us after forking
 suppid=0
@@ -32,7 +36,7 @@ source <(
 
 # Setup trap handler(s)
 if [ "$SET_TERM_HANDLER" != "" ]; then
-  # Catch all the main 
+  # Catch all the main
   trap 'kill -1 ${!}; term_handler 1' SIGHUP
   trap 'kill -2 ${!}; term_handler 2' SIGINT
   trap 'kill -3 ${!}; term_handler 3' SIGQUIT
@@ -52,6 +56,7 @@ function run_startup_scripts {
     sleep 7
   done
 
+  curl -XPUT -s -d '{"features:initScripts":"initializing"}' "http://localhost:$EDGE_PORT/health" > /dev/null
   for f in $INIT_SCRIPTS_PATH/*; do
     case "$f" in
       *.sh)     echo "$0: running $f"; . "$f" ;;
@@ -59,6 +64,7 @@ function run_startup_scripts {
     esac
     echo
   done
+  curl -XPUT -s -d '{"features:initScripts":"initialized"}' "http://localhost:$EDGE_PORT/health" > /dev/null
 }
 
 run_startup_scripts &

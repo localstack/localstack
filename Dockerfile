@@ -3,6 +3,12 @@ FROM localstack/java-maven-node-python
 MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="LocalStack Contributors"
 
+ARG LOCALSTACK_BUILD_DATE
+ARG LOCALSTACK_BUILD_GIT_HASH
+
+ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
+ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
+
 # set library path and default LocalStack hostname
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 ENV LOCALSTACK_HOSTNAME=localhost
@@ -23,15 +29,18 @@ RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
   touch localstack/__init__.py localstack/utils/__init__.py localstack/services/__init__.py localstack/utils/kinesis/__init__.py
 ADD localstack/constants.py localstack/config.py localstack/
 ADD localstack/services/install.py localstack/services/
+ADD localstack/services/cloudformation/deployment_utils.py localstack/services/cloudformation/deployment_utils.py
 ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/
 ADD localstack/utils/aws/ localstack/utils/aws/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
 ADD localstack/utils/analytics/ localstack/utils/analytics/
+ADD localstack/utils/generic/ localstack/utils/generic/
 ADD localstack/package.json localstack/package.json
 ADD localstack/services/__init__.py localstack/services/install.py localstack/services/
 
 # initialize installation (downloads remaining dependencies)
 RUN make init-testlibs
+ADD localstack/infra/stepfunctions localstack/infra/stepfunctions
 RUN make init
 
 # (re-)install web dashboard dependencies (already installed in base image)

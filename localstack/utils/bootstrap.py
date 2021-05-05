@@ -58,6 +58,9 @@ API_COMPOSITES = {
     'cognito': ['cognito-idp', 'cognito-identity']
 }
 
+# main container name determined via "docker inspect"
+MAIN_CONTAINER_NAME_CACHED = None
+
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
@@ -222,15 +225,28 @@ def get_main_container_ip():
     container_name = get_main_container_name()
     cmd = ("%s inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" %
         (config.DOCKER_CMD, container_name))
-    return run(cmd).strip()
+    return run(cmd, print_error=False).strip()
+
+
+def get_main_container_id():
+    container_name = get_main_container_name()
+    try:
+        cmd = "%s inspect -f '{{ .Id }}' %s" % (config.DOCKER_CMD, container_name)
+        return run(cmd, print_error=False).strip()
+    except Exception:
+        return None
 
 
 def get_main_container_name():
-    cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, config.HOSTNAME)
-    try:
-        return run(cmd, print_error=False).strip().lstrip('/')
-    except Exception:
-        return config.MAIN_CONTAINER_NAME
+    global MAIN_CONTAINER_NAME_CACHED
+    if MAIN_CONTAINER_NAME_CACHED is None:
+        hostname = os.environ.get('HOSTNAME')
+        cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, hostname)
+        try:
+            MAIN_CONTAINER_NAME_CACHED = run(cmd, print_error=False).strip().lstrip('/')
+        except Exception:
+            MAIN_CONTAINER_NAME_CACHED = config.MAIN_CONTAINER_NAME
+    return MAIN_CONTAINER_NAME_CACHED
 
 
 def get_server_version():
@@ -265,9 +281,9 @@ def setup_logging(log_level=None):
 
     # overriding the log level if LS_LOG has been set
     if config.LS_LOG:
-        LS_LOG = str(config.LS_LOG).upper()
-        LS_LOG = 'WARNING' if LS_LOG == 'WARN' else LS_LOG
-        log_level = getattr(logging, LS_LOG)
+        log_level = str(config.LS_LOG).upper()
+        log_level = 'WARNING' if log_level == 'WARN' else 'DEBUG' if log_level == 'TRACE' else log_level
+        log_level = getattr(logging, log_level)
         logging.getLogger('').setLevel(log_level)
         logging.getLogger('localstack').setLevel(log_level)
 
@@ -358,6 +374,85 @@ def start_infra_locally():
     bootstrap_installation()
     from localstack.services import infra
     return infra.start_infra()
+
+
+def validate_localstack_config(name):
+    LOG.setLevel(logging.INFO)
+
+    dirname = os.getcwd()
+    compose_file_name = name if os.path.isabs(name) else os.path.join(dirname, name)
+    warns = []
+
+    # validating docker-compose file
+    cmd = "docker-compose -f '%s' config" % (compose_file_name)
+    try:
+        run(cmd)
+    except Exception as e:
+        LOG.warning('Looks like the docker-compose file is not valid: %s' % e)
+        return False
+
+    # validating docker-compose variable
+    import yaml  # keep import here to avoid issues in test Lambdas
+    with open(compose_file_name) as file:
+        compose_content = yaml.full_load(file)
+    services_config = compose_content.get('services', {})
+    ls_service_name = [name for name, svc in services_config.items() if 'localstack' in svc.get('image', '')]
+    if not ls_service_name:
+        raise Exception('No LocalStack service found in config (looking for image names containing "localstack")')
+    if len(ls_service_name) > 1:
+        LOG.warning('Multiple candidates found for LocalStack service: %s' % ls_service_name)
+    ls_service_name = ls_service_name[0]
+    ls_service_details = services_config[ls_service_name]
+    image_name = ls_service_details.get('image', '')
+    if image_name.split(':')[0] not in constants.OFFICIAL_IMAGES:
+        LOG.info('Using custom image "%s", we recommend using an official image: %s' %
+            (image_name, constants.OFFICIAL_IMAGES))
+
+    # prepare config options
+    network_mode = ls_service_details.get('network_mode')
+    image_name = ls_service_details.get('image')
+    container_name = ls_service_details.get('container_name') or ''
+    docker_ports = (port.split(':')[0] for port in ls_service_details.get('ports', []))
+    docker_env = dict((env.split('=')[0], env.split('=')[1])
+        for env in ls_service_details.get('environment', {}))
+    edge_port = str(docker_env.get('EDGE_PORT') or config.EDGE_PORT)
+    main_container = config.MAIN_CONTAINER_NAME
+
+    # docker-compose file validation cases
+
+    if docker_env.get('PORT_WEB_UI') not in ['${PORT_WEB_UI- }', None, ''] and image_name == 'localstack/localstack':
+        warns.append('"PORT_WEB_UI" Web UI is now deprecated, '
+                    'and requires to use the "localstack/localstack-full" image.')
+
+    if not docker_env.get('HOST_TMP_FOLDER'):
+        warns.append('Please configure the "HOST_TMP_FOLDER" environment variable to point to the ' +
+            'absolute path of a temp folder on your host system (e.g., HOST_TMP_FOLDER=${TMPDIR})')
+
+    if (main_container not in container_name) and not docker_env.get('MAIN_CONTAINER_NAME'):
+        warns.append('Please use "container_name: %s" or add "MAIN_CONTAINER_NAME" in "environment".' %
+            main_container)
+
+    def port_exposed(port):
+        for exposed in docker_ports:
+            if re.match(r'^([0-9]+-)?%s(-[0-9]+)?$' % port, exposed):
+                return True
+
+    if not port_exposed(edge_port):
+        warns.append(('Edge port %s is not exposed. You may have to add the entry '
+                    'to the "ports" section of the docker-compose file.') % edge_port)
+
+    if network_mode != 'bridge' and not docker_env.get('LAMBDA_DOCKER_NETWORK'):
+        warns.append('Network mode is not set to "bridge" which may cause networking issues in Lambda containers. '
+                    'Consider adding "network_mode: bridge" to your docker-compose file, or configure '
+                    'LAMBDA_DOCKER_NETWORK with the name of the Docker network of your compose stack.')
+
+    # print warning/info messages
+    for warning in warns:
+        LOG.warning(warning)
+    if not warnings:
+        LOG.info('Done validating config file %s - no issues found' % compose_file_name)
+        return True
+    return False
 
 
 class PortMappings(object):
@@ -538,6 +633,7 @@ def start_infra_in_docker():
         def run(self):
             self.process = run(self.cmd, asynchronous=True)
 
+    # keep this print output here for debugging purposes
     print(docker_cmd)
     t = ShellRunnerThread(docker_cmd)
     t.start()

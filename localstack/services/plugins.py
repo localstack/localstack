@@ -77,6 +77,12 @@ def get_services_health(reload=False):
 
 def set_services_health(data):
     status = STATUSES['services'] = STATUSES.get('services', {})
+    for key, value in dict(data).items():
+        parent, _, child = key.partition(':')
+        if child:
+            STATUSES[parent] = STATUSES.get(parent, {})
+            STATUSES[parent][child] = value
+            data.pop(key)
     status.update(data or {})
     return get_services_health()
 
@@ -120,6 +126,7 @@ def reload_services_health():
 
 
 def record_service_health(api, status):
+    # TODO: consider making in-memory calls here, to optimize performance
     data = {
         api: status
     }

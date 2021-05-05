@@ -1,6 +1,8 @@
 import re
 import json
 import logging
+from urllib.parse import parse_qs, urlparse
+
 from jsonpatch import apply_patch
 from moto.core.utils import camelcase_to_underscores
 from moto.apigateway import models as apigateway_models
@@ -20,19 +22,24 @@ REST_API_ATTRIBUTES = ['disableExecuteApiEndpoint', 'apiKeySource', 'minimumComp
 
 
 def apply_json_patch_safe(subject, patch_operations, in_place=True):
+    results = []
     for operation in patch_operations:
         try:
-            return apply_patch(subject, [operation], in_place=in_place)
+            if not operation.get('value'):
+                LOG.info('Missing "value" in JSONPatch operation for %s: %s' % (subject, operation))
+                continue
+            result = apply_patch(subject, [operation], in_place=in_place)
+            results.append(result)
         except Exception as e:
-            if operation['op'] == 'replace' and 'replace a non-existent object' in str(e):
+            if operation['op'] == 'replace' and 'non-existent object' in str(e):
                 # fall back to an ADD operation if the REPLACE fails
                 operation['op'] = 'add'
                 return apply_patch(subject, [operation], in_place=in_place)
             raise
+    return results
 
 
 def apply_patches():
-
     def apigateway_models_Stage_init(self, cacheClusterEnabled=False, cacheClusterSize=None, **kwargs):
         apigateway_models_Stage_init_orig(self, cacheClusterEnabled=cacheClusterEnabled,
             cacheClusterSize=cacheClusterSize, **kwargs)
@@ -92,7 +99,7 @@ def apply_patches():
         rest_api = self.get_rest_api(function_id)
         # Remove default root, then add paths from API spec
         rest_api.resources = {}
-        for path in body['paths']:
+        for path in body.get('paths', {}):
             child_id = create_id()
             child = Resource(
                 id=child_id,
@@ -130,7 +137,6 @@ def apply_patches():
     # Implement import rest_api
     # https://github.com/localstack/localstack/issues/2763
     def apigateway_response_restapis_individual(self, request, full_url, headers):
-
         if request.method in ['GET', 'DELETE']:
             return apigateway_response_restapis_individual_orig(self, request, full_url, headers)
 
@@ -161,9 +167,6 @@ def apply_patches():
         # handle import rest_api via swagger file
         if self.method == 'PUT':
             body = json.loads(to_str(self.body))
-            if not body.get('paths'):
-                return 400, {}, ''
-
             rest_api = self.backend.put_rest_api(function_id, body)
             return 200, {}, json.dumps(rest_api.to_dict())
 
@@ -270,6 +273,24 @@ def apply_patches():
 
         return resp
 
+    apigateway_response_restapis_orig = APIGatewayResponse.restapis
+
+    # https://github.com/localstack/localstack/issues/171
+    def apigateway_response_restapis(self, request, full_url, headers):
+        parsed_qs = parse_qs(urlparse(full_url).query)
+        modes = parsed_qs.get('mode', [])
+
+        status, _, rest_api = apigateway_response_restapis_orig(self, request, full_url, headers)
+
+        if 'import' not in modes:
+            return status, _, rest_api
+
+        function_id = json.loads(rest_api)['id']
+        body = json.loads(request.data.decode('utf-8'))
+        self.backend.put_rest_api(function_id, body)
+
+        return 200, {}, rest_api
+
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
@@ -284,6 +305,7 @@ def apply_patches():
     apigateway_models_Integration_init_orig = apigateway_models.Integration.__init__
     apigateway_models.Integration.__init__ = apigateway_models_Integration_init
     apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict
+    APIGatewayResponse.restapis = apigateway_response_restapis
 
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):

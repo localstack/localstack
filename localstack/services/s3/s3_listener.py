@@ -1,4 +1,3 @@
-import time
 import re
 import json
 import uuid
@@ -15,25 +14,24 @@ import six
 import botocore.config
 from pytz import timezone
 from urllib.parse import parse_qs
-from botocore.compat import urlsplit
+from moto.s3.models import s3_backend
 from botocore.client import ClientError
-from botocore.credentials import Credentials
-from localstack.utils.auth import HmacV1QueryAuth
-from botocore.awsrequest import create_request_object
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack import config, constants
-from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
+from localstack.services.s3.s3_utils import (
+    is_static_website, extract_bucket_name, extract_key_name, validate_bucket_name, uses_host_addressing,
+    SIGNATURE_V2_PARAMS, SIGNATURE_V4_PARAMS, authenticate_presign_url, get_forwarded_for_host,
+    ALLOWED_HEADER_OVERRIDES
+)
 from localstack.utils.common import (
     short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc, is_base64
 )
 from localstack.utils.analytics import event_publisher
-from localstack.utils.http_utils import uses_chunked_encoding
 from localstack.utils.persistence import PersistingProxyListener
-from localstack.utils.aws.aws_responses import requests_response, requests_error_response_xml_signature_calculation
+from localstack.utils.aws.aws_responses import requests_response
 from localstack.services.cloudformation.service_models import S3Bucket
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
@@ -43,25 +41,22 @@ STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
 PORT_S3_BACKEND = None
 
 # mappings for S3 bucket notifications
-S3_NOTIFICATIONS = {}
+S3_NOTIFICATIONS = s3_backend.S3_NOTIFICATIONS = getattr(s3_backend, 'S3_NOTIFICATIONS', {})
 
 # mappings for bucket CORS settings
-BUCKET_CORS = {}
+BUCKET_CORS = s3_backend.BUCKET_CORS = getattr(s3_backend, 'BUCKET_CORS', {})
 
 # maps bucket name to lifecycle settings
-BUCKET_LIFECYCLE = {}
+BUCKET_LIFECYCLE = s3_backend.BUCKET_LIFECYCLE = getattr(s3_backend, 'BUCKET_LIFECYCLE', {})
 
 # maps bucket name to replication settings
-BUCKET_REPLICATIONS = {}
-
-# maps bucket name to encryption settings
-BUCKET_ENCRYPTIONS = {}
+BUCKET_REPLICATIONS = s3_backend.BUCKET_REPLICATIONS = getattr(s3_backend, 'BUCKET_REPLICATIONS', {})
 
 # maps bucket name to object lock settings
-OBJECT_LOCK_CONFIGS = {}
+OBJECT_LOCK_CONFIGS = s3_backend.OBJECT_LOCK_CONFIGS = getattr(s3_backend, 'OBJECT_LOCK_CONFIGS', {})
 
 # map to store the s3 expiry dates
-OBJECT_EXPIRY = {}
+OBJECT_EXPIRY = s3_backend.OBJECT_EXPIRY = getattr(s3_backend, 'OBJECT_EXPIRY', {})
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -79,19 +74,9 @@ NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunc
 # prefix for object metadata keys in headers and query params
 OBJECT_METADATA_KEY_PREFIX = 'x-amz-meta-'
 
-# response header overrides the client may request
-ALLOWED_HEADER_OVERRIDES = {
-    'response-content-type': 'Content-Type',
-    'response-content-language': 'Content-Language',
-    'response-expires': 'Expires',
-    'response-cache-control': 'Cache-Control',
-    'response-content-disposition': 'Content-Disposition',
-    'response-content-encoding': 'Content-Encoding',
-}
-
 # STS policy expiration date format
 POLICY_EXPIRATION_FORMAT1 = '%Y-%m-%dT%H:%M:%SZ'
-POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%IZ'
+POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 # ignored_headers_lower conatins headers which don't get involved in signature calculations process
 # these headers are being sent by the localstack by default.
@@ -101,16 +86,11 @@ IGNORED_HEADERS_LOWER = [
     'x-forwarded-for', 'x-localstack-edge', 'authorization', 'date'
 ]
 
-# params are required in presigned url
-PRESIGN_QUERY_PARAMS = ['Signature', 'Expires', 'AWSAccessKeyId']
-
 CORS_HEADERS = [
     'Access-Control-Allow-Origin', 'Access-Control-Allow-Methods', 'Access-Control-Allow-Headers',
     'Access-Control-Max-Age', 'Access-Control-Allow-Credentials', 'Access-Control-Expose-Headers',
     'Access-Control-Request-Headers', 'Access-Control-Request-Method'
 ]
-
-SIGNATURE_V4_PARAMS = ['X-Amz-Algorithm']
 
 
 def event_type_matches(events, action, api_method):
@@ -148,7 +128,7 @@ def _get_s3_filter(filters):
 
 
 def prefix_with_slash(s):
-    return s if s[0] == '/' else '/%s' % s
+    return s if s and s[0] == '/' else '/%s' % s
 
 
 def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag='', version_id=None, file_size=0):
@@ -156,7 +136,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag=''
     bucket_name = normalize_bucket_name(bucket_name)
     return {
         'Records': [{
-            'eventVersion': '2.0',
+            'eventVersion': '2.1',
             'eventSource': 'aws:s3',
             'awsRegion': aws_stack.get_region(),
             'eventTime': timestamp_millis(),
@@ -281,14 +261,21 @@ def get_cors(bucket_name):
         response.status_code = int(code)
         return response
 
+    response.status_code = 200
     cors = BUCKET_CORS.get(bucket_name)
     if not cors:
+        response.status_code = 404
         cors = {
-            'CORSConfiguration': []
+            'Error': {
+                'Code': 'NoSuchCORSConfiguration',
+                'Message': 'The CORS configuration does not exist',
+                'BucketName': bucket_name,
+                'RequestId': short_uid(),
+                'HostId': short_uid()
+            }
         }
     body = xmltodict.unparse(cors)
     response._content = body
-    response.status_code = 200
     return response
 
 
@@ -332,12 +319,6 @@ def convert_origins_into_list(allowed_origins):
 def get_origin_host(headers):
     origin = headers.get('Origin') or get_forwarded_for_host(headers)
     return origin
-
-
-def get_forwarded_for_host(headers):
-    x_forwarded_header = re.split(r',\s?', headers.get('X-Forwarded-For', ''))
-    host = x_forwarded_header[len(x_forwarded_header) - 1]
-    return host
 
 
 def append_cors_headers(bucket_name, request_method, request_headers, response):
@@ -438,11 +419,6 @@ def is_url_already_expired(expiry_timestamp):
 def add_response_metadata_headers(response):
     if response.headers.get('content-language') is None:
         response.headers['content-language'] = 'en-US'
-    if response.headers.get('cache-control') is None:
-        response.headers['cache-control'] = 'no-cache'
-    if response.headers.get('content-encoding') is None:
-        if not uses_chunked_encoding(response):
-            response.headers['content-encoding'] = 'identity'
 
 
 def append_last_modified_headers(response, content=None):
@@ -515,8 +491,8 @@ def fix_range_content_type(bucket_name, path, headers, response):
         return
 
     s3_client = aws_stack.connect_to_service('s3')
-    path = urlparse.unquote(path)
-    key_name = get_key_name(path, headers)
+    path = urlparse.urlparse(urlparse.unquote(path)).path
+    key_name = extract_key_name(headers, path)
     result = s3_client.head_object(Bucket=bucket_name, Key=key_name)
     content_type = result['ContentType']
     if response.headers.get('Content-Type') == 'text/html; charset=utf-8':
@@ -634,7 +610,7 @@ def remove_xml_preamble(response):
 
 # --------------
 # HELPER METHODS
-#   for lifecycle/replication/encryption/...
+#   for lifecycle/replication/...
 # --------------
 
 def get_lifecycle(bucket_name):
@@ -678,26 +654,6 @@ def get_replication(bucket_name):
     return requests_response(body, status_code=status_code)
 
 
-def get_encryption(bucket_name):
-    bucket_name = normalize_bucket_name(bucket_name)
-    exists, code, body = is_bucket_available(bucket_name)
-    if not exists:
-        return requests_response(body, status_code=code)
-
-    encryption = BUCKET_ENCRYPTIONS.get(bucket_name)
-    status_code = 200
-    if not encryption:
-        encryption = {
-            'Error': {
-                'Code': 'ServerSideEncryptionConfigurationNotFoundError',
-                'Message': 'The server side encryption configuration was not found'
-            }
-        }
-        status_code = 404
-    body = xmltodict.unparse(encryption)
-    return requests_response(body, status_code=status_code)
-
-
 def get_object_lock(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
@@ -730,6 +686,16 @@ def set_lifecycle(bucket_name, lifecycle):
     return 200
 
 
+def delete_lifecycle(bucket_name):
+    bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
+    if BUCKET_LIFECYCLE.get(bucket_name):
+        BUCKET_LIFECYCLE.pop(bucket_name)
+
+
 def set_replication(bucket_name, replication):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
@@ -739,18 +705,6 @@ def set_replication(bucket_name, replication):
     if isinstance(to_str(replication), six.string_types):
         replication = xmltodict.parse(replication)
     BUCKET_REPLICATIONS[bucket_name] = replication
-    return 200
-
-
-def set_encryption(bucket_name, encryption):
-    bucket_name = normalize_bucket_name(bucket_name)
-    exists, code, body = is_bucket_available(bucket_name)
-    if not exists:
-        return requests_response(body, status_code=code)
-
-    if isinstance(to_str(encryption), six.string_types):
-        encryption = xmltodict.parse(encryption)
-    BUCKET_ENCRYPTIONS[bucket_name] = encryption
     return 200
 
 
@@ -846,6 +800,18 @@ def no_such_key_error(resource, requestId=None, status_code=400):
     return requests_response(content, status_code=status_code, headers=headers)
 
 
+def no_such_bucket(bucket_name, requestId=None, status_code=404):
+    # TODO: fix the response to match AWS bucket response when the webconfig is not set and bucket not exists
+    result = {'Error': {'Code': 'NoSuchBucket',
+            'Message': 'The specified bucket does not exist',
+            'BucketName': bucket_name,
+            'RequestId': requestId,
+            'HostId': short_uid()}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
 def token_expired_error(resource, requestId=None, status_code=400):
     result = {'Error': {'Code': 'ExpiredToken',
             'Message': 'The provided token has expired.',
@@ -884,61 +850,6 @@ def is_object_specific_request(path, headers):
 
 def normalize_bucket_name(bucket_name):
     return S3Bucket.normalize_bucket_name(bucket_name)
-
-
-def get_key_name(path, headers):
-    parsed = urlparse.urlparse(path)
-    path_parts = parsed.path.lstrip('/').split('/', 1)
-
-    if uses_path_addressing(headers):
-        return path_parts[1]
-    return path_parts[0]
-
-
-def uses_path_addressing(headers):
-    # we can assume that the host header we are receiving here is actually the header we originally recieved
-    # from the client (because the edge service is forwarding the request in memory)
-    host = headers.get('host') or headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1]
-    return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL) or host.startswith(LOCALHOST_IP)
-
-
-def get_bucket_name(path, headers):
-    parsed = urlparse.urlparse(path)
-
-    # try pick the bucket_name from the path
-    bucket_name = parsed.path.split('/')[1]
-
-    # is the hostname not starting with a bucket name?
-    if uses_path_addressing(headers):
-        return normalize_bucket_name(bucket_name)
-
-    # matches the common endpoints like
-    #     - '<bucket_name>.s3.<region>.amazonaws.com'
-    #     - '<bucket_name>.s3-<region>.amazonaws.com.cn'
-    common_pattern = re.compile(r'^(.+)\.s3[.\-][a-z]{2}-[a-z]+-[0-9]{1,}'
-                                r'\.amazonaws\.com(\.[a-z]+)?$')
-    # matches dualstack endpoints like
-    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com'
-    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com.cn'
-    dualstack_pattern = re.compile(r'^(.+)\.s3\.dualstack\.[a-z]{2}-[a-z]+-[0-9]{1,}'
-                                   r'\.amazonaws\.com(\.[a-z]+)?$')
-    # matches legacy endpoints like
-    #     - '<bucket_name>.s3.amazonaws.com'
-    #     - '<bucket_name>.s3-external-1.amazonaws.com.cn'
-    legacy_patterns = re.compile(r'^(.+)\.s3\.?(-external-1)?\.amazonaws\.com(\.[a-z]+)?$')
-
-    # if any of the above patterns match, the first captured group
-    # will be returned as the bucket name
-    host = headers['host']
-    for pattern in [common_pattern, dualstack_pattern, legacy_patterns]:
-        match = pattern.match(host)
-        if match:
-            bucket_name = match.groups()[0]
-            break
-
-    # we're either returning the original bucket_name,
-    # or a pattern matched the host and we're returning that name instead
-    return normalize_bucket_name(bucket_name)
 
 
 def handle_notification_request(bucket, method, data):
@@ -1053,7 +964,10 @@ class ProxyListenerS3(PersistingProxyListener):
         # Except we do want to notify on multipart and presigned url upload completion
         contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
         contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
-        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
+        # nodejs sdk putObjectCommand is adding x-id=putobject in the query
+        allowed_query = 'x-id=' in query.lower()
+        if (method == 'POST' and query.startswith('uploadId')) \
+                or contains_cred or contains_key or allowed_query:
             return True
 
     @staticmethod
@@ -1064,26 +978,34 @@ class ProxyListenerS3(PersistingProxyListener):
             return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
 
     def forward_request(self, method, path, data, headers):
-
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
         path_orig = path
         path = path.replace('#', '%23')  # support key names containing hashes (e.g., required by Amplify)
+        # extracting bucket name from the request
+        parsed_path = urlparse.urlparse(path)
+        bucket_name = extract_bucket_name(headers, parsed_path.path)
+
+        if method == 'PUT' and bucket_name and not re.match(BUCKET_NAME_REGEX, bucket_name):
+            if len(parsed_path.path) <= 1:
+                return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
+                    'configured to use path style addressing, or send a valid ' +
+                    '<Bucket>.s3.localhost.localstack.cloud "Host" header',
+                    'InvalidBucketName', status_code=400)
+
+            return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # Detecting pre-sign url and checking signature
-        if any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
+        if (any([p in query_params for p in SIGNATURE_V2_PARAMS]) or
+                any([p in query_params for p in SIGNATURE_V4_PARAMS])):
             response = authenticate_presign_url(method=method, path=path, data=data, headers=headers)
             if response is not None:
                 return response
 
-        # parse path and query params
-        parsed_path = urlparse.urlparse(path)
-
-        # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
-        # Note that all S3 clients using LocalStack need to enable path style addressing.
-        if 's3.amazonaws.com' not in headers.get('host', ''):
-            headers['host'] = 'localhost'
+        # handling s3 website hosting requests
+        if is_static_website(headers) and method == 'GET':
+            return serve_static_website(headers=headers, path=path, bucket_name=bucket_name)
 
         # check content md5 hash integrity if not a copy request or multipart initialization
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
@@ -1093,16 +1015,6 @@ class ProxyListenerS3(PersistingProxyListener):
                 return response
 
         modified_data = None
-
-        # check bucket name
-        bucket_name = get_bucket_name(path, headers)
-        if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
-            if len(parsed_path.path) <= 1:
-                return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
-                    'configured to use path style addressing, or send a valid <Bucket>.s3.amazonaws.com "Host" header',
-                    'InvalidBucketName', status_code=400)
-
-            return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
         to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
@@ -1137,7 +1049,6 @@ class ProxyListenerS3(PersistingProxyListener):
         # parse query params
         query = parsed_path.query
         path = parsed_path.path
-        bucket = path.split('/')[1]
         query_map = urlparse.parse_qs(query, keep_blank_values=True)
 
         # remap metadata query params (not supported in moto) to request headers
@@ -1148,7 +1059,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
         if query == 'notification' or 'notification' in query_map:
             # handle and return response for ?notification request
-            response = handle_notification_request(bucket, method, data)
+            response = handle_notification_request(bucket_name, method, data)
             return response
 
         # if the Expires key in the url is already expired then return error
@@ -1170,35 +1081,34 @@ class ProxyListenerS3(PersistingProxyListener):
 
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':
-                return get_cors(bucket)
+                return get_cors(bucket_name)
             if method == 'PUT':
-                return set_cors(bucket, data)
+                return set_cors(bucket_name, data)
             if method == 'DELETE':
-                return delete_cors(bucket)
+                return delete_cors(bucket_name)
 
         if query == 'lifecycle' or 'lifecycle' in query_map:
             if method == 'GET':
-                return get_lifecycle(bucket)
+                return get_lifecycle(bucket_name)
             if method == 'PUT':
-                return set_lifecycle(bucket, data)
+                return set_lifecycle(bucket_name, data)
+            if method == 'DELETE':
+                delete_lifecycle(bucket_name)
 
         if query == 'replication' or 'replication' in query_map:
             if method == 'GET':
-                return get_replication(bucket)
+                return get_replication(bucket_name)
             if method == 'PUT':
-                return set_replication(bucket, data)
-
-        if query == 'encryption' or 'encryption' in query_map:
-            if method == 'GET':
-                return get_encryption(bucket)
-            if method == 'PUT':
-                return set_encryption(bucket, data)
+                return set_replication(bucket_name, data)
 
         if query == 'object-lock' or 'object-lock' in query_map:
             if method == 'GET':
-                return get_object_lock(bucket)
+                return get_object_lock(bucket_name)
             if method == 'PUT':
-                return set_object_lock(bucket, data)
+                return set_object_lock(bucket_name, data)
+
+        if method == 'DELETE' and validate_bucket_name(bucket_name):
+            delete_lifecycle(bucket_name)
 
         path_orig_escaped = path_orig.replace('#', '%23')
         if modified_data is not None or headers_changed or path_orig != path_orig_escaped:
@@ -1208,19 +1118,6 @@ class ProxyListenerS3(PersistingProxyListener):
             return Request(url=path_orig_escaped, data=data_to_return, headers=headers, method=method)
         return True
 
-    def get_forward_url(self, method, path, data, headers):
-        def sub(match):
-            # make sure to convert any bucket names to lower case
-            bucket_name = normalize_bucket_name(match.group(1))
-            return '/%s%s' % (bucket_name, match.group(2) or '')
-
-        path_new = re.sub(r'/([^?/]+)([?/].*)?', sub, path)
-        if path == path_new:
-            return
-
-        url = 'http://%s:%s%s' % (constants.LOCALHOST, PORT_S3_BACKEND, path_new)
-        return url
-
     def return_response(self, method, path, data, headers, response, request_handler=None):
         path = to_str(path)
         method = to_str(method)
@@ -1229,11 +1126,7 @@ class ProxyListenerS3(PersistingProxyListener):
         # persist this API call to disk
         super(ProxyListenerS3, self).return_response(method, path, data, headers, response, request_handler)
 
-        # No path-name based bucket name? Try host-based
-        bucket_name = get_bucket_name(path, headers)
-        hostname_parts = headers['host'].split('.')
-        if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
-            bucket_name = hostname_parts[0]
+        bucket_name = extract_bucket_name(headers, path)
 
         # POST requests to S3 may include a success_action_redirect or
         # success_action_status field, which should be used to redirect a
@@ -1241,7 +1134,6 @@ class ProxyListenerS3(PersistingProxyListener):
         key = None
         if method == 'POST':
             key, redirect_url = multipart_content.find_multipart_key_value(data, headers)
-
             if key and redirect_url:
                 response.status_code = 303
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
@@ -1257,12 +1149,15 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'
                 return response
-        if method == 'GET' and response.status_code == 416:
-            return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
+        if response.status_code == 416:
+            if method == 'GET':
+                return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
+            elif method == 'HEAD':
+                response.status_code = 200
+                return response
 
         parsed = urlparse.urlparse(path)
-        bucket_name_in_host = headers['host'].startswith(bucket_name)
-
+        bucket_name_in_host = uses_host_addressing(headers)
         should_send_notifications = all([
             method in ('PUT', 'POST', 'DELETE'),
             '/' in path[1:] or bucket_name_in_host or key,
@@ -1293,31 +1188,22 @@ class ProxyListenerS3(PersistingProxyListener):
             event_publisher.fire_event(event_type, payload={'n': event_publisher.get_hash(bucket_name)})
 
         # fix an upstream issue in moto S3 (see https://github.com/localstack/localstack/issues/382)
-        if method == 'PUT' and parsed.query == 'policy':
-            response._content = ''
-            response.status_code = 204
-            return response
-
-        # emulate ErrorDocument functionality if a website is configured
-        if method == 'GET' and response.status_code == 404 and parsed.query != 'website':
-            s3_client = aws_stack.connect_to_service('s3')
-
-            try:
-                # Verify the bucket exists in the first place--if not, we want normal processing of the 404
-                s3_client.head_bucket(Bucket=bucket_name)
-                website_config = s3_client.get_bucket_website(Bucket=bucket_name)
-                error_doc_key = website_config.get('ErrorDocument', {}).get('Key')
-
-                if error_doc_key:
-                    error_doc_path = '/' + bucket_name + '/' + error_doc_key
-                    if parsed.path != error_doc_path:
-                        error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
-                        response.status_code = 200
-                        response._content = error_object['Body'].read()
-                        response.headers['Content-Length'] = str(len(response._content))
-            except ClientError:
-                # Pass on the 404 as usual
-                pass
+        if method == 'PUT':
+            if parsed.query == 'policy':
+                response._content = ''
+                response.status_code = 204
+                return response
+            # when creating s3 bucket using aws s3api the return header contains 'Location' param
+            if key is None:
+                # if the bucket is created in 'us-east-1' the location header contains bucket as path
+                # else the the header contains bucket url
+                if aws_stack.get_region() == 'us-east-1':
+                    response.headers['Location'] = '/{}'.format(bucket_name)
+                else:
+                    # Note: we need to set the correct protocol here
+                    protocol = headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[0] or 'http'
+                    response.headers['Location'] = '{}://{}.{}:{}/'.format(
+                        protocol, bucket_name, constants.S3_VIRTUAL_HOSTNAME, config.EDGE_PORT)
 
         if response is not None:
             reset_content_length = False
@@ -1405,93 +1291,36 @@ class ProxyListenerS3(PersistingProxyListener):
             convert_to_chunked_encoding(method, path, response)
 
 
-def authenticate_presign_url(method, path, headers, data=None):
+def serve_static_website(headers, path, bucket_name):
+    s3_client = aws_stack.connect_to_service('s3')
 
-    sign_headers = []
-    url = '{}{}'.format(config.get_edge_url(), path)
-    parsed = urlparse.urlparse(url)
-    query_params = parse_qs(parsed.query)
+    # check if bucket exists
+    try:
+        s3_client.head_bucket(Bucket=bucket_name)
+    except ClientError:
+        return no_such_bucket(bucket_name, headers.get('x-amz-request-id'), 404)
 
-    # Checking required parameters are present in url or not
-    if not all([p in query_params for p in PRESIGN_QUERY_PARAMS]):
-        return requests_error_response_xml_signature_calculation(
-            code=403,
-            message='Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters',
-            code_string='AccessDenied'
-        )
+    try:
+        if path != '/':
+            path = path.lstrip('/')
+            content = s3_client.get_object(Bucket=bucket_name, Key=path)['Body'].read()
+            return requests_response(status_code=200, content=content)
+    except ClientError:
+        LOGGER.debug('No such key found. %s' % path)
 
-    # Fetching headers which has been sent to the requets
-    for header in headers:
-        key = header[0]
-        if key.lower() not in IGNORED_HEADERS_LOWER:
-            sign_headers.append(header)
-
-    # Request's headers are more essentials than the query parameters in the request.
-    # Different values of header in the header of the request and in the query parameter of the
-    # request URL will fail the signature calulation. As per the AWS behaviour
-    presign_params_lower = [p.lower() for p in PRESIGN_QUERY_PARAMS]
-    if len(query_params) > 2:
-        for key in query_params:
-            if key.lower() not in presign_params_lower:
-                if key.lower() not in (header[0].lower() for header in headers):
-                    sign_headers.append((key, query_params[key][0]))
-
-    # Preparnig dictionary of request to build AWSRequest's object of the botocore
-    request_url = url.split('?')[0]
-    forwarded_for = get_forwarded_for_host(headers)
-    if forwarded_for:
-        request_url = re.sub('://[^/]+', '://%s' % forwarded_for, request_url)
-    request_dict = {
-        'url_path': path.split('?')[0],
-        'query_string': {},
-        'method': method,
-        'headers': dict(sign_headers),
-        'body': b'',
-        'url': request_url,
-        'context': {
-            'is_presign_request': True,
-            'use_global_endpoint': True,
-            'signing': {
-                'bucket': str(path.split('?')[0]).split('/')[1]
-            }
-        }
-    }
-    aws_request = create_request_object(request_dict)
-
-    # Calculating Signature
-    credentials = Credentials(access_key=TEST_AWS_ACCESS_KEY_ID, secret_key=TEST_AWS_SECRET_ACCESS_KEY)
-    auth = HmacV1QueryAuth(credentials=credentials, expires=query_params['Expires'][0])
-    split = urlsplit(aws_request.url)
-    string_to_sign = auth.get_string_to_sign(method=method, split=split, headers=aws_request.headers)
-    signature = auth.get_signature(string_to_sign=string_to_sign)
-
-    # Comparing the signature in url with signature we calculated
-    query_sig = urlparse.unquote(query_params['Signature'][0])
-    if query_sig != signature:
-
-        # older signature calculation methods are not supported
-        # so logging a warning to the user to use the v4 calculation method
-        for param in SIGNATURE_V4_PARAMS:
-            if param.lower() not in (query_param.lower() for query_param in query_params):
-                LOGGER.warning(
-                    'Older version of signature calculation method detected. Please use v4 calculation method')
-        return requests_error_response_xml_signature_calculation(
-            code=403,
-            code_string='SignatureDoesNotMatch',
-            aws_access_token=TEST_AWS_ACCESS_KEY_ID,
-            string_to_sign=string_to_sign,
-            signature=signature,
-            message='The request signature we calculated does not match the signature you provided. \
-                    Check your key and signing method.')
-
-    # Checking whether the url is expired or not
-    if int(query_params['Expires'][0]) < time.time():
-        return requests_error_response_xml_signature_calculation(
-            code=403,
-            code_string='AccessDenied',
-            message='Request has expired',
-            expires=query_params['Expires'][0]
-        )
+    website_config = s3_client.get_bucket_website(Bucket=bucket_name)
+    path_suffix = website_config.get('IndexDocument', {}).get('Suffix', '').lstrip('/')
+    index_document = '%s/%s' % (path.rstrip('/'), path_suffix)
+    try:
+        content = s3_client.get_object(Bucket=bucket_name, Key=index_document)['Body'].read()
+        return requests_response(status_code=302, content=content)
+    except ClientError:
+        error_document = website_config.get('ErrorDocument', {}).get('Key', '').lstrip('/')
+        try:
+            content = s3_client.get_object(Bucket=bucket_name, Key=error_document)['Body'].read()
+            return requests_response(status_code=404, content=content)
+        except ClientError:
+            return requests_response(status_code=404, content='')
 
 
 # instantiate listener

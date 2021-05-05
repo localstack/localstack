@@ -20,6 +20,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.sns import sns_listener
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
+from localstack.services.install import SQS_BACKEND_IMPL
 
 TEST_TOPIC_NAME = 'TestTopic_snsTest'
 TEST_QUEUE_NAME = 'TestQueue_snsTest'
@@ -676,6 +677,23 @@ class SNSTest(unittest.TestCase):
         # clean up
         self.sns_client.delete_topic(TopicArn=topic_arn)
 
+    def test_create_duplicate_topic_check_idempotentness(self):
+        topic_name = 'test-%s' % short_uid()
+        tags = [{'Key': 'a', 'Value': '1'}, {'Key': 'b', 'Value': '2'}]
+        kwargs = [{'Tags': tags},  # to create topic with two tags
+            {'Tags': tags},  # to create the same topic again with same tags
+            {'Tags': [tags[0]]},  # to create the same topic again with one of the tags from above
+            {'Tags': []}  # to create the same topic again with no tags
+        ]
+        responses = []
+        for arg in kwargs:
+            responses.append(self.sns_client.create_topic(Name=topic_name, **arg))
+        # assert TopicArn is returned by all the above create_topic calls
+        for i in range(len(responses)):
+            self.assertIn('TopicArn', responses[i])
+        # clean up
+        self.sns_client.delete_topic(TopicArn=responses[0]['TopicArn'])
+
     def test_publish_by_path_parameters(self):
         topic_name = 'topic-{}'.format(short_uid())
         queue_name = 'queue-{}'.format(short_uid())
@@ -785,6 +803,40 @@ class SNSTest(unittest.TestCase):
             WaitTimeSeconds=2,
         )
         self.assertEqual(len(response['Messages']), 1)
+
+    def add_xray_header(self, request, **kwargs):
+        request.headers['X-Amzn-Trace-Id'] = \
+            'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1'
+
+    def test_publish_sqs_from_sns_with_xray_propagation(self):
+        if SQS_BACKEND_IMPL != 'elasticmq':
+            return
+
+        self.sns_client.meta.events.register('before-send.sns.Publish', self.add_xray_header)
+
+        topic = self.sns_client.create_topic(Name='test_topic4')
+        topic_arn = topic['TopicArn']
+        test_queue = self.sqs_client.create_queue(QueueName='test_queue4')
+
+        queue_url = test_queue['QueueUrl']
+        self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_url)
+        self.sns_client.publish(TargetArn=topic_arn, Message='X-Ray propagation test msg')
+
+        response = self.sqs_client.receive_message(
+            QueueUrl=queue_url,
+            AttributeNames=['SentTimestamp', 'AWSTraceHeader'],
+            MaxNumberOfMessages=1,
+            MessageAttributeNames=['All'],
+            VisibilityTimeout=2,
+            WaitTimeSeconds=2,
+        )
+
+        self.assertEqual(len(response['Messages']), 1)
+        message = response['Messages'][0]
+        self.assertTrue('Attributes' in message)
+        self.assertTrue('AWSTraceHeader' in message['Attributes'])
+        self.assertEqual(message['Attributes']['AWSTraceHeader'],
+                         'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1')
 
     def test_create_topic_after_delete_with_new_tags(self):
         topic_name = 'test-%s' % short_uid()

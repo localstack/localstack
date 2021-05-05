@@ -25,10 +25,11 @@ from localstack.services import generic_proxy, install
 from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, check_infra
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener, start_proxy_server
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.cloudformation import cloudformation_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.utils.analytics.profiler import log_duration
+from localstack.utils.cli import print_version
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
@@ -78,7 +79,7 @@ class ConfigUpdateProxyListener(ProxyListener):
         return response
 
 
-GenericProxyHandler.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
+ProxyListener.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
 
 
 # -----------------
@@ -191,6 +192,7 @@ def set_service_status(data):
         update_config_variable(port_variable, port)
         new_service_list = ','.join(services)
         os.environ['SERVICES'] = new_service_list
+        # TODO: expensive operation - check if we need to do this here for each service, should be optimized!
         config.populate_configs()
         LOG.info('Starting service %s on port %s' % (service, port))
         SERVICE_PLUGINS[service].start(asynchronous=True)
@@ -234,13 +236,13 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
-def do_run(cmd, asynchronous, print_output=None, env_vars={}):
+def do_run(cmd, asynchronous, print_output=None, env_vars={}, auto_restart=False):
     sys.stdout.flush()
     if asynchronous:
         if config.DEBUG and print_output is None:
             print_output = True
         outfile = subprocess.PIPE if print_output else None
-        t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars)
+        t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars, auto_restart=auto_restart)
         t.start()
         TMP_THREADS.append(t)
         return t
@@ -259,7 +261,7 @@ def start_proxy_for_service(service_name, port, backend_port, update_listener, q
     return start_proxy(port, backend_url=backend_url, update_listener=update_listener, quiet=quiet, params=params)
 
 
-def start_proxy(port, backend_url, update_listener=None, quiet=False, params={}, use_ssl=None):
+def start_proxy(port, backend_url=None, update_listener=None, quiet=False, params={}, use_ssl=None):
     use_ssl = config.USE_SSL if use_ssl is None else use_ssl
     proxy_thread = start_proxy_server(port=port, forward_url=backend_url,
         use_ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
@@ -359,6 +361,8 @@ def start_infra(asynchronous=False, apis=None):
             print('!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=0 - '
                   "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR")
 
+        print_version(is_in_docker)
+
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
         patch_instance_tracker_meta()
@@ -435,7 +439,10 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         # ensure that all infra components are up and running
         check_infra(apis=apis)
         # restore persisted data
+        record_service_health('features:persistence', 'initializing' if config.DATA_DIR else 'disabled')
         persistence.restore_persisted_data(apis=apis)
+        if config.DATA_DIR:
+            record_service_health('features:persistence', 'initialized')
         return thread
 
     prepare_environment()

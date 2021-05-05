@@ -19,7 +19,7 @@ class ProxyListenerCloudWatch(ProxyListener):
         action = req_data.get('Action')
         if action == 'TagResource':
             arn = req_data.get('ResourceARN')
-            tags = aws_stack.extract_tags(req_data)
+            tags = aws_responses.extract_tags(req_data)
             TAGS.tag_resource(arn, tags)
             return aws_responses.requests_response_xml(action, {}, xmlns=XMLNS_CLOUDWATCH)
         if action == 'UntagResource':
@@ -53,9 +53,8 @@ class ProxyListenerCloudWatch(ProxyListener):
             cloudwatch_backends[aws_stack.get_region()].alarms[name].treat_missing_data = treat_missing_data
             # record tags
             arn = aws_stack.cloudwatch_alarm_arn(name)
-            tags = aws_stack.extract_tags(req_data)
-            if tags:
-                TAGS.tag_resource(arn, tags)
+            tags = aws_responses.extract_tags(req_data)
+            TAGS.tag_resource(arn, tags)
 
         # Fix Incorrect date format to the correct format
         # the dictionary contains the tag as the key and the value is a

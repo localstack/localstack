@@ -2,16 +2,18 @@ import types
 import logging
 import traceback
 from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
-from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys
+from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys, S3_ALL_MULTIPARTS
 from moto.s3.exceptions import S3ClientError
 from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.services.s3 import s3_listener
+from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.server import multiserver
 from localstack.utils.common import wait_for_port_open, get_free_tcp_port
+from localstack.utils.generic.dict_utils import get_safe
 from localstack.services.infra import start_moto_server
 from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
+from urllib.parse import urlparse
 
 LOG = logging.getLogger(__name__)
 
@@ -20,6 +22,7 @@ S3_MAX_FILE_SIZE_MB = 2048
 
 # temporary state
 TMP_STATE = {}
+TMP_TAG = {}
 
 # Key for tracking patch applience
 PATCHES_APPLIED = 'S3_PATCHED'
@@ -129,6 +132,17 @@ def apply_patches():
     def s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):
         result = s3_key_response_post_orig(request, body, bucket_name, query, key_name, *args, **kwargs)
         s3_update_acls(self, request, query, bucket_name, key_name)
+        try:
+            if query.get('uploadId'):
+                if (bucket_name, key_name) in TMP_TAG:
+                    key = self.backend.get_object(bucket_name, key_name)
+                    self.backend.set_key_tags(key, TMP_TAG.get((bucket_name, key_name), None), key_name)
+                    TMP_TAG.pop((bucket_name, key_name))
+        except Exception:
+            pass
+        if query.get('uploads') and request.headers.get('X-Amz-Tagging'):
+            tags = self._tagging_from_headers(request.headers)
+            TMP_TAG[(bucket_name, key_name)] = tags
         return result
 
     s3_key_response_post_orig = s3_responses.S3ResponseInstance._key_response_post
@@ -172,7 +186,7 @@ def apply_patches():
         def __init__(self, *args, **kwargs):
             super(InvalidObjectState, self).__init__(
                 'InvalidObjectState',
-                'The operation is not valid for the object\"s storage class.',
+                "The operation is not valid for the object's storage class.",
                 *args,
                 **kwargs
             )
@@ -277,7 +291,7 @@ def apply_patches():
     # Patch utils_is_delete_keys
     # https://github.com/localstack/localstack/issues/2866
     # https://github.com/localstack/localstack/issues/2850
-
+    # https://github.com/localstack/localstack/issues/3931
     utils_is_delete_keys_orig = s3bucket_path_utils.is_delete_keys
 
     def utils_is_delete_keys(request, path, bucket_name):
@@ -285,9 +299,53 @@ def apply_patches():
 
     def s3_response_is_delete_keys(self, request, path, bucket_name):
         if self.subdomain_based_buckets(request):
-            return is_delete_keys(request, path, bucket_name)
+            # Temporary fix until moto supports x-id and DeleteObjects (#3931)
+            query = self._get_querystring(request.url)
+            is_delete_keys_v3 = (query and ('delete' in query) and get_safe(query, '$.x-id.0') == 'DeleteObjects')
+            return is_delete_keys_v3 or is_delete_keys(request, path, bucket_name)
         else:
             return utils_is_delete_keys(request, path, bucket_name)
 
     s3_responses.S3ResponseInstance.is_delete_keys = types.MethodType(
         s3_response_is_delete_keys, s3_responses.S3ResponseInstance)
+
+    def parse_bucket_name_from_url(self, request, url):
+        path = urlparse(url).path
+        return s3_utils.extract_bucket_name(request.headers, path)
+
+    s3_responses.S3ResponseInstance.parse_bucket_name_from_url = types.MethodType(
+        parse_bucket_name_from_url, s3_responses.S3ResponseInstance)
+
+    def subdomain_based_buckets(self, request):
+        return s3_utils.uses_host_addressing(request.headers)
+
+    s3_responses.S3ResponseInstance.subdomain_based_buckets = types.MethodType(
+        subdomain_based_buckets, s3_responses.S3ResponseInstance)
+
+    s3_responses_bucket_response_get_orig = s3_responses.S3ResponseInstance._bucket_response_get
+
+    def s3_bucket_response_get(self, bucket_name, querystring):
+        try:
+            return s3_responses_bucket_response_get_orig(bucket_name, querystring)
+        except NotImplementedError:
+            if 'uploads' not in querystring:
+                raise
+
+            multiparts = list(self.backend.get_all_multiparts(bucket_name).values())
+            if 'prefix' in querystring:
+                prefix = querystring.get('prefix', [None])[0]
+                multiparts = [
+                    upload for upload in multiparts if upload.key_name.startswith(prefix)
+                ]
+
+            upload_ids = [upload_id for upload_id in querystring.get('uploads') if upload_id]
+            if upload_ids:
+                multiparts = [
+                    upload for upload in multiparts if upload.id in upload_ids
+                ]
+
+            template = self.response_template(S3_ALL_MULTIPARTS)
+            return template.render(bucket_name=bucket_name, uploads=multiparts)
+
+    s3_responses.S3ResponseInstance._bucket_response_get = types.MethodType(
+        s3_bucket_response_get, s3_responses.S3ResponseInstance)

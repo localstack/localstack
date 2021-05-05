@@ -55,4 +55,3 @@ Outputs:
     Value: !Ref SnsTopic
     Export:
       Name: !Ref SnsTopic
-

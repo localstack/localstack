@@ -6,7 +6,6 @@
 
 /infra/
 localstack/infra/
-localstack/ext/java/.factorypath
 
 /node_modules/
 package-lock.json
@@ -47,3 +46,5 @@ requirements.copy.txt
 *tfplan
 
 .python-version
+
+venv

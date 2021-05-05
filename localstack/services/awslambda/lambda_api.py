@@ -17,12 +17,12 @@ from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
     to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
-    mkdir, unzip, is_zip_file, run, first_char_to_lower, run_for_max_seconds,
-    timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
+    mkdir, unzip, is_zip_file, run, run_safe, first_char_to_lower, run_for_max_seconds, parse_request_data,
+    timestamp_millis, timestamp, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
 from localstack.services.awslambda import lambda_executors
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.awslambda.lambda_utils import (
@@ -123,6 +123,7 @@ class ClientError(Exception):
 
 
 class LambdaContext(object):
+    DEFAULT_MEMORY_LIMIT = 1536
 
     def __init__(self, func_details, qualifier=None, context=None):
         self.function_name = func_details.name()
@@ -132,6 +133,10 @@ class LambdaContext(object):
         if qualifier:
             self.invoked_function_arn += ':' + qualifier
         self.cognito_identity = context.get('identity')
+        self.aws_request_id = str(uuid.uuid4())
+        self.memory_limit_in_mb = func_details.memory_size or self.DEFAULT_MEMORY_LIMIT
+        self.log_group_name = '/aws/lambda/%s' % self.function_name
+        self.log_stream_name = '%s/[1]%s' % (timestamp(format='%Y/%m/%d'), short_uid())
 
     def get_remaining_time_in_millis(self):
         # TODO implement!
@@ -290,28 +295,34 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
                                   stage_variables={}, request_context={}, event_context={}):
     try:
         resource_path = resource_path or path
+        event = construct_invocation_event(method, path, headers, payload, query_string_params)
         path_params = dict(path_params)
         fix_proxy_path_params(path_params)
-        event = {
-            'path': path,
-            'headers': dict(headers),
-            'multiValueHeaders': multi_value_dict_for_list(headers),
-            'pathParameters': path_params,
-            'body': payload,
-            'isBase64Encoded': False,
-            'resource': resource_path,
-            'httpMethod': method,
-            'queryStringParameters': query_string_params,
-            'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params),
-            'requestContext': request_context,
-            'stageVariables': stage_variables,
-        }
+        event['pathParameters'] = path_params
+        event['resource'] = resource_path
+        event['requestContext'] = request_context
+        event['stageVariables'] = stage_variables
         LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
         asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
-        inv_result = run_lambda(event=event, context=event_context, func_arn=func_arn, asynchronous=asynchronous)
+        inv_result = run_lambda(func_arn=func_arn, event=event, context=event_context, asynchronous=asynchronous)
         return inv_result.result
     except Exception as e:
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
+
+
+def construct_invocation_event(method, path, headers, data, query_string_params={}):
+    query_string_params = query_string_params or parse_request_data(method, path, '')
+    event = {
+        'path': path,
+        'headers': dict(headers),
+        'multiValueHeaders': multi_value_dict_for_list(headers),
+        'body': data,
+        'isBase64Encoded': False,
+        'httpMethod': method,
+        'queryStringParameters': query_string_params,
+        'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params)
+    }
+    return event
 
 
 def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_id,
@@ -338,7 +349,7 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message, mes
             }
         }]
     }
-    inv_result = run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
+    inv_result = run_lambda(func_arn=func_arn, event=event, context={}, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
     return inv_result.result
 
 
@@ -370,7 +381,7 @@ def process_kinesis_records(records, stream_name):
                         for rec in chunk
                     ]
                 }
-                run_lambda(event=event, context={}, func_arn=arn, asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS)
+                run_lambda(func_arn=arn, event=event, context={}, asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 
@@ -389,7 +400,11 @@ def start_lambda_sqs_listener():
 
             sqs_client = aws_stack.connect_to_service('sqs')
             entries = [{'Id': r['receiptHandle'], 'ReceiptHandle': r['receiptHandle']} for r in records]
-            sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+            try:
+                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+            except Exception as e:
+                LOG.info('Unable to delete Lambda events from SQS queue ' +
+                    '(please check SQS visibility timeout settings): %s - %s' % (entries, e))
 
         records = []
         for msg in messages:
@@ -411,7 +426,11 @@ def start_lambda_sqs_listener():
         event = {'Records': records}
 
         # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
-        run_lambda(event=event, context={}, func_arn=lambda_arn, asynchronous=True, callback=delete_messages)
+        res = run_lambda(func_arn=lambda_arn, event=event, context={},
+            asynchronous=True, callback=delete_messages)
+        if isinstance(res, lambda_executors.InvocationResult) and getattr(res.result, 'status_code', 0) >= 400:
+            return False
+        return True
 
     def listener_loop(*args):
         while True:
@@ -424,6 +443,8 @@ def start_lambda_sqs_listener():
                     SQS_LISTENER_THREAD.pop('_thread_')
                     return
 
+                unprocessed_messages = {}
+
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for source in sources:
                     queue_arn = source['EventSourceArn']
@@ -433,16 +454,21 @@ def start_lambda_sqs_listener():
                     try:
                         region_name = queue_arn.split(':')[3]
                         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-                        result = sqs_client.receive_message(
-                            QueueUrl=queue_url,
-                            MessageAttributeNames=['All'],
-                            MaxNumberOfMessages=batch_size
-                        )
-                        messages = result.get('Messages')
+                        messages = unprocessed_messages.pop(queue_arn, None)
                         if not messages:
-                            continue
+                            result = sqs_client.receive_message(
+                                QueueUrl=queue_url,
+                                MessageAttributeNames=['All'],
+                                MaxNumberOfMessages=batch_size
+                            )
+                            messages = result.get('Messages')
+                            if not messages:
+                                continue
 
-                        send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
+                        LOG.debug('Sending event from event source %s to Lambda %s' % (queue_arn, lambda_arn))
+                        res = send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
+                        if not res:
+                            unprocessed_messages[queue_arn] = messages
 
                     except Exception as e:
                         LOG.debug('Unable to poll SQS messages for queue %s: %s' % (queue_arn, e))
@@ -548,7 +574,8 @@ def do_update_alias(arn, alias, version, description=None):
     return new_alias
 
 
-def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False, callback=None):
+def run_lambda(func_arn, event, context={}, version=None,
+        suppress_output=False, asynchronous=False, callback=None):
     region_name = func_arn.split(':')[3]
     region = LambdaRegion.get(region_name)
     if suppress_output:
@@ -561,8 +588,15 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         func_arn = aws_stack.fix_arn(func_arn)
         func_details = region.lambdas.get(func_arn)
         if not func_details:
+            LOG.debug('Unable to find details for Lambda %s in region %s' % (func_arn, region_name))
             result = not_found_error(msg='The resource specified in the request does not exist.')
             return lambda_executors.InvocationResult(result)
+
+        # forward invocation to external endpoint, if configured
+        invocation_type = 'Event' if asynchronous else 'RequestResponse'
+        invoke_result = forward_to_external_url(func_details, event, context, invocation_type)
+        if invoke_result is not None:
+            return invoke_result
 
         context = LambdaContext(func_details, version, context)
         result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
@@ -637,7 +671,7 @@ def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME)
 
 
 def error_response(msg, code=500, error_type='InternalFailure'):
-    LOG.info(msg)
+    LOG.debug(msg)
     return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
 
 
@@ -686,7 +720,8 @@ def get_java_handler(zip_file_content, main_file, func_details=None):
             return result
         return execute
     raise ClientError(error_response(
-        'Unable to extract Java Lambda handler - file is not a valid zip/jar file', 400, error_type='ValidationError'))
+        'Unable to extract Java Lambda handler - file is not a valid zip/jar file (%s, %s bytes)' %
+        (main_file, len(zip_file_content or '')), 400, error_type='ValidationError'))
 
 
 def set_archive_code(code, lambda_name, zip_file_content=None):
@@ -877,7 +912,8 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'RevisionId': func_version.get('RevisionId'),
         'State': 'Active',
         'LastUpdateStatus': 'Successful',
-        'PackageType': func_details.package_type
+        'PackageType': func_details.package_type,
+        'ImageConfig': getattr(func_details, 'image_config', None)
     }
     if func_details.dead_letter_config:
         result['DeadLetterConfig'] = func_details.dead_letter_config
@@ -891,11 +927,33 @@ def format_func_details(func_details, version=None, always_add_version=False):
     return result
 
 
+def forward_to_external_url(func_details, event, context, invocation_type):
+    """ If LAMBDA_FORWARD_URL is configured, forward the invocation of this Lambda to the configured URL. """
+    if not config.LAMBDA_FORWARD_URL:
+        return
+    func_name = func_details.name()
+    url = '%s%s/functions/%s/invocations' % (config.LAMBDA_FORWARD_URL, PATH_ROOT, func_name)
+    headers = aws_stack.mock_aws_request_headers('lambda')
+    headers['X-Amz-Invocation-Type'] = invocation_type
+    headers['X-Amz-Log-Type'] = 'Tail'
+    client_context = context.get('client_context')
+    if client_context:
+        headers['X-Amz-Client-Context'] = client_context
+    data = json.dumps(event) if isinstance(event, dict) else str(event)
+    LOG.debug('Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s' % config.LAMBDA_FORWARD_URL)
+    result = safe_requests.post(url, data, headers=headers)
+    content = run_safe(lambda: to_str(result.content)) or result.content
+    LOG.debug('Received result from external Lambda endpoint (status %s): %s' % (result.status_code, content))
+    result = aws_responses.requests_to_flask_response(result)
+    result = lambda_executors.InvocationResult(result)
+    return result
+
+
 def forward_to_fallback_url(func_arn, data):
     """ If LAMBDA_FALLBACK_URL is configured, forward the invocation of this non-existing
         Lambda to the configured URL. """
     if not config.LAMBDA_FALLBACK_URL:
-        return None
+        return
 
     lambda_name = aws_stack.lambda_function_name(func_arn)
     if config.LAMBDA_FALLBACK_URL.startswith('dynamodb://'):
@@ -904,14 +962,17 @@ def forward_to_fallback_url(func_arn, data):
         item = {
             'id': {'S': short_uid()},
             'timestamp': {'N': str(now_utc())},
-            'payload': {'S': str(data)},
+            'payload': {'S': data},
             'function_name': {'S': lambda_name}
         }
         aws_stack.create_dynamodb_table(table_name, partition_key='id')
         dynamodb.put_item(TableName=table_name, Item=item)
         return ''
     if re.match(r'^https?://.+', config.LAMBDA_FALLBACK_URL):
-        headers = {'lambda-function-name': lambda_name}
+        headers = {
+            'lambda-function-name': lambda_name,
+            'Content-Type': APPLICATION_JSON
+        }
         response = safe_requests.post(config.LAMBDA_FALLBACK_URL, data, headers=headers)
         content = response.content
         try:
@@ -946,6 +1007,20 @@ def get_lambda_policy(function, qualifier=None):
     res_qualifier = func_qualifier(function, qualifier)
     policy = [d for d in docs if d['Statement'][0]['Resource'] == res_qualifier]
     return (policy or [None])[0]
+
+
+def lookup_function(function, region, request_url):
+    result = {
+        'Configuration': function,
+        'Code': {
+            'Location': '%s/code' % request_url
+        },
+        'Tags': function['Tags']
+    }
+    lambda_details = region.lambdas.get(function['FunctionArn'])
+    if lambda_details.concurrency is not None:
+        result['Concurrency'] = lambda_details.concurrency
+    return jsonify(result)
 
 
 def not_found_error(ref=None, msg=None):
@@ -1007,7 +1082,8 @@ def create_function():
         func_details.memory_size = data.get('MemorySize')
         func_details.code_signing_config_arn = data.get('CodeSigningConfigArn')
         func_details.code = data['Code']
-        func_details.package_type = 'Zip'
+        func_details.package_type = data.get('PackageType') or 'Zip'
+        func_details.image_config = data.get('ImageConfig', {})
         func_details.set_dead_letter_config(data)
         result = set_function_code(func_details.code, lambda_name)
         if isinstance(result, Response):
@@ -1041,18 +1117,10 @@ def get_function(function):
     region = LambdaRegion.get()
     funcs = do_list_functions()
     for func in funcs:
-        if func['FunctionName'] == function:
-            result = {
-                'Configuration': func,
-                'Code': {
-                    'Location': '%s/code' % request.url
-                },
-                'Tags': func['Tags']
-            }
-            lambda_details = region.lambdas.get(func['FunctionArn'])
-            if lambda_details.concurrency is not None:
-                result['Concurrency'] = lambda_details.concurrency
-            return jsonify(result)
+        if function == func['FunctionName']:
+            return lookup_function(func, region, request.url)
+        elif function in func['FunctionArn']:
+            return lookup_function(func, region, request.url)
     return not_found_error(func_arn(function))
 
 
@@ -1247,20 +1315,25 @@ def generate_policy(sid, action, arn, sourcearn, principal):
 
 @app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['POST'])
 def add_permission(function):
-    region = LambdaRegion.get()
+    arn = func_arn(function)
+    qualifier = request.args.get('Qualifier')
+    q_arn = func_qualifier(function, qualifier)
+    result = add_permission_policy_statement(function, arn, q_arn)
+    return result
 
+
+def add_permission_policy_statement(resource_name, resource_arn, resource_arn_qualified):
+    region = LambdaRegion.get()
     data = json.loads(to_str(request.data))
     iam_client = aws_stack.connect_to_service('iam')
     sid = data.get('StatementId')
     action = data.get('Action')
     principal = data.get('Principal')
     sourcearn = data.get('SourceArn')
-    qualifier = request.args.get('Qualifier')
-    arn = func_arn(function)
-    previous_policy = get_lambda_policy(function)
+    previous_policy = get_lambda_policy(resource_name)
 
-    if arn not in region.lambdas:
-        return not_found_error(func_arn(function))
+    if resource_arn not in region.lambdas:
+        return not_found_error(resource_arn)
 
     if not re.match(r'lambda:[*]|lambda:[a-zA-Z]+|[*]', action):
         return error_response('1 validation error detected: Value "%s" at "action" failed to satisfy '
@@ -1268,21 +1341,23 @@ def add_permission(function):
                               '(lambda:[*]|lambda:[a-zA-Z]+|[*])' % action,
                               400, error_type='ValidationException')
 
-    q_arn = func_qualifier(function, qualifier)
-    new_policy = generate_policy(sid, action, q_arn, sourcearn, principal)
+    new_policy = generate_policy(sid, action, resource_arn_qualified, sourcearn, principal)
 
     if previous_policy:
         statment_with_sid = next((statement for statement in previous_policy['Statement'] if statement['Sid'] == sid),
             None)
         if statment_with_sid:
-            return error_response('The statement id (%s) provided already exists. Please provide a new statement id,'
-                        ' or remove the existing statement.' % sid, 400, error_type='ResourceConflictException')
+            msg = ('The statement id (%s) provided already exists. Please provide a new statement id, '
+                   'or remove the existing statement.') % sid
+            return error_response(msg, 400, error_type='ResourceConflictException')
 
         new_policy['Statement'].extend(previous_policy['Statement'])
         iam_client.delete_policy(PolicyArn=previous_policy['PolicyArn'])
 
-    iam_client.create_policy(PolicyName=LAMBDA_POLICY_NAME_PATTERN % function,
-        PolicyDocument=json.dumps(new_policy), Description='Policy for Lambda function "%s"' % function)
+    policy_name = LAMBDA_POLICY_NAME_PATTERN % resource_name
+    LOG.debug('Creating IAM policy "%s" for Lambda resource %s' % (policy_name, resource_arn))
+    iam_client.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(new_policy),
+        Description='Policy for Lambda function "%s"' % resource_name)
 
     result = {'Statement': json.dumps(new_policy['Statement'][0])}
     return jsonify(result)
@@ -1336,8 +1411,8 @@ def invoke_function(function):
         qualifier = request.args.get('Qualifier')
     data = request.get_data()
     if data:
-        data = to_str(data)
         try:
+            data = to_str(data)
             data = json.loads(data)
         except Exception:
             try:
@@ -1366,11 +1441,16 @@ def invoke_function(function):
             details['Payload'] = to_str(result.data)
             if result.status_code >= 400:
                 details['FunctionError'] = 'Unhandled'
-        elif isinstance(result, dict):
+        if isinstance(result, (str, bytes)):
+            try:
+                result = json.loads(to_str(result))
+            except Exception:
+                pass
+        if isinstance(result, dict):
             for key in ('StatusCode', 'Payload', 'FunctionError'):
                 if result.get(key):
                     details[key] = result[key]
-        # Try to parse parse payload as JSON
+        # Try to parse payload as JSON
         was_json = False
         payload = details['Payload']
         if payload and isinstance(payload, POSSIBLE_JSON_TYPES) and payload[0] in JSON_START_CHARS:
@@ -1406,17 +1486,20 @@ def invoke_function(function):
         not_found = not_found_error('{0}:{1}'.format(arn, qualifier))
 
     if not_found:
-        forward_result = forward_to_fallback_url(arn, data)
-        if forward_result is not None:
-            return _create_response(forward_result)
+        try:
+            forward_result = forward_to_fallback_url(arn, json.dumps(data))
+            if forward_result is not None:
+                return _create_response(forward_result)
+        except Exception as e:
+            LOG.debug('Unable to forward Lambda invocation to fallback URL: "%s" - %s' % (data, e))
         return not_found
 
     if invocation_type == 'RequestResponse':
         context = {'client_context': request.headers.get('X-Amz-Client-Context')}
-        result = run_lambda(asynchronous=False, func_arn=arn, event=data, context=context, version=qualifier)
+        result = run_lambda(func_arn=arn, event=data, context=context, asynchronous=False, version=qualifier)
         return _create_response(result)
     elif invocation_type == 'Event':
-        run_lambda(asynchronous=True, func_arn=arn, event=data, context={}, version=qualifier)
+        run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)
         return _create_response('', status_code=202)
     elif invocation_type == 'DryRun':
         # Assume the dry run always passes.
@@ -1705,6 +1788,9 @@ def get_function_event_invoke_config(function):
         return error_response(str(e), 400)
 
     response = lambda_obj.get_function_event_invoke_config()
+    if not response:
+        msg = "The function %s doesn't have an EventInvokeConfig" % function_arn
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
     return jsonify(response)
 
 

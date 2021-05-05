@@ -1,0 +1,5 @@
+Resources:
+  localEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: my-testing

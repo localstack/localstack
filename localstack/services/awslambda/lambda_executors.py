@@ -92,7 +92,7 @@ def _store_logs(func_details, log_output, invocation_time=None, container_id=Non
 
 def get_main_endpoint_from_container():
     global DOCKER_MAIN_CONTAINER_IP
-    if DOCKER_MAIN_CONTAINER_IP is None:
+    if not config.HOSTNAME_FROM_LAMBDA and DOCKER_MAIN_CONTAINER_IP is None:
         DOCKER_MAIN_CONTAINER_IP = False
         try:
             if in_docker():
@@ -102,8 +102,8 @@ def get_main_endpoint_from_container():
             container_name = bootstrap.get_main_container_name()
             LOG.info('Unable to get IP address of main Docker container "%s": %s' %
                 (container_name, e))
-    # return main container IP, or fall back to Docker host (bridge IP, or host DNS address)
-    return DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
+    # return (1) predefined endpoint host, or (2) main container IP, or (3) Docker host (e.g., bridge IP)
+    return config.HOSTNAME_FROM_LAMBDA or DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
 
 
 class InvocationResult(object):
@@ -126,6 +126,8 @@ class LambdaExecutor(object):
 
         # injecting aws credentials into docker environment if not provided
         aws_stack.inject_test_credentials_into_env(result)
+        # injecting the region into the docker environment
+        aws_stack.inject_region_into_env(result, func_details.region())
 
         return result
 
@@ -634,7 +636,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         been inactive for longer than MAX_CONTAINER_IDLE_TIME_MS.
         :return: None
         """
-        LOG.info('Checking if there are idle containers.')
+        LOG.debug('Checking if there are idle containers ...')
         current_time = int(time.time() * 1000)
         for func_arn, last_run_time in dict(self.function_invoke_times).items():
             duration = current_time - last_run_time
@@ -719,7 +721,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 '%s '
                 '%s start -ai "$CONTAINER_ID";'
             ) % (docker_cmd, entrypoint, debug_docker_java_port,
-                env_vars_string, network_str, dns_str, rm_flag,
+                 env_vars_string, network_str, dns_str, rm_flag,
                  docker_image, command,
                  cp_cmd,
                  docker_cmd)
@@ -860,6 +862,9 @@ class Util:
         lambdas_to_add_prefix = ['dotnetcore2.0', 'dotnetcore2.1', 'python2.7', 'python3.6', 'python3.7']
         if docker_image == 'lambci/lambda' and any(img in docker_tag for img in lambdas_to_add_prefix):
             docker_tag = '20191117-%s' % docker_tag
+        if runtime == 'nodejs14.x':
+            # TODO temporary fix until lambci image for nodejs14.x becomes available
+            docker_image = 'localstack/lambda-js'
         return '"%s:%s"' % (docker_image, docker_tag)
 
     @classmethod

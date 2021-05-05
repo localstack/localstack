@@ -1,8 +1,8 @@
-from localstack.utils.common import timestamp_millis
 import time
 import json
 import six
 from datetime import datetime
+from localstack.utils.common import timestamp_millis
 
 if six.PY3:
     long = int
@@ -194,6 +194,7 @@ class LambdaFunction(Component):
         self.description = ''
         self.code_signing_config_arn = None
         self.package_type = None
+        self.image_config = {}
 
     def set_dead_letter_config(self, data):
         config = data.get('DeadLetterConfig')
@@ -205,10 +206,7 @@ class LambdaFunction(Component):
             raise Exception('Dead letter queue ARN "%s" requires a valid SQS queue or SNS topic' % target_arn)
 
     def get_function_event_invoke_config(self):
-        response = {
-            'LastModified': timestamp_millis(self.last_modified),
-            'FunctionArn': str(self.id),
-        }
+        response = {}
 
         if self.max_retry_attempts:
             response.update({'MaximumRetryAttempts': self.max_retry_attempts})
@@ -230,7 +228,12 @@ class LambdaFunction(Component):
                         'Destination': self.on_failed_invocation
                     }
                 })
-
+        if not response:
+            return None
+        response.update({
+            'LastModified': timestamp_millis(self.last_modified),
+            'FunctionArn': str(self.id),
+        })
         return response
 
     def clear_function_event_invoke_config(self):
@@ -297,6 +300,9 @@ class LambdaFunction(Component):
     def name(self):
         # Example ARN: arn:aws:lambda:aws-region:acct-id:function:helloworld:1
         return self.id.split(':')[6]
+
+    def region(self):
+        return self.id.split(':')[3]
 
     def arn(self):
         return self.id

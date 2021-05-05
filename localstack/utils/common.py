@@ -24,6 +24,7 @@ import six
 import shutil
 import requests
 import dns.resolver
+import platform
 from io import BytesIO
 from datetime import datetime, date
 from contextlib import closing
@@ -107,7 +108,7 @@ class CustomEncoder(json.JSONEncoder):
 class ShellCommandThread(FuncThread):
     """ Helper class to run a shell command in a background thread. """
 
-    def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False,
+    def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False, auto_restart=False,
             quiet=True, inherit_cwd=False, inherit_env=True, log_listener=None):
         self.cmd = cmd
         self.process = None
@@ -117,10 +118,17 @@ class ShellCommandThread(FuncThread):
         self.inherit_cwd = inherit_cwd
         self.inherit_env = inherit_env
         self.log_listener = log_listener
+        self.auto_restart = auto_restart
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
+        while True:
+            self.do_run_cmd()
+            if INFRA_STOPPED or not self.auto_restart or not self.process or self.process.returncode == 0:
+                return
+            LOG.info('Restarting process (received exit code %s): %s' % (self.process.returncode, self.cmd))
 
+    def do_run_cmd(self):
         def convert_line(line):
             line = to_str(line or '')
             return '%s\r\n' % line.strip()
@@ -140,6 +148,8 @@ class ShellCommandThread(FuncThread):
                     # get stdout/stderr from child process and write to parent output
                     streams = ((self.process.stdout, sys.stdout), (self.process.stderr, sys.stderr))
                     for instream, outstream in streams:
+                        if not instream:
+                            continue
                         for line in iter(instream.readline, None):
                             # `line` should contain a newline at the end as we're iterating,
                             # hence we can safely break the loop if `line` is None or empty string
@@ -418,6 +428,7 @@ def md5(string):
 
 
 def select_attributes(object, attributes):
+    attributes = attributes if isinstance(attributes, list) else [attributes]
     return dict([(k, v) for k, v in object.items() if k in attributes])
 
 
@@ -437,12 +448,30 @@ def get_docker_container_names():
     return bootstrap.get_docker_container_names()
 
 
+def get_docker_image_names(strip_latest=True):
+    cmd = "%s images --format '{{.Repository}}:{{.Tag}}'" % config.DOCKER_CMD
+    try:
+        output = to_str(run(cmd))
+        image_names = re.split(r'\s+', output.strip().replace('\n', ' '))
+        if strip_latest:
+            suffix = ':latest'
+            for image in list(image_names):
+                if image.endswith(suffix):
+                    image_names.append(image[:-len(suffix)])
+        return image_names
+    except Exception as e:
+        LOG.info('Unable to list Docker images via "%s": %s' % (cmd, e))
+        return []
+
+
 def path_from_url(url):
     return '/%s' % str(url).partition('://')[2].partition('/')[2] if '://' in url else url
 
 
 def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=['tcp']):
     port = port_or_url
+    if is_number(port):
+        port = int(port)
     host = 'localhost'
     protocol = 'http'
     protocols = protocols if isinstance(protocols, list) else [protocols]
@@ -491,7 +520,7 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
         If 'http_path' is set, make a GET request to this path and assert a non-error response. """
     def check():
         if not is_port_open(port, http_path=http_path, expect_success=expect_success):
-            raise Exception()
+            raise Exception('Port %s (path: %s) was not open' % (port, http_path))
 
     return retry(check, sleep=sleep_time, retries=retries)
 
@@ -632,6 +661,13 @@ def camel_to_snake_case(string):
     return re.sub(r'(?<!^)(?=[A-Z])', '_', string).replace('__', '_').lower()
 
 
+def snake_to_camel_case(string, capitalize_first=True):
+    components = string.split('_')
+    start_idx = 0 if capitalize_first else 1
+    components = [x.title() for x in components[start_idx:]]
+    return ''.join(components)
+
+
 def base64_to_hex(b64_string):
     return binascii.hexlify(base64.b64decode(b64_string))
 
@@ -700,6 +736,8 @@ def chown_r(path, user):
 
 def chmod_r(path, mode):
     """ Recursive chmod """
+    if not os.path.exists(path):
+        return
     os.chmod(path, mode)
     for root, dirnames, filenames in os.walk(path):
         for dirname in dirnames:
@@ -730,11 +768,20 @@ def rm_rf(path):
         shutil.rmtree(path)
 
 
-def cp_r(src, dst):
+def cp_r(src, dst, rm_dest_on_conflict=False):
     """Recursively copies file/directory"""
     if os.path.isfile(src):
         return shutil.copy(src, dst)
-    return shutil.copytree(src, dst, dirs_exist_ok=True)
+    kwargs = {}
+    if 'dirs_exist_ok' in inspect.getargspec(shutil.copytree)[0]:
+        kwargs['dirs_exist_ok'] = True
+    try:
+        return shutil.copytree(src, dst, **kwargs)
+    except FileExistsError:
+        if rm_dest_on_conflict:
+            rm_rf(dst)
+            return shutil.copytree(src, dst, **kwargs)
+        raise
 
 
 def disk_usage(path, include_hidden=False):
@@ -801,11 +848,17 @@ def download(url, path, verify_ssl=True):
         s.close()
 
 
-def parse_request_data(method, path, data):
+def parse_request_data(method, path, data=None, headers={}):
     """ Extract request data either from query string (for GET) or request body (for POST). """
     result = {}
-    if method in ['POST', 'PUT', 'PATCH']:
-        result = parse_qs(to_str(data or ''))
+    headers = headers or {}
+    content_type = headers.get('Content-Type', '')
+    if method in ['POST', 'PUT', 'PATCH'] and (not content_type or 'form-' in content_type):
+        # content-type could be either "application/x-www-form-urlencoded" or "multipart/form-data"
+        try:
+            result = parse_qs(to_str(data or ''))
+        except Exception:
+            pass  # probably binary / JSON / non-URL encoded payload - ignore
     if not result:
         parsed_path = urlparse(path)
         result = parse_qs(parsed_path.query)
@@ -814,7 +867,11 @@ def parse_request_data(method, path, data):
 
 
 def first_char_to_lower(s):
-    return '%s%s' % (s[0].lower(), s[1:])
+    return s and '%s%s' % (s[0].lower(), s[1:])
+
+
+def first_char_to_upper(s):
+    return s and '%s%s' % (s[0].upper(), s[1:])
 
 
 def format_number(number, decimals=2):
@@ -835,6 +892,10 @@ def is_mac_os():
 
 def is_linux():
     return bootstrap.is_linux()
+
+
+def is_windows():
+    return platform.system().lower() == 'windows'
 
 
 def is_alpine():
@@ -858,6 +919,8 @@ def get_arch():
         return 'alpine'
     if is_linux():
         return 'linux'
+    if is_windows():
+        return 'windows'
     raise Exception('Unable to determine system architecture')
 
 
@@ -1183,10 +1246,13 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     def store_cert_key_files(base_filename):
         key_file_name = '%s.key' % base_filename
         cert_file_name = '%s.crt' % base_filename
+        # TODO: Cleaner code to load the cert dinamically
         # extract key and cert from target_file and store into separate files
         content = load_file(target_file)
-        key_start = '-----BEGIN PRIVATE KEY-----'
-        key_end = '-----END PRIVATE KEY-----'
+        key_start = re.search(r'-----BEGIN(.*)PRIVATE KEY-----', content)
+        key_start = key_start.group(0)
+        key_end = re.search(r'-----END(.*)PRIVATE KEY-----', content)
+        key_end = key_end.group(0)
         cert_start = '-----BEGIN CERTIFICATE-----'
         cert_end = '-----END CERTIFICATE-----'
         key_content = content[content.index(key_start): content.index(key_end) + len(key_end)]
@@ -1434,6 +1500,16 @@ def escape_html(string, quote=False):
         return cgi.escape(string, quote=quote)
     import html
     return html.escape(string, quote=quote)
+
+
+def get_all_subclasses(clazz):
+    """ Recursively get all subclasses of the given class. """
+    result = set()
+    subs = clazz.__subclasses__()
+    for sub in subs:
+        result.add(sub)
+        result.update(get_all_subclasses(sub))
+    return result
 
 
 def parallelize(func, list, size=None):

@@ -11,7 +11,9 @@ from six import iteritems
 from localstack.utils.aws import aws_stack
 from localstack.constants import (
     LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, ENV_INTERNAL_TEST_RUN)
-from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
+from localstack.utils.common import (TMP_FILES, run, mkdir, to_str, load_file, save_file,
+    is_alpine, chmod_r, get_free_tcp_port)
+from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_utils import (
     get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 
@@ -36,7 +38,6 @@ def rm_dir(dir):
     if is_alpine():
         # Using the native command can be an order of magnitude faster on Travis-CI
         return run('rm -r %s' % dir)
-
     shutil.rmtree(dir)
 
 
@@ -54,6 +55,7 @@ def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file
         for i in range(1, len(path)):
             save_file(os.path.join(tmp_dir, *(path[:i] + ['__init__.py'])), '')
     save_file(script_file, script)
+    chmod_r(script_file, 0o777)
     # copy libs
     for lib in libs:
         paths = [lib, '%s.py' % lib]
@@ -142,8 +144,9 @@ def create_lambda_function(func_name, zip_file=None, event_source_arn=None, hand
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:
+        file_content = load_file(handler_file) if os.path.exists(handler_file) else handler_file
         if libs or not handler:
-            zip_file = create_lambda_archive(load_file(handler_file), libs=libs,
+            zip_file = create_lambda_archive(file_content, libs=libs,
                 get_content=True, runtime=runtime or LAMBDA_DEFAULT_RUNTIME)
         else:
             zip_file = create_zip_file(handler_file, get_content=True)
@@ -220,6 +223,25 @@ def connect_api_gateway_to_http_with_lambda_proxy(gateway_name, target_uri,
     )
 
 
+def create_lambda_api_gateway_integration(gateway_name, func_name, handler_file,
+        methods=[], path=None, runtime=None, stage_name=None, auth_type=None):
+    methods = methods or ['GET', 'POST']
+    path = path or '/test'
+    auth_type = auth_type or 'REQUEST'
+    stage_name = stage_name or 'test'
+
+    # create Lambda
+    zip_file = create_lambda_archive(handler_file, get_content=True, runtime=runtime)
+    create_lambda_function(func_name=func_name, zip_file=zip_file, runtime=runtime)
+    func_arn = aws_stack.lambda_function_arn(func_name)
+    target_arn = aws_stack.apigateway_invocations_arn(func_arn)
+
+    # connect API GW to Lambda
+    result = connect_api_gateway_to_http_with_lambda_proxy(
+        gateway_name, target_arn, stage_name=stage_name, path=path, auth_type=auth_type)
+    return result
+
+
 def assert_objects(asserts, all_objects):
     if type(asserts) is not list:
         asserts = [asserts]
@@ -274,6 +296,20 @@ def find_recursive(key, value, obj):
                 return True
     else:
         return False
+
+
+def start_http_server(test_port=None, invocations=None):
+    from localstack.services.infra import start_proxy
+
+    class TestListener(ProxyListener):
+        def forward_request(self, **kwargs):
+            invocations.append(kwargs)
+            return 200
+
+    test_port = test_port or get_free_tcp_port()
+    invocations = invocations or []
+    proxy = start_proxy(test_port, update_listener=TestListener())
+    return test_port, invocations, proxy
 
 
 def list_all_s3_objects():
@@ -350,7 +386,7 @@ def send_dynamodb_request(path, action, request_body):
     headers = {
         'Host': 'dynamodb.amazonaws.com',
         'x-amz-target': 'DynamoDB_20120810.{}'.format(action),
-        'authorization': 'some_token'
+        'Authorization': aws_stack.mock_aws_request_headers('dynamodb')['Authorization']
     }
     url = '{}/{}'.format(os.getenv('TEST_DYNAMODB_URL'), path)
     return requests.put(url, data=request_body, headers=headers, verify=False)

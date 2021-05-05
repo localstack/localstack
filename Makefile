@@ -4,6 +4,7 @@ IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_NAME_FULL ?= localstack/localstack-full
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 DOCKER_SQUASH ?= --squash
+NOSE_LOG_LEVEL ?= WARNING
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
 TEST_PATH ?= .
@@ -54,7 +55,11 @@ infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
 
 docker-build:      ## Build Docker image
-	docker build -t $(IMAGE_NAME) .
+	# prepare
+	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
+	# start build
+	docker build --build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
+	--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") -t $(IMAGE_NAME) .
 
 docker-squash:
 	# squash entire image
@@ -83,6 +88,7 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		echo "Skipping docker push as no credentials are provided.") || \
 	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
 		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
+		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
 		echo "This is a fork and not the main repo.") || \
 	( \
 		which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
@@ -105,6 +111,9 @@ docker-run:        ## Run Docker image locally
 docker-mount-run:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \
 		ENTRYPOINT="-v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/" make docker-run
+
+docker-build-lambdas:
+	docker build -t localstack/lambda-js:nodejs14.x -f bin/lambda/Dockerfile.nodejs14x .
 
 vagrant-start:
 	@vagrant up || EXIT_CODE=$$? ;\
@@ -133,9 +142,10 @@ docker-cp-coverage:
 web:
 	($(VENV_RUN); bin/localstack web)
 
-test:              ## Run automated tests
+## Run automated tests
+test:
 	make lint && \
-		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests $(NOSE_ARGS) --with-timer --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' $(TEST_PATH))
+		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests $(NOSE_ARGS) --with-timer --with-coverage --logging-level=$(NOSE_LOG_LEVEL) --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' $(TEST_PATH))
 
 test-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
@@ -146,6 +156,42 @@ test-docker-mount: ## Run automated tests in Docker (mounting local code)
 test-docker-mount-code:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); \
 	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/ -e TEST_PATH=$(TEST_PATH) -e NOSE_ARGS=-v -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
+
+# Note: the ci-* targets below should only be used in CI builds!
+
+ci-build-prepare:
+	sudo useradd localstack -s /bin/bash
+	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
+	make init
+	nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-python2.7 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-python3.6 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null &
+	nohup docker pull lambci/lambda:dotnetcore3.1 > /dev/null &
+	nohup docker pull lambci/lambda:20191117-provided > /dev/null &
+	nohup docker pull lambci/lambda:java8 > /dev/null &
+	nohup docker pull lambci/lambda:python3.8 > /dev/null &
+
+ci-build-test:
+	# check if the build environment contains a special command via $$CUSTOM_CMD
+	if [ "$$CUSTOM_CMD" = rebuild-base-image ]; then make docker-build-base-ci; exit; fi
+	# run tests using Python 3 (limit the set of tests to reduce test duration)
+	DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+	DEBUG=1 SQS_PROVIDER=elasticmq TEST_PATH="tests/integration/test_sns.py:SNSTest.test_publish_sqs_from_sns_with_xray_propagation" make test
+	# start pulling Docker base image in the background
+	nohup docker pull localstack/java-maven-node-python > /dev/null &
+	LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+
+ci-build-push:
+	# build Docker image
+	make docker-build
+	# extract .coverage details from created image
+	make docker-cp-coverage
+	sed -i "s:/opt/code/localstack:`pwd`/localstack:g" .coverage
+	# push Docker image (if on master branch)
+	make docker-push-master
+	make coveralls || true
 
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
 	rm -rf $(VENV_DIR)

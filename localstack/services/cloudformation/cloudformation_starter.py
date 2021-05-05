@@ -53,7 +53,7 @@ MAX_DEPENDENCY_DEPTH = 40
 
 # map of additional model classes
 MODEL_MAP = {
-    'AWS::StepFunctions::Activity': service_models.StepFunctionsActivity,
+    'AWS::StepFunctions::Activity': service_models.SFNActivity,
     'AWS::SNS::Subscription': service_models.SNSSubscription,
     'AWS::ApiGateway::GatewayResponse': service_models.GatewayResponse,
     'AWS::ApiGateway::Deployment': apigw_models.Deployment,
@@ -172,6 +172,11 @@ def update_physical_resource_id(resource):
 
     elif isinstance(resource, service_models.ElasticsearchDomain):
         resource.physical_resource_id = resource.params.get('DomainName')
+
+    elif isinstance(resource, service_models.SecretsManagerSecret):
+        secret = service_models.SecretsManagerSecret.fetch_details(resource.props['Name'])
+        if secret:
+            resource.props['ARN'] = resource.physical_resource_id = secret['ARN']
 
     elif isinstance(resource, dynamodb_models.Table):
         resource.physical_resource_id = resource.name
@@ -500,7 +505,9 @@ def apply_patches():
             resource_props = res_details['Properties']
             if hasattr(resource, 'get_cfn_attribute') and not resource_props.get('PhysicalResourceId'):
                 try:
-                    resource_props['PhysicalResourceId'] = resource.get_cfn_attribute('Ref')
+                    phys_res_id = resource.get_cfn_attribute('Ref')
+                    if phys_res_id:
+                        resource_props['PhysicalResourceId'] = phys_res_id
                 except Exception:
                     # ignore this error here if the "Ref" attribute is not (yet) available
                     pass

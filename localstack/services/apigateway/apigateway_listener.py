@@ -10,8 +10,8 @@ from six.moves.urllib_parse import urljoin
 from moto.apigateway.models import apigateway_backends
 from localstack.utils import common
 from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
-from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
-from localstack.utils.aws import aws_stack
+from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID, LOCALHOST_HOSTNAME
+from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import to_str, to_bytes
 from localstack.utils.analytics import event_publisher
 from localstack.services.kinesis import kinesis_listener
@@ -20,7 +20,8 @@ from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
 from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
-    extract_query_string_params, extract_path_params, make_error_response, get_cors_response)
+    handle_accounts, extract_query_string_params, extract_path_params, make_error_response,
+    get_cors_response, hande_base_path_mappings)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 PATH_REGEX_VALIDATORS = r'^/restapis/([A-Za-z0-9_\-]+)/requestvalidators(\?.*)?'
 PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?'
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
+PATH_REGEX_PATH_MAPPINGS = r'/domainnames/([^/]+)/basepathmappings(/.*)?'
 HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
 
 # Maps API IDs to list of gateway responses
@@ -71,6 +73,18 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(r'/restapis/[^/]+/documentation/versions', path):
             if response.status_code == 404:
                 return requests_response({'position': '1', 'items': []})
+
+        # add missing implementations
+        if response.status_code == 404:
+            data = data and json.loads(to_str(data))
+            result = None
+            if path == '/account':
+                result = handle_accounts(method, path, data, headers)
+            if re.match(PATH_REGEX_PATH_MAPPINGS, path):
+                result = hande_base_path_mappings(method, path, data, headers)
+            if result is not None:
+                response.status_code = 200
+                aws_responses.set_response_content(response, result)
 
         # publish event
         if method == 'POST' and path == '/restapis':
@@ -162,8 +176,7 @@ def authorize_invocation(api_id, headers):
 
 def validate_api_key(api_key, stage):
 
-    key = None
-    usage_plan_id = None
+    usage_plan_ids = []
 
     client = aws_stack.connect_to_service('apigateway')
     usage_plans = client.get_usage_plans()
@@ -171,18 +184,15 @@ def validate_api_key(api_key, stage):
         api_stages = item.get('apiStages', [])
         for api_stage in api_stages:
             if api_stage.get('stage') == stage:
-                usage_plan_id = item.get('id')
-    if not usage_plan_id:
-        return False
+                usage_plan_ids.append(item.get('id'))
 
-    usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
-    for item in usage_plan_keys.get('items', []):
-        key = item.get('value')
+    for usage_plan_id in usage_plan_ids:
+        usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
+        for key in usage_plan_keys.get('items', []):
+            if key.get('value') == api_key:
+                return True
 
-    if key != api_key:
-        return False
-
-    return True
+    return False
 
 
 def is_api_key_valid(is_api_key_required, headers, stage):
@@ -290,15 +300,15 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
         resource_path, context={}, resource_id=None, response_templates={}):
 
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
-    integration_type = integration.get('type') or integration.get('integrationType')
-    uri = integration.get('uri') or integration.get('integrationUri')
+    integration_type_orig = integration.get('type') or integration.get('integrationType') or ''
+    integration_type = integration_type_orig.upper()
+    uri = integration.get('uri') or integration.get('integrationUri') or ''
 
     if (uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri) or uri.startswith('arn:aws:lambda'):
         if integration_type in ['AWS', 'AWS_PROXY']:
             func_arn = uri
             if ':lambda:path' in uri:
                 func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
-            data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
 
             try:
                 path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
@@ -306,18 +316,23 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                 path_params = {}
 
             # apply custom request template
-            data_str = apply_template(integration, 'request', data_str, path_params=path_params,
-                query_params=query_string_params, headers=headers)
+            data_str = data
+            try:
+                data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
+                data_str = apply_template(integration, 'request', data_str, path_params=path_params,
+                    query_params=query_string_params, headers=headers)
+            except Exception:
+                pass
 
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
             request_context = get_lambda_event_request_context(method, path, data, headers,
-                integration_uri=uri, resource_id=resource_id)
+                integration_uri=uri, resource_id=resource_id, resource_path=resource_path)
             stage_variables = get_stage_variables(api_id, stage)
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                 stage, api_id, headers, path_params=path_params, query_string_params=query_string_params,
-                method=method, resource_path=path, request_context=request_context,
+                method=method, resource_path=resource_path, request_context=request_context,
                 event_context=context, stage_variables=stage_variables)
 
             if isinstance(result, FlaskResponse):
@@ -349,12 +364,15 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
 
             return response
 
-        msg = 'API Gateway AWS integration action URI "%s", method "%s" not yet implemented' % (uri, method)
+        msg = 'API Gateway %s integration action "%s", method "%s" not yet implemented' % (
+            integration_type, uri, method)
         LOGGER.warning(msg)
         return make_error_response(msg, 404)
 
     elif integration_type == 'AWS':
         if 'kinesis:action/' in uri:
+            if uri.endswith('kinesis:action/PutRecord'):
+                target = kinesis_listener.ACTION_PUT_RECORD
             if uri.endswith('kinesis:action/PutRecords'):
                 target = kinesis_listener.ACTION_PUT_RECORDS
             if uri.endswith('kinesis:action/ListStreams'):
@@ -374,6 +392,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             if uri.endswith('states:action/StartExecution'):
                 action = 'StartExecution'
             decoded_data = data.decode()
+            payload = {}
             if 'stateMachineArn' in decoded_data and 'input' in decoded_data:
                 payload = json.loads(decoded_data)
             elif APPLICATION_JSON in integration.get('requestTemplates', {}):
@@ -391,6 +410,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                 },
                 headers=aws_stack.mock_aws_request_headers()
             )
+            response.headers['content-type'] = APPLICATION_JSON
             return response
 
         if method == 'POST':
@@ -481,16 +501,22 @@ def get_stage_variables(api_id, stage):
     return response.get('variables', None)
 
 
-def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
-    _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
+def get_lambda_event_request_context(method, path, data, headers,
+                                     integration_uri=None, resource_id=None, resource_path=None):
+    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
     relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
     source_ip = headers.get('X-Forwarded-For', ',').split(',')[-2].strip()
     integration_uri = integration_uri or ''
     account_id = integration_uri.split(':lambda:path')[-1].split(':function:')[0].split(':')[-1]
+    domain_name = f'{api_id}.execute-api.{LOCALHOST_HOSTNAME}'
     request_context = {
         # adding stage to the request context path.
         # https://github.com/localstack/localstack/issues/2210
         'path': '/' + stage + relative_path,
+        'resourcePath': resource_path or relative_path,
+        'apiId': api_id,
+        'domainPrefix': api_id,
+        'domainName': domain_name,
         'accountId': account_id,
         'resourceId': resource_id,
         'stage': stage,

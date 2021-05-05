@@ -106,3 +106,19 @@ class SSMTest(unittest.TestCase):
 
         response = ssm_client.get_parameters(Names=[search_name])
         do_assert(response['Parameters'])
+
+    def test_get_parameters_by_path_and_filter_by_labels(self):
+        ssm_client = aws_stack.connect_to_service('ssm')
+        path = '/my/path'
+        value = 'value'
+        param = ssm_client.put_parameter(Name=path, Value=value, Type='String')
+        ssm_client.label_parameter_version(Name=path, ParameterVersion=param['Version'], Labels=['latest'])
+        list_of_params = ssm_client.get_parameters_by_path(Path='/my',
+            ParameterFilters=[
+                {
+                    'Key': 'Label',
+                    'Values': ['latest']
+                }
+            ]
+        )
+        self.assertEquals(list_of_params['Parameters'][0]['Name'], '/my/path')

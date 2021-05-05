@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/localstack/localstack.svg)](https://travis-ci.org/localstack/localstack) [![Backers on Open Collective](https://opencollective.com/localstack/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/localstack/sponsors/badge.svg)](#sponsors) [![Coverage Status](https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master)](https://coveralls.io/github/localstack/localstack?branch=master)
+[![CircleCI](https://circleci.com/gh/localstack/localstack.svg?style=svg)](https://circleci.com/gh/localstack/localstack) [![Backers on Open Collective](https://opencollective.com/localstack/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/localstack/sponsors/badge.svg)](#sponsors) [![Coverage Status](https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master)](https://coveralls.io/github/localstack/localstack?branch=master)
 [![Gitter](https://img.shields.io/gitter/room/localstack/Platform.svg)](https://gitter.im/localstack/Platform)
 [![PyPI Version](https://badge.fury.io/py/localstack.svg)](https://badge.fury.io/py/localstack)
 [![PyPI License](https://img.shields.io/pypi/l/localstack.svg)](https://img.shields.io/pypi/l/localstack.svg)
@@ -15,6 +15,7 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 
 # Announcements
 
+* **2021-04-24**: **We're hiring!** - If you love what we're doing at LocalStack, check out our [jobs board](https://localstack.cloud/jobs) and shoot us an email with your CV/background/portfolio. We look forward to hearing from you!
 * **2020-12-28**: Check out the LocalStack Pro **feature roadmap** here: https://roadmap.localstack.cloud - please help us prioritize our backlog by creating and upvoting feature requests. Looking forward to getting your feedback!
 * **2020-09-15**: A major (breaking) change has been merged in PR #2905 - starting with releases after `v0.11.5`, all services are now exposed via the edge service (port 4566) only! Please update your client configurations to use this new endpoint.
 * **2019-10-09**: **LocalStack Pro is out!** We're incredibly excited to announce the launch of LocalStack Pro - the enterprise version of LocalStack with additional APIs and advanced features. Check out the free trial at https://localstack.cloud
@@ -64,13 +65,17 @@ accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
 * **Amplify**
 * **API Gateway V2 (WebSockets support)**
+* **Application AutoScaling**
 * **AppSync**
 * **Athena**
+* **Batch**
 * **CloudFront**
 * **CloudTrail**
 * **Cognito**
+* **CostExplorer**
 * **ECS/ECR/EKS**
 * **ElastiCache**
+* **ELB/ELBv2**
 * **EMR**
 * **Glacier** / **S3 Select**
 * **IAM Security Policy Enforcement**
@@ -90,30 +95,9 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Test report dashboards**
 * ...and much, much more to come! (Check out our **feature roadmap** here: https://roadmap.localstack.cloud)
 
-## Why LocalStack?
-
-LocalStack builds on existing best-of-breed mocking/testing tools, notably
-[kinesalite](https://github.com/mhart/kinesalite)/[dynalite](https://github.com/mhart/dynalite)
-and [moto](https://github.com/spulec/moto), [ElasticMQ](https://github.com/softwaremill/elasticmq),
-and others. While these tools are *awesome* (!), they lack functionality for certain use cases.
-LocalStack combines the tools, makes them interoperable, and adds important missing functionality
-on top of them:
-
-* **Error injection:** LocalStack allows to inject errors frequently occurring in real Cloud environments,
-  for instance `ProvisionedThroughputExceededException` which is thrown by Kinesis or DynamoDB if the amount of
-  read/write throughput is exceeded.
-* **Isolated processes**: Services in LocalStack can be run in separate processes.
-  In moto, components are often hard-wired in memory (e.g., when forwarding a message on an SNS topic to an
-  SQS queue, the queue endpoint is looked up in a local hash map). In contrast, LocalStack services live in
-  isolation (separate processes/threads communicating via HTTP), which fosters true decoupling and more closely
-  resembles the real cloud environment.
-* **Pluggable services**: All services in LocalStack are easily pluggable (and replaceable), due to the fact that
-  we are using isolated processes for each service. This allows us to keep the framework up-to-date and select
-  best-of-breed mocks for each individual service.
-
 ## Requirements
 
-* `python` (both Python 2.x and 3.x supported)
+* `python` (Python 2.x up to 3.8 supported)
 * `pip` (python package manager)
 * `Docker`
 
@@ -129,7 +113,7 @@ pip install localstack
 should be installed and started entirely under a local non-root user. If you have problems
 with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
-## Running in Docker
+## Running
 
 By default, LocalStack gets started inside a Docker container using this command:
 
@@ -145,6 +129,16 @@ localstack start
 **Note**: By default, LocalStack uses the image tagged `latest` that is cached on your machine, and will **not** pull the latest image automatically from Docker Hub (i.e., the image needs to be pulled manually if needed).
 
 (**Note**: Although it is strongly recommended to use Docker, the infrastructure can also be spun up directly on the host machine using the `--host` startup flag. Note that this will require [additional dependencies](#Developing), and is not supported on some operating systems, including Windows.)
+
+### Using `docker`
+
+You can also use docker directly and use the following command to get started with localstack
+
+```
+docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack
+```
+
+to run a throw-away container without any external volumes. To start a subset of services use `-e "SERVICES=dynamodb,s3"`.
 
 ### Using `docker-compose`
 
@@ -187,6 +181,7 @@ You can pass the following environment variables to LocalStack:
   started in different containers using docker-compose.
 * `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (default: `localhost`).
   This host is used, e.g., when returning queue URLs from the SQS service to the client.
+* `HOSTNAME_FROM_LAMBDA`: Endpoint host under which APIs are accessible from Lambda containers (optional). This can be useful in docker-compose stacks to use the local container hostname (e.g., `HOSTNAME_FROM_LAMBDA=localstack`) if neither IP address nor container name of the main container are available (e.g., in CI). Often used in combination with `LAMBDA_DOCKER_NETWORK`.
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.
@@ -225,7 +220,8 @@ You can pass the following environment variables to LocalStack:
   Kinesis, DynamoDB, Elasticsearch, S3, Secretsmanager, SSM, SQS, SNS). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
-* `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`). Note that the Web UI is now deprecated, and requires to use the `localstack/localstack-full` Docker image.
+* `PERSISTENCE_SINGLE_FILE`: Specify if persistence files should be combined.  (default: `true`).
+* `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`). Note that the Web UI is now deprecated (needs to be activated with `START_WEB=1`), and requires to use the `localstack/localstack-full` Docker image.
 * `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
   `KINESIS`, `S3`, `SNS`, `SQS`). This allows to easily integrate third-party services into LocalStack.
@@ -233,15 +229,16 @@ You can pass the following environment variables to LocalStack:
 * `DOCKER_FLAGS`: Allows to pass custom flags (e.g., volume mounts) to "docker run" when running LocalStack in Docker.
 * `DOCKER_CMD`: Shell command used to run Docker containers, e.g., set to `"sudo docker"` to run as sudo (default: `docker`).
 * `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
-* `START_WEB`: Flag to control whether the Web UI should be started in Docker (values: `0`/`1`; default: `1`).
+* `START_WEB`: Flag to control whether the Web UI should be started in Docker (default: `false`; deprecated).
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
+* `LAMBDA_FORWARD_URL`: URL used to forward all Lambda invocations (useful to run Lambdas via an external service).
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
 * `LAMBDA_JAVA_OPTS`: Allow passing custom JVM options (e.g., `-Xmx512M`) to Java Lambdas executed in Docker. Use `_debug_port_` placeholder to configure the debug port (e.g., `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_`).
 * `MAIN_CONTAINER_NAME`: Specify the main docker container name (default: `localstack_main`).
 * `INIT_SCRIPTS_PATH`: Specify the path to the initializing files with extensions .sh that are found default in `/docker-entrypoint-initaws.d`.
 * `DEBUG`: For troubleshooting LocalStack start issues
-* `LS_LOG`: Specify the log level('debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration.
+* `LS_LOG`: Specify the log level('trace', 'debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration. Enable `LS_LOG=trace` to print detailed request/response messages.
 
 The following environment configurations are *deprecated*:
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.
@@ -257,6 +254,15 @@ An example passing the above environment variables to LocalStack to start Kinesi
 
 ```
 SERVICES=kinesis,lambda,sqs,dynamodb localstack start
+```
+
+### Verifying your docker-compose configuration using the command line
+
+You can use the `localstack config validate` command to check for common mis-configurations.
+
+By default it validates `docker-compose.yml`, the target file can be specified using the `--file` argument, e.g.,:
+```
+localstack config validate --file=localstack-docker-compose.yml
 ```
 
 ### Dynamically updating configuration at runtime
@@ -500,7 +506,6 @@ builder.withPathStyleAccessEnabled(true);
 
 * If you run into file permission issues on `pip install` under Mac OS (e.g., `Permission denied: '/Library/Python/2.7/site-packages/six.py'`), then you may have to re-install `pip` via Homebrew (see [this discussion thread](https://github.com/localstack/localstack/issues/260#issuecomment-334458631)). Alternatively, try installing
 with the `--user` flag: `pip install --user localstack`
-
 
 * If you are deploying within OpenShift, please be aware: the pod must run as `root`, and the user must have capabilities added to the running pod, in order to allow Elasticsearch to be run as the non-root `localstack` user.
 
