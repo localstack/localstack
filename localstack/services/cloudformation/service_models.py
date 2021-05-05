@@ -9,6 +9,7 @@ from moto.iam.models import Role as MotoRole
 from moto.core.models import CloudFormationModel
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
+from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     camel_to_snake_case, select_attributes, canonical_json, md5, is_base64,
@@ -206,6 +207,46 @@ class EventsRule(GenericBaseModel):
         rule_name = self.resolve_refs_recursively(stack_name, self.props.get('Name'), resources)
         result = aws_stack.connect_to_service('events').describe_rule(Name=rule_name) or {}
         return result if result.get('Name') else None
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def events_put_rule_params(params, **kwargs):
+            attrs = ['ScheduleExpression', 'EventPattern', 'State', 'Description', 'Name', 'EventBusName']
+            result = select_parameters(*attrs)(params, **kwargs)
+            result['Name'] = result.get('Name') or PLACEHOLDER_RESOURCE_NAME
+
+            def wrap_in_lists(o, **kwargs):
+                if isinstance(o, dict):
+                    for k, v in o.items():
+                        if not isinstance(v, (dict, list)):
+                            o[k] = [v]
+                return o
+
+            pattern = result.get('EventPattern')
+            if isinstance(pattern, dict):
+                wrapped = common.recurse_object(pattern, wrap_in_lists)
+                result['EventPattern'] = json.dumps(wrapped)
+            return result
+
+        return {
+            'create': [{
+                'function': 'put_rule',
+                'parameters': events_put_rule_params
+            }, {
+                'function': 'put_targets',
+                'parameters': {
+                    'Rule': PLACEHOLDER_RESOURCE_NAME,
+                    'EventBusName': 'EventBusName',
+                    'Targets': 'Targets'
+                }
+            }],
+            'delete': {
+                'function': 'delete_rule',
+                'parameters': {
+                    'Name': 'PhysicalResourceId'
+                }
+            }
+        }
 
 
 class EventBus(GenericBaseModel):
