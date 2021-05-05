@@ -1009,6 +1009,20 @@ def get_lambda_policy(function, qualifier=None):
     return (policy or [None])[0]
 
 
+def lookup_function(function, region, request_url):
+    result = {
+        'Configuration': function,
+        'Code': {
+            'Location': '%s/code' % request_url
+        },
+        'Tags': function['Tags']
+    }
+    lambda_details = region.lambdas.get(function['FunctionArn'])
+    if lambda_details.concurrency is not None:
+        result['Concurrency'] = lambda_details.concurrency
+    return jsonify(result)
+
+
 def not_found_error(ref=None, msg=None):
     if not msg:
         msg = 'The resource you requested does not exist.'
@@ -1103,18 +1117,10 @@ def get_function(function):
     region = LambdaRegion.get()
     funcs = do_list_functions()
     for func in funcs:
-        if func['FunctionName'] == function:
-            result = {
-                'Configuration': func,
-                'Code': {
-                    'Location': '%s/code' % request.url
-                },
-                'Tags': func['Tags']
-            }
-            lambda_details = region.lambdas.get(func['FunctionArn'])
-            if lambda_details.concurrency is not None:
-                result['Concurrency'] = lambda_details.concurrency
-            return jsonify(result)
+        if function == func['FunctionName']:
+            return lookup_function(func, region, request.url)
+        elif function in func['FunctionArn']:
+            return lookup_function(func, region, request.url)
     return not_found_error(func_arn(function))
 
 
