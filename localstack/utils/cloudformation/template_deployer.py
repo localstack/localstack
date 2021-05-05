@@ -85,12 +85,6 @@ def es_add_tags_params(params, **kwargs):
     return {'ARN': es_arn, 'TagList': tags}
 
 
-def lambda_permission_params(params, **kwargs):
-    result = select_parameters('FunctionName', 'Action', 'Principal')(params, **kwargs)
-    result['StatementId'] = common.short_uid()
-    return result
-
-
 def get_ddb_provisioned_throughput(params, **kwargs):
     args = params.get('ProvisionedThroughput')
     if args == PLACEHOLDER_AWS_NO_VALUE:
@@ -189,12 +183,6 @@ RESOURCE_TO_FUNCTION = {
         'create': {
             'function': 'publish_version',
             'parameters': select_parameters('FunctionName', 'CodeSha256', 'Description')
-        }
-    },
-    'Lambda::Permission': {
-        'create': {
-            'function': 'add_permission',
-            'parameters': lambda_permission_params
         }
     },
     'Lambda::EventSourceMapping': {
