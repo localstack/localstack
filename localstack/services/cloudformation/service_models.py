@@ -775,13 +775,10 @@ class GatewayMethod(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        try:
-            api_id = self.resolve_refs_recursively(stack_name, props['RestApiId'], resources)
-            res_id = self.resolve_refs_recursively(stack_name, props['ResourceId'], resources)
-            if not api_id or not res_id:
-                return None
 
-        except DependencyNotYetSatisfied:
+        api_id = self.resolve_refs_recursively(stack_name, props['RestApiId'], resources)
+        res_id = self.resolve_refs_recursively(stack_name, props['ResourceId'], resources)
+        if not api_id or not res_id:
             return None
 
         res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
