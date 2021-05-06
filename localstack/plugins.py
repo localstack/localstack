@@ -49,6 +49,7 @@ def do_register_localstack_plugins():
         from localstack.services.kms import kms_starter
         from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.redshift import redshift_starter
+        from localstack.services.resourcegroupstaggingapi import rgta_starter, rgta_listener
         from localstack.services.route53 import route53_listener, route53_starter
         from localstack.services.s3 import s3_listener, s3_starter
         from localstack.services.secretsmanager import secretsmanager_listener, secretsmanager_starter
@@ -58,7 +59,6 @@ def do_register_localstack_plugins():
         from localstack.services.ssm import ssm_listener
         from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
         from localstack.services.sts import sts_starter, sts_listener
-        from localstack.services.resourcegroupstaggingapi import rgsa_starter, rgsa_listener
         from localstack.services.support import support_starter
         from localstack.services.swf import swf_starter, swf_listener
 
@@ -203,8 +203,8 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin(
             'resourcegroupstaggingapi',
-            start=rgsa_starter.start_rgsa,
-            listener=rgsa_listener.UPDATE_RGSA))
+            start=rgta_starter.start_rgsa,
+            listener=rgta_listener.UPDATE_RGSA))
 
         register_plugin(Plugin(
             'support',
