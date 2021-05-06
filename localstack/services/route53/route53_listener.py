@@ -12,6 +12,8 @@ class Route53Backend(RegionBackend):
     def __init__(self):
         # maps zone ID to association details
         self.vpc_hosted_zone_associations = {}
+        # maps delegation set ID to reusable delegation set details
+        self.reusable_delegation_sets = {}
 
 
 class ProxyListenerRoute53(PersistingProxyListener):
