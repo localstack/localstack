@@ -1315,20 +1315,25 @@ def generate_policy(sid, action, arn, sourcearn, principal):
 
 @app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['POST'])
 def add_permission(function):
-    region = LambdaRegion.get()
+    arn = func_arn(function)
+    qualifier = request.args.get('Qualifier')
+    q_arn = func_qualifier(function, qualifier)
+    result = add_permission_policy_statement(function, arn, q_arn)
+    return result
 
+
+def add_permission_policy_statement(resource_name, resource_arn, resource_arn_qualified):
+    region = LambdaRegion.get()
     data = json.loads(to_str(request.data))
     iam_client = aws_stack.connect_to_service('iam')
     sid = data.get('StatementId')
     action = data.get('Action')
     principal = data.get('Principal')
     sourcearn = data.get('SourceArn')
-    qualifier = request.args.get('Qualifier')
-    arn = func_arn(function)
-    previous_policy = get_lambda_policy(function)
+    previous_policy = get_lambda_policy(resource_name)
 
-    if arn not in region.lambdas:
-        return not_found_error(func_arn(function))
+    if resource_arn not in region.lambdas:
+        return not_found_error(resource_arn)
 
     if not re.match(r'lambda:[*]|lambda:[a-zA-Z]+|[*]', action):
         return error_response('1 validation error detected: Value "%s" at "action" failed to satisfy '
@@ -1336,21 +1341,23 @@ def add_permission(function):
                               '(lambda:[*]|lambda:[a-zA-Z]+|[*])' % action,
                               400, error_type='ValidationException')
 
-    q_arn = func_qualifier(function, qualifier)
-    new_policy = generate_policy(sid, action, q_arn, sourcearn, principal)
+    new_policy = generate_policy(sid, action, resource_arn_qualified, sourcearn, principal)
 
     if previous_policy:
         statment_with_sid = next((statement for statement in previous_policy['Statement'] if statement['Sid'] == sid),
             None)
         if statment_with_sid:
-            return error_response('The statement id (%s) provided already exists. Please provide a new statement id,'
-                        ' or remove the existing statement.' % sid, 400, error_type='ResourceConflictException')
+            msg = ('The statement id (%s) provided already exists. Please provide a new statement id, '
+                   'or remove the existing statement.') % sid
+            return error_response(msg, 400, error_type='ResourceConflictException')
 
         new_policy['Statement'].extend(previous_policy['Statement'])
         iam_client.delete_policy(PolicyArn=previous_policy['PolicyArn'])
 
-    iam_client.create_policy(PolicyName=LAMBDA_POLICY_NAME_PATTERN % function,
-        PolicyDocument=json.dumps(new_policy), Description='Policy for Lambda function "%s"' % function)
+    policy_name = LAMBDA_POLICY_NAME_PATTERN % resource_name
+    LOG.debug('Creating IAM policy "%s" for Lambda resource %s' % (policy_name, resource_arn))
+    iam_client.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(new_policy),
+        Description='Policy for Lambda function "%s"' % resource_name)
 
     result = {'Statement': json.dumps(new_policy['Statement'][0])}
     return jsonify(result)

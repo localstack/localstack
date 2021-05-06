@@ -263,6 +263,8 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = 'web', config.PORT_WEB_UI
     elif result[0] == 'EventBridge' or target.startswith('AWSEvents'):
         result = 'events', config.PORT_EVENTS
+    elif target.startswith('ResourceGroupsTaggingAPI_'):
+        result = 'resourcegroupstaggingapi', config.PORT_RESOURCEGROUPSTAGGINGAPI
 
     return result[0], result_before[1] or result[1], path, host
 

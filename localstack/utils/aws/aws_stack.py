@@ -3,6 +3,7 @@ import re
 import json
 import time
 import boto3
+import socket
 import logging
 import six
 import botocore
@@ -50,6 +51,9 @@ SQS_ARN_TO_URL_CACHE = {}
 
 # List of parameters with additional event target parameters
 EVENT_TARGET_PARAMETERS = ['$.SqsParameters', '$.KinesisParameters']
+
+# cached value used to determine the DNS status of the S3 hostname (whether it can be resolved properly)
+CACHE_S3_HOSTNAME_DNS_STATUS = None
 
 
 class Environment(object):
@@ -247,10 +251,10 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
             if backend_url:
                 endpoint_url = backend_url
         config = config or botocore.client.Config()
-        # configure S3 path style addressing
+        # configure S3 path/host style addressing
         if service_name == 's3':
             if re.match(r'https?://localhost(:[0-9]+)?', endpoint_url):
-                endpoint_url = endpoint_url.replace('://localhost', '://%s' % S3_VIRTUAL_HOSTNAME)
+                endpoint_url = endpoint_url.replace('://localhost', '://%s' % get_s3_hostname())
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         config.max_pool_connections = MAX_POOL_CONNECTIONS
@@ -261,6 +265,19 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         BOTO_CLIENTS_CACHE[cache_key] = result
 
     return BOTO_CLIENTS_CACHE[cache_key]
+
+
+def get_s3_hostname():
+    global CACHE_S3_HOSTNAME_DNS_STATUS
+    if CACHE_S3_HOSTNAME_DNS_STATUS is None:
+        try:
+            assert socket.gethostbyname(S3_VIRTUAL_HOSTNAME)
+            CACHE_S3_HOSTNAME_DNS_STATUS = True
+        except socket.error:
+            CACHE_S3_HOSTNAME_DNS_STATUS = False
+    if CACHE_S3_HOSTNAME_DNS_STATUS:
+        return S3_VIRTUAL_HOSTNAME
+    return LOCALHOST
 
 
 # TODO remove from here in the future

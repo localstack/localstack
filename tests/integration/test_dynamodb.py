@@ -833,6 +833,33 @@ class TestDynamoDB(unittest.TestCase):
         dynamodb = aws_stack.connect_to_service('dynamodb')
         dynamodb.delete_table(TableName=table_name)
 
+    def test_dynamodb_batch_write_item(self):
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        table_name = 'ddb-table-%s' % short_uid()
+
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{
+                'AttributeName': 'id', 'KeyType': 'HASH'
+            }],
+            AttributeDefinitions=[{
+                'AttributeName': 'id', 'AttributeType': 'S'
+            }],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+            Tags=TEST_DDB_TAGS
+        )
+
+        result = dynamodb.batch_write_item(RequestItems={table_name: [
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'Test1'}}}},
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'Test2'}}}},
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'Test3'}}}},
+
+        ]})
+
+        self.assertEqual(result.get('UnprocessedItems'), {})
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.connect_to_service('dynamodb')

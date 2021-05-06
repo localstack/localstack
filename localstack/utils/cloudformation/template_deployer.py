@@ -60,35 +60,10 @@ def rename_params(func, rename_map):
     return do_rename
 
 
-def events_put_rule_params(params, **kwargs):
-    attrs = ['ScheduleExpression', 'EventPattern', 'State', 'Description', 'Name']
-    result = select_parameters(*attrs)(params, **kwargs)
-    result['Name'] = result.get('Name') or PLACEHOLDER_RESOURCE_NAME
-
-    def wrap_in_lists(o, **kwargs):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if not isinstance(v, (dict, list)):
-                    o[k] = [v]
-        return o
-
-    pattern = result.get('EventPattern')
-    if isinstance(pattern, dict):
-        wrapped = common.recurse_object(pattern, wrap_in_lists)
-        result['EventPattern'] = json.dumps(wrapped)
-    return result
-
-
 def es_add_tags_params(params, **kwargs):
     es_arn = aws_stack.es_domain_arn(params.get('DomainName'))
     tags = params.get('Tags', [])
     return {'ARN': es_arn, 'TagList': tags}
-
-
-def lambda_permission_params(params, **kwargs):
-    result = select_parameters('FunctionName', 'Action', 'Principal')(params, **kwargs)
-    result['StatementId'] = common.short_uid()
-    return result
 
 
 def get_ddb_provisioned_throughput(params, **kwargs):
@@ -171,30 +146,10 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
-    'Logs::LogGroup': {
-        'create': {
-            'function': 'create_log_group',
-            'parameters': {
-                'logGroupName': 'LogGroupName'
-            }
-        },
-        'delete': {
-            'function': 'delete_log_group',
-            'parameters': {
-                'logGroupName': 'LogGroupName'
-            }
-        }
-    },
     'Lambda::Version': {
         'create': {
             'function': 'publish_version',
             'parameters': select_parameters('FunctionName', 'CodeSha256', 'Description')
-        }
-    },
-    'Lambda::Permission': {
-        'create': {
-            'function': 'add_permission',
-            'parameters': lambda_permission_params
         }
     },
     'Lambda::EventSourceMapping': {
@@ -242,25 +197,6 @@ RESOURCE_TO_FUNCTION = {
             'function': 'delete_event_bus',
             'parameters': {
                 'Name': 'Name'
-            }
-        }
-    },
-    'Events::Rule': {
-        'create': [{
-            'function': 'put_rule',
-            'parameters': events_put_rule_params
-        }, {
-            'function': 'put_targets',
-            'parameters': {
-                'Rule': PLACEHOLDER_RESOURCE_NAME,
-                'EventBusName': 'EventBusName',
-                'Targets': 'Targets'
-            }
-        }],
-        'delete': {
-            'function': 'delete_rule',
-            'parameters': {
-                'Name': 'PhysicalResourceId'
             }
         }
     },
