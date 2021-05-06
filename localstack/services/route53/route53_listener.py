@@ -107,6 +107,9 @@ class ProxyListenerRoute53(PersistingProxyListener):
             response = requests_response(body)
             return response
 
+        if '/delegationset' in path:
+            pass
+
 
 # instantiate listener
 UPDATE_ROUTE53 = ProxyListenerRoute53()

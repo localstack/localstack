@@ -316,8 +316,8 @@ class LogsSubscriptionFilter(GenericBaseModel):
         group_name = self.resolve_refs_recursively(stack_name, props.get('LogGroupName'), resources)
         filter_pattern = self.resolve_refs_recursively(stack_name, props.get('FilterPattern'), resources)
         logs = aws_stack.connect_to_service('logs')
-        groups = logs.describe_subscription_filters(logGroupName=group_name)
-        groups = [g for g in groups['subscriptionFilters'] if g.get('filterPattern') == filter_pattern]
+        groups = logs.describe_subscription_filters(logGroupName=group_name)['subscriptionFilters']
+        groups = [g for g in groups if g.get('filterPattern') == filter_pattern]
         return (groups or [None])[0]
 
     @staticmethod
