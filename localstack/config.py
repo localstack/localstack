@@ -228,7 +228,8 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'WINDOWS_DOCKER_MOUNT_PREFIX', 'HOSTNAME_FROM_LAMBDA', 'LOG_LICENSE_ISSUES',
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
-                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS', 'PERSISTENCE_SINGLE_FILE']
+                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS', 'PERSISTENCE_SINGLE_FILE',
+                   'S3_SKIP_SIGNATURE_VALIDATION']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -441,3 +442,5 @@ if LS_LOG == 'trace':
     load_end_time = time.time()
     LOG = logging.getLogger(__name__)
     LOG.debug('Initializing the configuration took %s ms' % int((load_end_time - load_start_time) * 1000))
+
+S3_SKIP_SIGNATURE_VALIDATION = os.environ.get('S3_SKIP_SIGNATURE_VALIDATION', '0')

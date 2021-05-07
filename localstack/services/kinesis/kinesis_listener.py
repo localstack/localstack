@@ -184,13 +184,18 @@ class ProxyListenerKinesis(ProxyListener):
                     # https://github.com/localstack/localstack/issues/3588
                     tmp = bytearray(record['Data']['data'])
                     if len(tmp) >= 2 and tmp[0] == tmp[-1] == b'"'[0]:
-                        record['Data'] = tmp[1:-1]
+                        tmp = tmp[1:-1]
+
+                    if encoding_type == APPLICATION_JSON:
+                        record['Data'] = to_str(base64.b64encode(tmp))
+                    else:
+                        record['Data'] = to_str(tmp)
+
                 else:
                     tmp = base64.b64decode(record['Data'])
                     if len(tmp) >= 2 and tmp[0] == tmp[-1] == b'"'[0]:
                         tmp = tmp[1:-1]
-
-                record['Data'] = to_str(base64.b64encode(tmp))
+                    record['Data'] = to_str(base64.b64encode(tmp))
 
             response._content = cbor2.dumps(results) if encoding_type == APPLICATION_CBOR else json.dumps(results)
             return response
