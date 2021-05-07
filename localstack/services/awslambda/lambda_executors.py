@@ -55,6 +55,9 @@ DOCKER_MAIN_CONTAINER_IP = None
 # maps lambda arns to concurrency locks
 LAMBDA_CONCURRENCY_LOCK = {}
 
+# CWD folder of handler code in Lambda containers
+DOCKER_TASK_FOLDER = '/var/task'
+
 
 class InvocationException(Exception):
     def __init__(self, message, log_output, result=None):
@@ -295,7 +298,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # custom command to execute in the container
         command = ''
-        events_file = ''
+        events_file_path = ''
 
         if config.LAMBDA_JAVA_OPTS and is_java_lambda(runtime):
             # if running a Java Lambda with our custom executor, set up classpath arguments
@@ -306,12 +309,13 @@ class LambdaExecutorContainers(LambdaExecutor):
             if not os.path.exists(target_file):
                 cp_r(LAMBDA_EXECUTOR_JAR, target_file)
             # TODO cleanup once we have custom Java Docker image
-            taskdir = '/var/task'
             events_file = '_lambda.events.%s.json' % short_uid()
-            save_file(os.path.join(lambda_cwd, events_file), event_body)
+            events_file_path = os.path.join(lambda_cwd, events_file)
+            save_file(events_file_path, event_body)
+            # construct Java command
             classpath = Util.get_java_classpath(target_file)
             command = ("bash -c 'cd %s; java %s -cp \"%s\" \"%s\" \"%s\" \"%s\"'" %
-                (taskdir, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, events_file))
+                (DOCKER_TASK_FOLDER, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, events_file))
 
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):
@@ -320,12 +324,17 @@ class LambdaExecutorContainers(LambdaExecutor):
         # determine the command to be executed (implemented by subclasses)
         cmd = self.prepare_execution(func_details, environment, command)
 
+        # copy events file into container, if necessary
+        if events_file_path:
+            container_name = self.get_container_name(func_details.arn())
+            self.copy_into_container(events_file_path, container_name, DOCKER_TASK_FOLDER)
+
         # run Lambda executor and fetch invocation result
         LOG.info('Running lambda cmd: %s' % cmd)
         result = self.run_lambda_executor(cmd, stdin, env_vars=environment, func_details=func_details)
 
         # clean up events file
-        events_file and os.path.exists(events_file) and rm_rf(events_file)
+        events_file_path and os.path.exists(events_file_path) and rm_rf(events_file_path)
 
         return result
 
@@ -376,7 +385,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         docker_cmd = self._docker_cmd()
         if not has_been_invoked_before and config.LAMBDA_REMOTE_DOCKER:
             # if this is the first invocation: copy the entire folder into the container
-            copy_command = '%s cp "%s/." "%s:/var/task";' % (docker_cmd, lambda_cwd, container_info.name)
+            copy_command = '%s cp "%s/." "%s:%s";' % (docker_cmd,
+                lambda_cwd, container_info.name, DOCKER_TASK_FOLDER)
 
         cmd = (
             '%s'
@@ -447,7 +457,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
                 if (':' in lambda_cwd and '\\' in lambda_cwd):
                     lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
-                mount_volume_str = '-v "%s":/var/task' % lambda_cwd_on_host if mount_volume else ''
+                mount_volume_str = '-v "%s":%s' % (lambda_cwd_on_host, DOCKER_TASK_FOLDER) if mount_volume else ''
 
                 # Create and start the container
                 LOG.debug('Creating container: %s' % container_name)
@@ -473,12 +483,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
                 if not mount_volume:
                     LOG.debug('Copying files to container "%s" from "%s".' % (container_name, lambda_cwd))
-                    cmd = (
-                        '%s cp'
-                        ' "%s/." "%s:/var/task"'
-                    ) % (docker_cmd, lambda_cwd, container_name)
-                    LOG.debug(cmd)
-                    run(cmd)
+                    self.copy_into_container('%s/.' % lambda_cwd, container_name, DOCKER_TASK_FOLDER)
 
                 LOG.debug('Starting container: %s' % container_name)
                 cmd = '%s start %s' % (docker_cmd, container_name)
@@ -506,6 +511,11 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 % (entry_point, container_name, container_network))
 
             return ContainerInfo(container_name, entry_point)
+
+    def copy_into_container(self, local_path, container_name, container_path):
+        cmd = ('%s cp %s "%s:%s"') % (self._docker_cmd(), local_path, container_name, container_path)
+        LOG.debug(cmd)
+        run(cmd)
 
     def destroy_docker_container(self, func_arn):
         """
@@ -707,7 +717,8 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         rm_flag = Util.get_docker_remove_flag()
 
         if config.LAMBDA_REMOTE_DOCKER:
-            cp_cmd = '%s cp "%s/." "$CONTAINER_ID:/var/task";' % (docker_cmd, lambda_cwd) if lambda_cwd else ''
+            cp_cmd = ('%s cp "%s/." "$CONTAINER_ID:%s";' % (
+                docker_cmd, lambda_cwd, DOCKER_TASK_FOLDER)) if lambda_cwd else ''
             cmd = (
                 'CONTAINER_ID="$(%s create -i'
                 ' %s'  # entrypoint
@@ -728,7 +739,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         else:
             mount_flag = ''
             if lambda_cwd:
-                mount_flag = '-v "%s":/var/task' % Util.get_host_path_for_path_in_docker(lambda_cwd)
+                mount_flag = '-v "%s":%s' % (Util.get_host_path_for_path_in_docker(lambda_cwd), DOCKER_TASK_FOLDER)
             cmd = (
                 '%s run -i'
                 ' %s'
