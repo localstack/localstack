@@ -20,7 +20,7 @@ from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker, long_uid,
-    now, to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
+    now, to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port, rm_docker_container)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
 from localstack.utils.aws.dead_letter_queue import sqs_error_to_dead_letter_queue
@@ -335,6 +335,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # clean up events file
         events_file_path and os.path.exists(events_file_path) and rm_rf(events_file_path)
+        # TODO: delete events file from container!
 
         return result
 
@@ -541,10 +542,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
             if status == -1:
                 LOG.debug('Removing container: %s' % container_name)
-                cmd = '%s rm %s' % (docker_cmd, container_name)
-
-                LOG.debug(cmd)
-                run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+                rm_docker_container(container_name, safe=True)
 
     def get_all_container_names(self):
         """
