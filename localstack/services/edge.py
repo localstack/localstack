@@ -265,6 +265,8 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = 'events', config.PORT_EVENTS
     elif target.startswith('ResourceGroupsTaggingAPI_'):
         result = 'resourcegroupstaggingapi', config.PORT_RESOURCEGROUPSTAGGINGAPI
+    elif result[0] == 'resource-groups':
+        result = 'resource-groups', config.PORT_RESOURCE_GROUPS
 
     return result[0], result_before[1] or result[1], path, host
 
