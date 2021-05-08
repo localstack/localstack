@@ -464,6 +464,19 @@ def get_docker_image_names(strip_latest=True):
         return []
 
 
+def rm_docker_container(container_name_or_id, check_existence=False, safe=False):
+    if not container_name_or_id:
+        return
+    if check_existence and container_name_or_id not in get_docker_container_names():
+        # TODO: check names as well as container IDs!
+        return
+    try:
+        run('%s rm -f %s' % (config.DOCKER_CMD, container_name_or_id), print_error=False)
+    except Exception:
+        if not safe:
+            raise
+
+
 def path_from_url(url):
     return '/%s' % str(url).partition('://')[2].partition('/')[2] if '://' in url else url
 
