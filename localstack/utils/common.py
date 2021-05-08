@@ -321,7 +321,7 @@ class CaptureOutput(object):
         return proxy
 
     def _ident(self):
-        return threading.currentThread().ident
+        return threading.current_thread().ident
 
     def stdout(self):
         return self._stream_value(self._stdout)
