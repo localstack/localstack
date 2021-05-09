@@ -218,7 +218,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
     # prevent requests from processing response body (e.g., to pass-through gzip encoded content unmodified)
     pass_raw = ((hasattr(response, '_content_consumed') and not response._content_consumed) or
         response.headers.get('content-encoding') in ['gzip'])
-    if pass_raw and response.raw:
+    if pass_raw and getattr(response, 'raw', None):
         new_content = response.raw.read()
         if new_content:
             response._content = new_content
