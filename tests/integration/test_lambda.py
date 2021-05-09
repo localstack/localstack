@@ -133,13 +133,15 @@ class LambdaTestBase(unittest.TestCase):
         client = aws_stack.connect_to_service('lambda')
         client.create_function(**kwargs)
 
-        rs = client.get_function(
-            FunctionName=func_name
-        )
+        function_arn = 'arn:aws:lambda:us-east-1:000000000000:function:' + func_name
+        partial_function_arn = ':'.join(function_arn.split(':')[3:])
 
-        self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
-        self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
-        self.assertEqual(rs['Tags'], tags)
+        # Get function by Name, ARN and partial ARN
+        for func_ref in [func_name, function_arn, partial_function_arn]:
+            rs = client.get_function(FunctionName=func_ref)
+            self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
+            self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
+            self.assertEqual(rs['Tags'], tags)
 
         client.delete_function(FunctionName=func_name)
 

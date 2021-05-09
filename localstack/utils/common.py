@@ -321,7 +321,7 @@ class CaptureOutput(object):
         return proxy
 
     def _ident(self):
-        return threading.currentThread().ident
+        return threading.current_thread().ident
 
     def stdout(self):
         return self._stream_value(self._stdout)
@@ -462,6 +462,19 @@ def get_docker_image_names(strip_latest=True):
     except Exception as e:
         LOG.info('Unable to list Docker images via "%s": %s' % (cmd, e))
         return []
+
+
+def rm_docker_container(container_name_or_id, check_existence=False, safe=False):
+    if not container_name_or_id:
+        return
+    if check_existence and container_name_or_id not in get_docker_container_names():
+        # TODO: check names as well as container IDs!
+        return
+    try:
+        run('%s rm -f %s' % (config.DOCKER_CMD, container_name_or_id), print_error=False)
+    except Exception:
+        if not safe:
+            raise
 
 
 def path_from_url(url):
@@ -848,7 +861,7 @@ def download(url, path, verify_ssl=True):
         s.close()
 
 
-def parse_request_data(method, path, data, headers={}):
+def parse_request_data(method, path, data=None, headers={}):
     """ Extract request data either from query string (for GET) or request body (for POST). """
     result = {}
     headers = headers or {}

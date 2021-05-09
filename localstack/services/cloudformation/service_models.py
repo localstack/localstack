@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import logging
@@ -8,12 +9,17 @@ from moto.iam.models import Role as MotoRole
 from moto.core.models import CloudFormationModel
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
+from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import camel_to_snake_case, select_attributes, canonical_json, md5
+from localstack.utils.common import (
+    camel_to_snake_case, select_attributes, canonical_json, md5, is_base64,
+    new_tmp_dir, save_file, rm_rf, mkdir, cp_r, short_uid)
+from localstack.utils.testutil import create_zip_file
+from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower,
     merge_parameters, params_dict_to_list, select_parameters, params_select_attributes,
-    lambda_select_params)
+    lambda_select_params, get_cfn_response_mod_file)
 
 LOG = logging.getLogger(__name__)
 
@@ -202,6 +208,46 @@ class EventsRule(GenericBaseModel):
         result = aws_stack.connect_to_service('events').describe_rule(Name=rule_name) or {}
         return result if result.get('Name') else None
 
+    @classmethod
+    def get_deploy_templates(cls):
+        def events_put_rule_params(params, **kwargs):
+            attrs = ['ScheduleExpression', 'EventPattern', 'State', 'Description', 'Name', 'EventBusName']
+            result = select_parameters(*attrs)(params, **kwargs)
+            result['Name'] = result.get('Name') or PLACEHOLDER_RESOURCE_NAME
+
+            def wrap_in_lists(o, **kwargs):
+                if isinstance(o, dict):
+                    for k, v in o.items():
+                        if not isinstance(v, (dict, list)):
+                            o[k] = [v]
+                return o
+
+            pattern = result.get('EventPattern')
+            if isinstance(pattern, dict):
+                wrapped = common.recurse_object(pattern, wrap_in_lists)
+                result['EventPattern'] = json.dumps(wrapped)
+            return result
+
+        return {
+            'create': [{
+                'function': 'put_rule',
+                'parameters': events_put_rule_params
+            }, {
+                'function': 'put_targets',
+                'parameters': {
+                    'Rule': PLACEHOLDER_RESOURCE_NAME,
+                    'EventBusName': 'EventBusName',
+                    'Targets': 'Targets'
+                }
+            }],
+            'delete': {
+                'function': 'delete_rule',
+                'parameters': {
+                    'Name': 'PhysicalResourceId'
+                }
+            }
+        }
+
 
 class EventBus(GenericBaseModel):
     @staticmethod
@@ -238,6 +284,62 @@ class LogsLogGroup(GenericBaseModel):
         logs = aws_stack.connect_to_service('logs')
         groups = logs.describe_log_groups(logGroupNamePrefix=group_name)['logGroups']
         return ([g for g in groups if g['logGroupName'] == group_name] or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_log_group',
+                'parameters': {
+                    'logGroupName': 'LogGroupName'
+                }
+            },
+            'delete': {
+                'function': 'delete_log_group',
+                'parameters': {
+                    'logGroupName': 'LogGroupName'
+                }
+            }
+        }
+
+
+class LogsSubscriptionFilter(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Logs::SubscriptionFilter'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('LogGroupName')
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        group_name = self.resolve_refs_recursively(stack_name, props.get('LogGroupName'), resources)
+        filter_pattern = self.resolve_refs_recursively(stack_name, props.get('FilterPattern'), resources)
+        logs = aws_stack.connect_to_service('logs')
+        groups = logs.describe_subscription_filters(logGroupName=group_name)['subscriptionFilters']
+        groups = [g for g in groups if g.get('filterPattern') == filter_pattern]
+        return (groups or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'put_subscription_filter',
+                'parameters': {
+                    'logGroupName': 'LogGroupName',
+                    'filterName': 'LogGroupName',  # there can only be one filter associated with a log group
+                    'filterPattern': 'FilterPattern',
+                    'destinationArn': 'DestinationArn'
+                }
+            },
+            'delete': {
+                'function': 'delete_subscription_filter',
+                'parameters': {
+                    'logGroupName': 'LogGroupName',
+                    'filterName': 'LogGroupName'
+                }
+            }
+        }
 
 
 class CloudFormationStack(GenericBaseModel):
@@ -311,6 +413,63 @@ class LambdaFunction(GenericBaseModel):
             update_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
         return client.update_function_configuration(**update_props)
 
+    @staticmethod
+    def get_deploy_templates():
+        def get_lambda_code_param(params, **kwargs):
+            code = params.get('Code', {})
+            zip_file = code.get('ZipFile')
+            if zip_file and not is_base64(zip_file):
+                tmp_dir = new_tmp_dir()
+                handler_file = get_handler_file_from_name(params['Handler'], runtime=params['Runtime'])
+                tmp_file = os.path.join(tmp_dir, handler_file)
+                save_file(tmp_file, zip_file)
+
+                # add 'cfn-response' module to archive - see:
+                # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
+                cfn_response_tmp_file = get_cfn_response_mod_file()
+                cfn_response_mod_dir = os.path.join(tmp_dir, 'node_modules', 'cfn-response')
+                mkdir(cfn_response_mod_dir)
+                cp_r(cfn_response_tmp_file, os.path.join(cfn_response_mod_dir, 'index.js'))
+
+                # create zip file
+                zip_file = create_zip_file(tmp_dir, get_content=True)
+                code['ZipFile'] = zip_file
+                rm_rf(tmp_dir)
+            return code
+
+        def get_delete_params(params, **kwargs):
+            return {'FunctionName': params.get('FunctionName')}
+
+        return {
+            'create': {
+                'function': 'create_function',
+                'parameters': {
+                    'FunctionName': 'FunctionName',
+                    'Runtime': 'Runtime',
+                    'Role': 'Role',
+                    'Handler': 'Handler',
+                    'Code': get_lambda_code_param,
+                    'Description': 'Description',
+                    'Environment': 'Environment',
+                    'Timeout': 'Timeout',
+                    'MemorySize': 'MemorySize',
+                    'Layers': 'Layers'
+                    # TODO add missing fields
+                },
+                'defaults': {
+                    'Role': 'test_role'
+                },
+                'types': {
+                    'Timeout': int,
+                    'MemorySize': int
+                }
+            },
+            'delete': {
+                'function': 'delete_function',
+                'parameters': get_delete_params
+            }
+        }
+
 
 class LambdaFunctionVersion(GenericBaseModel):
     @staticmethod
@@ -359,25 +518,43 @@ class LambdaPermission(GenericBaseModel):
         return 'AWS::Lambda::Permission'
 
     def fetch_state(self, stack_name, resources):
+        props = self.props
+        func_name = self.resolve_refs_recursively(stack_name, props.get('FunctionName'), resources)
+        func_arn = aws_stack.lambda_function_arn(func_name)
+        return self.do_fetch_state(func_name, func_arn)
+
+    def do_fetch_state(self, resource_name, resource_arn):
         iam = aws_stack.connect_to_service('iam')
         props = self.props
-        policy_name = LAMBDA_POLICY_NAME_PATTERN % props.get('FunctionName')
+        policy_name = LAMBDA_POLICY_NAME_PATTERN % resource_name
         policy_arn = aws_stack.policy_arn(policy_name)
         policy = iam.get_policy(PolicyArn=policy_arn)['Policy']
         version = policy.get('DefaultVersionId')
         policy = iam.get_policy_version(PolicyArn=policy_arn, VersionId=version)['PolicyVersion']
         statements = policy['Document']['Statement']
         statements = statements if isinstance(statements, list) else [statements]
-        func_arn = aws_stack.lambda_function_arn(props['FunctionName'])
         principal = props.get('Principal')
         existing = [s for s in statements if s['Action'] == props['Action'] and
-            s['Resource'] == func_arn and
+            s['Resource'] == resource_arn and
             (not principal or s['Principal'] in [principal, {'Service': principal}, {'Service': [principal]}])]
         return existing[0] if existing else None
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         # return statement ID here to indicate that the resource has been deployed
         return self.props.get('Sid')
+
+    @staticmethod
+    def get_deploy_templates():
+        def lambda_permission_params(params, **kwargs):
+            result = select_parameters('FunctionName', 'Action', 'Principal')(params, **kwargs)
+            result['StatementId'] = short_uid()
+            return result
+        return {
+            'create': {
+                'function': 'add_permission',
+                'parameters': lambda_permission_params
+            }
+        }
 
 
 class LambdaEventInvokeConfig(GenericBaseModel):
