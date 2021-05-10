@@ -118,15 +118,16 @@ class ProxyListenerEdge(ProxyListener):
             return do_forward_request(api, method, path, data, headers, port=port)
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
-
+        api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
         if config.LS_LOG:
             # print response trace for debugging, if enabled
-            api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
             if api and api != API_UNKNOWN:
                 LOG.debug('OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s' %
                     (api, method, path, response.status_code, dict(response.headers), response.content))
 
-        if headers.get('Accept-Encoding') == 'gzip' and response._content:
+        # Fix Go SDK issue
+        # https://github.com/localstack/localstack/issues/3833
+        if headers.get('Accept-Encoding') == 'gzip' and response._content and api not in [S3]:
             response._content = gzip.compress(to_bytes(response._content))
             response.headers['Content-Length'] = str(len(response._content))
             response.headers['Content-Encoding'] = 'gzip'
