@@ -1505,7 +1505,8 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN,
 
 
 def truncate(data, max_length=100):
-    return ('%s...' % data[:max_length]) if len(data or '') > max_length else data
+    data = str(data or '')
+    return ('%s...' % data[:max_length]) if len(data) > max_length else data
 
 
 def escape_html(string, quote=False):
