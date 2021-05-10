@@ -45,10 +45,8 @@ class AuthorizationError(Exception):
 class ProxyListenerApiGateway(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if re.match(PATH_REGEX_USER_REQUEST, path):
-            print("USERREQUEST", path, data)
             return invoke_rest_api_from_request(method, path, data, headers)
 
-        print("DATA", path, data)
         data = data and json.loads(to_str(data))
 
         if re.match(PATH_REGEX_AUTHORIZERS, path):
