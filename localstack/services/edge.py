@@ -32,6 +32,9 @@ LOG = logging.getLogger(__name__)
 # this process is started as root, then we cannot kill it from a non-root process
 HEADER_KILL_SIGNAL = 'x-localstack-kill'
 
+# Header to indicate the current API (service) being called
+HEADER_TARGET_API = 'x-localstack-tgt-api'
+
 # lock obtained during boostrapping (persistence restoration) to avoid concurrency issues
 BOOTSTRAP_LOCK = threading.RLock()
 
@@ -100,6 +103,7 @@ class ProxyListenerEdge(ProxyListener):
 
         if api and not headers.get('Authorization'):
             headers['Authorization'] = aws_stack.mock_aws_request_headers(api)['Authorization']
+        headers[HEADER_TARGET_API] = str(api)
 
         headers['Host'] = host
         if isinstance(data, dict):
@@ -118,7 +122,8 @@ class ProxyListenerEdge(ProxyListener):
             return do_forward_request(api, method, path, data, headers, port=port)
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
-        api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
+        api = headers.get(HEADER_TARGET_API) or ''
+
         if config.LS_LOG:
             # print response trace for debugging, if enabled
             if api and api != API_UNKNOWN:
