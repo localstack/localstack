@@ -45,8 +45,10 @@ class AuthorizationError(Exception):
 class ProxyListenerApiGateway(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if re.match(PATH_REGEX_USER_REQUEST, path):
+            print("USERREQUEST", path, data)
             return invoke_rest_api_from_request(method, path, data, headers)
 
+        print("DATA", path, data)
         data = data and json.loads(to_str(data))
 
         if re.match(PATH_REGEX_AUTHORIZERS, path):
@@ -466,6 +468,10 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
 
     elif integration_type in ['HTTP_PROXY', 'HTTP']:
         function = getattr(requests, method.lower())
+
+        if uri.__contains__('{proxy}'):
+            paths = path.split('/')
+            uri = uri.replace('{proxy}', paths[len(paths) - 2])
 
         # apply custom request template
         data = apply_template(integration, 'request', data)
