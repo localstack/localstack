@@ -91,11 +91,15 @@ def _prepare_messages_to_dlq(source_arn, event, error):
             messages.append({'Id': str(uuid.uuid4()), 'MessageBody': json.dumps(event),
                 'MessageAttributes': custom_attrs})
         elif ':lambda:' in source_arn:
-            for record in event['Records']:
-                message_attrs = {**record['Sns']['MessageAttributes'], **custom_attrs}
-                messages.append({'Id': record['Sns']['MessageId'], 'MessageBody': record['Sns']['Message'],
-                'MessageAttributes': message_attrs})
 
+            if event.get('Records') and 'sns' in event['Records'][0]['EventSource']:
+                for record in event['Records']:
+                    message_attrs = {**record['Sns']['MessageAttributes'], **custom_attrs}
+                    messages.append({'Id': record['Sns']['MessageId'], 'MessageBody': record['Sns']['Message'],
+                    'MessageAttributes': message_attrs})
+            else:
+                messages.append({'Id': str(uuid.uuid4()), 'MessageBody': json.dumps(event),
+                'MessageAttributes': custom_attrs})
     return messages
 
 
