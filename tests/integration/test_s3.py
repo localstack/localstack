@@ -945,6 +945,30 @@ class TestS3(unittest.TestCase):
 
         self.assertEqual(downloaded_data, data)
 
+    def test_multipart_copy_object_etag(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        key = 'test.file'
+        copy_key = 'copy.file'
+        src_object_path = '%s/%s' % (bucket_name, key)
+        content = 'test content 123'
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        multipart_etag = self._perform_multipart_upload(bucket=bucket_name, key=key, data=content)['ETag']
+        copy_etag = self.s3_client.copy_object(
+            Bucket=bucket_name, CopySource=src_object_path, Key=copy_key
+        )['CopyObjectResult']['ETag']
+        # etags should be different
+        self.assertNotEqual(multipart_etag, copy_etag)
+
+        # cleanup
+        self.s3_client.delete_objects(
+            Bucket=bucket_name,
+            Delete={
+                'Objects': [{'Key': key}, {'Key': copy_key}]
+            }
+        )
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+
     def test_set_external_hostname(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         key = 'test.file'
