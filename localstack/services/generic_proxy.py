@@ -8,6 +8,7 @@ import logging
 import requests
 from asyncio.selector_events import BaseSelectorEventLoop
 from flask_cors import CORS
+from flask_cors.core import ACL_ORIGIN, ACL_METHODS, ACL_ALLOW_HEADERS, ACL_EXPOSE_HEADERS, ACL_REQUEST_HEADERS
 from requests.models import Response, Request
 from six.moves.urllib.parse import urlparse
 from localstack import config
@@ -118,16 +119,27 @@ class RegionBackend(object):
 def append_cors_headers(response=None):
     # Note: Use "response is not None" here instead of "not response"!
     headers = {} if response is None else response.headers
-    if 'Access-Control-Allow-Origin' not in headers:
-        headers['Access-Control-Allow-Origin'] = '*'
-    if 'Access-Control-Allow-Methods' not in headers:
-        headers['Access-Control-Allow-Methods'] = ','.join(CORS_ALLOWED_METHODS)
-    if 'Access-Control-Allow-Headers' not in headers:
-        requested_headers = headers.get('Access-Control-Request-Headers', '')
+
+    # In case we have LambdaResponse copy multivalue headers to regular headers, since
+    # CaseInsensitiveDict does not support "__contains__" and it's easier to deal with
+    # a single headers object
+    if isinstance(response, LambdaResponse):
+        for key in response.multi_value_headers.keys():
+            headers[key] = ','.join(
+                response.multi_value_headers[key] + ([] if key not in response.headers else [response.headers[key]])
+            )
+        response.multi_value_headers = {}
+
+    if ACL_ORIGIN not in headers:
+        headers[ACL_ORIGIN] = '*'
+    if ACL_METHODS not in headers:
+        headers[ACL_METHODS] = ','.join(CORS_ALLOWED_METHODS)
+    if ACL_ALLOW_HEADERS not in headers:
+        requested_headers = headers.get(ACL_REQUEST_HEADERS, '')
         requested_headers = re.split(r'[,\s]+', requested_headers) + CORS_ALLOWED_HEADERS
-        headers['Access-Control-Allow-Headers'] = ','.join([h for h in requested_headers if h])
-    if 'Access-Control-Expose-Headers' not in headers:
-        headers['Access-Control-Expose-Headers'] = ','.join(CORS_EXPOSE_HEADERS)
+        headers[ACL_ALLOW_HEADERS] = ','.join([h for h in requested_headers if h])
+    if ACL_EXPOSE_HEADERS not in headers:
+        headers[ACL_EXPOSE_HEADERS] = ','.join(CORS_EXPOSE_HEADERS)
 
     for header in ALLOWED_CORS_RESPONSE_HEADERS:
         if headers.get(header) == '':
