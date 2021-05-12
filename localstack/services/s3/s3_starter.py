@@ -357,7 +357,7 @@ def apply_patches():
         storage=None, acl=None, src_version_id=None, *args, **kwargs
     ):
         copy_key_orig(src_bucket_name, src_key_name, dest_bucket_name,
-            dest_key_name, storage=None, acl=None, src_version_id=None, *args, **kwargs)
+            dest_key_name, storage=storage, acl=acl, src_version_id=src_version_id, *args, **kwargs)
         key = self.get_object(dest_bucket_name, dest_key_name)
         key._etag = None
 
