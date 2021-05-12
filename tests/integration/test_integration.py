@@ -203,7 +203,8 @@ class IntegrationTest(unittest.TestCase):
         # make sure we cannot create Lambda with same name twice
         with pytest.raises(Exception):
             testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
-                                            zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
+                                            zip_file=zip_file, event_source_arn=ddb_event_source_arn,
+                                            runtime=LAMBDA_RUNTIME_PYTHON27)
 
         # deploy test lambda connected to Kinesis Stream
         kinesis_event_source_arn = kinesis.describe_stream(
