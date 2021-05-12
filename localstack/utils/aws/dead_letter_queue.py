@@ -81,25 +81,24 @@ def _prepare_messages_to_dlq(source_arn, event, error):
     }
     if ':sqs:' in source_arn:
         custom_attrs['ErrorMessage']['StringValue'] = str(error.result)
-        for record in event['Records']:
+        for record in event.get('Records', []):
             msg_attrs = message_attributes_to_upper(record.get('messageAttributes'))
             message_attrs = {**msg_attrs, **custom_attrs}
-            messages.append({'Id': record['messageId'], 'MessageBody': record['body'],
+            messages.append({'Id': record.get('messageId'), 'MessageBody': record.get('body'),
                 'MessageAttributes': message_attrs})
-    else:
-        if ':sns:' in source_arn:
+    elif ':sns:' in source_arn:
+        messages.append({'Id': str(uuid.uuid4()), 'MessageBody': json.dumps(event),
+            'MessageAttributes': custom_attrs})
+    elif ':lambda:' in source_arn:
+        if event.get('Records') and 'sns' in event['Records'][0]['EventSource']:
+            for record in event['Records']:
+                sns_rec = record.get('Sns', {})
+                message_attrs = {**sns_rec.get('MessageAttributes'), **custom_attrs}
+                messages.append({'Id': sns_rec.get('MessageId'), 'MessageBody': sns_rec.get('Message'),
+                'MessageAttributes': message_attrs})
+        else:
             messages.append({'Id': str(uuid.uuid4()), 'MessageBody': json.dumps(event),
-                'MessageAttributes': custom_attrs})
-        elif ':lambda:' in source_arn:
-
-            if event.get('Records') and 'sns' in event['Records'][0]['EventSource']:
-                for record in event['Records']:
-                    message_attrs = {**record['Sns']['MessageAttributes'], **custom_attrs}
-                    messages.append({'Id': record['Sns']['MessageId'], 'MessageBody': record['Sns']['Message'],
-                    'MessageAttributes': message_attrs})
-            else:
-                messages.append({'Id': str(uuid.uuid4()), 'MessageBody': json.dumps(event),
-                'MessageAttributes': custom_attrs})
+            'MessageAttributes': custom_attrs})
     return messages
 
 
