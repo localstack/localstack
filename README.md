@@ -438,9 +438,9 @@ The URL pattern for API Gateway executions is `http://localhost:4566/restapis/<a
 $ curl http://localhost:4566/restapis/nmafetnwf6/prod/_user_request_/my/path
 ```
 
-## Integration with nosetests
+## Integration with pytest
 
-If you want to use LocalStack in your integration tests (e.g., nosetests), simply fire up the
+If you want to use LocalStack in your integration tests (e.g., pytest), simply fire up the
 infrastructure in your test setup method and then clean up everything in your teardown method:
 
 ```
