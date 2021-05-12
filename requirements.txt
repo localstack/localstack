@@ -18,7 +18,7 @@ boto3>=1.14.33                 #basic-lib
 botocore>=1.12.13
 cachetools>=3.1.1,<4.0.0
 cbor2>=5.2.0
-coverage==4.5.4
+coverage>=5.2.1
 crontab>=0.22.6
 # pin version to avoid Rust build issues: https://github.com/pyca/cryptography/issues/5771
 cryptography<3.4
