@@ -1,7 +1,6 @@
 import json
 import time
 import unittest
-from nose.tools import assert_equal, assert_in, assert_not_in
 from botocore.exceptions import ClientError
 from localstack import config
 from localstack.utils.aws import aws_stack
@@ -39,7 +38,7 @@ class ElasticsearchTest(unittest.TestCase):
             'interests': ['music']
         }
         resp = cls._add_document(TEST_DOC_ID, document)
-        assert_equal(resp.status_code, 201, msg='Request failed({}): {}'.format(resp.status_code, resp.text))
+        assert resp.status_code == 201, 'Request failed({}): {}'.format(resp.status_code, resp.text)
 
     @classmethod
     def tearDownClass(cls):
@@ -48,7 +47,8 @@ class ElasticsearchTest(unittest.TestCase):
         # make sure domain deletion works
         es_client = aws_stack.connect_to_service('es')
         es_client.delete_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
-        assert_not_in(TEST_DOMAIN_NAME, [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
+        assert (TEST_DOMAIN_NAME not in
+            [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
 
     def test_domain_es_version(self):
         es_client = aws_stack.connect_to_service('es')
@@ -160,7 +160,7 @@ class ElasticsearchTest(unittest.TestCase):
         if es_cluster_config:
             kwargs['ElasticsearchClusterConfig'] = es_cluster_config
         es_client.create_elasticsearch_domain(DomainName=name, **kwargs)
-        assert_in(name, [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
+        assert name in [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']]
 
         # wait for completion status
         def check_cluster_ready(*args):

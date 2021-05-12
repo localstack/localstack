@@ -1,5 +1,5 @@
 import os
-from nose.tools import assert_raises, assert_equal
+import pytest
 from botocore.exceptions import ClientError
 from localstack import config
 from localstack.utils.common import short_uid
@@ -27,12 +27,12 @@ def test_kinesis_error_injection():
 
     # by default, no errors
     test_no_errors = kinesis.put_records(StreamName=TEST_STREAM_NAME, Records=records)
-    assert_equal(test_no_errors['FailedRecordCount'], 0)
+    assert test_no_errors['FailedRecordCount'] == 0
 
     # with a probability of 1, always throw errors
     config.KINESIS_ERROR_PROBABILITY = 1.0
     test_all_errors = kinesis.put_records(StreamName=TEST_STREAM_NAME, Records=records)
-    assert_equal(test_all_errors['FailedRecordCount'], 1)
+    assert test_all_errors['FailedRecordCount'] == 1
 
     # reset probability to zero
     config.KINESIS_ERROR_PROBABILITY = 0.0
@@ -48,7 +48,7 @@ def get_dynamodb_table():
 def assert_zero_probability_read_error_injection(table, partition_key):
     # by default, no errors
     test_no_errors = table.get_item(Key={PARTITION_KEY: partition_key})
-    assert_equal(test_no_errors['ResponseMetadata']['HTTPStatusCode'], 200)
+    assert test_no_errors['ResponseMetadata']['HTTPStatusCode'] == 200
 
 
 def test_dynamodb_error_injection():
@@ -62,7 +62,8 @@ def test_dynamodb_error_injection():
 
     # with a probability of 1, always throw errors
     config.DYNAMODB_ERROR_PROBABILITY = 1.0
-    assert_raises(ClientError, table.get_item, Key={PARTITION_KEY: partition_key})
+    with pytest.raises(ClientError):
+        table.get_item(Key={PARTITION_KEY: partition_key})
 
     # reset probability to zero
     config.DYNAMODB_ERROR_PROBABILITY = 0.0
@@ -79,7 +80,8 @@ def test_dynamodb_read_error_injection():
 
     # with a probability of 1, always throw errors
     config.DYNAMODB_READ_ERROR_PROBABILITY = 1.0
-    assert_raises(ClientError, table.get_item, Key={PARTITION_KEY: partition_key})
+    with pytest.raises(ClientError):
+        table.get_item(Key={PARTITION_KEY: partition_key})
 
     # reset probability to zero
     config.DYNAMODB_READ_ERROR_PROBABILITY = 0.0
@@ -93,15 +95,17 @@ def test_dynamodb_write_error_injection():
 
     # by default, no errors
     test_no_errors = table.put_item(Item={PARTITION_KEY: short_uid(), 'data': 'foobar123'})
-    assert_equal(test_no_errors['ResponseMetadata']['HTTPStatusCode'], 200)
+    assert test_no_errors['ResponseMetadata']['HTTPStatusCode'] == 200
 
     # with a probability of 1, always throw errors
     config.DYNAMODB_WRITE_ERROR_PROBABILITY = 1.0
-    assert_raises(ClientError, table.put_item, Item={PARTITION_KEY: short_uid(), 'data': 'foobar123'})
+    with pytest.raises(ClientError):
+        table.put_item(Item={PARTITION_KEY: short_uid(), 'data': 'foobar123'})
 
     # BatchWriteItem throws ProvisionedThroughputExceededException if ALL items in Batch are Throttled
-    assert_raises(ClientError, table.batch_write_item, RequestItems={table: [{
-        'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}}]})
+    with pytest.raises(ClientError):
+        table.batch_write_item(RequestItems={table: [{
+            'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}}]})
 
     # reset probability to zero
     config.DYNAMODB_WRITE_ERROR_PROBABILITY = 0.0
