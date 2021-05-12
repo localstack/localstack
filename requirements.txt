@@ -39,8 +39,9 @@ localstack-ext[full]>=0.12.5
 localstack-ext>=0.12.5         #basic-lib
 localstack-client>=1.15        #basic-lib
 moto-ext[all]>=2.0.0
-nose>=1.3.7
-nose-timer>=0.7.5
+pytest==6.2.0
+pytest-cov==211.1
+pytest-timer==0.0.10
 psutil>=5.4.8,<6.0.0
 pympler>=0.6
 pyopenssl==17.5.0
