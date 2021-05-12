@@ -6,6 +6,8 @@ jobs:
       image: ubuntu-2004:202101-01
     steps:
       - checkout
+      - restore_cache:
+          key: python-requirements-V1-{{ checksum "requirements.txt" }}
       - run:
           command: |
             sudo apt-get update
@@ -14,6 +16,10 @@ jobs:
       - run:
           command: virtualenv --python=`which python3.8` .venv; make ci-build-prepare
           name: Setup environment
+      - save_cache:
+          key: python-requirements-V1-{{ checksum "requirements.txt" }}
+          paths:
+            - "~/.cache/pip"
       - run:
           command: . /opt/circleci/.nvm/nvm.sh; make ci-build-test
           name: Run integration tests
