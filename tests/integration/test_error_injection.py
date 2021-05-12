@@ -63,7 +63,7 @@ def test_dynamodb_error_injection():
     # with a probability of 1, always throw errors
     config.DYNAMODB_ERROR_PROBABILITY = 1.0
     with pytest.raises(ClientError):
-        table.get_item(Key={PARTITION_KEY: partition_key}))
+        table.get_item(Key={PARTITION_KEY: partition_key})
 
     # reset probability to zero
     config.DYNAMODB_ERROR_PROBABILITY = 0.0
@@ -81,7 +81,7 @@ def test_dynamodb_read_error_injection():
     # with a probability of 1, always throw errors
     config.DYNAMODB_READ_ERROR_PROBABILITY = 1.0
     with pytest.raises(ClientError):
-        table.get_item(Key={PARTITION_KEY: partition_key}))
+        table.get_item(Key={PARTITION_KEY: partition_key})
 
     # reset probability to zero
     config.DYNAMODB_READ_ERROR_PROBABILITY = 0.0
