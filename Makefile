@@ -145,7 +145,7 @@ web:
 ## Run automated tests
 test:
 	make lint && \
-		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` python -m pytest --log-cli-level=WARNING -s --cov=localstack $(TEST_PATH))
+		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` python -m pytest -n auto --log-cli-level=WARNING -s --cov=localstack $(TEST_PATH))
 
 test-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run

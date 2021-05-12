@@ -41,7 +41,7 @@ localstack-client>=1.15        #basic-lib
 moto-ext[all]>=2.0.0
 pytest==6.2.0
 pytest-cov==2.11.1
-pytest-timer==0.0.10
+pytest-xdist==2.2.1
 psutil>=5.4.8,<6.0.0
 pympler>=0.6
 pyopenssl==17.5.0
