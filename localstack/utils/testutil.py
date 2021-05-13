@@ -452,7 +452,8 @@ def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY
 
         try:
             rs.append(json.loads(raw_message))
-        except Exception:
+        except Exception as e:
+            print(f"Appending raw message : {raw_message} Exception raised {e!r}")
             rs.append(raw_message)
 
     return rs
