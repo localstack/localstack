@@ -46,6 +46,12 @@ SIGNATURE_V4_PARAMS = [
     'X-Amz-SignedHeaders', 'X-Amz-Signature'
 ]
 
+# query params overrides for multipart upload and node sdk
+ALLOWED_QUERY_PARAMS = [
+    'X-id', 'X-Amz-User-Agent', 'X-Amz-Content-Sha256',
+    'versionid', 'uploadid', 'partnumber'
+]
+
 
 def is_static_website(headers):
     """
@@ -175,7 +181,7 @@ def authenticate_presign_url(method, path, headers, data=None):
             if key_lower not in presign_params_lower:
                 if (key_lower not in (header[0].lower() for header in headers) and
                         key_lower not in params_header_override):
-                    if key_lower in ['versionid', 'uploadid', 'partnumber']:
+                    if key_lower in (allowed_param.lower() for allowed_param in ALLOWED_QUERY_PARAMS):
                         query_string[key] = query_params[key][0]
                     else:
                         sign_headers[key] = query_params[key][0]
@@ -189,7 +195,7 @@ def authenticate_presign_url(method, path, headers, data=None):
                 sign_headers[header_name] = header_value
 
     # Preparnig dictionary of request to build AWSRequest's object of the botocore
-    request_url = '{}://{}{}'.format(parsed.scheme, parsed.netloc, urlparse.quote(parsed.path))
+    request_url = '{}://{}{}'.format(parsed.scheme, parsed.netloc, parsed.path)
     # Fix https://github.com/localstack/localstack/issues/3912
     # urlencode method replaces white spaces with plus sign cause signature calculation to fail
     request_url = ('%s?%s' % (request_url, urlencode(query_string, quote_via=urlparse.quote, safe=' '))
@@ -200,7 +206,7 @@ def authenticate_presign_url(method, path, headers, data=None):
     bucket_name = extract_bucket_name(headers, parsed.path)
 
     request_dict = {
-        'url_path': urlparse.quote(parsed.path),
+        'url_path': parsed.path,
         'query_string': query_string,
         'method': method,
         'headers': sign_headers,
