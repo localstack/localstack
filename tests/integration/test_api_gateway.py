@@ -999,13 +999,13 @@ class TestAPIGateway(unittest.TestCase):
             patchOperations=[
                 {
                     'op': 'replace',
-                    'path': '/' + api_resource_path_part,
+                    'path': '/pathPart',
                     'value': 'demo'
                 },
             ]
         )
         update_resource_path_part = response_update_resource.get('pathPart')
-        self.assertNotEqual(api_resource_path_part, update_resource_path_part)
+        self.assertEqual(update_resource_path_part, 'demo')
         apigw_client.delete_rest_api(restApiId=api_id)
 
     # =====================================================================
