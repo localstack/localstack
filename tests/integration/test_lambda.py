@@ -700,7 +700,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         )
 
         def process_records(record):
-            print(f"Processing {record}")
+            print('Processing {}'.format(record))
 
         stream_name = 'test-foobar'
         aws_stack.create_kinesis_stream(stream_name, delete=True)
