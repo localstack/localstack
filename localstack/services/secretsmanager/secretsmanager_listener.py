@@ -21,7 +21,10 @@ class ProxyListenerSecretsManager(PersistingProxyListener):
             if parts[3] != aws_stack.get_region():
                 LOG.info('Unexpected request region %s for secret "%s"' % (aws_stack.get_region(), secret_id))
             # secret ARN ends with "-<randomId>" which we remove in the request for upstream compatibility
-            data['SecretId'] = parts[-1].rpartition('-')[0]
+            if parts[-1][len(parts[-1]) - 6: len(parts[-1]) - 5] == '-':
+                data['SecretId'] = parts[-1][: len(parts[-1]) - 6]
+            elif parts[-1][-1] != '-':
+                data['SecretId'] = data['SecretId'] + '-'
             data = json.dumps(data)
             return Request(data=data, headers=headers, method=method)
         return True
