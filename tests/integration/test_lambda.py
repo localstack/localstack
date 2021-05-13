@@ -721,7 +721,6 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         ], StreamName=stream_name)
 
         events = get_lambda_log_events(function_name)
-        print(events)
         self.assertEqual(len(events[0]['Records']), 10)
 
         self.assertIn('eventID', events[0]['Records'][0])
