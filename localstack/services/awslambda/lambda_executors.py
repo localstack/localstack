@@ -505,7 +505,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             run_result = run(cmd)
 
             entry_point = run_result.strip('[]\n\r ')
-
             container_network = self.get_docker_container_network(func_arn)
 
             LOG.debug('Using entrypoint "%s" for container "%s" on network "%s".'

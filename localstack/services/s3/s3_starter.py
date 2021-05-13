@@ -349,3 +349,16 @@ def apply_patches():
 
     s3_responses.S3ResponseInstance._bucket_response_get = types.MethodType(
         s3_bucket_response_get, s3_responses.S3ResponseInstance)
+
+    copy_key_orig = s3_models.s3_backend.copy_key
+
+    def copy_key(
+        self, src_bucket_name, src_key_name, dest_bucket_name, dest_key_name,
+        storage=None, acl=None, src_version_id=None, *args, **kwargs
+    ):
+        copy_key_orig(src_bucket_name, src_key_name, dest_bucket_name,
+            dest_key_name, storage=storage, acl=acl, src_version_id=src_version_id, *args, **kwargs)
+        key = self.get_object(dest_bucket_name, dest_key_name)
+        key._etag = None
+
+    s3_models.s3_backend.copy_key = types.MethodType(copy_key, s3_models.s3_backend)
