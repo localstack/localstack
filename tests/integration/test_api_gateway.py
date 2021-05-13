@@ -991,7 +991,6 @@ class TestAPIGateway(unittest.TestCase):
         api_id = api['id']
         root_res_id = apigw_client.get_resources(restApiId=api_id)['items'][0]['id']
         api_resource = apigw_client.create_resource(restApiId=api_id, parentId=root_res_id, pathPart='test')
-        api_resource_path_part = api_resource.get('pathPart')
 
         response_update_resource = apigw_client.update_resource(
             restApiId=api_id,
