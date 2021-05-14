@@ -20,7 +20,7 @@ def apply_patches():
                 'CertificateTransparencyLoggingPreference': 'ENABLED'
             }
         }
-        addenda['DomainValidationOptions'] = options = self.domain_validation_options or []
+        addenda['DomainValidationOptions'] = options = getattr(self, 'domain_validation_options', None) or []
         if not options:
             options = addenda['DomainValidationOptions'] = [{'ValidationMethod': cert.get('ValidationMethod')}]
         for option in options:

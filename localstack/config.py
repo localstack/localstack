@@ -225,10 +225,11 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
                    'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID', 'DISABLE_EVENTS', 'EDGE_PORT', 'LS_LOG',
                    'EDGE_PORT_HTTP', 'SKIP_INFRA_DOWNLOADS', 'STEPFUNCTIONS_LAMBDA_ENDPOINT',
-                   'WINDOWS_DOCKER_MOUNT_PREFIX', 'HOSTNAME_FROM_LAMBDA',
+                   'WINDOWS_DOCKER_MOUNT_PREFIX', 'HOSTNAME_FROM_LAMBDA', 'LOG_LICENSE_ISSUES',
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
-                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS', 'PERSISTENCE_SINGLE_FILE']
+                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS', 'PERSISTENCE_SINGLE_FILE',
+                   'S3_SKIP_SIGNATURE_VALIDATION']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -351,6 +352,7 @@ def parse_service_ports():
     return result
 
 
+# TODO: we need to investigate the performance impact of this
 def populate_configs(service_ports=None):
     global SERVICE_PORTS, CONFIG_ENV_VARS
 
@@ -441,3 +443,5 @@ if LS_LOG == 'trace':
     load_end_time = time.time()
     LOG = logging.getLogger(__name__)
     LOG.debug('Initializing the configuration took %s ms' % int((load_end_time - load_start_time) * 1000))
+
+S3_SKIP_SIGNATURE_VALIDATION = os.environ.get('S3_SKIP_SIGNATURE_VALIDATION', '0')

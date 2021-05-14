@@ -346,6 +346,11 @@ class ProxyListenerDynamoDB(ProxyListener):
                 for key in ['PutRequest', 'DeleteRequest']:
                     if any(unprocessed_items[key]):
                         content['UnprocessedItems'][table_name].append({key: unprocessed_items[key]})
+                unprocessed = content['UnprocessedItems']
+                for key in list(unprocessed.keys()):
+                    if not unprocessed.get(key):
+                        del unprocessed[key]
+
                 response._content = json.dumps(content)
                 fix_headers_for_updated_response(response)
 
@@ -521,7 +526,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                         new_record['eventName'] = 'REMOVE'
                         new_record['dynamodb']['Keys'] = keys
                         new_record['dynamodb']['OldImage'] = existing_items[i]
-                        new_record['dynamodb']['SizeBytes'] = len(json.dumps(existing_item))
+                        new_record['dynamodb']['SizeBytes'] = len(json.dumps(existing_items[i]))
                         new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                         records.append(new_record)
                     unprocessed_delete_items = self._thread_local('unprocessed_delete_items')

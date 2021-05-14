@@ -42,6 +42,8 @@ provider:
           Action:
             - 'sns:Subscribe'
           Resource: '*'
+  eventBridge:
+    useCloudFormation: true
 
 resources:
   Resources:
@@ -138,6 +140,13 @@ functions:
           path: /test/v1
           method: get
           integration: lambda-proxy
+
+      - eventBridge:
+          eventBus: customBus
+          pattern:
+            source:
+            - "customSource"
+
   dynamodbStreamHandler:
     handler: handler.processItem
     events:

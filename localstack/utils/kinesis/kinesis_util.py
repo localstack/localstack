@@ -12,7 +12,6 @@ LOGGER = logging.getLogger(__name__)
 class EventFileReaderThread(FuncThread):
     def __init__(self, events_file, callback, ready_mutex=None, fh_d_stream=None):
         FuncThread.__init__(self, self.retrieve_loop, None)
-        self.running = True
         self.events_file = events_file
         self.callback = callback
         self.ready_mutex = ready_mutex
@@ -56,6 +55,3 @@ class EventFileReaderThread(FuncThread):
                 LOGGER.warning("Unable to process JSON line: '%s': %s %s. Callback: %s" %
                                (truncate(line), e, traceback.format_exc(), self.callback))
         conn.close()
-
-    def stop(self, quiet=True):
-        self.running = False
