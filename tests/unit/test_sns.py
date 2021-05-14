@@ -46,13 +46,12 @@ class SNSTests(unittest.TestCase):
             'Attribute.entry.2.value': ['{"type": ["foo", "bar"]}']
         }
         attributes = sns_listener.get_subscribe_attributes(req_data)
-        self.assertDictEqual(
-            attributes,
-            {
-                'RawMessageDelivery': 'true',
-                'FilterPolicy': '{"type": ["foo", "bar"]}'
-            }
-        )
+        expected = {
+            'RawMessageDelivery': 'true',
+            'PendingConfirmation': 'false',
+            'FilterPolicy': '{"type": ["foo", "bar"]}'
+        }
+        self.assertDictEqual(attributes, expected)
 
     def test_create_sns_message_body_raw_message_delivery(self):
         self.subscriber['RawMessageDelivery'] = 'true'
@@ -142,6 +141,16 @@ class SNSTests(unittest.TestCase):
 
         self.assertEqual(result['Message'], {'message': 'abc'})
 
+    def test_create_sns_message_body_json_structure_raw_delivery(self):
+        self.subscriber['RawMessageDelivery'] = 'true'
+        action = {
+            'Message': ['{"default": {"message": "abc"}}'],
+            'MessageStructure': ['json']
+        }
+        result = sns_listener.create_sns_message_body(self.subscriber, action)
+
+        self.assertEqual(result, {'message': 'abc'})
+
     def test_create_sns_message_body_json_structure_without_default_key(self):
         action = {
             'Message': ['{"message": "abc"}'],
@@ -160,6 +169,16 @@ class SNSTests(unittest.TestCase):
         result = json.loads(result_str)
 
         self.assertEqual(result['Message'], 'sqs message')
+
+    def test_create_sns_message_body_json_structure_raw_delivery_sqs_protocol(self):
+        self.subscriber['RawMessageDelivery'] = 'true'
+        action = {
+            'Message': ['{"default": {"message": "default version"}, "sqs": {"message": "sqs version"}}'],
+            'MessageStructure': ['json']
+        }
+        result = sns_listener.create_sns_message_body(self.subscriber, action)
+
+        self.assertEqual(result, {'message': 'sqs version'})
 
     def test_create_sqs_message_attributes(self):
         self.subscriber['RawMessageDelivery'] = 'true'

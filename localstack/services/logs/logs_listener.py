@@ -1,18 +1,27 @@
 import re
+import json
+import logging
 from requests.models import Request
-from localstack.utils.common import to_str
+from localstack.utils.aws import aws_stack
+from localstack.utils.common import to_str, is_number
 from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
 from localstack.services.generic_proxy import ProxyListener
+
+LOG = logging.getLogger(__name__)
 
 
 class ProxyListenerCloudWatchLogs(ProxyListener):
     def forward_request(self, method, path, data, headers):
+        action = headers.get('X-Amz-Target') or ''
+        action = action.split('.')[-1]
+
+        if action == 'PutLogEvents':
+            publish_log_metrics_for_events(data)
         if method == 'POST' and path == '/':
             if 'nextToken' in to_str(data or ''):
                 data = self._fix_next_token_request(data)
                 headers['Content-Length'] = str(len(data))
                 return Request(data=data, headers=headers, method=method)
-
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -41,6 +50,42 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
         pattern = r'"nextToken":\s*([0-9]+)'
         replacement = r'"nextToken": "\1"'
         response._content = re.sub(pattern, replacement, to_str(response.content))
+
+
+def publish_log_metrics_for_events(data):
+    """ Filter and publish log metrics for matching events """
+    from moto.logs.models import logs_backends  # TODO: create separate RegionBackend class to store state
+    data = data if isinstance(data, dict) else json.loads(data)
+    log_events = data.get('logEvents') or []
+    logs_backend = logs_backends[aws_stack.get_region()]
+    metric_filters = logs_backend.metric_filters = getattr(logs_backend, 'metric_filters', [])
+    client = aws_stack.connect_to_service('cloudwatch')
+    for metric_filter in metric_filters:
+        pattern = metric_filter.get('filterPattern', '')
+        if log_events_match_filter_pattern(pattern, log_events):
+            for tf in metric_filter.get('metricTransformations', []):
+                value = tf.get('metricValue') or '1'
+                if '$size' in value:
+                    LOG.info('Expression not yet supported for log filter metricValue: %s' % value)
+                value = float(value) if is_number(value) else 1
+                data = [{'MetricName': tf['metricName'], 'Value': value}]
+                try:
+                    client.put_metric_data(Namespace=tf['metricNamespace'], MetricData=data)
+                except Exception as e:
+                    LOG.info('Unable to put metric data for matching CloudWatch log events: %s' % e)
+
+
+def log_events_match_filter_pattern(filter_pattern, log_events):
+    def matches(event):
+        # TODO: implement full support for filter pattern expressions:
+        # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html
+        return re.match(filter_pattern, event.get('message') or '')
+    filter_pattern = (filter_pattern or '').strip() or '*'
+    filter_pattern = filter_pattern.replace('*', '.*')
+    log_events = log_events if isinstance(log_events, list) else [log_events]
+    for event in log_events:
+        if matches(event):
+            return True
 
 
 # instantiate listener

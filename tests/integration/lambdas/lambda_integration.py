@@ -42,6 +42,9 @@ def handler(event, context):
             body = json.loads(event['body'])
         except Exception:
             body = {}
+
+        body['path'] = event.get('path')
+        body['resource'] = event.get('resource')
         body['pathParameters'] = event.get('pathParameters')
         body['requestContext'] = event.get('requestContext')
         body['queryStringParameters'] = event.get('queryStringParameters')
@@ -65,6 +68,10 @@ def handler(event, context):
         result_map['context']['invoked_function_arn'] = context.invoked_function_arn
         result_map['context']['function_version'] = context.function_version
         result_map['context']['function_name'] = context.function_name
+        result_map['context']['memory_limit_in_mb'] = context.memory_limit_in_mb
+        result_map['context']['aws_request_id'] = context.aws_request_id
+        result_map['context']['log_group_name'] = context.log_group_name
+        result_map['context']['log_stream_name'] = context.log_stream_name
 
         if hasattr(context, 'client_context'):
             result_map['context']['client_context'] = context.client_context
@@ -90,7 +97,7 @@ def handler(event, context):
             forwarding_target = ddb_new_image['data'][MSG_BODY_MESSAGE_TARGET]
             target_name = forwarding_target.split(':')[-1]
             if forwarding_target.startswith('kinesis:'):
-                ddb_new_image['data'][MSG_BODY_MESSAGE_TARGET] = 's3:/test_chain_result'
+                ddb_new_image['data'][MSG_BODY_MESSAGE_TARGET] = 's3:test_chain_result'
                 kinesis_record['Data'] = json.dumps(ddb_new_image['data'])
                 forward_event_to_target_stream(kinesis_record, target_name)
             elif forwarding_target.startswith('s3:'):

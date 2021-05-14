@@ -82,12 +82,14 @@ def convert_schedule_to_cron(schedule):
 
 def handle_put_rule(data):
     schedule = data.get('ScheduleExpression')
+    enabled = data.get('State') != 'DISABLED'
+
     if schedule:
         job_func = get_scheduled_rule_func(data)
         cron = convert_schedule_to_cron(schedule)
         LOG.debug('Adding new scheduled Events rule with cron schedule %s' % cron)
 
-        job_id = JobScheduler.instance().add_job(job_func, cron)
+        job_id = JobScheduler.instance().add_job(job_func, cron, enabled)
         region = aws_stack.get_region()
         RULE_SCHEDULED_JOBS[region] = RULE_SCHEDULED_JOBS.get(region) or {}
         RULE_SCHEDULED_JOBS[region][data['Name']] = job_id
@@ -101,6 +103,14 @@ def handle_delete_rule(rule_name):
     if job_id:
         LOG.debug('Removing scheduled Events: {} | job_id: {}'.format(rule_name, job_id))
         JobScheduler.instance().cancel_job(job_id=job_id)
+
+
+def handle_disable_rule(rule_name):
+    region = aws_stack.get_region()
+    job_id = RULE_SCHEDULED_JOBS.get(region, {}).get(rule_name)
+    if job_id:
+        LOG.debug('Disabling Rule: {} | job_id: {}'.format(rule_name, job_id))
+        JobScheduler.instance().disable_job(job_id=job_id)
 
 
 class ProxyListenerEvents(ProxyListener):
@@ -130,6 +140,9 @@ class ProxyListenerEvents(ProxyListener):
             elif action == 'AWSEvents.UntagResource':
                 self.svc.untag_resource(parsed_data['ResourceARN'], parsed_data['TagKeys'])
                 return {}
+
+            elif action == 'AWSEvents.DisableRule':
+                handle_disable_rule(rule_name=parsed_data.get('Name', None))
 
         return True
 

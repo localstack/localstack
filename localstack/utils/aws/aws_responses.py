@@ -3,15 +3,18 @@ import json
 import binascii
 import datetime
 import xmltodict
-from flask import Response
+from struct import pack
 from binascii import crc32
-from requests.models import CaseInsensitiveDict
-from requests.models import Response as RequestsResponse
+from flask import Response
+from requests.models import CaseInsensitiveDict, Response as RequestsResponse
+from localstack.config import DEFAULT_ENCODING
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, to_str, to_bytes, json_safe, replace_response_content
 
 REGEX_FLAGS = re.MULTILINE | re.DOTALL
+
+AWS_BINARY_DATA_TYPE_STRING = 7
 
 
 class ErrorResponse(Exception):
@@ -142,6 +145,11 @@ def requests_to_flask_response(r):
     return Response(r.content, status=r.status_code, headers=dict(r.headers))
 
 
+def flask_not_found_error(msg=None):
+    msg = msg or 'The specified resource doesnt exist.'
+    return flask_error_response_json(msg, code=404, error_type='ResourceNotFoundException')
+
+
 def response_regex_replace(response, search, replace):
     content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
     set_response_content(response, content)
@@ -150,6 +158,9 @@ def response_regex_replace(response, search, replace):
 def set_response_content(response, content):
     if isinstance(content, dict):
         content = json.dumps(content)
+    elif isinstance(content, RequestsResponse):
+        response.status_code = content.status_code
+        content = content.content
     response._content = content or ''
     response.headers['Content-Length'] = str(len(response._content))
 
@@ -162,8 +173,72 @@ def make_error(*args, **kwargs):
     return flask_error_response_xml(*args, **kwargs)
 
 
+def extract_tags(req_data):
+    keys = []
+    values = []
+    for param_name in ['Tag', 'member']:
+        keys = extract_url_encoded_param_list(req_data, 'Tags.{}.%s.Key'.format(param_name))
+        values = extract_url_encoded_param_list(req_data, 'Tags.{}.%s.Value'.format(param_name))
+        if keys and values:
+            break
+    entries = zip(keys, values)
+    tags = [{'Key': entry[0], 'Value': entry[1]} for entry in entries]
+    return tags
+
+
+def extract_url_encoded_param_list(req_data, pattern):
+    result = []
+    for i in range(1, 200):
+        key = pattern % i
+        value = req_data.get(key)
+        if value is None:
+            break
+        result.append(value)
+    return result
+
+
 def calculate_crc32(content):
     return crc32(to_bytes(content)) & 0xffffffff
+
+
+def convert_to_binary_event_payload(result, event_type=None, message_type=None):
+    # e.g.: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTSelectObjectAppendix.html
+    # e.g.: https://docs.aws.amazon.com/transcribe/latest/dg/event-stream.html
+
+    header_descriptors = {
+        ':event-type': event_type or 'Records',
+        ':message-type': message_type or 'event'
+    }
+
+    # construct headers
+    headers = b''
+    for key, value in header_descriptors.items():
+        header_name = key.encode(DEFAULT_ENCODING)
+        header_value = to_bytes(value)
+        headers += pack('!B', len(header_name))
+        headers += header_name
+        headers += pack('!B', AWS_BINARY_DATA_TYPE_STRING)
+        headers += pack('!H', len(header_value))
+        headers += header_value
+
+    # construct body
+    body = bytes(result, DEFAULT_ENCODING)
+
+    # calculate lengths
+    headers_length = len(headers)
+    body_length = len(body)
+
+    # construct message
+    result = pack('!I', body_length + headers_length + 16)
+    result += pack('!I', headers_length)
+    prelude_crc = binascii.crc32(result)
+    result += pack('!I', prelude_crc)
+    result += headers
+    result += body
+    payload_crc = binascii.crc32(result)
+    result += pack('!I', payload_crc)
+
+    return result
 
 
 class LambdaResponse(object):

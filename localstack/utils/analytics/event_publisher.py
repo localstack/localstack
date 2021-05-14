@@ -5,7 +5,7 @@ from six.moves import queue
 from localstack import config
 from localstack.constants import API_ENDPOINT
 from localstack.utils.common import (
-    JsonObject, to_str, timestamp, short_uid, save_file, FuncThread, load_file, get_or_create_file)
+    JsonObject, timestamp, short_uid, save_file, FuncThread, get_or_create_file)
 from localstack.utils.common import safe_requests as requests
 
 PROCESS_ID = short_uid()
@@ -105,9 +105,7 @@ def get_machine_id():
     config_file_home = get_config_file_homedir()
     for config_file in (config_file_home, config_file_tmp):
         if config_file:
-            local_configs = load_file(config_file)
-            local_configs = json.loads(to_str(local_configs))
-            configs_map[config_file] = local_configs
+            local_configs = configs_map[config_file] = config.load_config_file(config_file=config_file)
             if 'machine_id' in local_configs:
                 MACHINE_ID = local_configs['machine_id']
                 break

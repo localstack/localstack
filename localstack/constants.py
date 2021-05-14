@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.12.6'
+VERSION = '0.12.11'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
@@ -12,6 +12,7 @@ ENV_DEV = 'dev'
 
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = 'x-localstack-edge'
+HEADER_LOCALSTACK_REQUEST_URL = 'x-localstack-request-url'
 HEADER_LOCALSTACK_TARGET = 'x-localstack-target'
 
 # backend service ports, for services that are behind a proxy (counting down from 4566)
@@ -21,6 +22,7 @@ DEFAULT_PORT_WEB_UI = 8080
 # host name for localhost
 LOCALHOST = 'localhost'
 LOCALHOST_IP = '127.0.0.1'
+LOCALHOST_HOSTNAME = 'localhost.localstack.cloud'
 
 # version of the Maven dependency with Java utility code
 LOCALSTACK_MAVEN_VERSION = '0.2.5'
@@ -37,7 +39,10 @@ if 'TEST_AWS_ACCOUNT_ID' not in os.environ:
 TEST_AWS_ACCOUNT_ID = os.environ['TEST_AWS_ACCOUNT_ID']
 
 # root code folder
-LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
+# TODO rename to "ROOT_FOLDER"!
+LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(MODULE_MAIN_PATH, '..'))
+INSTALL_DIR_INFRA = os.path.join(MODULE_MAIN_PATH, 'infra')
 
 # virtualenv folder
 LOCALSTACK_VENV_FOLDER = os.path.join(LOCALSTACK_ROOT_FOLDER, '.venv')
@@ -70,7 +75,7 @@ APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
 # strings to indicate truthy/falsy values
 TRUE_STRINGS = ('1', 'true', 'True')
 FALSE_STRINGS = ('0', 'false', 'False')
-LOG_LEVELS = ('debug', 'info', 'warn', 'error', 'warning')
+LOG_LEVELS = ('trace', 'debug', 'info', 'warn', 'error', 'warning')
 
 # Lambda defaults
 LAMBDA_TEST_ROLE = 'arn:aws:iam::%s:role/lambda-test-role' % TEST_AWS_ACCOUNT_ID
@@ -88,7 +93,7 @@ ELASTICSEARCH_PLUGIN_LIST = ['analysis-icu', 'ingest-attachment', 'analysis-kuro
  'mapper-murmur3', 'mapper-size', 'analysis-phonetic', 'analysis-smartcn', 'analysis-stempel', 'analysis-ukrainian']
 # Default ES modules to exclude (save apprx 66MB in the final image)
 ELASTICSEARCH_DELETE_MODULES = ['ingest-geoip']
-ELASTICMQ_JAR_URL = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.15.7.jar'
+ELASTICMQ_JAR_URL = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar'
 STS_JAR_URL = 'https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
 STEPFUNCTIONS_ZIP_URL = 'https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip'
 KMS_URL_PATTERN = 'https://s3-eu-west-2.amazonaws.com/local-kms/localstack/v3/local-kms.<arch>.bin'
@@ -134,3 +139,10 @@ TEST_AWS_SECRET_ACCESS_KEY = 'test'
 # credentials being used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = '__internal_call__'
 INTERNAL_AWS_SECRET_ACCESS_KEY = '__internal_call__'
+
+# list of official docker images
+OFFICIAL_IMAGES = ['localstack/localstack', 'localstack/localstack-light', 'localstack/localstack-full']
+
+# s3 virtual host name
+S3_VIRTUAL_HOSTNAME = 's3.%s' % LOCALHOST_HOSTNAME
+S3_STATIC_WEBSITE_HOSTNAME = 's3-website.%s' % LOCALHOST_HOSTNAME

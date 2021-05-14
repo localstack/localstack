@@ -146,7 +146,7 @@
       "Type": "AWS::ApiGateway::ApiKey",
       "Properties": {
         "Name": "ApiGatewayApiKey421",
-        "Value": "test123"
+        "Value": "test123test123test123"
       }
     },
     "ApiGatewayUsagePlan": {

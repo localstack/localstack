@@ -2,6 +2,7 @@
 import os
 import unittest
 import json
+from time import sleep
 from datetime import datetime
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
@@ -94,7 +95,7 @@ class TestDynamoDB(unittest.TestCase):
         for k, item in items.items():
             table.put_item(Item=item)
 
-        # Describe TTL when still unset.
+        # Describe TTL when still unset
         response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'], 'DISABLED')
@@ -364,6 +365,138 @@ class TestDynamoDB(unittest.TestCase):
                                                  get('SequenceNumberRange').get('StartingSequenceNumber'))
         self.assertIn('ShardIterator', response)
 
+    def test_dynamodb_stream_stream_view_type(self):
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
+        table_name = 'table_with_stream-%s' % short_uid()
+        # create table
+        table = dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{'AttributeName': 'Username', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'Username', 'AttributeType': 'S'}],
+            StreamSpecification={
+                'StreamEnabled': True,
+                'StreamViewType': 'KEYS_ONLY',
+            },
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+        )
+        stream_arn = table['TableDescription']['LatestStreamArn']
+        # wait for stream to be created
+        sleep(0.5)
+        # put item in table - Insert event
+        dynamodb.put_item(TableName=table_name, Item={'Username': {'S': 'Fred'}})
+        # update item in table - Modify event
+        dynamodb.update_item(TableName=table_name,
+            Key={'Username': {'S': 'Fred'}},
+            UpdateExpression='set S=:r',
+            ExpressionAttributeValues={
+                ':r': {'S': 'Fred_Modified'}
+            },
+            ReturnValues='UPDATED_NEW'
+        )
+        # delete item in table - Delete event
+        dynamodb.delete_item(TableName=table_name, Key={'Username': {'S': 'Fred'}})
+        result = ddbstreams.describe_stream(StreamArn=stream_arn)
+        # assert stream_view_type of the table
+        self.assertEquals('KEYS_ONLY', result['StreamDescription']['StreamViewType'])
+
+        # get shard iterator
+        response = ddbstreams.get_shard_iterator(StreamArn=stream_arn,
+            ShardId=result['StreamDescription']['Shards'][0]['ShardId'],
+            ShardIteratorType='AT_SEQUENCE_NUMBER',
+            SequenceNumber=result['StreamDescription']['Shards'][0].
+            get('SequenceNumberRange').get('StartingSequenceNumber')
+        )
+
+        # get records
+        record = ddbstreams.get_records(ShardIterator=response['ShardIterator'])
+
+        # assert stream_view_type of records forwarded to the stream
+        self.assertEquals('KEYS_ONLY', record['Records'][0]['dynamodb']['StreamViewType'])
+        self.assertEquals('KEYS_ONLY', record['Records'][1]['dynamodb']['StreamViewType'])
+        self.assertEquals('KEYS_ONLY', record['Records'][2]['dynamodb']['StreamViewType'])
+        # assert Keys present in the record for all insert, modify and delete events
+        self.assertEquals({'Username': {'S': 'Fred'}}, record['Records'][0]['dynamodb']['Keys'])
+        self.assertEquals({'Username': {'S': 'Fred'}}, record['Records'][1]['dynamodb']['Keys'])
+        self.assertEquals({'Username': {'S': 'Fred'}}, record['Records'][2]['dynamodb']['Keys'])
+        # assert oldImage not in the records
+        self.assertNotIn('OldImage', record['Records'][0]['dynamodb'])
+        self.assertNotIn('OldImage', record['Records'][1]['dynamodb'])
+        self.assertNotIn('OldImage', record['Records'][2]['dynamodb'])
+        # assert newImage not in the record
+        self.assertNotIn('NewImage', record['Records'][0]['dynamodb'])
+        self.assertNotIn('NewImage', record['Records'][1]['dynamodb'])
+        self.assertNotIn('NewImage', record['Records'][2]['dynamodb'])
+
+        # clean up
+        delete_table(table_name)
+
+    def test_dynamodb_with_kinesis_stream(self):
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        kinesis = aws_stack.connect_to_service('kinesis')
+
+        # create kinesis datastream
+        kinesis.create_stream(StreamName='kinesis_dest_stream', ShardCount=1)
+        # wait for the stream to be created
+        sleep(1)
+        # Get stream description
+        stream_description = kinesis.describe_stream(StreamName='kinesis_dest_stream')['StreamDescription']
+        table_name = 'table_with_kinesis_stream-%s' % short_uid()
+        # create table
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{'AttributeName': 'Username', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'Username', 'AttributeType': 'S'}],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+        )
+
+        # Enable kinesis destination for the table
+        dynamodb.enable_kinesis_streaming_destination(
+            TableName=table_name, StreamArn=stream_description['StreamARN']
+        )
+
+        # put item into table
+        dynamodb.put_item(TableName=table_name, Item={'Username': {'S': 'Fred'}})
+
+        # get shard iterator of the stream
+        shard_iterator = kinesis.get_shard_iterator(
+            StreamName='kinesis_dest_stream', ShardId=stream_description['Shards'][0]['ShardId'],
+            ShardIteratorType='TRIM_HORIZON')['ShardIterator']
+
+        # get records from the stream
+        rec = kinesis.get_records(ShardIterator=shard_iterator)['Records']
+        # assert records in stream
+        self.assertEquals(1, len(rec))
+
+        # describe kinesis streaming destination of the table
+        describe = dynamodb.describe_kinesis_streaming_destination(
+            TableName=table_name)['KinesisDataStreamDestinations'][0]
+
+        # assert kinesis streaming destination status
+        self.assertEquals(stream_description['StreamARN'], describe['StreamArn'])
+        self.assertEquals('ACTIVE', describe['DestinationStatus'])
+
+        # Disable kinesis destination
+        dynamodb.disable_kinesis_streaming_destination(
+            TableName=table_name, StreamArn=stream_description['StreamARN']
+        )
+
+        # describe kinesis streaming destination of the table
+        describe = dynamodb.describe_kinesis_streaming_destination(
+            TableName=table_name)['KinesisDataStreamDestinations'][0]
+
+        # assert kinesis streaming destination status
+        self.assertEquals(stream_description['StreamARN'], describe['StreamArn'])
+        self.assertEquals('DISABLED', describe['DestinationStatus'])
+
+        # clean up
+        delete_table(table_name)
+        kinesis.delete_stream(StreamName='kinesis_dest_stream')
+
     def test_global_tables(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         dynamodb = aws_stack.connect_to_service('dynamodb')
@@ -523,6 +656,52 @@ class TestDynamoDB(unittest.TestCase):
         # clean up
         dynamodb.delete_table(TableName=table_name)
 
+    def test_batch_write_items(self):
+        table_name = 'test-ddb-table-%s' % short_uid()
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{
+                'AttributeName': 'id', 'KeyType': 'HASH'
+            }],
+            AttributeDefinitions=[{
+                'AttributeName': 'id', 'AttributeType': 'S'
+            }],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+            Tags=TEST_DDB_TAGS
+        )
+        dynamodb.put_item(TableName=table_name, Item={'id': {'S': 'Fred'}})
+        response = dynamodb.batch_write_item(
+            RequestItems={
+                table_name: [
+                    {
+                        'DeleteRequest': {
+                            'Key': {
+                                'id': {
+                                    'S': 'Fred'
+                                }
+                            }
+                        }
+                    },
+                    {
+                        'PutRequest': {
+                            'Item': {
+                                'id': {
+                                    'S': 'Bob'
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        )
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+        # clean up
+        dynamodb.delete_table(TableName=table_name)
+
     def test_dynamodb_stream_records_with_update_item(self):
         table_name = 'test-ddb-table-%s' % short_uid()
         dynamodb = aws_stack.connect_to_service('dynamodb')
@@ -653,6 +832,33 @@ class TestDynamoDB(unittest.TestCase):
 
         dynamodb = aws_stack.connect_to_service('dynamodb')
         dynamodb.delete_table(TableName=table_name)
+
+    def test_dynamodb_batch_write_item(self):
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        table_name = 'ddb-table-%s' % short_uid()
+
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{
+                'AttributeName': 'id', 'KeyType': 'HASH'
+            }],
+            AttributeDefinitions=[{
+                'AttributeName': 'id', 'AttributeType': 'S'
+            }],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+            Tags=TEST_DDB_TAGS
+        )
+
+        result = dynamodb.batch_write_item(RequestItems={table_name: [
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'Test1'}}}},
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'Test2'}}}},
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'Test3'}}}},
+
+        ]})
+
+        self.assertEqual(result.get('UnprocessedItems'), {})
 
 
 def delete_table(name):

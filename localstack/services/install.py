@@ -4,10 +4,13 @@ import re
 import os
 import sys
 import glob
+import time
 import shutil
 import logging
 import tempfile
 from localstack import config
+from localstack.constants import MODULE_MAIN_PATH, INSTALL_DIR_INFRA
+from localstack.utils.common import is_windows
 from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_URLS, ELASTICSEARCH_DEFAULT_VERSION, ELASTICSEARCH_PLUGIN_LIST,
@@ -18,13 +21,9 @@ if __name__ == '__main__':
 # flake8: noqa: E402
 from localstack.utils.common import (
     download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf,
-    chmod_r, is_alpine, in_docker, get_arch)
+    chmod_r, is_alpine, in_docker, get_arch, new_tmp_file)
 
-THIS_PATH = os.path.dirname(os.path.realpath(__file__))
-ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
-
-INSTALL_DIR_INFRA = '%s/infra' % ROOT_PATH
-INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
+INSTALL_DIR_NPM = '%s/node_modules' % MODULE_MAIN_PATH
 INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
 INSTALL_DIR_KCL = '%s/amazon-kinesis-client' % INSTALL_DIR_INFRA
 INSTALL_DIR_STEPFUNCTIONS = '%s/stepfunctions' % INSTALL_DIR_INFRA
@@ -40,6 +39,7 @@ INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, 'kinesalite', 'cli.j
 URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
 MARKER_FILE_LIGHT_VERSION = '%s/.light-version' % INSTALL_DIR_INFRA
+IMAGE_NAME_SFN_LOCAL = 'amazon/aws-stepfunctions-local'
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
@@ -142,7 +142,7 @@ def install_elasticmq():
 def install_kinesalite():
     if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
         log_install_msg('Kinesis')
-        run('cd "%s" && npm install' % ROOT_PATH)
+        run('cd "%s" && npm install' % MODULE_MAIN_PATH)
 
 
 def install_local_kms():
@@ -158,25 +158,34 @@ def install_local_kms():
 
 def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
+        # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
         log_install_msg('Step Functions')
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'stepfunctions.zip')
-        download_and_extract_with_retry(
-            STEPFUNCTIONS_ZIP_URL, tmp_archive, INSTALL_DIR_STEPFUNCTIONS)
+        mkdir(INSTALL_DIR_STEPFUNCTIONS)
+        run('{dc} pull {img}'.format(dc=config.DOCKER_CMD, img=IMAGE_NAME_SFN_LOCAL))
+        docker_name = 'tmp-ls-sfn'
+        run(('{dc} run --name={dn} --entrypoint= -d --rm {img} sleep 15').format(
+                dc=config.DOCKER_CMD, dn=docker_name, img=IMAGE_NAME_SFN_LOCAL))
+        time.sleep(5)
+        run('{dc} cp {dn}:/home/stepfunctionslocal/ {tgt}'.format(dc=config.DOCKER_CMD,
+            dn=docker_name, tgt=INSTALL_DIR_INFRA))
+        run('mv %s/stepfunctionslocal/*.jar %s' % (INSTALL_DIR_INFRA, INSTALL_DIR_STEPFUNCTIONS))
+        rm_rf('%s/stepfunctionslocal' % INSTALL_DIR_INFRA)
 
 
 def install_dynamodb_local():
     if OVERWRITE_DDB_FILES_IN_DOCKER and in_docker():
         rm_rf(INSTALL_DIR_DDB)
+    is_in_alpine = is_alpine()
     if not os.path.exists(INSTALL_PATH_DDB_JAR):
         log_install_msg('DynamoDB')
         # download and extract archive
         tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
-        dynamodb_url = DYNAMODB_JAR_URL_ALPINE if in_docker() else DYNAMODB_JAR_URL
+        dynamodb_url = DYNAMODB_JAR_URL_ALPINE if is_in_alpine else DYNAMODB_JAR_URL
         download_and_extract_with_retry(dynamodb_url, tmp_archive, INSTALL_DIR_DDB)
 
     # fix for Alpine, otherwise DynamoDBLocal fails with:
     # DynamoDBLocal_lib/libsqlite4java-linux-amd64.so: __memcpy_chk: symbol not found
-    if is_alpine():
+    if is_in_alpine:
         ddb_libs_dir = '%s/DynamoDBLocal_lib' % INSTALL_DIR_DDB
         patched_marker = '%s/alpine_fix_applied' % ddb_libs_dir
         if APPLY_DDB_ALPINE_FIX and not os.path.exists(patched_marker):
@@ -215,8 +224,11 @@ def install_amazon_kinesis_client_libs():
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
     classpath = kclipy_helper.get_kcl_classpath()
-    java_files = '%s/utils/kinesis/java/cloud/localstack/*.java' % ROOT_PATH
-    class_files = '%s/utils/kinesis/java/cloud/localstack/*.class' % ROOT_PATH
+
+    if is_windows():
+        classpath = re.sub(r':([^\\])', r';\1', classpath)
+    java_files = '%s/utils/kinesis/java/cloud/localstack/*.java' % MODULE_MAIN_PATH
+    class_files = '%s/utils/kinesis/java/cloud/localstack/*.class' % MODULE_MAIN_PATH
     if not glob.glob(class_files):
         run('javac -source %s -target %s -cp "%s" %s' % (
             JAVAC_TARGET_VERSION, JAVAC_TARGET_VERSION, classpath, java_files))
@@ -229,13 +241,20 @@ def install_lambda_java_libs():
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
 
 
+def install_cloudformation_libs():
+    from localstack.services.cloudformation import deployment_utils
+    # trigger download of CF module file
+    deployment_utils.get_cfn_response_mod_file()
+
+
 def install_component(name):
     installers = {
-        'kinesis': install_kinesalite,
+        'cloudformation': install_cloudformation_libs,
         'dynamodb': install_dynamodb_local,
+        'kinesis': install_kinesalite,
+        'kms': install_local_kms,
         'sqs': install_elasticmq,
         'stepfunctions': install_stepfunctions_local,
-        'kms': install_local_kms
     }
     installer = installers.get(name)
     if installer:
@@ -264,30 +283,37 @@ def log_install_msg(component, verbatim=False):
     LOG.info('Downloading and installing %s. This may take some time.' % component)
 
 
-def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
+def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
 
-    def download_and_extract():
-        if not os.path.exists(tmp_archive):
-            # create temporary placeholder file, to avoid duplicate parallel downloads
-            save_file(tmp_archive, '')
-            download(archive_url, tmp_archive)
+    tmp_archive = tmp_archive or new_tmp_file()
+    if not os.path.exists(tmp_archive):
+        # create temporary placeholder file, to avoid duplicate parallel downloads
+        save_file(tmp_archive, '')
+        for i in range(retries + 1):
+            try:
+                download(archive_url, tmp_archive)
+                break
+            except Exception:
+                time.sleep(sleep)
 
-        _, ext = os.path.splitext(tmp_archive)
-        if ext == '.zip':
-            unzip(tmp_archive, target_dir)
-        elif ext == '.gz' or ext == '.bz2':
-            untar(tmp_archive, target_dir)
-        else:
-            raise Exception('Unsupported archive format: %s' % ext)
+    _, ext = os.path.splitext(tmp_archive)
+    if ext == '.zip':
+        unzip(tmp_archive, target_dir)
+    elif ext == '.gz' or ext == '.bz2':
+        untar(tmp_archive, target_dir)
+    else:
+        raise Exception('Unsupported archive format: %s' % ext)
 
+
+def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
     try:
-        download_and_extract()
+        download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
     except Exception as e:
         # try deleting and re-downloading the zip file
         LOG.info('Unable to extract file, re-downloading ZIP archive %s: %s' % (tmp_archive, e))
         rm_rf(tmp_archive)
-        download_and_extract()
+        download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
 
 
 if __name__ == '__main__':

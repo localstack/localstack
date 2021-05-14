@@ -6,8 +6,8 @@ Resources:
   SQSQueue2:
     Type: AWS::SQS::Queue
     Properties:
-      QueueName: cf-test-queue-2
-  SNSTopic1:
+      QueueName: !Sub local-${AWS::Region}-DLQ
+  SNSTopic:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: cf-test-topic-1
@@ -19,8 +19,8 @@ Resources:
           Endpoint:
             "Fn::GetAtt": ["SQSQueue2", "Arn"]
 Outputs:
-  T27SQSQueue1URL:
+  T27SQSQueueURL:
     Value:
-      Ref: SQSQueue1
+      Ref: SQSQueue2
     Export:
-      Name: T27SQSQueue1-URL
+      Name: T27SQSQueue-URL

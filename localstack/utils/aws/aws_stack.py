@@ -3,6 +3,7 @@ import re
 import json
 import time
 import boto3
+import socket
 import logging
 import six
 import botocore
@@ -10,10 +11,12 @@ from localstack import config
 from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID, REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
     APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
-    MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
+    MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, S3_VIRTUAL_HOSTNAME)
 from localstack.utils.aws import templating
+from localstack.utils.generic import dict_utils
 from localstack.utils.common import (
-    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol, retry)
+    run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
+    is_port_open, get_service_protocol, retry, to_bytes)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -45,6 +48,12 @@ DEFAULT_TIMER_LOOP_SECONDS = 60 * 50
 
 # maps SQS queue ARNs to queue URLs
 SQS_ARN_TO_URL_CACHE = {}
+
+# List of parameters with additional event target parameters
+EVENT_TARGET_PARAMETERS = ['$.SqsParameters', '$.KinesisParameters']
+
+# cached value used to determine the DNS status of the S3 hostname (whether it can be resolved properly)
+CACHE_S3_HOSTNAME_DNS_STATUS = None
 
 
 class Environment(object):
@@ -171,7 +180,7 @@ def get_local_region():
     if LOCAL_REGION is None:
         session = boto3.session.Session()
         LOCAL_REGION = session.region_name or ''
-    return LOCAL_REGION or config.DEFAULT_REGION
+    return config.DEFAULT_REGION or LOCAL_REGION
 
 
 def is_internal_call_context(headers):
@@ -227,7 +236,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     region_name = region_name or get_region()
     env = get_environment(env, region_name=region_name)
     region = env.region if env.region != REGION_LOCAL else region_name
-    key_elements = [service_name, client, env, region, endpoint_url, config]
+    key_elements = [service_name, client, env, region, endpoint_url, config, kwargs]
     cache_key = '/'.join([str(k) for k in key_elements])
     if not cache or cache_key not in BOTO_CLIENTS_CACHE:
         # Cache clients, as this is a relatively expensive operation
@@ -242,19 +251,33 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
             if backend_url:
                 endpoint_url = backend_url
         config = config or botocore.client.Config()
-        # configure S3 path style addressing
+        # configure S3 path/host style addressing
         if service_name == 's3':
-            config.s3 = {'addressing_style': 'path'}
+            if re.match(r'https?://localhost(:[0-9]+)?', endpoint_url):
+                endpoint_url = endpoint_url.replace('://localhost', '://%s' % get_s3_hostname())
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         config.max_pool_connections = MAX_POOL_CONNECTIONS
         result = method(service_name, region_name=region,
-            endpoint_url=endpoint_url, verify=verify, config=config)
+            endpoint_url=endpoint_url, verify=verify, config=config, **kwargs)
         if not cache:
             return result
         BOTO_CLIENTS_CACHE[cache_key] = result
 
     return BOTO_CLIENTS_CACHE[cache_key]
+
+
+def get_s3_hostname():
+    global CACHE_S3_HOSTNAME_DNS_STATUS
+    if CACHE_S3_HOSTNAME_DNS_STATUS is None:
+        try:
+            assert socket.gethostbyname(S3_VIRTUAL_HOSTNAME)
+            CACHE_S3_HOSTNAME_DNS_STATUS = True
+        except socket.error:
+            CACHE_S3_HOSTNAME_DNS_STATUS = False
+    if CACHE_S3_HOSTNAME_DNS_STATUS:
+        return S3_VIRTUAL_HOSTNAME
+    return LOCALHOST
 
 
 # TODO remove from here in the future
@@ -332,22 +355,35 @@ def inject_test_credentials_into_env(env):
         env[ENV_SECRET_KEY] = 'test'
 
 
+def inject_region_into_env(env, region):
+    env['AWS_REGION'] = region
+
+
 def sqs_queue_url_for_arn(queue_arn):
     if '://' in queue_arn:
         return queue_arn
     if queue_arn in SQS_ARN_TO_URL_CACHE:
         return SQS_ARN_TO_URL_CACHE[queue_arn]
-    sqs_client = connect_to_service('sqs')
-    parts = queue_arn.split(':')
-    result = sqs_client.get_queue_url(QueueName=parts[5], QueueOwnerAWSAccountId=parts[4])['QueueUrl']
+    region_name = extract_region_from_arn(queue_arn)
+    sqs_client = connect_to_service('sqs', region_name=region_name)
+    queue_name = sqs_queue_name(queue_arn)
+    result = sqs_client.get_queue_url(QueueName=queue_name)['QueueUrl']
     SQS_ARN_TO_URL_CACHE[queue_arn] = result
     return result
 
 
-def extract_region_from_auth_header(headers):
+# TODO: remove and merge with sqs_queue_url_for_arn(..) above!!
+def get_sqs_queue_url(queue_arn):
+    return sqs_queue_url_for_arn(queue_arn)
+
+
+def extract_region_from_auth_header(headers, use_default=True):
     auth = headers.get('Authorization') or ''
     region = re.sub(r'.*Credential=[^/]+/[^/]+/([^/]+)/.*', r'\1', auth)
-    region = region or get_region()
+    if region == auth:
+        region = None
+    if use_default:
+        region = region or get_region()
     return region
 
 
@@ -399,9 +435,11 @@ def get_iam_role(resource, env=None):
     return 'role-%s' % resource
 
 
-def secretsmanager_secret_arn(secret_name, account_id=None, region_name=None):
+def secretsmanager_secret_arn(secret_id, account_id=None, region_name=None):
+    if ':' in (secret_id or ''):
+        return secret_id
     pattern = 'arn:aws:secretsmanager:%s:%s:secret:%s'
-    return _resource_arn(secret_name, pattern, account_id=account_id, region_name=region_name)
+    return _resource_arn(secret_id, pattern, account_id=account_id, region_name=region_name)
 
 
 def cloudformation_stack_arn(stack_name, stack_id=None, account_id=None, region_name=None):
@@ -520,6 +558,11 @@ def es_domain_arn(domain_name, account_id=None, region_name=None):
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def kms_key_arn(key_id, account_id=None, region_name=None):
+    pattern = 'arn:aws:kms:%s:%s:key/%s'
+    return _resource_arn(key_id, pattern, account_id=account_id, region_name=region_name)
+
+
 def code_signing_arn(code_signing_id, account_id=None, region_name=None):
     pattern = 'arn:aws:lambda:%s:%s:code-signing-config:%s'
     return _resource_arn(code_signing_id, pattern, account_id=account_id, region_name=region_name)
@@ -534,38 +577,83 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
         return name
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
+    if len(pattern.split('%s')) == 3:
+        return pattern % (account_id, name)
     return pattern % (region_name, account_id, name)
 
 
-def send_event_to_target(arn, event, target_attributes=None):
+def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
+    region = arn.split(':')[3]
+
     if ':lambda:' in arn:
         from localstack.services.awslambda import lambda_api
-        lambda_api.run_lambda(event=event, context={}, func_arn=arn)
+        lambda_api.run_lambda(func_arn=arn, event=event, context={}, asynchronous=asynchronous)
 
     elif ':sns:' in arn:
-        sns_client = connect_to_service('sns')
+        sns_client = connect_to_service('sns', region_name=region)
         sns_client.publish(TopicArn=arn, Message=json.dumps(event))
 
     elif ':sqs:' in arn:
-        sqs_client = connect_to_service('sqs')
+        sqs_client = connect_to_service('sqs', region_name=region)
         queue_url = get_sqs_queue_url(arn)
-
-        msg_group_id = (target_attributes or {}).get('MessageGroupId')
+        msg_group_id = dict_utils.get_safe(target_attributes, '$.SqsParameters.MessageGroupId')
         kwargs = {'MessageGroupId': msg_group_id} if msg_group_id else {}
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 
-    elif ':states' in arn:
-        stepfunctions_client = connect_to_service('stepfunctions')
+    elif ':states:' in arn:
+        stepfunctions_client = connect_to_service('stepfunctions', region_name=region)
         stepfunctions_client.start_execution(stateMachineArn=arn, input=json.dumps(event))
 
+    elif ':firehose:' in arn:
+        delivery_stream_name = firehose_name(arn)
+        firehose_client = connect_to_service('firehose', region_name=region)
+        firehose_client.put_record(
+            DeliveryStreamName=delivery_stream_name,
+            Record={'Data': to_bytes(json.dumps(event))})
+
+    elif ':events:' in arn:
+        bus_name = arn.split(':')[-1].split('/')[-1]
+        events_client = connect_to_service('events', region_name=region)
+        events_client.put_events(
+            Entries=[{
+                'EventBusName': bus_name,
+                'Source': event.get('source'),
+                'DetailType': event.get('detail-type'),
+                'Detail': event.get('detail')
+            }]
+        )
+
+    elif ':kinesis:' in arn:
+        partition_key_path = dict_utils.get_safe(
+            target_attributes,
+            '$.KinesisParameters.PartitionKeyPath',
+            default_value='$.id'
+        )
+
+        stream_name = arn.split('/')[-1]
+        partition_key = dict_utils.get_safe(event, partition_key_path, event['id'])
+        kinesis_client = connect_to_service('kinesis', region_name=region)
+
+        kinesis_client.put_record(
+            StreamName=stream_name,
+            Data=to_bytes(json.dumps(event)),
+            PartitionKey=partition_key
+        )
+
     else:
-        LOG.info('Unsupported Events rule target ARN "%s"' % arn)
+        LOG.warning('Unsupported Events rule target ARN: "%s"' % arn)
 
 
 def get_events_target_attributes(target):
-    # added for sqs, if needed can be moved to an if else
-    # block for multiple targets
-    return target.get('SqsParameters')
+    return dict_utils.pick_attributes(target, EVENT_TARGET_PARAMETERS)
+
+
+def get_or_create_bucket(bucket_name):
+    s3_client = connect_to_service('s3')
+    try:
+        return s3_client.head_bucket(Bucket=bucket_name)
+    except Exception:
+        return s3_client.create_bucket(Bucket=bucket_name)
 
 
 def create_sqs_queue(queue_name, env=None):
@@ -596,14 +684,6 @@ def sqs_queue_name(queue_arn):
 def sns_topic_arn(topic_name, account_id=None):
     account_id = get_account_id(account_id)
     return ('arn:aws:sns:%s:%s:%s' % (get_region(), account_id, topic_name))
-
-
-def get_sqs_queue_url(queue_arn):
-    region_name = extract_region_from_arn(queue_arn)
-    queue_name = sqs_queue_name(queue_arn)
-    client = connect_to_service('sqs', region_name=region_name)
-    response = client.get_queue_url(QueueName=queue_name)
-    return response['QueueUrl']
 
 
 def sqs_receive_message(queue_arn):
@@ -908,8 +988,8 @@ def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None):
     return result
 
 
-def get_stack_details(stack_name):
-    cloudformation = connect_to_service('cloudformation')
+def get_stack_details(stack_name, region_name=None):
+    cloudformation = connect_to_service('cloudformation', region_name=region_name)
     stacks = cloudformation.describe_stacks(StackName=stack_name)
     for stack in stacks['Stacks']:
         if stack['StackName'] == stack_name:
@@ -923,30 +1003,18 @@ def deploy_cf_stack(stack_name, template_body):
     return await_stack_completion(stack_name)
 
 
-def await_stack_status(stack_name, expected_statuses, retries=3, sleep=2):
+def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2, region_name=None):
     def check_stack():
-        stack = get_stack_details(stack_name)
-        assert stack['StackStatus'] in expected_statuses
+        stack = get_stack_details(stack_name, region_name=region_name)
+        if stack['StackStatus'] not in expected_statuses:
+            raise Exception('Status "%s" for stack "%s" not in expected list: %s' % (
+                stack['StackStatus'], stack_name, expected_statuses))
         return stack
 
     expected_statuses = expected_statuses if isinstance(expected_statuses, list) else [expected_statuses]
     return retry(check_stack, retries, sleep)
 
 
-def await_stack_completion(stack_name, retries=3, sleep=2, statuses=None):
+def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None, region_name=None):
     statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
-    return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
-
-
-# TODO: move to aws_responses.py?
-def extract_tags(req_data):
-    tags = []
-    for i in range(1, 200):
-        k1 = 'Tags.member.%s.Key' % i
-        k2 = 'Tags.member.%s.Value' % i
-        key = req_data.get(k1)
-        value = req_data.get(k2, '')
-        if key is None:
-            break
-        tags.append({'Key': key, 'Value': value})
-    return tags
+    return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep, region_name=region_name)

@@ -32,7 +32,8 @@ def add_dynamodb_stream(table_name, latest_stream_label=None, view_type='NEW_AND
             'StreamLabel': latest_stream_label,
             'StreamStatus': 'ENABLED',
             'KeySchema': [],
-            'Shards': []
+            'Shards': [],
+            'StreamViewType': view_type
         }
         table_arn = aws_stack.dynamodb_table_arn(table_name)
         DDB_STREAMS[table_arn] = stream

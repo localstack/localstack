@@ -7,13 +7,11 @@ import ipaddress
 from moto.events.models import Rule as rule_model
 from moto.events.responses import EventsHandler as events_handler
 from localstack import config
-from localstack.constants import (
-    APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID)
+from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_bytes, extract_jsonpath
+from localstack.utils.common import short_uid, extract_jsonpath
 from localstack.services.infra import start_moto_server
 from localstack.services.events.scheduler import JobScheduler
-from localstack.services.awslambda.lambda_api import run_lambda
 from localstack.services.events.events_listener import _create_and_register_temp_dir, _dump_events_to_files
 
 
@@ -31,31 +29,6 @@ CONTENT_BASE_FILTER_KEYWORDS = [
 ]
 
 
-def send_event_to_sqs(event, arn):
-    region = arn.split(':')[3]
-    queue_url = aws_stack.get_sqs_queue_url(arn)
-    sqs_client = aws_stack.connect_to_service('sqs', region_name=region)
-    sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
-
-
-def send_event_to_sns(event, arn):
-    region = arn.split(':')[3]
-    sns_client = aws_stack.connect_to_service('sns', region_name=region)
-    sns_client.publish(TopicArn=arn, Message=json.dumps(event))
-
-
-def send_event_to_lambda(event, arn):
-    run_lambda(event=event, context={}, func_arn=arn, asynchronous=True)
-
-
-def send_event_to_firehose(event, arn):
-    delivery_stream_name = aws_stack.firehose_name(arn)
-    firehose_client = aws_stack.connect_to_service('firehose')
-    firehose_client.put_record(
-        DeliveryStreamName=delivery_stream_name,
-        Record={'Data': to_bytes(json.dumps(event))})
-
-
 def filter_event_with_target_input_path(target, event):
     input_path = target.get('InputPath')
     if input_path:
@@ -63,14 +36,58 @@ def filter_event_with_target_input_path(target, event):
     return event
 
 
+def handle_prefix_filtering(event_pattern, value):
+    if isinstance(event_pattern, list):
+        for element in event_pattern:
+            if isinstance(element, (int, str)):
+                if str(element) == str(value):
+                    return True
+            elif isinstance(element, dict) and 'prefix' in element:
+                if value.startswith(element.get('prefix')):
+                    return True
+            elif isinstance(element, dict) and 'anything-but' in element:
+                if element.get('anything-but') != value:
+                    return True
+            elif 'numeric' in element:
+                return handle_numeric_conditions(element.get('numeric'), value)
+            elif isinstance(element, list):
+                if value in list:
+                    return True
+    return False
+
+
+def handle_numeric_conditions(conditions, value):
+    for i in range(0, len(conditions), 2):
+        if conditions[i] == '<' and not (value < conditions[i + 1]):
+            return False
+        if conditions[i] == '>' and not (value > conditions[i + 1]):
+            return False
+        if conditions[i] == '<=' and not (value <= conditions[i + 1]):
+            return False
+        if conditions[i] == '>=' and not (value >= conditions[i + 1]):
+            return False
+    return True
+
+
 def filter_event_based_on_event_format(self, rule, event):
-    def filter_event(event_pattern, event):
-        for key, value in event_pattern.items():
+    def filter_event(event_pattern_filter, event):
+        for key, value in event_pattern_filter.items():
             event_value = event.get(key.lower())
             if not event_value:
                 return False
 
-            if isinstance(value, list) and not identify_content_base_parameter_in_pattern(value):
+            if event_value and isinstance(event_value, dict):
+                for key_a, value_a in event_value.items():
+                    if key_a == 'ip':
+                        # TODO add IP-Address check here
+                        continue
+                    if isinstance(value.get(key_a), (int, str)):
+                        if value_a != value.get(key_a):
+                            return False
+                    if not handle_prefix_filtering(value.get(key_a), value_a):
+                        return False
+
+            elif isinstance(value, list) and not identify_content_base_parameter_in_pattern(value):
                 if isinstance(event_value, list) and \
                    get_two_lists_intersection(value, event_value) == []:
                     return False
@@ -83,18 +100,18 @@ def filter_event_based_on_event_format(self, rule, event):
                 if not filter_event_with_content_base_parameter(value, event_value):
                     return False
 
-            elif isinstance(value, (str, int)):
+            elif isinstance(value, (str, dict)):
                 try:
-                    if isinstance(json.loads(value), dict) and \
-                       not filter_event(json.loads(value), event_value):
+                    value = json.loads(value) if isinstance(value, str) else value
+                    if isinstance(value, dict) and not filter_event(value, event_value):
                         return False
                 except json.decoder.JSONDecodeError:
                     return False
         return True
 
     rule_information = self.events_backend.describe_rule(rule)
-    if rule_information.event_pattern:
-        event_pattern = json.loads(rule_information.event_pattern)
+    if rule_information.event_pattern._filter:
+        event_pattern = rule_information.event_pattern._filter
         if not filter_event(event_pattern, event):
             return False
     return True
@@ -103,22 +120,8 @@ def filter_event_based_on_event_format(self, rule, event):
 def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
-        service = arn.split(':')[2]
         changed_event = filter_event_with_target_input_path(target, event)
-        if service == 'sqs':
-            send_event_to_sqs(changed_event, arn)
-
-        elif service == 'sns':
-            send_event_to_sns(changed_event, arn)
-
-        elif service == 'lambda':
-            send_event_to_lambda(changed_event, arn)
-
-        elif service == 'firehose':
-            send_event_to_firehose(changed_event, arn)
-
-        else:
-            LOG.warning('Unsupported Events target service type "%s"' % service)
+        aws_stack.send_event_to_target(arn, changed_event, aws_stack.get_events_target_attributes(target))
 
 
 def apply_patches():
@@ -147,14 +150,26 @@ def apply_patches():
         name = self._get_param('Name')
         event_bus = self._get_param('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
-        EVENT_RULES.get(event_bus, set()).remove(name)
+        rules_set = EVENT_RULES.get(event_bus, set())
+        if name not in rules_set:
+            return self.error('ValidationException', 'Rule "%s" not found for event bus "%s"' % (name, event_bus))
+        rules_set.remove(name)
 
         return events_handler_delete_rule_orig(self)
 
     # 2101 Events put-targets does not respond
     def events_handler_put_targets(self):
+
+        def is_rule_present(rule_name):
+            if EVENT_RULES.get(event_bus):
+                for rule in EVENT_RULES.get(event_bus):
+                    if rule == rule_name:
+                        return True
+            return False
+
         rule_name = self._get_param('Rule')
         targets = self._get_param('Targets')
+        event_bus = self._get_param('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
         if not rule_name:
             return self.error('ValidationException', 'Parameter Rule is required.')
@@ -162,10 +177,11 @@ def apply_patches():
         if not targets:
             return self.error('ValidationException', 'Parameter Targets is required.')
 
-        if not self.events_backend.put_targets(rule_name, targets):
-            return self.error(
-                'ResourceNotFoundException', 'Rule ' + rule_name + ' does not exist.'
-            )
+        if not self.events_backend.put_targets(rule_name, event_bus, targets):
+            if not is_rule_present(rule_name):
+                return self.error(
+                    'ResourceNotFoundException', 'Rule ' + rule_name + ' does not exist.'
+                )
 
         return json.dumps({'FailedEntryCount': 0, 'FailedEntries': []}), self.response_headers
 
@@ -193,7 +209,7 @@ def apply_patches():
                 'time': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'region': self.region,
                 'resources': event.get('Resources', []),
-                'detail': json.loads(event.get('Detail')),
+                'detail': json.loads(event.get('Detail', '{}')),
             }
 
             targets = []
@@ -218,7 +234,6 @@ def apply_patches():
     rule_model._generate_arn = rule_model_generate_arn
     events_handler.put_rule = events_handler_put_rule
     events_handler.delete_rule = events_handler_delete_rule
-    events_handler.put_targets = events_handler_put_targets
     events_handler.put_events = events_handler_put_events
 
 

@@ -15,7 +15,8 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import (
     to_str, json_safe, clone, short_uid, get_free_tcp_port,
     load_file, select_attributes, safe_requests as requests)
-from localstack.services.generic_proxy import GenericProxy, ProxyListener
+from localstack.services.infra import start_proxy
+from localstack.services.generic_proxy import ProxyListener
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs, gateway_request_url)
 from localstack.services.awslambda.lambda_api import add_event_source
@@ -24,6 +25,7 @@ from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, 'files', 'swagger.json')
+TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, 'files', 'pets.json')
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 
 
@@ -213,6 +215,7 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(result.status_code, 200)
         self.assertTrue(re.match(result.headers['Access-Control-Allow-Origin'].replace('*', '.*'), origin))
         self.assertIn('POST', result.headers['Access-Control-Allow-Methods'])
+        self.assertIn('PATCH', result.headers['Access-Control-Allow-Methods'])
 
         custom_result = json.dumps({'foo': 'bar'})
 
@@ -534,73 +537,6 @@ class TestAPIGateway(unittest.TestCase):
         lambda_client.delete_function(FunctionName=lambda_name)
         apigw_client.delete_rest_api(restApiId=api_id)
 
-    # =====================================================================
-    # Helper methods
-    # =====================================================================
-
-    def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
-        resources = {}
-        template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
-        resource_path = self.API_PATH_DATA_INBOUND.replace('/', '')
-        resources[resource_path] = [{
-            'httpMethod': 'POST',
-            'authorizationType': 'NONE',
-            'integrations': [{
-                'type': 'AWS',
-                'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % aws_stack.get_region(),
-                'requestTemplates': {
-                    'application/json': template
-                }
-            }]
-        }, {
-            'httpMethod': 'GET',
-            'authorizationType': 'NONE',
-            'integrations': [{
-                'type': 'AWS',
-                'uri': 'arn:aws:apigateway:%s:kinesis:action/ListStreams' % aws_stack.get_region(),
-                'requestTemplates': {
-                    'application/json': '{}'
-                }
-            }]
-        }]
-        return aws_stack.create_api_gateway(
-            name=gateway_name,
-            resources=resources,
-            stage_name=self.TEST_STAGE_NAME
-        )
-
-    def connect_api_gateway_to_http(self, int_type, gateway_name, target_url, methods=[], path=None):
-        if not methods:
-            methods = ['GET', 'POST']
-        if not path:
-            path = '/'
-        resources = {}
-        resource_path = path.replace('/', '')
-        resources[resource_path] = []
-        req_templates = {
-            'application/json': json.dumps({'foo': 'bar'})
-        } if int_type == 'custom' else {}
-        for method in methods:
-            resources[resource_path].append({
-                'httpMethod': method,
-                'integrations': [{
-                    'type': 'HTTP' if int_type == 'custom' else 'HTTP_PROXY',
-                    'uri': target_url,
-                    'requestTemplates': req_templates,
-                    'responseTemplates': {}
-                }]
-            })
-        return aws_stack.create_api_gateway(
-            name=gateway_name,
-            resources=resources,
-            stage_name=self.TEST_STAGE_NAME
-        )
-
-    @staticmethod
-    def create_lambda_function(fn_name):
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name)
-
     def test_create_model(self):
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
@@ -646,6 +582,9 @@ class TestAPIGateway(unittest.TestCase):
             self.assertEqual(e.response['Error']['Code'], 'BadRequestException')
             self.assertEqual(e.response['Error']['Message'], 'No Model Name specified')
 
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
     def test_get_api_models(self):
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
@@ -669,27 +608,81 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(result['items'][0]['name'], model_name)
         self.assertEqual(result['items'][0]['description'], description)
 
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
     def test_request_validator(self):
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
         rest_api_id = response['id']
+        # CREATE
         name = 'validator123'
         result = client.create_request_validator(restApiId=rest_api_id, name=name)
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
         validator_id = result['id']
+        # LIST
         result = client.get_request_validators(restApiId=rest_api_id)
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(result['items'], [{'id': validator_id, 'name': name}])
+        # GET
         result = client.get_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(select_attributes(result, ['id', 'name']), {'id': validator_id, 'name': name})
+        # UPDATE
         result = client.update_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id,
             patchOperations=[])
+        # DELETE
         client.delete_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
         with self.assertRaises(Exception):
             client.get_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
         with self.assertRaises(Exception):
             client.delete_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
+    def test_base_path_mapping(self):
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='this is my api')
+        rest_api_id = response['id']
+
+        # CREATE
+        domain_name = 'domain1.example.com'
+        base_path = '/foo'
+        result = client.create_base_path_mapping(
+            domainName=domain_name, basePath=base_path, restApiId=rest_api_id, stage='dev')
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        # LIST
+        result = client.get_base_path_mappings(domainName=domain_name)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        expected = {'basePath': base_path, 'restApiId': rest_api_id, 'stage': 'dev'}
+        self.assertEqual(result['items'], [expected])
+        # GET
+        result = client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(select_attributes(result, ['basePath', 'restApiId', 'stage']), expected)
+        # UPDATE
+        result = client.update_base_path_mapping(domainName=domain_name, basePath=base_path,
+            patchOperations=[])
+        # DELETE
+        client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
+        with self.assertRaises(Exception):
+            client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
+        with self.assertRaises(Exception):
+            client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
+
+    def test_api_account(self):
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='test 123')
+        rest_api_id = response['id']
+
+        result = client.get_account()
+        self.assertIn('UsagePlans', result['features'])
+        result = client.update_account(patchOperations=[{'op': 'add', 'path': '/features/-', 'value': 'foobar'}])
+        self.assertIn('foobar', result['features'])
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
 
     def test_get_model_by_name(self):
         client = aws_stack.connect_to_service('apigateway')
@@ -732,6 +725,9 @@ class TestAPIGateway(unittest.TestCase):
 
         except ClientError as e:
             self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
         api_id = self.create_api_gateway_and_deploy({})
@@ -802,6 +798,55 @@ class TestAPIGateway(unittest.TestCase):
         # when the api key is passed as part of the header
         self.assertEqual(response.status_code, 200)
 
+    def test_multiple_api_keys_validate(self):
+        response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
+                                                              'Item': {'id': '$.Id', 'data': '$.data'}})}
+
+        api_id = self.create_api_gateway_and_deploy(response_templates, True)
+        url = gateway_request_url(api_id=api_id, stage_name='staging', path='/')
+
+        client = aws_stack.connect_to_service('apigateway')
+
+        # Create multiple usage plans
+        usage_plan_ids = []
+        for i in range(2):
+            payload = {
+                'name': 'APIKEYTEST-PLAN-{}'.format(i),
+                'description': 'Description',
+                'quota': {'limit': 10, 'period': 'DAY', 'offset': 0},
+                'throttle': {'rateLimit': 2, 'burstLimit': 1},
+                'apiStages': [{'apiId': api_id, 'stage': 'staging'}],
+                'tags': {'tag_key': 'tag_value'},
+            }
+            usage_plan_ids.append(client.create_usage_plan(**payload)['id'])
+
+        api_keys = []
+        key_type = 'API_KEY'
+        # Create multiple API Keys in each usage plan
+        for usage_plan_id in usage_plan_ids:
+            for i in range(2):
+                api_key = client.create_api_key(name='testMultipleApiKeys{}'.format(i))
+                payload = {'usagePlanId': usage_plan_id, 'keyId': api_key['id'], 'keyType': key_type}
+                client.create_usage_plan_key(**payload)
+                api_keys.append(api_key['value'])
+
+        response = requests.put(
+            url,
+            json.dumps({'id': 'id1', 'data': 'foobar123'}),
+        )
+        # when the api key is not passed as part of the header
+        self.assertEqual(response.status_code, 403)
+
+        # Check All API Keys work
+        for key in api_keys:
+            response = requests.put(
+                url,
+                json.dumps({'id': 'id1', 'data': 'foobar123'}),
+                headers={'X-API-Key': key}
+            )
+            # when the api key is passed as part of the header
+            self.assertEqual(response.status_code, 200)
+
     def test_import_rest_api(self):
         rest_api_name = 'restapi-%s' % short_uid()
 
@@ -810,7 +855,8 @@ class TestAPIGateway(unittest.TestCase):
 
         spec_file = load_file(TEST_SWAGGER_FILE)
         rs = client.put_rest_api(
-            restApiId=rest_api_id, body=spec_file)
+            restApiId=rest_api_id, body=spec_file, mode='overwrite'
+        )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         rs = client.get_resources(restApiId=rest_api_id)
@@ -819,6 +865,25 @@ class TestAPIGateway(unittest.TestCase):
         resource = rs['items'][0]
         self.assertEqual(resource['path'], '/test')
         self.assertIn('GET', resource['resourceMethods'])
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
+        spec_file = load_file(TEST_IMPORT_REST_API_FILE)
+        rs = client.import_rest_api(
+            body=spec_file
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rest_api_id = rs['id']
+
+        rs = client.get_resources(restApiId=rest_api_id)
+        resources = rs['items']
+        self.assertEqual(len(resources), 2)
+
+        paths = [res['path'] for res in resources]
+        self.assertIn('/pets', paths)
+        self.assertIn('/pets/{petId}', paths)
 
         # clean up
         client.delete_rest_api(restApiId=rest_api_id)
@@ -841,14 +906,10 @@ class TestAPIGateway(unittest.TestCase):
             }
         }
 
-        fn_name = 'test-stepfunctions-apigw'
-
         # create state machine
+        fn_name = 'test-stepfunctions-apigw'
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
-            func_name=fn_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36
-        )
+            handler_file=TEST_LAMBDA_ECHO_FILE, func_name=fn_name, runtime=LAMBDA_RUNTIME_PYTHON36)
 
         resp = lambda_client.list_functions()
         role_arn = aws_stack.role_arn('sfn_role')
@@ -860,17 +921,9 @@ class TestAPIGateway(unittest.TestCase):
         sm_arn = 'arn:aws:states:%s:%s:stateMachine:%s' \
             % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, state_machine_name)
 
-        sfn_client.create_state_machine(
-            name=state_machine_name, definition=definition, roleArn=role_arn)
-
-        rest_api = client.create_rest_api(
-            name='test',
-            description='test'
-        )
-
-        resources = client.get_resources(
-            restApiId=rest_api['id']
-        )
+        sfn_client.create_state_machine(name=state_machine_name, definition=definition, roleArn=role_arn)
+        rest_api = client.create_rest_api(name='test', description='test')
+        resources = client.get_resources(restApiId=rest_api['id'])
 
         client.put_method(
             restApiId=rest_api['id'],
@@ -933,6 +986,73 @@ class TestAPIGateway(unittest.TestCase):
         sfn_client.delete_state_machine(stateMachineArn=sm_arn)
         client.delete_rest_api(restApiId=rest_api['id'])
 
+    # =====================================================================
+    # Helper methods
+    # =====================================================================
+
+    def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
+        resources = {}
+        template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
+        resource_path = self.API_PATH_DATA_INBOUND.replace('/', '')
+        resources[resource_path] = [{
+            'httpMethod': 'POST',
+            'authorizationType': 'NONE',
+            'integrations': [{
+                'type': 'AWS',
+                'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % aws_stack.get_region(),
+                'requestTemplates': {
+                    'application/json': template
+                }
+            }]
+        }, {
+            'httpMethod': 'GET',
+            'authorizationType': 'NONE',
+            'integrations': [{
+                'type': 'AWS',
+                'uri': 'arn:aws:apigateway:%s:kinesis:action/ListStreams' % aws_stack.get_region(),
+                'requestTemplates': {
+                    'application/json': '{}'
+                }
+            }]
+        }]
+        return aws_stack.create_api_gateway(
+            name=gateway_name,
+            resources=resources,
+            stage_name=self.TEST_STAGE_NAME
+        )
+
+    def connect_api_gateway_to_http(self, int_type, gateway_name, target_url, methods=[], path=None):
+        if not methods:
+            methods = ['GET', 'POST']
+        if not path:
+            path = '/'
+        resources = {}
+        resource_path = path.replace('/', '')
+        resources[resource_path] = []
+        req_templates = {
+            'application/json': json.dumps({'foo': 'bar'})
+        } if int_type == 'custom' else {}
+        for method in methods:
+            resources[resource_path].append({
+                'httpMethod': method,
+                'integrations': [{
+                    'type': 'HTTP' if int_type == 'custom' else 'HTTP_PROXY',
+                    'uri': target_url,
+                    'requestTemplates': req_templates,
+                    'responseTemplates': {}
+                }]
+            })
+        return aws_stack.create_api_gateway(
+            name=gateway_name,
+            resources=resources,
+            stage_name=self.TEST_STAGE_NAME
+        )
+
+    @staticmethod
+    def create_lambda_function(fn_name):
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name)
+
     @staticmethod
     def start_http_backend(test_port):
         # test listener for target HTTP backend
@@ -947,8 +1067,7 @@ class TestAPIGateway(unittest.TestCase):
                 response._content = json.dumps(json_safe(result))
                 return response
 
-        proxy = GenericProxy(test_port, update_listener=TestListener())
-        proxy.start()
+        proxy = start_proxy(test_port, update_listener=TestListener())
         return proxy
 
     @staticmethod
