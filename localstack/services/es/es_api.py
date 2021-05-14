@@ -91,8 +91,10 @@ def get_domain_config(domain_name):
                     'DedicatedMasterType': status['ElasticsearchClusterConfig'].get(
                     'DedicatedMasterType', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterType']),
                     'InstanceCount': status['ElasticsearchClusterConfig'].get('InstanceCount', DEFAULT_ES_CLUSTER_CONFIG['InstanceCount']),
-                    'InstanceType': status['ElasticsearchClusterConfig'].get('InstanceType', DEFAULT_ES_CLUSTER_CONFIG['InstanceType']),
-                    'ZoneAwarenessEnabled': status['ElasticsearchClusterConfig'].get('ZoneAwarenessEnabled', DEFAULT_ES_CLUSTER_CONFIG['ZoneAwarenessEnabled']),
+                    'InstanceType': status['ElasticsearchClusterConfig'].get(
+                        'InstanceType', DEFAULT_ES_CLUSTER_CONFIG['InstanceType']),
+                    'ZoneAwarenessEnabled': status['ElasticsearchClusterConfig'].get(
+                        'ZoneAwarenessEnabled', DEFAULT_ES_CLUSTER_CONFIG['ZoneAwarenessEnabled']),
                 },
                 'Status': config_status
             },
@@ -159,13 +161,18 @@ def get_domain_status(domain_name, deleted=False):
             'DomainId': '%s/%s' % (TEST_AWS_ACCOUNT_ID, domain_name),
             'DomainName': domain_name,
             'ElasticsearchClusterConfig': {
-                'DedicatedMasterCount': status['ElasticsearchClusterConfig'].get('DedicatedMasterCount', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterCount']),
-                'DedicatedMasterEnabled': status['ElasticsearchClusterConfig'].get('DedicatedMasterEnabled', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterEnabled']),
+                'DedicatedMasterCount': status['ElasticsearchClusterConfig'].get(
+                    'DedicatedMasterCount', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterCount']),
+                'DedicatedMasterEnabled': status['ElasticsearchClusterConfig'].get(
+                    'DedicatedMasterEnabled', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterEnabled']),
                 'DedicatedMasterType': status['ElasticsearchClusterConfig'].get(
                 'DedicatedMasterType', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterType']),
-                'InstanceCount': status['ElasticsearchClusterConfig'].get('InstanceCount', DEFAULT_ES_CLUSTER_CONFIG['InstanceCount']),
-                'InstanceType': status['ElasticsearchClusterConfig'].get('InstanceType', DEFAULT_ES_CLUSTER_CONFIG['InstanceType']),
-                'ZoneAwarenessEnabled': status['ElasticsearchClusterConfig'].get('ZoneAwarenessEnabled', DEFAULT_ES_CLUSTER_CONFIG['ZoneAwarenessEnabled']),
+                'InstanceCount': status['ElasticsearchClusterConfig'].get(
+                    'InstanceCount', DEFAULT_ES_CLUSTER_CONFIG['InstanceCount']),
+                'InstanceType': status['ElasticsearchClusterConfig'].get(
+                    'InstanceType', DEFAULT_ES_CLUSTER_CONFIG['InstanceType']),
+                'ZoneAwarenessEnabled': status['ElasticsearchClusterConfig'].get(
+                    'ZoneAwarenessEnabled', DEFAULT_ES_CLUSTER_CONFIG['ZoneAwarenessEnabled']),
             },
             'ElasticsearchVersion': status.get('ElasticsearchVersion') or DEFAULT_ES_VERSION,
             'Endpoint': endpoint,
