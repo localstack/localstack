@@ -86,11 +86,14 @@ def get_domain_config(domain_name):
             },
             'ElasticsearchClusterConfig': {
                 'Options': {
-                    'DedicatedMasterCount': status['ElasticsearchClusterConfig'].get('DedicatedMasterCount', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterCount']),
-                    'DedicatedMasterEnabled': status['ElasticsearchClusterConfig'].get('DedicatedMasterEnabled', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterEnabled']),
+                    'DedicatedMasterCount': status['ElasticsearchClusterConfig'].get(
+                        'DedicatedMasterCount', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterCount']),
+                    'DedicatedMasterEnabled': status['ElasticsearchClusterConfig'].get(
+                        'DedicatedMasterEnabled', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterEnabled']),
                     'DedicatedMasterType': status['ElasticsearchClusterConfig'].get(
-                    'DedicatedMasterType', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterType']),
-                    'InstanceCount': status['ElasticsearchClusterConfig'].get('InstanceCount', DEFAULT_ES_CLUSTER_CONFIG['InstanceCount']),
+                        'DedicatedMasterType', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterType']),
+                    'InstanceCount': status['ElasticsearchClusterConfig'].get(
+                        'InstanceCount', DEFAULT_ES_CLUSTER_CONFIG['InstanceCount']),
                     'InstanceType': status['ElasticsearchClusterConfig'].get(
                         'InstanceType', DEFAULT_ES_CLUSTER_CONFIG['InstanceType']),
                     'ZoneAwarenessEnabled': status['ElasticsearchClusterConfig'].get(
