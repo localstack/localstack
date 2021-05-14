@@ -4,6 +4,8 @@ import asyncio
 from localstack.constants import LOCALHOST_IP
 from localstack.utils.common import start_worker_thread, is_number, run_safe
 
+BUFFER_SIZE = 2 ** 10  # 1024
+
 
 def start_tcp_proxy(src, dst, handler, **kwargs):
     """ Run a simple TCP proxy (tunneling raw connections from src to dst), using a message handler
@@ -14,7 +16,6 @@ def start_tcp_proxy(src, dst, handler, **kwargs):
     dst -- Destination IP address and port. I.e.: '127.0.0.1:8888'
     handler -- a handler function to intercept requests (returns tuple (forward_value, response_value))
     """
-    BUFFER_SIZE = 2 ** 10  # 1024
 
     src = '%s:%s' % (LOCALHOST_IP, src) if is_number(src) else src
     dst = '%s:%s' % (LOCALHOST_IP, dst) if is_number(dst) else dst
