@@ -59,6 +59,7 @@ def get_domain_config_status():
 
 
 def get_domain_config(domain_name):
+    status = ES_DOMAINS.get(domain_name) or {}
     config_status = get_domain_config_status()
     return {
         'DomainConfig': {
@@ -85,12 +86,13 @@ def get_domain_config(domain_name):
             },
             'ElasticsearchClusterConfig': {
                 'Options': {
-                    'DedicatedMasterCount': 1,
-                    'DedicatedMasterEnabled': True,
-                    'DedicatedMasterType': 'm3.medium.elasticsearch',
-                    'InstanceCount': 1,
-                    'InstanceType': 'm3.medium.elasticsearch',
-                    'ZoneAwarenessEnabled': False
+                    'DedicatedMasterCount': status['ElasticsearchClusterConfig'].get('DedicatedMasterCount', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterCount']),
+                    'DedicatedMasterEnabled': status['ElasticsearchClusterConfig'].get('DedicatedMasterEnabled', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterEnabled']),
+                    'DedicatedMasterType': status['ElasticsearchClusterConfig'].get(
+                    'DedicatedMasterType', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterType']),
+                    'InstanceCount': status['ElasticsearchClusterConfig'].get('InstanceCount', DEFAULT_ES_CLUSTER_CONFIG['InstanceCount']),
+                    'InstanceType': status['ElasticsearchClusterConfig'].get('InstanceType', DEFAULT_ES_CLUSTER_CONFIG['InstanceType']),
+                    'ZoneAwarenessEnabled': status['ElasticsearchClusterConfig'].get('ZoneAwarenessEnabled', DEFAULT_ES_CLUSTER_CONFIG['ZoneAwarenessEnabled']),
                 },
                 'Status': config_status
             },
