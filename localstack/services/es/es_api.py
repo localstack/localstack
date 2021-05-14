@@ -169,7 +169,7 @@ def get_domain_status(domain_name, deleted=False):
                 'DedicatedMasterEnabled': status['ElasticsearchClusterConfig'].get(
                     'DedicatedMasterEnabled', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterEnabled']),
                 'DedicatedMasterType': status['ElasticsearchClusterConfig'].get(
-                'DedicatedMasterType', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterType']),
+                    'DedicatedMasterType', DEFAULT_ES_CLUSTER_CONFIG['DedicatedMasterType']),
                 'InstanceCount': status['ElasticsearchClusterConfig'].get(
                     'InstanceCount', DEFAULT_ES_CLUSTER_CONFIG['InstanceCount']),
                 'InstanceType': status['ElasticsearchClusterConfig'].get(
