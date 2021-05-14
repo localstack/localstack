@@ -86,7 +86,8 @@ class ProxyListenerSNS(PersistingProxyListener):
                 sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
                 if not sub:
                     return make_error(message='Subscription with arn {0} not found'.
-                                      format(req_data['SubscriptionArn'][0]), code=404, code_string='NotFound')
+                                      format(req_data['SubscriptionArn'][0]),
+                                      code=404, code_string='NotFound')
 
                 content = '<Attributes>'
                 for key, value in sub.items():
