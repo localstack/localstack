@@ -1,6 +1,7 @@
 import unittest
 from localstack import constants
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 
 class TestRoute53(unittest.TestCase):
@@ -50,3 +51,27 @@ class TestRoute53(unittest.TestCase):
         with self.assertRaises(Exception):
             route53.disassociate_vpc_from_hosted_zone(
                 HostedZoneId=zone_id, VPC={'VPCRegion': aws_stack.get_region(), 'VPCId': vpc_id})
+
+    def test_reusable_delegation_sets(self):
+        client = aws_stack.connect_to_service('route53')
+
+        sets_before = client.list_reusable_delegation_sets()['DelegationSets']
+
+        call_ref = 'c-%s' % short_uid()
+        result = client.create_reusable_delegation_set(CallerReference=call_ref)['DelegationSet']
+        set_id = result['Id']
+
+        result = client.get_reusable_delegation_set(Id=set_id)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(result['DelegationSet']['Id'], set_id)
+
+        result = client.list_reusable_delegation_sets()
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(len(result['DelegationSets']), len(sets_before) + 1)
+
+        result = client.delete_reusable_delegation_set(Id=set_id)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        with self.assertRaises(Exception) as ctx:
+            client.get_reusable_delegation_set(Id=set_id)
+        self.assertIn('404', str(ctx.exception))

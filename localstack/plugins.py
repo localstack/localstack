@@ -2,8 +2,8 @@ import os
 import sys
 from localstack import config
 from localstack.constants import TRUE_STRINGS
-from localstack.services.swf import swf_starter, swf_listener
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
+# Note: make sure not to add any additional imports at the global scope here!
 
 
 def register_localstack_plugins():
@@ -49,6 +49,8 @@ def do_register_localstack_plugins():
         from localstack.services.kms import kms_starter
         from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.redshift import redshift_starter
+        from localstack.services.resourcegroupstaggingapi import rgta_starter, rgta_listener
+        from localstack.services.resourcegroups import rg_starter, rg_listener
         from localstack.services.route53 import route53_listener, route53_starter
         from localstack.services.s3 import s3_listener, s3_starter
         from localstack.services.secretsmanager import secretsmanager_listener, secretsmanager_starter
@@ -59,6 +61,7 @@ def do_register_localstack_plugins():
         from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
         from localstack.services.sts import sts_starter, sts_listener
         from localstack.services.support import support_starter
+        from localstack.services.swf import swf_starter, swf_listener
 
         register_plugin(Plugin(
             'edge',
@@ -198,6 +201,16 @@ def do_register_localstack_plugins():
             start=swf_starter.start_swf,
             check=swf_starter.check_swf,
             listener=swf_listener.UPDATE_SWF))
+
+        register_plugin(Plugin(
+            'resourcegroupstaggingapi',
+            start=rgta_starter.start_rgsa,
+            listener=rgta_listener.UPDATE_RGSA))
+
+        register_plugin(Plugin(
+            'resource-groups',
+            start=rg_starter.start_rg,
+            listener=rg_listener.UPDATE_RG))
 
         register_plugin(Plugin(
             'support',

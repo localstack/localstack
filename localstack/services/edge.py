@@ -32,12 +32,16 @@ LOG = logging.getLogger(__name__)
 # this process is started as root, then we cannot kill it from a non-root process
 HEADER_KILL_SIGNAL = 'x-localstack-kill'
 
+# Header to indicate the current API (service) being called
+HEADER_TARGET_API = 'x-localstack-tgt-api'
+
 # lock obtained during boostrapping (persistence restoration) to avoid concurrency issues
 BOOTSTRAP_LOCK = threading.RLock()
 
 GZIP_ENCODING = 'GZIP'
 IDENTITY_ENCODING = 'IDENTITY'
 S3 = 's3'
+API_UNKNOWN = '_unknown_'
 
 
 class ProxyListenerEdge(ProxyListener):
@@ -83,7 +87,7 @@ class ProxyListenerEdge(ProxyListener):
                     LOG.debug('OUT(%s): "%s %s" - status: %s' % (api, method, path, 200))
                 return 200
 
-            if api in ['', None, '_unknown_']:
+            if api in ['', None, API_UNKNOWN]:
                 truncated = truncate(data)
                 if auth_header or target or data or path not in ['/', '/favicon.ico']:
                     LOG.info(('Unable to find forwarding rule for host "%s", path "%s %s", '
@@ -99,6 +103,7 @@ class ProxyListenerEdge(ProxyListener):
 
         if api and not headers.get('Authorization'):
             headers['Authorization'] = aws_stack.mock_aws_request_headers(api)['Authorization']
+        headers[HEADER_TARGET_API] = str(api)
 
         headers['Host'] = host
         if isinstance(data, dict):
@@ -117,15 +122,17 @@ class ProxyListenerEdge(ProxyListener):
             return do_forward_request(api, method, path, data, headers, port=port)
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
+        api = headers.get(HEADER_TARGET_API) or ''
 
         if config.LS_LOG:
             # print response trace for debugging, if enabled
-            api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
-            if api and api != '_unknown_':
+            if api and api != API_UNKNOWN:
                 LOG.debug('OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s' %
                     (api, method, path, response.status_code, dict(response.headers), response.content))
 
-        if headers.get('Accept-Encoding') == 'gzip' and response._content:
+        # Fix Go SDK issue
+        # https://github.com/localstack/localstack/issues/3833
+        if headers.get('Accept-Encoding') == 'gzip' and response._content and api not in [S3]:
             response._content = gzip.compress(to_bytes(response._content))
             response.headers['Content-Length'] = str(len(response._content))
             response.headers['Content-Encoding'] = 'gzip'
@@ -221,7 +228,7 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
     path = path or '/'
 
     # initialize result
-    result = '_unknown_', 0
+    result = API_UNKNOWN, 0
 
     # https://docs.aws.amazon.com/general/latest/gr/sigv4-signed-request-examples.html
     try:
@@ -262,6 +269,10 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = 'web', config.PORT_WEB_UI
     elif result[0] == 'EventBridge' or target.startswith('AWSEvents'):
         result = 'events', config.PORT_EVENTS
+    elif target.startswith('ResourceGroupsTaggingAPI_'):
+        result = 'resourcegroupstaggingapi', config.PORT_RESOURCEGROUPSTAGGINGAPI
+    elif result[0] == 'resource-groups':
+        result = 'resource-groups', config.PORT_RESOURCE_GROUPS
 
     return result[0], result_before[1] or result[1], path, host
 

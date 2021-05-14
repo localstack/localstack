@@ -22,6 +22,7 @@ S3_MAX_FILE_SIZE_MB = 2048
 
 # temporary state
 TMP_STATE = {}
+TMP_TAG = {}
 
 # Key for tracking patch applience
 PATCHES_APPLIED = 'S3_PATCHED'
@@ -131,6 +132,17 @@ def apply_patches():
     def s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):
         result = s3_key_response_post_orig(request, body, bucket_name, query, key_name, *args, **kwargs)
         s3_update_acls(self, request, query, bucket_name, key_name)
+        try:
+            if query.get('uploadId'):
+                if (bucket_name, key_name) in TMP_TAG:
+                    key = self.backend.get_object(bucket_name, key_name)
+                    self.backend.set_key_tags(key, TMP_TAG.get((bucket_name, key_name), None), key_name)
+                    TMP_TAG.pop((bucket_name, key_name))
+        except Exception:
+            pass
+        if query.get('uploads') and request.headers.get('X-Amz-Tagging'):
+            tags = self._tagging_from_headers(request.headers)
+            TMP_TAG[(bucket_name, key_name)] = tags
         return result
 
     s3_key_response_post_orig = s3_responses.S3ResponseInstance._key_response_post
@@ -337,3 +349,16 @@ def apply_patches():
 
     s3_responses.S3ResponseInstance._bucket_response_get = types.MethodType(
         s3_bucket_response_get, s3_responses.S3ResponseInstance)
+
+    copy_key_orig = s3_models.s3_backend.copy_key
+
+    def copy_key(
+        self, src_bucket_name, src_key_name, dest_bucket_name, dest_key_name,
+        storage=None, acl=None, src_version_id=None, *args, **kwargs
+    ):
+        copy_key_orig(src_bucket_name, src_key_name, dest_bucket_name,
+            dest_key_name, storage=storage, acl=acl, src_version_id=src_version_id, *args, **kwargs)
+        key = self.get_object(dest_bucket_name, dest_key_name)
+        key._etag = None
+
+    s3_models.s3_backend.copy_key = types.MethodType(copy_key, s3_models.s3_backend)
