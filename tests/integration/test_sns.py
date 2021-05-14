@@ -694,6 +694,27 @@ class SNSTest(unittest.TestCase):
         # clean up
         self.sns_client.delete_topic(TopicArn=responses[0]['TopicArn'])
 
+    def test_create_platform_endpoint_check_idempotentness(self):
+        response = self.sns_client.create_platform_application(
+            Name='test-%s' % short_uid(), Platform='GCM', Attributes={'PlatformCredential': '123'}
+        )
+        kwargs_list = [{'Token': 'test1', 'CustomUserData': 'test-data'},
+            {'Token': 'test1', 'CustomUserData': 'test-data'},
+            {'Token': 'test1'}
+        ]
+        platform_arn = response['PlatformApplicationArn']
+        responses = []
+        for kwargs in kwargs_list:
+            responses.append(self.sns_client.create_platform_endpoint(PlatformApplicationArn=platform_arn,
+                **kwargs))
+        # Assert endpointarn is returned in every call create platform call
+        for i in range(len(responses)):
+            self.assertIn('EndpointArn', responses[i])
+        endpoint_arn = responses[0]['EndpointArn']
+        # clean up
+        self.sns_client.delete_endpoint(EndpointArn=endpoint_arn)
+        self.sns_client.delete_platform_application(PlatformApplicationArn=platform_arn)
+
     def test_publish_by_path_parameters(self):
         topic_name = 'topic-{}'.format(short_uid())
         queue_name = 'queue-{}'.format(short_uid())

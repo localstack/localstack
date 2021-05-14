@@ -36,6 +36,9 @@ SNS_TAGS = {}
 # cache of platform endpoint messages (used primarily for testing)
 PLATFORM_ENDPOINT_MESSAGES = {}
 
+# cache platform applications with its attributes
+PLATFORM_APPLICATIONS = {}
+
 # maps phone numbers to list of sent messages
 SMS_MESSAGES = []
 
@@ -69,11 +72,9 @@ class ProxyListenerSNS(PersistingProxyListener):
 
             req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn') or req_data.get('ResourceArn')
-
             if topic_arn:
                 topic_arn = topic_arn[0]
                 topic_arn = aws_stack.fix_account_id_in_arns(topic_arn)
-
             if req_action == 'SetSubscriptionAttributes':
                 sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
                 if not sub:
@@ -167,6 +168,11 @@ class ProxyListenerSNS(PersistingProxyListener):
                 do_untag_resource(topic_arn, tags_to_remove)
                 return make_response(req_action)
 
+            elif req_action == 'CreatePlatformEndpoint':
+                response = check_existing_endpoints(req_data)
+                if response is not None:
+                    return response
+
             data = self._reset_account_id(data)
             return Request(data=data, headers=headers, method=method)
 
@@ -245,6 +251,11 @@ class ProxyListenerSNS(PersistingProxyListener):
                     event_publisher.EVENT_SNS_DELETE_TOPIC,
                     payload={'t': event_publisher.get_hash(topic_arn)}
                 )
+            if req_action == 'CreatePlatformEndpoint' and response.status_code == 200:
+                response_data = xmltodict.parse(response.content)
+                add_platform_endpoint(req_data, response_data)
+            if req_action == 'DeleteEndpoint' and response.status_code == 200:
+                delete_platform_endpoint(req_data)
 
     def should_persist(self, method, path, data, headers, response):
         req_params = parse_request_data(method, path, data)
@@ -424,7 +435,6 @@ def do_confirm_subscription(topic_arn, token):
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
     topic_subs = SNS_SUBSCRIPTIONS[topic_arn] = SNS_SUBSCRIPTIONS.get(topic_arn) or []
-
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
     for existing_topic_subscription in topic_subs:
@@ -511,6 +521,45 @@ def do_tag_resource(topic_arn, tags):
 def do_untag_resource(topic_arn, tag_keys):
     SNS_TAGS[topic_arn] = [t for t in _get_tags(topic_arn) if t['Key'] not in tag_keys]
 
+
+def check_existing_endpoints(req_data):
+    arn = req_data.get('PlatformApplicationArn')[0]
+    token = req_data.get('Token')[0]
+    plat_app = PLATFORM_APPLICATIONS
+    if arn in plat_app.keys() and token in plat_app[arn].keys():
+        if (req_data.get('CustomUserData') and plat_app[arn][token]['CustomUserData'] !=
+        req_data.get('CustomUserData')[0]):
+            return make_error(f'Endpoint exists with different attributes for the given token: \
+                Token:{token}')
+        content = '<EndpointArn>{}</EndpointArn>'.format(plat_app[arn][token]['EndpointArn'])
+        return make_response('CreatePlatformEndpoint', content=content)
+
+
+def add_platform_endpoint(req_data, response_data):
+    arn = req_data.get('PlatformApplicationArn')[0]
+    token = req_data.get('Token')[0]
+    custom_user_data = req_data.get('CustomUserData', [''])[0]
+    plat_app = PLATFORM_APPLICATIONS
+    if arn not in plat_app:
+        PLATFORM_APPLICATIONS[arn] = {}
+    if token not in plat_app[arn]:
+        PLATFORM_APPLICATIONS[arn][token] = {}
+    PLATFORM_APPLICATIONS[arn][token]['EndpointArn'] = (response_data['CreatePlatformEndpointResponse']
+        ['CreatePlatformEndpointResult'].get('EndpointArn'))
+    PLATFORM_APPLICATIONS[arn][token]['CustomUserData'] = custom_user_data
+
+
+def delete_platform_endpoint(req_data):
+    end_point_arn = req_data.get('EndpointArn')[0]
+    # derive platform app Arn from EndpointArn
+    plat_app_arn = end_point_arn.rsplit('/', 1)[0]
+    plat_app_arn = plat_app_arn.replace(':endpoint', ':app')
+    token_matched = None
+    for token in PLATFORM_APPLICATIONS[plat_app_arn].keys():
+        if PLATFORM_APPLICATIONS[plat_app_arn][token]['EndpointArn'] == end_point_arn:
+            token_matched = token
+    if token_matched is not None:
+        del PLATFORM_APPLICATIONS[plat_app_arn][token_matched]
 
 # ---------------
 # HELPER METHODS
