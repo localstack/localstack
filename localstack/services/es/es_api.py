@@ -148,12 +148,13 @@ def get_domain_status(domain_name, deleted=False):
             'DomainId': '%s/%s' % (TEST_AWS_ACCOUNT_ID, domain_name),
             'DomainName': domain_name,
             'ElasticsearchClusterConfig': {
-                'DedicatedMasterCount': 1,
-                'DedicatedMasterEnabled': True,
-                'DedicatedMasterType': 'm3.medium.elasticsearch',
-                'InstanceCount': 1,
-                'InstanceType': 'm3.medium.elasticsearch',
-                'ZoneAwarenessEnabled': False
+                'DedicatedMasterCount': status['ElasticsearchClusterConfig'].get('DedicatedMasterCount', 1),
+                'DedicatedMasterEnabled': status['ElasticsearchClusterConfig'].get('DedicatedMasterEnabled', True),
+                'DedicatedMasterType': status['ElasticsearchClusterConfig'].get(
+                'DedicatedMasterType', 'm3.medium.elasticsearch'),
+                'InstanceCount': status['ElasticsearchClusterConfig'].get('InstanceCount', 1),
+                'InstanceType': status['ElasticsearchClusterConfig'].get('InstanceType', 'm3.medium.elasticsearch'),
+                'ZoneAwarenessEnabled': status['ElasticsearchClusterConfig'].get('ZoneAwarenessEnabled', False),
             },
             'ElasticsearchVersion': status.get('ElasticsearchVersion') or DEFAULT_ES_VERSION,
             'Endpoint': endpoint,
