@@ -114,7 +114,7 @@ class ProxyListenerSNS(PersistingProxyListener):
             elif req_action == 'Publish':
                 if req_data.get('Subject') == ['']:
                     return make_error(code=400, code_string='InvalidParameter', message='Subject')
-
+                sns_backend = SNSBackend.get()
                 # No need to create a topic to send SMS or single push notifications with SNS
                 # but we can't mock a sending so we only return that it went well
                 if 'PhoneNumber' not in req_data and 'TargetArn' not in req_data:
@@ -140,8 +140,9 @@ class ProxyListenerSNS(PersistingProxyListener):
                 return make_response(req_action, content=content)
 
             elif req_action == 'CreateTopic':
+                sns_backend = SNSBackend.get()
                 topic_arn = aws_stack.sns_topic_arn(req_data['Name'][0])
-                tag_resource_success = self._extract_tags(topic_arn, req_data, True)
+                tag_resource_success = self._extract_tags(topic_arn, req_data, True, sns_backend)
                 sns_backend.sns_subscriptions[topic_arn] = sns_backend.sns_subscriptions.get(topic_arn) or []
                 # in case if there is an error it returns an error , other wise it will continue as expected.
                 if not tag_resource_success:
@@ -149,7 +150,8 @@ class ProxyListenerSNS(PersistingProxyListener):
                                   message='Topic already exists with different tags')
 
             elif req_action == 'TagResource':
-                self._extract_tags(topic_arn, req_data, False)
+                sns_backend = SNSBackend.get()
+                self._extract_tags(topic_arn, req_data, False, sns_backend)
                 return make_response(req_action)
 
             elif req_action == 'UntagResource':
@@ -167,7 +169,7 @@ class ProxyListenerSNS(PersistingProxyListener):
         return True
 
     @staticmethod
-    def _extract_tags(topic_arn, req_data, is_create_topic_request):
+    def _extract_tags(topic_arn, req_data, is_create_topic_request, sns_backend):
         tags = []
         req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
         existing_tags = sns_backend.sns_tags.get(topic_arn, None)
@@ -241,6 +243,7 @@ class ProxyListenerSNS(PersistingProxyListener):
                 )
 
     def should_persist(self, method, path, data, headers, response):
+        sns_backend = SNSBackend.get()
         req_params = parse_request_data(method, path, data)
         action = req_params.get('Action', '')
         if action in sns_backend.skip_persistence_actions:
@@ -259,8 +262,7 @@ def patch_moto():
                     if custom_user_data and custom_user_data != endpoint.custom_user_data:
                         raise DuplicateSnsEndpointError('Endpoint already exist for token: %s with different attributes'
                              % token)
-                    else:
-                        return endpoint
+                    return endpoint
     create_platform_endpoint_orig = MotoSNSBackend.create_platform_endpoint
     MotoSNSBackend.create_platform_endpoint = patch_create_platform_endpoint
 
@@ -268,11 +270,11 @@ def patch_moto():
 patch_moto()
 # instantiate listener
 UPDATE_SNS = ProxyListenerSNS()
-sns_backend = SNSBackend.get()
 
 
 def unsubscribe_sqs_queue(queue_url):
     """ Called upon deletion of an SQS queue, to remove the queue from subscriptions """
+    sns_backend = SNSBackend.get()
     for topic_arn, subscriptions in sns_backend.sns_subscriptions.items():
         subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
         for subscriber in list(subscriptions):
@@ -282,6 +284,7 @@ def unsubscribe_sqs_queue(queue_url):
 
 
 def message_to_subscribers(message_id, message, topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
+    sns_backend = SNSBackend.get()
     subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
     for subscriber in list(subscriptions):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
@@ -408,6 +411,7 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, headers, su
 
 
 def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
+    sns_backend = SNSBackend.get()
     message = req_data['Message'][0]
     message_id = str(uuid.uuid4())
 
@@ -425,17 +429,20 @@ def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_ch
 
 
 def do_delete_topic(topic_arn):
+    sns_backend = SNSBackend.get()
     sns_backend.sns_subscriptions.pop(topic_arn, None)
     sns_backend.sns_tags.pop(topic_arn, None)
 
 
 def do_confirm_subscription(topic_arn, token):
+    sns_backend = SNSBackend.get()
     for k, v in sns_backend.subscription_status.items():
         if v['Token'] == token and v['TopicArn'] == topic_arn:
             v['Status'] = 'Subscribed'
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
+    sns_backend = SNSBackend.get()
     topic_subs = sns_backend.sns_subscriptions[topic_arn] = sns_backend.sns_subscriptions.get(topic_arn) or []
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
@@ -479,6 +486,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
 
 
 def do_unsubscribe(subscription_arn):
+    sns_backend = SNSBackend.get()
     for topic_arn, existing_subs in sns_backend.sns_subscriptions.items():
         sns_backend.sns_subscriptions[topic_arn] = [
             sub for sub in existing_subs
@@ -487,6 +495,7 @@ def do_unsubscribe(subscription_arn):
 
 
 def _get_tags(topic_arn):
+    sns_backend = SNSBackend.get()
     if topic_arn not in sns_backend.sns_tags:
         sns_backend.sns_tags[topic_arn] = []
 
@@ -498,6 +507,7 @@ def do_list_tags_for_resource(topic_arn):
 
 
 def do_tag_resource(topic_arn, tags):
+    sns_backend = SNSBackend.get()
     existing_tags = sns_backend.sns_tags.get(topic_arn, [])
     tags = [
         tag for idx, tag in enumerate(tags)
@@ -521,6 +531,7 @@ def do_tag_resource(topic_arn, tags):
 
 
 def do_untag_resource(topic_arn, tag_keys):
+    sns_backend = SNSBackend.get()
     sns_backend.sns_tags[topic_arn] = [t for t in _get_tags(topic_arn) if t['Key'] not in tag_keys]
 
 
@@ -530,6 +541,7 @@ def do_untag_resource(topic_arn, tag_keys):
 
 
 def get_subscription_by_arn(sub_arn):
+    sns_backend = SNSBackend.get()
     # TODO maintain separate map instead of traversing all items
     for key, subscriptions in sns_backend.sns_subscriptions.items():
         for sub in subscriptions:
