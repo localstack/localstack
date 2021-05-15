@@ -869,13 +869,13 @@ class SNSTest(unittest.TestCase):
 
         self.sns_client.unsubscribe(SubscriptionArn=subscription['SubscriptionArn'])
 
-        try:
+        with self.assertRaises(ClientError) as ctx:
             self.sns_client.get_subscription_attributes(
                 SubscriptionArn=subscription['SubscriptionArn'])
             self.fail('This call should not be successful as the subscription does not exist')
-        except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'NotFound')
-            self.assertEqual(e.response['ResponseMetadata']['HTTPStatusCode'], 404)
+
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'NotFound')
+        self.assertEqual(ctx.exception.response['ResponseMetadata']['HTTPStatusCode'], 404)
 
         # cleanup
         self.sns_client.delete_topic(TopicArn=topic_arn)
