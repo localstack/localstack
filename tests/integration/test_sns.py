@@ -848,3 +848,34 @@ class SNSTest(unittest.TestCase):
 
         # cleanup
         self.sns_client.delete_topic(TopicArn=topic1['TopicArn'])
+
+    def test_not_found_error_on_get_subscription_attributes(self):
+        topic_name = 'queue-{}'.format(short_uid())
+        queue_name = 'test-%s' % short_uid()
+
+        topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
+        queue = self.sqs_client.create_queue(QueueName=queue_name)
+
+        queue_url = queue['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        subscription = self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_arn)
+
+        subscription_attributes = self.sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription['SubscriptionArn'])
+
+        self.assertEqual(subscription_attributes.get('Attributes').get('SubscriptionArn'),
+                         subscription['SubscriptionArn'])
+
+        self.sns_client.unsubscribe(SubscriptionArn=subscription['SubscriptionArn'])
+
+        with self.assertRaises(ClientError) as ctx:
+            self.sns_client.get_subscription_attributes(
+                SubscriptionArn=subscription['SubscriptionArn'])
+
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'NotFound')
+        self.assertEqual(ctx.exception.response['ResponseMetadata']['HTTPStatusCode'], 404)
+
+        # cleanup
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+        self.sqs_client.delete_queue(QueueUrl=queue_url)

@@ -69,7 +69,6 @@ class ProxyListenerSNS(PersistingProxyListener):
 
             req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn') or req_data.get('ResourceArn')
-
             if topic_arn:
                 topic_arn = topic_arn[0]
                 topic_arn = aws_stack.fix_account_id_in_arns(topic_arn)
@@ -87,7 +86,9 @@ class ProxyListenerSNS(PersistingProxyListener):
             elif req_action == 'GetSubscriptionAttributes':
                 sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
                 if not sub:
-                    return make_error(message='Unable to find subscription for given ARN', code=400)
+                    return make_error(message='Subscription with arn {0} not found'.
+                                      format(req_data['SubscriptionArn'][0]),
+                                      code=404, code_string='NotFound')
 
                 content = '<Attributes>'
                 for key, value in sub.items():
