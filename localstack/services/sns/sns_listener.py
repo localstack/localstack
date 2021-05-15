@@ -20,30 +20,23 @@ from localstack.utils.aws.aws_responses import response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.common import parse_request_data, timestamp_millis, short_uid, to_str, to_bytes, start_thread
 from localstack.utils.persistence import PersistingProxyListener
+from localstack.services.generic_proxy import RegionBackend
+from moto.sns.models import SNSBackend as MotoSNSBackend
+from moto.sns.exceptions import DuplicateSnsEndpointError
 
 # set up logger
 LOG = logging.getLogger(__name__)
 
-# mappings for SNS topic subscriptions
-SNS_SUBSCRIPTIONS = {}
 
-# mappings for subscription status
-SUBSCRIPTION_STATUS = {}
-
-# mappings for SNS tags
-SNS_TAGS = {}
-
-# cache of platform endpoint messages (used primarily for testing)
-PLATFORM_ENDPOINT_MESSAGES = {}
-
-# cache platform applications with its attributes
-PLATFORM_APPLICATIONS = {}
-
-# maps phone numbers to list of sent messages
-SMS_MESSAGES = []
-
-# actions to be skipped from persistence
-SKIP_PERSISTENCE_ACTIONS = ['Subscribe', 'ConfirmSubscription', 'Unsubscribe']
+class SNSBackend(RegionBackend):
+    def __init__(self):
+        self.sns_subscriptions = {}  # mappings for SNS topic subscriptions
+        self.subscription_status = {}  # mappings for subscription status
+        self.sns_tags = {}  # mappings for SNS tags
+        self.platform_endpoint_messages = {}  # cache of platform endpoint messages (used primarily for testing)
+        self.sms_messages = []  # maps phone numbers to list of sent messages
+        # actions to be skipped from persistence
+        self.skip_persistence_actions = ['Subscribe', 'ConfirmSubscription', 'Unsubscribe']
 
 
 class ProxyListenerSNS(PersistingProxyListener):
@@ -125,7 +118,7 @@ class ProxyListenerSNS(PersistingProxyListener):
                 # No need to create a topic to send SMS or single push notifications with SNS
                 # but we can't mock a sending so we only return that it went well
                 if 'PhoneNumber' not in req_data and 'TargetArn' not in req_data:
-                    if topic_arn not in SNS_SUBSCRIPTIONS:
+                    if topic_arn not in sns_backend.sns_subscriptions:
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
 
                 message_id = publish_message(topic_arn, req_data, headers)
@@ -149,7 +142,7 @@ class ProxyListenerSNS(PersistingProxyListener):
             elif req_action == 'CreateTopic':
                 topic_arn = aws_stack.sns_topic_arn(req_data['Name'][0])
                 tag_resource_success = self._extract_tags(topic_arn, req_data, True)
-                SNS_SUBSCRIPTIONS[topic_arn] = SNS_SUBSCRIPTIONS.get(topic_arn) or []
+                sns_backend.sns_subscriptions[topic_arn] = sns_backend.sns_subscriptions.get(topic_arn) or []
                 # in case if there is an error it returns an error , other wise it will continue as expected.
                 if not tag_resource_success:
                     return make_error(code=400, code_string='InvalidParameter',
@@ -168,11 +161,6 @@ class ProxyListenerSNS(PersistingProxyListener):
                 do_untag_resource(topic_arn, tags_to_remove)
                 return make_response(req_action)
 
-            elif req_action == 'CreatePlatformEndpoint':
-                response = check_existing_endpoints(req_data)
-                if response is not None:
-                    return response
-
             data = self._reset_account_id(data)
             return Request(data=data, headers=headers, method=method)
 
@@ -182,7 +170,7 @@ class ProxyListenerSNS(PersistingProxyListener):
     def _extract_tags(topic_arn, req_data, is_create_topic_request):
         tags = []
         req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
-        existing_tags = SNS_TAGS.get(topic_arn, None)
+        existing_tags = sns_backend.sns_tags.get(topic_arn, None)
         # TODO: use aws_responses.extract_tags(...) here!
         for i in range(int(len(req_tags.keys()) / 2)):
             key = req_tags['Tags.member.' + str(i + 1) + '.Key'][0]
@@ -251,28 +239,42 @@ class ProxyListenerSNS(PersistingProxyListener):
                     event_publisher.EVENT_SNS_DELETE_TOPIC,
                     payload={'t': event_publisher.get_hash(topic_arn)}
                 )
-            if req_action == 'CreatePlatformEndpoint' and response.status_code == 200:
-                response_data = xmltodict.parse(response.content)
-                add_platform_endpoint(req_data, response_data)
-            if req_action == 'DeleteEndpoint' and response.status_code == 200:
-                delete_platform_endpoint(req_data)
 
     def should_persist(self, method, path, data, headers, response):
         req_params = parse_request_data(method, path, data)
         action = req_params.get('Action', '')
-        if action in SKIP_PERSISTENCE_ACTIONS:
+        if action in sns_backend.skip_persistence_actions:
             return False
         return super(ProxyListenerSNS, self).should_persist(method, path, data, headers, response)
 
 
+def patch_moto():
+    def patch_create_platform_endpoint(self, *args):
+        try:
+            return create_platform_endpoint_orig(self, *args)
+        except DuplicateSnsEndpointError:
+            custom_user_data, token = args[2], args[3]
+            for endpoint in self.platform_endpoints.values():
+                if endpoint.token == token:
+                    if custom_user_data and custom_user_data != endpoint.custom_user_data:
+                        raise DuplicateSnsEndpointError('Endpoint already exist for token: %s with different attributes'
+                             % token)
+                    else:
+                        return endpoint
+    create_platform_endpoint_orig = MotoSNSBackend.create_platform_endpoint
+    MotoSNSBackend.create_platform_endpoint = patch_create_platform_endpoint
+
+
+patch_moto()
 # instantiate listener
 UPDATE_SNS = ProxyListenerSNS()
+sns_backend = SNSBackend.get()
 
 
 def unsubscribe_sqs_queue(queue_url):
     """ Called upon deletion of an SQS queue, to remove the queue from subscriptions """
-    for topic_arn, subscriptions in SNS_SUBSCRIPTIONS.items():
-        subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
+    for topic_arn, subscriptions in sns_backend.sns_subscriptions.items():
+        subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
         for subscriber in list(subscriptions):
             sub_url = subscriber.get('sqs_queue_url') or subscriber['Endpoint']
             if queue_url == sub_url:
@@ -280,8 +282,7 @@ def unsubscribe_sqs_queue(queue_url):
 
 
 def message_to_subscribers(message_id, message, topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
-
-    subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
+    subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
     for subscriber in list(subscriptions):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
             continue
@@ -298,7 +299,7 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, headers, su
                 'endpoint': subscriber['Endpoint'],
                 'message_content': req_data['Message'][0]
             }
-            SMS_MESSAGES.append(event)
+            sns_backend.sms_messages.append(event)
             LOG.info('Delivering SMS message to %s: %s', subscriber['Endpoint'], req_data['Message'][0])
 
         elif subscriber['Protocol'] == 'sqs':
@@ -412,7 +413,8 @@ def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_ch
 
     if topic_arn and ':endpoint/' in topic_arn:
         # cache messages published to platform endpoints
-        cache = PLATFORM_ENDPOINT_MESSAGES[topic_arn] = PLATFORM_ENDPOINT_MESSAGES.get(topic_arn) or []
+        cache = sns_backend.platform_endpoint_messages[topic_arn] = sns_backend. \
+            platform_endpoint_messages.get(topic_arn) or []
         cache.append(req_data)
 
     LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
@@ -423,18 +425,18 @@ def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_ch
 
 
 def do_delete_topic(topic_arn):
-    SNS_SUBSCRIPTIONS.pop(topic_arn, None)
-    SNS_TAGS.pop(topic_arn, None)
+    sns_backend.sns_subscriptions.pop(topic_arn, None)
+    sns_backend.sns_tags.pop(topic_arn, None)
 
 
 def do_confirm_subscription(topic_arn, token):
-    for k, v in SUBSCRIPTION_STATUS.items():
+    for k, v in sns_backend.subscription_status.items():
         if v['Token'] == token and v['TopicArn'] == topic_arn:
             v['Status'] = 'Subscribed'
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
-    topic_subs = SNS_SUBSCRIPTIONS[topic_arn] = SNS_SUBSCRIPTIONS.get(topic_arn) or []
+    topic_subs = sns_backend.sns_subscriptions[topic_arn] = sns_backend.sns_subscriptions.get(topic_arn) or []
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
     for existing_topic_subscription in topic_subs:
@@ -452,10 +454,10 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
     subscription.update(attributes)
     topic_subs.append(subscription)
 
-    if subscription_arn not in SUBSCRIPTION_STATUS:
-        SUBSCRIPTION_STATUS[subscription_arn] = {}
+    if subscription_arn not in sns_backend.subscription_status:
+        sns_backend.subscription_status[subscription_arn] = {}
 
-    SUBSCRIPTION_STATUS[subscription_arn].update(
+    sns_backend.subscription_status[subscription_arn].update(
         {
             'TopicArn': topic_arn,
             'Token': short_uid(),
@@ -477,18 +479,18 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
 
 
 def do_unsubscribe(subscription_arn):
-    for topic_arn, existing_subs in SNS_SUBSCRIPTIONS.items():
-        SNS_SUBSCRIPTIONS[topic_arn] = [
+    for topic_arn, existing_subs in sns_backend.sns_subscriptions.items():
+        sns_backend.sns_subscriptions[topic_arn] = [
             sub for sub in existing_subs
             if sub['SubscriptionArn'] != subscription_arn
         ]
 
 
 def _get_tags(topic_arn):
-    if topic_arn not in SNS_TAGS:
-        SNS_TAGS[topic_arn] = []
+    if topic_arn not in sns_backend.sns_tags:
+        sns_backend.sns_tags[topic_arn] = []
 
-    return SNS_TAGS[topic_arn]
+    return sns_backend.sns_tags[topic_arn]
 
 
 def do_list_tags_for_resource(topic_arn):
@@ -496,7 +498,7 @@ def do_list_tags_for_resource(topic_arn):
 
 
 def do_tag_resource(topic_arn, tags):
-    existing_tags = SNS_TAGS.get(topic_arn, [])
+    existing_tags = sns_backend.sns_tags.get(topic_arn, [])
     tags = [
         tag for idx, tag in enumerate(tags)
         if tag not in tags[:idx]
@@ -515,51 +517,12 @@ def do_tag_resource(topic_arn, tags):
         else:
             existing_tags[existing_index] = item
 
-    SNS_TAGS[topic_arn] = existing_tags
+    sns_backend.sns_tags[topic_arn] = existing_tags
 
 
 def do_untag_resource(topic_arn, tag_keys):
-    SNS_TAGS[topic_arn] = [t for t in _get_tags(topic_arn) if t['Key'] not in tag_keys]
+    sns_backend.sns_tags[topic_arn] = [t for t in _get_tags(topic_arn) if t['Key'] not in tag_keys]
 
-
-def check_existing_endpoints(req_data):
-    arn = req_data.get('PlatformApplicationArn')[0]
-    token = req_data.get('Token')[0]
-    plat_app = PLATFORM_APPLICATIONS
-    if arn in plat_app.keys() and token in plat_app[arn].keys():
-        if (req_data.get('CustomUserData') and plat_app[arn][token]['CustomUserData'] !=
-        req_data.get('CustomUserData')[0]):
-            return make_error(f'Endpoint exists with different attributes for the given token: \
-                Token:{token}')
-        content = '<EndpointArn>{}</EndpointArn>'.format(plat_app[arn][token]['EndpointArn'])
-        return make_response('CreatePlatformEndpoint', content=content)
-
-
-def add_platform_endpoint(req_data, response_data):
-    arn = req_data.get('PlatformApplicationArn')[0]
-    token = req_data.get('Token')[0]
-    custom_user_data = req_data.get('CustomUserData', [''])[0]
-    plat_app = PLATFORM_APPLICATIONS
-    if arn not in plat_app:
-        PLATFORM_APPLICATIONS[arn] = {}
-    if token not in plat_app[arn]:
-        PLATFORM_APPLICATIONS[arn][token] = {}
-    PLATFORM_APPLICATIONS[arn][token]['EndpointArn'] = (response_data['CreatePlatformEndpointResponse']
-        ['CreatePlatformEndpointResult'].get('EndpointArn'))
-    PLATFORM_APPLICATIONS[arn][token]['CustomUserData'] = custom_user_data
-
-
-def delete_platform_endpoint(req_data):
-    end_point_arn = req_data.get('EndpointArn')[0]
-    # derive platform app Arn from EndpointArn
-    plat_app_arn = end_point_arn.rsplit('/', 1)[0]
-    plat_app_arn = plat_app_arn.replace(':endpoint', ':app')
-    token_matched = None
-    for token in PLATFORM_APPLICATIONS[plat_app_arn].keys():
-        if PLATFORM_APPLICATIONS[plat_app_arn][token]['EndpointArn'] == end_point_arn:
-            token_matched = token
-    if token_matched is not None:
-        del PLATFORM_APPLICATIONS[plat_app_arn][token_matched]
 
 # ---------------
 # HELPER METHODS
@@ -568,7 +531,7 @@ def delete_platform_endpoint(req_data):
 
 def get_subscription_by_arn(sub_arn):
     # TODO maintain separate map instead of traversing all items
-    for key, subscriptions in SNS_SUBSCRIPTIONS.items():
+    for key, subscriptions in sns_backend.sns_subscriptions.items():
         for sub in subscriptions:
             if sub['SubscriptionArn'] == sub_arn:
                 return sub
