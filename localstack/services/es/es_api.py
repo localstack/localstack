@@ -168,18 +168,18 @@ def get_domain_status(domain_name, deleted=False):
             'DomainId': '%s/%s' % (TEST_AWS_ACCOUNT_ID, domain_name),
             'DomainName': domain_name,
             'ElasticsearchClusterConfig': {
-                    'DedicatedMasterCount': cluster_cfg.get(
-                        'DedicatedMasterCount', default_cfg['DedicatedMasterCount']),
-                    'DedicatedMasterEnabled': cluster_cfg.get(
-                        'DedicatedMasterEnabled', default_cfg['DedicatedMasterEnabled']),
-                    'DedicatedMasterType': cluster_cfg.get(
-                        'DedicatedMasterType', default_cfg['DedicatedMasterType']),
-                    'InstanceCount': cluster_cfg.get(
-                        'InstanceCount', default_cfg['InstanceCount']),
-                    'InstanceType': cluster_cfg.get(
-                        'InstanceType', default_cfg['InstanceType']),
-                    'ZoneAwarenessEnabled': cluster_cfg.get(
-                        'ZoneAwarenessEnabled', default_cfg['ZoneAwarenessEnabled']),
+                'DedicatedMasterCount': cluster_cfg.get(
+                    'DedicatedMasterCount', default_cfg['DedicatedMasterCount']),
+                'DedicatedMasterEnabled': cluster_cfg.get(
+                    'DedicatedMasterEnabled', default_cfg['DedicatedMasterEnabled']),
+                'DedicatedMasterType': cluster_cfg.get(
+                    'DedicatedMasterType', default_cfg['DedicatedMasterType']),
+                'InstanceCount': cluster_cfg.get(
+                    'InstanceCount', default_cfg['InstanceCount']),
+                'InstanceType': cluster_cfg.get(
+                    'InstanceType', default_cfg['InstanceType']),
+                'ZoneAwarenessEnabled': cluster_cfg.get(
+                    'ZoneAwarenessEnabled', default_cfg['ZoneAwarenessEnabled']),
             },
             'ElasticsearchVersion': status.get('ElasticsearchVersion') or DEFAULT_ES_VERSION,
             'Endpoint': endpoint,
