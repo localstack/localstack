@@ -872,7 +872,6 @@ class SNSTest(unittest.TestCase):
         with self.assertRaises(ClientError) as ctx:
             self.sns_client.get_subscription_attributes(
                 SubscriptionArn=subscription['SubscriptionArn'])
-            self.fail('This call should not be successful as the subscription does not exist')
 
         self.assertEqual(ctx.exception.response['Error']['Code'], 'NotFound')
         self.assertEqual(ctx.exception.response['ResponseMetadata']['HTTPStatusCode'], 404)
