@@ -17,7 +17,6 @@ from localstack.utils.common import (
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
-# from localstack.services.sns import sns_listener
 from localstack.services.sns.sns_listener import SNSBackend
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
