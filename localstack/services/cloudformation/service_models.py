@@ -56,7 +56,7 @@ class GenericBaseModel(CloudFormationModel):
         self.resource_json = resource_json
         self.resource_type = resource_json['Type']
         # Properties, as defined in the resource template
-        self.properties = resource_json.get('Properties') or {}
+        self.properties = resource_json['Properties'] = resource_json.get('Properties') or {}
         # State, as determined from the deployed resource; use a special dict key here to keep
         # track of state changes within resource_json (this way we encapsulate all state details
         # in `resource_json` and the changes will survive creation of multiple instances of this class)
