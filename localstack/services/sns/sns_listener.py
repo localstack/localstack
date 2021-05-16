@@ -30,11 +30,16 @@ LOG = logging.getLogger(__name__)
 
 class SNSBackend(RegionBackend):
     def __init__(self):
-        self.sns_subscriptions = {}  # mappings for SNS topic subscriptions
-        self.subscription_status = {}  # mappings for subscription status
-        self.sns_tags = {}  # mappings for SNS tags
-        self.platform_endpoint_messages = {}  # cache of platform endpoint messages (used primarily for testing)
-        self.sms_messages = []  # maps phone numbers to list of sent messages
+        # maps topic ARN to list of subscriptions
+        self.sns_subscriptions = {}
+        # maps subscription ARN to subscription status
+        self.subscription_status = {}
+        # maps topic ARN to list of tags
+        self.sns_tags = {}
+        # cache of topic ARN to platform endpoint messages (used primarily for testing)
+        self.platform_endpoint_messages = {}
+        # maps phone numbers to list of sent messages
+        self.sms_messages = []
         # actions to be skipped from persistence
         self.skip_persistence_actions = ['Subscribe', 'ConfirmSubscription', 'Unsubscribe']
 
