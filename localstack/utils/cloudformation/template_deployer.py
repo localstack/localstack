@@ -1503,6 +1503,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
     elif res_type == 'AWS::EC2::SecurityGroup':
         props['GroupName'] = props.get('GroupName') or _generate_res_name()
 
+    elif res_type == 'AWS::Redshift::Cluster':
+        props['ClusterIdentifier'] = props.get('ClusterIdentifier') or _generate_res_name()
+
     elif res_type == 'AWS::IAM::InstanceProfile':
         props['InstanceProfileName'] = props.get('InstanceProfileName') or _generate_res_name()
 

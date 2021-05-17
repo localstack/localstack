@@ -17,7 +17,7 @@ from localstack.utils.common import (
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
-from localstack.services.sns import sns_listener
+from localstack.services.sns.sns_listener import SNSBackend
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
 from localstack.services.install import SQS_BACKEND_IMPL
@@ -279,13 +279,14 @@ class SNSTest(unittest.TestCase):
 
     def test_subscribe_platform_endpoint(self):
         sns = self.sns_client
+        sns_backend = SNSBackend.get()
         app_arn = sns.create_platform_application(Name='app1', Platform='p1', Attributes={})['PlatformApplicationArn']
         platform_arn = sns.create_platform_endpoint(PlatformApplicationArn=app_arn, Token='token_1')['EndpointArn']
         subscription = self._publish_sns_message_with_attrs(platform_arn, 'application')
 
         # assert that message has been received
         def check_message():
-            self.assertGreater(len(sns_listener.PLATFORM_ENDPOINT_MESSAGES[platform_arn]), 0)
+            self.assertGreater(len(sns_backend.platform_endpoint_messages[platform_arn]), 0)
         retry(check_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
         # clean up
@@ -394,10 +395,11 @@ class SNSTest(unittest.TestCase):
             Protocol='email',
             Endpoint='localstack@yopmail.com'
         )
+        sns_backend = SNSBackend.get()
 
         def check_subscription():
             subscription_arn = subscription['SubscriptionArn']
-            subscription_obj = sns_listener.SUBSCRIPTION_STATUS[subscription_arn]
+            subscription_obj = sns_backend.subscription_status[subscription_arn]
             self.assertEqual(subscription_obj['Status'], 'Not Subscribed')
 
             _token = subscription_obj['Token']
@@ -694,6 +696,27 @@ class SNSTest(unittest.TestCase):
         # clean up
         self.sns_client.delete_topic(TopicArn=responses[0]['TopicArn'])
 
+    def test_create_platform_endpoint_check_idempotentness(self):
+        response = self.sns_client.create_platform_application(
+            Name='test-%s' % short_uid(), Platform='GCM', Attributes={'PlatformCredential': '123'}
+        )
+        kwargs_list = [{'Token': 'test1', 'CustomUserData': 'test-data'},
+            {'Token': 'test1', 'CustomUserData': 'test-data'},
+            {'Token': 'test1'}, {'Token': 'test1'}
+        ]
+        platform_arn = response['PlatformApplicationArn']
+        responses = []
+        for kwargs in kwargs_list:
+            responses.append(self.sns_client.create_platform_endpoint(PlatformApplicationArn=platform_arn,
+                **kwargs))
+        # Assert endpointarn is returned in every call create platform call
+        for i in range(len(responses)):
+            self.assertIn('EndpointArn', responses[i])
+        endpoint_arn = responses[0]['EndpointArn']
+        # clean up
+        self.sns_client.delete_endpoint(EndpointArn=endpoint_arn)
+        self.sns_client.delete_platform_application(PlatformApplicationArn=platform_arn)
+
     def test_publish_by_path_parameters(self):
         topic_name = 'topic-{}'.format(short_uid())
         queue_name = 'queue-{}'.format(short_uid())
@@ -765,6 +788,10 @@ class SNSTest(unittest.TestCase):
         return queue_name, queue_arn, queue_url
 
     def test_publish_sms_endpoint(self):
+        def check_messages():
+            sns_backend = SNSBackend.get()
+            self.assertEqual(len(list_of_contacts), len(sns_backend.sms_messages))
+
         list_of_contacts = [
             '+10123456789',
             '+10000000000',
@@ -780,9 +807,6 @@ class SNSTest(unittest.TestCase):
             )
         # Publish a message.
         self.sns_client.publish(Message=message, TopicArn=self.topic_arn)
-
-        def check_messages():
-            self.assertEqual(len(list_of_contacts), len(sns_listener.SMS_MESSAGES))
         retry(check_messages, retries=3, sleep=0.5)
 
     def test_publish_sqs_from_sns(self):
@@ -848,3 +872,34 @@ class SNSTest(unittest.TestCase):
 
         # cleanup
         self.sns_client.delete_topic(TopicArn=topic1['TopicArn'])
+
+    def test_not_found_error_on_get_subscription_attributes(self):
+        topic_name = 'queue-{}'.format(short_uid())
+        queue_name = 'test-%s' % short_uid()
+
+        topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
+        queue = self.sqs_client.create_queue(QueueName=queue_name)
+
+        queue_url = queue['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        subscription = self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_arn)
+
+        subscription_attributes = self.sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription['SubscriptionArn'])
+
+        self.assertEqual(subscription_attributes.get('Attributes').get('SubscriptionArn'),
+                         subscription['SubscriptionArn'])
+
+        self.sns_client.unsubscribe(SubscriptionArn=subscription['SubscriptionArn'])
+
+        with self.assertRaises(ClientError) as ctx:
+            self.sns_client.get_subscription_attributes(
+                SubscriptionArn=subscription['SubscriptionArn'])
+
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'NotFound')
+        self.assertEqual(ctx.exception.response['ResponseMetadata']['HTTPStatusCode'], 404)
+
+        # cleanup
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
