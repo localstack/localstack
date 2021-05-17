@@ -106,7 +106,7 @@ def get_main_endpoint_from_container():
             LOG.info('Unable to get IP address of main Docker container "%s": %s' %
                 (container_name, e))
     # return (1) predefined endpoint host, or (2) main container IP, or (3) Docker host (e.g., bridge IP)
-    return config.HOSTNAME_FROM_LAMBDA or DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
+    return config.DOCKER_HOST_FROM_CONTAINER or config.HOSTNAME_FROM_LAMBDA or config.DOCKER_HOST_FROM_CONTAINER or DOCKER_MAIN_CONTAINER_IP
 
 
 class InvocationResult(object):
