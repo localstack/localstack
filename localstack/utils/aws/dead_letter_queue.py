@@ -2,6 +2,7 @@ import json
 import uuid
 import logging
 
+from localstack.utils.common import first_char_to_upper
 from json import JSONDecodeError
 from localstack.utils.aws import aws_stack
 
@@ -33,7 +34,7 @@ def sns_error_to_dead_letter_queue(sns_subscriber_arn, event, error):
     target_arn = policy.get('deadLetterTargetArn')
     if not target_arn:
         return
-    return _send_to_dead_letter_queue('SQS', sns_subscriber_arn, target_arn, event, error)
+    return _send_to_dead_letter_queue('SNS', sns_subscriber_arn, target_arn, event, error)
 
 
 def lambda_error_to_dead_letter_queue(func_details, event, error):
@@ -46,19 +47,14 @@ def _send_to_dead_letter_queue(source_type, source_arn, dlq_arn, event, error):
     if not dlq_arn:
         return
     LOG.info('Sending failed execution %s to dead letter queue %s' % (source_arn, dlq_arn))
-    message = json.dumps(event)
-    message_attrs = {
-        'RequestID': {'DataType': 'String', 'StringValue': str(uuid.uuid4())},
-        'ErrorCode': {'DataType': 'String', 'StringValue': '200'},
-        'ErrorMessage': {'DataType': 'String', 'StringValue': str(error)}
-    }
+    messages = _prepare_messages_to_dlq(source_arn, event, error)
     if ':sqs:' in dlq_arn:
         queue_url = aws_stack.get_sqs_queue_url(dlq_arn)
         sqs_client = aws_stack.connect_to_service('sqs')
         error = None
         result_code = None
         try:
-            result = sqs_client.send_message(QueueUrl=queue_url, MessageBody=message, MessageAttributes=message_attrs)
+            result = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=messages)
             result_code = result.get('ResponseMetadata', {}).get('HTTPStatusCode')
         except Exception as e:
             error = e
@@ -68,7 +64,50 @@ def _send_to_dead_letter_queue(source_type, source_arn, dlq_arn, event, error):
             raise Exception(msg)
     elif ':sns:' in dlq_arn:
         sns_client = aws_stack.connect_to_service('sns')
-        sns_client.publish(TopicArn=dlq_arn, Message=message, MessageAttributes=message_attrs)
+        for message in messages:
+            sns_client.publish(TopicArn=dlq_arn, Message=message['MessageBody'],
+                MessageAttributes=message['MessageAttributes'])
     else:
         LOG.warning('Unsupported dead letter queue type: %s' % dlq_arn)
     return dlq_arn
+
+
+def _prepare_messages_to_dlq(source_arn, event, error):
+    messages = []
+    custom_attrs = {
+        'RequestID': {'DataType': 'String', 'StringValue': str(uuid.uuid4())},
+        'ErrorCode': {'DataType': 'String', 'StringValue': '200'},
+        'ErrorMessage': {'DataType': 'String', 'StringValue': str(error)}
+    }
+    if ':sqs:' in source_arn:
+        custom_attrs['ErrorMessage']['StringValue'] = str(error.result)
+        for record in event.get('Records', []):
+            msg_attrs = message_attributes_to_upper(record.get('messageAttributes'))
+            message_attrs = {**msg_attrs, **custom_attrs}
+            messages.append({'Id': record.get('messageId'), 'MessageBody': record.get('body'),
+                'MessageAttributes': message_attrs})
+    elif ':sns:' in source_arn:
+        messages.append({'Id': str(uuid.uuid4()), 'MessageBody': json.dumps(event),
+            'MessageAttributes': custom_attrs})
+    elif ':lambda:' in source_arn:
+        if event.get('Records') and 'sns' in event['Records'][0]['EventSource']:
+            for record in event['Records']:
+                sns_rec = record.get('Sns', {})
+                message_attrs = {**sns_rec.get('MessageAttributes'), **custom_attrs}
+                messages.append({'Id': sns_rec.get('MessageId'), 'MessageBody': sns_rec.get('Message'),
+                'MessageAttributes': message_attrs})
+        else:
+            messages.append({'Id': str(uuid.uuid4()), 'MessageBody': json.dumps(event),
+            'MessageAttributes': custom_attrs})
+    return messages
+
+
+def message_attributes_to_upper(message_attrs):
+    """ Convert message attribute details (first characters) to upper case (e.g., StringValue, DataType). """
+    message_attrs = message_attrs or {}
+    for _, attr in message_attrs.items():
+        if not isinstance(attr, dict):
+            continue
+        for key, value in dict(attr).items():
+            attr[first_char_to_upper(key)] = attr.pop(key)
+    return message_attrs

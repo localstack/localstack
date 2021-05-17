@@ -1,3 +1,4 @@
+import os
 import json
 import base64
 import logging
@@ -14,6 +15,10 @@ MSG_BODY_MESSAGE_TARGET = 'message_target'
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
+
+# TODO: should be injected by Lambda executor! (Doesn't seem to be the case for default python executor?)
+os.environ['AWS_ACCESS_KEY_ID'] = os.environ.get('AWS_ACCESS_KEY_ID') or 'test'
+os.environ['AWS_SECRET_ACCESS_KEY'] = os.environ.get('AWS_SECRET_ACCESS_KEY') or 'test'
 
 
 # Subclass of boto's TypeDeserializer for DynamoDB

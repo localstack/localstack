@@ -1,5 +1,4 @@
 import re
-import os
 import json
 import base64
 import logging
@@ -15,13 +14,12 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     json_safe, md5, canonical_json, short_uid, to_str, to_bytes,
-    mkdir, cp_r, prevent_stack_overflow, start_worker_thread, get_all_subclasses)
-from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
+    prevent_stack_overflow, start_worker_thread, get_all_subclasses)
+from localstack.utils.testutil import delete_all_s3_objects
 from localstack.utils.cloudformation import template_preparer
-from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.service_models import GenericBaseModel, DependencyNotYetSatisfied
 from localstack.services.cloudformation.deployment_utils import (
-    dump_json_params, select_parameters, param_defaults, remove_none_values, get_cfn_response_mod_file,
+    dump_json_params, select_parameters, param_defaults, remove_none_values,
     lambda_keys_to_lower, PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
 
 ACTION_CREATE = 'create'
@@ -62,58 +60,10 @@ def rename_params(func, rename_map):
     return do_rename
 
 
-def get_lambda_code_param(params, **kwargs):
-    code = params.get('Code', {})
-    zip_file = code.get('ZipFile')
-    if zip_file and not common.is_base64(zip_file):
-        tmp_dir = common.new_tmp_dir()
-        handler_file = get_handler_file_from_name(params['Handler'], runtime=params['Runtime'])
-        tmp_file = os.path.join(tmp_dir, handler_file)
-        common.save_file(tmp_file, zip_file)
-
-        # add 'cfn-response' module to archive - see:
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
-        cfn_response_tmp_file = get_cfn_response_mod_file()
-        cfn_response_mod_dir = os.path.join(tmp_dir, 'node_modules', 'cfn-response')
-        mkdir(cfn_response_mod_dir)
-        cp_r(cfn_response_tmp_file, os.path.join(cfn_response_mod_dir, 'index.js'))
-
-        # create zip file
-        zip_file = create_zip_file(tmp_dir, get_content=True)
-        code['ZipFile'] = zip_file
-        common.rm_rf(tmp_dir)
-    return code
-
-
-def events_put_rule_params(params, **kwargs):
-    attrs = ['ScheduleExpression', 'EventPattern', 'State', 'Description', 'Name']
-    result = select_parameters(*attrs)(params, **kwargs)
-    result['Name'] = result.get('Name') or PLACEHOLDER_RESOURCE_NAME
-
-    def wrap_in_lists(o, **kwargs):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if not isinstance(v, (dict, list)):
-                    o[k] = [v]
-        return o
-
-    pattern = result.get('EventPattern')
-    if isinstance(pattern, dict):
-        wrapped = common.recurse_object(pattern, wrap_in_lists)
-        result['EventPattern'] = json.dumps(wrapped)
-    return result
-
-
 def es_add_tags_params(params, **kwargs):
     es_arn = aws_stack.es_domain_arn(params.get('DomainName'))
     tags = params.get('Tags', [])
     return {'ARN': es_arn, 'TagList': tags}
-
-
-def lambda_permission_params(params, **kwargs):
-    result = select_parameters('FunctionName', 'Action', 'Principal')(params, **kwargs)
-    result['StatementId'] = common.short_uid()
-    return result
 
 
 def get_ddb_provisioned_throughput(params, **kwargs):
@@ -196,60 +146,10 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
-    'Logs::LogGroup': {
-        'create': {
-            'function': 'create_log_group',
-            'parameters': {
-                'logGroupName': 'LogGroupName'
-            }
-        },
-        'delete': {
-            'function': 'delete_log_group',
-            'parameters': {
-                'logGroupName': 'LogGroupName'
-            }
-        }
-    },
-    'Lambda::Function': {
-        'create': {
-            'function': 'create_function',
-            'parameters': {
-                'FunctionName': 'FunctionName',
-                'Runtime': 'Runtime',
-                'Role': 'Role',
-                'Handler': 'Handler',
-                'Code': get_lambda_code_param,
-                'Description': 'Description',
-                'Environment': 'Environment',
-                'Timeout': 'Timeout',
-                'MemorySize': 'MemorySize',
-                # TODO add missing fields
-            },
-            'defaults': {
-                'Role': 'test_role'
-            },
-            'types': {
-                'Timeout': int,
-                'MemorySize': int
-            }
-        },
-        'delete': {
-            'function': 'delete_function',
-            'parameters': {
-                'FunctionName': 'PhysicalResourceId'
-            }
-        }
-    },
     'Lambda::Version': {
         'create': {
             'function': 'publish_version',
             'parameters': select_parameters('FunctionName', 'CodeSha256', 'Description')
-        }
-    },
-    'Lambda::Permission': {
-        'create': {
-            'function': 'add_permission',
-            'parameters': lambda_permission_params
         }
     },
     'Lambda::EventSourceMapping': {
@@ -297,25 +197,6 @@ RESOURCE_TO_FUNCTION = {
             'function': 'delete_event_bus',
             'parameters': {
                 'Name': 'Name'
-            }
-        }
-    },
-    'Events::Rule': {
-        'create': [{
-            'function': 'put_rule',
-            'parameters': events_put_rule_params
-        }, {
-            'function': 'put_targets',
-            'parameters': {
-                'Rule': PLACEHOLDER_RESOURCE_NAME,
-                'EventBusName': 'EventBusName',
-                'Targets': 'Targets'
-            }
-        }],
-        'delete': {
-            'function': 'delete_rule',
-            'parameters': {
-                'Name': 'PhysicalResourceId'
             }
         }
     },
@@ -1339,6 +1220,9 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
             if integration.get('IntegrationHttpMethod'):
                 kwargs['integrationHttpMethod'] = integration['IntegrationHttpMethod']
 
+            if integration.get('RequestTemplates'):
+                kwargs['requestTemplates'] = integration['RequestTemplates']
+
             apigateway.put_integration(
                 restApiId=api_id,
                 resourceId=res_id,
@@ -1619,6 +1503,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
     elif res_type == 'AWS::EC2::SecurityGroup':
         props['GroupName'] = props.get('GroupName') or _generate_res_name()
 
+    elif res_type == 'AWS::Redshift::Cluster':
+        props['ClusterIdentifier'] = props.get('ClusterIdentifier') or _generate_res_name()
+
     elif res_type == 'AWS::IAM::InstanceProfile':
         props['InstanceProfileName'] = props.get('InstanceProfileName') or _generate_res_name()
 
@@ -1693,6 +1580,8 @@ class TemplateDeployer(object):
         self.apply_changes(self.stack, new_stack, stack_name=self.stack.stack_name, action='UPDATE')
 
     def delete_stack(self):
+        if not self.stack:
+            return
         self.stack.set_stack_status('DELETE_IN_PROGRESS')
         stack_resources = list(self.stack.resources.values())
         stack_name = self.stack.stack_name

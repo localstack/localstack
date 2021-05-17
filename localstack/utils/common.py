@@ -321,7 +321,8 @@ class CaptureOutput(object):
         return proxy
 
     def _ident(self):
-        return threading.currentThread().ident
+        # TODO: On some systems we seem to be running into a stack overflow with LAMBDA_EXECUTOR=local here!
+        return threading.current_thread().ident
 
     def stdout(self):
         return self._stream_value(self._stdout)
@@ -464,6 +465,19 @@ def get_docker_image_names(strip_latest=True):
         return []
 
 
+def rm_docker_container(container_name_or_id, check_existence=False, safe=False):
+    if not container_name_or_id:
+        return
+    if check_existence and container_name_or_id not in get_docker_container_names():
+        # TODO: check names as well as container IDs!
+        return
+    try:
+        run('%s rm -f %s' % (config.DOCKER_CMD, container_name_or_id), print_error=False)
+    except Exception:
+        if not safe:
+            raise
+
+
 def path_from_url(url):
     return '/%s' % str(url).partition('://')[2].partition('/')[2] if '://' in url else url
 
@@ -564,6 +578,24 @@ def edge_ports_info():
     else:
         result = 'port %s' % config.EDGE_PORT
     result = '%s %s' % (get_service_protocol(), result)
+    return result
+
+
+def to_unique_items_list(inputs, comparator=None):
+    """ Return a list of unique items from the given input iterable.
+        The comparator(item1, item2) returns True/False or an int for comparison. """
+    def contained(item):
+        for r in result:
+            if comparator:
+                cmp_res = comparator(item, r)
+                if cmp_res is True or str(cmp_res) == '0':
+                    return True
+            elif item == r:
+                return True
+    result = []
+    for it in inputs:
+        if not contained(it):
+            result.append(it)
     return result
 
 
@@ -848,7 +880,7 @@ def download(url, path, verify_ssl=True):
         s.close()
 
 
-def parse_request_data(method, path, data, headers={}):
+def parse_request_data(method, path, data=None, headers={}):
     """ Extract request data either from query string (for GET) or request body (for POST). """
     result = {}
     headers = headers or {}
@@ -1491,7 +1523,8 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN,
 
 
 def truncate(data, max_length=100):
-    return ('%s...' % data[:max_length]) if len(data or '') > max_length else data
+    data = str(data or '')
+    return ('%s...' % data[:max_length]) if len(data) > max_length else data
 
 
 def escape_html(string, quote=False):

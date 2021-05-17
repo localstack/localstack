@@ -215,6 +215,7 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(result.status_code, 200)
         self.assertTrue(re.match(result.headers['Access-Control-Allow-Origin'].replace('*', '.*'), origin))
         self.assertIn('POST', result.headers['Access-Control-Allow-Methods'])
+        self.assertIn('PATCH', result.headers['Access-Control-Allow-Methods'])
 
         custom_result = json.dumps({'foo': 'bar'})
 

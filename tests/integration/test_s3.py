@@ -1,5 +1,6 @@
 import io
 import os
+import shutil
 import ssl
 import boto3
 import gzip
@@ -23,8 +24,10 @@ from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener, s3_utils
 
 from localstack.utils.common import (
-    short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf, load_file)
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+    new_tmp_dir, short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf,
+    load_file, run)
+from localstack.services.awslambda.lambda_api import use_docker
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_NODEJS14X
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
@@ -945,6 +948,30 @@ class TestS3(unittest.TestCase):
 
         self.assertEqual(downloaded_data, data)
 
+    def test_multipart_copy_object_etag(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        key = 'test.file'
+        copy_key = 'copy.file'
+        src_object_path = '%s/%s' % (bucket_name, key)
+        content = 'test content 123'
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        multipart_etag = self._perform_multipart_upload(bucket=bucket_name, key=key, data=content)['ETag']
+        copy_etag = self.s3_client.copy_object(
+            Bucket=bucket_name, CopySource=src_object_path, Key=copy_key
+        )['CopyObjectResult']['ETag']
+        # etags should be different
+        self.assertNotEqual(multipart_etag, copy_etag)
+
+        # cleanup
+        self.s3_client.delete_objects(
+            Bucket=bucket_name,
+            Delete={
+                'Objects': [{'Key': key}, {'Key': copy_key}]
+            }
+        )
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+
     def test_set_external_hostname(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         key = 'test.file'
@@ -1519,6 +1546,7 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [])
 
     def test_presigned_url_signature_authentication(self):
+
         client = boto3.client('s3', endpoint_url=config.get_edge_url(),
             config=Config(signature_version='s3'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
@@ -1579,7 +1607,8 @@ class TestS3(unittest.TestCase):
 
         presign_get_url = client.generate_presigned_url(
             'get_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain',
+                'ResponseContentDisposition': 'attachment;  filename=test.txt'},
             ExpiresIn=EXPIRES
         )
 
@@ -1747,14 +1776,14 @@ class TestS3(unittest.TestCase):
 
         OBJECT_KEY = 'temp.txt'
         OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
-        BUCKET = 'test'
-        EXPIRES = 4
+        bucket_name = 'presign-%s' % short_uid()
+        expires = 4
 
         def make_v2_url_invalid(url):
             parsed = urlparse.urlparse(url)
             query_params = parse_qs(parsed.query)
             url = '{}://{}.{}:{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}'.format(
-                config.get_protocol(), BUCKET, S3_VIRTUAL_HOSTNAME, config.EDGE_PORT, OBJECT_KEY,
+                config.get_protocol(), bucket_name, S3_VIRTUAL_HOSTNAME, config.EDGE_PORT, OBJECT_KEY,
                 'test', query_params['Signature'][0], query_params['Expires'][0]
             )
             return url
@@ -1766,31 +1795,26 @@ class TestS3(unittest.TestCase):
                    'X-Amz-Credential={}&X-Amz-Date={}&' +
                    'X-Amz-Expires={}&X-Amz-SignedHeaders=host&' +
                    'X-Amz-Signature={}').format(
-                config.get_protocol(), BUCKET, S3_VIRTUAL_HOSTNAME, config.EDGE_PORT, OBJECT_KEY,
+                config.get_protocol(), bucket_name, S3_VIRTUAL_HOSTNAME, config.EDGE_PORT, OBJECT_KEY,
                 quote(query_params['X-Amz-Credential'][0]).replace('/', '%2F'),
                 query_params['X-Amz-Date'][0], query_params['X-Amz-Expires'][0], query_params['X-Amz-Signature'][0]
             )
             return url
 
-        self.s3_client.create_bucket(Bucket=BUCKET)
-
-        self.s3_client.put_object(
-            Key=OBJECT_KEY,
-            Bucket=BUCKET,
-            Body='123'
-        )
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Key=OBJECT_KEY, Bucket=bucket_name, Body='123')
 
         # GET requests
         presign_get_url = client.generate_presigned_url(
             'get_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY},
+            ExpiresIn=expires
         )
 
         presign_get_url_v4 = client_v4.generate_presigned_url(
             'get_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY},
+            ExpiresIn=expires
         )
 
         # Valid request
@@ -1802,14 +1826,14 @@ class TestS3(unittest.TestCase):
 
         presign_get_url = client.generate_presigned_url(
             'get_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            ExpiresIn=expires
         )
 
         presign_get_url_v4 = client_v4.generate_presigned_url(
             'get_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            ExpiresIn=expires
         )
 
         # Valid request
@@ -1831,14 +1855,14 @@ class TestS3(unittest.TestCase):
         # PUT Requests
         presign_put_url = client.generate_presigned_url(
             'put_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY},
+            ExpiresIn=expires
         )
 
         presign_put_url_v4 = client_v4.generate_presigned_url(
             'put_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY},
+            ExpiresIn=expires
         )
 
         # Valid request
@@ -1850,14 +1874,14 @@ class TestS3(unittest.TestCase):
 
         presign_put_url = client.generate_presigned_url(
             'put_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
+            ExpiresIn=expires
         )
 
         presign_put_url_v4 = client_v4.generate_presigned_url(
             'put_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
+            ExpiresIn=expires
         )
 
         # Valid request
@@ -1879,14 +1903,14 @@ class TestS3(unittest.TestCase):
         # DELETE Requests
         presign_delete_url = client.generate_presigned_url(
             'delete_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY},
+            ExpiresIn=expires
         )
 
         presign_delete_url_v4 = client_v4.generate_presigned_url(
             'delete_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY},
+            ExpiresIn=expires
         )
 
         # Valid request
@@ -1899,14 +1923,14 @@ class TestS3(unittest.TestCase):
 
         presign_delete_url = client.generate_presigned_url(
             'delete_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY, 'VersionId': '1'},
+            ExpiresIn=expires
         )
 
         presign_delete_url_v4 = client_v4.generate_presigned_url(
             'delete_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
-            ExpiresIn=EXPIRES
+            Params={'Bucket': bucket_name, 'Key': OBJECT_KEY, 'VersionId': '1'},
+            ExpiresIn=expires
         )
 
         # Valid request
@@ -1947,13 +1971,13 @@ class TestS3(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
 
         # Multipart uploading
-        response = self._perform_multipart_upload_with_presign(BUCKET, OBJECT_KEY, client)
+        response = self._perform_multipart_upload_with_presign(bucket_name, OBJECT_KEY, client)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
-        response = self._perform_multipart_upload_with_presign(BUCKET, OBJECT_KEY, client_v4)
+        response = self._perform_multipart_upload_with_presign(bucket_name, OBJECT_KEY, client_v4)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
-        client.delete_bucket(Bucket=BUCKET)
+        client.delete_object(Bucket=bucket_name, Key=OBJECT_KEY)
+        client.delete_bucket(Bucket=bucket_name)
 
     def test_precondition_failed_error(self):
         bucket = 'bucket-%s' % short_uid()
@@ -2072,6 +2096,37 @@ class TestS3(unittest.TestCase):
 
         # Cleanup
         self._delete_bucket(bucket, key_by_path)
+
+    def test_s3_lambda_integration(self):
+        if not use_docker():
+            return
+        temp_folder = new_tmp_dir()
+        handler_file = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_s3_integration.js')
+        shutil.copy(handler_file, temp_folder)
+        run('cd %s; npm install @aws-sdk/client-s3; npm install @aws-sdk/s3-request-presigner;' % temp_folder)
+
+        function_name = 'func-integration-%s' % short_uid()
+        lambda_client = aws_stack.connect_to_service('lambda')
+        s3_client = aws_stack.connect_to_service('s3')
+
+        testutil.create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(temp_folder, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler='lambda_s3_integration.handler'
+        )
+        s3_client.create_bucket(Bucket=function_name)
+
+        response = lambda_client.invoke(FunctionName=function_name)
+        presigned_url = response['Payload'].read()
+        presigned_url = json.loads(to_str(presigned_url))['body'].strip('"')
+
+        response = requests.put(presigned_url, verify=False)
+        response = s3_client.head_object(Bucket=function_name, Key='key.png')
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        s3_client.delete_object(Bucket=function_name, Key='key.png')
+        s3_client.delete_bucket(Bucket=function_name)
 
     def test_terraform_request_sequence(self):
 
