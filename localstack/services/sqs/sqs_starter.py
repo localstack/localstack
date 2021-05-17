@@ -130,9 +130,6 @@ def patch_moto():
         visibility_timeout,
         message_attribute_names=None,
     ):
-        # print('---DEBUG---')
-        # queue = self.get_queue(queue_name)
-        # print(len(queue.messages))
 
         if message_attribute_names is None:
             message_attribute_names = []
@@ -143,7 +140,6 @@ def patch_moto():
         polling_end = unix_time() + wait_seconds_timeout
         currently_pending_groups = deepcopy(queue.pending_message_groups)
 
-        # queue.messages only contains visible messages
         while True:
 
             if result or (wait_seconds_timeout and unix_time() > polling_end):
@@ -156,8 +152,6 @@ def patch_moto():
                     continue
 
                 if message in queue.pending_messages:
-                    # The message is pending but is visible again, so the
-                    # consumer must have timed out.
                     queue.pending_messages.remove(message)
                     currently_pending_groups = deepcopy(queue.pending_message_groups)
 
@@ -166,11 +160,8 @@ def patch_moto():
                         # A previous call is still processing messages in this group, so we cannot deliver this one.
                         continue
 
-                if (
-                    queue.dead_letter_queue is not None
-                    and message.approximate_receive_count
-                    >= queue.redrive_policy["maxReceiveCount"]
-                ):
+                dead_queue_exists = queue.dead_letter_queue is not None
+                if (dead_queue_exists and message.approximate_receive_count >= queue.redrive_policy['maxReceiveCount']):
                     messages_to_dlq.append(message)
                     continue
 
@@ -187,8 +178,6 @@ def patch_moto():
 
             if previous_result_count == len(result):
                 if wait_seconds_timeout == 0:
-                    # There is timeout and we have added no additional results,
-                    # so break to avoid an infinite loop.
                     break
 
                 import time
