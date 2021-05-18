@@ -20,6 +20,7 @@ SEQUENCE_NUMBER_COUNTER = 1
 
 
 def add_dynamodb_stream(table_name, latest_stream_label=None, view_type='NEW_AND_OLD_IMAGES', enabled=True):
+    stream = {}
     if enabled:
         # create kinesis stream as a backend
         stream_name = get_kinesis_stream_name(table_name)
@@ -40,6 +41,8 @@ def add_dynamodb_stream(table_name, latest_stream_label=None, view_type='NEW_AND
         # record event
         event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_CREATE_STREAM,
             payload={'n': event_publisher.get_hash(table_name)})
+
+    return stream
 
 
 def get_stream_for_table(table_arn):
