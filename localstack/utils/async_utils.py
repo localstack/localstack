@@ -1,5 +1,6 @@
 import time
 import asyncio
+import functools
 import concurrent.futures
 from contextvars import copy_context
 from localstack.utils import common
@@ -76,10 +77,11 @@ class AsyncThread(FuncThread):
         return thread
 
 
-async def run_sync(func, *args, thread_pool=None):
+async def run_sync(func, *args, thread_pool=None, **kwargs):
     loop = asyncio.get_running_loop()
     thread_pool = thread_pool or THREAD_POOL
-    return await loop.run_in_executor(thread_pool, copy_context().run, func, *args)
+    func_wrapped = functools.partial(func, *args, **kwargs)
+    return await loop.run_in_executor(thread_pool, copy_context().run, func_wrapped)
 
 
 def run_coroutine(coroutine, loop=None):

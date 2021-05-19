@@ -62,7 +62,7 @@ accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`
 * **StepFunctions**
 * **STS**
 
-In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
+In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/pricing) supports additional APIs and advanced features, including:
 * **Amplify**
 * **API Gateway V2 (WebSockets support)**
 * **Application AutoScaling**
@@ -75,6 +75,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **CostExplorer**
 * **ECS/ECR/EKS**
 * **ElastiCache**
+* **ElasticBeanstalk**
 * **ELB/ELBv2**
 * **EMR**
 * **Glacier** / **S3 Select**
