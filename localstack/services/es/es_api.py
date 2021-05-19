@@ -22,6 +22,15 @@ DEFAULT_ES_VERSION = '7.7'
 
 ES_DOMAINS = {}
 
+DEFAULT_ES_CLUSTER_CONFIG = {
+    'InstanceType': 'm3.medium.elasticsearch',
+    'InstanceCount': 1,
+    'DedicatedMasterEnabled': True,
+    'ZoneAwarenessEnabled': False,
+    'DedicatedMasterType': 'm3.medium.elasticsearch',
+    'DedicatedMasterCount': 1
+}
+
 TAGS = TaggingService()
 
 app = Flask(APP_NAME)
@@ -50,6 +59,9 @@ def get_domain_config_status():
 
 
 def get_domain_config(domain_name):
+    status = ES_DOMAINS.get(domain_name) or {}
+    cluster_cfg = status.get('ElasticsearchClusterConfig') or {}
+    default_cfg = DEFAULT_ES_CLUSTER_CONFIG
     config_status = get_domain_config_status()
     return {
         'DomainConfig': {
@@ -76,12 +88,18 @@ def get_domain_config(domain_name):
             },
             'ElasticsearchClusterConfig': {
                 'Options': {
-                    'DedicatedMasterCount': 1,
-                    'DedicatedMasterEnabled': True,
-                    'DedicatedMasterType': 'm3.medium.elasticsearch',
-                    'InstanceCount': 1,
-                    'InstanceType': 'm3.medium.elasticsearch',
-                    'ZoneAwarenessEnabled': False
+                    'DedicatedMasterCount': cluster_cfg.get(
+                        'DedicatedMasterCount', default_cfg['DedicatedMasterCount']),
+                    'DedicatedMasterEnabled': cluster_cfg.get(
+                        'DedicatedMasterEnabled', default_cfg['DedicatedMasterEnabled']),
+                    'DedicatedMasterType': cluster_cfg.get(
+                        'DedicatedMasterType', default_cfg['DedicatedMasterType']),
+                    'InstanceCount': cluster_cfg.get(
+                        'InstanceCount', default_cfg['InstanceCount']),
+                    'InstanceType': cluster_cfg.get(
+                        'InstanceType', default_cfg['InstanceType']),
+                    'ZoneAwarenessEnabled': cluster_cfg.get(
+                        'ZoneAwarenessEnabled', default_cfg['ZoneAwarenessEnabled']),
                 },
                 'Status': config_status
             },
@@ -139,6 +157,8 @@ def get_domain_config(domain_name):
 
 def get_domain_status(domain_name, deleted=False):
     status = ES_DOMAINS.get(domain_name) or {}
+    cluster_cfg = status.get('ElasticsearchClusterConfig') or {}
+    default_cfg = DEFAULT_ES_CLUSTER_CONFIG
     endpoint = '%s://%s:%s' % (get_service_protocol(), config.HOSTNAME_EXTERNAL, config.PORT_ELASTICSEARCH)
     return {
         'DomainStatus': {
@@ -148,12 +168,18 @@ def get_domain_status(domain_name, deleted=False):
             'DomainId': '%s/%s' % (TEST_AWS_ACCOUNT_ID, domain_name),
             'DomainName': domain_name,
             'ElasticsearchClusterConfig': {
-                'DedicatedMasterCount': 1,
-                'DedicatedMasterEnabled': True,
-                'DedicatedMasterType': 'm3.medium.elasticsearch',
-                'InstanceCount': 1,
-                'InstanceType': 'm3.medium.elasticsearch',
-                'ZoneAwarenessEnabled': False
+                'DedicatedMasterCount': cluster_cfg.get(
+                    'DedicatedMasterCount', default_cfg['DedicatedMasterCount']),
+                'DedicatedMasterEnabled': cluster_cfg.get(
+                    'DedicatedMasterEnabled', default_cfg['DedicatedMasterEnabled']),
+                'DedicatedMasterType': cluster_cfg.get(
+                    'DedicatedMasterType', default_cfg['DedicatedMasterType']),
+                'InstanceCount': cluster_cfg.get(
+                    'InstanceCount', default_cfg['InstanceCount']),
+                'InstanceType': cluster_cfg.get(
+                    'InstanceType', default_cfg['InstanceType']),
+                'ZoneAwarenessEnabled': cluster_cfg.get(
+                    'ZoneAwarenessEnabled', default_cfg['ZoneAwarenessEnabled']),
             },
             'ElasticsearchVersion': status.get('ElasticsearchVersion') or DEFAULT_ES_VERSION,
             'Endpoint': endpoint,

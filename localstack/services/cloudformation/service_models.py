@@ -56,7 +56,7 @@ class GenericBaseModel(CloudFormationModel):
         self.resource_json = resource_json
         self.resource_type = resource_json['Type']
         # Properties, as defined in the resource template
-        self.properties = resource_json.get('Properties') or {}
+        self.properties = resource_json['Properties'] = resource_json.get('Properties') or {}
         # State, as determined from the deployed resource; use a special dict key here to keep
         # track of state changes within resource_json (this way we encapsulate all state details
         # in `resource_json` and the changes will survive creation of multiple instances of this class)
@@ -1416,6 +1416,14 @@ class SNSSubscription(GenericBaseModel):
         }
 
 
+class QueuePolicy(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::SQS::QueuePolicy'
+
+    # TODO: add deployment methods
+
+
 class DynamoDBTable(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -1433,10 +1441,27 @@ class DynamoDBTable(GenericBaseModel):
         return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
 
 
-class QueuePolicy(GenericBaseModel):
+class RedshiftCluster(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
-        return 'AWS::SQS::QueuePolicy'
+        return 'AWS::Redshift::Cluster'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('ClusterIdentifier')
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('redshift')
+        cluster_id = self.resolve_refs_recursively(stack_name, self.props.get('ClusterIdentifier'), resources)
+        result = client.describe_clusters(ClusterIdentifier=cluster_id)['Clusters']
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_cluster'
+            }
+        }
 
 
 class SSMParameter(GenericBaseModel):

@@ -1,7 +1,7 @@
-from localstack import config
 from moto.route53 import responses as route53_responses
 from moto.route53.models import route53_backend
 from six.moves.urllib.parse import parse_qs, urlparse
+from localstack import config
 from localstack.services.infra import start_moto_server
 
 

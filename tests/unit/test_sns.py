@@ -5,6 +5,7 @@ import unittest
 import dateutil.parser
 import re
 from localstack.services.sns import sns_listener
+from localstack.services.sns.sns_listener import SNSBackend
 
 
 class SNSTests(unittest.TestCase):
@@ -14,8 +15,6 @@ class SNSTests(unittest.TestCase):
             'RawMessageDelivery': 'false',
             'TopicArn': 'arn',
         }
-        # Reset subscriptions
-        sns_listener.SNS_SUBSCRIPTIONS = {}
 
     def test_unsubscribe_without_arn_should_error(self):
         sns = sns_listener.ProxyListenerSNS()
@@ -222,7 +221,7 @@ class SNSTests(unittest.TestCase):
     def test_only_one_subscription_per_topic_per_endpoint(self):
         sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
         topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
-
+        sns_backend = SNSBackend().get()
         for i in [1, 2]:
             sns_listener.do_subscribe(
                 topic_arn,
@@ -231,7 +230,7 @@ class SNSTests(unittest.TestCase):
                 sub_arn,
                 {}
             )
-            self.assertEqual(len(sns_listener.SNS_SUBSCRIPTIONS[topic_arn]), 1)
+            self.assertEqual(len(sns_backend.sns_subscriptions[topic_arn]), 1)
 
     def test_filter_policy(self):
         test_data = [
