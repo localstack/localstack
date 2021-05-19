@@ -1539,6 +1539,7 @@ class TestS3(unittest.TestCase):
         response = self.sqs_client.receive_message(QueueUrl=queue_url,
                                                    AttributeNames=['AWSTraceHeader'],
                                                    MessageAttributeNames=['All'])
+        print(response)
 
         self.assertEqual(response['Messages'][0]['Attributes']['AWSTraceHeader'],
                          'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1')
