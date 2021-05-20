@@ -1544,7 +1544,7 @@ class TestS3(unittest.TestCase):
             self.assertEqual(resp['Messages'][0]['Attributes']['AWSTraceHeader'],
                          'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1')
 
-            retry(get_message, retries=3, sleep=10, q_url=queue_url)
+            retry(get_message, retries=3, sleep=10, queue_url=queue_url)
 
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
