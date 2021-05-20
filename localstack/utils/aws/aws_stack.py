@@ -293,9 +293,10 @@ def render_velocity_template(*args, **kwargs):
     return templating.render_velocity_template(*args, **kwargs)
 
 
-def generate_presigned_url(*args, endpoint_url=None, **kwargs):
+def generate_presigned_url(*args, **kwargs):
     id_before = os.environ.get(ENV_ACCESS_KEY)
     key_before = os.environ.get(ENV_SECRET_KEY)
+    endpoint_url = kwargs.pop('endpoint_url', None)
     try:
         # Note: presigned URL needs to be created with test credentials
         os.environ[ENV_ACCESS_KEY] = TEST_AWS_ACCESS_KEY_ID
