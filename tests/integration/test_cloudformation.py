@@ -505,7 +505,7 @@ def queue_exists(name):
         url = name if '://' in name else aws_stack.get_sqs_queue_url(name)
     except Exception:
         return False
-    for queue_url in queues['QueueUrls']:
+    for queue_url in queues.get('QueueUrls', []):
         if queue_url == url:
             return queue_url
 

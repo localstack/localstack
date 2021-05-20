@@ -15,6 +15,14 @@ COMMON_HEADERS = {
     'Accept-encoding': 'identity'
 }
 TEST_DOMAIN_NAME = 'test_es_domain_1'
+ES_CLUSTER_CONFIG = {
+    'InstanceType': 'm3.xlarge.elasticsearch',
+    'InstanceCount': 4,
+    'DedicatedMasterEnabled': True,
+    'ZoneAwarenessEnabled': True,
+    'DedicatedMasterType': 'm3.xlarge.elasticsearch',
+    'DedicatedMasterCount': 3
+}
 
 
 class ElasticsearchTest(unittest.TestCase):
@@ -49,9 +57,10 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertEqual(status['ElasticsearchVersion'], DEFAULT_ES_VERSION)
 
         domain_name = 'es-%s' % short_uid()
-        self._create_domain(name=domain_name, version='6.8')
+        self._create_domain(name=domain_name, version='6.8', es_cluster_config=ES_CLUSTER_CONFIG)
         status = es_client.describe_elasticsearch_domain(DomainName=domain_name)['DomainStatus']
         self.assertEqual(status['ElasticsearchVersion'], '6.8')
+        self.assertEqual(status['ElasticsearchClusterConfig'], ES_CLUSTER_CONFIG)
 
     def test_create_indexes_and_domains(self):
         indexes = ['index1', 'index2']
@@ -142,12 +151,14 @@ class ElasticsearchTest(unittest.TestCase):
         return resp
 
     @classmethod
-    def _create_domain(cls, name=None, version=None):
+    def _create_domain(cls, name=None, version=None, es_cluster_config=None):
         es_client = aws_stack.connect_to_service('es')
         name = name or TEST_DOMAIN_NAME
         kwargs = {}
         if version:
             kwargs['ElasticsearchVersion'] = version
+        if es_cluster_config:
+            kwargs['ElasticsearchClusterConfig'] = es_cluster_config
         es_client.create_elasticsearch_domain(DomainName=name, **kwargs)
         assert_in(name, [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
 

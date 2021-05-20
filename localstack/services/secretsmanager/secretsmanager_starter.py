@@ -1,7 +1,7 @@
-import logging
 import json
 import random
 import string
+import logging
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.responses import SecretsManagerResponse
 from moto.secretsmanager.models import secretsmanager_backends, SecretsManagerBackend

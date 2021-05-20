@@ -352,6 +352,7 @@ def parse_service_ports():
     return result
 
 
+# TODO: we need to investigate the performance impact of this
 def populate_configs(service_ports=None):
     global SERVICE_PORTS, CONFIG_ENV_VARS
 

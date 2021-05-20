@@ -152,6 +152,25 @@ class CloudWatchTest(unittest.TestCase):
         result = json.loads(to_str(result.content))
         self.assertGreaterEqual(len(result['metrics']), 3)
 
+    def test_multiple_dimensions(self):
+        client = aws_stack.connect_to_service('cloudwatch')
+
+        namespaces = ['ns1-%s' % short_uid(), 'ns2-%s' % short_uid(), 'ns3-%s' % short_uid()]
+        num_dimensions = 2
+        for ns in namespaces:
+            for i in range(3):
+                rs = client.put_metric_data(
+                    Namespace=ns, MetricData=[{
+                        'MetricName': 'someMetric', 'Value': 123,
+                        'Dimensions': [{'Name': 'foo', 'Value': 'bar-%s' % (i % num_dimensions)}]
+                    }]
+                )
+                self.assertEquals(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = client.list_metrics()
+        metrics = [m for m in rs['Metrics'] if m.get('Namespace') in namespaces]
+        self.assertEqual(len(metrics), len(namespaces) * num_dimensions)
+
     def test_store_tags(self):
         cloudwatch = aws_stack.connect_to_service('cloudwatch')
 

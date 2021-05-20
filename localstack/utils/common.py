@@ -581,6 +581,24 @@ def edge_ports_info():
     return result
 
 
+def to_unique_items_list(inputs, comparator=None):
+    """ Return a list of unique items from the given input iterable.
+        The comparator(item1, item2) returns True/False or an int for comparison. """
+    def contained(item):
+        for r in result:
+            if comparator:
+                cmp_res = comparator(item, r)
+                if cmp_res is True or str(cmp_res) == '0':
+                    return True
+            elif item == r:
+                return True
+    result = []
+    for it in inputs:
+        if not contained(it):
+            result.append(it)
+    return result
+
+
 def timestamp(time=None, format=TIMESTAMP_FORMAT):
     if not time:
         time = datetime.utcnow()

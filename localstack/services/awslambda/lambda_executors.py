@@ -763,12 +763,11 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
-            path_before = sys.path
             result = None
             try:
                 if lambda_cwd:
                     os.chdir(lambda_cwd)
-                    sys.path = [lambda_cwd] + sys.path
+                    sys.path.insert(0, '')
                 if environment:
                     os.environ.update(environment)
                 result = lambda_function(event, context)
@@ -777,7 +776,6 @@ class LambdaExecutorLocal(LambdaExecutor):
                 sys.stderr.write('%s %s' % (e, traceback.format_exc()))
                 raise
             finally:
-                sys.path = path_before
                 queue.put(result)
 
         process = Process(target=do_execute)

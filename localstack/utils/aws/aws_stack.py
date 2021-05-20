@@ -194,6 +194,14 @@ def is_internal_call_context(headers):
 def set_internal_auth(headers):
     authorization = headers.get('Authorization') or ''
     authorization = re.sub(r'Credential=[^/]+/', 'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID, authorization)
+    if authorization.startswith('AWS '):
+        authorization = re.sub(r'AWS [^/]+',  # Cover Non HMAC Authentication
+                               'Credential=%s' % INTERNAL_AWS_ACCESS_KEY_ID,
+                               authorization)
+    else:
+        authorization = re.sub(r'Credential=[^/]+/',
+                               'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID,
+                               authorization)
     headers['Authorization'] = authorization
     return headers
 
