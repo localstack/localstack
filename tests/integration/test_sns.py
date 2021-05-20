@@ -819,16 +819,21 @@ class SNSTest(unittest.TestCase):
         self.sns_client.publish(TargetArn=topic_arn, Message='Test msg',
                                 MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
 
-        response = self.sqs_client.receive_message(
-            QueueUrl=queue_url,
-            AttributeNames=['SentTimestamp'],
-            MaxNumberOfMessages=1,
-            MessageAttributeNames=['All'],
-            VisibilityTimeout=2,
-            WaitTimeSeconds=2,
-        )
-        self.assertEqual(len(response['Messages']), 1)
-        self.assertEqual(response['Messages'][0]['MessageAttributes'],
+        def get_message(queue_url):
+            response = self.sqs_client.receive_message(
+                QueueUrl=queue_url,
+                AttributeNames=['SentTimestamp'],
+                MaxNumberOfMessages=1,
+                MessageAttributeNames=['All'],
+                VisibilityTimeout=2,
+                WaitTimeSeconds=2,
+            )
+            return response['Messages']
+
+        messages = retry(get_message, retries=3, sleep=10, queue_url=queue_url)
+
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]['MessageAttributes'],
                          {'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
 
     def add_xray_header(self, request, **kwargs):
