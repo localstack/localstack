@@ -25,7 +25,8 @@ def apply_patches():
         if not options:
             options = addenda['DomainValidationOptions'] = [{'ValidationMethod': cert.get('ValidationMethod')}]
         for san in sans:
-            options.append({'DomainName': san, 'ValidationMethod': cert.get('ValidationMethod')})
+            if san != cert.get('DomainName'):
+                options.append({'DomainName': san, 'ValidationMethod': cert.get('ValidationMethod')})
         for option in options:
             option['DomainName'] = domain_name = option.get('DomainName') or cert.get('DomainName')
             option['ValidationDomain'] = option.get('ValidationDomain') or option['DomainName']
