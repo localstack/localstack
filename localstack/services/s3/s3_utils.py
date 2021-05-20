@@ -272,7 +272,7 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
 
     # Comparing the signature in url with signature we calculated
     query_sig = urlparse.unquote(query_params['Signature'][0])
-    if config.S3_SKIP_SIGNATURE_VALIDATION == '1':
+    if config.S3_SKIP_SIGNATURE_VALIDATION:
         if query_sig != signature:
             LOGGER.warning('Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1')
         signature = query_sig

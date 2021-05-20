@@ -1546,6 +1546,14 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [])
 
     def test_presigned_url_signature_authentication(self):
+        old_config = config.S3_SKIP_SIGNATURE_VALIDATION
+        try:
+            config.S3_SKIP_SIGNATURE_VALIDATION = False
+            self.run_presigned_url_signature_authentication()
+        finally:
+            config.S3_SKIP_SIGNATURE_VALIDATION = old_config
+
+    def run_presigned_url_signature_authentication(self):
 
         client = boto3.client('s3', endpoint_url=config.get_edge_url(),
             config=Config(signature_version='s3'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
@@ -1763,6 +1771,15 @@ class TestS3(unittest.TestCase):
         client.delete_bucket(Bucket=BUCKET)
 
     def test_presigned_url_signature_authentication_virtual_host_addressing(self):
+        old_config = config.S3_SKIP_SIGNATURE_VALIDATION
+        try:
+            config.S3_SKIP_SIGNATURE_VALIDATION = False
+            self.run_presigned_url_signature_authentication_virtual_host_addressing()
+        finally:
+            config.S3_SKIP_SIGNATURE_VALIDATION = old_config
+
+    def run_presigned_url_signature_authentication_virtual_host_addressing(self):
+        # TODO: merge with run_presigned_url_signature_authentication() above!
         virtual_endpoint = '{}://{}:{}'.format(
             config.get_protocol(), S3_VIRTUAL_HOSTNAME, config.EDGE_PORT)
         client = boto3.client('s3', endpoint_url=virtual_endpoint,
