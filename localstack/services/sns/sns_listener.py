@@ -314,8 +314,10 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, headers, su
 
         elif subscriber['Protocol'] == 'sqs':
             queue_url = None
+
             try:
                 endpoint = subscriber['Endpoint']
+
                 if 'sqs_queue_url' in subscriber:
                     queue_url = subscriber.get('sqs_queue_url')
                 elif '://' in endpoint:
@@ -482,6 +484,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
     if protocol in ['http', 'https']:
         token = short_uid()
         external_url = external_service_url('sns')
+        subscription['UnsubscribeURL'] = '%s/?Action=Unsubscribe&SubscriptionArn=%s' % (external_url, subscription_arn)
         confirmation = {
             'Type': ['SubscriptionConfirmation'],
             'Token': [token],
@@ -619,6 +622,10 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
     for key in ['Subject', 'SubscribeURL', 'Token']:
         if req_data.get(key):
             data[key] = req_data[key][0]
+
+    for key in ['UnsubscribeURL']:
+        if key in subscriber:
+            data[key] = subscriber[key]
 
     attributes = get_message_attributes(req_data)
     if attributes:
