@@ -293,14 +293,14 @@ def render_velocity_template(*args, **kwargs):
     return templating.render_velocity_template(*args, **kwargs)
 
 
-def generate_presigned_url(*args, **kwargs):
+def generate_presigned_url(*args, endpoint_url=None, **kwargs):
     id_before = os.environ.get(ENV_ACCESS_KEY)
     key_before = os.environ.get(ENV_SECRET_KEY)
     try:
         # Note: presigned URL needs to be created with test credentials
         os.environ[ENV_ACCESS_KEY] = TEST_AWS_ACCESS_KEY_ID
         os.environ[ENV_SECRET_KEY] = TEST_AWS_SECRET_ACCESS_KEY
-        s3_client = connect_to_service('s3', cache=False)
+        s3_client = connect_to_service('s3', endpoint_url=endpoint_url, cache=False)
         return s3_client.generate_presigned_url(*args, **kwargs)
     finally:
         if id_before:
