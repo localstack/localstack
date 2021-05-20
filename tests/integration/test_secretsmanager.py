@@ -28,6 +28,8 @@ class SecretsManagerTest(unittest.TestCase):
             Name=secret_name, SecretString='my_secret', Description='testing creation of secrets')
         secret_arn = rs['ARN']
 
+        self.assertEqual(len(secret_arn.rpartition('-')[2]), 6)
+
         rs = self.secretsmanager_client.get_secret_value(SecretId=secret_name)
         self.assertEqual(rs['Name'], secret_name)
         self.assertEqual(rs['SecretString'], 'my_secret')
@@ -39,12 +41,12 @@ class SecretsManagerTest(unittest.TestCase):
         self.assertEqual(rs['SecretString'], 'my_secret')
         self.assertEqual(rs['ARN'], secret_arn)
 
-        rs = self.secretsmanager_client.get_secret_value(SecretId=secret_arn[:len(secret_arn) - 5])
+        rs = self.secretsmanager_client.get_secret_value(SecretId=secret_arn[:len(secret_arn) - 6])
         self.assertEqual(rs['Name'], secret_name)
         self.assertEqual(rs['SecretString'], 'my_secret')
         self.assertEqual(rs['ARN'], secret_arn)
 
-        rs = self.secretsmanager_client.get_secret_value(SecretId=secret_arn[:len(secret_arn) - 6])
+        rs = self.secretsmanager_client.get_secret_value(SecretId=secret_arn[:len(secret_arn) - 7])
         self.assertEqual(rs['Name'], secret_name)
         self.assertEqual(rs['SecretString'], 'my_secret')
         self.assertEqual(rs['ARN'], secret_arn)
