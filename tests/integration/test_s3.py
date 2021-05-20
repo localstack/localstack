@@ -1528,7 +1528,7 @@ class TestS3(unittest.TestCase):
         key = 'test-data'
         bucket_name = 'bucket-%s' % short_uid()
         self.s3_client.meta.events.register('before-send.s3.*', self.add_xray_header)
-        queue_url = self.sqs_client.create_queue(QueueName='testQueue')['QueueUrl']
+        queue_url = self.sqs_client.create_queue(QueueName='testQueueNew')['QueueUrl']
         queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
 
         self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
@@ -1536,12 +1536,15 @@ class TestS3(unittest.TestCase):
         # put an object where the bucket_name is in the path
         self.s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
 
-        response = self.sqs_client.receive_message(QueueUrl=queue_url,
+        def get_message(queue_url):
+            resp = self.sqs_client.receive_message(QueueUrl=queue_url,
                                                    AttributeNames=['AWSTraceHeader'],
                                                    MessageAttributeNames=['All'])
-        print(response)
+            return resp['Messages']
 
-        self.assertEqual(response['Messages'][0]['Attributes']['AWSTraceHeader'],
+        messages = retry(get_message, retries=3, sleep=10, q_url=queue_url)
+
+        self.assertEqual(messages[0]['Attributes']['AWSTraceHeader'],
                          'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1')
 
         # clean up
