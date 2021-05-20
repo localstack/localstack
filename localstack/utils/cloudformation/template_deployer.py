@@ -17,7 +17,8 @@ from localstack.utils.common import (
     prevent_stack_overflow, start_worker_thread, get_all_subclasses)
 from localstack.utils.testutil import delete_all_s3_objects
 from localstack.utils.cloudformation import template_preparer
-from localstack.services.cloudformation.service_models import GenericBaseModel, DependencyNotYetSatisfied
+from localstack.services.cloudformation.service_models import (
+    GenericBaseModel, DependencyNotYetSatisfied, KEY_RESOURCE_STATE)
 from localstack.services.cloudformation.deployment_utils import (
     dump_json_params, select_parameters, param_defaults, remove_none_values,
     lambda_keys_to_lower, PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
@@ -964,7 +965,7 @@ def delete_resource(resource_id, resources, stack_name):
                 raise
 
     if res_type == 'AWS::EC2::VPC':
-        state = res['_state_']
+        state = res[KEY_RESOURCE_STATE]
         physical_resource_id = res['PhysicalResourceId'] or state.get('VpcId')
         res['PhysicalResourceId'] = physical_resource_id
 
@@ -980,7 +981,7 @@ def delete_resource(resource_id, resources, stack_name):
                 ec2_client.delete_route_table(RouteTableId=rt['RouteTableId'])
 
     if res_type == 'AWS::EC2::Subnet':
-        state = res['_state_']
+        state = res[KEY_RESOURCE_STATE]
         physical_resource_id = res['PhysicalResourceId'] or state['SubnetId']
         res['PhysicalResourceId'] = physical_resource_id
 
@@ -1073,6 +1074,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     defaults = func_details.get('defaults', {})
     resource_props = resource['Properties'] = resource.get('Properties', {})
     resource_props = dict(resource_props)
+    resource_state = resource.get(KEY_RESOURCE_STATE, {})
 
     # Validate props for each resource type
     fix_resource_props_for_sdk_deployment(resource_type, resource_props)
@@ -1080,7 +1082,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     if callable(params):
         params = params(resource_props, stack_name=stack_name, resources=resources, resource_id=resource_id)
     else:
-        # it could be a list ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
+        # it could be a list like ['param1', 'param2', {'apiCallParamName': 'cfResourcePropName'}]
         if isinstance(params, list):
             _params = {}
             for param in params:
@@ -1103,7 +1105,8 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
                         prop_value = prop_key(resource_props, stack_name=stack_name,
                             resources=resources, resource_id=resource_id)
                     else:
-                        prop_value = resource_props.get(prop_key, resource.get(prop_key))
+                        prop_value = resource_props.get(prop_key,
+                            resource.get(prop_key, resource_state.get(prop_key)))
                     if prop_value is not None:
                         params[param_key] = prop_value
                         break
@@ -1480,6 +1483,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
         props['UsagePlanName'] = _generate_res_name()
 
     elif res_type == 'AWS::ApiGateway::Model' and not props.get('Name'):
+        props['Name'] = _generate_res_name()
+
+    elif res_type == 'AWS::ApiGateway::RequestValidator' and not props.get('Name'):
         props['Name'] = _generate_res_name()
 
     elif res_type == 'AWS::DynamoDB::Table':

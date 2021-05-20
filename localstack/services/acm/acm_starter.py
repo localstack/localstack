@@ -8,6 +8,7 @@ def apply_patches():
     def describe(self):
         result = describe_orig(self)
         cert = result.get('Certificate', {})
+        sans = cert.get('SubjectAlternativeNames', [])
 
         # add missing attributes in ACM certs that cause Terraform to fail
         addenda = {
@@ -23,6 +24,8 @@ def apply_patches():
         addenda['DomainValidationOptions'] = options = getattr(self, 'domain_validation_options', None) or []
         if not options:
             options = addenda['DomainValidationOptions'] = [{'ValidationMethod': cert.get('ValidationMethod')}]
+        for san in sans:
+            options.append({'DomainName': san, 'ValidationMethod': cert.get('ValidationMethod')})
         for option in options:
             option['DomainName'] = domain_name = option.get('DomainName') or cert.get('DomainName')
             option['ValidationDomain'] = option.get('ValidationDomain') or option['DomainName']
