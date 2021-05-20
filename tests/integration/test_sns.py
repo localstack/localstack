@@ -828,13 +828,11 @@ class SNSTest(unittest.TestCase):
                 VisibilityTimeout=2,
                 WaitTimeSeconds=2,
             )
-            return response['Messages']
 
-        messages = retry(get_message, retries=3, sleep=10, queue_url=queue_url)
+            self.assertEqual(response['Messages'][0]['MessageAttributes'],
+                             {'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
 
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(messages[0]['MessageAttributes'],
-                         {'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
+        retry(get_message, retries=3, sleep=10, queue_url=queue_url)
 
     def add_xray_header(self, request, **kwargs):
         request.headers['X-Amzn-Trace-Id'] = \
