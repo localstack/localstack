@@ -499,6 +499,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
     except DependencyNotYetSatisfied:
         return
+
     except Exception as e:
         check_not_found_exception(e, resource_type, resource, resource_status)
 
@@ -510,9 +511,11 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
     markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException',
         '404', 'not found', 'not exist']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
-        LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
-            (resource_type, e, ''.join(traceback.format_stack()), resource, resource_status))
+        LOG.warning('Unexpected error retrieving details for resource type %s: Exception: %s - %s - status: %s' %
+            (resource_type, e, resource, resource_status))
+
         return False
+
     return True
 
 

@@ -1000,20 +1000,22 @@ class GatewayMethod(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
+
         api_id = self.resolve_refs_recursively(stack_name, props['RestApiId'], resources)
         res_id = self.resolve_refs_recursively(stack_name, props['ResourceId'], resources)
-
         if not api_id or not res_id:
             return None
 
         res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
         match = [v for (k, v) in res_obj.get('resourceMethods', {}).items()
                  if props['HttpMethod'] in (v.get('httpMethod'), k)]
+
         int_props = props.get('Integration') or {}
         if int_props.get('Type') == 'AWS_PROXY':
-            match = [m for m in match if
-                m.get('methodIntegration', {}).get('type') == 'AWS_PROXY' and
-                m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
+            match = [m for m in match
+                     if m.get('methodIntegration', {}).get('type') == 'AWS_PROXY' and
+                     m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
+
         return match[0] if match else None
 
     def update_resource(self, new_resource, stack_name, resources):
