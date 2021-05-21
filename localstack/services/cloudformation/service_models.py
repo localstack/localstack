@@ -26,6 +26,9 @@ LOG = logging.getLogger(__name__)
 # name pattern of IAM policies associated with Lambda functions
 LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
 
+# dict key used to store the deployment state of a resource
+KEY_RESOURCE_STATE = '_state_'
+
 # ref attribute definitions
 REF_ATTRS = ['PhysicalResourceId', 'Ref']
 REF_ID_ATTRS = REF_ATTRS + ['Id']
@@ -56,11 +59,11 @@ class GenericBaseModel(CloudFormationModel):
         self.resource_json = resource_json
         self.resource_type = resource_json['Type']
         # Properties, as defined in the resource template
-        self.properties = resource_json.get('Properties') or {}
+        self.properties = resource_json['Properties'] = resource_json.get('Properties') or {}
         # State, as determined from the deployed resource; use a special dict key here to keep
         # track of state changes within resource_json (this way we encapsulate all state details
         # in `resource_json` and the changes will survive creation of multiple instances of this class)
-        self.state = resource_json['_state_'] = resource_json.get('_state_') or {}
+        self.state = resource_json[KEY_RESOURCE_STATE] = resource_json.get(KEY_RESOURCE_STATE) or {}
 
     # ----------------------
     # ABSTRACT BASE METHODS
@@ -869,6 +872,45 @@ class GatewayResponse(GenericBaseModel):
         return result if 'responseType' in result else None
 
 
+class GatewayRequestValidator(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::RequestValidator'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('apigateway')
+        props = self.props
+        api_id = self.resolve_refs_recursively(stack_name, props['RestApiId'], resources)
+        name = self.resolve_refs_recursively(stack_name, props['Name'], resources)
+        result = client.get_request_validators(restApiId=api_id).get('items', [])
+        result = [r for r in result if r.get('name') == name]
+        return result[0] if result else None
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_request_validator',
+                'parameters': {
+                    'name': 'Name',
+                    'restApiId': 'RestApiId',
+                    'validateRequestBody': 'ValidateRequestBody',
+                    'validateRequestParameters': 'ValidateRequestParameters'
+                }
+            },
+            'delete': {
+                'function': 'delete_request_validator',
+                'parameters': {
+                    'restApiId': 'RestApiId',
+                    'requestValidatorId': 'id'
+                }
+            }
+        }
+
+
 class GatewayRestAPI(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -958,20 +1000,22 @@ class GatewayMethod(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
+
         api_id = self.resolve_refs_recursively(stack_name, props['RestApiId'], resources)
         res_id = self.resolve_refs_recursively(stack_name, props['ResourceId'], resources)
-
         if not api_id or not res_id:
             return None
 
         res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
         match = [v for (k, v) in res_obj.get('resourceMethods', {}).items()
                  if props['HttpMethod'] in (v.get('httpMethod'), k)]
+
         int_props = props.get('Integration') or {}
         if int_props.get('Type') == 'AWS_PROXY':
-            match = [m for m in match if
-                m.get('methodIntegration', {}).get('type') == 'AWS_PROXY' and
-                m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
+            match = [m for m in match
+                     if m.get('methodIntegration', {}).get('type') == 'AWS_PROXY' and
+                     m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
+
         return match[0] if match else None
 
     def update_resource(self, new_resource, stack_name, resources):
@@ -1416,6 +1460,14 @@ class SNSSubscription(GenericBaseModel):
         }
 
 
+class QueuePolicy(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::SQS::QueuePolicy'
+
+    # TODO: add deployment methods
+
+
 class DynamoDBTable(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -1433,10 +1485,27 @@ class DynamoDBTable(GenericBaseModel):
         return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
 
 
-class QueuePolicy(GenericBaseModel):
+class RedshiftCluster(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
-        return 'AWS::SQS::QueuePolicy'
+        return 'AWS::Redshift::Cluster'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('ClusterIdentifier')
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('redshift')
+        cluster_id = self.resolve_refs_recursively(stack_name, self.props.get('ClusterIdentifier'), resources)
+        result = client.describe_clusters(ClusterIdentifier=cluster_id)['Clusters']
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_cluster'
+            }
+        }
 
 
 class SSMParameter(GenericBaseModel):

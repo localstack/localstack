@@ -4,8 +4,9 @@ import sys
 import json
 import time
 import select
-import pkgutil
+import inspect
 import logging
+import pkgutil
 import warnings
 import threading
 import traceback
@@ -682,11 +683,16 @@ class FuncThread(threading.Thread):
         self.func = func
         self.quiet = quiet
         self.result_future = Future()
+        self._stop_event = threading.Event()
 
     def run(self):
         result = None
         try:
-            result = self.func(self.params)
+            kwargs = {}
+            argspec = inspect.getfullargspec(self.func)
+            if argspec.varkw or '_thread' in (argspec.args or []) + (argspec.kwonlyargs or []):
+                kwargs['_thread'] = self
+            result = self.func(self.params, **kwargs)
         except Exception as e:
             result = e
             if not self.quiet:
@@ -699,7 +705,12 @@ class FuncThread(threading.Thread):
                 # this can happen as InvalidStateError on shutdown, if the task is already canceled
                 pass
 
+    @property
+    def running(self):
+        return not self._stop_event.is_set()
+
     def stop(self, quiet=False):
+        self._stop_event.set()
         if not quiet and not self.quiet:
             LOG.warning('Not implemented: FuncThread.stop(..)')
 

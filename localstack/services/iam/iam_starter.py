@@ -6,7 +6,7 @@ from urllib.parse import quote
 from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE, GET_ROLE_TEMPLATE
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.models import (
-    iam_backend as moto_iam_backend, aws_managed_policies,
+    iam_backend as moto_iam_backend, aws_managed_policies, aws_managed_policies_data_parsed,
     AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy, Role
 )
 from localstack import config, constants
@@ -296,6 +296,21 @@ def apply_patches():
             return result
 
         IamResponse.get_service_linked_role_deletion_status = get_service_linked_role_deletion_status
+
+    # fix missing regions in managed policies (e.g., aws-us-gov)
+    # TODO: possibly find a more efficient way for this - e.g., lazy loading of policies in special regions
+
+    class AWSManagedPolicyUSGov(AWSManagedPolicy):
+        @property
+        def arn(self):
+            return 'arn:aws-us-gov:iam::aws:policy{0}{1}'.format(self.path, self.name)
+
+    managed_policies = moto_iam_backend.managed_policies
+    if 'arn:aws-us-gov:iam::aws:policy/AmazonRDSFullAccess' not in managed_policies:
+        for name, data in aws_managed_policies_data_parsed.items():
+            policy = AWSManagedPolicyUSGov.from_data(name, data)
+            if policy.arn not in moto_iam_backend.managed_policies:
+                moto_iam_backend.managed_policies[policy.arn] = policy
 
 
 def start_iam(port=None, asynchronous=False, update_listener=None):

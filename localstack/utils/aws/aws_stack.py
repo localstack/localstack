@@ -194,6 +194,14 @@ def is_internal_call_context(headers):
 def set_internal_auth(headers):
     authorization = headers.get('Authorization') or ''
     authorization = re.sub(r'Credential=[^/]+/', 'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID, authorization)
+    if authorization.startswith('AWS '):
+        authorization = re.sub(r'AWS [^/]+',  # Cover Non HMAC Authentication
+                               'Credential=%s' % INTERNAL_AWS_ACCESS_KEY_ID,
+                               authorization)
+    else:
+        authorization = re.sub(r'Credential=[^/]+/',
+                               'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID,
+                               authorization)
     headers['Authorization'] = authorization
     return headers
 
@@ -288,11 +296,12 @@ def render_velocity_template(*args, **kwargs):
 def generate_presigned_url(*args, **kwargs):
     id_before = os.environ.get(ENV_ACCESS_KEY)
     key_before = os.environ.get(ENV_SECRET_KEY)
+    endpoint_url = kwargs.pop('endpoint_url', None)
     try:
         # Note: presigned URL needs to be created with test credentials
         os.environ[ENV_ACCESS_KEY] = TEST_AWS_ACCESS_KEY_ID
         os.environ[ENV_SECRET_KEY] = TEST_AWS_SECRET_ACCESS_KEY
-        s3_client = connect_to_service('s3', cache=False)
+        s3_client = connect_to_service('s3', endpoint_url=endpoint_url, cache=False)
         return s3_client.generate_presigned_url(*args, **kwargs)
     finally:
         if id_before:

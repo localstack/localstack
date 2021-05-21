@@ -1,10 +1,10 @@
 import base64
 import logging
-import localstack.config as config
 from datetime import date, datetime
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.responses import ses_backend
 from moto.ses.exceptions import MessageRejectedError
+from localstack import config
 from localstack.utils.common import to_str, timestamp_millis
 from localstack.services.infra import start_moto_server
 

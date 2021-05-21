@@ -1,5 +1,6 @@
 import io
 import os
+import shutil
 import ssl
 import boto3
 import gzip
@@ -23,8 +24,10 @@ from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener, s3_utils
 
 from localstack.utils.common import (
-    short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf, load_file)
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+    new_tmp_dir, short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf,
+    load_file, run)
+from localstack.services.awslambda.lambda_api import use_docker
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_NODEJS14X
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
@@ -1543,8 +1546,14 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [])
 
     def test_presigned_url_signature_authentication(self):
-        # TODO !Test seems to be currently broken!
-        return
+        old_config = config.S3_SKIP_SIGNATURE_VALIDATION
+        try:
+            config.S3_SKIP_SIGNATURE_VALIDATION = False
+            self.run_presigned_url_signature_authentication()
+        finally:
+            config.S3_SKIP_SIGNATURE_VALIDATION = old_config
+
+    def run_presigned_url_signature_authentication(self):
 
         client = boto3.client('s3', endpoint_url=config.get_edge_url(),
             config=Config(signature_version='s3'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
@@ -1762,6 +1771,15 @@ class TestS3(unittest.TestCase):
         client.delete_bucket(Bucket=BUCKET)
 
     def test_presigned_url_signature_authentication_virtual_host_addressing(self):
+        old_config = config.S3_SKIP_SIGNATURE_VALIDATION
+        try:
+            config.S3_SKIP_SIGNATURE_VALIDATION = False
+            self.run_presigned_url_signature_authentication_virtual_host_addressing()
+        finally:
+            config.S3_SKIP_SIGNATURE_VALIDATION = old_config
+
+    def run_presigned_url_signature_authentication_virtual_host_addressing(self):
+        # TODO: merge with run_presigned_url_signature_authentication() above!
         virtual_endpoint = '{}://{}:{}'.format(
             config.get_protocol(), S3_VIRTUAL_HOSTNAME, config.EDGE_PORT)
         client = boto3.client('s3', endpoint_url=virtual_endpoint,
@@ -2095,6 +2113,37 @@ class TestS3(unittest.TestCase):
 
         # Cleanup
         self._delete_bucket(bucket, key_by_path)
+
+    def test_s3_lambda_integration(self):
+        if not use_docker():
+            return
+        temp_folder = new_tmp_dir()
+        handler_file = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_s3_integration.js')
+        shutil.copy(handler_file, temp_folder)
+        run('cd %s; npm install @aws-sdk/client-s3; npm install @aws-sdk/s3-request-presigner;' % temp_folder)
+
+        function_name = 'func-integration-%s' % short_uid()
+        lambda_client = aws_stack.connect_to_service('lambda')
+        s3_client = aws_stack.connect_to_service('s3')
+
+        testutil.create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(temp_folder, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler='lambda_s3_integration.handler'
+        )
+        s3_client.create_bucket(Bucket=function_name)
+
+        response = lambda_client.invoke(FunctionName=function_name)
+        presigned_url = response['Payload'].read()
+        presigned_url = json.loads(to_str(presigned_url))['body'].strip('"')
+
+        response = requests.put(presigned_url, verify=False)
+        response = s3_client.head_object(Bucket=function_name, Key='key.png')
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        s3_client.delete_object(Bucket=function_name, Key='key.png')
+        s3_client.delete_bucket(Bucket=function_name)
 
     def test_terraform_request_sequence(self):
 

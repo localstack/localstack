@@ -10,11 +10,11 @@ from cachetools import TTLCache
 from requests.models import Request, Response
 from localstack import config, constants
 from localstack.utils.aws import aws_stack, aws_responses
-from localstack.utils.common import to_bytes, to_str, clone, select_attributes, short_uid
+from localstack.utils.common import to_bytes, to_str, clone, select_attributes, short_uid, json_safe
 from localstack.utils.analytics import event_publisher
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import ProxyListener
+from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 
 # set up logger
@@ -23,17 +23,8 @@ LOGGER = logging.getLogger(__name__)
 # cache schema definitions
 SCHEMA_CACHE = TTLCache(maxsize=50, ttl=20)
 
-# maps table names to cached table definitions (TODO: make region-aware!)
-TABLE_DEFINITIONS = {}
-
-# cache table taggings
-TABLE_TAGS = {}
-
 # action header prefix
 ACTION_PREFIX = 'DynamoDB_20120810.'
-
-# maps global table names to configurations
-GLOBAL_TABLES = {}
 
 # list of actions subject to throughput limitations
 READ_THROTTLED_ACTIONS = [
@@ -43,6 +34,19 @@ WRITE_THROTTLED_ACTIONS = [
     'PutItem', 'BatchWriteItem', 'UpdateItem', 'DeleteItem', 'TransactWriteItems',
 ]
 THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
+
+
+class DynamoDBRegion(RegionBackend):
+    # maps global table names to configurations
+    GLOBAL_TABLES = {}
+    # cache table taggings
+    TABLE_TAGS = {}
+
+    def __init__(self):
+        # maps table names to cached table definitions
+        self.table_definitions = {}
+        # maps table names to additional table properties that are not stored upstream (e.g., ReplicaUpdates)
+        self.table_properties = {}
 
 
 class ProxyListenerDynamoDB(ProxyListener):
@@ -103,7 +107,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
         if 'TableName' in data:
-            table_def = TABLE_DEFINITIONS.get(data['TableName']) or {}
+            table_def = DynamoDBRegion.get().table_definitions.get(data['TableName']) or {}
 
         if action == 'CreateTable':
             # Check if table exists, to avoid error log output from DynamoDBLocal
@@ -234,7 +238,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             response._content = json.dumps({
                 'Tags': [
                     {'Key': k, 'Value': v}
-                    for k, v in TABLE_TAGS.get(data['ResourceArn'], {}).items()
+                    for k, v in DynamoDBRegion.TABLE_TAGS.get(data['ResourceArn'], {}).items()
                 ]
             })
             fix_headers_for_updated_response(response)
@@ -282,7 +286,8 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         # update table definitions
         if data and 'TableName' in data and 'KeySchema' in data:
-            TABLE_DEFINITIONS[data['TableName']] = data
+            table_definitions = DynamoDBRegion.get().table_definitions
+            table_definitions[data['TableName']] = data
         if response._content:
             # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
             content_replaced = re.sub(
@@ -423,7 +428,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
             if data.get('Tags') and response.status_code == 200:
                 table_arn = json.loads(response._content)['TableDescription']['TableArn']
-                TABLE_TAGS[table_arn] = {tag['Key']: tag['Value'] for tag in data['Tags']}
+                DynamoDBRegion.TABLE_TAGS[table_arn] = {tag['Key']: tag['Value'] for tag in data['Tags']}
 
             return
 
@@ -436,27 +441,58 @@ class ProxyListenerDynamoDB(ProxyListener):
                 )
                 self.delete_all_event_source_mappings(table_arn)
                 dynamodbstreams_api.delete_streams(table_arn)
-                TABLE_TAGS.pop(table_arn, None)
+                DynamoDBRegion.TABLE_TAGS.pop(table_arn, None)
             return
 
         elif action == 'UpdateTable':
-            if 'StreamSpecification' in data:
-                if response.status_code == 200:
-                    content = json.loads(to_str(response._content))
-                    create_dynamodb_stream(data, content['TableDescription'].get('LatestStreamLabel'))
+            content_str = to_str(response._content or '')
+            if response.status_code == 200 and 'StreamSpecification' in data:
+                content = json.loads(content_str)
+                create_dynamodb_stream(data, content['TableDescription'].get('LatestStreamLabel'))
+            if response.status_code >= 400 and data.get('ReplicaUpdates') and 'Nothing to update' in content_str:
+                table_name = data.get('TableName')
+                # update local table props (replicas)
+                table_properties = DynamoDBRegion.get().table_properties
+                table_properties[table_name] = table_props = table_properties.get(table_name) or {}
+                table_props['Replicas'] = replicas = table_props.get('Replicas') or []
+                for repl_update in data['ReplicaUpdates']:
+                    for key, details in repl_update.items():
+                        region = details.get('RegionName')
+                        if key == 'Create':
+                            details['ReplicaStatus'] = details.get('ReplicaStatus') or 'ACTIVE'
+                            replicas.append(details)
+                        if key == 'Update':
+                            replica = [r for r in replicas if r.get('RegionName') == region]
+                            if replica:
+                                replica[0].update(details)
+                        if key == 'Delete':
+                            table_props['Replicas'] = [r for r in replicas if r.get('RegionName') != region]
+                # update response content
+                schema = get_table_schema(table_name)
+                result = {'TableDescription': schema['Table']}
+                update_response_content(response, json_safe(result), 200)
             return
+
+        elif action == 'DescribeTable':
+            table_name = data.get('TableName')
+            table_props = DynamoDBRegion.get().table_properties.get(table_name)
+            if table_props:
+                content = json.loads(to_str(response.content))
+                content.get('Table', {}).update(table_props)
+                update_response_content(response, content)
 
         elif action == 'TagResource':
             table_arn = data['ResourceArn']
-            if table_arn not in TABLE_TAGS:
-                TABLE_TAGS[table_arn] = {}
-            TABLE_TAGS[table_arn].update({tag['Key']: tag['Value'] for tag in data.get('Tags', [])})
+            table_tags = DynamoDBRegion.TABLE_TAGS
+            if table_arn not in table_tags:
+                table_tags[table_arn] = {}
+            table_tags[table_arn].update({tag['Key']: tag['Value'] for tag in data.get('Tags', [])})
             return
 
         elif action == 'UntagResource':
             table_arn = data['ResourceArn']
             for tag_key in data.get('TagKeys', []):
-                TABLE_TAGS.get(table_arn, {}).pop(tag_key, None)
+                DynamoDBRegion.TABLE_TAGS.get(table_arn, {}).pop(tag_key, None)
             return
 
         else:
@@ -658,9 +694,9 @@ def handle_special_request(method, path, data, headers):
 
 def create_global_table(data):
     table_name = data['GlobalTableName']
-    if table_name in GLOBAL_TABLES:
+    if table_name in DynamoDBRegion.GLOBAL_TABLES:
         return get_error_message('Global Table with this name already exists', 'GlobalTableAlreadyExistsException')
-    GLOBAL_TABLES[table_name] = data
+    DynamoDBRegion.GLOBAL_TABLES[table_name] = data
     for group in data.get('ReplicationGroup', []):
         group['ReplicaStatus'] = 'ACTIVE'
         group['ReplicaStatusDescription'] = 'Replica active'
@@ -670,7 +706,7 @@ def create_global_table(data):
 
 def describe_global_table(data):
     table_name = data['GlobalTableName']
-    details = GLOBAL_TABLES.get(table_name)
+    details = DynamoDBRegion.GLOBAL_TABLES.get(table_name)
     if not details:
         return get_error_message('Global Table with this name does not exist', 'GlobalTableNotFoundException')
     result = {'GlobalTableDescription': details}
@@ -678,14 +714,15 @@ def describe_global_table(data):
 
 
 def list_global_tables(data):
-    result = [select_attributes(tab, ['GlobalTableName', 'ReplicationGroup']) for tab in GLOBAL_TABLES.values()]
+    result = [select_attributes(tab, ['GlobalTableName', 'ReplicationGroup'])
+        for tab in DynamoDBRegion.GLOBAL_TABLES.values()]
     result = {'GlobalTables': result}
     return result
 
 
 def update_global_table(data):
     table_name = data['GlobalTableName']
-    details = GLOBAL_TABLES.get(table_name)
+    details = DynamoDBRegion.GLOBAL_TABLES.get(table_name)
     if not details:
         return get_error_message('Global Table with this name does not exist', 'GlobalTableNotFoundException')
     for update in data.get('ReplicaUpdates', []):
@@ -736,8 +773,9 @@ def has_event_sources_or_streams_enabled(table_name, cache={}):
     # get table name from table_arn
     # since batch_wrtie and transact write operations passing table_arn instead of table_name
     table_name = table_arn.split('/', 1)[-1]
-    if not result and TABLE_DEFINITIONS.get(table_name):
-        if TABLE_DEFINITIONS[table_name].get('KinesisDataStreamDestinationStatus') == 'ACTIVE':
+    table_definitions = DynamoDBRegion.get().table_definitions
+    if not result and table_definitions.get(table_name):
+        if table_definitions[table_name].get('KinesisDataStreamDestinationStatus') == 'ACTIVE':
             result = True
     return result
 
@@ -803,6 +841,13 @@ def fix_headers_for_updated_response(response):
     response.headers['x-amz-crc32'] = calculate_crc32(response)
 
 
+def update_response_content(response, content, status_code=None):
+    aws_responses.set_response_content(response, content)
+    if status_code:
+        response.status_code = status_code
+    fix_headers_for_updated_response(response)
+
+
 def update_put_item_response_content(data, response_content):
     # when return-values variable is set only then attribute data should be returned
     # in the response otherwise by default is should not return any data.
@@ -851,10 +896,11 @@ def forward_to_ddb_stream(records):
 
 def forward_to_kinesis_stream(records):
     kinesis = aws_stack.connect_to_service('kinesis')
+    table_definitions = DynamoDBRegion.get().table_definitions
     for record in records:
         if record.get('eventSourceARN'):
             table_name = record['eventSourceARN'].split('/', 1)[-1]
-            table_def = TABLE_DEFINITIONS.get(table_name) or {}
+            table_def = table_definitions.get(table_name) or {}
             if table_def.get('KinesisDataStreamDestinationStatus') == 'ACTIVE':
                 stream_name = table_def['KinesisDataStreamDestinations'][-1]['StreamArn'].split('/', 1)[-1]
                 partition_key = list(filter(lambda key: key['KeyType'] == 'HASH',
@@ -864,11 +910,12 @@ def forward_to_kinesis_stream(records):
 
 def dynamodb_extract_keys(item, table_name):
     result = {}
-    if table_name not in TABLE_DEFINITIONS:
-        LOGGER.warning('Unknown table: %s not found in %s' % (table_name, TABLE_DEFINITIONS))
+    table_definitions = DynamoDBRegion.get().table_definitions
+    if table_name not in table_definitions:
+        LOGGER.warning('Unknown table: %s not found in %s' % (table_name, table_definitions))
         return None
 
-    for key in TABLE_DEFINITIONS[table_name]['KeySchema']:
+    for key in table_definitions[table_name]['KeySchema']:
         attr_name = key['AttributeName']
         if attr_name not in item:
             return error_response(

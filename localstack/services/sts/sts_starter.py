@@ -1,5 +1,5 @@
-from localstack.services.infra import start_moto_server
 from localstack import config
+from localstack.services.infra import start_moto_server
 
 
 def start_sts(port=None, asynchronous=False, update_listener=None):

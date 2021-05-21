@@ -135,7 +135,6 @@ class OutputReaderThread(FuncThread):
         FuncThread.__init__(self, self.start_reading, params)
         self.buffer = []
         self.params = params
-        self._stop_event = threading.Event()
         # number of lines that make up a single log entry
         self.buffer_size = 2
         # determine log level
@@ -154,10 +153,6 @@ class OutputReaderThread(FuncThread):
             self.logger.severe = self.logger.critical
             self.logger.fatal = self.logger.critical
             self.logger.setLevel(self.log_level)
-
-    @property
-    def running(self):
-        return not self._stop_event.is_set()
 
     @classmethod
     def get_log_level_names(cls, min_level):
@@ -216,9 +211,6 @@ class OutputReaderThread(FuncThread):
                     # empty if at EOF (non-empty, including newline, if not at EOF)
                     return
                 yield line.replace('\n', '')
-
-    def stop(self, quiet=True):
-        self._stop_event.set()
 
 
 class KclLogListener(object):
