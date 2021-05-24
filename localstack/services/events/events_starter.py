@@ -20,6 +20,7 @@ LOG = logging.getLogger(__name__)
 DEFAULT_EVENT_BUS_NAME = 'default'
 
 # Event rules storage
+# TODO: make region-aware!
 EVENT_RULES = {
     DEFAULT_EVENT_BUS_NAME: set()
 }
@@ -110,6 +111,9 @@ def filter_event_based_on_event_format(self, rule, event):
         return True
 
     rule_information = self.events_backend.describe_rule(rule)
+    if not rule_information:
+        LOG.info('Unable to find rule "%s" in backend: %s' % (rule, rule_information))
+        return False
     if rule_information.event_pattern._filter:
         event_pattern = rule_information.event_pattern._filter
         if not filter_event(event_pattern, event):

@@ -46,7 +46,7 @@ def _dump_events_to_files(events_with_added_uuid):
 
 
 def get_scheduled_rule_func(data):
-    def func(*args):
+    def func(*args, **kwargs):
         rule_name = data.get('Name')
         client = aws_stack.connect_to_service('events')
         targets = client.list_targets_by_rule(Rule=rule_name)['Targets']
