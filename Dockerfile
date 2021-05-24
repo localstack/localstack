@@ -18,7 +18,7 @@ RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ss
 
 # install basic tools
 RUN pip install awscli awscli-local requests --upgrade
-RUN apk add iputils gcc python3-dev linux-headers musl-dev
+RUN apk add iputils gcc python3-dev musl-dev
 
 # add files required to install virtualenv dependencies
 ADD Makefile requirements.txt ./
