@@ -239,6 +239,9 @@ You can pass the following environment variables to LocalStack:
 * `MAIN_CONTAINER_NAME`: Specify the main docker container name (default: `localstack_main`).
 * `INIT_SCRIPTS_PATH`: Specify the path to the initializing files with extensions .sh that are found default in `/docker-entrypoint-initaws.d`.
 * `DEBUG`: For troubleshooting LocalStack start issues
+* `DEVELOP`: Starts a debugpy server before starting Localstack services
+* `DEVELOP_PORT`:  Port number for debugpy server
+* `WAIT_FOR_DEBUGGER`:  Forces localstack to wait for a debugger to start the services
 * `LS_LOG`: Specify the log level('trace', 'debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration. Enable `LS_LOG=trace` to print detailed request/response messages.
 
 The following environment configurations are *deprecated*:

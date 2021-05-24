@@ -18,7 +18,7 @@ RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ss
 
 # install basic tools
 RUN pip install awscli awscli-local requests --upgrade
-RUN apk add iputils
+RUN apk add iputils gcc python3-dev linux-headers musl-dev
 
 # add files required to install virtualenv dependencies
 ADD Makefile requirements.txt ./
@@ -52,7 +52,7 @@ ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
 # expose edge service, ElasticSearch & web dashboard ports
-EXPOSE 4566 4571 8080
+EXPOSE 4566 4571 8080 5678
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]

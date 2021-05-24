@@ -52,3 +52,4 @@ requests-aws4auth==0.9
 sasl>=0.2.1
 six>=1.12.0                    #basic-lib
 xmltodict>=0.11.0
+debugpy>=1.3.0                 #extended-lib
