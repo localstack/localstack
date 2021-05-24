@@ -776,6 +776,11 @@ class TestAPIGateway(unittest.TestCase):
         client = aws_stack.connect_to_service('apigateway')
         usage_plan_id = client.create_usage_plan(**payload)['id']
 
+        resource_id = client.get_resources(restApiId=api_id)['items'][0].get('id')
+        resource_method = client.response = client.get_method(restApiId=api_id, resourceId=resource_id,
+            httpMethod='PUT')
+        # assert request parameters is present in resource method PUT
+        self.assertEqual(resource_method['requestParameters'], {'method.request.path.id': True})
         key_name = 'testApiKey'
         key_type = 'API_KEY'
         api_key = client.create_api_key(name=key_name)
@@ -1081,7 +1086,7 @@ class TestAPIGateway(unittest.TestCase):
 
         apigw_client.put_method(
             restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE',
-            apiKeyRequired=is_api_key_required
+            apiKeyRequired=is_api_key_required, requestParameters={'method.request.path.id': True}
         )
 
         apigw_client.put_method_response(
