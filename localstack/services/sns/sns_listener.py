@@ -27,6 +27,9 @@ from moto.sns.exceptions import DuplicateSnsEndpointError
 # set up logger
 LOG = logging.getLogger(__name__)
 
+# additional attributes used for HTTP subscriptions
+HTTP_SUBSCRIPTION_ATTRIBUTES = ['UnsubscribeURL']
+
 
 class SNSBackend(RegionBackend):
     def __init__(self):
@@ -92,6 +95,8 @@ class ProxyListenerSNS(PersistingProxyListener):
 
                 content = '<Attributes>'
                 for key, value in sub.items():
+                    if key in HTTP_SUBSCRIPTION_ATTRIBUTES:
+                        continue
                     content += '<entry><key>%s</key><value>%s</value></entry>\n' % (key, value)
                 content += '</Attributes>'
                 return make_response(req_action, content=content)
@@ -623,7 +628,7 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
         if req_data.get(key):
             data[key] = req_data[key][0]
 
-    for key in ['UnsubscribeURL']:
+    for key in HTTP_SUBSCRIPTION_ATTRIBUTES:
         if key in subscriber:
             data[key] = subscriber[key]
 
