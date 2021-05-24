@@ -8,15 +8,24 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, save_file, TMP_FILES, mkdir, replace_response_content
 from localstack.utils.tagging import TaggingService
-from localstack.services.generic_proxy import ProxyListener
+from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.services.events.scheduler import JobScheduler
 
 LOG = logging.getLogger(__name__)
 
 EVENTS_TMP_DIR = os.path.join(config.TMP_FOLDER, 'cw_events')
 
-# maps rule to job_id
-RULE_SCHEDULED_JOBS = {}
+DEFAULT_EVENT_BUS_NAME = 'default'
+
+
+class EventsBackend(RegionBackend):
+    def __init__(self):
+        # maps event bus name to set of event rules - TODO: check if still required, or available upstream?
+        self.event_rules = {
+            DEFAULT_EVENT_BUS_NAME: set()
+        }
+        # maps rule to job_id
+        self.rule_scheduled_jobs = {}
 
 
 def fix_account_id(response):
@@ -90,24 +99,23 @@ def handle_put_rule(data):
         LOG.debug('Adding new scheduled Events rule with cron schedule %s' % cron)
 
         job_id = JobScheduler.instance().add_job(job_func, cron, enabled)
-        region = aws_stack.get_region()
-        RULE_SCHEDULED_JOBS[region] = RULE_SCHEDULED_JOBS.get(region) or {}
-        RULE_SCHEDULED_JOBS[region][data['Name']] = job_id
+        rule_scheduled_jobs = EventsBackend.get().rule_scheduled_jobs
+        rule_scheduled_jobs[data['Name']] = job_id
 
     return True
 
 
 def handle_delete_rule(rule_name):
-    region = aws_stack.get_region()
-    job_id = RULE_SCHEDULED_JOBS.get(region, {}).get(rule_name)
+    rule_scheduled_jobs = EventsBackend.get().rule_scheduled_jobs
+    job_id = rule_scheduled_jobs.get(rule_name)
     if job_id:
         LOG.debug('Removing scheduled Events: {} | job_id: {}'.format(rule_name, job_id))
         JobScheduler.instance().cancel_job(job_id=job_id)
 
 
 def handle_disable_rule(rule_name):
-    region = aws_stack.get_region()
-    job_id = RULE_SCHEDULED_JOBS.get(region, {}).get(rule_name)
+    rule_scheduled_jobs = EventsBackend.get().rule_scheduled_jobs
+    job_id = rule_scheduled_jobs.get(rule_name)
     if job_id:
         LOG.debug('Disabling Rule: {} | job_id: {}'.format(rule_name, job_id))
         JobScheduler.instance().disable_job(job_id=job_id)
