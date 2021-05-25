@@ -6,8 +6,9 @@ LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
 # install some common libs
 RUN apk add --no-cache autoconf automake boost-dev build-base ca-certificates cmake curl cyrus-sasl-dev \
         g++ gcc git groff iputils libffi-dev libtool linux-headers make nss openssl openssl-dev \
-        postgresql-dev py3-pip python3 python3-dev tar xz zip && \
+        py3-pip python3 python3-dev tar xz zip && \
     update-ca-certificates
+RUN apk add 'postgresql-dev~12' --repository=http://dl-cdn.alpinelinux.org/alpine/v3.12/main
 
 # install Docker (CLI only)
 RUN docker_version=17.05.0-ce; \
