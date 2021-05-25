@@ -47,8 +47,6 @@ JAVAC_TARGET_VERSION = '1.8'
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get('SQS_PROVIDER') or 'moto'
 
-# As of 2019-10-09, the DDB fix (see below) doesn't seem to be required anymore
-APPLY_DDB_ALPINE_FIX = False
 # TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
 OVERWRITE_DDB_FILES_IN_DOCKER = False
 
@@ -182,20 +180,6 @@ def install_dynamodb_local():
         tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
         dynamodb_url = DYNAMODB_JAR_URL_ALPINE if is_in_alpine else DYNAMODB_JAR_URL
         download_and_extract_with_retry(dynamodb_url, tmp_archive, INSTALL_DIR_DDB)
-
-    # fix for Alpine, otherwise DynamoDBLocal fails with:
-    # DynamoDBLocal_lib/libsqlite4java-linux-amd64.so: __memcpy_chk: symbol not found
-    if is_in_alpine:
-        ddb_libs_dir = '%s/DynamoDBLocal_lib' % INSTALL_DIR_DDB
-        patched_marker = '%s/alpine_fix_applied' % ddb_libs_dir
-        if APPLY_DDB_ALPINE_FIX and not os.path.exists(patched_marker):
-            patched_lib = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
-                'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/libsqlite4java-linux-amd64.so')
-            patched_jar = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
-                'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/sqlite4java.jar')
-            run("curl -L -o %s/libsqlite4java-linux-amd64.so '%s'" % (ddb_libs_dir, patched_lib))
-            run("curl -L -o %s/sqlite4java.jar '%s'" % (ddb_libs_dir, patched_jar))
-            save_file(patched_marker, '')
 
     # fix logging configuration for DynamoDBLocal
     log4j2_config = """<Configuration status="WARN">
