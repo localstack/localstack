@@ -29,9 +29,9 @@ from localstack.services.apigateway.helpers import gateway_request_url
 from localstack.services.awslambda.lambda_api import (
     use_docker, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION, LAMBDA_DEFAULT_HANDLER)
 from localstack.services.awslambda.lambda_utils import (
-    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
-    LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_NODEJS810,
-    LAMBDA_RUNTIME_PROVIDED, LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS14X)
+    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY27,
+    LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11,
+    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS14X)
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -1433,7 +1433,7 @@ class TestRubyRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_RUBY,
             handler_file=TEST_LAMBDA_RUBY,
             handler='lambda_integration.handler',
-            runtime=LAMBDA_RUNTIME_RUBY25
+            runtime=LAMBDA_RUNTIME_RUBY27
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_RUBY, Payload=b'{}')
