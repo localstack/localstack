@@ -2145,6 +2145,33 @@ class TestS3(unittest.TestCase):
         s3_client.delete_object(Bucket=function_name, Key='key.png')
         s3_client.delete_bucket(Bucket=function_name)
 
+    def test_presign_port_permutation(self):
+        bucket_name = short_uid()
+        port1 = 443
+        port2 = 4566
+        s3_client = aws_stack.connect_to_service('s3')
+
+        s3_presign = boto3.client('s3',
+            endpoint_url='http://127.0.0.1:%s' % port1,
+            aws_access_key_id='test',
+            aws_secret_access_key='test',
+            config=Config(signature_version='s3v4')
+        )
+
+        s3_client.create_bucket(Bucket=bucket_name)
+        s3_client.put_object(Body='test-value', Bucket=bucket_name, Key='test')
+        response = s3_client.head_object(Bucket=bucket_name, Key='test')
+
+        presign_url = s3_presign.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': bucket_name, 'Key': 'test'},
+            ExpiresIn=86400
+        )
+        presign_url = presign_url.replace(':%s' % port1, ':%s' % port2)
+
+        response = requests.get(presign_url)
+        self.assertEqual(response._content, b'test-value')
+
     def test_terraform_request_sequence(self):
 
         reqs = load_file(os.path.join(os.path.dirname(__file__), 'files', 's3.requests.txt'))
