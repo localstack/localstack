@@ -2103,7 +2103,7 @@ class CloudFormationTest(unittest.TestCase):
         route_table_id = resp['RouteTables'][1]['RouteTableId']
         routes = resp['RouteTables'][1]['Routes']
 
-        # Each RouteTable have 1 default route
+        # Each RouteTable has 1 default route
         self.assertEqual(len(routes), 2)
 
         self.assertEqual(routes[0]['DestinationCidrBlock'], '100.0.0.0/20')

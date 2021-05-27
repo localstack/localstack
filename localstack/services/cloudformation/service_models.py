@@ -2001,8 +2001,8 @@ class EC2Route(GenericBaseModel):
         route_table = ([t for t in route_tables if t['RouteTableId'] == table_id] or [None])[0]
         if route_table:
             routes = route_table.get('Routes', [])
-            route = [r for r in routes if r.get('DestinationCidrBlock') == dst_cidr or
-                r.get('DestinationIpv6CidrBlock') == dst_cidr6]
+            route = [r for r in routes if r.get('DestinationCidrBlock') == (dst_cidr or '_not_set_') or
+                r.get('DestinationIpv6CidrBlock') == (dst_cidr6 or '_not_set_')]
             return (route or [None])[0]
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
