@@ -1991,6 +1991,20 @@ class EC2Route(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::EC2::Route'
 
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('ec2')
+        props = self.props
+        dst_cidr = self.resolve_refs_recursively(stack_name, props.get('DestinationCidrBlock'), resources)
+        dst_cidr6 = self.resolve_refs_recursively(stack_name, props.get('DestinationIpv6CidrBlock'), resources)
+        table_id = self.resolve_refs_recursively(stack_name, props.get('RouteTableId'), resources)
+        route_tables = client.describe_route_tables()['RouteTables']
+        route_table = ([t for t in route_tables if t['RouteTableId'] == table_id] or [None])[0]
+        if route_table:
+            routes = route_table.get('Routes', [])
+            route = [r for r in routes if r.get('DestinationCidrBlock') == dst_cidr or
+                r.get('DestinationIpv6CidrBlock') == dst_cidr6]
+            return (route or [None])[0]
+
     def get_physical_resource_id(self, attribute=None, **kwargs):
         props = self.props
         return generate_route_id(
@@ -2055,8 +2069,9 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service('ec2')
-        table_id = self.resolve_refs_recursively(stack_name, self.props.get('RouteTableId'), resources)
-        gw_id = self.resolve_refs_recursively(stack_name, self.props.get('GatewayId'), resources)
+        props = self.props
+        table_id = self.resolve_refs_recursively(stack_name, props.get('RouteTableId'), resources)
+        gw_id = self.resolve_refs_recursively(stack_name, props.get('GatewayId'), resources)
         route_tables = client.describe_route_tables()['RouteTables']
         route_table = ([t for t in route_tables if t['RouteTableId'] == table_id] or [None])[0]
         if route_table:

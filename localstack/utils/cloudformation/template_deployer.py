@@ -1518,6 +1518,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
     elif res_type == 'AWS::IAM::InstanceProfile':
         props['InstanceProfileName'] = props.get('InstanceProfileName') or _generate_res_name()
 
+    elif res_type == 'AWS::Logs::LogGroup':
+        props['LogGroupName'] = props.get('LogGroupName') or _generate_res_name()
+
     elif res_type == 'AWS::KMS::Key':
         tags = props['Tags'] = props.get('Tags', [])
         existing = [t for t in tags if t['Key'] == 'localstack-key-id']
