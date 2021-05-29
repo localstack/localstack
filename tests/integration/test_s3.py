@@ -1996,6 +1996,28 @@ class TestS3(unittest.TestCase):
         client.delete_object(Bucket=bucket_name, Key=OBJECT_KEY)
         client.delete_bucket(Bucket=bucket_name)
 
+    def test_presigned_url_with_session_token(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        key_name = 'key'
+
+        client = boto3.client(
+            's3',
+            config=Config(signature_version='s3v4'),
+            endpoint_url='http://127.0.0.1:4566',
+            aws_access_key_id='test',
+            aws_secret_access_key='test',
+            aws_session_token='test'
+        )
+        client.create_bucket(Bucket=bucket_name)
+        client.put_object(Body='test-value', Bucket=bucket_name, Key=key_name)
+        presigned_url = client.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': bucket_name, 'Key': key_name},
+            ExpiresIn=600,
+        )
+        response = requests.get(presigned_url)
+        self.assertEqual(response._content, b'test-value')
+
     def test_precondition_failed_error(self):
         bucket = 'bucket-%s' % short_uid()
         client = self._get_test_client()
