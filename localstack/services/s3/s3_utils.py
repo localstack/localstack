@@ -29,7 +29,7 @@ BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
 
 HOST_COMBINATION_REGEX = r'^(.*)(:[\d]{0,6})'
-PORT_REPLACEMENT = [':80', ':443', ':4566', '']
+PORT_REPLACEMENT = [':80', ':443', ':%s' % config.EDGE_PORT, '']
 
 # response header overrides the client may request
 ALLOWED_HEADER_OVERRIDES = {
