@@ -18,15 +18,15 @@ from localstack.constants import (
 load_start_time = time.time()
 
 
-def is_env_true(env_var_name):
-    """ Whether the given environment variable has a truthy value. """
-    return os.environ.get(env_var_name, '').lower().strip() in TRUE_STRINGS
-
-
 def eval_log_type(env_var_name):
     """get the log type from environment variable"""
     ls_log = os.environ.get(env_var_name, '').lower().strip()
     return ls_log if ls_log in LOG_LEVELS else False
+
+
+def is_env_true(env_var_name):
+    """ Whether the given environment variable has a truthy value. """
+    return os.environ.get(env_var_name, '').lower().strip() in TRUE_STRINGS
 
 
 def is_env_not_false(env_var_name):
@@ -179,6 +179,9 @@ LOCALSTACK_BUILD_GIT_HASH = os.environ.get('LOCALSTACK_BUILD_GIT_HASH', '').stri
 
 # the date on which the docker image was created
 LOCALSTACK_BUILD_DATE = os.environ.get('LOCALSTACK_BUILD_DATE', '').strip() or None
+
+# whether to skip S3 presign URL signature validation (TODO: currently enabled, until all issues are resolved)
+S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false('S3_SKIP_SIGNATURE_VALIDATION')
 
 
 def has_docker():
@@ -443,5 +446,3 @@ if LS_LOG == 'trace':
     load_end_time = time.time()
     LOG = logging.getLogger(__name__)
     LOG.debug('Initializing the configuration took %s ms' % int((load_end_time - load_start_time) * 1000))
-
-S3_SKIP_SIGNATURE_VALIDATION = os.environ.get('S3_SKIP_SIGNATURE_VALIDATION', '0')

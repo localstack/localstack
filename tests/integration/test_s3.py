@@ -1546,6 +1546,14 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [])
 
     def test_presigned_url_signature_authentication(self):
+        old_config = config.S3_SKIP_SIGNATURE_VALIDATION
+        try:
+            config.S3_SKIP_SIGNATURE_VALIDATION = False
+            self.run_presigned_url_signature_authentication()
+        finally:
+            config.S3_SKIP_SIGNATURE_VALIDATION = old_config
+
+    def run_presigned_url_signature_authentication(self):
 
         client = boto3.client('s3', endpoint_url=config.get_edge_url(),
             config=Config(signature_version='s3'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
@@ -1763,6 +1771,15 @@ class TestS3(unittest.TestCase):
         client.delete_bucket(Bucket=BUCKET)
 
     def test_presigned_url_signature_authentication_virtual_host_addressing(self):
+        old_config = config.S3_SKIP_SIGNATURE_VALIDATION
+        try:
+            config.S3_SKIP_SIGNATURE_VALIDATION = False
+            self.run_presigned_url_signature_authentication_virtual_host_addressing()
+        finally:
+            config.S3_SKIP_SIGNATURE_VALIDATION = old_config
+
+    def run_presigned_url_signature_authentication_virtual_host_addressing(self):
+        # TODO: merge with run_presigned_url_signature_authentication() above!
         virtual_endpoint = '{}://{}:{}'.format(
             config.get_protocol(), S3_VIRTUAL_HOSTNAME, config.EDGE_PORT)
         client = boto3.client('s3', endpoint_url=virtual_endpoint,
@@ -2127,6 +2144,33 @@ class TestS3(unittest.TestCase):
 
         s3_client.delete_object(Bucket=function_name, Key='key.png')
         s3_client.delete_bucket(Bucket=function_name)
+
+    def test_presign_port_permutation(self):
+        bucket_name = short_uid()
+        port1 = 443
+        port2 = 4566
+        s3_client = aws_stack.connect_to_service('s3')
+
+        s3_presign = boto3.client('s3',
+            endpoint_url='http://127.0.0.1:%s' % port1,
+            aws_access_key_id='test',
+            aws_secret_access_key='test',
+            config=Config(signature_version='s3v4')
+        )
+
+        s3_client.create_bucket(Bucket=bucket_name)
+        s3_client.put_object(Body='test-value', Bucket=bucket_name, Key='test')
+        response = s3_client.head_object(Bucket=bucket_name, Key='test')
+
+        presign_url = s3_presign.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': bucket_name, 'Key': 'test'},
+            ExpiresIn=86400
+        )
+        presign_url = presign_url.replace(':%s' % port1, ':%s' % port2)
+
+        response = requests.get(presign_url)
+        self.assertEqual(response._content, b'test-value')
 
     def test_terraform_request_sequence(self):
 

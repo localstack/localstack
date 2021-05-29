@@ -1,11 +1,11 @@
 import logging
 import traceback
 from localstack import config
-from localstack.services.infra import start_moto_server
-from localstack.services.swf import swf_listener
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import get_free_tcp_port, wait_for_port_open
 from localstack.utils.server import multiserver
+from localstack.services.swf import swf_listener
+from localstack.utils.common import get_free_tcp_port, wait_for_port_open
+from localstack.services.infra import start_moto_server
 
 LOG = logging.getLogger(__name__)
 

@@ -530,7 +530,7 @@ def queue_exists(name):
         url = name if '://' in name else aws_stack.get_sqs_queue_url(name)
     except Exception:
         return False
-    for queue_url in queues['QueueUrls']:
+    for queue_url in queues.get('QueueUrls', []):
         if queue_url == url:
             return queue_url
 
@@ -2128,7 +2128,7 @@ class CloudFormationTest(unittest.TestCase):
         route_table_id = resp['RouteTables'][1]['RouteTableId']
         routes = resp['RouteTables'][1]['Routes']
 
-        # Each RouteTable have 1 default route
+        # Each RouteTable has 1 default route
         self.assertEqual(len(routes), 2)
 
         self.assertEqual(routes[0]['DestinationCidrBlock'], '100.0.0.0/20')

@@ -12,17 +12,10 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, extract_jsonpath
 from localstack.services.infra import start_moto_server
 from localstack.services.events.scheduler import JobScheduler
-from localstack.services.events.events_listener import _create_and_register_temp_dir, _dump_events_to_files
-
+from localstack.services.events.events_listener import (
+    _create_and_register_temp_dir, _dump_events_to_files, EventsBackend, DEFAULT_EVENT_BUS_NAME)
 
 LOG = logging.getLogger(__name__)
-
-DEFAULT_EVENT_BUS_NAME = 'default'
-
-# Event rules storage
-EVENT_RULES = {
-    DEFAULT_EVENT_BUS_NAME: set()
-}
 
 CONTENT_BASE_FILTER_KEYWORDS = [
     'prefix', 'anything-but', 'numeric', 'cidr', 'exists'
@@ -110,6 +103,9 @@ def filter_event_based_on_event_format(self, rule, event):
         return True
 
     rule_information = self.events_backend.describe_rule(rule)
+    if not rule_information:
+        LOG.info('Unable to find rule "%s" in backend: %s' % (rule, rule_information))
+        return False
     if rule_information.event_pattern._filter:
         event_pattern = rule_information.event_pattern._filter
         if not filter_event(event_pattern, event):
@@ -137,10 +133,9 @@ def apply_patches():
         name = self._get_param('Name')
         event_bus = self._get_param('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
-        if event_bus not in EVENT_RULES:
-            EVENT_RULES[event_bus] = set()
-
-        EVENT_RULES[event_bus].add(name)
+        event_rules = EventsBackend.get().event_rules
+        event_rules.setdefault(event_bus, set())
+        event_rules[event_bus].add(name)
 
         return events_handler_put_rule_orig(self)
 
@@ -150,7 +145,8 @@ def apply_patches():
         name = self._get_param('Name')
         event_bus = self._get_param('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
-        rules_set = EVENT_RULES.get(event_bus, set())
+        event_rules = EventsBackend.get().event_rules
+        rules_set = event_rules.get(event_bus, set())
         if name not in rules_set:
             return self.error('ValidationException', 'Rule "%s" not found for event bus "%s"' % (name, event_bus))
         rules_set.remove(name)
@@ -159,12 +155,12 @@ def apply_patches():
 
     # 2101 Events put-targets does not respond
     def events_handler_put_targets(self):
+        event_rules = EventsBackend.get().event_rules
 
         def is_rule_present(rule_name):
-            if EVENT_RULES.get(event_bus):
-                for rule in EVENT_RULES.get(event_bus):
-                    if rule == rule_name:
-                        return True
+            for rule in event_rules.get(event_bus, []):
+                if rule == rule_name:
+                    return True
             return False
 
         rule_name = self._get_param('Rule')
@@ -193,12 +189,13 @@ def apply_patches():
 
         _create_and_register_temp_dir()
         _dump_events_to_files(events)
+        event_rules = EventsBackend.get().event_rules
 
         for event_envelope in events:
             event = event_envelope['event']
             event_bus = event.get('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
-            rules = EVENT_RULES.get(event_bus, [])
+            rules = event_rules.get(event_bus, [])
 
             formatted_event = {
                 'version': '0',

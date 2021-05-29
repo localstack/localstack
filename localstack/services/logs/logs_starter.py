@@ -2,13 +2,13 @@ import io
 import json
 import base64
 from gzip import GzipFile
-from localstack import config
-from localstack.utils.aws import aws_stack
 from moto.awslambda import models as lambda_models
 from moto.logs import models as logs_models, responses as logs_responses
 from moto.core.utils import unix_time_millis
 from moto.logs.models import LogStream
 from moto.logs.exceptions import ResourceNotFoundException, InvalidParameterException
+from localstack import config
+from localstack.utils.aws import aws_stack
 from localstack.services.infra import start_moto_server
 
 
