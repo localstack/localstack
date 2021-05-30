@@ -28,6 +28,9 @@ S3_VIRTUAL_HOSTNAME_REGEX = (r'^(http(s)?://)?((?!s3\.)[^\./]+)\.'
 BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
 
+HOST_COMBINATION_REGEX = r'^(.*)(:[\d]{0,6})'
+PORT_REPLACEMENT = [':80', ':443', ':%s' % config.EDGE_PORT, '']
+
 # response header overrides the client may request
 ALLOWED_HEADER_OVERRIDES = {
     'response-content-type': 'Content-Type',
@@ -45,6 +48,9 @@ SIGNATURE_V4_PARAMS = [
     'X-Amz-Algorithm', 'X-Amz-Credential', 'X-Amz-Date', 'X-Amz-Expires',
     'X-Amz-SignedHeaders', 'X-Amz-Signature'
 ]
+
+# headers to blacklist from request_dict.signed_headers
+BLACKLISTED_HEADERS = ['X-Amz-Security-Token']
 
 # query params overrides for multipart upload and node sdk
 ALLOWED_QUERY_PARAMS = [
@@ -183,6 +189,8 @@ def authenticate_presign_url(method, path, headers, data=None):
                         key_lower not in params_header_override):
                     if key_lower in (allowed_param.lower() for allowed_param in ALLOWED_QUERY_PARAMS):
                         query_string[key] = query_params[key][0]
+                    elif key_lower in (blacklisted_header.lower() for blacklisted_header in BLACKLISTED_HEADERS):
+                        pass
                     else:
                         sign_headers[key] = query_params[key][0]
 
@@ -250,6 +258,7 @@ def authenticate_presign_url(method, path, headers, data=None):
                 X-Amz-SignedHeaders and X-Amz-Signature parameters.',
             code_string='AccessDenied'
         )
+
     elif is_v4 and not is_v2:
         response = authenticate_presign_url_signv4(method, path, headers, data, url, query_params, request_dict)
 
@@ -263,7 +272,8 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
 
     # Calculating Signature
     aws_request = create_request_object(request_dict)
-    credentials = Credentials(access_key=TEST_AWS_ACCESS_KEY_ID, secret_key=TEST_AWS_SECRET_ACCESS_KEY)
+    credentials = Credentials(access_key=TEST_AWS_ACCESS_KEY_ID, secret_key=TEST_AWS_SECRET_ACCESS_KEY,
+        token=query_params.get('X-Amz-Security-Token', None))
     auth = HmacV1QueryAuth(credentials=credentials, expires=query_params['Expires'][0])
     split = urlsplit(aws_request.url)
     string_to_sign = auth.get_string_to_sign(method=method, split=split, headers=aws_request.headers)
@@ -271,7 +281,7 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
 
     # Comparing the signature in url with signature we calculated
     query_sig = urlparse.unquote(query_params['Signature'][0])
-    if config.S3_SKIP_SIGNATURE_VALIDATION == '1':
+    if config.S3_SKIP_SIGNATURE_VALIDATION:
         if query_sig != signature:
             LOGGER.warning('Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1')
         signature = query_sig
@@ -299,26 +309,40 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
 
 def authenticate_presign_url_signv4(method, path, headers, data, url, query_params, request_dict):
 
-    # Calculating Signature
-    aws_request = create_request_object(request_dict)
-    ReadOnlyCredentials = namedtuple('ReadOnlyCredentials',
-                                 ['access_key', 'secret_key', 'token'])
-    credentials = ReadOnlyCredentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, None)
-    region = query_params['X-Amz-Credential'][0].split('/')[2]
-    signer = S3SigV4QueryAuth(credentials, 's3', region, expires=int(query_params['X-Amz-Expires'][0]))
-    signature = signer.add_auth(aws_request, query_params['X-Amz-Date'][0])
+    is_presign_valid = False
+    for port in PORT_REPLACEMENT:
+        match = re.match(HOST_COMBINATION_REGEX, urlparse.urlparse(request_dict['url']).netloc)
+        if match and match.group(2):
+            request_dict['url'] = request_dict['url'].replace('%s' % match.group(2), '%s' % port)
+        else:
+            request_dict['url'] = '%s:%s' % (request_dict['url'], port)
 
-    expiration_time = datetime.datetime.strptime(query_params['X-Amz-Date'][0], '%Y%m%dT%H%M%SZ') + \
-        datetime.timedelta(seconds=int(query_params['X-Amz-Expires'][0]))
+        # Calculating Signature
+        aws_request = create_request_object(request_dict)
+        ReadOnlyCredentials = namedtuple('ReadOnlyCredentials',
+                                ['access_key', 'secret_key', 'token'])
+        credentials = ReadOnlyCredentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY,
+            query_params.get('X-Amz-Security-Token', None))
+        region = query_params['X-Amz-Credential'][0].split('/')[2]
+        signer = S3SigV4QueryAuth(credentials, 's3', region, expires=int(query_params['X-Amz-Expires'][0]))
+        signature = signer.add_auth(aws_request, query_params['X-Amz-Date'][0])
+
+        expiration_time = datetime.datetime.strptime(query_params['X-Amz-Date'][0], '%Y%m%dT%H%M%SZ') + \
+            datetime.timedelta(seconds=int(query_params['X-Amz-Expires'][0]))
+
+        # Comparing the signature in url with signature we calculated
+        query_sig = urlparse.unquote(query_params['X-Amz-Signature'][0])
+        if query_sig == signature:
+            is_presign_valid = True
+            break
 
     # Comparing the signature in url with signature we calculated
-    query_sig = urlparse.unquote(query_params['X-Amz-Signature'][0])
-    if config.S3_SKIP_SIGNATURE_VALIDATION == '1':
-        if query_sig != signature:
+    if config.S3_SKIP_SIGNATURE_VALIDATION:
+        if not is_presign_valid:
             LOGGER.warning('Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1')
         signature = query_sig
 
-    if query_sig != signature:
+    if not is_presign_valid:
 
         return requests_error_response_xml_signature_calculation(
             code=403,

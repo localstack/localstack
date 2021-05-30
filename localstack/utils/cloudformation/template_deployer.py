@@ -499,6 +499,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
     except DependencyNotYetSatisfied:
         return
+
     except Exception as e:
         check_not_found_exception(e, resource_type, resource, resource_status)
 
@@ -510,9 +511,11 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
     markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException',
         '404', 'not found', 'not exist']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
-        LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
-            (resource_type, e, ''.join(traceback.format_stack()), resource, resource_status))
+        LOG.warning('Unexpected error retrieving details for resource type %s: Exception: %s - %s - status: %s' %
+            (resource_type, e, resource, resource_status))
+
         return False
+
     return True
 
 
@@ -1383,7 +1386,7 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
 
 def update_resource_details(stack, resource_id, details, action=None):
     resource = stack.resources.get(resource_id, {})
-    if not resource:
+    if not resource or not details:
         return
 
     resource_type = resource.get('Type') or ''
@@ -1514,6 +1517,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
 
     elif res_type == 'AWS::IAM::InstanceProfile':
         props['InstanceProfileName'] = props.get('InstanceProfileName') or _generate_res_name()
+
+    elif res_type == 'AWS::Logs::LogGroup':
+        props['LogGroupName'] = props.get('LogGroupName') or _generate_res_name()
 
     elif res_type == 'AWS::KMS::Key':
         tags = props['Tags'] = props.get('Tags', [])
