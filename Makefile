@@ -165,6 +165,7 @@ ci-build-prepare:
 	make init
 	nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
 	nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
+	nohup docker pull lambci/lambda:20210129-ruby2.7 > /dev/null &
 	nohup docker pull lambci/lambda:20191117-python2.7 > /dev/null &
 	nohup docker pull lambci/lambda:20191117-python3.6 > /dev/null &
 	nohup docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null &

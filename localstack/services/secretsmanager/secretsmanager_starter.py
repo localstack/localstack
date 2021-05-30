@@ -1,4 +1,6 @@
 import json
+import random
+import string
 import logging
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.responses import SecretsManagerResponse
@@ -7,18 +9,20 @@ from moto.secretsmanager.exceptions import SecretNotFoundException
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
-
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 # maps key names to ARNs
 SECRET_ARN_STORAGE = {}
 
 
 def apply_patches():
-    secret_arn_orig = secretsmanager_models.secret_arn
 
     def secretsmanager_models_secret_arn(region, secret_id):
         k = '{}_{}'.format(region, secret_id)
         if k not in SECRET_ARN_STORAGE:
-            arn = secret_arn_orig(region, secret_id)
+            id_string = ''.join(random.choice(string.ascii_letters) for _ in range(6))
+            arn = 'arn:aws:secretsmanager:{0}:{1}:secret:{2}-{3}'.format(
+                region, TEST_AWS_ACCOUNT_ID, secret_id, id_string
+            )
             SECRET_ARN_STORAGE[k] = arn
 
         return SECRET_ARN_STORAGE[k]

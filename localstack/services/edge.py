@@ -256,6 +256,8 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = 'route53', config.PORT_ROUTE53
     elif result[0] == 'monitoring':
         result = 'cloudwatch', config.PORT_CLOUDWATCH
+    elif result[0] == 'email':
+        result = 'ses', config.PORT_SES
     elif result[0] == 'execute-api' or '.execute-api.' in host:
         result = 'apigateway', config.PORT_APIGATEWAY
     elif target.startswith('Firehose_'):

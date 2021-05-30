@@ -1137,6 +1137,21 @@ def clear_list(list_obj):
         del list_obj[0]
 
 
+def items_equivalent(list1, list2, comparator):
+    """ Returns whether two lists are equivalent (i.e., same items contained in both lists,
+        irresepective of the items' order) with respect to a comparator function. """
+    def contained(item):
+        for _item in list2:
+            if comparator(item, _item):
+                return True
+    if len(list1) != len(list2):
+        return False
+    for item in list1:
+        if not contained(item):
+            return False
+    return True
+
+
 def cleanup_tmp_files():
     for tmp in TMP_FILES:
         try:
