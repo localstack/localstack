@@ -1226,6 +1226,25 @@ class TestS3(unittest.TestCase):
         resp = self.s3_client.list_objects(Bucket=bucket_name, Marker='')
         self.assertEqual(resp['Marker'], '')
 
+    def test_create_bucket_with_exsisting_name(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name,
+                             CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+
+        with self.assertRaises(ClientError) as error:
+            self.s3_client.create_bucket(Bucket=bucket_name,
+                                 CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+        self.assertIn('BucketAlreadyExists', str(error.exception))
+
+        self.s3_client.create_bucket(Bucket=bucket_name,
+                             CreateBucketConfiguration={'LocationConstraint': 'us-east-1'})
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+        bucket_name = 'bucket-%s' % short_uid()
+        response = self.s3_client.create_bucket(Bucket=bucket_name,
+                                CreateBucketConfiguration={'LocationConstraint': 'us-east-1'})
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+
     def test_s3_multipart_upload_file(self):
         def upload(size_in_mb, bucket):
             file_name = '{}.tmp'.format(short_uid())
