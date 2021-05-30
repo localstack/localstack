@@ -49,6 +49,9 @@ SIGNATURE_V4_PARAMS = [
     'X-Amz-SignedHeaders', 'X-Amz-Signature'
 ]
 
+# headers to blacklist from request_dict.signed_headers
+BLACKLISTED_HEADERS = ['X-Amz-Security-Token']
+
 # query params overrides for multipart upload and node sdk
 ALLOWED_QUERY_PARAMS = [
     'X-id', 'X-Amz-User-Agent', 'X-Amz-Content-Sha256',
@@ -186,6 +189,8 @@ def authenticate_presign_url(method, path, headers, data=None):
                         key_lower not in params_header_override):
                     if key_lower in (allowed_param.lower() for allowed_param in ALLOWED_QUERY_PARAMS):
                         query_string[key] = query_params[key][0]
+                    elif key_lower in (blacklisted_header.lower() for blacklisted_header in BLACKLISTED_HEADERS):
+                        pass
                     else:
                         sign_headers[key] = query_params[key][0]
 
@@ -267,7 +272,8 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
 
     # Calculating Signature
     aws_request = create_request_object(request_dict)
-    credentials = Credentials(access_key=TEST_AWS_ACCESS_KEY_ID, secret_key=TEST_AWS_SECRET_ACCESS_KEY)
+    credentials = Credentials(access_key=TEST_AWS_ACCESS_KEY_ID, secret_key=TEST_AWS_SECRET_ACCESS_KEY,
+        token=query_params.get('X-Amz-Security-Token', None))
     auth = HmacV1QueryAuth(credentials=credentials, expires=query_params['Expires'][0])
     split = urlsplit(aws_request.url)
     string_to_sign = auth.get_string_to_sign(method=method, split=split, headers=aws_request.headers)
@@ -315,7 +321,8 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
         aws_request = create_request_object(request_dict)
         ReadOnlyCredentials = namedtuple('ReadOnlyCredentials',
                                 ['access_key', 'secret_key', 'token'])
-        credentials = ReadOnlyCredentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, None)
+        credentials = ReadOnlyCredentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY,
+            query_params.get('X-Amz-Security-Token', None))
         region = query_params['X-Amz-Credential'][0].split('/')[2]
         signer = S3SigV4QueryAuth(credentials, 's3', region, expires=int(query_params['X-Amz-Expires'][0]))
         signature = signer.add_auth(aws_request, query_params['X-Amz-Date'][0])
