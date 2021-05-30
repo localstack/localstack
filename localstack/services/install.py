@@ -40,6 +40,9 @@ URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
 MARKER_FILE_LIGHT_VERSION = '%s/.light-version' % INSTALL_DIR_INFRA
 IMAGE_NAME_SFN_LOCAL = 'amazon/aws-stepfunctions-local'
+ARTIFACTS_REPO = 'https://github.com/localstack/localstack-artifacts'
+SFN_PATCH_CLASS = 'com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class'
+SFN_PATCH_CLASS_URL = '%s/raw/master/stepfunctions-local-patch/%s' % (ARTIFACTS_REPO, SFN_PATCH_CLASS)
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
@@ -131,7 +134,7 @@ def install_elasticmq():
         log_install_msg('ElasticMQ')
         mkdir(INSTALL_DIR_ELASTICMQ)
         # download archive
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'elasticmq-server.jar')
+        tmp_archive = os.path.join(config.TMP_FOLDER, 'elasticmq-server.jar')
         if not os.path.exists(tmp_archive):
             download(ELASTICMQ_JAR_URL, tmp_archive)
         shutil.copy(tmp_archive, INSTALL_DIR_ELASTICMQ)
@@ -168,6 +171,12 @@ def install_stepfunctions_local():
             dn=docker_name, tgt=INSTALL_DIR_INFRA))
         run('mv %s/stepfunctionslocal/*.jar %s' % (INSTALL_DIR_INFRA, INSTALL_DIR_STEPFUNCTIONS))
         rm_rf('%s/stepfunctionslocal' % INSTALL_DIR_INFRA)
+    # apply patches
+    patch_class_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, SFN_PATCH_CLASS)
+    if not os.path.exists(patch_class_file):
+        download(SFN_PATCH_CLASS_URL, patch_class_file)
+        cmd = 'cd "%s"; zip %s %s' % (INSTALL_DIR_STEPFUNCTIONS, INSTALL_PATH_STEPFUNCTIONS_JAR, SFN_PATCH_CLASS)
+        run(cmd)
 
 
 def install_dynamodb_local():
