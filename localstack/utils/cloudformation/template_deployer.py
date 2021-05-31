@@ -1386,7 +1386,7 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
 
 def update_resource_details(stack, resource_id, details, action=None):
     resource = stack.resources.get(resource_id, {})
-    if not resource:
+    if not resource or not details:
         return
 
     resource_type = resource.get('Type') or ''

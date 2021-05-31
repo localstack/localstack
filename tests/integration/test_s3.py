@@ -1226,6 +1226,25 @@ class TestS3(unittest.TestCase):
         resp = self.s3_client.list_objects(Bucket=bucket_name, Marker='')
         self.assertEqual(resp['Marker'], '')
 
+    def test_create_bucket_with_exsisting_name(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name,
+                             CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+
+        with self.assertRaises(ClientError) as error:
+            self.s3_client.create_bucket(Bucket=bucket_name,
+                                 CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+        self.assertIn('BucketAlreadyExists', str(error.exception))
+
+        self.s3_client.create_bucket(Bucket=bucket_name,
+                             CreateBucketConfiguration={'LocationConstraint': 'us-east-1'})
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+        bucket_name = 'bucket-%s' % short_uid()
+        response = self.s3_client.create_bucket(Bucket=bucket_name,
+                                CreateBucketConfiguration={'LocationConstraint': 'us-east-1'})
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+
     def test_s3_multipart_upload_file(self):
         def upload(size_in_mb, bucket):
             file_name = '{}.tmp'.format(short_uid())
@@ -1995,6 +2014,28 @@ class TestS3(unittest.TestCase):
 
         client.delete_object(Bucket=bucket_name, Key=OBJECT_KEY)
         client.delete_bucket(Bucket=bucket_name)
+
+    def test_presigned_url_with_session_token(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        key_name = 'key'
+
+        client = boto3.client(
+            's3',
+            config=Config(signature_version='s3v4'),
+            endpoint_url='http://127.0.0.1:4566',
+            aws_access_key_id='test',
+            aws_secret_access_key='test',
+            aws_session_token='test'
+        )
+        client.create_bucket(Bucket=bucket_name)
+        client.put_object(Body='test-value', Bucket=bucket_name, Key=key_name)
+        presigned_url = client.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': bucket_name, 'Key': key_name},
+            ExpiresIn=600,
+        )
+        response = requests.get(presigned_url)
+        self.assertEqual(response._content, b'test-value')
 
     def test_precondition_failed_error(self):
         bucket = 'bucket-%s' % short_uid()
