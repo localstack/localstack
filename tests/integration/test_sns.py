@@ -820,15 +820,8 @@ class SNSTest(unittest.TestCase):
                                 MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
 
         def get_message(queue_url):
-            response = self.sqs_client.receive_message(
-                QueueUrl=queue_url,
-                AttributeNames=['All'],
-                MaxNumberOfMessages=1,
-                MessageAttributeNames=['All'],
-                VisibilityTimeout=2,
-                WaitTimeSeconds=2,
-            )
-
+            response = self.sqs_client.receive_message(QueueUrl=queue_url,
+                                                       MessageAttributeNames=['All'])
             print(response)
             self.assertEqual(response['Messages'][0]['MessageAttributes'],
                              {'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
