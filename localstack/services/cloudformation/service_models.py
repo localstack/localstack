@@ -2044,7 +2044,7 @@ class EC2InternetGateway(GenericBaseModel):
         client = aws_stack.connect_to_service('ec2')
         gateways = client.describe_internet_gateways()['InternetGateways']
         tags = self.props.get('Tags')
-        gateway = [g for g in gateways if g.get('Tags') == tags]
+        gateway = [g for g in gateways if (g.get('Tags') or []) == (tags or [])]
         return (gateway or [None])[0]
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
@@ -2103,8 +2103,9 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service('ec2')
-        igw_id = self.resolve_refs_recursively(stack_name, self.props.get('InternetGatewayId'), resources)
-        vpngw_id = self.resolve_refs_recursively(stack_name, self.props.get('VpnGatewayId'), resources)
+        props = self.props
+        igw_id = self.resolve_refs_recursively(stack_name, props.get('InternetGatewayId'), resources)
+        vpngw_id = self.resolve_refs_recursively(stack_name, props.get('VpnGatewayId'), resources)
         gateways = []
         if igw_id:
             gateways = client.describe_internet_gateways()['InternetGateways']
@@ -2112,20 +2113,29 @@ class EC2VPCGatewayAttachment(GenericBaseModel):
         elif vpngw_id:
             gateways = client.describe_vpn_gateways()['VpnGateways']
             gateways = [g for g in gateways if g['VpnGatewayId'] == vpngw_id]
-        return (gateways or [None])[0]
+        gateway = (gateways or [{}])[0]
+        attachments = gateway.get('Attachments') or gateway.get('VpcAttachments') or []
+        result = [a for a in attachments if a.get('State') in ('attached', 'available')]
+        if result:
+            return gateway
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return self.props.get('RouteTableAssociationId')
+        props = self.props
+        gw_id = props.get('VpnGatewayId') or props.get('InternetGatewayId')
+        attachment = (props.get('Attachments') or props.get('VpcAttachments') or [{}])[0]
+        if attachment:
+            result = '%s-%s' % (gw_id, attachment.get('VpcId'))
+            return result
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
         def _attach_gateway(resource_id, resources, *args, **kwargs):
             client = aws_stack.connect_to_service('ec2')
-            resource = resources[resource_id]
-            resource_props = resource.get('Properties')
-            igw_id = resource_props.get('InternetGatewayId')
-            vpngw_id = resource_props.get('VpnGatewayId')
-            vpc_id = resource_props.get('VpcId')
+            resource = cls(resources[resource_id])
+            props = resource.props
+            igw_id = props.get('InternetGatewayId')
+            vpngw_id = props.get('VpnGatewayId')
+            vpc_id = props.get('VpcId')
             if igw_id:
                 client.attach_internet_gateway(VpcId=vpc_id, InternetGatewayId=igw_id)
             elif vpngw_id:

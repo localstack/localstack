@@ -24,10 +24,6 @@ def dump_json_params(param_func=None, *param_names):
     return replace
 
 
-def select_parameters(*param_names):
-    return lambda params, **kwargs: dict([(k, v) for k, v in params.items() if k in param_names])
-
-
 def param_defaults(param_func, defaults):
     def replace(params, **kwargs):
         result = param_func(params, **kwargs)
@@ -114,6 +110,9 @@ def get_cfn_response_mod_file():
 
 
 def lambda_select_params(*selected):
-    def do_select(params, **kwargs):
-        return dict([(k, v) for k, v in params.items() if k in selected])
-    return do_select
+    # TODO: remove and merge with function below
+    return select_parameters(*selected)
+
+
+def select_parameters(*param_names):
+    return lambda params, **kwargs: dict([(k, v) for k, v in params.items() if k in param_names])

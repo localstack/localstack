@@ -429,8 +429,12 @@ def md5(string):
 
 
 def select_attributes(object, attributes):
-    attributes = attributes if isinstance(attributes, list) else [attributes]
+    attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     return dict([(k, v) for k, v in object.items() if k in attributes])
+
+
+def is_list_or_tuple(object):
+    return isinstance(object, (list, tuple))
 
 
 def in_docker():
