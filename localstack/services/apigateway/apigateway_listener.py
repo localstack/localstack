@@ -465,14 +465,22 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             return make_error_response(msg, 404)
 
     elif integration_type in ['HTTP_PROXY', 'HTTP']:
-        function = getattr(requests, method.lower())
+
+        if ':servicediscovery:' in uri:
+            # check if this is a servicediscovery integration URI
+            client = aws_stack.connect_to_service('servicediscovery')
+            service_id = uri.split('/')[-1]
+            instances = client.list_instances(ServiceId=service_id)['Instances']
+            instance = (instances or [None])[0]
+            if instance and instance.get('Id'):
+                uri = 'http://%s/%s' % (instance['Id'], invocation_path.lstrip('/'))
 
         # apply custom request template
         data = apply_template(integration, 'request', data)
-
         if isinstance(data, dict):
             data = json.dumps(data)
 
+        function = getattr(requests, method.lower())
         result = function(uri, data=data, headers=headers)
 
         # apply custom response template
