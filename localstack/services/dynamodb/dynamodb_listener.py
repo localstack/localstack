@@ -869,15 +869,12 @@ def create_dynamodb_stream(data, latest_stream_label):
         table_name = data['TableName']
         view_type = stream['StreamViewType']
 
-        response = dynamodbstreams_api.add_dynamodb_stream(
+        dynamodbstreams_api.add_dynamodb_stream(
             table_name=table_name,
             latest_stream_label=latest_stream_label,
             view_type=view_type,
             enabled=enabled
         )
-        table_def = TABLE_DEFINITIONS.get(data['TableName']) or {}
-        data['StreamArn'] = response.get('StreamArn')
-        dynamodb_enable_kinesis_streaming_destination(data, table_def)
 
 
 def forward_to_lambda(records):

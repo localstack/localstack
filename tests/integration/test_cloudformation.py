@@ -508,8 +508,6 @@ Resources:
       - AttributeName: pkey
         KeyType: HASH
       BillingMode: PAY_PER_REQUEST
-      StreamSpecification:
-        StreamViewType: NEW_IMAGE
       KinesisStreamSpecification:
         StreamArn: !GetAtt EventStream.Arn
 """
