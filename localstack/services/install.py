@@ -274,8 +274,9 @@ def install_all_components():
 def install_debugpy_and_dependencies():
     try:
         import debugpy
-    except:
-        run('apk add %s' %  (" ".join(DEBUGPY_DEPENDENCIES)) )
+    except ModuleNotFoundError:
+        run('apk fetch %s --output %s'%  (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER))
+        run('apk add %s --cache-dir %s' %  (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER ) )
         run('pip install %s' % DEBUGPY_MODULE )
 
 
