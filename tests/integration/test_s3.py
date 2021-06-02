@@ -772,6 +772,24 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name)
 
+    def test_s3_request_payer(self):
+        bucket_name = 'test-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        response = self.s3_client.put_bucket_request_payment(
+            Bucket=bucket_name,
+            RequestPaymentConfiguration={
+                'Payer': 'Requester'
+            }
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        response = self.s3_client.get_bucket_request_payment(
+            Bucket=bucket_name
+        )
+        self.assertEqual(response['Payer'], 'Requester')
+        self._delete_bucket(bucket_name)
+
     def test_bucket_exists(self):
         # Test setup
         bucket = 'test-bucket-%s' % short_uid()
