@@ -183,6 +183,7 @@ You can pass the following environment variables to LocalStack:
 * `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (default: `localhost`).
   This host is used, e.g., when returning queue URLs from the SQS service to the client.
 * `HOSTNAME_FROM_LAMBDA`: Endpoint host under which APIs are accessible from Lambda containers (optional). This can be useful in docker-compose stacks to use the local container hostname (e.g., `HOSTNAME_FROM_LAMBDA=localstack`) if neither IP address nor container name of the main container are available (e.g., in CI). Often used in combination with `LAMBDA_DOCKER_NETWORK`.
+* `DEBUG`: Flag to increase log level and print more verbose logs (useful for troubleshooting issues)
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.
@@ -213,6 +214,7 @@ You can pass the following environment variables to LocalStack:
       docker-compose.
 * `LAMBDA_DOCKER_NETWORK`: Optional Docker network for the container running your lambda function.
 * `LAMBDA_DOCKER_DNS`: Optional DNS server for the container running your lambda function.
+* `LAMBDA_DOCKER_FLAGS`: Additional flags passed to Lambda Docker `run`/`create` commands (e.g., useful for specifying custom volume mounts)
 * `LAMBDA_CONTAINER_REGISTRY` Use an alternative docker registry to pull lambda execution containers (default: `lambci/lambda`).
 * `LAMBDA_REMOVE_CONTAINERS`: Whether to remove containers after Lambdas finished executing (default: `true`).
 * `TMPDIR`: Temporary folder inside the LocalStack container (default: `/tmp`).
@@ -238,11 +240,12 @@ You can pass the following environment variables to LocalStack:
 * `LAMBDA_JAVA_OPTS`: Allow passing custom JVM options (e.g., `-Xmx512M`) to Java Lambdas executed in Docker. Use `_debug_port_` placeholder to configure the debug port (e.g., `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_`).
 * `MAIN_CONTAINER_NAME`: Specify the main docker container name (default: `localstack_main`).
 * `INIT_SCRIPTS_PATH`: Specify the path to the initializing files with extensions .sh that are found default in `/docker-entrypoint-initaws.d`.
-* `DEBUG`: For troubleshooting LocalStack start issues
+* `LS_LOG`: Specify the log level('trace', 'debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration. Enable `LS_LOG=trace` to print detailed request/response messages.
+
+The following environment configurations can be useful for debugging:
 * `DEVELOP`: Starts a debugpy server before starting Localstack services
 * `DEVELOP_PORT`:  Port number for debugpy server
-* `WAIT_FOR_DEBUGGER`:  Forces localstack to wait for a debugger to start the services
-* `LS_LOG`: Specify the log level('trace', 'debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration. Enable `LS_LOG=trace` to print detailed request/response messages.
+* `WAIT_FOR_DEBUGGER`:  Forces LocalStack to wait for a debugger to start the services
 
 The following environment configurations are *deprecated*:
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.

@@ -451,6 +451,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 network = config.LAMBDA_DOCKER_NETWORK
                 network_str = '--network="%s"' % network if network else ''
 
+                additional_flags = config.LAMBDA_DOCKER_FLAGS or ''
+
                 dns = config.LAMBDA_DOCKER_DNS
                 dns_str = '--dns="%s"' % dns if dns else ''
 
@@ -473,12 +475,13 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' -e HOSTNAME="$HOSTNAME"'
                     ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                     ' -e EDGE_PORT="$EDGE_PORT"'
-                    '  %s'  # env_vars
-                    '  %s'  # network
-                    '  %s'  # dns
+                    ' %s'  # env_vars
+                    ' %s'  # network
+                    ' %s'  # dns
+                    ' %s'  # additional flags
                     ' %s'
                 ) % (docker_cmd, rm_flag, container_name, mount_volume_str,
-                    env_vars_str, network_str, dns_str, docker_image)
+                    env_vars_str, network_str, dns_str, additional_flags, docker_image)
                 LOG.debug(cmd)
                 run(cmd)
 
@@ -704,6 +707,8 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             env_vars['DOCKER_LAMBDA_API_PORT'] = port
             env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = port
 
+        additional_flags = config.LAMBDA_DOCKER_FLAGS or ''
+
         dns = config.LAMBDA_DOCKER_DNS
         dns_str = '--dns="%s"' % dns if dns else ''
 
@@ -713,6 +718,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         docker_image = Util.docker_image_for_lambda(func_details)
         rm_flag = Util.get_docker_remove_flag()
 
+        # construct common flags for commands below
+        common_flags = ' '.join([env_vars_string, network_str, dns_str, additional_flags, rm_flag])
+
         if config.LAMBDA_REMOTE_DOCKER:
             cp_cmd = ('%s cp "%s/." "$CONTAINER_ID:%s";' % (
                 docker_cmd, lambda_cwd, DOCKER_TASK_FOLDER)) if lambda_cwd else ''
@@ -720,19 +728,14 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 'CONTAINER_ID="$(%s create -i'
                 ' %s'  # entrypoint
                 ' %s'  # debug_docker_java_port
-                ' %s'  # env
-                ' %s'  # network
-                ' %s'  # dns
-                ' %s'  # --rm flag
+                ' %s'  # common flags
                 ' %s %s'  # image and command
                 ')";'
                 '%s '
                 '%s start -ai "$CONTAINER_ID";'
             ) % (docker_cmd, entrypoint, debug_docker_java_port,
-                 env_vars_string, network_str, dns_str, rm_flag,
-                 docker_image, command,
-                 cp_cmd,
-                 docker_cmd)
+                 common_flags, docker_image, command,
+                 cp_cmd, docker_cmd)
         else:
             mount_flag = ''
             if lambda_cwd:
@@ -741,13 +744,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 '%s run -i'
                 ' %s'
                 ' %s'  # code mount
-                ' %s'
-                ' %s'  # network
-                ' %s'  # dns
-                ' %s'  # --rm flag
+                ' %s'  # common flags
                 ' %s %s'
-            ) % (docker_cmd, entrypoint, mount_flag, env_vars_string,
-                 network_str, dns_str, rm_flag, docker_image, command)
+            ) % (docker_cmd, entrypoint, mount_flag, common_flags, docker_image, command)
         return cmd
 
 
