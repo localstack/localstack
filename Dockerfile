@@ -51,8 +51,8 @@ RUN make install-web
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
-# expose edge service, ElasticSearch & web dashboard ports
-EXPOSE 4566 4571 8080
+# expose edge service, ElasticSearch, debugpy & web dashboard ports
+EXPOSE 4566 4571 8080 5678
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]

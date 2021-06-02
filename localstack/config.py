@@ -12,7 +12,7 @@ import six
 from boto3 import Session
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS, LOCALHOST, LOCALHOST_IP, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
-    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1, LOG_LEVELS)
+    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1, LOG_LEVELS, DEFAULT_DEVELOP_PORT)
 
 # keep track of start time, for performance debugging
 load_start_time = time.time()
@@ -119,6 +119,15 @@ HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type('LS_LOG')
 DEBUG = is_env_true('DEBUG') or LS_LOG == 'trace'
+
+# whether to enable debugpy
+DEVELOP = is_env_true('DEVELOP')
+
+# PORT FOR DEBUGGER
+DEVELOP_PORT = int(os.environ.get('DEVELOP_PORT', '').strip() or DEFAULT_DEVELOP_PORT)
+
+# whether to make debugpy wait for a debbuger client
+WAIT_FOR_DEBUGGER = is_env_true('WAIT_FOR_DEBUGGER')
 
 # whether to use SSL encryption for the services
 USE_SSL = is_env_true('USE_SSL')
@@ -232,7 +241,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
                    'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS', 'PERSISTENCE_SINGLE_FILE',
-                   'S3_SKIP_SIGNATURE_VALIDATION']
+                   'S3_SKIP_SIGNATURE_VALIDATION', 'DEVELOP', 'DEVELOP_PORT', 'WAIT_FOR_DEBUGGER']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')

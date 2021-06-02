@@ -44,6 +44,9 @@ ARTIFACTS_REPO = 'https://github.com/localstack/localstack-artifacts'
 SFN_PATCH_CLASS = 'com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class'
 SFN_PATCH_CLASS_URL = '%s/raw/master/stepfunctions-local-patch/%s' % (ARTIFACTS_REPO, SFN_PATCH_CLASS)
 
+DEBUGPY_MODULE='debugpy'
+DEBUGPY_DEPENDENCIES=['gcc', 'python3-dev', 'musl-dev']
+
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
 
@@ -179,6 +182,8 @@ def install_stepfunctions_local():
         run(cmd)
 
 
+
+
 def install_dynamodb_local():
     if OVERWRITE_DDB_FILES_IN_DOCKER and in_docker():
         rm_rf(INSTALL_DIR_DDB)
@@ -265,6 +270,14 @@ def install_all_components():
     bootstrap.load_plugins()
     # install all components
     install_components(DEFAULT_SERVICE_PORTS.keys())
+
+def install_debugpy_and_dependencies():
+    try:
+        import debugpy
+    except ModuleNotFoundError:
+        run('apk fetch %s --output %s'%  (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER))
+        run('apk add %s --cache-dir %s' %  (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER ) )
+        run('pip install %s' % DEBUGPY_MODULE )
 
 
 # -----------------

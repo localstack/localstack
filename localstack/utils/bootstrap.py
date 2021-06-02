@@ -606,6 +606,9 @@ def start_infra_in_docker():
         for port in [config.PORT_WEB_UI, config.PORT_WEB_UI_SSL]:
             port_mappings.add(port)
 
+    if config.DEVELOP:
+        port_mappings.add(config.DEVELOP_PORT)
+
     docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +
         '--name %s ' +
