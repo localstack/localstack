@@ -58,8 +58,10 @@ docker-build:      ## Build Docker image
 	# prepare
 	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
 	# start build
+	# --add-host: Fix for Centos host OS
 	docker build --build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
-	--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") -t $(IMAGE_NAME) .
+	  --build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") -t $(IMAGE_NAME) \
+	  --add-host="localhost.localdomain:127.0.0.1" .
 
 docker-squash:
 	# squash entire image
