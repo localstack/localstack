@@ -327,8 +327,9 @@ async def message_to_subscriber(message_id, message, topic_arn, req_data,
             'endpoint': subscriber['Endpoint'],
             'message_content': req_data['Message'][0]
         }
-        await sns_backend.sms_messages.append(event)
+        sns_backend.sms_messages.append(event)
         LOG.info('Delivering SMS message to %s: %s', subscriber['Endpoint'], req_data['Message'][0])
+        return
 
     elif subscriber['Protocol'] == 'sqs':
         queue_url = None
@@ -363,7 +364,8 @@ async def message_to_subscriber(message_id, message, topic_arn, req_data,
             sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
             if 'NonExistentQueue' in str(exc):
                 LOG.info('Removing non-existent queue "%s" subscribed to topic "%s"' % (queue_url, topic_arn))
-                # subscriptions.remove(subscriber)
+                subscriptions.remove(subscriber)
+        return
 
     elif subscriber['Protocol'] == 'lambda':
         try:
@@ -388,6 +390,7 @@ async def message_to_subscriber(message_id, message, topic_arn, req_data,
         except Exception as exc:
             LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
             sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+        return
 
     elif subscriber['Protocol'] in ['http', 'https']:
         msg_type = (req_data.get('Type') or ['Notification'])[0]
@@ -414,6 +417,7 @@ async def message_to_subscriber(message_id, message, topic_arn, req_data,
         except Exception as exc:
             LOG.info('Received error on sending SNS message, putting to DLQ (if configured): %s' % exc)
             sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+        return
 
     elif subscriber['Protocol'] == 'application':
         try:
@@ -422,6 +426,7 @@ async def message_to_subscriber(message_id, message, topic_arn, req_data,
         except Exception as exc:
             LOG.warning('Unable to forward SNS message to SNS platform app: %s %s' % (exc, traceback.format_exc()))
             sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+        return
 
     elif subscriber['Protocol'] == 'email':
         ses_client = aws_stack.connect_to_service('ses')
