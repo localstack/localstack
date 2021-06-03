@@ -91,6 +91,13 @@ def get_ddb_global_sec_indexes(params, **kwargs):
     return args
 
 
+def get_ddb_kinesis_stream_specification(params, **kwargs):
+    args = params.get('KinesisStreamSpecification')
+    if args:
+        args['TableName'] = params['TableName']
+    return args
+
+
 def get_apigw_resource_params(params, **kwargs):
     result = {
         'restApiId': params.get('RestApiId'),
@@ -161,7 +168,7 @@ RESOURCE_TO_FUNCTION = {
         }
     },
     'DynamoDB::Table': {
-        'create': {
+        'create': [{
             'function': 'create_table',
             'parameters': {
                 'TableName': 'TableName',
@@ -179,7 +186,10 @@ RESOURCE_TO_FUNCTION = {
                     'WriteCapacityUnits': 5
                 }
             }
-        },
+        }, {
+            'function': 'enable_kinesis_streaming_destination',
+            'parameters': get_ddb_kinesis_stream_specification
+        }],
         'delete': {
             'function': 'delete_table',
             'parameters': {

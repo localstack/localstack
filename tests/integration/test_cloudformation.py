@@ -489,6 +489,29 @@ Outputs:
     Value: !Ref MessageQueue
 """
 
+TEST_TEMPLATE_28 = """
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  EventStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: EventStream
+      ShardCount: 1
+  EventTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: %s
+      AttributeDefinitions:
+      - AttributeName: pkey
+        AttributeType: S
+      KeySchema:
+      - AttributeName: pkey
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      KinesisStreamSpecification:
+        StreamArn: !GetAtt EventStream.Arn
+"""
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -2185,3 +2208,16 @@ class CloudFormationTest(unittest.TestCase):
 
         apis = [api for api in apigw_client.get_rest_apis()['items'] if api['name'] == 'celeste-Gateway-local']
         self.assertEqual(len(apis), 0)
+
+    def test_dynamodb_stream_response_with_cf(self):
+
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        template = TEST_TEMPLATE_28 % 'EventTable'
+        stack_name = 'stack-%s' % short_uid()
+        create_and_await_stack(StackName=stack_name, TemplateBody=template)
+
+        response = dynamodb.describe_kinesis_streaming_destination(TableName='EventTable')
+
+        self.assertEqual(response.get('TableName'), 'EventTable')
+        self.assertEqual(len(response.get('KinesisDataStreamDestinations')), 1)
+        self.assertIn('StreamArn', response.get('KinesisDataStreamDestinations')[0])
