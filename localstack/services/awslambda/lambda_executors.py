@@ -439,53 +439,19 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
 
             docker_image = Util.docker_image_for_lambda(func_details)
-            rm_flag = Util.get_docker_remove_flag()
 
             # Container is not running or doesn't exist.
             if status < 1:
                 # Make sure the container does not exist in any form/state.
                 self.destroy_docker_container(func_arn)
 
-                env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in env_vars])
-
-                network = config.LAMBDA_DOCKER_NETWORK
-                network_str = '--network="%s"' % network if network else ''
-
-                additional_flags = config.LAMBDA_DOCKER_FLAGS or ''
-
-                dns = config.LAMBDA_DOCKER_DNS
-                dns_str = '--dns="%s"' % dns if dns else ''
-
-                mount_volume = not config.LAMBDA_REMOTE_DOCKER
-                lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
-                if (':' in lambda_cwd and '\\' in lambda_cwd):
-                    lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
-                mount_volume_str = '-v "%s":%s' % (lambda_cwd_on_host, DOCKER_TASK_FOLDER) if mount_volume else ''
-
-                # Create and start the container
+                # get container startup command and run it
                 LOG.debug('Creating container: %s' % container_name)
-                cmd = (
-                    '%s create'
-                    ' %s'  # --rm flag
-                    ' --name "%s"'
-                    ' --entrypoint /bin/bash'  # Load bash when it starts.
-                    ' %s'
-                    ' --interactive'  # Keeps the container running bash.
-                    ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
-                    ' -e HOSTNAME="$HOSTNAME"'
-                    ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
-                    ' -e EDGE_PORT="$EDGE_PORT"'
-                    ' %s'  # env_vars
-                    ' %s'  # network
-                    ' %s'  # dns
-                    ' %s'  # additional flags
-                    ' %s'
-                ) % (docker_cmd, rm_flag, container_name, mount_volume_str,
-                    env_vars_str, network_str, dns_str, additional_flags, docker_image)
+                cmd = self.get_container_startup_command(func_details, env_vars, lambda_cwd)
                 LOG.debug(cmd)
                 run(cmd)
 
-                if not mount_volume:
+                if config.LAMBDA_REMOTE_DOCKER:
                     LOG.debug('Copying files to container "%s" from "%s".' % (container_name, lambda_cwd))
                     self.copy_into_container('%s/.' % lambda_cwd, container_name, DOCKER_TASK_FOLDER)
 
@@ -496,24 +462,72 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 # give the container some time to start up
                 time.sleep(1)
 
-            # Get the entry point for the image.
-            LOG.debug('Getting the entrypoint for image: %s' % (docker_image))
-            cmd = (
-                '%s image inspect'
-                ' --format="{{ .Config.Entrypoint }}"'
-                ' %s'
-            ) % (docker_cmd, docker_image)
-
-            LOG.debug(cmd)
-            run_result = run(cmd)
-
-            entry_point = run_result.strip('[]\n\r ')
             container_network = self.get_docker_container_network(func_arn)
+            entry_point = self.get_container_entrypoint(docker_image)
 
             LOG.debug('Using entrypoint "%s" for container "%s" on network "%s".'
                 % (entry_point, container_name, container_network))
 
             return ContainerInfo(container_name, entry_point)
+
+    def get_container_startup_command(self, func_details, env_vars, lambda_cwd):
+        docker_image = Util.docker_image_for_lambda(func_details)
+        rm_flag = Util.get_docker_remove_flag()
+        docker_cmd = self._docker_cmd()
+        container_name = self.get_container_name(func_details.arn())
+
+        env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in env_vars])
+
+        network = config.LAMBDA_DOCKER_NETWORK
+        network_str = '--network="%s"' % network if network else ''
+
+        additional_flags = config.LAMBDA_DOCKER_FLAGS or ''
+
+        dns = config.LAMBDA_DOCKER_DNS
+        dns_str = '--dns="%s"' % dns if dns else ''
+
+        mount_volume = not config.LAMBDA_REMOTE_DOCKER
+        lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
+        if (':' in lambda_cwd and '\\' in lambda_cwd):
+            lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
+        mount_volume_str = '-v "%s":%s' % (lambda_cwd_on_host, DOCKER_TASK_FOLDER) if mount_volume else ''
+
+        # Create and start the container
+        cmd = (
+            '%s create'
+            ' %s'  # --rm flag
+            ' --name "%s"'
+            ' --entrypoint /bin/bash'  # Load bash when it starts.
+            ' %s'
+            ' --interactive'  # Keeps the container running bash.
+            ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
+            ' -e HOSTNAME="$HOSTNAME"'
+            ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
+            ' -e EDGE_PORT="$EDGE_PORT"'
+            ' %s'  # env_vars
+            ' %s'  # network
+            ' %s'  # dns
+            ' %s'  # additional flags
+            ' %s'
+        ) % (docker_cmd, rm_flag, container_name, mount_volume_str,
+            env_vars_str, network_str, dns_str, additional_flags, docker_image)
+        return cmd
+
+    def get_container_entrypoint(self, docker_image):
+        """ Get the entry point for the given image """
+        docker_cmd = self._docker_cmd()
+        LOG.debug('Getting the entrypoint for image: %s' % (docker_image))
+        cmd = (
+            '%s image inspect'
+            ' --format="{{ .Config.Entrypoint }}"'
+            ' %s'
+        ) % (docker_cmd, docker_image)
+
+        LOG.debug(cmd)
+        run_result = run(cmd)
+
+        entry_point = run_result.strip('[]\n\r ')
+        return entry_point
 
     def copy_into_container(self, local_path, container_name, container_path):
         cmd = ('%s cp %s "%s:%s"') % (self._docker_cmd(), local_path, container_name, container_path)
