@@ -8,8 +8,12 @@ RUN apk add --no-cache autoconf automake boost-dev build-base ca-certificates cm
         g++ gcc git groff iputils libffi-dev libtool linux-headers make nss openssl openssl-dev \
         py3-pip python3 python3-dev tar xz zip && \
     update-ca-certificates
-RUN apk add postgresql=12.7-r0 postgresql-client=12.7-r0 postgresql-dev=12.7-r0 postgresql-plpython3=12.7-r0 \
-  --repository=http://dl-cdn.alpinelinux.org/alpine/v3.12/main
+# ARG PG_VER=12.7-r0
+# ARG APK_REPO=http://dl-cdn.alpinelinux.org/alpine/v3.12/main
+# reverting back to v11.12 to save ~150MB of disk space in the final image
+ARG PG_VER=11.12-r0
+ARG APK_REPO=http://dl-cdn.alpinelinux.org/alpine/v3.10/main
+RUN apk add postgresql=$PG_VER postgresql-client=$PG_VER postgresql-dev=$PG_VER postgresql-plpython3=$PG_VER --repository=$APK_REPO
 
 # install Docker (CLI only)
 RUN docker_version=17.05.0-ce; \
