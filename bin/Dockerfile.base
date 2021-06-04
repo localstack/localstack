@@ -13,7 +13,7 @@ RUN apk add --no-cache autoconf automake boost-dev build-base ca-certificates cm
 # reverting back to v11.12 to save ~150MB of disk space in the final image
 ARG PG_VER=11.12-r0
 ARG APK_REPO=http://dl-cdn.alpinelinux.org/alpine/v3.10/main
-RUN apk add postgresql=$PG_VER postgresql-client=$PG_VER postgresql-dev=$PG_VER postgresql-plpython3=$PG_VER --repository=$APK_REPO
+RUN apk add --no-cache postgresql=$PG_VER postgresql-client=$PG_VER postgresql-dev=$PG_VER postgresql-plpython3=$PG_VER --repository=$APK_REPO
 
 # install Docker (CLI only)
 RUN docker_version=17.05.0-ce; \
@@ -31,7 +31,7 @@ RUN { \
     && chmod +x /usr/local/bin/docker-java-home
 RUN set -x \
   # Install JDK 11.0.8 due to JDK-8165852.
-  && apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community openjdk11
+  && apk add --no-cache openjdk11
 
 # create a custom, minimized JRE via jlink
 RUN /usr/lib/jvm/java-11-openjdk/bin/jlink --add-modules \
@@ -77,7 +77,7 @@ WORKDIR /opt/code/localstack/
 ENV ES_TMPDIR /tmp
 
 # install npm dependencies (Note: node-gyp currently requires python2 :/ , hence install it temporarily)
-RUN apk add python2
+RUN apk add --no-cache python2
 ADD localstack/package.json localstack/package.json
 RUN cd localstack && npm install
 RUN apk del python2
