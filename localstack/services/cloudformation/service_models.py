@@ -15,16 +15,14 @@ from localstack.utils.common import (
     camel_to_snake_case, select_attributes, canonical_json, md5, is_base64,
     new_tmp_dir, save_file, rm_rf, mkdir, cp_r, short_uid)
 from localstack.utils.testutil import create_zip_file
-from localstack.services.awslambda.lambda_api import get_handler_file_from_name
+from localstack.services.awslambda.lambda_api import (
+    get_handler_file_from_name, LAMBDA_POLICY_NAME_PATTERN)
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower,
     merge_parameters, params_dict_to_list, select_parameters, params_select_attributes,
     lambda_select_params, get_cfn_response_mod_file)
 
 LOG = logging.getLogger(__name__)
-
-# name pattern of IAM policies associated with Lambda functions
-LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
 
 # dict key used to store the deployment state of a resource
 KEY_RESOURCE_STATE = '_state_'

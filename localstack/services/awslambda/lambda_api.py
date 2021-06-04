@@ -31,11 +31,12 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
 from localstack.utils.aws.aws_models import LambdaFunction, CodeSigningConfig
-from localstack.services.cloudformation.service_models import LAMBDA_POLICY_NAME_PATTERN
 
 # logger
 LOG = logging.getLogger(__name__)
 
+# name pattern of IAM policies associated with Lambda functions
+LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
 # constants
 APP_NAME = 'lambda_api'
 PATH_ROOT = '/2015-03-31'
