@@ -1,4 +1,4 @@
-FROM node:alpine
+FROM node:14-alpine
 
 MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
@@ -139,8 +139,9 @@ RUN (virtualenv .venv && source .venv/bin/activate && pip install 'cryptography<
 # clean up (layers are later squashed into a single one)
 RUN rm -rf localstack/infra/elasticsearch/jdk/
 RUN rm -rf /root/.npm; \
-  apk del --purge autoconf automake boost-dev build-base cmake g++ gcc giflib krb5-conf krb5-libs \
-  libc-dev libffi-dev libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev
+  apk del --purge autoconf automake boost-dev build-base cmake g++ gcc giflib libc-dev libffi-dev \
+  libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev
+RUN apk del --purge krb5-conf krb5-libs || true
 
 # final fixes
 RUN which python || ln -s /usr/bin/python3 /usr/bin/python
