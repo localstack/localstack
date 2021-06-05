@@ -30,8 +30,8 @@ RUN { \
     } > /usr/local/bin/docker-java-home \
     && chmod +x /usr/local/bin/docker-java-home
 RUN set -x \
-  # Install JDK 11.0.8 due to JDK-8165852.
-  && apk add --no-cache openjdk11
+  # Install JDK 11.0.8+ due to JDK-8165852.
+  && apk add --no-cache --upgrade --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community openjdk11
 
 # create a custom, minimized JRE via jlink
 RUN /usr/lib/jvm/java-11-openjdk/bin/jlink --add-modules \
