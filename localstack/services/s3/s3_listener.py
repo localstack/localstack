@@ -321,9 +321,15 @@ def get_request_payment(bucket_name):
         response.status_code = int(code)
         return response
 
+    content = {
+        'RequestPaymentConfiguration': {
+            '@xmlns': 'http://s3.amazonaws.com/doc/2006-03-01/',
+            'Payer': s3_backend.buckets[bucket_name].payer
+        }
+    }
+
+    body = xmltodict.unparse(content)
     response.status_code = 200
-    payer = BUCKET_PAYER.get(bucket_name)
-    body = xmltodict.unparse(payer)
     response._content = body
     return response
 
@@ -353,7 +359,7 @@ def set_request_payment(bucket_name, payer):
             response._content = body
             return response
 
-    BUCKET_PAYER[bucket_name] = payer
+    s3_backend.buckets[bucket_name].payer = payer['RequestPaymentConfiguration']['Payer']
     response.status_code = 200
     return response
 
