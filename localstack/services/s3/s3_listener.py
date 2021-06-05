@@ -46,6 +46,9 @@ S3_NOTIFICATIONS = s3_backend.S3_NOTIFICATIONS = getattr(s3_backend, 'S3_NOTIFIC
 # mappings for bucket CORS settings
 BUCKET_CORS = s3_backend.BUCKET_CORS = getattr(s3_backend, 'BUCKET_CORS', {})
 
+# mappings for bucket payer settings
+BUCKET_PAYER = s3_backend.BUCKET_PAYER = getattr(s3_backend, 'BUCKET_PAYER', {})
+
 # maps bucket name to lifecycle settings
 BUCKET_LIFECYCLE = s3_backend.BUCKET_LIFECYCLE = getattr(s3_backend, 'BUCKET_LIFECYCLE', {})
 
@@ -306,6 +309,57 @@ def delete_cors(bucket_name):
         return response
 
     BUCKET_CORS.pop(bucket_name, {})
+    response.status_code = 200
+    return response
+
+
+def get_request_payment(bucket_name):
+    response = Response()
+
+    exists, code = bucket_exists(bucket_name)
+    if not exists:
+        response.status_code = int(code)
+        return response
+
+    content = {
+        'RequestPaymentConfiguration': {
+            '@xmlns': 'http://s3.amazonaws.com/doc/2006-03-01/',
+            'Payer': s3_backend.buckets[bucket_name].payer
+        }
+    }
+
+    body = xmltodict.unparse(content)
+    response.status_code = 200
+    response._content = body
+    return response
+
+
+def set_request_payment(bucket_name, payer):
+    response = Response()
+    exists, code = bucket_exists(bucket_name)
+    if not exists:
+        response.status_code = int(code)
+        return response
+
+    if not isinstance(payer, dict):
+        payer = xmltodict.parse(payer)
+        if payer['RequestPaymentConfiguration']['Payer'] not in ['Requester', 'BucketOwner']:
+            error = {
+                'Error': {
+                    'Code': 'MalformedXML',
+                    'Message': 'The XML you provided was not well-formed ' +
+                    'or did not validate against our published schema',
+                    'BucketName': bucket_name,
+                    'RequestId': short_uid(),
+                    'HostId': short_uid()
+                }
+            }
+            body = xmltodict.unparse(error)
+            response.status_code = 400
+            response._content = body
+            return response
+
+    s3_backend.buckets[bucket_name].payer = payer['RequestPaymentConfiguration']['Payer']
     response.status_code = 200
     return response
 
@@ -1086,6 +1140,12 @@ class ProxyListenerS3(PersistingProxyListener):
                 return set_cors(bucket_name, data)
             if method == 'DELETE':
                 return delete_cors(bucket_name)
+
+        if query == 'requestPayment' or 'requestPayment' in query_map:
+            if method == 'GET':
+                return get_request_payment(bucket_name)
+            if method == 'PUT':
+                return set_request_payment(bucket_name, data)
 
         if query == 'lifecycle' or 'lifecycle' in query_map:
             if method == 'GET':
