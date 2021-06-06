@@ -46,9 +46,6 @@ S3_NOTIFICATIONS = s3_backend.S3_NOTIFICATIONS = getattr(s3_backend, 'S3_NOTIFIC
 # mappings for bucket CORS settings
 BUCKET_CORS = s3_backend.BUCKET_CORS = getattr(s3_backend, 'BUCKET_CORS', {})
 
-# mappings for bucket payer settings
-BUCKET_PAYER = s3_backend.BUCKET_PAYER = getattr(s3_backend, 'BUCKET_PAYER', {})
-
 # maps bucket name to lifecycle settings
 BUCKET_LIFECYCLE = s3_backend.BUCKET_LIFECYCLE = getattr(s3_backend, 'BUCKET_LIFECYCLE', {})
 
