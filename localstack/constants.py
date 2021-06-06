@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.12.11'
+VERSION = '0.12.12'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
