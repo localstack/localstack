@@ -170,6 +170,17 @@ def make_error(*args, **kwargs):
     return flask_error_response_xml(*args, **kwargs)
 
 
+def create_sqs_system_attributes(headers):
+
+    system_attributes = {}
+    if 'X-Amzn-Trace-Id' in headers:
+        system_attributes['AWSTraceHeader'] = {
+            'DataType': 'String',
+            'StringValue': str(headers['X-Amzn-Trace-Id'])
+        }
+    return system_attributes
+
+
 def extract_tags(req_data):
     keys = []
     values = []
