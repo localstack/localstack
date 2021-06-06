@@ -16,7 +16,7 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import response_regex_replace
+from localstack.utils.aws.aws_responses import response_regex_replace, create_sqs_system_attributes
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.common import parse_request_data, timestamp_millis, short_uid, to_str, to_bytes, start_thread
 from localstack.utils.persistence import PersistingProxyListener
@@ -657,17 +657,6 @@ def create_sqs_message_attributes(subscriber, attributes):
         message_attributes[key] = attribute
 
     return message_attributes
-
-
-def create_sqs_system_attributes(headers):
-
-    system_attributes = {}
-    if 'X-Amzn-Trace-Id' in headers:
-        system_attributes['AWSTraceHeader'] = {
-            'DataType': 'String',
-            'StringValue': str(headers['X-Amzn-Trace-Id'])
-        }
-    return system_attributes
 
 
 def get_message_attributes(req_data):

@@ -22,7 +22,6 @@ from localstack.utils import testutil
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, S3_VIRTUAL_HOSTNAME
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener, s3_utils
-
 from localstack.utils.common import (
     new_tmp_dir, short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf,
     load_file, run)
@@ -1555,6 +1554,35 @@ class TestS3(unittest.TestCase):
 
         response = self.sqs_client.receive_message(QueueUrl=queue_url)
         self.assertEqual(json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'], 'a%40b')
+        # clean up
+        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
+
+    def add_xray_header(self, request, **kwargs):
+        request.headers['X-Amzn-Trace-Id'] = \
+            'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1'
+
+    def test_xray_header_to_sqs(self):
+        key = 'test-data'
+        bucket_name = 'bucket-%s' % short_uid()
+        self.s3_client.meta.events.register('before-send.s3.*', self.add_xray_header)
+        queue_url = self.sqs_client.create_queue(QueueName='testQueueNew')['QueueUrl']
+        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
+
+        # put an object where the bucket_name is in the path
+        self.s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
+
+        def get_message(queue_url):
+            resp = self.sqs_client.receive_message(QueueUrl=queue_url,
+                                                   AttributeNames=['AWSTraceHeader'],
+                                                   MessageAttributeNames=['All'])
+
+            self.assertEqual(resp['Messages'][0]['Attributes']['AWSTraceHeader'],
+                         'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1')
+
+        retry(get_message, retries=3, sleep=10, queue_url=queue_url)
+
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
 
