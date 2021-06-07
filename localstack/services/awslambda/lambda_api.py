@@ -1753,7 +1753,7 @@ def put_function_event_invoke_config(function):
     response = lambda_obj.put_function_event_invoke_config(data)
 
     return jsonify({
-        'LastModified': timestamp_millis(response.last_modified),
+        'LastModified': response.last_modified.strftime('%Y-%m-%dT%H:%M:%S.%f') + '+00:00',
         'FunctionArn': str(function_arn),
         'MaximumRetryAttempts': response.max_retry_attempts,
         'MaximumEventAgeInSeconds': response.max_event_age,
