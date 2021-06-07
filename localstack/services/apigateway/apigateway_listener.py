@@ -490,17 +490,11 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
         data = apply_template(integration, 'request', data)
         if isinstance(data, dict):
             data = json.dumps(data)
-
-
         uri = apply_request_parameter(integration=integration, path_params=path_params)
-
         function = getattr(requests, method.lower())
-
         result = function(uri, data=data, headers=headers)
-
         # apply custom response template
         data = apply_template(integration, 'response', data)
-
         return result
 
     elif integration_type == 'MOCK':
