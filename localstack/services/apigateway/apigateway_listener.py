@@ -211,6 +211,19 @@ def update_content_length(response):
         response.headers['Content-Length'] = str(len(response.content))
 
 
+def apply_request_parameter(integration, path_params):
+    request_parameters = integration.get('requestParameters', None)
+    uri = integration.get('uri', '')
+    if request_parameters:
+        for key in path_params:
+            # check if path_params is present in the integration request parameters
+            request_param_key = f'integration.request.path.{key}'
+            request_param_value = f'method.request.path.{key}'
+            if request_parameters.get(request_param_key, None) == request_param_value:
+                uri = uri.replace(f'{{{key}}}', path_params[key])
+    return uri
+
+
 def apply_template(integration, req_res_type, data, path_params={}, query_params={}, headers={}):
     integration_type = integration.get('type') or integration.get('integrationType')
     if integration_type in ['HTTP', 'AWS']:
@@ -303,17 +316,15 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
     integration_type_orig = integration.get('type') or integration.get('integrationType') or ''
     integration_type = integration_type_orig.upper()
     uri = integration.get('uri') or integration.get('integrationUri') or ''
-
+    try:
+        path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
+    except Exception:
+        path_params = {}
     if (uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri) or uri.startswith('arn:aws:lambda'):
         if integration_type in ['AWS', 'AWS_PROXY']:
             func_arn = uri
             if ':lambda:path' in uri:
                 func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
-
-            try:
-                path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
-            except Exception:
-                path_params = {}
 
             # apply custom request template
             data_str = data
@@ -479,13 +490,11 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
         data = apply_template(integration, 'request', data)
         if isinstance(data, dict):
             data = json.dumps(data)
-
+        uri = apply_request_parameter(integration=integration, path_params=path_params)
         function = getattr(requests, method.lower())
         result = function(uri, data=data, headers=headers)
-
         # apply custom response template
         data = apply_template(integration, 'response', data)
-
         return result
 
     elif integration_type == 'MOCK':

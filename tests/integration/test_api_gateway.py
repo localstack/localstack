@@ -986,6 +986,46 @@ class TestAPIGateway(unittest.TestCase):
         sfn_client.delete_state_machine(stateMachineArn=sm_arn)
         client.delete_rest_api(restApiId=rest_api['id'])
 
+    def test_api_gateway_http_integration_with_path_request_parmeter(self):
+        client = aws_stack.connect_to_service('apigateway')
+        test_port = get_free_tcp_port()
+        backend_url = 'http://localhost:%s/person/{id}' % (test_port)
+
+        # start test HTTP backend
+        proxy = self.start_http_backend(test_port)
+
+        # create rest api
+        api_rest = client.create_rest_api(name='test')
+        api_id = api_rest['id']
+        parent_response = client.get_resources(restApiId=api_id)
+        parent_id = parent_response['items'][0]['id']
+        resource_1 = client.create_resource(restApiId=api_id, parentId=parent_id, pathPart='person')
+        resource_1_id = resource_1['id']
+        resource_2 = client.create_resource(restApiId=api_id, parentId=resource_1_id, pathPart='{id}')
+        resource_2_id = resource_2['id']
+        client.put_method(
+            restApiId=api_id, resourceId=resource_2_id, httpMethod='GET', authorizationType='NONE',
+            apiKeyRequired=False, requestParameters={'method.request.path.id': True})
+        client.put_integration(
+            restApiId=api_id,
+            resourceId=resource_2_id,
+            httpMethod='GET',
+            integrationHttpMethod='GET',
+            type='HTTP',
+            uri=backend_url,
+            timeoutInMillis=3000,
+            contentHandling='CONVERT_TO_BINARY',
+            requestParameters={'integration.request.path.id': 'method.request.path.id'})
+        client.create_deployment(restApiId=api_id, stageName='test')
+        url = f'http://localhost:4566/restapis/{api_id}/test/_user_request_/person/1'
+        result = requests.get(url)
+        content = json.loads(result._content)
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(content['headers'].get('x-localstack-request-url'), 'http://localhost:4566/person/1')
+        # clean up
+        client.delete_rest_api(restApiId=api_id)
+        proxy.stop()
+
     # =====================================================================
     # Helper methods
     # =====================================================================

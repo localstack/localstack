@@ -160,6 +160,16 @@ def apply_patches():
     def apigateway_response_resource_methods(self, request, *args, **kwargs):
         result = apigateway_response_resource_methods_orig(self, request, *args, **kwargs)
 
+        if self.method == 'PUT' and self._get_param('requestParameters'):
+            request_parameters = self._get_param('requestParameters')
+            url_path_parts = self.path.split('/')
+            function_id = url_path_parts[2]
+            resource_id = url_path_parts[4]
+            method_type = url_path_parts[6]
+            resource = self.backend.get_resource(function_id, resource_id)
+            resource.resource_methods[method_type]['requestParameters'] = request_parameters
+            method = resource.resource_methods[method_type]
+            result = 200, {}, json.dumps(method)
         if len(result) != 3:
             return result
         authorization_type = self._get_param('authorizationType')

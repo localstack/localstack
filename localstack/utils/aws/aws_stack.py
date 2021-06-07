@@ -859,7 +859,8 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
                 resourceId=api_resource['id'],
                 httpMethod=method['httpMethod'],
                 authorizationType=method.get('authorizationType') or 'NONE',
-                apiKeyRequired=method.get('apiKeyRequired') or False
+                apiKeyRequired=method.get('apiKeyRequired') or False,
+                requestParameters=method.get('requestParameters') or {}
             )
             # create integrations for this API resource/method
             integrations = method['integrations']
@@ -879,6 +880,7 @@ def create_api_gateway_integrations(api_id, resource_id, method,
         success_code = integration.get('successCode') or '200'
         client_error_code = integration.get('clientErrorCode') or '400'
         server_error_code = integration.get('serverErrorCode') or '500'
+        request_parameters = integration.get('requestParameters') or {}
         # create integration
         client.put_integration(
             restApiId=api_id,
@@ -887,7 +889,8 @@ def create_api_gateway_integrations(api_id, resource_id, method,
             integrationHttpMethod=method.get('integrationHttpMethod') or method['httpMethod'],
             type=integration['type'],
             uri=integration['uri'],
-            requestTemplates=req_templates
+            requestTemplates=req_templates,
+            requestParameters=request_parameters
         )
         response_configs = [
             {'pattern': '^2.*', 'code': success_code, 'res_templates': res_templates},

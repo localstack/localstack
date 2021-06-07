@@ -2197,6 +2197,9 @@ class CloudFormationTest(unittest.TestCase):
 
         self.assertEqual(len(resources), 1)
 
+        # assert request parameter is present in resource method
+        self.assertEqual(resources[0]['resourceMethods']['POST']['requestParameters'],
+            {'method.request.path.account': True})
         models = [model
                   for model in apigw_client.get_models(restApiId=api_id)['items']
                   if stack_name in model['name']]
