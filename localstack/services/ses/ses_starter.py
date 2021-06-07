@@ -1,12 +1,18 @@
 import base64
+import json
 import logging
+import os
 from datetime import date, datetime
+
+from moto.ses.exceptions import MessageRejectedError
+from moto.ses.models import SESBackend
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.responses import ses_backend
-from moto.ses.exceptions import MessageRejectedError
+
 from localstack import config
-from localstack.utils.common import to_str, timestamp_millis
 from localstack.services.infra import start_moto_server
+from localstack.utils.common import mkdir
+from localstack.utils.common import to_str, timestamp_millis
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +57,7 @@ def apply_patches():
     email_responses_send_raw_email_orig = email_responses.send_raw_email
 
     def email_responses_send_raw_email(self):
-        (source, ) = self.querystring.get('Source', [''])
+        (source,) = self.querystring.get('Source', [''])
         if source.strip():
             return email_responses_send_raw_email_orig(self)
 
@@ -122,11 +128,31 @@ def apply_patches():
 
     def get_identity_verification_attributes(self):
         resources = [self.querystring[identity][0] for identity
-          in self.querystring.keys() if 'Identities.member' in identity]
+                     in self.querystring.keys() if 'Identities.member' in identity]
         template = self.response_template(GET_IDENTITY_VERIFICATION_ATTRIBUTES_RESPONSE)
         return template.render(resources=resources)
 
     email_responses.get_identity_verification_attributes = get_identity_verification_attributes
+
+    backend_send_email_orig = SESBackend.send_email
+
+    def send_email_save_contents(self, source, subject, body, destinations, region):
+        message = backend_send_email_orig(self, source, subject, body, destinations, region)
+
+        ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, 'ses')
+        mkdir(ses_dir)
+
+        with (open(os.path.join(ses_dir, message.id + '.json'), 'w')) as f:
+            f.write(json.dumps({
+                'Source': source,
+                'Subject': subject,
+                'Body': body,
+                'Destinations': destinations,
+                'Region': region
+            }))
+        return message
+
+    SESBackend.send_email = send_email_save_contents
 
 
 def start_ses(port=None, backend_port=None, asynchronous=None, update_listener=None):

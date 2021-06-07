@@ -401,6 +401,15 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     # set up logging
     setup_logging()
 
+    if config.DEVELOP:
+        install.install_debugpy_and_dependencies()
+        import debugpy
+        LOG.info('Starting debug server at: %s:%s' % (constants.BIND_HOST, config.DEVELOP_PORT))
+        debugpy.listen((constants.BIND_HOST, config.DEVELOP_PORT))
+
+        if config.WAIT_FOR_DEBUGGER:
+            debugpy.wait_for_client()
+
     # prepare APIs
     apis = canonicalize_api_names(apis)
 

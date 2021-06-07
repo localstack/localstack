@@ -51,8 +51,8 @@ RUN make install-web
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
-# expose edge service, ElasticSearch & web dashboard ports
-EXPOSE 4566 4571 8080
+# expose edge service, ElasticSearch, debugpy & web dashboard ports
+EXPOSE 4566 4571 8080 5678
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
@@ -68,7 +68,7 @@ RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
 RUN rm -rf /usr/share/maven .venv/lib/python3.*/site-packages/cfnlint
 RUN rm -rf /tmp/* /root/.cache /opt/yarn-* /root/.npm/*cache; mkdir -p /tmp/localstack
 RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
-ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages
+ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages:/opt/code/localstack/.venv/lib/python3.7/site-packages
 
 # add rest of the code
 ADD localstack/ localstack/
@@ -89,9 +89,6 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     adduser -D localstack && \
     chown -R localstack:localstack . /tmp/localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
-
-# Fix for Centos host OS
-RUN echo "127.0.0.1 localhost.localdomain" >> /etc/hosts
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/

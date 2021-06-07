@@ -91,6 +91,13 @@ def get_ddb_global_sec_indexes(params, **kwargs):
     return args
 
 
+def get_ddb_kinesis_stream_specification(params, **kwargs):
+    args = params.get('KinesisStreamSpecification')
+    if args:
+        args['TableName'] = params['TableName']
+    return args
+
+
 def get_apigw_resource_params(params, **kwargs):
     result = {
         'restApiId': params.get('RestApiId'),
@@ -161,7 +168,7 @@ RESOURCE_TO_FUNCTION = {
         }
     },
     'DynamoDB::Table': {
-        'create': {
+        'create': [{
             'function': 'create_table',
             'parameters': {
                 'TableName': 'TableName',
@@ -179,7 +186,10 @@ RESOURCE_TO_FUNCTION = {
                     'WriteCapacityUnits': 5
                 }
             }
-        },
+        }, {
+            'function': 'enable_kinesis_streaming_destination',
+            'parameters': get_ddb_kinesis_stream_specification
+        }],
         'delete': {
             'function': 'delete_table',
             'parameters': {
@@ -1386,7 +1396,7 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
 
 def update_resource_details(stack, resource_id, details, action=None):
     resource = stack.resources.get(resource_id, {})
-    if not resource:
+    if not resource or not details:
         return
 
     resource_type = resource.get('Type') or ''
@@ -1517,6 +1527,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
 
     elif res_type == 'AWS::IAM::InstanceProfile':
         props['InstanceProfileName'] = props.get('InstanceProfileName') or _generate_res_name()
+
+    elif res_type == 'AWS::Logs::LogGroup':
+        props['LogGroupName'] = props.get('LogGroupName') or _generate_res_name()
 
     elif res_type == 'AWS::KMS::Key':
         tags = props['Tags'] = props.get('Tags', [])

@@ -1,6 +1,9 @@
+import json
+import os
 import unittest
-
 from datetime import date, datetime
+
+import localstack.config as config
 from localstack.utils.aws import aws_stack
 
 TEST_TEMPLATE_ATTRIBUTES = {
@@ -49,3 +52,30 @@ class SESTest(unittest.TestCase):
             self.assertEqual('Success', response[value]['VerificationStatus'])
         self.assertIn('VerificationToken', response[domain])
         self.assertNotIn('VerificationToken', response[email])
+
+    def test_send_email_save(self):
+        client = aws_stack.connect_to_service('ses')
+        data_dir = config.DATA_DIR or config.TMP_FOLDER
+        email = 'user@example.com'
+        client.verify_email_address(EmailAddress=email)
+        message = client.send_email(Source=email, Message={
+            'Subject': {
+                'Data': 'A_SUBJECT',
+            },
+            'Body': {
+                'Text': {
+                    'Data': 'A_MESSAGE',
+                },
+            },
+        }, Destination={
+            'ToAddresses': ['success@example.com'],
+        })
+
+        with open(os.path.join(data_dir, 'ses', message['MessageId'] + '.json'), 'r') as f:
+            message = f.read()
+
+        contents = json.loads(message)
+        self.assertEqual(email, contents['Source'])
+        self.assertEqual('A_SUBJECT', contents['Subject'])
+        self.assertEqual('A_MESSAGE', contents['Body'])
+        self.assertEqual(['success@example.com'], contents['Destinations']['ToAddresses'])

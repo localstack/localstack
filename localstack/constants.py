@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.12.11'
+VERSION = '0.12.12'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
@@ -146,3 +146,6 @@ OFFICIAL_IMAGES = ['localstack/localstack', 'localstack/localstack-light', 'loca
 # s3 virtual host name
 S3_VIRTUAL_HOSTNAME = 's3.%s' % LOCALHOST_HOSTNAME
 S3_STATIC_WEBSITE_HOSTNAME = 's3-website.%s' % LOCALHOST_HOSTNAME
+
+# port for debug py
+DEFAULT_DEVELOP_PORT = 5678

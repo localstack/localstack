@@ -22,6 +22,7 @@ LAMBDA_RUNTIME_DOTNETCORE31 = 'dotnetcore3.1'
 LAMBDA_RUNTIME_GOLANG = 'go1.x'
 LAMBDA_RUNTIME_RUBY = 'ruby'
 LAMBDA_RUNTIME_RUBY25 = 'ruby2.5'
+LAMBDA_RUNTIME_RUBY27 = 'ruby2.7'
 LAMBDA_RUNTIME_PROVIDED = 'provided'
 
 # default handler and runtime
