@@ -151,7 +151,10 @@ def cleanup():
     LAMBDA_EXECUTOR.cleanup()
 
 
-def func_arn(function_name):
+def func_arn(function_name, remove_qualifier=True):
+    parts = function_name.split(':function:')
+    if remove_qualifier and len(parts) > 1:
+        function_name = '%s:function:%s' % (parts[0], parts[1].split(':')[0])
     return aws_stack.lambda_function_arn(function_name)
 
 
@@ -1208,7 +1211,10 @@ def get_function_code(function):
     """
     region = LambdaRegion.get()
     arn = func_arn(function)
-    lambda_cwd = region.lambdas[arn].cwd
+    func_details = region.lambdas.get(arn)
+    if not func_details:
+        return not_found_error(arn)
+    lambda_cwd = func_details.cwd
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
     return Response(load_file(tmp_file, mode='rb'),
             mimetype='application/zip',
