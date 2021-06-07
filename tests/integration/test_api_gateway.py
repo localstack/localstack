@@ -9,9 +9,10 @@ from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
+from localstack import config
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.utils.common import (
     to_str, json_safe, clone, short_uid, get_free_tcp_port,
     load_file, select_attributes, safe_requests as requests)
@@ -1017,11 +1018,12 @@ class TestAPIGateway(unittest.TestCase):
             contentHandling='CONVERT_TO_BINARY',
             requestParameters={'integration.request.path.id': 'method.request.path.id'})
         client.create_deployment(restApiId=api_id, stageName='test')
-        url = f'http://localhost:4566/restapis/{api_id}/test/_user_request_/person/1'
+        url = f'http://localhost:{config.EDGE_PORT}/restapis/{api_id}/test/_user_request_/person/123'
         result = requests.get(url)
         content = json.loads(result._content)
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(content['headers'].get('x-localstack-request-url'), 'http://localhost:4566/person/1')
+        self.assertEqual(content['headers'].get(HEADER_LOCALSTACK_REQUEST_URL),
+            f'http://localhost:{config.EDGE_PORT}/person/123')
         # clean up
         client.delete_rest_api(restApiId=api_id)
         proxy.stop()
