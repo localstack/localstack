@@ -59,6 +59,8 @@ BATCH_SIZE_RANGES = {
     'sqs': (10, 10)
 }
 
+DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f+00:00'
+
 app = Flask(APP_NAME)
 
 # mutex for access to CWD and ENV
@@ -1753,7 +1755,7 @@ def put_function_event_invoke_config(function):
     response = lambda_obj.put_function_event_invoke_config(data)
 
     return jsonify({
-        'LastModified': response.last_modified.strftime('%Y-%m-%dT%H:%M:%S.%f') + '+00:00',
+        'LastModified': response.last_modified.strftime(DATE_FORMAT),
         'FunctionArn': str(function_arn),
         'MaximumRetryAttempts': response.max_retry_attempts,
         'MaximumEventAgeInSeconds': response.max_event_age,
