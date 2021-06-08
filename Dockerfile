@@ -69,7 +69,7 @@ RUN apk del --purge mvn || true
 RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
 RUN rm -rf /usr/share/maven .venv/lib/python3.*/site-packages/cfnlint
 RUN rm -rf /tmp/* /root/.cache /opt/yarn-* /root/.npm/*cache; mkdir -p /tmp/localstack
-RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
+RUN if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
 
 # add rest of the code
 ADD localstack/ localstack/
