@@ -12,5 +12,6 @@ def handler(event, context):
     ddb = boto3.resource('dynamodb', endpoint_url=endpoint_url, region_name=event['region_name'], verify=False)
 
     table_name = event['table_name']
+    table = ddb.Table(table_name)
     for item in event['items']:
-        ddb.Table(table_name).put_item(Item=item)
+        table.put_item(Item=item)

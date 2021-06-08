@@ -31,11 +31,12 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
 from localstack.utils.aws.aws_models import LambdaFunction, CodeSigningConfig
-from localstack.services.cloudformation.service_models import LAMBDA_POLICY_NAME_PATTERN
 
 # logger
 LOG = logging.getLogger(__name__)
 
+# name pattern of IAM policies associated with Lambda functions
+LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
 # constants
 APP_NAME = 'lambda_api'
 PATH_ROOT = '/2015-03-31'
@@ -57,6 +58,8 @@ BATCH_SIZE_RANGES = {
     'dynamodb': (100, 1000),
     'sqs': (10, 10)
 }
+
+DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%f+00:00'
 
 app = Flask(APP_NAME)
 
@@ -150,7 +153,10 @@ def cleanup():
     LAMBDA_EXECUTOR.cleanup()
 
 
-def func_arn(function_name):
+def func_arn(function_name, remove_qualifier=True):
+    parts = function_name.split(':function:')
+    if remove_qualifier and len(parts) > 1:
+        function_name = '%s:function:%s' % (parts[0], parts[1].split(':')[0])
     return aws_stack.lambda_function_arn(function_name)
 
 
@@ -1207,7 +1213,10 @@ def get_function_code(function):
     """
     region = LambdaRegion.get()
     arn = func_arn(function)
-    lambda_cwd = region.lambdas[arn].cwd
+    func_details = region.lambdas.get(arn)
+    if not func_details:
+        return not_found_error(arn)
+    lambda_cwd = func_details.cwd
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
     return Response(load_file(tmp_file, mode='rb'),
             mimetype='application/zip',
@@ -1752,7 +1761,7 @@ def put_function_event_invoke_config(function):
     response = lambda_obj.put_function_event_invoke_config(data)
 
     return jsonify({
-        'LastModified': timestamp_millis(response.last_modified),
+        'LastModified': response.last_modified.strftime(DATE_FORMAT),
         'FunctionArn': str(function_arn),
         'MaximumRetryAttempts': response.max_retry_attempts,
         'MaximumEventAgeInSeconds': response.max_event_age,

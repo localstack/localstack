@@ -429,8 +429,12 @@ def md5(string):
 
 
 def select_attributes(object, attributes):
-    attributes = attributes if isinstance(attributes, list) else [attributes]
+    attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     return dict([(k, v) for k, v in object.items() if k in attributes])
+
+
+def is_list_or_tuple(object):
+    return isinstance(object, (list, tuple))
 
 
 def in_docker():
@@ -1135,6 +1139,21 @@ def kill_process_tree(parent_pid):
 def clear_list(list_obj):
     while len(list_obj):
         del list_obj[0]
+
+
+def items_equivalent(list1, list2, comparator):
+    """ Returns whether two lists are equivalent (i.e., same items contained in both lists,
+        irresepective of the items' order) with respect to a comparator function. """
+    def contained(item):
+        for _item in list2:
+            if comparator(item, _item):
+                return True
+    if len(list1) != len(list2):
+        return False
+    for item in list1:
+        if not contained(item):
+            return False
+    return True
 
 
 def cleanup_tmp_files():

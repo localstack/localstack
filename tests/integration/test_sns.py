@@ -816,17 +816,16 @@ class SNSTest(unittest.TestCase):
 
         queue_url = test_queue['QueueUrl']
         self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_url)
-        self.sns_client.publish(TargetArn=topic_arn, Message='Test msg')
+        self.sns_client.publish(TargetArn=topic_arn, Message='Test msg',
+                                MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
 
-        response = self.sqs_client.receive_message(
-            QueueUrl=queue_url,
-            AttributeNames=['SentTimestamp'],
-            MaxNumberOfMessages=1,
-            MessageAttributeNames=['All'],
-            VisibilityTimeout=2,
-            WaitTimeSeconds=2,
-        )
-        self.assertEqual(len(response['Messages']), 1)
+        def get_message(queue_url):
+            response = self.sqs_client.receive_message(QueueUrl=queue_url,
+                                                       MessageAttributeNames=['All'])
+            self.assertEqual(response['Messages'][0]['MessageAttributes'],
+                             {'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
+
+        retry(get_message, retries=3, sleep=10, queue_url=queue_url)
 
     def add_xray_header(self, request, **kwargs):
         request.headers['X-Amzn-Trace-Id'] = \

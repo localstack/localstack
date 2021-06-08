@@ -7,6 +7,7 @@ import traceback
 import six
 import requests
 import xmltodict
+import asyncio
 from flask import Response as FlaskResponse
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
@@ -16,7 +17,7 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import response_regex_replace
+from localstack.utils.aws.aws_responses import response_regex_replace, create_sqs_system_attributes
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.common import parse_request_data, timestamp_millis, short_uid, to_str, to_bytes, start_thread
 from localstack.utils.persistence import PersistingProxyListener
@@ -26,6 +27,9 @@ from moto.sns.exceptions import DuplicateSnsEndpointError
 
 # set up logger
 LOG = logging.getLogger(__name__)
+
+# additional attributes used for HTTP subscriptions
+HTTP_SUBSCRIPTION_ATTRIBUTES = ['UnsubscribeURL']
 
 
 class SNSBackend(RegionBackend):
@@ -92,6 +96,8 @@ class ProxyListenerSNS(PersistingProxyListener):
 
                 content = '<Attributes>'
                 for key, value in sub.items():
+                    if key in HTTP_SUBSCRIPTION_ATTRIBUTES:
+                        continue
                     content += '<entry><key>%s</key><value>%s</value></entry>\n' % (key, value)
                 content += '</Attributes>'
                 return make_response(req_action, content=content)
@@ -290,131 +296,150 @@ def unsubscribe_sqs_queue(queue_url):
                 subscriptions.remove(subscriber)
 
 
-def message_to_subscribers(message_id, message, topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
+def message_to_subscribers(message_id, message, topic_arn, req_data, headers, subscription_arn=None,
+        skip_checks=False):
     sns_backend = SNSBackend.get()
     subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
-    for subscriber in list(subscriptions):
-        if subscription_arn not in [None, subscriber['SubscriptionArn']]:
-            continue
 
-        filter_policy = json.loads(subscriber.get('FilterPolicy') or '{}')
-        message_attributes = get_message_attributes(req_data)
-        if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
-            LOG.info('SNS filter policy %s does not match attributes %s' % (filter_policy, message_attributes))
-            continue
+    async def wait_for_messages_sent():
+        await asyncio.wait([
+            message_to_subscriber(message_id, message, topic_arn, req_data, headers, subscription_arn, skip_checks,
+            sns_backend, subscriber, subscriptions) for subscriber in list(subscriptions)
+        ])
 
-        if subscriber['Protocol'] == 'sms':
-            event = {
-                'topic_arn': topic_arn,
-                'endpoint': subscriber['Endpoint'],
-                'message_content': req_data['Message'][0]
-            }
-            sns_backend.sms_messages.append(event)
-            LOG.info('Delivering SMS message to %s: %s', subscriber['Endpoint'], req_data['Message'][0])
+    asyncio.run(wait_for_messages_sent())
 
-        elif subscriber['Protocol'] == 'sqs':
-            queue_url = None
-            try:
-                endpoint = subscriber['Endpoint']
-                if 'sqs_queue_url' in subscriber:
-                    queue_url = subscriber.get('sqs_queue_url')
-                elif '://' in endpoint:
-                    queue_url = endpoint
-                else:
-                    queue_name = endpoint.split(':')[5]
-                    queue_url = aws_stack.get_sqs_queue_url(queue_name)
-                    subscriber['sqs_queue_url'] = queue_url
 
-                message_group_id = req_data.get('MessageGroupId')[0] if req_data.get('MessageGroupId') else ''
+async def message_to_subscriber(message_id, message, topic_arn, req_data,
+        headers, subscription_arn, skip_checks, sns_backend, subscriber, subscriptions):
 
-                sqs_client = aws_stack.connect_to_service('sqs')
+    if subscription_arn not in [None, subscriber['SubscriptionArn']]:
+        return
 
-                # TODO remove this kwargs if we stop using ElasticMQ entirely
-                kwargs = {'MessageGroupId': message_group_id} if SQS_BACKEND_IMPL == 'moto' else {}
-                sqs_client.send_message(
-                    QueueUrl=queue_url,
-                    MessageBody=create_sns_message_body(subscriber, req_data, message_id),
-                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes),
-                    MessageSystemAttributes=create_sqs_system_attributes(headers),
-                    **kwargs
-                )
-            except Exception as exc:
-                LOG.warning('Unable to forward SNS message to SQS: %s %s' % (exc, traceback.format_exc()))
-                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
-                if 'NonExistentQueue' in str(exc):
-                    LOG.info('Removing non-existent queue "%s" subscribed to topic "%s"' % (queue_url, topic_arn))
-                    subscriptions.remove(subscriber)
+    filter_policy = json.loads(subscriber.get('FilterPolicy') or '{}')
+    message_attributes = get_message_attributes(req_data)
+    if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
+        LOG.info('SNS filter policy %s does not match attributes %s' % (filter_policy, message_attributes))
+        return
+    if subscriber['Protocol'] == 'sms':
+        event = {
+            'topic_arn': topic_arn,
+            'endpoint': subscriber['Endpoint'],
+            'message_content': req_data['Message'][0]
+        }
+        sns_backend.sms_messages.append(event)
+        LOG.info('Delivering SMS message to %s: %s', subscriber['Endpoint'], req_data['Message'][0])
+        return
 
-        elif subscriber['Protocol'] == 'lambda':
-            try:
-                external_url = external_service_url('sns')
-                unsubscribe_url = '%s/?Action=Unsubscribe&SubscriptionArn=%s' % (external_url,
-                                    subscriber['SubscriptionArn'])
-                response = lambda_api.process_sns_notification(
-                    subscriber['Endpoint'],
-                    topic_arn,
-                    subscriber['SubscriptionArn'],
-                    message,
-                    message_id,
-                    message_attributes,
-                    unsubscribe_url,
-                    subject=req_data.get('Subject', [None])[0]
-                )
-                if isinstance(response, Response):
-                    response.raise_for_status()
-                elif isinstance(response, FlaskResponse):
-                    if response.status_code >= 400:
-                        raise Exception('Error response (code %s): %s' % (response.status_code, response.data))
-            except Exception as exc:
-                LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
-                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+    elif subscriber['Protocol'] == 'sqs':
+        queue_url = None
 
-        elif subscriber['Protocol'] in ['http', 'https']:
-            msg_type = (req_data.get('Type') or ['Notification'])[0]
-            try:
-                message_body = create_sns_message_body(subscriber, req_data, message_id)
-            except Exception:
-                continue
-            try:
-                response = requests.post(
-                    subscriber['Endpoint'],
-                    headers={
-                        'Content-Type': 'text/plain',
-                        # AWS headers according to
-                        # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
-                        'x-amz-sns-message-type': msg_type,
-                        'x-amz-sns-topic-arn': subscriber['TopicArn'],
-                        'x-amz-sns-subscription-arn': subscriber['SubscriptionArn'],
-                        'User-Agent': 'Amazon Simple Notification Service Agent'
-                    },
-                    data=message_body,
-                    verify=False
-                )
+        try:
+            endpoint = subscriber['Endpoint']
+
+            if 'sqs_queue_url' in subscriber:
+                queue_url = subscriber.get('sqs_queue_url')
+            elif '://' in endpoint:
+                queue_url = endpoint
+            else:
+                queue_name = endpoint.split(':')[5]
+                queue_url = aws_stack.get_sqs_queue_url(queue_name)
+                subscriber['sqs_queue_url'] = queue_url
+
+            message_group_id = req_data.get('MessageGroupId')[0] if req_data.get('MessageGroupId') else ''
+
+            sqs_client = aws_stack.connect_to_service('sqs')
+
+            # TODO remove this kwargs if we stop using ElasticMQ entirely
+            kwargs = {'MessageGroupId': message_group_id} if SQS_BACKEND_IMPL == 'moto' else {}
+            sqs_client.send_message(
+                QueueUrl=queue_url,
+                MessageBody=create_sns_message_body(subscriber, req_data, message_id),
+                MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes),
+                MessageSystemAttributes=create_sqs_system_attributes(headers),
+                **kwargs
+            )
+        except Exception as exc:
+            LOG.warning('Unable to forward SNS message to SQS: %s %s' % (exc, traceback.format_exc()))
+            sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+            if 'NonExistentQueue' in str(exc):
+                LOG.info('Removing non-existent queue "%s" subscribed to topic "%s"' % (queue_url, topic_arn))
+                subscriptions.remove(subscriber)
+        return
+
+    elif subscriber['Protocol'] == 'lambda':
+        try:
+            external_url = external_service_url('sns')
+            unsubscribe_url = '%s/?Action=Unsubscribe&SubscriptionArn=%s' % (external_url,
+                                subscriber['SubscriptionArn'])
+            response = lambda_api.process_sns_notification(
+                subscriber['Endpoint'],
+                topic_arn,
+                subscriber['SubscriptionArn'],
+                message,
+                message_id,
+                message_attributes,
+                unsubscribe_url,
+                subject=req_data.get('Subject', [None])[0]
+            )
+            if isinstance(response, Response):
                 response.raise_for_status()
-            except Exception as exc:
-                LOG.info('Received error on sending SNS message, putting to DLQ (if configured): %s' % exc)
-                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+            elif isinstance(response, FlaskResponse):
+                if response.status_code >= 400:
+                    raise Exception('Error response (code %s): %s' % (response.status_code, response.data))
+        except Exception as exc:
+            LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
+            sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+        return
 
-        elif subscriber['Protocol'] == 'application':
-            try:
-                sns_client = aws_stack.connect_to_service('sns')
-                sns_client.publish(TargetArn=subscriber['Endpoint'], Message=message)
-            except Exception as exc:
-                LOG.warning('Unable to forward SNS message to SNS platform app: %s %s' % (exc, traceback.format_exc()))
-                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+    elif subscriber['Protocol'] in ['http', 'https']:
+        msg_type = (req_data.get('Type') or ['Notification'])[0]
+        try:
+            message_body = create_sns_message_body(subscriber, req_data, message_id)
+        except Exception:
+            return
+        try:
+            response = requests.post(
+                subscriber['Endpoint'],
+                headers={
+                    'Content-Type': 'text/plain',
+                    # AWS headers according to
+                    # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
+                    'x-amz-sns-message-type': msg_type,
+                    'x-amz-sns-topic-arn': subscriber['TopicArn'],
+                    'x-amz-sns-subscription-arn': subscriber['SubscriptionArn'],
+                    'User-Agent': 'Amazon Simple Notification Service Agent'
+                },
+                data=message_body,
+                verify=False
+            )
+            response.raise_for_status()
+        except Exception as exc:
+            LOG.info('Received error on sending SNS message, putting to DLQ (if configured): %s' % exc)
+            sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+        return
 
-        elif subscriber['Protocol'] == 'email':
-            ses_client = aws_stack.connect_to_service('ses')
-            if subscriber.get('Endpoint'):
-                ses_client.verify_email_address(EmailAddress=subscriber.get('Endpoint'))
-                ses_client.verify_email_address(EmailAddress='admin@localstack.com')
+    elif subscriber['Protocol'] == 'application':
+        try:
+            sns_client = aws_stack.connect_to_service('sns')
+            sns_client.publish(TargetArn=subscriber['Endpoint'], Message=message)
+        except Exception as exc:
+            LOG.warning('Unable to forward SNS message to SNS platform app: %s %s' % (exc, traceback.format_exc()))
+            sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+        return
 
-                ses_client.send_email(Source='admin@localstack.com',
-                                      Message={'Body': {'Text': {'Data': message}},
-                                               'Subject': {'Data': 'SNS-Subscriber-Endpoint'}},
-                                      Destination={'ToAddresses': [subscriber.get('Endpoint')]})
-        else:
-            LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
+    elif subscriber['Protocol'] == 'email':
+        ses_client = aws_stack.connect_to_service('ses')
+        if subscriber.get('Endpoint'):
+            ses_client.verify_email_address(EmailAddress=subscriber.get('Endpoint'))
+            ses_client.verify_email_address(EmailAddress='admin@localstack.com')
+
+            ses_client.send_email(Source='admin@localstack.com',
+                                Message={'Body': {'Text': {'Data': message}},
+                                    'Subject': {'Data': 'SNS-Subscriber-Endpoint'}},
+                                Destination={'ToAddresses': [subscriber.get('Endpoint')]})
+    else:
+        LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
 
 def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
@@ -482,6 +507,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
     if protocol in ['http', 'https']:
         token = short_uid()
         external_url = external_service_url('sns')
+        subscription['UnsubscribeURL'] = '%s/?Action=Unsubscribe&SubscriptionArn=%s' % (external_url, subscription_arn)
         confirmation = {
             'Type': ['SubscriptionConfirmation'],
             'Token': [token],
@@ -620,6 +646,10 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
         if req_data.get(key):
             data[key] = req_data[key][0]
 
+    for key in HTTP_SUBSCRIPTION_ATTRIBUTES:
+        if key in subscriber:
+            data[key] = subscriber[key]
+
     attributes = get_message_attributes(req_data)
     if attributes:
         data['MessageAttributes'] = attributes
@@ -628,8 +658,9 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
 
 
 def create_sqs_message_attributes(subscriber, attributes):
-    if not is_raw_message_delivery(subscriber):
-        return {}
+    # Message attributes are going empty because of this hence removing this check.
+    # if not is_raw_message_delivery(subscriber):
+    #     return {}
 
     message_attributes = {}
     for key, value in attributes.items():
@@ -644,17 +675,6 @@ def create_sqs_message_attributes(subscriber, attributes):
         message_attributes[key] = attribute
 
     return message_attributes
-
-
-def create_sqs_system_attributes(headers):
-
-    system_attributes = {}
-    if 'X-Amzn-Trace-Id' in headers:
-        system_attributes['AWSTraceHeader'] = {
-            'DataType': 'String',
-            'StringValue': str(headers['X-Amzn-Trace-Id'])
-        }
-    return system_attributes
 
 
 def get_message_attributes(req_data):

@@ -9,6 +9,7 @@ services:
 branches:
   only:
     - master
+    - build-base-img
 
 addons:
   apt:

@@ -1,7 +1,7 @@
 import types
 import logging
 import traceback
-from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
+from moto.s3 import models as s3_models, responses as s3_responses
 from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys, S3_ALL_MULTIPARTS
 from moto.s3.exceptions import S3ClientError
 from moto.s3bucket_path import utils as s3bucket_path_utils
@@ -119,11 +119,8 @@ def apply_patches():
     # patch S3Bucket.get_bucket(..)
     def delete_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-        try:
-            s3_listener.remove_bucket_notification(bucket_name)
-            return delete_bucket_orig(bucket_name, *args, **kwargs)
-        except s3_exceptions.MissingBucket:
-            pass
+        s3_listener.remove_bucket_notification(bucket_name)
+        return delete_bucket_orig(bucket_name, *args, **kwargs)
 
     delete_bucket_orig = s3_models.s3_backend.delete_bucket
     s3_models.s3_backend.delete_bucket = types.MethodType(delete_bucket, s3_models.s3_backend)

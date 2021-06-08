@@ -22,7 +22,6 @@ from localstack.utils import testutil
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, S3_VIRTUAL_HOSTNAME
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener, s3_utils
-
 from localstack.utils.common import (
     new_tmp_dir, short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf,
     load_file, run)
@@ -772,6 +771,31 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name)
 
+    def test_s3_request_payer(self):
+        bucket_name = 'test-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        response = self.s3_client.put_bucket_request_payment(
+            Bucket=bucket_name,
+            RequestPaymentConfiguration={
+                'Payer': 'Requester'
+            }
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        response = self.s3_client.get_bucket_request_payment(
+            Bucket=bucket_name
+        )
+        self.assertEqual(response['Payer'], 'Requester')
+        self._delete_bucket(bucket_name)
+
+    def delete_non_existing_bucket(self):
+        bucket_name = 'test-%s' % short_uid()
+        with self.assertRaises(ClientError) as ctx:
+            self.s3_client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'NoSuchBucket')
+        self.assertEqual(ctx.exception.response['Error']['Message'], 'The specified bucket does not exist')
+
     def test_bucket_exists(self):
         # Test setup
         bucket = 'test-bucket-%s' % short_uid()
@@ -1226,6 +1250,25 @@ class TestS3(unittest.TestCase):
         resp = self.s3_client.list_objects(Bucket=bucket_name, Marker='')
         self.assertEqual(resp['Marker'], '')
 
+    def test_create_bucket_with_exsisting_name(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name,
+                             CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+
+        with self.assertRaises(ClientError) as error:
+            self.s3_client.create_bucket(Bucket=bucket_name,
+                                 CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+        self.assertIn('BucketAlreadyExists', str(error.exception))
+
+        self.s3_client.create_bucket(Bucket=bucket_name,
+                             CreateBucketConfiguration={'LocationConstraint': 'us-east-1'})
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+        bucket_name = 'bucket-%s' % short_uid()
+        response = self.s3_client.create_bucket(Bucket=bucket_name,
+                                CreateBucketConfiguration={'LocationConstraint': 'us-east-1'})
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+
     def test_s3_multipart_upload_file(self):
         def upload(size_in_mb, bucket):
             file_name = '{}.tmp'.format(short_uid())
@@ -1518,6 +1561,35 @@ class TestS3(unittest.TestCase):
 
         response = self.sqs_client.receive_message(QueueUrl=queue_url)
         self.assertEqual(json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'], 'a%40b')
+        # clean up
+        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
+
+    def add_xray_header(self, request, **kwargs):
+        request.headers['X-Amzn-Trace-Id'] = \
+            'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1'
+
+    def test_xray_header_to_sqs(self):
+        key = 'test-data'
+        bucket_name = 'bucket-%s' % short_uid()
+        self.s3_client.meta.events.register('before-send.s3.*', self.add_xray_header)
+        queue_url = self.sqs_client.create_queue(QueueName='testQueueNew')['QueueUrl']
+        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
+
+        # put an object where the bucket_name is in the path
+        self.s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
+
+        def get_message(queue_url):
+            resp = self.sqs_client.receive_message(QueueUrl=queue_url,
+                                                   AttributeNames=['AWSTraceHeader'],
+                                                   MessageAttributeNames=['All'])
+
+            self.assertEqual(resp['Messages'][0]['Attributes']['AWSTraceHeader'],
+                         'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1')
+
+        retry(get_message, retries=3, sleep=10, queue_url=queue_url)
+
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
 
@@ -1996,6 +2068,28 @@ class TestS3(unittest.TestCase):
         client.delete_object(Bucket=bucket_name, Key=OBJECT_KEY)
         client.delete_bucket(Bucket=bucket_name)
 
+    def test_presigned_url_with_session_token(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        key_name = 'key'
+
+        client = boto3.client(
+            's3',
+            config=Config(signature_version='s3v4'),
+            endpoint_url='http://127.0.0.1:4566',
+            aws_access_key_id='test',
+            aws_secret_access_key='test',
+            aws_session_token='test'
+        )
+        client.create_bucket(Bucket=bucket_name)
+        client.put_object(Body='test-value', Bucket=bucket_name, Key=key_name)
+        presigned_url = client.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': bucket_name, 'Key': key_name},
+            ExpiresIn=600,
+        )
+        response = requests.get(presigned_url)
+        self.assertEqual(response._content, b'test-value')
+
     def test_precondition_failed_error(self):
         bucket = 'bucket-%s' % short_uid()
         client = self._get_test_client()
@@ -2144,6 +2238,33 @@ class TestS3(unittest.TestCase):
 
         s3_client.delete_object(Bucket=function_name, Key='key.png')
         s3_client.delete_bucket(Bucket=function_name)
+
+    def test_presign_port_permutation(self):
+        bucket_name = short_uid()
+        port1 = 443
+        port2 = 4566
+        s3_client = aws_stack.connect_to_service('s3')
+
+        s3_presign = boto3.client('s3',
+            endpoint_url='http://127.0.0.1:%s' % port1,
+            aws_access_key_id='test',
+            aws_secret_access_key='test',
+            config=Config(signature_version='s3v4')
+        )
+
+        s3_client.create_bucket(Bucket=bucket_name)
+        s3_client.put_object(Body='test-value', Bucket=bucket_name, Key='test')
+        response = s3_client.head_object(Bucket=bucket_name, Key='test')
+
+        presign_url = s3_presign.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': bucket_name, 'Key': 'test'},
+            ExpiresIn=86400
+        )
+        presign_url = presign_url.replace(':%s' % port1, ':%s' % port2)
+
+        response = requests.get(presign_url)
+        self.assertEqual(response._content, b'test-value')
 
     def test_terraform_request_sequence(self):
 

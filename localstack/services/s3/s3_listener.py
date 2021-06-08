@@ -31,7 +31,7 @@ from localstack.utils.common import (
 )
 from localstack.utils.analytics import event_publisher
 from localstack.utils.persistence import PersistingProxyListener
-from localstack.utils.aws.aws_responses import requests_response
+from localstack.utils.aws.aws_responses import requests_response, create_sqs_system_attributes
 from localstack.services.cloudformation.service_models import S3Bucket
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
@@ -173,7 +173,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag=''
     }
 
 
-def send_notifications(method, bucket_name, object_path, version_id):
+def send_notifications(method, bucket_name, object_path, version_id, headers):
     for bucket, notifs in S3_NOTIFICATIONS.items():
         if normalize_bucket_name(bucket) == normalize_bucket_name(bucket_name):
             action = {'PUT': 'ObjectCreated', 'POST': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
@@ -187,10 +187,11 @@ def send_notifications(method, bucket_name, object_path, version_id):
             event_name = '%s:%s' % (action, api_method)
             for notif in notifs:
                 send_notification_for_subscriber(notif, bucket_name, object_path,
-                    version_id, api_method, action, event_name)
+                    version_id, api_method, action, event_name, headers)
 
 
-def send_notification_for_subscriber(notif, bucket_name, object_path, version_id, api_method, action, event_name):
+def send_notification_for_subscriber(notif, bucket_name, object_path, version_id, api_method, action, event_name,
+                                     headers):
     bucket_name = normalize_bucket_name(bucket_name)
 
     if not event_type_matches(notif['Event'], action, api_method) or \
@@ -222,7 +223,8 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
         sqs_client = aws_stack.connect_to_service('sqs')
         try:
             queue_url = aws_stack.sqs_queue_url_for_arn(notif['Queue'])
-            sqs_client.send_message(QueueUrl=queue_url, MessageBody=message)
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=message,
+                                    MessageSystemAttributes=create_sqs_system_attributes(headers))
         except Exception as e:
             LOGGER.warning('Unable to send notification for S3 bucket "%s" to SQS queue "%s": %s' %
                 (bucket_name, notif['Queue'], e))
@@ -306,6 +308,57 @@ def delete_cors(bucket_name):
         return response
 
     BUCKET_CORS.pop(bucket_name, {})
+    response.status_code = 200
+    return response
+
+
+def get_request_payment(bucket_name):
+    response = Response()
+
+    exists, code = bucket_exists(bucket_name)
+    if not exists:
+        response.status_code = int(code)
+        return response
+
+    content = {
+        'RequestPaymentConfiguration': {
+            '@xmlns': 'http://s3.amazonaws.com/doc/2006-03-01/',
+            'Payer': s3_backend.buckets[bucket_name].payer
+        }
+    }
+
+    body = xmltodict.unparse(content)
+    response.status_code = 200
+    response._content = body
+    return response
+
+
+def set_request_payment(bucket_name, payer):
+    response = Response()
+    exists, code = bucket_exists(bucket_name)
+    if not exists:
+        response.status_code = int(code)
+        return response
+
+    if not isinstance(payer, dict):
+        payer = xmltodict.parse(payer)
+        if payer['RequestPaymentConfiguration']['Payer'] not in ['Requester', 'BucketOwner']:
+            error = {
+                'Error': {
+                    'Code': 'MalformedXML',
+                    'Message': 'The XML you provided was not well-formed ' +
+                    'or did not validate against our published schema',
+                    'BucketName': bucket_name,
+                    'RequestId': short_uid(),
+                    'HostId': short_uid()
+                }
+            }
+            body = xmltodict.unparse(error)
+            response.status_code = 400
+            response._content = body
+            return response
+
+    s3_backend.buckets[bucket_name].payer = payer['RequestPaymentConfiguration']['Payer']
     response.status_code = 200
     return response
 
@@ -1087,6 +1140,12 @@ class ProxyListenerS3(PersistingProxyListener):
             if method == 'DELETE':
                 return delete_cors(bucket_name)
 
+        if query == 'requestPayment' or 'requestPayment' in query_map:
+            if method == 'GET':
+                return get_request_payment(bucket_name)
+            if method == 'PUT':
+                return set_request_payment(bucket_name, data)
+
         if query == 'lifecycle' or 'lifecycle' in query_map:
             if method == 'GET':
                 return get_lifecycle(bucket_name)
@@ -1179,7 +1238,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
             version_id = response.headers.get('x-amz-version-id', None)
 
-            send_notifications(method, bucket_name, object_path, version_id)
+            send_notifications(method, bucket_name, object_path, version_id, headers)
 
         # publish event for creation/deletion of buckets:
         if method in ('PUT', 'DELETE') and ('/' not in path[1:] or len(path[1:].split('/')[1]) <= 0):
