@@ -254,8 +254,8 @@ def subscribe_to_shard(data, headers):
     stream_name = find_stream_for_consumer(data['ConsumerARN'])
     iter_type = data['StartingPosition']['Type']
     kwargs = {}
+    starting_sequence_number = data['StartingPosition'].get('SequenceNumber') or '0'
     if iter_type in ['AT_SEQUENCE_NUMBER', 'AFTER_SEQUENCE_NUMBER']:
-        starting_sequence_number = data['StartingPosition'].get('SequenceNumber') or '0'
         kwargs['StartingSequenceNumber'] = starting_sequence_number
     elif iter_type in ['AT_TIMESTAMP']:
         # or value is just an example timestamp from aws docs
@@ -270,6 +270,7 @@ def subscribe_to_shard(data, headers):
     def send_events():
         yield convert_to_binary_event_payload('', event_type='initial-response')
         iter = iterator
+        last_sequence_number = starting_sequence_number
         # TODO: find better way to run loop up to max 5 minutes (until connection terminates)!
         for i in range(5 * 60):
             result = None
@@ -287,17 +288,17 @@ def subscribe_to_shard(data, headers):
                 if data_needs_encoding:
                     record['Data'] = base64.b64encode(record['Data'])
                 record['Data'] = to_str(record['Data'])
+                last_sequence_number = record['SequenceNumber']
             if not records:
                 time.sleep(1)
                 continue
 
             response = {
                 'ChildShards': [],
-                'ContinuationSequenceNumber': iter,
+                'ContinuationSequenceNumber': last_sequence_number,
                 'MillisBehindLatest': 0,
                 'Records': json_safe(records),
             }
-
             result = json.dumps(response)
             yield convert_to_binary_event_payload(result, event_type='SubscribeToShardEvent')
 
