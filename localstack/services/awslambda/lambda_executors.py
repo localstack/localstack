@@ -373,7 +373,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         # create/verify the docker container is running.
         LOG.debug('Priming docker container with runtime "%s" and arn "%s".', runtime, func_arn)
-        container_info = self.prime_docker_container(func_details, env_vars.items(), lambda_cwd)
+        container_info = self.prime_docker_container(func_details, env_vars, lambda_cwd)
 
         if not command:
             command = '%s %s' % (container_info.entry_point, handler)
@@ -922,7 +922,7 @@ class Util:
     def create_env_vars_file_flag(cls, env_vars):
         if not env_vars:
             return ''
-        env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in env_vars])
+        env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for k, v in env_vars.items()])
         # default ARG_MAX=131072 in Docker - let's create an env var file if the string becomes too long...
         if len(env_vars_str) <= MAX_ENV_ARGS_LENGTH:
             return env_vars_str
