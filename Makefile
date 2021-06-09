@@ -24,7 +24,7 @@ setup-venv:
 
 install-venv:
 	make setup-venv && \
-		test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt)
+		test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install -r requirements.txt)
 
 init:              ## Initialize the infrastructure, make sure all libs are downloaded
 	$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py libs

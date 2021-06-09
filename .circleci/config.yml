@@ -15,11 +15,14 @@ jobs:
           command: virtualenv --python=`which python3.8` .venv; make ci-build-prepare
           name: Setup environment
       - run:
-          command: . /opt/circleci/.nvm/nvm.sh; make ci-build-test
-          name: Run integration tests
-      - run:
           command: make ci-build-push
           name: Build and push Docker image
+      - run:
+          command: . /opt/circleci/.nvm/nvm.sh; make ci-build-test
+          name: Run integration tests
+      # - run:
+      #     command: make ci-build-push
+      #     name: Build and push Docker image
 
 workflows:
   main:
