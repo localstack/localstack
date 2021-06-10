@@ -213,7 +213,7 @@ def update_content_length(response):
 
 def apply_request_parameter(integration, path_params):
     request_parameters = integration.get('requestParameters', None)
-    uri = integration.get('uri', '')
+    uri = integration.get('uri') or integration.get('integrationUri') or ''
     if request_parameters:
         for key in path_params:
             # check if path_params is present in the integration request parameters
