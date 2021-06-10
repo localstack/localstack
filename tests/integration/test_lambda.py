@@ -853,7 +853,8 @@ class TestPythonRuntimes(LambdaTestBase):
         )
         result_data = result['Payload'].read()
         result_data = json.loads(to_str(result_data))
-
+        self.assertEqual(result['ResponseMetadata']['HTTPHeaders']['content-type'],
+            'application/json')
         self.assertEqual(result['StatusCode'], 200)
         self.assertIsInstance(result_data, dict)
 
