@@ -547,6 +547,9 @@ def extract_resource_attribute(resource_type, resource_state, attribute, resourc
     if isinstance(resource_state, MotoCloudFormationModel):
         if is_ref_attribute:
             res_phys_id = getattr(resource_state, 'physical_resource_id', None)
+            get_res_phys_id = getattr(resource_state, 'get_physical_resource_id', None)
+            if not res_phys_id and get_res_phys_id:
+                res_phys_id = get_res_phys_id(attribute)
             if res_phys_id:
                 return res_phys_id
         if hasattr(resource_state, 'get_cfn_attribute'):
