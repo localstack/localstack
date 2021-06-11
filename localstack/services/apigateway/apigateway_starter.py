@@ -1,9 +1,9 @@
 import re
 import json
 import logging
-from urllib.parse import parse_qs, urlparse
-
 from jsonpatch import apply_patch
+from jsonpointer import JsonPointerException
+from urllib.parse import parse_qs, urlparse
 from moto.core.utils import camelcase_to_underscores
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.models import Resource, Integration
@@ -25,11 +25,23 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True):
     results = []
     for operation in patch_operations:
         try:
-            if not operation.get('value'):
+            # special case: for "replace" operations, assume "" as the default value
+            if operation['op'] == 'replace' and operation.get('value') is None:
+                operation['value'] = ''
+
+            if operation['op'] != 'remove' and operation.get('value') is None:
                 LOG.info('Missing "value" in JSONPatch operation for %s: %s' % (subject, operation))
                 continue
+
+            # special case: if "path" is an attribute name pointing to an array in "subject", and we're
+            # running an "add" operation, then we should use the standard-compliant notation "/path/-"
+            if operation['op'] == 'add' and isinstance(subject.get(operation['path'].strip('/')), list):
+                operation['path'] = '%s/-' % operation['path']
+
             result = apply_patch(subject, [operation], in_place=in_place)
             results.append(result)
+        except JsonPointerException:
+            pass  # path cannot be found - ignore
         except Exception as e:
             if operation['op'] == 'replace' and 'non-existent object' in str(e):
                 # fall back to an ADD operation if the REPLACE fails
@@ -253,12 +265,101 @@ def apply_patches():
 
         return result
 
-    def apigateway_models_backend_update_deployment(self, function_id, deployment_id, patch_operations):
+    def backend_update_deployment(self, function_id, deployment_id, patch_operations):
         rest_api = self.get_rest_api(function_id)
         deployment = rest_api.get_deployment(deployment_id)
         deployment = deployment or {}
         apply_json_patch_safe(deployment, patch_operations, in_place=True)
         return deployment
+
+    # define json-patch operations for backend models
+
+    def backend_model_apply_operations(self, patch_operations):
+        apply_json_patch_safe(self, patch_operations, in_place=True)
+        return self
+
+    model_classes = [apigateway_models.Authorizer, apigateway_models.Stage,
+        apigateway_models.Method, apigateway_models.MethodResponse]
+    for model_class in model_classes:
+        model_class.apply_operations = backend_model_apply_operations
+
+    # fix data types for some json-patch operation values
+
+    def method_apply_operations(self, patch_operations):
+        result = method_apply_operations_orig(self, patch_operations)
+        params = self.get('requestParameters') or {}
+        bool_params_prefixes = ['method.request.querystring', 'method.request.header']
+        list_params = ['authorizationScopes']
+        for param, value in params.items():
+            for param_prefix in bool_params_prefixes:
+                if param.startswith(param_prefix) and not isinstance(value, bool):
+                    params[param] = str(value) in ['true', 'True']
+        for list_param in list_params:
+            value = self.get(list_param)
+            if value and not isinstance(value, list):
+                self[list_param] = [value]
+        return result
+
+    method_apply_operations_orig = apigateway_models.Method.apply_operations
+    apigateway_models.Method.apply_operations = method_apply_operations
+
+    def method_response_apply_operations(self, patch_operations):
+        result = method_response_apply_operations_orig(self, patch_operations)
+        params = self.get('responseParameters') or {}
+        bool_params_prefixes = ['method.response.querystring', 'method.response.header']
+        for param, value in params.items():
+            for param_prefix in bool_params_prefixes:
+                if param.startswith(param_prefix) and not isinstance(value, bool):
+                    params[param] = str(value) in ['true', 'True']
+        return result
+
+    method_response_apply_operations_orig = apigateway_models.MethodResponse.apply_operations
+    apigateway_models.MethodResponse.apply_operations = method_response_apply_operations
+
+    def stage_apply_operations(self, patch_operations):
+        result = stage_apply_operations_orig(self, patch_operations)
+        key_mappings = {
+            'metrics/enabled': ('metricsEnabled', bool),
+            'logging/loglevel': ('loggingLevel', str),
+            'logging/dataTrace': ('dataTraceEnabled', bool),
+            'throttling/burstLimit': ('throttlingBurstLimit', int),
+            'throttling/rateLimit': ('throttlingRateLimit', float),
+            'caching/enabled': ('cachingEnabled', bool),
+            'caching/ttlInSeconds': ('cacheTtlInSeconds', int),
+            'caching/dataEncrypted': ('cacheDataEncrypted', bool),
+            'caching/requireAuthorizationForCacheControl': ('requireAuthorizationForCacheControl', bool),
+            'caching/unauthorizedCacheControlHeaderStrategy': ('unauthorizedCacheControlHeaderStrategy', str)
+        }
+
+        def cast_value(value, value_type):
+            if value is None:
+                return value
+            if value_type == bool:
+                return str(value) in ['true', 'True']
+            return value_type(value)
+
+        method_settings = self['methodSettings'] = self.get('methodSettings') or {}
+        for operation in patch_operations:
+            path = operation['path']
+            parts = path.strip('/').split('/')
+            if len(parts) >= 4:
+                if operation['op'] not in ['add', 'replace']:
+                    continue
+                key1 = '/'.join(parts[:-2])
+                key2 = '/%s' % key1
+                setting_key = '%s/%s' % (parts[-2], parts[-1])
+                setting_name, setting_type = key_mappings.get(setting_key)
+                for key in [key1, key2]:
+                    setting = method_settings[key] = method_settings.get(key) or {}
+                    value = operation.get('value')
+                    value = cast_value(value, setting_type)
+                    setting[setting_name] = value
+        return result
+
+    stage_apply_operations_orig = apigateway_models.Stage.apply_operations
+    apigateway_models.Stage.apply_operations = stage_apply_operations
+
+    # patch integration error responses
 
     def apigateway_models_resource_get_integration(self, method_type):
         resource_method = self.resource_methods.get(method_type, {})
@@ -275,7 +376,7 @@ def apply_patches():
         apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
 
     if not hasattr(apigateway_models.APIGatewayBackend, 'update_deployment'):
-        apigateway_models.APIGatewayBackend.update_deployment = apigateway_models_backend_update_deployment
+        apigateway_models.APIGatewayBackend.update_deployment = backend_update_deployment
 
     apigateway_models_RestAPI_to_dict_orig = apigateway_models.RestAPI.to_dict
 
