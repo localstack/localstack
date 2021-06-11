@@ -452,8 +452,10 @@ def can_use_sudo():
 
 def ensure_can_use_sudo():
     if not is_root() and not can_use_sudo():
+        if not sys.stdin.isatty():
+            raise IOError('cannot get sudo password from non-tty input')
         print('Please enter your sudo password (required to configure local network):')
-        run('sudo echo', stdin=True)
+        run('sudo -v', stdin=True)
 
 
 def start_edge(port=None, use_ssl=True, asynchronous=False):
@@ -477,7 +479,11 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
                 pass
 
     # make sure we can run sudo commands
-    ensure_can_use_sudo()
+    try:
+        ensure_can_use_sudo()
+    except Exception as e:
+        LOG.error('cannot start edge proxy on privileged port %s: %s', port, str(e))
+        return
 
     # register a signal handler to terminate the sudo process later on
     TMP_THREADS.append(Terminator())
