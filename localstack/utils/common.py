@@ -1052,6 +1052,14 @@ def get_or_create_file(file_path, content=None):
         pass
 
 
+def replace_in_file(search, replace, file_path):
+    """ Replace all occurrences of `search` with `replace` in the given file (overwrites in place!) """
+    content = load_file(file_path) or ''
+    content_new = content.replace(search, replace)
+    if content != content_new:
+        save_file(file_path, content_new)
+
+
 def to_str(obj, encoding=DEFAULT_ENCODING, errors='strict'):
     """ If ``obj`` is an instance of ``binary_type``, return
     ``obj.decode(encoding, errors)``, otherwise return ``obj`` """
