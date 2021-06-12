@@ -1,6 +1,7 @@
 import base64
 import logging
 import unittest
+import re
 from time import sleep
 from datetime import datetime
 from localstack.utils.aws import aws_stack
@@ -89,6 +90,9 @@ class TestKinesis(unittest.TestCase):
         results = []
         for entry in stream:
             records = entry['SubscribeToShardEvent']['Records']
+            continuation_sequence_number = entry['SubscribeToShardEvent']['ContinuationSequenceNumber']
+            # https://docs.aws.amazon.com/kinesis/latest/APIReference/API_SubscribeToShardEvent.html
+            self.assertIsNotNone(re.fullmatch('^0|([1-9][0-9]{0,128})$', continuation_sequence_number))
             results.extend(records)
             if len(results) >= num_records:
                 break

@@ -789,6 +789,13 @@ class TestS3(unittest.TestCase):
         self.assertEqual(response['Payer'], 'Requester')
         self._delete_bucket(bucket_name)
 
+    def delete_non_existing_bucket(self):
+        bucket_name = 'test-%s' % short_uid()
+        with self.assertRaises(ClientError) as ctx:
+            self.s3_client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'NoSuchBucket')
+        self.assertEqual(ctx.exception.response['Error']['Message'], 'The specified bucket does not exist')
+
     def test_bucket_exists(self):
         # Test setup
         bucket = 'test-bucket-%s' % short_uid()

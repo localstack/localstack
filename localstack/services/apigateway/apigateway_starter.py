@@ -1,9 +1,9 @@
 import re
 import json
 import logging
-from urllib.parse import parse_qs, urlparse
-
 from jsonpatch import apply_patch
+from jsonpointer import JsonPointerException
+from urllib.parse import parse_qs, urlparse
 from moto.core.utils import camelcase_to_underscores
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.models import Resource, Integration
@@ -25,11 +25,23 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True):
     results = []
     for operation in patch_operations:
         try:
-            if not operation.get('value'):
+            # special case: for "replace" operations, assume "" as the default value
+            if operation['op'] == 'replace' and operation.get('value') is None:
+                operation['value'] = ''
+
+            if operation['op'] != 'remove' and operation.get('value') is None:
                 LOG.info('Missing "value" in JSONPatch operation for %s: %s' % (subject, operation))
                 continue
+
+            # special case: if "path" is an attribute name pointing to an array in "subject", and we're
+            # running an "add" operation, then we should use the standard-compliant notation "/path/-"
+            if operation['op'] == 'add' and isinstance(subject.get(operation['path'].strip('/')), list):
+                operation['path'] = '%s/-' % operation['path']
+
             result = apply_patch(subject, [operation], in_place=in_place)
             results.append(result)
+        except JsonPointerException:
+            pass  # path cannot be found - ignore
         except Exception as e:
             if operation['op'] == 'replace' and 'non-existent object' in str(e):
                 # fall back to an ADD operation if the REPLACE fails
@@ -54,27 +66,12 @@ def apply_patches():
         resource = self.get_resource(function_id, resource_id)
         method = resource.get_method(method_type)
         if not method:
-            raise NoIntegrationDefined()
-
+            return
         return resource.resource_methods.pop(method_type)
-
-    def apigateway_models_resource_get_method(self, method_type):
-        method = self.resource_methods.get(method_type)
-        if not method:
-            raise NoIntegrationDefined()
-
-        return method
-
-    def apigateway_models_resource_get_integration(self, method_type):
-        resource_method = self.resource_methods.get(method_type, {})
-        if 'methodIntegration' not in resource_method:
-            raise NoIntegrationDefined()
-
-        return resource_method['methodIntegration']
 
     def apigateway_models_resource_delete_integration(self, method_type):
         if method_type in self.resource_methods:
-            return self.resource_methods[method_type].pop('methodIntegration')
+            return self.resource_methods[method_type].pop('methodIntegration', {})
 
         return {}
 
@@ -175,6 +172,16 @@ def apply_patches():
     def apigateway_response_resource_methods(self, request, *args, **kwargs):
         result = apigateway_response_resource_methods_orig(self, request, *args, **kwargs)
 
+        if self.method == 'PUT' and self._get_param('requestParameters'):
+            request_parameters = self._get_param('requestParameters')
+            url_path_parts = self.path.split('/')
+            function_id = url_path_parts[2]
+            resource_id = url_path_parts[4]
+            method_type = url_path_parts[6]
+            resource = self.backend.get_resource(function_id, resource_id)
+            resource.resource_methods[method_type]['requestParameters'] = request_parameters
+            method = resource.resource_methods[method_type]
+            result = 200, {}, json.dumps(method)
         if len(result) != 3:
             return result
         authorization_type = self._get_param('authorizationType')
@@ -189,24 +196,33 @@ def apply_patches():
 
     def apigateway_response_integrations(self, request, *args, **kwargs):
         result = apigateway_response_integrations_orig(self, request, *args, **kwargs)
-        timeout_milliseconds = self._get_param('timeoutInMillis')
-        request_parameters = self._get_param('requestParameters') or {}
-        cache_key_parameters = self._get_param('cacheKeyParameters') or []
-        content_handling = self._get_param('contentHandling')
+
+        if self.method not in ['PUT', 'PATCH']:
+            return result
+
+        url_path_parts = self.path.split('/')
+        function_id = url_path_parts[2]
+        resource_id = url_path_parts[4]
+        method_type = url_path_parts[6]
+
+        integration = self.backend.get_integration(function_id, resource_id, method_type)
+        if not integration:
+            return result
 
         if self.method == 'PUT':
-            url_path_parts = self.path.split('/')
-            function_id = url_path_parts[2]
-            resource_id = url_path_parts[4]
-            method_type = url_path_parts[6]
+            timeout_milliseconds = self._get_param('timeoutInMillis')
+            request_parameters = self._get_param('requestParameters') or {}
+            cache_key_parameters = self._get_param('cacheKeyParameters') or []
+            content_handling = self._get_param('contentHandling')
+            integration['timeoutInMillis'] = timeout_milliseconds
+            integration['requestParameters'] = request_parameters
+            integration['cacheKeyParameters'] = cache_key_parameters
+            integration['contentHandling'] = content_handling
+            return 200, {}, json.dumps(integration)
 
-            integration_response = self.backend.get_integration(function_id, resource_id, method_type)
-
-            integration_response['timeoutInMillis'] = timeout_milliseconds
-            integration_response['requestParameters'] = request_parameters
-            integration_response['cacheKeyParameters'] = cache_key_parameters
-            integration_response['contentHandling'] = content_handling
-            return 200, {}, json.dumps(integration_response)
+        if self.method == 'PATCH':
+            patch_operations = self._get_param('patchOperations')
+            apply_json_patch_safe(integration, patch_operations, in_place=True)
 
         return result
 
@@ -249,6 +265,108 @@ def apply_patches():
 
         return result
 
+    def backend_update_deployment(self, function_id, deployment_id, patch_operations):
+        rest_api = self.get_rest_api(function_id)
+        deployment = rest_api.get_deployment(deployment_id)
+        deployment = deployment or {}
+        apply_json_patch_safe(deployment, patch_operations, in_place=True)
+        return deployment
+
+    # define json-patch operations for backend models
+
+    def backend_model_apply_operations(self, patch_operations):
+        apply_json_patch_safe(self, patch_operations, in_place=True)
+        return self
+
+    model_classes = [apigateway_models.Authorizer, apigateway_models.Stage,
+        apigateway_models.Method, apigateway_models.MethodResponse]
+    for model_class in model_classes:
+        model_class.apply_operations = backend_model_apply_operations
+
+    # fix data types for some json-patch operation values
+
+    def method_apply_operations(self, patch_operations):
+        result = method_apply_operations_orig(self, patch_operations)
+        params = self.get('requestParameters') or {}
+        bool_params_prefixes = ['method.request.querystring', 'method.request.header']
+        list_params = ['authorizationScopes']
+        for param, value in params.items():
+            for param_prefix in bool_params_prefixes:
+                if param.startswith(param_prefix) and not isinstance(value, bool):
+                    params[param] = str(value) in ['true', 'True']
+        for list_param in list_params:
+            value = self.get(list_param)
+            if value and not isinstance(value, list):
+                self[list_param] = [value]
+        return result
+
+    method_apply_operations_orig = apigateway_models.Method.apply_operations
+    apigateway_models.Method.apply_operations = method_apply_operations
+
+    def method_response_apply_operations(self, patch_operations):
+        result = method_response_apply_operations_orig(self, patch_operations)
+        params = self.get('responseParameters') or {}
+        bool_params_prefixes = ['method.response.querystring', 'method.response.header']
+        for param, value in params.items():
+            for param_prefix in bool_params_prefixes:
+                if param.startswith(param_prefix) and not isinstance(value, bool):
+                    params[param] = str(value) in ['true', 'True']
+        return result
+
+    method_response_apply_operations_orig = apigateway_models.MethodResponse.apply_operations
+    apigateway_models.MethodResponse.apply_operations = method_response_apply_operations
+
+    def stage_apply_operations(self, patch_operations):
+        result = stage_apply_operations_orig(self, patch_operations)
+        key_mappings = {
+            'metrics/enabled': ('metricsEnabled', bool),
+            'logging/loglevel': ('loggingLevel', str),
+            'logging/dataTrace': ('dataTraceEnabled', bool),
+            'throttling/burstLimit': ('throttlingBurstLimit', int),
+            'throttling/rateLimit': ('throttlingRateLimit', float),
+            'caching/enabled': ('cachingEnabled', bool),
+            'caching/ttlInSeconds': ('cacheTtlInSeconds', int),
+            'caching/dataEncrypted': ('cacheDataEncrypted', bool),
+            'caching/requireAuthorizationForCacheControl': ('requireAuthorizationForCacheControl', bool),
+            'caching/unauthorizedCacheControlHeaderStrategy': ('unauthorizedCacheControlHeaderStrategy', str)
+        }
+
+        def cast_value(value, value_type):
+            if value is None:
+                return value
+            if value_type == bool:
+                return str(value) in ['true', 'True']
+            return value_type(value)
+
+        method_settings = self['methodSettings'] = self.get('methodSettings') or {}
+        for operation in patch_operations:
+            path = operation['path']
+            parts = path.strip('/').split('/')
+            if len(parts) >= 4:
+                if operation['op'] not in ['add', 'replace']:
+                    continue
+                key1 = '/'.join(parts[:-2])
+                key2 = '/%s' % key1
+                setting_key = '%s/%s' % (parts[-2], parts[-1])
+                setting_name, setting_type = key_mappings.get(setting_key)
+                for key in [key1, key2]:
+                    setting = method_settings[key] = method_settings.get(key) or {}
+                    value = operation.get('value')
+                    value = cast_value(value, setting_type)
+                    setting[setting_name] = value
+        return result
+
+    stage_apply_operations_orig = apigateway_models.Stage.apply_operations
+    apigateway_models.Stage.apply_operations = stage_apply_operations
+
+    # patch integration error responses
+
+    def apigateway_models_resource_get_integration(self, method_type):
+        resource_method = self.resource_methods.get(method_type, {})
+        if 'methodIntegration' not in resource_method:
+            raise NoIntegrationDefined()
+        return resource_method['methodIntegration']
+
     if not hasattr(apigateway_models.APIGatewayBackend, 'put_rest_api'):
         apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
         APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
@@ -256,6 +374,9 @@ def apply_patches():
 
     if not hasattr(apigateway_models.APIGatewayBackend, 'delete_method'):
         apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
+
+    if not hasattr(apigateway_models.APIGatewayBackend, 'update_deployment'):
+        apigateway_models.APIGatewayBackend.update_deployment = backend_update_deployment
 
     apigateway_models_RestAPI_to_dict_orig = apigateway_models.RestAPI.to_dict
 
@@ -291,11 +412,23 @@ def apply_patches():
 
         return 200, {}, rest_api
 
-    apigateway_models.Resource.get_method = apigateway_models_resource_get_method
+    def individual_deployment(self, request, full_url, headers, *args, **kwargs):
+        result = individual_deployment_orig(self, request, full_url, headers, *args, **kwargs)
+        if self.method == 'PATCH' and len(result) >= 3 and result[2] in ['null', None, str(None)]:
+            url_path_parts = self.path.split('/')
+            function_id = url_path_parts[2]
+            deployment_id = url_path_parts[4]
+            patch_operations = self._get_param('patchOperations')
+            deployment = self.backend.update_deployment(function_id, deployment_id, patch_operations)
+            return 200, {}, json.dumps(deployment)
+        return result
+
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
     apigateway_response_resource_methods_orig = APIGatewayResponse.resource_methods
     APIGatewayResponse.resource_methods = apigateway_response_resource_methods
+    individual_deployment_orig = APIGatewayResponse.individual_deployment
+    APIGatewayResponse.individual_deployment = individual_deployment
     apigateway_response_integrations_orig = APIGatewayResponse.integrations
     APIGatewayResponse.integrations = apigateway_response_integrations
     apigateway_response_integration_responses_orig = APIGatewayResponse.integration_responses

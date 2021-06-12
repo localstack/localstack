@@ -341,6 +341,7 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
         if not is_presign_valid:
             LOGGER.warning('Signatures do not match, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1')
         signature = query_sig
+        is_presign_valid = True
 
     if not is_presign_valid:
 

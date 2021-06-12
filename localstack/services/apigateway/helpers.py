@@ -139,7 +139,7 @@ def add_authorizer(path, data):
     region_details = APIGatewayRegion.get()
 
     api_id = get_api_id_from_path(path)
-    authorizer_id = common.short_uid()
+    authorizer_id = common.short_uid()[:6]  # length 6 to make TF tests pass
     result = common.clone(data)
 
     result['id'] = authorizer_id
@@ -336,7 +336,7 @@ def add_validator(path, data):
     region_details = APIGatewayRegion.get()
 
     api_id = get_api_id_from_path(path)
-    validator_id = common.short_uid()
+    validator_id = common.short_uid()[:6]  # length 6 (as in AWS) to make TF tests pass
     result = common.clone(data)
     result['id'] = validator_id
 

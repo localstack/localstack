@@ -40,6 +40,8 @@ LAMBDA_SERVER_PORT_OFFSET = 5000
 LAMBDA_API_UNIQUE_PORTS = 500
 LAMBDA_API_PORT_OFFSET = 9000
 
+MAX_ENV_ARGS_LENGTH = 20000
+
 # logger
 LOG = logging.getLogger(__name__)
 
@@ -195,7 +197,7 @@ class LambdaExecutor(object):
 
         is_provided = runtime.startswith(LAMBDA_RUNTIME_PROVIDED)
         if func_details and is_provided and env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
-            # Note: certain "provided" runtimes (e.g., Rust programs) can block when we pass in
+            # Note: certain "provided" runtimes (e.g., Rust programs) can block if we pass in
             # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
             env_updates = {
                 'PATH': env_vars.get('PATH') or os.environ.get('PATH', ''),
@@ -371,15 +373,13 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         # create/verify the docker container is running.
         LOG.debug('Priming docker container with runtime "%s" and arn "%s".', runtime, func_arn)
-        container_info = self.prime_docker_container(func_details, env_vars.items(), lambda_cwd)
-
-        # Note: currently "docker exec" does not support --env-file, i.e., environment variables can only be
-        # passed directly on the command line, using "-e" below. TODO: Update this code once --env-file is
-        # available for docker exec, to better support very large Lambda events (very long environment values)
-        exec_env_vars = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
+        container_info = self.prime_docker_container(func_details, env_vars, lambda_cwd)
 
         if not command:
             command = '%s %s' % (container_info.entry_point, handler)
+
+        # create file with environment variables
+        env_vars_flag = Util.create_env_vars_file_flag(env_vars)
 
         # determine files to be copied into the container
         copy_command = ''
@@ -392,10 +392,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         cmd = (
             '%s'
             ' %s exec'
-            ' %s'  # env variables
+            ' %s'  # env variables file
             ' %s'  # container name
             ' %s'  # run cmd
-        ) % (copy_command, docker_cmd, exec_env_vars, container_info.name, command)
+        ) % (copy_command, docker_cmd, env_vars_flag, container_info.name, command)
         LOG.debug('Command for docker-reuse Lambda executor: %s' % cmd)
 
         return cmd
@@ -476,7 +476,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         docker_cmd = self._docker_cmd()
         container_name = self.get_container_name(func_details.arn())
 
-        env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in env_vars])
+        # create environment variables flag (either passed directly, or as env var file)
+        env_vars_flags = Util.create_env_vars_file_flag(env_vars)
 
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = '--network="%s"' % network if network else ''
@@ -510,7 +511,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             ' %s'  # additional flags
             ' %s'
         ) % (docker_cmd, rm_flag, container_name, mount_volume_str,
-            env_vars_str, network_str, dns_str, additional_flags, docker_image)
+            env_vars_flags, network_str, dns_str, additional_flags, docker_image)
         return cmd
 
     def get_container_entrypoint(self, docker_image):
@@ -726,14 +727,14 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         dns = config.LAMBDA_DOCKER_DNS
         dns_str = '--dns="%s"' % dns if dns else ''
 
-        env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
+        env_vars_flag = Util.create_env_vars_file_flag(env_vars)
         debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''
         docker_cmd = self._docker_cmd()
         docker_image = Util.docker_image_for_lambda(func_details)
         rm_flag = Util.get_docker_remove_flag()
 
         # construct common flags for commands below
-        common_flags = ' '.join([env_vars_string, network_str, dns_str, additional_flags, rm_flag])
+        common_flags = ' '.join([env_vars_flag, network_str, dns_str, additional_flags, rm_flag])
 
         if config.LAMBDA_REMOTE_DOCKER:
             cp_cmd = ('%s cp "%s/." "$CONTAINER_ID:%s";' % (
@@ -886,8 +887,8 @@ class Util:
             docker_image = 'localstack/lambda-js'
         return '"%s:%s"' % (docker_image, docker_tag)
 
-    @classmethod
-    def get_docker_remove_flag(cls):
+    @staticmethod
+    def get_docker_remove_flag():
         return '--rm' if config.LAMBDA_REMOVE_CONTAINERS else ''
 
     @classmethod
@@ -916,6 +917,35 @@ class Util:
         entries.append('java/lib/*.jar')
         result = ':'.join(entries)
         return result
+
+    @classmethod
+    def create_env_vars_file_flag(cls, env_vars):
+        if not env_vars:
+            return ''
+        env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for k, v in env_vars.items()])
+        # default ARG_MAX=131072 in Docker - let's create an env var file if the string becomes too long...
+        if len(env_vars_str) <= MAX_ENV_ARGS_LENGTH:
+            return env_vars_str
+        env_file = cls.mountable_tmp_file()
+        env_content = ''
+        for name, value in env_vars.items():
+            value = value.replace('\n', '\\')
+            env_content += '%s=%s\n' % (name, value)
+        save_file(env_file, env_content)
+        return '--env-file %s' % env_file
+
+    @staticmethod
+    def rm_env_vars_file(env_vars_file_flag):
+        if not env_vars_file_flag or '--env-file' not in env_vars_file_flag:
+            return
+        env_vars_file = env_vars_file_flag.replace('--env-file', '').strip()
+        return rm_rf(env_vars_file)
+
+    @staticmethod
+    def mountable_tmp_file():
+        f = os.path.join(config.TMP_FOLDER, short_uid())
+        TMP_FILES.append(f)
+        return f
 
 
 # --------------
