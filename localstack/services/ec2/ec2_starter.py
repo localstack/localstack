@@ -179,7 +179,7 @@ def patch_ec2():
         endpoint_id = self._get_param('VpcEndpointId')
         endpoint = self.ec2_backend.vpc_end_points.get(endpoint_id)
         if not endpoint:
-            return '', 404
+            return '', {}, 404
 
         policy_doc = self._get_param('PolicyDocument')
         dns_enabled = self._get_bool_param('PrivateDnsEnabled')
@@ -207,6 +207,34 @@ def patch_ec2():
         return result
 
     vpcs.VPCs.modify_vpc_endpoint = modify_vpc_endpoint
+
+    def create_vpc_endpoint_service_configuration(self):
+        configs = getattr(self.ec2_backend, 'vpc_endpoint_service_configurations', {})
+        self.ec2_backend.vpc_endpoint_service_configurations = configs
+        dns_name = self._get_param('PrivateDnsName')
+        lb_arns = self._get_multi_param('NetworkLoadBalancerArn')
+        gw_arns = self._get_multi_param('GatewayLoadBalancerArn')
+        tags = self._get_multi_param('TagSpecification')
+        tags = (tags or {}).get('Tags')
+        service_id = short_uid()
+        entry = {
+            'serviceId': service_id,
+            'privateDnsName': dns_name,
+            'networkLoadBalancerArns': lb_arns,
+            'gatewayLoadBalancerArns': gw_arns,
+            'Tags': tags
+        }
+        configs[service_id] = entry
+        result = {
+            'CreateVpcEndpointServiceConfiguration': {
+                '@xmlns': XMLNS_EC2,
+                'serviceConfiguration': entry
+            }
+        }
+        result = xmltodict.unparse(result)
+        return result
+
+    vpcs.VPCs.create_vpc_endpoint_service_configuration = create_vpc_endpoint_service_configuration
 
 
 def start_ec2(port=None, asynchronous=False, update_listener=None):
