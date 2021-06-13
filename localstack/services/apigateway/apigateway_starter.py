@@ -1,8 +1,6 @@
 import re
 import json
 import logging
-from jsonpatch import apply_patch
-from jsonpointer import JsonPointerException
 from urllib.parse import parse_qs, urlparse
 from moto.core.utils import camelcase_to_underscores
 from moto.apigateway import models as apigateway_models
@@ -14,41 +12,12 @@ from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import short_uid, to_str, DelSafeDict
 from localstack.services.infra import start_moto_server
+from localstack.services.apigateway.helpers import apply_json_patch_safe
 
 LOG = logging.getLogger(__name__)
 
 # additional REST API attributes
 REST_API_ATTRIBUTES = ['disableExecuteApiEndpoint', 'apiKeySource', 'minimumCompressionSize']
-
-
-def apply_json_patch_safe(subject, patch_operations, in_place=True):
-    results = []
-    for operation in patch_operations:
-        try:
-            # special case: for "replace" operations, assume "" as the default value
-            if operation['op'] == 'replace' and operation.get('value') is None:
-                operation['value'] = ''
-
-            if operation['op'] != 'remove' and operation.get('value') is None:
-                LOG.info('Missing "value" in JSONPatch operation for %s: %s' % (subject, operation))
-                continue
-
-            # special case: if "path" is an attribute name pointing to an array in "subject", and we're
-            # running an "add" operation, then we should use the standard-compliant notation "/path/-"
-            if operation['op'] == 'add' and isinstance(subject.get(operation['path'].strip('/')), list):
-                operation['path'] = '%s/-' % operation['path']
-
-            result = apply_patch(subject, [operation], in_place=in_place)
-            results.append(result)
-        except JsonPointerException:
-            pass  # path cannot be found - ignore
-        except Exception as e:
-            if operation['op'] == 'replace' and 'non-existent object' in str(e):
-                # fall back to an ADD operation if the REPLACE fails
-                operation['op'] = 'add'
-                return apply_patch(subject, [operation], in_place=in_place)
-            raise
-    return results
 
 
 def apply_patches():

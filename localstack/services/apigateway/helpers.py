@@ -1,14 +1,18 @@
 import re
 import json
+import logging
 from jsonpatch import apply_patch
+from jsonpointer import JsonPointerException
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack import config
 from localstack.utils import common
-from localstack.services.generic_proxy import RegionBackend
 from localstack.constants import TEST_AWS_ACCOUNT_ID, APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import requests_response
+from localstack.services.generic_proxy import RegionBackend
+from localstack.utils.aws.aws_responses import requests_response, requests_error_response_json
+
+LOG = logging.getLogger(__name__)
 
 # regex path patterns
 PATH_REGEX_MAIN = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?'
@@ -49,11 +53,10 @@ def make_json_response(message):
     return requests_response(json.dumps(message), headers={'Content-Type': APPLICATION_JSON})
 
 
-def make_error_response(message, code=400):
-    response = Response()
-    response.status_code = code
-    response._content = json.dumps({'message': message})
-    return response
+def make_error_response(message, code=400, error_type=None):
+    if code == 404 and not error_type:
+        error_type = 'NotFoundException'
+    return requests_error_response_json(message, code=code, error_type=error_type)
 
 
 def make_accepted_response():
@@ -80,7 +83,7 @@ def get_account():
 
 def update_account(data):
     region_details = APIGatewayRegion.get()
-    apply_patch(region_details.account, data['patchOperations'], in_place=True)
+    apply_json_patch_safe(region_details.account, data['patchOperations'], in_place=True)
     return to_account_response_json(region_details.account)
 
 
@@ -89,7 +92,7 @@ def handle_accounts(method, path, data, headers):
         return get_account()
     if method == 'PATCH':
         return update_account(data)
-    return make_error_response('Not implemented for API Gateway accounts: %s' % method, 404)
+    return make_error_response('Not implemented for API Gateway accounts: %s' % method, code=404)
 
 
 # -----------------
@@ -109,10 +112,14 @@ def _find_authorizer(api_id, authorizer_id):
 
 
 def normalize_authorizer(data):
-    result = common.clone(data)
-    # terraform sends this as a string in patch, so convert to int
-    result['authorizerResultTtlInSeconds'] = int(result.get('authorizerResultTtlInSeconds') or 300)
-    return result
+    is_list = isinstance(data, list)
+    entries = data if is_list else [data]
+    for i in range(len(entries)):
+        entry = common.clone(entries[i])
+        # terraform sends this as a string in patch, so convert to int
+        entry['authorizerResultTtlInSeconds'] = int(entry.get('authorizerResultTtlInSeconds', 300))
+        entries[i] = entry
+    return entries if is_list else entries[0]
 
 
 def get_authorizers(path):
@@ -127,7 +134,7 @@ def get_authorizers(path):
     if authorizer_id:
         authorizer = _find_authorizer(api_id, authorizer_id)
         if authorizer is None:
-            return make_error_response('Not found: %s' % authorizer_id, 404)
+            return make_error_response('Not found: %s' % authorizer_id, code=404, error_type='NotFoundException')
         return to_authorizer_response_json(api_id, authorizer)
 
     result = [to_authorizer_response_json(api_id, a) for a in auth_list]
@@ -159,9 +166,9 @@ def update_authorizer(path, data):
 
     authorizer = _find_authorizer(api_id, authorizer_id)
     if authorizer is None:
-        return make_error_response('Not found: %s' % api_id, 404)
+        return make_error_response('Not found: %s' % api_id, code=404)
 
-    result = apply_patch(authorizer, data['patchOperations'])
+    result = apply_json_patch_safe(authorizer, data['patchOperations'])
     result = normalize_authorizer(result)
 
     auth_list = region_details.authorizers[api_id]
@@ -196,7 +203,7 @@ def handle_authorizers(method, path, data, headers):
         return update_authorizer(path, data)
     elif method == 'DELETE':
         return delete_authorizer(path)
-    return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
+    return make_error_response('Not implemented for API Gateway authorizers: %s' % method, code=404)
 
 
 # -----------------------
@@ -224,7 +231,7 @@ def get_base_path_mapping(path):
     if base_path:
         mapping = ([m for m in mappings_list if m['basePath'] == base_path] or [None])[0]
         if mapping is None:
-            return make_error_response('Not found: %s' % base_path, 404)
+            return make_error_response('Not found: %s' % base_path, code=404)
         return to_base_mapping_response_json(domain_name, base_path, mapping)
 
     result = [to_base_mapping_response_json(domain_name, m['basePath'], m) for m in mappings_list]
@@ -258,9 +265,9 @@ def update_base_path_mapping(path, data):
     mapping = ([m for m in mappings_list if m['basePath'] == base_path] or [None])[0]
     if mapping is None:
         return make_error_response('Not found: mapping for domain name %s, base path %s' %
-            (domain_name, base_path), 404)
+            (domain_name, base_path), code=404)
 
-    result = apply_patch(mapping, data['patchOperations'])
+    result = apply_json_patch_safe(mapping, data['patchOperations'])
 
     for i in range(len(mappings_list)):
         if mappings_list[i]['basePath'] == base_path:
@@ -281,7 +288,7 @@ def delete_base_path_mapping(path):
             del mappings_list[i]
             return make_accepted_response()
 
-    return make_error_response('Base path mapping %s for domain %s not found' % (base_path, domain_name), 404)
+    return make_error_response('Base path mapping %s for domain %s not found' % (base_path, domain_name), code=404)
 
 
 def hande_base_path_mappings(method, path, data, headers):
@@ -293,7 +300,7 @@ def hande_base_path_mappings(method, path, data, headers):
         return update_base_path_mapping(path, data)
     elif method == 'DELETE':
         return delete_base_path_mapping(path)
-    return make_error_response('Not implemented for API Gateway base path mappings: %s' % method, 404)
+    return make_error_response('Not implemented for API Gateway base path mappings: %s' % method, code=404)
 
 
 # ----------------
@@ -324,7 +331,8 @@ def get_validators(path):
     if validator_id:
         validator = _find_validator(api_id, validator_id)
         if validator is None:
-            return make_error_response('Validator %s for API Gateway %s not found' % (validator_id, api_id), 404)
+            return make_error_response('Validator %s for API Gateway %s not found' %
+                (validator_id, api_id), code=404)
         return to_validator_response_json(api_id, validator)
 
     result = [to_validator_response_json(api_id, a) for a in auth_list]
@@ -354,9 +362,9 @@ def update_validator(path, data):
 
     validator = _find_validator(api_id, validator_id)
     if validator is None:
-        return make_error_response('Validator %s for API Gateway %s not found' % (validator_id, api_id), 404)
+        return make_error_response('Validator %s for API Gateway %s not found' % (validator_id, api_id), code=404)
 
-    result = apply_patch(validator, data['patchOperations'])
+    result = apply_json_patch_safe(validator, data['patchOperations'])
 
     entry_list = region_details.validators[api_id]
     for i in range(len(entry_list)):
@@ -378,7 +386,7 @@ def delete_validator(path):
             del auth_list[i]
             return make_accepted_response()
 
-    return make_error_response('Validator %s for API Gateway %s not found' % (validator_id, api_id), 404)
+    return make_error_response('Validator %s for API Gateway %s not found' % (validator_id, api_id), code=404)
 
 
 def handle_validators(method, path, data, headers):
@@ -390,7 +398,7 @@ def handle_validators(method, path, data, headers):
         return update_validator(path, data)
     elif method == 'DELETE':
         return delete_validator(path)
-    return make_error_response('Not implemented for API Gateway validators: %s' % method, 404)
+    return make_error_response('Not implemented for API Gateway validators: %s' % method, code=404)
 
 
 # ---------------
@@ -415,6 +423,8 @@ def to_account_response_json(data):
 
 
 def to_response_json(model_type, data, api_id=None, self_link=None):
+    if isinstance(data, list) and len(data) == 1:
+        data = data[0]
     result = common.clone(data)
     if not self_link:
         self_link = '/restapis/%s/%ss/%s' % (api_id, model_type, data['id'])
@@ -553,3 +563,37 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
     }]
     return aws_stack.create_api_gateway(
         name=gateway_name, resources=resources, stage_name=stage_name, region_name=region_name)
+
+
+def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=False):
+    results = []
+    for operation in patch_operations:
+        try:
+            # special case: for "replace" operations, assume "" as the default value
+            if operation['op'] == 'replace' and operation.get('value') is None:
+                operation['value'] = ''
+
+            if operation['op'] != 'remove' and operation.get('value') is None:
+                LOG.info('Missing "value" in JSONPatch operation for %s: %s' % (subject, operation))
+                continue
+
+            # special case: if "path" is an attribute name pointing to an array in "subject", and we're
+            # running an "add" operation, then we should use the standard-compliant notation "/path/-"
+            if operation['op'] == 'add' and isinstance(subject.get(operation['path'].strip('/')), list):
+                operation['path'] = '%s/-' % operation['path']
+
+            result = apply_patch(subject, [operation], in_place=in_place)
+            if not in_place:
+                subject = result
+            results.append(result)
+        except JsonPointerException:
+            pass  # path cannot be found - ignore
+        except Exception as e:
+            if operation['op'] == 'replace' and 'non-existent object' in str(e):
+                # fall back to an ADD operation if the REPLACE fails
+                operation['op'] = 'add'
+                return apply_patch(subject, [operation], in_place=in_place)
+            raise
+    if return_list:
+        return results
+    return (results or [subject])[-1]
