@@ -16,8 +16,8 @@ ARG APK_REPO=http://dl-cdn.alpinelinux.org/alpine/v3.10/main
 RUN apk add --no-cache postgresql=$PG_VER postgresql-client=$PG_VER postgresql-dev=$PG_VER postgresql-plpython3=$PG_VER --repository=$APK_REPO
 
 # install Docker (CLI only)
-RUN docker_version=17.05.0-ce; \
-  curl -fsSLO https://get.docker.com/builds/Linux/x86_64/docker-$docker_version.tgz \
+RUN docker_version=20.10.7; \
+  curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-$docker_version.tgz \
   && tar xzvf docker-$docker_version.tgz \
   && mv docker/docker /usr/local/bin \
   && rm -r docker docker-$docker_version.tgz

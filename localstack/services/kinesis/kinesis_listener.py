@@ -12,7 +12,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import ProxyListener
+from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
 
 LOG = logging.getLogger(__name__)
@@ -23,14 +23,18 @@ ACTION_PUT_RECORD = '%s.PutRecord' % ACTION_PREFIX
 ACTION_PUT_RECORDS = '%s.PutRecords' % ACTION_PREFIX
 ACTION_LIST_STREAMS = '%s.ListStreams' % ACTION_PREFIX
 
-# list of stream consumer details
-STREAM_CONSUMERS = []
+
+class KinesisBackend(RegionBackend):
+    def __init__(self):
+        # list of stream consumer details
+        self.stream_consumers = []
+        # maps stream name to list of enhanced monitoring metrics
+        self.enhanced_metrics = {}
 
 
 class ProxyListenerKinesis(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        global STREAM_CONSUMERS
         data, encoding_type = self.decode_content(data or '{}', True)
         action = headers.get('X-Amz-Target', '').split('.')[-1]
         if action == 'RegisterStreamConsumer':
@@ -48,7 +52,8 @@ class ProxyListenerKinesis(ProxyListener):
             consumer['ConsumerARN'] = '%s/consumer/%s' % (stream_arn, cons_name)
             consumer['ConsumerCreationTimestamp'] = now_utc()
             consumer = json_safe(consumer)
-            STREAM_CONSUMERS.append(consumer)
+            stream_consumers = KinesisBackend.get().stream_consumers
+            stream_consumers.append(consumer)
 
             result = {'Consumer': consumer}
 
@@ -61,13 +66,15 @@ class ProxyListenerKinesis(ProxyListener):
                 cons_arn = data.get('ConsumerARN', '').strip('" ')
                 return (c.get('ConsumerARN') == cons_arn or
                     (c.get('StreamARN') == stream_arn and c.get('ConsumerName') == cons_name))
-            STREAM_CONSUMERS = [c for c in STREAM_CONSUMERS if not consumer_matches(c)]
+            region = KinesisBackend.get()
+            region.stream_consumers = [c for c in region.stream_consumers if not consumer_matches(c)]
             return {}
 
         elif action == 'ListStreamConsumers':
+            stream_consumers = KinesisBackend.get().stream_consumers
             stream_arn = data.get('StreamARN', '').strip('" ')
             result = {
-                'Consumers': [c for c in STREAM_CONSUMERS if c.get('StreamARN') == stream_arn]
+                'Consumers': [c for c in stream_consumers if c.get('StreamARN') == stream_arn]
             }
             return encoded_response(result, encoding_type)
 
@@ -97,6 +104,22 @@ class ProxyListenerKinesis(ProxyListener):
 
         elif action == 'SubscribeToShard':
             result = subscribe_to_shard(data, headers)
+            return result
+
+        elif action == 'EnableEnhancedMonitoring':
+            stream_name = data.get('StreamName', '').strip('" ')
+            metrics = data.get('ShardLevelMetrics', [])
+            enhanced_metrics = KinesisBackend.get().enhanced_metrics
+            stream_metrics = enhanced_metrics[stream_name] = enhanced_metrics.get(stream_name) or []
+            stream_metrics += [m for m in metrics if m not in stream_metrics]
+            return {}
+
+        elif action == 'DisableEnhancedMonitoring':
+            stream_name = data.get('StreamName', '').strip('" ')
+            metrics = data.get('ShardLevelMetrics', [])
+            enhanced_metrics = KinesisBackend.get().enhanced_metrics
+            stream_metrics = enhanced_metrics.get(stream_name) or []
+            enhanced_metrics[stream_name] = [m for m in stream_metrics if m not in metrics]
             return result
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
@@ -254,8 +277,8 @@ def subscribe_to_shard(data, headers):
     stream_name = find_stream_for_consumer(data['ConsumerARN'])
     iter_type = data['StartingPosition']['Type']
     kwargs = {}
+    starting_sequence_number = data['StartingPosition'].get('SequenceNumber') or '0'
     if iter_type in ['AT_SEQUENCE_NUMBER', 'AFTER_SEQUENCE_NUMBER']:
-        starting_sequence_number = data['StartingPosition'].get('SequenceNumber') or '0'
         kwargs['StartingSequenceNumber'] = starting_sequence_number
     elif iter_type in ['AT_TIMESTAMP']:
         # or value is just an example timestamp from aws docs
@@ -270,6 +293,7 @@ def subscribe_to_shard(data, headers):
     def send_events():
         yield convert_to_binary_event_payload('', event_type='initial-response')
         iter = iterator
+        last_sequence_number = starting_sequence_number
         # TODO: find better way to run loop up to max 5 minutes (until connection terminates)!
         for i in range(5 * 60):
             result = None
@@ -287,17 +311,17 @@ def subscribe_to_shard(data, headers):
                 if data_needs_encoding:
                     record['Data'] = base64.b64encode(record['Data'])
                 record['Data'] = to_str(record['Data'])
+                last_sequence_number = record['SequenceNumber']
             if not records:
                 time.sleep(1)
                 continue
 
             response = {
                 'ChildShards': [],
-                'ContinuationSequenceNumber': iter,
+                'ContinuationSequenceNumber': last_sequence_number,
                 'MillisBehindLatest': 0,
                 'Records': json_safe(records),
             }
-
             result = json.dumps(response)
             yield convert_to_binary_event_payload(result, event_type='SubscribeToShardEvent')
 
@@ -306,7 +330,8 @@ def subscribe_to_shard(data, headers):
 
 
 def find_consumer(consumer_arn='', consumer_name='', stream_arn=''):
-    for consumer in STREAM_CONSUMERS:
+    stream_consumers = KinesisBackend.get().stream_consumers
+    for consumer in stream_consumers:
         if consumer_arn and consumer_arn == consumer.get('ConsumerARN'):
             return consumer
         elif consumer_name == consumer.get('ConsumerName') and stream_arn == consumer.get('StreamARN'):

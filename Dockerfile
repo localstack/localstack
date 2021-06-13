@@ -57,12 +57,10 @@ EXPOSE 4566 4571 8080 5678
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# expose default environment (required for aws-cli to work)
+# expose default environment
 ENV MAVEN_CONFIG=/opt/code/localstack \
     USER=localstack \
     PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages:/opt/code/localstack/.venv/lib/python3.7/site-packages
-RUN which awslocal
 
 # clean up and prepare for squashing the image
 RUN apk del --purge mvn || true
@@ -70,6 +68,10 @@ RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
 RUN rm -rf /usr/share/maven .venv/lib/python3.*/site-packages/cfnlint
 RUN rm -rf /tmp/* /root/.cache /opt/yarn-* /root/.npm/*cache; mkdir -p /tmp/localstack
 RUN if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
+
+# set up PYTHONPATH (after global pip packages are removed above), accommodating different install paths
+ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages:/opt/code/localstack/.venv/lib/python3.7/site-packages
+RUN which awslocal
 
 # add rest of the code
 ADD localstack/ localstack/
