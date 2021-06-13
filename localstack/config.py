@@ -12,7 +12,8 @@ import six
 from boto3 import Session
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS, LOCALHOST, LOCALHOST_IP, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
-    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1, LOG_LEVELS, DEFAULT_DEVELOP_PORT)
+    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1, LOG_LEVELS, DEFAULT_DEVELOP_PORT,
+    DEFAULT_BUCKET_MARKER_LOCAL)
 
 # keep track of start time, for performance debugging
 load_start_time = time.time()
@@ -80,6 +81,10 @@ HOSTNAME_FROM_LAMBDA = os.environ.get('HOSTNAME_FROM_LAMBDA', '').strip()
 
 # whether to remotely copy the lambda code or locally mount a volume
 LAMBDA_REMOTE_DOCKER = is_env_true('LAMBDA_REMOTE_DOCKER')
+
+# Marker name to indicate that a bucket represents the local file system. This is used for testing
+# Serverless applications where we mount the Lambda code directly into the container from the host OS.
+BUCKET_MARKER_LOCAL = os.environ.get('BUCKET_MARKER_LOCAL', '').strip() or DEFAULT_BUCKET_MARKER_LOCAL
 
 # network that the docker lambda container will be joining
 LAMBDA_DOCKER_NETWORK = os.environ.get('LAMBDA_DOCKER_NETWORK', '').strip()
@@ -241,7 +246,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID', 'DISABLE_EVENTS', 'EDGE_PORT', 'LS_LOG',
                    'EDGE_PORT_HTTP', 'SKIP_INFRA_DOWNLOADS', 'STEPFUNCTIONS_LAMBDA_ENDPOINT',
                    'WINDOWS_DOCKER_MOUNT_PREFIX', 'HOSTNAME_FROM_LAMBDA', 'LOG_LICENSE_ISSUES',
-                   'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
+                   'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS', 'BUCKET_MARKER_LOCAL',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
                    'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS', 'PERSISTENCE_SINGLE_FILE',
                    'S3_SKIP_SIGNATURE_VALIDATION', 'DEVELOP', 'DEVELOP_PORT', 'WAIT_FOR_DEBUGGER']
