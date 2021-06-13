@@ -84,7 +84,7 @@ class ProxyListenerApiGateway(ProxyListener):
                 result = hande_base_path_mappings(method, path, data, headers)
             if result is not None:
                 response.status_code = 200
-                aws_responses.set_response_content(response, result)
+                aws_responses.set_response_content(response, result, getattr(result, 'headers', {}))
 
         # publish event
         if method == 'POST' and path == '/restapis':

@@ -56,6 +56,7 @@ def make_json_response(message):
 def make_error_response(message, code=400, error_type=None):
     if code == 404 and not error_type:
         error_type = 'NotFoundException'
+    error_type = error_type or 'InvalidRequest'
     return requests_error_response_json(message, code=code, error_type=error_type)
 
 
@@ -134,7 +135,8 @@ def get_authorizers(path):
     if authorizer_id:
         authorizer = _find_authorizer(api_id, authorizer_id)
         if authorizer is None:
-            return make_error_response('Not found: %s' % authorizer_id, code=404, error_type='NotFoundException')
+            return make_error_response('Authorizer not found: %s' % authorizer_id,
+                code=404, error_type='NotFoundException')
         return to_authorizer_response_json(api_id, authorizer)
 
     result = [to_authorizer_response_json(api_id, a) for a in auth_list]
@@ -166,7 +168,7 @@ def update_authorizer(path, data):
 
     authorizer = _find_authorizer(api_id, authorizer_id)
     if authorizer is None:
-        return make_error_response('Not found: %s' % api_id, code=404)
+        return make_error_response('Authorizer not found for API: %s' % api_id, code=404)
 
     result = apply_json_patch_safe(authorizer, data['patchOperations'])
     result = normalize_authorizer(result)
@@ -231,7 +233,8 @@ def get_base_path_mapping(path):
     if base_path:
         mapping = ([m for m in mappings_list if m['basePath'] == base_path] or [None])[0]
         if mapping is None:
-            return make_error_response('Not found: %s' % base_path, code=404)
+            return make_error_response('Base path mapping not found: %s' % base_path, code=404,
+                error_type='NotFoundException')
         return to_base_mapping_response_json(domain_name, base_path, mapping)
 
     result = [to_base_mapping_response_json(domain_name, m['basePath'], m) for m in mappings_list]
@@ -267,7 +270,12 @@ def update_base_path_mapping(path, data):
         return make_error_response('Not found: mapping for domain name %s, base path %s' %
             (domain_name, base_path), code=404)
 
-    result = apply_json_patch_safe(mapping, data['patchOperations'])
+    operations = data['patchOperations']
+    operations = operations if isinstance(operations, list) else [operations]
+    for operation in operations:
+        if operation['path'] == '/restapiId':
+            operation['path'] = '/restApiId'
+    result = apply_json_patch_safe(mapping, operations)
 
     for i in range(len(mappings_list)):
         if mappings_list[i]['basePath'] == base_path:
