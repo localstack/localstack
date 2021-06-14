@@ -16,6 +16,8 @@ from localstack.services.apigateway.helpers import apply_json_patch_safe
 
 LOG = logging.getLogger(__name__)
 
+TRUE_STRINGS = ['true', 'True']
+
 # additional REST API attributes
 REST_API_ATTRIBUTES = ['disableExecuteApiEndpoint', 'apiKeySource', 'minimumCompressionSize']
 
@@ -53,7 +55,7 @@ def apply_patches():
 
         self['passthroughBehavior'] = pass_through_behavior
         self['cacheKeyParameters'] = cache_key_parameters
-        self['cacheNamespace'] = short_uid()
+        self['cacheNamespace'] = self.get('cacheNamespace') or short_uid()
 
         # httpMethod not present in response if integration_type is None, verified against AWS
         if integration_type == 'MOCK':
@@ -98,6 +100,11 @@ def apply_patches():
 
             rest_api.resources[child_id] = child
 
+        policy = body.get('x-amazon-apigateway-policy')
+        if policy:
+            policy = json.dumps(policy) if isinstance(policy, dict) else str(policy)
+            rest_api.policy = policy
+
         return rest_api
 
     # Implement import rest_api
@@ -110,20 +117,23 @@ def apply_patches():
         function_id = self.path.replace('/restapis/', '', 1).split('/')[0]
 
         if self.method == 'PATCH':
-            not_supported_attributes = ['/id', '/region_name', '/create_date']
+            not_supported_attributes = ['/id', '/region_name', '/createdDate']
 
             rest_api = self.backend.apis.get(function_id)
             if not rest_api:
                 msg = 'Invalid API identifier specified %s:%s' % (TEST_AWS_ACCOUNT_ID, function_id)
-                return (404, {}, msg)
+                return 404, {}, msg
 
             patch_operations = self._get_param('patchOperations')
+            model_attributes = list(rest_api.__dict__.keys())
             for operation in patch_operations:
-                if operation['path'].strip('/') in REST_API_ATTRIBUTES:
-                    operation['path'] = camelcase_to_underscores(operation['path'])
                 if operation['path'] in not_supported_attributes:
                     msg = 'Invalid patch path %s' % (operation['path'])
-                    return (400, {}, msg)
+                    return 400, {}, msg
+                path_stripped = operation['path'].strip('/')
+                path_underscores = camelcase_to_underscores(path_stripped)
+                if path_stripped not in model_attributes and path_underscores in model_attributes:
+                    operation['path'] = operation['path'].replace(path_stripped, path_underscores)
 
             rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
             apply_json_patch_safe(rest_api.__dict__, patch_operations, in_place=True)
@@ -192,6 +202,12 @@ def apply_patches():
         if self.method == 'PATCH':
             patch_operations = self._get_param('patchOperations')
             apply_json_patch_safe(integration, patch_operations, in_place=True)
+            # fix data types
+            if integration.get('timeoutInMillis'):
+                integration['timeoutInMillis'] = int(integration.get('timeoutInMillis'))
+            skip_verification = (integration.get('tlsConfig') or {}).get('insecureSkipVerification')
+            if skip_verification:
+                integration['tlsConfig']['insecureSkipVerification'] = str(skip_verification) in TRUE_STRINGS
 
         return result
 
@@ -262,7 +278,7 @@ def apply_patches():
         for param, value in params.items():
             for param_prefix in bool_params_prefixes:
                 if param.startswith(param_prefix) and not isinstance(value, bool):
-                    params[param] = str(value) in ['true', 'True']
+                    params[param] = str(value) in TRUE_STRINGS
         for list_param in list_params:
             value = self.get(list_param)
             if value and not isinstance(value, list):
@@ -318,11 +334,15 @@ def apply_patches():
                 key2 = '/%s' % key1
                 setting_key = '%s/%s' % (parts[-2], parts[-1])
                 setting_name, setting_type = key_mappings.get(setting_key)
-                for key in [key1, key2]:
+                # keys = [key1, key2]  # TODO remove?
+                keys = [key2]
+                for key in keys:
                     setting = method_settings[key] = method_settings.get(key) or {}
                     value = operation.get('value')
                     value = cast_value(value, setting_type)
                     setting[setting_name] = value
+            if operation['op'] == 'remove':
+                method_settings.pop(path, None)
         return result
 
     stage_apply_operations_orig = apigateway_models.Stage.apply_operations

@@ -22,6 +22,7 @@ PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
 PATH_REGEX_AUTHORIZER = r'^/restapis/[A-Za-z0-9_\-]+/authorizers/(.*)'
 PATH_REGEX_VALIDATOR = r'^/restapis/[A-Za-z0-9_\-]+/requestvalidators/?(.*)'
 PATH_REGEX_PATH_MAPPING = r'/domainnames/([^/]+)/basepathmappings/?(.*)'
+PATH_REGEX_VPC_LINKS = r'/vpclinks/([^/]+)?(.*)'
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
@@ -47,6 +48,8 @@ class APIGatewayRegion(RegionBackend):
         }
         # maps (domain_name) -> [path_mappings]
         self.base_path_mappings = {}
+        # maps ID to VPC link details
+        self.vpc_links = {}
 
 
 def make_json_response(message):
@@ -311,6 +314,69 @@ def hande_base_path_mappings(method, path, data, headers):
     return make_error_response('Not implemented for API Gateway base path mappings: %s' % method, code=404)
 
 
+# --------------
+# VCP LINK APIs
+# --------------
+
+def get_vpc_links(path):
+    region_details = APIGatewayRegion.get()
+    vpc_link_id = get_vpc_link_id_from_path(path)
+    if vpc_link_id:
+        vpc_link = region_details.vpc_links.get(vpc_link_id)
+        if vpc_link is None:
+            return make_error_response('VPC link ID "%s" not found' % vpc_link_id, code=404)
+        return make_json_response(to_vpc_link_response_json(vpc_link))
+    result = region_details.vpc_links.values()
+    result = [to_vpc_link_response_json(r) for r in result]
+    result = {'items': result}
+    return result
+
+
+def add_vpc_link(path, data):
+    region_details = APIGatewayRegion.get()
+    result = common.clone(data)
+    result['id'] = common.short_uid()
+    result['status'] = 'AVAILABLE'
+    region_details.vpc_links[result['id']] = result
+    return make_json_response(to_vpc_link_response_json(result))
+
+
+def update_vpc_link(path, data):
+    region_details = APIGatewayRegion.get()
+    vpc_link_id = get_vpc_link_id_from_path(path)
+    vpc_link = region_details.vpc_links.get(vpc_link_id)
+    if vpc_link is None:
+        return make_error_response('VPC link ID "%s" not found' % vpc_link_id, code=404)
+    result = apply_json_patch_safe(vpc_link, data['patchOperations'])
+    return make_json_response(to_vpc_link_response_json(result))
+
+
+def delete_vpc_link(path):
+    region_details = APIGatewayRegion.get()
+    vpc_link_id = get_vpc_link_id_from_path(path)
+    vpc_link = region_details.vpc_links.pop(vpc_link_id, None)
+    if vpc_link is None:
+        return make_error_response('VPC link ID "%s" not found for deletion' % vpc_link_id, code=404)
+    return make_accepted_response()
+
+
+def get_vpc_link_id_from_path(path):
+    match = re.match(PATH_REGEX_VPC_LINKS, path)
+    return match.group(1) if match else None
+
+
+def handle_vpc_links(method, path, data, headers):
+    if method == 'GET':
+        return get_vpc_links(path)
+    elif method == 'POST':
+        return add_vpc_link(path, data)
+    if method == 'PATCH':
+        return update_vpc_link(path, data)
+    elif method == 'DELETE':
+        return delete_vpc_link(path)
+    return make_error_response('Not implemented for API Gateway VPC links: %s' % method, code=404)
+
+
 # ----------------
 # VALIDATORS APIs
 # ----------------
@@ -430,12 +496,18 @@ def to_account_response_json(data):
     return to_response_json('account', data, self_link='/account')
 
 
+def to_vpc_link_response_json(data):
+    return to_response_json('vpclink', data)
+
+
 def to_response_json(model_type, data, api_id=None, self_link=None):
     if isinstance(data, list) and len(data) == 1:
         data = data[0]
     result = common.clone(data)
     if not self_link:
-        self_link = '/restapis/%s/%ss/%s' % (api_id, model_type, data['id'])
+        self_link = '/%ss/%s' % (model_type, data['id'])
+        if api_id:
+            self_link = '/restapis/%s/%s' % (api_id, self_link)
     if '_links' not in result:
         result['_links'] = {}
     result['_links']['self'] = {'href': self_link}
@@ -597,10 +669,13 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
         except JsonPointerException:
             pass  # path cannot be found - ignore
         except Exception as e:
-            if operation['op'] == 'replace' and 'non-existent object' in str(e):
-                # fall back to an ADD operation if the REPLACE fails
-                operation['op'] = 'add'
-                return apply_patch(subject, [operation], in_place=in_place)
+            if 'non-existent object' in str(e):
+                if operation['op'] == 'replace':
+                    # fall back to an ADD operation if the REPLACE fails
+                    operation['op'] = 'add'
+                    return apply_patch(subject, [operation], in_place=in_place)
+                if operation['op'] == 'remove' and isinstance(subject, dict):
+                    subject.pop(operation['path'], None)
             raise
     if return_list:
         return results

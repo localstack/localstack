@@ -20,7 +20,7 @@ from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
 from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
-    handle_accounts, extract_query_string_params, extract_path_params, make_error_response,
+    handle_accounts, handle_vpc_links, extract_query_string_params, extract_path_params, make_error_response,
     get_cors_response, hande_base_path_mappings)
 
 # set up logger
@@ -80,6 +80,8 @@ class ProxyListenerApiGateway(ProxyListener):
             result = None
             if path == '/account':
                 result = handle_accounts(method, path, data, headers)
+            if path.startswith('/vpclinks'):
+                result = handle_vpc_links(method, path, data, headers)
             if re.match(PATH_REGEX_PATH_MAPPINGS, path):
                 result = hande_base_path_mappings(method, path, data, headers)
             if result is not None:
