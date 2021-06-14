@@ -1,3 +1,4 @@
+import os
 import types
 import logging
 import traceback
@@ -66,7 +67,8 @@ def apply_patches():
 
     TMP_STATE[PATCHES_APPLIED] = True
 
-    s3_models.DEFAULT_KEY_BUFFER_SIZE = S3_MAX_FILE_SIZE_MB * 1024 * 1024
+    if os.environ.get('MOTO_S3_DEFAULT_KEY_BUFFER_SIZE', None) is None:
+        os.environ['MOTO_S3_DEFAULT_KEY_BUFFER_SIZE'] = '1024'
 
     def s3_update_acls(self, request, query, bucket_name, key_name):
         # fix for - https://github.com/localstack/localstack/issues/1733
