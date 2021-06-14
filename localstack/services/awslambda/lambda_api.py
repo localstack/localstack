@@ -98,10 +98,6 @@ IAM_POLICY_VERSION = '2012-10-17'
 # Whether to check if the handler function exists while creating lambda function
 CHECK_HANDLER_ON_CREATION = False
 
-# Marker name to indicate that a bucket represents the local file system. This is used for testing
-# Serverless applications where we mount the Lambda code directly into the container from the host OS.
-BUCKET_MARKER_LOCAL = '__local__'
-
 
 class LambdaRegion(RegionBackend):
     def __init__(self):
@@ -735,11 +731,11 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     # get metadata
     lambda_arn = func_arn(lambda_name)
     lambda_details = region.lambdas[lambda_arn]
-    is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
+    is_local_mount = code.get('S3Bucket') == config.BUCKET_MARKER_LOCAL
 
     if is_local_mount and config.LAMBDA_REMOTE_DOCKER:
         msg = 'Please note that Lambda mounts (bucket name "%s") cannot be used with LAMBDA_REMOTE_DOCKER=1'
-        raise Exception(msg % BUCKET_MARKER_LOCAL)
+        raise Exception(msg % config.BUCKET_MARKER_LOCAL)
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(lambda_arn)
@@ -794,7 +790,7 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
     handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
     code_passed = code
     code = code or lambda_details.code
-    is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
+    is_local_mount = code.get('S3Bucket') == config.BUCKET_MARKER_LOCAL
     zip_file_content = None
 
     if code_passed:

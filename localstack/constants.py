@@ -149,3 +149,6 @@ S3_STATIC_WEBSITE_HOSTNAME = 's3-website.%s' % LOCALHOST_HOSTNAME
 
 # port for debug py
 DEFAULT_DEVELOP_PORT = 5678
+
+# Default bucket name of the s3 bucket used for local lambda development
+DEFAULT_BUCKET_MARKER_LOCAL = '__local__'

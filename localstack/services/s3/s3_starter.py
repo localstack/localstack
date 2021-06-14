@@ -12,7 +12,6 @@ from localstack.utils.server import multiserver
 from localstack.utils.common import wait_for_port_open, get_free_tcp_port
 from localstack.utils.generic.dict_utils import get_safe
 from localstack.services.infra import start_moto_server
-from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 from urllib.parse import urlparse
 
 LOG = logging.getLogger(__name__)
@@ -109,7 +108,7 @@ def apply_patches():
     # patch S3Bucket.get_bucket(..)
     def get_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-        if bucket_name == BUCKET_MARKER_LOCAL:
+        if bucket_name == config.BUCKET_MARKER_LOCAL:
             return None
         return get_bucket_orig(bucket_name, *args, **kwargs)
 

@@ -212,6 +212,7 @@ You can pass the following environment variables to LocalStack:
       host on the same machine. Also, `HOST_TMP_FOLDER` must be set properly, and a volume
       mount like `${HOST_TMP_FOLDER}:/tmp/localstack` needs to be configured if you're using
       docker-compose.
+* `BUCKET_MARKER_LOCAL`: Optional bucket name for running lambdas locally.
 * `LAMBDA_DOCKER_NETWORK`: Optional Docker network for the container running your lambda function.
 * `LAMBDA_DOCKER_DNS`: Optional DNS server for the container running your lambda function.
 * `LAMBDA_DOCKER_FLAGS`: Additional flags passed to Lambda Docker `run`/`create` commands (e.g., useful for specifying custom volume mounts)
@@ -455,7 +456,7 @@ You can use [Terraform](https://www.terraform.io) to provision your resources lo
 
 ## Using local code with Lambda
 
-In order to mount a local folder, ensure that `LAMBDA_REMOTE_DOCKER` is set to `false` then set the S3 bucket name to `__local__` and the S3 key to your local path:
+In order to mount a local folder, ensure that `LAMBDA_REMOTE_DOCKER` is set to `false` then set the S3 bucket name to `__local__` or `BUCKET_MARKER_LOCAL` if it is set, and the S3 key to your local path:
 
 ```
 awslocal lambda create-function --function-name myLambda \
