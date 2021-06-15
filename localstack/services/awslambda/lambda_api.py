@@ -1475,8 +1475,8 @@ def invoke_function(function):
         response_obj = details['Payload']
         if was_json or isinstance(response_obj, JSON_START_TYPES):
             response_obj = json_safe(response_obj)
+            # Content-type header is not required since jsonify automatically adds it
             response_obj = jsonify(response_obj)
-            details['Headers']['Content-Type'] = 'application/json'
         else:
             response_obj = str(response_obj)
             details['Headers']['Content-Type'] = 'text/plain'
