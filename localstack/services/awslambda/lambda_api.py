@@ -1276,8 +1276,11 @@ def update_function_configuration(function):
         lambda_details.vpc_config = data['VpcConfig']
     if data.get('KMSKeyArn'):
         lambda_details.kms_key_arn = data['KMSKeyArn']
+    result = data
+    func_details = region.lambdas.get(arn)
+    result.update(format_func_details(func_details))
 
-    return jsonify(data)
+    return jsonify(result)
 
 
 def generate_policy_statement(sid, action, arn, sourcearn, principal):
