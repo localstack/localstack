@@ -3,6 +3,7 @@ import json
 import logging
 import traceback
 import requests
+from sys import platform
 from localstack import config
 from localstack.services import install
 from localstack.constants import MODULE_MAIN_PATH, INSTALL_DIR_INFRA
@@ -38,15 +39,35 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
 
 def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     target_dir = os.path.join(INSTALL_DIR_INFRA, 'kinesis-mock')
-    target_jar = os.path.join(target_dir, 'kinesis-mock.jar')
-    if not os.path.exists(target_jar):
+
+    if platform.startswith('linux'):
+        target_file_name = 'kinesis-mock-linux-amd64-dynamic'
+    elif platform == 'darwin':
+        target_file_name = 'kinesis-mock-macos-amd64-dynamic'
+    elif platform.startswith('win'):
+        target_file_name = 'kinesis-mock-dynamic.exe'
+    else:
+        target_file_name = 'kinesis-mock.jar'
+
+    target_file = os.path.join(target_dir, target_file_name)
+    if not os.path.exists(target_file):
         response = requests.get(KINESIS_MOCK_RELEASES)
         content = json.loads(to_str(response.content))
         archive_url = content.get('assets', [])[0].get('browser_download_url')
-        download(archive_url, target_jar)
+        download(archive_url, target_file)
     port = port or config.PORT_KINESIS
     backend_port = get_free_tcp_port()
-    cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s java -jar %s' % (backend_port, target_jar)
+    kinesis_data_dir_param = ''
+    if config.DATA_DIR:
+        kinesis_data_dir = '%s/kinesis' % config.DATA_DIR
+        mkdir(kinesis_data_dir)
+        kinesis_data_dir_param = 'SHOULD_PERSIST_DATA=true PERSIST_PATH=%s' % kinesis_data_dir
+    if target_file_name.endswith('.jar'):
+        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s java -XX:+UseG1GC -jar %s' \
+            % (backend_port, config.KINESIS_SHARD_LIMIT, kinesis_data_dir_param, target_file)
+    else:
+        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s --gc=G1' \
+            % (backend_port, config.KINESIS_SHARD_LIMIT, kinesis_data_dir_param, target_file)
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
 
