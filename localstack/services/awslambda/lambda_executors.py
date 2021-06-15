@@ -194,9 +194,11 @@ class LambdaExecutor(object):
         env_vars = dict(env_vars or {})
         runtime = func_details.runtime or ''
 
-        event = event or env_vars.get('AWS_LAMBDA_EVENT_BODY')
-        event_stdin_str = str(event)
-        is_large_event = len(event_stdin_str) > MAX_ENV_ARGS_LENGTH
+        stdin_str = None
+        event_body = event if event is not None else env_vars.get('AWS_LAMBDA_EVENT_BODY')
+        event_body = json.dumps(event_body) if isinstance(event_body, dict) else event_body
+        event_body = event_body or ''
+        is_large_event = len(event_body) > MAX_ENV_ARGS_LENGTH
 
         is_provided = runtime.startswith(LAMBDA_RUNTIME_PROVIDED)
         if not is_large_event and func_details and is_provided and env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
@@ -204,20 +206,19 @@ class LambdaExecutor(object):
             # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
             env_updates = {
                 'PATH': env_vars.get('PATH') or os.environ.get('PATH', ''),
-                'AWS_LAMBDA_EVENT_BODY': event_stdin_str,
+                'AWS_LAMBDA_EVENT_BODY': to_str(event_body),
                 'DOCKER_LAMBDA_USE_STDIN': '1'
             }
             env_vars.update(env_updates)
             # Note: $AWS_LAMBDA_COGNITO_IDENTITY='{}' causes Rust Lambdas to hang
             env_vars.pop('AWS_LAMBDA_COGNITO_IDENTITY', None)
-            event_stdin_str = None
             cmd = re.sub(r'(.*)(%s\s+(run|start|exec))' % self._docker_cmd(),
                 r'\1echo $AWS_LAMBDA_EVENT_BODY | \2', cmd)
 
-        if is_large_event:
+        elif is_large_event:
             # in case of very large event payloads, we need to pass them via stdin
-            event_stdin_str = str(event)
-            LOG.debug('Received large Lambda event payload (length %s) - passing via stdin' % len(event_stdin_str))
+            stdin_str = event_body
+            LOG.debug('Received large Lambda event payload (length %s) - passing via stdin' % len(stdin_str))
             env_vars.pop('AWS_LAMBDA_EVENT_BODY', None)
             env_vars['DOCKER_LAMBDA_USE_STDIN'] = '1'
             if 'DOCKER_LAMBDA_USE_STDIN' not in cmd:
@@ -225,9 +226,12 @@ class LambdaExecutor(object):
                     r'\1 \2 -e DOCKER_LAMBDA_USE_STDIN=1 ', cmd)
                 cmd = re.sub(r'-e\s+AWS_LAMBDA_EVENT_BODY="?\$AWS_LAMBDA_EVENT_BODY"?', '', cmd)
 
+        elif env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
+            stdin_str = event_body
+
         kwargs = {'stdin': True, 'inherit_env': True, 'asynchronous': True}
         process = run(cmd, env_vars=env_vars, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs)
-        event_stdin_bytes = to_bytes(event_stdin_str or '')
+        event_stdin_bytes = stdin_str and to_bytes(stdin_str)
         result, log_output = process.communicate(input=event_stdin_bytes)
         try:
             result = to_str(result).strip()
