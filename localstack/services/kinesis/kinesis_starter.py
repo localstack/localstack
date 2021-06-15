@@ -48,8 +48,9 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     if not os.path.exists(target_file):
         response = requests.get(KINESIS_MOCK_RELEASES)
         content = json.loads(to_str(response.content))
-        archive_url = filter(lambda x: x.get('name') == target_file_name,
-            content.get('assets', []))[0].get('browser_download_url')
+        assets = content.get('assets', [])
+        filtered = [x for x in assets if x['name'] == target_file_name]
+        archive_url = filtered[0].get('browser_download_url')
         download(archive_url, target_file)
     port = port or config.PORT_KINESIS
     backend_port = get_free_tcp_port()
