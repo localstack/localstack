@@ -190,28 +190,61 @@ class LambdaExecutor(object):
     def cleanup(self, arn=None):
         pass
 
-    def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars={}):
-        kwargs = {'stdin': True, 'inherit_env': True, 'asynchronous': True}
-        env_vars = env_vars or {}
+    def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars=None):
+        env_vars = dict(env_vars or {})
         runtime = func_details.runtime or ''
 
+        stdin_str = None
+        event_body = event if event is not None else env_vars.get('AWS_LAMBDA_EVENT_BODY')
+        event_body = json.dumps(event_body) if isinstance(event_body, dict) else event_body
+        event_body = event_body or ''
+        is_large_event = len(event_body) > MAX_ENV_ARGS_LENGTH
+
         is_provided = runtime.startswith(LAMBDA_RUNTIME_PROVIDED)
-        if func_details and is_provided and env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
+        if not is_large_event and func_details and is_provided and env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
             # Note: certain "provided" runtimes (e.g., Rust programs) can block if we pass in
             # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
             env_updates = {
                 'PATH': env_vars.get('PATH') or os.environ.get('PATH', ''),
-                'AWS_LAMBDA_EVENT_BODY': to_str(event),
+                'AWS_LAMBDA_EVENT_BODY': to_str(event_body),  # Note: seems to be needed for provided runtimes!
                 'DOCKER_LAMBDA_USE_STDIN': '1'
             }
             env_vars.update(env_updates)
             # Note: $AWS_LAMBDA_COGNITO_IDENTITY='{}' causes Rust Lambdas to hang
             env_vars.pop('AWS_LAMBDA_COGNITO_IDENTITY', None)
-            event = None
-            cmd = re.sub(r'(.*)(%s\s+(run|start))' % self._docker_cmd(), r'\1echo $AWS_LAMBDA_EVENT_BODY | \2', cmd)
+            cmd = re.sub(r'(.*)(%s\s+(run|start|exec))' % self._docker_cmd(),
+                r'\1echo $AWS_LAMBDA_EVENT_BODY | \2', cmd)
 
+        if is_large_event:
+            # in case of very large event payloads, we need to pass them via stdin
+            LOG.debug('Received large Lambda event payload (length %s) - passing via stdin' % len(event_body))
+            env_vars['DOCKER_LAMBDA_USE_STDIN'] = '1'
+
+        def add_env_var(cmd, name, value=None):
+            value = value or '$%s' % name
+            return re.sub(r'(%s)\s+(run|exec)\s+' % config.DOCKER_CMD,
+                r'\1 \2 -e %s="%s" ' % (name, value), cmd)
+
+        def rm_env_var(cmd, name):
+            return re.sub(r'-e\s+%s="?[^"\s]+"?' % name, '', cmd)
+
+        if env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
+            stdin_str = event_body
+            if not is_provided:
+                env_vars.pop('AWS_LAMBDA_EVENT_BODY', None)
+            if 'DOCKER_LAMBDA_USE_STDIN' not in cmd:
+                cmd = add_env_var(cmd, 'DOCKER_LAMBDA_USE_STDIN', '1')
+                cmd = rm_env_var(cmd, 'AWS_LAMBDA_EVENT_BODY')
+        else:
+            if 'AWS_LAMBDA_EVENT_BODY' not in env_vars:
+                env_vars['AWS_LAMBDA_EVENT_BODY'] = to_str(event_body)
+            cmd = add_env_var(cmd, 'AWS_LAMBDA_EVENT_BODY')
+            cmd = rm_env_var(cmd, 'DOCKER_LAMBDA_USE_STDIN')
+
+        kwargs = {'stdin': True, 'inherit_env': True, 'asynchronous': True}
         process = run(cmd, env_vars=env_vars, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs)
-        result, log_output = process.communicate(input=event)
+        event_stdin_bytes = stdin_str and to_bytes(stdin_str)
+        result, log_output = process.communicate(input=event_stdin_bytes)
         try:
             result = to_str(result).strip()
         except Exception:
@@ -261,7 +294,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         """ Return the event as a stdin string. """
         # amend the environment variables for execution
         environment['AWS_LAMBDA_EVENT_BODY'] = event_body
-        return None
+        return event_body.encode()
 
     def _execute(self, func_arn, func_details, event, context=None, version=None):
         lambda_cwd = func_details.cwd
@@ -275,7 +308,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # prepare event body
         if not event:
-            LOG.warning('Empty event body specified for invocation of Lambda "%s"' % func_arn)
+            LOG.info('Empty event body specified for invocation of Lambda "%s"' % func_arn)
             event = {}
         event_body = json.dumps(json_safe(event))
         stdin = self.prepare_event(environment, event_body)
@@ -333,7 +366,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # run Lambda executor and fetch invocation result
         LOG.info('Running lambda cmd: %s' % cmd)
-        result = self.run_lambda_executor(cmd, stdin, env_vars=environment, func_details=func_details)
+        result = self.run_lambda_executor(cmd, event=stdin, env_vars=environment, func_details=func_details)
 
         # clean up events file
         events_file_path and os.path.exists(events_file_path) and rm_rf(events_file_path)
@@ -391,7 +424,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         cmd = (
             '%s'
-            ' %s exec'
+            ' %s exec -i'
             ' %s'  # env variables file
             ' %s'  # container name
             ' %s'  # run cmd
@@ -436,7 +469,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             docker_cmd = self._docker_cmd()
 
             status = self.get_docker_container_status(func_arn)
-            LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
+            LOG.debug('Priming Docker container (status "%s"): %s' % (status, container_name))
 
             docker_image = Util.docker_image_for_lambda(func_details)
 
@@ -476,6 +509,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         docker_cmd = self._docker_cmd()
         container_name = self.get_container_name(func_details.arn())
 
+        # make sure AWS_LAMBDA_EVENT_BODY is not set (otherwise causes issues with "docker exec ..." above)
+        env_vars.pop('AWS_LAMBDA_EVENT_BODY', None)
+
         # create environment variables flag (either passed directly, or as env var file)
         env_vars_flags = Util.create_env_vars_file_flag(env_vars)
 
@@ -501,7 +537,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             ' --entrypoint /bin/bash'  # Load bash when it starts.
             ' %s'
             ' --interactive'  # Keeps the container running bash.
-            ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
             ' -e HOSTNAME="$HOSTNAME"'
             ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
             ' -e EDGE_PORT="$EDGE_PORT"'
@@ -919,20 +954,31 @@ class Util:
         return result
 
     @classmethod
-    def create_env_vars_file_flag(cls, env_vars):
+    def create_env_vars_file_flag(cls, env_vars, use_env_variable_names=True):
         if not env_vars:
             return ''
-        env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for k, v in env_vars.items()])
-        # default ARG_MAX=131072 in Docker - let's create an env var file if the string becomes too long...
-        if len(env_vars_str) <= MAX_ENV_ARGS_LENGTH:
-            return env_vars_str
-        env_file = cls.mountable_tmp_file()
-        env_content = ''
-        for name, value in env_vars.items():
-            value = value.replace('\n', '\\')
-            env_content += '%s=%s\n' % (name, value)
-        save_file(env_file, env_content)
-        return '--env-file %s' % env_file
+        result = ''
+        env_vars = dict(env_vars)
+        if len(str(env_vars)) > MAX_ENV_ARGS_LENGTH:
+            # default ARG_MAX=131072 in Docker - let's create an env var file if the string becomes too long...
+            env_file = cls.mountable_tmp_file()
+            env_content = ''
+            for name, value in dict(env_vars).items():
+                if len(value) > MAX_ENV_ARGS_LENGTH:
+                    # each line in the env file has a max size as well (error "bufio.Scanner: token too long")
+                    continue
+                env_vars.pop(name)
+                value = value.replace('\n', '\\')
+                env_content += '%s=%s\n' % (name, value)
+            save_file(env_file, env_content)
+            result += '--env-file %s ' % env_file
+
+        if use_env_variable_names:
+            env_vars_str = ' '.join(['-e {k}="${k}"'.format(k=k) for k in env_vars.keys()])
+        else:
+            env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for k, v in env_vars.items()])
+        result += env_vars_str
+        return result
 
     @staticmethod
     def rm_env_vars_file(env_vars_file_flag):
