@@ -206,7 +206,7 @@ class LambdaExecutor(object):
             # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
             env_updates = {
                 'PATH': env_vars.get('PATH') or os.environ.get('PATH', ''),
-                # 'AWS_LAMBDA_EVENT_BODY': to_str(event_body),  # TODO needed?
+                'AWS_LAMBDA_EVENT_BODY': to_str(event_body),  # Note: seems to be needed for provided runtimes!
                 'DOCKER_LAMBDA_USE_STDIN': '1'
             }
             env_vars.update(env_updates)
@@ -217,7 +217,7 @@ class LambdaExecutor(object):
 
         if is_large_event:
             # in case of very large event payloads, we need to pass them via stdin
-            LOG.debug('Received large Lambda event payload (length %s) - passing via stdin' % len(stdin_str))
+            LOG.debug('Received large Lambda event payload (length %s) - passing via stdin' % len(event_body))
             env_vars['DOCKER_LAMBDA_USE_STDIN'] = '1'
 
         def add_env_var(cmd, name, value=None):
@@ -230,7 +230,8 @@ class LambdaExecutor(object):
 
         if env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
             stdin_str = event_body
-            env_vars.pop('AWS_LAMBDA_EVENT_BODY', None)
+            if not is_provided:
+                env_vars.pop('AWS_LAMBDA_EVENT_BODY', None)
             if 'DOCKER_LAMBDA_USE_STDIN' not in cmd:
                 cmd = add_env_var(cmd, 'DOCKER_LAMBDA_USE_STDIN', '1')
                 cmd = rm_env_var(cmd, 'AWS_LAMBDA_EVENT_BODY')

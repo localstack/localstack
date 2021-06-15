@@ -399,14 +399,13 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36
         )
         lambda_client = aws_stack.connect_to_service('lambda')
-        payload = json.dumps({'test': 'test123456' * 100 * 1000 * 5})  # 5MB payload
-        result = lambda_client.invoke(FunctionName=function_name, Payload=to_bytes(payload))
-        print(result)
+        payload = {'test': 'test123456' * 100 * 1000 * 5}  # 5MB payload
+        payload_bytes = to_bytes(json.dumps(payload))
+        result = lambda_client.invoke(FunctionName=function_name, Payload=payload_bytes)
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
         result_data = result['Payload'].read()
-        print(len(result_data))
-        result_data = json.loads(result_data)
-        self.assertTrue(result_data)
+        result_data = json.loads(to_str(result_data))
+        self.assertEqual(result_data, payload)
 
         lambda_client.delete_function(FunctionName=function_name)
 
@@ -1367,7 +1366,7 @@ class TestCustomRuntimes(LambdaTestBase):
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
 
-    def test_nodejs_lambda_running_in_docker(self):
+    def test_provided_runtime_running_in_docker(self):
         if not use_docker():
             return
 
