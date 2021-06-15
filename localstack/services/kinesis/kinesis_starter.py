@@ -8,7 +8,7 @@ from localstack import config
 from localstack.services import install
 from localstack.constants import MODULE_MAIN_PATH, INSTALL_DIR_INFRA
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import mkdir, get_free_tcp_port, replace_in_file, to_str, download
+from localstack.utils.common import chmod_r, mkdir, get_free_tcp_port, replace_in_file, to_str, download
 from localstack.services.infra import start_proxy_for_service, do_run, log_startup_message
 
 LOGGER = logging.getLogger(__name__)
@@ -55,6 +55,7 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         content = json.loads(to_str(response.content))
         archive_url = content.get('assets', [])[0].get('browser_download_url')
         download(archive_url, target_file)
+    chmod_r(target_file, 0o777)
     port = port or config.PORT_KINESIS
     backend_port = get_free_tcp_port()
     kinesis_data_dir_param = ''
