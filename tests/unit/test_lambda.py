@@ -651,12 +651,13 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(response.get_data())
             self.assertTrue('Tags' in result)
             self.assertDictEqual({'hello': 'world'}, result['Tags'])
-    
+
     def test_update_configuration(self):
         self._create_function(self.FUNCTION_NAME)
 
         updated_config = {'Description': 'lambda_description'}
-        response = json.loads(self.client.put('{0}/functions/{1}/configuration'.format(lambda_api.PATH_ROOT, self.FUNCTION_NAME), json=updated_config).get_data())
+        response = json.loads(self.client.put('{0}/functions/{1}/configuration'.format(lambda_api.PATH_ROOT,
+                            self.FUNCTION_NAME), json=updated_config).get_data())
 
         expected_response = dict()
         expected_response['LastUpdateStatus'] = 'Successful'
@@ -668,7 +669,8 @@ class TestLambdaAPI(unittest.TestCase):
         expected_response.update(updated_config)
         self.assertDictContainsSubset(expected_response, response)
 
-        get_response = json.loads(self.client.get('{0}/functions/{1}/configuration'.format(lambda_api.PATH_ROOT, self.FUNCTION_NAME)).get_data())
+        get_response = json.loads(self.client.get('{0}/functions/{1}/configuration'.format(lambda_api.PATH_ROOT,
+                            self.FUNCTION_NAME)).get_data())
         self.assertDictEqual(response, get_response)
 
     def test_java_options_empty_return_empty_value(self):
