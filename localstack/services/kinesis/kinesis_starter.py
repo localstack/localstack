@@ -12,7 +12,7 @@ from localstack.services.infra import start_proxy_for_service, do_run, log_start
 
 LOGGER = logging.getLogger(__name__)
 
-KINESIS_MOCK_RELEASES = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/latest'
+KINESIS_MOCK_RELEASES = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/0.0.8'
 
 # Kinesis provider - either "kinesis-mock" or "kinesalite"
 KINESIS_PROVIDER = os.environ.get('KINESIS_PROVIDER') or 'kinesis-mock'
