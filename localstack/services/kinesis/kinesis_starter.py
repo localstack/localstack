@@ -64,7 +64,7 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         'UPDATE_SHARD_COUNT_DURATION=%s' \
         % (latency, latency, latency, latency, latency, latency, latency, latency, latency)
     if target_file_name.endswith('.jar'):
-        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s java -XX:+UseG1GC -jar %s' \
+        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s java -XX:+UseG1GC -cp %s kinesis.mock.KinesisMockService' \
             % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param, target_file)
     else:
         chmod_r(target_file, 0o777)
