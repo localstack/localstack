@@ -57,13 +57,19 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         kinesis_data_dir = '%s/kinesis' % config.DATA_DIR
         mkdir(kinesis_data_dir)
         kinesis_data_dir_param = 'SHOULD_PERSIST_DATA=true PERSIST_PATH=%s' % kinesis_data_dir
+    latency = config.KINESIS_LATENCY
+    latency_param = 'CREATE_STREAM_DURATION=%s DELETE_STREAM_DURATION=%s REGISTER_STREAM_CONSUMER_DURATION=%s ' \
+        'START_STREAM_ENCRYPTION_DURATION=%s STOP_STREAM_ENCRYPTION_DURATION=%s ' \
+        'DEREGISTER_STREAM_CONSUMER_DURATION=%s MERGE_SHARDS_DURATION=%s SPLIT_SHARD_DURATION=%s ' \
+        'UPDATE_SHARD_COUNT_DURATION=%s' \
+        % (latency, latency, latency, latency, latency, latency, latency, latency, latency)
     if target_file_name.endswith('.jar'):
-        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s java -XX:+UseG1GC -jar %s' \
-            % (backend_port, config.KINESIS_SHARD_LIMIT, kinesis_data_dir_param, target_file)
+        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s java -XX:+UseG1GC -jar %s' \
+            % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param, target_file)
     else:
         chmod_r(target_file, 0o777)
-        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s --gc=G1' \
-            % (backend_port, config.KINESIS_SHARD_LIMIT, kinesis_data_dir_param, target_file)
+        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s --gc=G1' \
+            % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param, target_file)
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
 
