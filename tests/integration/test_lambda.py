@@ -391,6 +391,25 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
         lambda_client.delete_function(FunctionName=function_name)
 
+    def test_large_payloads(self):
+        function_name = 'large_payload-{}'.format(short_uid())
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+        lambda_client = aws_stack.connect_to_service('lambda')
+        payload = json.dumps({'test': 'test123456' * 100 * 1000 * 5})  # 5MB payload
+        result = lambda_client.invoke(FunctionName=function_name, Payload=to_bytes(payload))
+        print(result)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        result_data = result['Payload'].read()
+        print(len(result_data))
+        result_data = json.loads(result_data)
+        self.assertTrue(result_data)
+
+        lambda_client.delete_function(FunctionName=function_name)
+
     def test_add_lambda_multiple_permission(self):
         function_name = 'lambda_func-{}'.format(short_uid())
         testutil.create_lambda_function(

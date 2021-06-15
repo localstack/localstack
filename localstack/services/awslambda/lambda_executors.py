@@ -206,7 +206,7 @@ class LambdaExecutor(object):
             # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
             env_updates = {
                 'PATH': env_vars.get('PATH') or os.environ.get('PATH', ''),
-                'AWS_LAMBDA_EVENT_BODY': to_str(event_body),
+                # 'AWS_LAMBDA_EVENT_BODY': to_str(event_body),  # TODO needed?
                 'DOCKER_LAMBDA_USE_STDIN': '1'
             }
             env_vars.update(env_updates)
@@ -215,19 +215,30 @@ class LambdaExecutor(object):
             cmd = re.sub(r'(.*)(%s\s+(run|start|exec))' % self._docker_cmd(),
                 r'\1echo $AWS_LAMBDA_EVENT_BODY | \2', cmd)
 
-        elif is_large_event:
+        if is_large_event:
             # in case of very large event payloads, we need to pass them via stdin
-            stdin_str = event_body
             LOG.debug('Received large Lambda event payload (length %s) - passing via stdin' % len(stdin_str))
-            env_vars.pop('AWS_LAMBDA_EVENT_BODY', None)
             env_vars['DOCKER_LAMBDA_USE_STDIN'] = '1'
-            if 'DOCKER_LAMBDA_USE_STDIN' not in cmd:
-                cmd = re.sub(r'(%s)\s+(run|exec)\s+' % config.DOCKER_CMD,
-                    r'\1 \2 -e DOCKER_LAMBDA_USE_STDIN=1 ', cmd)
-                cmd = re.sub(r'-e\s+AWS_LAMBDA_EVENT_BODY="?\$AWS_LAMBDA_EVENT_BODY"?', '', cmd)
 
-        elif env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
+        def add_env_var(cmd, name, value=None):
+            value = value or '$%s' % name
+            return re.sub(r'(%s)\s+(run|exec)\s+' % config.DOCKER_CMD,
+                r'\1 \2 -e %s="%s" ' % (name, value), cmd)
+
+        def rm_env_var(cmd, name):
+            return re.sub(r'-e\s+%s="?[^"\s]+"?' % name, '', cmd)
+
+        if env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
             stdin_str = event_body
+            env_vars.pop('AWS_LAMBDA_EVENT_BODY', None)
+            if 'DOCKER_LAMBDA_USE_STDIN' not in cmd:
+                cmd = add_env_var(cmd, 'DOCKER_LAMBDA_USE_STDIN', '1')
+                cmd = rm_env_var(cmd, 'AWS_LAMBDA_EVENT_BODY')
+        else:
+            if 'AWS_LAMBDA_EVENT_BODY' not in env_vars:
+                env_vars['AWS_LAMBDA_EVENT_BODY'] = to_str(event_body)
+            cmd = add_env_var(cmd, 'AWS_LAMBDA_EVENT_BODY')
+            cmd = rm_env_var(cmd, 'DOCKER_LAMBDA_USE_STDIN')
 
         kwargs = {'stdin': True, 'inherit_env': True, 'asynchronous': True}
         process = run(cmd, env_vars=env_vars, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs)
@@ -282,7 +293,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         """ Return the event as a stdin string. """
         # amend the environment variables for execution
         environment['AWS_LAMBDA_EVENT_BODY'] = event_body
-        return None
+        return event_body.encode()
 
     def _execute(self, func_arn, func_details, event, context=None, version=None):
         lambda_cwd = func_details.cwd
@@ -296,7 +307,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # prepare event body
         if not event:
-            LOG.warning('Empty event body specified for invocation of Lambda "%s"' % func_arn)
+            LOG.info('Empty event body specified for invocation of Lambda "%s"' % func_arn)
             event = {}
         event_body = json.dumps(json_safe(event))
         stdin = self.prepare_event(environment, event_body)
@@ -354,7 +365,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # run Lambda executor and fetch invocation result
         LOG.info('Running lambda cmd: %s' % cmd)
-        result = self.run_lambda_executor(cmd, stdin, env_vars=environment, func_details=func_details)
+        result = self.run_lambda_executor(cmd, event=stdin, env_vars=environment, func_details=func_details)
 
         # clean up events file
         events_file_path and os.path.exists(events_file_path) and rm_rf(events_file_path)
@@ -457,7 +468,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             docker_cmd = self._docker_cmd()
 
             status = self.get_docker_container_status(func_arn)
-            LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
+            LOG.debug('Priming Docker container (status "%s"): %s' % (status, container_name))
 
             docker_image = Util.docker_image_for_lambda(func_details)
 
