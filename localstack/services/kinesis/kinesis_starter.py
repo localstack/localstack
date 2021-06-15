@@ -3,8 +3,6 @@ import json
 import logging
 import traceback
 import requests
-import struct
-from sys import platform
 from localstack import config
 from localstack.services import install
 from localstack.constants import MODULE_MAIN_PATH, INSTALL_DIR_INFRA
