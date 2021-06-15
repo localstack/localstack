@@ -15,7 +15,6 @@ from localstack.services.infra import start_moto_server
 
 XMLNS_IAM = 'https://iam.amazonaws.com/doc/2010-05-08/'
 
-
 USER_RESPONSE_TEMPLATE = """<{{ action }}UserResponse>
    <{{ action }}UserResult>
       <User>
@@ -36,7 +35,6 @@ USER_RESPONSE_TEMPLATE = """<{{ action }}UserResponse>
       <RequestId>{{request_id}}</RequestId>
    </ResponseMetadata>
 </{{ action }}UserResponse>"""
-
 
 ADDITIONAL_MANAGED_POLICIES = {
     'AWSLambdaExecute': {
@@ -67,7 +65,6 @@ ADDITIONAL_MANAGED_POLICIES = {
         'UpdateDate': '2019-05-20T18:22:18+00:00',
     }
 }
-
 
 SIMULATE_PRINCIPAL_POLICY_RESPONSE = """
 <SimulatePrincipalPolicyResponse xmlns="__xmlns__">
@@ -196,11 +193,9 @@ def apply_patches():
             default_version_id=None,
             description=None,
             document=None,
-            path=None,
-            create_date=None,
-            update_date=None
+            **kwargs
     ):
-        policy_init_orig(self, name, default_version_id, description, document, path, create_date, update_date)
+        policy_init_orig(self, name, default_version_id, description, document, **kwargs)
         self.document = document
 
     Policy.__init__ = policy__init__
@@ -238,6 +233,81 @@ def apply_patches():
             pass
 
     InlinePolicy.unapply_policy = inline_policy_unapply_policy
+
+    # support update_group
+
+    def update_group(self):
+        group_name = self._get_param('GroupName')
+        new_path = self._get_param('NewPath')
+        new_group_name = self._get_param('NewGroupName') or group_name
+        group = moto_iam_backend.get_group(group_name)
+        group.path = new_path
+        group.name = new_group_name
+        moto_iam_backend.groups[new_group_name] = moto_iam_backend.groups.pop(group_name)
+        return ''
+
+    if not hasattr(IamResponse, 'update_group'):
+        IamResponse.update_group = update_group
+
+    # support instance profile tags
+
+    def list_instance_profile_tags(self):
+        profile_name = self._get_param('InstanceProfileName')
+        profile = moto_iam_backend.get_instance_profile(profile_name)
+        result = {
+            'ListInstanceProfileTagsResponse': {
+                '@xmlns': XMLNS_IAM,
+                'ListInstanceProfileTagsResult': {'Tags': profile.tags}
+            }
+        }
+        return xmltodict.unparse(result)
+
+    if not hasattr(IamResponse, 'list_instance_profile_tags'):
+        IamResponse.list_instance_profile_tags = list_instance_profile_tags
+
+    def tag_instance_profile(self):
+        profile_name = self._get_param('InstanceProfileName')
+        tags = self._get_multi_param('Tags.member')
+        tags = {tag['Key']: tag['Value'] for tag in tags or []}
+        profile = moto_iam_backend.get_instance_profile(profile_name)
+        profile.tags.update(tags)
+        return ''
+
+    if not hasattr(IamResponse, 'tag_instance_profile'):
+        IamResponse.tag_instance_profile = tag_instance_profile
+
+    def untag_instance_profile(self):
+        profile_name = self._get_param('InstanceProfileName')
+        tag_keys = self._get_multi_param('TagKeys.member')
+        profile = moto_iam_backend.get_instance_profile(profile_name)
+        profile.tags = {k: v for k, v in profile.tags.items() if k not in tag_keys}
+        return ''
+
+    if not hasattr(IamResponse, 'untag_instance_profile'):
+        IamResponse.untag_instance_profile = untag_instance_profile
+
+    # support policy tags
+
+    def tag_policy(self):
+        policy_arn = self._get_param('PolicyArn')
+        tags = self._get_multi_param('Tags.member')
+        tags = {tag['Key']: tag['Value'] for tag in tags or []}
+        policy = moto_iam_backend.get_policy(policy_arn)
+        policy.tags.update(tags)
+        return ''
+
+    if not hasattr(IamResponse, 'tag_policy'):
+        IamResponse.tag_policy = tag_policy
+
+    def untag_policy(self):
+        policy_arn = self._get_param('PolicyArn')
+        tag_keys = self._get_multi_param('TagKeys.member')
+        policy = moto_iam_backend.get_policy(policy_arn)
+        policy.tags = {k: v for k, v in policy.tags.items() if k not in tag_keys}
+        return ''
+
+    if not hasattr(IamResponse, 'untag_policy'):
+        IamResponse.untag_policy = untag_policy
 
     # support service linked roles
 
@@ -279,8 +349,7 @@ def apply_patches():
                     'DeleteServiceLinkedRoleResult': {'DeletionTaskId': short_uid()}
                 }
             }
-            result = xmltodict.unparse(result)
-            return result
+            return xmltodict.unparse(result)
 
         IamResponse.delete_service_linked_role = delete_service_linked_role
 
@@ -292,8 +361,7 @@ def apply_patches():
                     'GetServiceLinkedRoleDeletionStatusResult': {'Status': 'SUCCEEDED'}
                 }
             }
-            result = xmltodict.unparse(result)
-            return result
+            return xmltodict.unparse(result)
 
         IamResponse.get_service_linked_role_deletion_status = get_service_linked_role_deletion_status
 

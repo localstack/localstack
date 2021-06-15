@@ -391,6 +391,24 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
         lambda_client.delete_function(FunctionName=function_name)
 
+    def test_large_payloads(self):
+        function_name = 'large_payload-{}'.format(short_uid())
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+        lambda_client = aws_stack.connect_to_service('lambda')
+        payload = {'test': 'test123456' * 100 * 1000 * 5}  # 5MB payload
+        payload_bytes = to_bytes(json.dumps(payload))
+        result = lambda_client.invoke(FunctionName=function_name, Payload=payload_bytes)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        result_data = result['Payload'].read()
+        result_data = json.loads(to_str(result_data))
+        self.assertEqual(result_data, payload)
+
+        lambda_client.delete_function(FunctionName=function_name)
+
     def test_add_lambda_multiple_permission(self):
         function_name = 'lambda_func-{}'.format(short_uid())
         testutil.create_lambda_function(
@@ -853,7 +871,8 @@ class TestPythonRuntimes(LambdaTestBase):
         )
         result_data = result['Payload'].read()
         result_data = json.loads(to_str(result_data))
-
+        self.assertEqual(result['ResponseMetadata']['HTTPHeaders']['content-type'],
+            'application/json')
         self.assertEqual(result['StatusCode'], 200)
         self.assertIsInstance(result_data, dict)
 
@@ -1348,7 +1367,7 @@ class TestCustomRuntimes(LambdaTestBase):
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
 
-    def test_nodejs_lambda_running_in_docker(self):
+    def test_provided_runtime_running_in_docker(self):
         if not use_docker():
             return
 

@@ -141,7 +141,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'{}\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[2])
+            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_populated_map_json_response(self, mock_run_lambda):
@@ -151,7 +151,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'{"bool":true,"int":1}\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[2])
+            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_empty_list_json_response(self, mock_run_lambda):
@@ -161,7 +161,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'[]\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[2])
+            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_populated_list_json_response(self, mock_run_lambda):
@@ -171,7 +171,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'[true,1,"thing"]\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[2])
+            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_string_json_response(self, mock_run_lambda):
@@ -181,7 +181,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'"thing"\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[2])
+            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_integer_json_response(self, mock_run_lambda):
@@ -191,7 +191,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'1234\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[2])
+            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_float_json_response(self, mock_run_lambda):
@@ -199,9 +199,10 @@ class TestLambdaAPI(unittest.TestCase):
             self._request_response(context)
             mock_run_lambda.return_value = '1.3'
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            print(f'float - {response[0].headers}')
             self.assertEqual(b'1.3\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[2])
+            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_boolean_json_response(self, mock_run_lambda):
@@ -211,7 +212,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'true\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[2])
+            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_null_json_response(self, mock_run_lambda):
@@ -221,7 +222,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'null\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[2])
+            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
 
     def test_create_event_source_mapping(self):
         self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
