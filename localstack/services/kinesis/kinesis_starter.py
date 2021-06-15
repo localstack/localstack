@@ -50,7 +50,6 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         content = json.loads(to_str(response.content))
         archive_url = content.get('assets', [])[0].get('browser_download_url')
         download(archive_url, target_file)
-    chmod_r(target_file, 0o777)
     port = port or config.PORT_KINESIS
     backend_port = get_free_tcp_port()
     kinesis_data_dir_param = ''
@@ -62,6 +61,7 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s java -XX:+UseG1GC -jar %s' \
             % (backend_port, config.KINESIS_SHARD_LIMIT, kinesis_data_dir_param, target_file)
     else:
+        chmod_r(target_file, 0o777)
         cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s --gc=G1' \
             % (backend_port, config.KINESIS_SHARD_LIMIT, kinesis_data_dir_param, target_file)
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
