@@ -48,7 +48,8 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     if not os.path.exists(target_file):
         response = requests.get(KINESIS_MOCK_RELEASES)
         content = json.loads(to_str(response.content))
-        archive_url = content.get('assets', [])[0].get('browser_download_url')
+        archive_url = filter(lambda x: x.get('name') == target_file_name,
+            content.get('assets', []))[0].get('browser_download_url')
         download(archive_url, target_file)
     port = port or config.PORT_KINESIS
     backend_port = get_free_tcp_port()
@@ -64,8 +65,7 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         'UPDATE_SHARD_COUNT_DURATION=%s' \
         % (latency, latency, latency, latency, latency, latency, latency, latency, latency)
     if target_file_name.endswith('.jar'):
-        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s java -XX:+UseG1GC -cp %s ' \
-            'kinesis.mock.KinesisMockService' \
+        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s java -XX:+UseG1GC -jar %s' \
             % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param, target_file)
     else:
         chmod_r(target_file, 0o777)
