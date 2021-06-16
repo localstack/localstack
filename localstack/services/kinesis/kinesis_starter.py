@@ -59,7 +59,7 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         kinesis_data_dir = '%s/kinesis' % config.DATA_DIR
         mkdir(kinesis_data_dir)
         kinesis_data_dir_param = 'SHOULD_PERSIST_DATA=true PERSIST_PATH=%s' % kinesis_data_dir
-    latency = config.KINESIS_LATENCY
+    latency = config.KINESIS_LATENCY + 'ms'
     latency_param = 'CREATE_STREAM_DURATION=%s DELETE_STREAM_DURATION=%s REGISTER_STREAM_CONSUMER_DURATION=%s ' \
         'START_STREAM_ENCRYPTION_DURATION=%s STOP_STREAM_ENCRYPTION_DURATION=%s ' \
         'DEREGISTER_STREAM_CONSUMER_DURATION=%s MERGE_SHARDS_DURATION=%s SPLIT_SHARD_DURATION=%s ' \

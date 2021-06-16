@@ -23,6 +23,7 @@ class TestKinesis(unittest.TestCase):
 
         # create stream and assert 0 consumers
         client.create_stream(StreamName=stream_name, ShardCount=1)
+        sleep(1)
         assert_consumers(0)
 
         # create consumer and assert 1 consumer
