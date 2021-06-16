@@ -38,12 +38,15 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
 def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     target_dir = os.path.join(INSTALL_DIR_INFRA, 'kinesis-mock')
 
-    if platform.machine().lower() == 'x86_64' or platform.machine().lower == 'amd64':
-        if platform.system().lower() == 'windows':
+    machine = platform.machine().lower()
+    system = platform.system().lower()
+
+    if machine == 'x86_64' or machine == 'amd64':
+        if system == 'windows':
             target_file_name = 'kinesis-mock-mostly-static.exe'
-        elif platform.system().lower() == 'linux':
+        elif system == 'linux':
             target_file_name = 'kinesis-mock-linux-amd64-static'
-        elif platform.system().lower() == 'darwin':
+        elif system == 'darwin':
             target_file_name = 'kinesis-mock-macos-amd64-dynamic'
         else:
             target_file_name = 'kinesis-mock.jar'
