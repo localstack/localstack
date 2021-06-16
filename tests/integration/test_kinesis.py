@@ -53,10 +53,6 @@ class TestKinesis(unittest.TestCase):
             ConsumerName=consumer_name)['ConsumerDescription']
         self.assertEqual(consumer_description_by_arn, consumer_description_by_name)
 
-        # delete non-existing consumer and assert 1 consumer
-        client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='_invalid_')
-        assert_consumers(1)
-
         # delete existing consumer and assert 0 remaining consumers
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
         assert_consumers(0)
@@ -118,6 +114,7 @@ class TestKinesis(unittest.TestCase):
         result = client.create_stream(StreamName=stream_name, ShardCount=1)
         sleep(1)
         result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')['Consumer']
+        sleep(1)
         # get starting sequence number
         response = client.describe_stream(StreamName=stream_name)
         sequence_number = response.get('StreamDescription').get('Shards')[0].get('SequenceNumberRange'). \
