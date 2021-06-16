@@ -55,6 +55,7 @@ class TestKinesis(unittest.TestCase):
 
         # delete existing consumer and assert 0 remaining consumers
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        sleep(1)
         assert_consumers(0)
 
         # clean up
