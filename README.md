@@ -101,6 +101,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * `python` (Python 2.x up to 3.8 supported)
 * `pip` (python package manager)
 * `Docker`
+* `JDK` (If `KINESIS_PROVIDER` is `kinesis-mock`. 8+ supported)
 
 ## Installing
 
