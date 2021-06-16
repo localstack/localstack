@@ -2,6 +2,8 @@ import json
 import time
 import logging
 import traceback
+from concurrent.futures import ThreadPoolExecutor
+
 import requests
 from localstack import config
 from localstack.utils.common import clone
@@ -99,7 +101,7 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
         # loop through plugins and check service status
         for name, plugin in SERVICE_PLUGINS.items():
             if name in apis:
-                check_service_health(api=name, print_error=print_error)
+                check_service_health(api=name, print_error=print_error, expect_shutdown=expect_shutdown)
 
         for additional in additional_checks:
             additional(expect_shutdown=expect_shutdown)
@@ -111,13 +113,30 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
         check_infra(retries - 1, expect_shutdown=expect_shutdown, apis=apis, additional_checks=additional_checks)
 
 
+def wait_for_infra_shutdown(apis=None):
+    apis = apis or canonicalize_api_names()
+
+    names = [name for name, plugin in SERVICE_PLUGINS.items() if name in apis]
+
+    def check(name):
+        check_service_health(api=name, expect_shutdown=True)
+        LOG.debug('[shutdown] api %s has shut down', name)
+
+    # no special significance to 10 workers, seems like a reasonable number given the number of services we have
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        executor.map(check, names)
+
+
 def check_service_health(api, print_error=False, expect_shutdown=False):
     try:
         plugin = SERVICE_PLUGINS.get(api)
         plugin.check(expect_shutdown=expect_shutdown, print_error=print_error)
         record_service_health(api, 'running')
     except Exception as e:
-        LOG.warning('Service "%s" not yet available, retrying...' % api)
+        if not expect_shutdown:
+            LOG.warning('Service "%s" not yet available, retrying...' % api)
+        else:
+            LOG.warning('Service "%s" still shutting down, retrying...' % api)
         raise e
 
 

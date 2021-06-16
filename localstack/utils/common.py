@@ -1093,11 +1093,11 @@ def cleanup(files=True, env=ENV_DEV, quiet=True):
         cleanup_tmp_files()
 
 
-def cleanup_threads_and_processes(quiet=True, debug=False):
+def cleanup_threads_and_processes(quiet=True):
     for thread in TMP_THREADS:
         if thread:
             try:
-                print_debug('[shutdown] Cleaning up thread: %s' % thread, debug)
+                # LOG.debug('[shutdown] Cleaning up thread: %s', thread)
                 if hasattr(thread, 'shutdown'):
                     thread.shutdown()
                     continue
@@ -1109,7 +1109,7 @@ def cleanup_threads_and_processes(quiet=True, debug=False):
                 print(e)
     for proc in TMP_PROCESSES:
         try:
-            print_debug('[shutdown] Cleaning up process: %s' % proc, debug)
+            # LOG.debug('[shutdown] Cleaning up process: %s', proc)
             kill_process_tree(proc.pid)
             # proc.terminate()
         except Exception as e:
@@ -1119,16 +1119,16 @@ def cleanup_threads_and_processes(quiet=True, debug=False):
         import asyncio
         for task in asyncio.all_tasks():
             try:
-                print_debug('[shutdown] Canceling asyncio task: %s' % task, debug)
+                # LOG.debug('[shutdown] Canceling asyncio task: %s', task)
                 task.cancel()
             except Exception as e:
                 print(e)
     except Exception:
         pass
-    print_debug('[shutdown] Done cleaning up threads / processes / tasks', debug)
+    LOG.debug('[shutdown] Done cleaning up threads / processes / tasks')
     # clear lists
-    clear_list(TMP_THREADS)
-    clear_list(TMP_PROCESSES)
+    TMP_THREADS.clear()
+    TMP_PROCESSES.clear()
 
 
 def kill_process_tree(parent_pid):
@@ -1142,11 +1142,6 @@ def kill_process_tree(parent_pid):
         except Exception:
             pass
     parent.kill()
-
-
-def clear_list(list_obj):
-    while len(list_obj):
-        del list_obj[0]
 
 
 def items_equivalent(list1, list2, comparator):
@@ -1283,14 +1278,9 @@ def is_root():
     return out == 'root'
 
 
-def cleanup_resources(debug=False):
+def cleanup_resources():
     cleanup_tmp_files()
-    cleanup_threads_and_processes(debug=debug)
-
-
-def print_debug(msg, debug=False):
-    if debug:
-        print(msg)
+    cleanup_threads_and_processes()
 
 
 @synchronized(lock=SSL_CERT_LOCK)
