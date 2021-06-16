@@ -14,7 +14,8 @@ class KinesisListenerTest(unittest.TestCase):
         if config.KINESIS_PROVIDER == 'kinesalite':
             describe_stream_summary_header = {'X-Amz-Target': 'Kinesis_20131202.DescribeStreamSummary'}
 
-            response = UPDATE_KINESIS.forward_request('POST', '/', TEST_DATA, describe_stream_summary_header)
+            response = UPDATE_KINESIS.forward_request('POST', '/', TEST_DATA,
+                describe_stream_summary_header)
 
             self.assertEqual(response, True)
         else:
@@ -53,7 +54,8 @@ class KinesisListenerTest(unittest.TestCase):
             error_response = Response()
             error_response.status_code = 400
 
-            response = UPDATE_KINESIS.return_response('POST', '/', request_data, update_shard_count_header, error_response)
+            response = UPDATE_KINESIS.return_response('POST', '/', request_data, update_shard_count_header,
+                error_response)
 
             self.assertEqual(response.status_code, 200)
             resp_json = json.loads(to_str(response.content))

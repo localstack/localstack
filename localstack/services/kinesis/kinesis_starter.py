@@ -14,6 +14,7 @@ LOGGER = logging.getLogger(__name__)
 
 KINESIS_MOCK_RELEASES = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/latest'
 
+
 def apply_patches_kinesalite():
     files = [
         '%s/node_modules/kinesalite/validations/decreaseStreamRetentionPeriod.js',
@@ -29,7 +30,7 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
         return start_kinesis_mock(port=port, asynchronous=asynchronous, update_listener=update_listener)
     elif config.KINESIS_PROVIDER == 'kinesalite':
         return start_kinesalite(port=port, asynchronous=asynchronous, update_listener=update_listener)
-    else: 
+    else:
         raise Exception('Unsupported Kinesis provider "%s"' % config.KINESIS_PROVIDER)
 
 
