@@ -44,8 +44,8 @@ class TestKinesis(unittest.TestCase):
             ConsumerARN=consumer_arn)['ConsumerDescription']
         self.assertEqual(consumer_description_by_arn['ConsumerName'], consumer_name)
         self.assertEqual(consumer_description_by_arn['ConsumerARN'], consumer_arn)
-        self.assertEqual(consumer_description_by_arn['ConsumerStatus'], 'ACTIVE')
         self.assertEqual(consumer_description_by_arn['StreamARN'], stream_arn)
+        self.assertEqual(consumer_description_by_arn['ConsumerStatus'], 'ACTIVE')
         self.assertTrue(isinstance(consumer_description_by_arn['ConsumerCreationTimestamp'], datetime))
         consumer_description_by_name = client.describe_stream_consumer(
             StreamARN=stream_arn,
