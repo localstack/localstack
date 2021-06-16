@@ -29,6 +29,7 @@ class TestKinesis(unittest.TestCase):
         # create consumer and assert 1 consumer
         consumer_name = 'cons1'
         response = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        sleep(1)
         self.assertEqual(response['Consumer']['ConsumerName'], consumer_name)
         # boto3 converts the timestamp to datetime
         self.assertTrue(isinstance(response['Consumer']['ConsumerCreationTimestamp'], datetime))
