@@ -1516,7 +1516,7 @@ def invoke_function(function):
                           code=400, error_type='InvalidParameterValueException')
 
 
-@app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['GET'])
+@app.route('%s/event-source-mappings' % PATH_ROOT, methods=['GET'], strict_slashes=False)
 def get_event_source_mappings():
     """ List event source mappings
         ---
@@ -1557,7 +1557,7 @@ def get_event_source_mapping(mapping_uuid):
     return jsonify(mappings[0])
 
 
-@app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['POST'])
+@app.route('%s/event-source-mappings' % PATH_ROOT, methods=['POST'], strict_slashes=False)
 def create_event_source_mapping():
     """ Create new event source mapping
         ---
