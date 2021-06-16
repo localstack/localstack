@@ -2,7 +2,7 @@ import types
 import logging
 import traceback
 from moto.s3 import models as s3_models, responses as s3_responses
-from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys, S3_ALL_MULTIPARTS
+from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, S3_ALL_MULTIPARTS, is_delete_keys
 from moto.s3.exceptions import S3ClientError
 from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
@@ -12,7 +12,6 @@ from localstack.utils.server import multiserver
 from localstack.utils.common import wait_for_port_open, get_free_tcp_port
 from localstack.utils.generic.dict_utils import get_safe
 from localstack.services.infra import start_moto_server
-from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 from urllib.parse import urlparse
 
 LOG = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ def check_s3(expect_shutdown=False, print_error=False):
     if expect_shutdown:
         assert out is None
     else:
-        assert isinstance(out['Buckets'], list)
+        assert out and isinstance(out.get('Buckets'), list)
 
 
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
@@ -109,7 +108,7 @@ def apply_patches():
     # patch S3Bucket.get_bucket(..)
     def get_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-        if bucket_name == BUCKET_MARKER_LOCAL:
+        if bucket_name == config.BUCKET_MARKER_LOCAL:
             return None
         return get_bucket_orig(bucket_name, *args, **kwargs)
 
@@ -289,10 +288,11 @@ def apply_patches():
     # https://github.com/localstack/localstack/issues/2866
     # https://github.com/localstack/localstack/issues/2850
     # https://github.com/localstack/localstack/issues/3931
+    # https://github.com/localstack/localstack/issues/4015
     utils_is_delete_keys_orig = s3bucket_path_utils.is_delete_keys
 
     def utils_is_delete_keys(request, path, bucket_name):
-        return path == '/' + bucket_name + '?delete=' or utils_is_delete_keys_orig(request, path, bucket_name)
+        return '/' + bucket_name + '?delete=' in path or utils_is_delete_keys_orig(request, path, bucket_name)
 
     def s3_response_is_delete_keys(self, request, path, bucket_name):
         if self.subdomain_based_buckets(request):

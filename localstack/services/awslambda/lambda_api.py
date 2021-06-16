@@ -98,10 +98,6 @@ IAM_POLICY_VERSION = '2012-10-17'
 # Whether to check if the handler function exists while creating lambda function
 CHECK_HANDLER_ON_CREATION = False
 
-# Marker name to indicate that a bucket represents the local file system. This is used for testing
-# Serverless applications where we mount the Lambda code directly into the container from the host OS.
-BUCKET_MARKER_LOCAL = '__local__'
-
 
 class LambdaRegion(RegionBackend):
     def __init__(self):
@@ -735,11 +731,11 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     # get metadata
     lambda_arn = func_arn(lambda_name)
     lambda_details = region.lambdas[lambda_arn]
-    is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
+    is_local_mount = code.get('S3Bucket') == config.BUCKET_MARKER_LOCAL
 
     if is_local_mount and config.LAMBDA_REMOTE_DOCKER:
         msg = 'Please note that Lambda mounts (bucket name "%s") cannot be used with LAMBDA_REMOTE_DOCKER=1'
-        raise Exception(msg % BUCKET_MARKER_LOCAL)
+        raise Exception(msg % config.BUCKET_MARKER_LOCAL)
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(lambda_arn)
@@ -794,7 +790,7 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
     handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
     code_passed = code
     code = code or lambda_details.code
-    is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
+    is_local_mount = code.get('S3Bucket') == config.BUCKET_MARKER_LOCAL
     zip_file_content = None
 
     if code_passed:
@@ -1280,8 +1276,11 @@ def update_function_configuration(function):
         lambda_details.vpc_config = data['VpcConfig']
     if data.get('KMSKeyArn'):
         lambda_details.kms_key_arn = data['KMSKeyArn']
+    result = data
+    func_details = region.lambdas.get(arn)
+    result.update(format_func_details(func_details))
 
-    return jsonify(data)
+    return jsonify(result)
 
 
 def generate_policy_statement(sid, action, arn, sourcearn, principal):
@@ -1479,8 +1478,8 @@ def invoke_function(function):
         response_obj = details['Payload']
         if was_json or isinstance(response_obj, JSON_START_TYPES):
             response_obj = json_safe(response_obj)
+            # Content-type header is not required since jsonify automatically adds it
             response_obj = jsonify(response_obj)
-            details['Headers']['Content-Type'] = 'application/json'
         else:
             response_obj = str(response_obj)
             details['Headers']['Content-Type'] = 'text/plain'
@@ -1517,7 +1516,7 @@ def invoke_function(function):
                           code=400, error_type='InvalidParameterValueException')
 
 
-@app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['GET'])
+@app.route('%s/event-source-mappings' % PATH_ROOT, methods=['GET'], strict_slashes=False)
 def get_event_source_mappings():
     """ List event source mappings
         ---
@@ -1558,7 +1557,7 @@ def get_event_source_mapping(mapping_uuid):
     return jsonify(mappings[0])
 
 
-@app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['POST'])
+@app.route('%s/event-source-mappings' % PATH_ROOT, methods=['POST'], strict_slashes=False)
 def create_event_source_mapping():
     """ Create new event source mapping
         ---

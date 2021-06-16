@@ -451,7 +451,7 @@ class TestAPIGateway(unittest.TestCase):
                 resourceId=api_resource['id'],
                 httpMethod='GET'
             )
-        self.assertEqual(ctx.exception.response['Error']['Code'], 'BadRequestException')
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'NotFoundException')
 
         # clean up
         lambda_client = aws_stack.connect_to_service('lambda')
@@ -557,31 +557,25 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(response['name'], model_name)
         self.assertEqual(response['description'], description)
 
-        try:
+        with self.assertRaises(Exception) as ctx:
             client.create_model(
                 restApiId=dummy_rest_api_id,
                 name=model_name,
                 description=description,
                 contentType=content_type,
             )
-            self.fail('This call should not be successful as the rest api is not valid.')
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'NotFoundException')
+        self.assertEqual(ctx.exception.response['Error']['Message'], 'Invalid Rest API Id specified')
 
-        except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
-            self.assertEqual(e.response['Error']['Message'], 'Invalid Rest API Id specified')
-
-        try:
+        with self.assertRaises(Exception) as ctx:
             client.create_model(
                 restApiId=dummy_rest_api_id,
                 name='',
                 description=description,
                 contentType=content_type,
             )
-            self.fail('This call should not be successful as the model name is not specified.')
-
-        except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'BadRequestException')
-            self.assertEqual(e.response['Error']['Message'], 'No Model Name specified')
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'BadRequestException')
+        self.assertEqual(ctx.exception.response['Error']['Message'], 'No Model Name specified')
 
         # clean up
         client.delete_rest_api(restApiId=rest_api_id)
