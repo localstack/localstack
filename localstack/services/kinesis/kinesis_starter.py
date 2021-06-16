@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import platform
 import traceback
 import requests
 from localstack import config
@@ -37,8 +38,15 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
 def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     target_dir = os.path.join(INSTALL_DIR_INFRA, 'kinesis-mock')
 
-    if config.is_in_docker:
-        target_file_name = 'kinesis-mock-linux-amd64-static'
+    if platform.machine().lower() == 'x86_64' or platform.machine().lower == 'amd64':
+        if platform.system().lower() == 'windows':
+            target_file_name = 'kinesis-mock-mostly-static.exe'
+        elif platform.system().lower() == 'linux':
+            target_file_name = 'kinesis-mock-linux-amd64-static'
+        elif platform.system().lower() == 'darwin':
+            target_file_name = 'kinesis-mock-macos-amd64-dynamic'
+        else:
+            target_file_name = 'kinesis-mock.jar'
     else:
         target_file_name = 'kinesis-mock.jar'
 
