@@ -57,6 +57,13 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         kinesis_data_dir = '%s/kinesis' % config.DATA_DIR
         mkdir(kinesis_data_dir)
         kinesis_data_dir_param = 'SHOULD_PERSIST_DATA=true PERSIST_PATH=%s' % kinesis_data_dir
+    if not config.LS_LOG:
+        log_level = 'INFO'
+    elif config.LS_LOG == 'warning':
+        log_level = 'WARN'
+    else:
+        log_level = config.LS_LOG.upper
+    log_level_param = 'LOG_LEVEL=%s' % (log_level)
     latency = config.KINESIS_LATENCY + 'ms'
     latency_param = 'CREATE_STREAM_DURATION=%s DELETE_STREAM_DURATION=%s REGISTER_STREAM_CONSUMER_DURATION=%s ' \
         'START_STREAM_ENCRYPTION_DURATION=%s STOP_STREAM_ENCRYPTION_DURATION=%s ' \
@@ -64,12 +71,14 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         'UPDATE_SHARD_COUNT_DURATION=%s' \
         % (latency, latency, latency, latency, latency, latency, latency, latency, latency)
     if target_file_name.endswith('.jar'):
-        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s java -XX:+UseG1GC -jar %s' \
-            % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param, target_file)
+        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s java -XX:+UseG1GC -jar %s' \
+            % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
+            log_level_param, target_file)
     else:
         chmod_r(target_file, 0o777)
-        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s --gc=G1' \
-            % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param, target_file)
+        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s --gc=G1' \
+            % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
+            log_level_param, target_file)
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
 
