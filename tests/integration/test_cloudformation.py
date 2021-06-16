@@ -691,7 +691,6 @@ class CloudFormationTest(unittest.TestCase):
         self.assertFalse(queue_exists('cf-test-queue-1'))
         self.assertFalse(topic_exists('%s-test-topic-1-1' % stack_name))
         retry(lambda: self.assertFalse(stream_exists('cf-test-stream-1')))
-        self.assertFalse(stream_consumer_exists('cf-test-stream-1', 'c1'))
 
     def test_list_stack_events(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
