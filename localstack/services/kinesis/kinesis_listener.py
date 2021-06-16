@@ -112,7 +112,7 @@ class ProxyListenerKinesis(ProxyListener):
             enhanced_metrics = KinesisBackend.get().enhanced_metrics
             stream_metrics = enhanced_metrics[stream_name] = enhanced_metrics.get(stream_name) or []
             stream_metrics += [m for m in metrics if m not in stream_metrics]
-            return result
+            return {}
 
         elif action == 'DisableEnhancedMonitoring' and config.KINESIS_PROVIDER == 'kinesalite':
             stream_name = data.get('StreamName', '').strip('" ')
@@ -120,7 +120,7 @@ class ProxyListenerKinesis(ProxyListener):
             enhanced_metrics = KinesisBackend.get().enhanced_metrics
             stream_metrics = enhanced_metrics.get(stream_name) or []
             enhanced_metrics[stream_name] = [m for m in stream_metrics if m not in metrics]
-            return {}
+            return result
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
             if action in ['PutRecord', 'PutRecords']:
