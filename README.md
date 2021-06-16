@@ -187,6 +187,7 @@ You can pass the following environment variables to LocalStack:
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.
+* `KINESIS_PROVIDER`: Determines which mock is in use. Valid values are `kinesalite` and `kinesis-mock` (default).
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
 * `KINESIS_SHARD_LIMIT`: Integer value (default: `100`) or `Infinity` (to disable), causing the Kinesis API to start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
@@ -717,3 +718,4 @@ kinesalite                | MIT License
 **Other tools:**          |
 Elasticsearch             | Apache License 2.0
 local-kms                 | MIT License
+kinesis-mock              | MIT License
