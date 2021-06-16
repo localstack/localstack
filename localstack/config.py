@@ -44,6 +44,9 @@ KINESIS_SHARD_LIMIT = os.environ.get('KINESIS_SHARD_LIMIT', '').strip() or '100'
 # delay in kinesalite response when making changes to streams
 KINESIS_LATENCY = os.environ.get('KINESIS_LATENCY', '').strip() or '500'
 
+# Kinesis provider - either "kinesis-mock" or "kinesalite"
+KINESIS_PROVIDER = os.environ.get('KINESIS_PROVIDER') or 'kinesis-mock'
+
 # default AWS region
 if 'DEFAULT_REGION' not in os.environ:
     os.environ['DEFAULT_REGION'] = os.environ.get('AWS_DEFAULT_REGION') or AWS_REGION_US_EAST_1

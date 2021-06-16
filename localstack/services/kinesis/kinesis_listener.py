@@ -37,7 +37,7 @@ class ProxyListenerKinesis(ProxyListener):
     def forward_request(self, method, path, data, headers):
         data, encoding_type = self.decode_content(data or '{}', True)
         action = headers.get('X-Amz-Target', '').split('.')[-1]
-        if action == 'RegisterStreamConsumer':
+        if action == 'RegisterStreamConsumer' & config.KINESIS_PROVIDER == 'kinesalite':
             stream_arn = data.get('StreamARN', '').strip('" ')
             cons_arn = data.get('ConsumerARN', '').strip('" ')
             cons_name = data.get('ConsumerName', '').strip('" ')
@@ -59,7 +59,7 @@ class ProxyListenerKinesis(ProxyListener):
 
             return encoded_response(result, encoding_type)
 
-        elif action == 'DeregisterStreamConsumer':
+        elif action == 'DeregisterStreamConsumer' & config.KINESIS_PROVIDER == 'kinesalite':
             def consumer_matches(c):
                 stream_arn = data.get('StreamARN', '').strip('" ')
                 cons_name = data.get('ConsumerName', '').strip('" ')
@@ -70,7 +70,7 @@ class ProxyListenerKinesis(ProxyListener):
             region.stream_consumers = [c for c in region.stream_consumers if not consumer_matches(c)]
             return {}
 
-        elif action == 'ListStreamConsumers':
+        elif action == 'ListStreamConsumers' & config.KINESIS_PROVIDER == 'kinesalite':
             stream_consumers = KinesisBackend.get().stream_consumers
             stream_arn = data.get('StreamARN', '').strip('" ')
             result = {
@@ -78,7 +78,7 @@ class ProxyListenerKinesis(ProxyListener):
             }
             return encoded_response(result, encoding_type)
 
-        elif action == 'DescribeStreamConsumer':
+        elif action == 'DescribeStreamConsumer' & config.KINESIS_PROVIDER == 'kinesalite':
             consumer_arn = data.get('ConsumerARN', '').strip('" ')
             consumer_name = data.get('ConsumerName', '').strip('" ')
             stream_arn = data.get('StreamARN', '').strip('" ')
@@ -106,7 +106,7 @@ class ProxyListenerKinesis(ProxyListener):
             result = subscribe_to_shard(data, headers)
             return result
 
-        elif action == 'EnableEnhancedMonitoring':
+        elif action == 'EnableEnhancedMonitoring' & config.KINESIS_PROVIDER == 'kinesalite':
             stream_name = data.get('StreamName', '').strip('" ')
             metrics = data.get('ShardLevelMetrics', [])
             enhanced_metrics = KinesisBackend.get().enhanced_metrics
@@ -114,13 +114,13 @@ class ProxyListenerKinesis(ProxyListener):
             stream_metrics += [m for m in metrics if m not in stream_metrics]
             return {}
 
-        elif action == 'DisableEnhancedMonitoring':
+        elif action == 'DisableEnhancedMonitoring' & config.KINESIS_PROVIDER == 'kinesalite':
             stream_name = data.get('StreamName', '').strip('" ')
             metrics = data.get('ShardLevelMetrics', [])
             enhanced_metrics = KinesisBackend.get().enhanced_metrics
             stream_metrics = enhanced_metrics.get(stream_name) or []
             enhanced_metrics[stream_name] = [m for m in stream_metrics if m not in metrics]
-            return result
+            return {}
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
             if action in ['PutRecord', 'PutRecords']:
