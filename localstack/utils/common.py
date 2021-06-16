@@ -1097,7 +1097,7 @@ def cleanup_threads_and_processes(quiet=True):
     for thread in TMP_THREADS:
         if thread:
             try:
-                LOG.debug('[shutdown] Cleaning up thread: %s', thread)
+                # LOG.debug('[shutdown] Cleaning up thread: %s', thread)
                 if hasattr(thread, 'shutdown'):
                     thread.shutdown()
                     continue
@@ -1109,7 +1109,7 @@ def cleanup_threads_and_processes(quiet=True):
                 print(e)
     for proc in TMP_PROCESSES:
         try:
-            LOG.debug('[shutdown] Cleaning up process: %s', proc)
+            # LOG.debug('[shutdown] Cleaning up process: %s', proc)
             kill_process_tree(proc.pid)
             # proc.terminate()
         except Exception as e:
@@ -1119,7 +1119,7 @@ def cleanup_threads_and_processes(quiet=True):
         import asyncio
         for task in asyncio.all_tasks():
             try:
-                LOG.debug('[shutdown] Canceling asyncio task: %s', task)
+                # LOG.debug('[shutdown] Canceling asyncio task: %s', task)
                 task.cancel()
             except Exception as e:
                 print(e)

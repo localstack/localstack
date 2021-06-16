@@ -2,6 +2,8 @@ import json
 import time
 import logging
 import traceback
+from concurrent.futures import ThreadPoolExecutor
+
 import requests
 from localstack import config
 from localstack.utils.common import clone
@@ -109,6 +111,20 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
             raise e
         time.sleep(3)
         check_infra(retries - 1, expect_shutdown=expect_shutdown, apis=apis, additional_checks=additional_checks)
+
+
+def wait_for_infra_shutdown(apis=None):
+    apis = apis or canonicalize_api_names()
+
+    names = [name for name, plugin in SERVICE_PLUGINS.items() if name in apis]
+
+    def check(name):
+        check_service_health(api=name, expect_shutdown=True)
+        LOG.debug('[shutdown] api %s has shut down', name)
+
+    # no special significance to 10 workers, seems like a reasonable number given the number of services we have
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        executor.map(check, names)
 
 
 def check_service_health(api, print_error=False, expect_shutdown=False):
