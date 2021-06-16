@@ -75,3 +75,9 @@ Resources:
         - ExecutionRole
         - Arn
       Runtime: nodejs12.x
+
+  ResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name: cf-rg-6427
+      Description: Test ResourceGroup description ...

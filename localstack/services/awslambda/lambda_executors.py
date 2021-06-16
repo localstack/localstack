@@ -976,6 +976,7 @@ class Util:
         if use_env_variable_names:
             env_vars_str = ' '.join(['-e {k}="${k}"'.format(k=k) for k in env_vars.keys()])
         else:
+            # TODO: we should remove this mid-term - shouldn't be using cmd_quote directly
             env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for k, v in env_vars.items()])
         result += env_vars_str
         return result

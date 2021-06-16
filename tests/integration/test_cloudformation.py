@@ -1780,6 +1780,12 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(tags1['TagSet'][0]['Value'].lower(), buckets[0]['Name'])
         self.assertEqual(tags2['TagSet'][0]['Value'].lower(), buckets[1]['Name'])
 
+        # assert additional resources are present
+        rg_client = aws_stack.connect_to_service('resource-groups')
+        rg_name = 'cf-rg-6427'
+        groups = rg_client.list_groups().get('Groups', [])
+        self.assertTrue([g for g in groups if g['Name'] == rg_name])
+
         # clean up
         self.cleanup(stack_name)
 
