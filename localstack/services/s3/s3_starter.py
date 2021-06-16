@@ -40,7 +40,7 @@ def check_s3(expect_shutdown=False, print_error=False):
     if expect_shutdown:
         assert out is None
     else:
-        assert isinstance(out['Buckets'], list)
+        assert out and isinstance(out.get('Buckets'), list)
 
 
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):

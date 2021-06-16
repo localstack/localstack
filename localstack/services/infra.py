@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import json
+import threading
 import time
 import signal
 import logging
@@ -15,14 +16,14 @@ from localstack.utils import common, persistence
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux, start_thread,
-    ShellCommandThread, in_docker, is_port_open, sleep_forever, print_debug, edge_ports_info)
+    ShellCommandThread, in_docker, is_port_open, edge_ports_info)
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.bootstrap import (
     setup_logging, canonicalize_api_names, load_plugins, in_ci)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
-from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, check_infra
+from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, check_infra, wait_for_infra_shutdown
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
@@ -45,6 +46,9 @@ PROXY_LISTENERS = {}
 
 # set up logger
 LOG = logging.getLogger(__name__)
+
+# event flag indicating that the infrastructure has been shut down
+SHUTDOWN_INFRA = threading.Event()
 
 
 # -----------------------
@@ -228,9 +232,12 @@ def register_signal_handlers():
         return
 
     # register signal handlers
-    def signal_handler(signal, frame):
+    def signal_handler(sig, frame):
+        LOG.debug('[shutdown] signal received %s', sig)
         stop_infra()
-        os._exit(0)
+        if config.FORCE_SHUTDOWN:
+            sys.exit(0)
+
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
     SIGNAL_HANDLERS_SETUP = True
@@ -304,23 +311,31 @@ def start_local_api(name, port, api, method, asynchronous=False):
         method(port)
 
 
-def stop_infra(debug=False):
+def stop_infra():
     if common.INFRA_STOPPED:
         return
     common.INFRA_STOPPED = True
 
     event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
 
-    generic_proxy.QUIET = True
-    print_debug('[shutdown] Cleaning up files ...', debug)
-    common.cleanup(files=True, quiet=True)
-    print_debug('[shutdown] Cleaning up resources ...', debug)
-    common.cleanup_resources(debug=debug)
-    print_debug('[shutdown] Cleaning up Lambda resources ...', debug)
-    lambda_api.cleanup()
-    time.sleep(2)
-    # TODO: optimize this (takes too long currently)
-    # check_infra(retries=2, expect_shutdown=True)
+    try:
+        generic_proxy.QUIET = True
+        LOG.debug('[shutdown] Cleaning up files ...')
+        common.cleanup(files=True, quiet=True)
+        LOG.debug('[shutdown] Cleaning up resources ...')
+        common.cleanup_resources()
+        LOG.debug('[shutdown] Cleaning up Lambda resources ...')
+        lambda_api.cleanup()
+
+        if config.FORCE_SHUTDOWN:
+            LOG.debug('[shutdown] Force shutdown, not waiting for infrastructure to shut down')
+            return
+
+        LOG.debug('[shutdown] Waiting for infrastructure to shut down ...')
+        wait_for_infra_shutdown()
+        LOG.debug('[shutdown] Infrastructure is shut down')
+    finally:
+        SHUTDOWN_INFRA.set()
 
 
 def log_startup_message(service):
@@ -374,10 +389,10 @@ def start_infra(asynchronous=False, apis=None):
         thread = do_start_infra(asynchronous, apis, is_in_docker)
 
         if not asynchronous and thread:
-            # this is a bit of an ugly hack, but we need to make sure that we
-            # stay in the execution context of the main thread, otherwise our
-            # signal handlers don't work
-            sleep_forever()
+            # We're making sure that we stay in the execution context of the
+            # main thread, otherwise our signal handlers don't work
+            SHUTDOWN_INFRA.wait()
+
         return thread
 
     except KeyboardInterrupt:

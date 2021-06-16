@@ -200,6 +200,9 @@ LOCALSTACK_BUILD_DATE = os.environ.get('LOCALSTACK_BUILD_DATE', '').strip() or N
 # whether to skip S3 presign URL signature validation (TODO: currently enabled, until all issues are resolved)
 S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false('S3_SKIP_SIGNATURE_VALIDATION')
 
+# whether to skip waiting for the infrastructure to shut down, or exit immediately
+FORCE_SHUTDOWN = is_env_not_false('FORCE_SHUTDOWN')
+
 
 def has_docker():
     try:
