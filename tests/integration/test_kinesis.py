@@ -44,7 +44,6 @@ class TestKinesis(unittest.TestCase):
             ConsumerARN=consumer_arn)['ConsumerDescription']
         self.assertEqual(consumer_description_by_arn['ConsumerName'], consumer_name)
         self.assertEqual(consumer_description_by_arn['ConsumerARN'], consumer_arn)
-        self.assertEqual(consumer_description_by_arn['StreamARN'], stream_arn)
         self.assertEqual(consumer_description_by_arn['ConsumerStatus'], 'ACTIVE')
         self.assertTrue(isinstance(consumer_description_by_arn['ConsumerCreationTimestamp'], datetime))
         consumer_description_by_name = client.describe_stream_consumer(
@@ -72,6 +71,7 @@ class TestKinesis(unittest.TestCase):
         result = client.create_stream(StreamName=stream_name, ShardCount=1)
         sleep(1)
         result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')['Consumer']
+        sleep(1)
 
         # subscribe to shard
         response = client.describe_stream(StreamName=stream_name)
