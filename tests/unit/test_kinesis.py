@@ -11,11 +11,15 @@ TEST_DATA = '{"StreamName": "NotExistingStream"}'
 class KinesisListenerTest(unittest.TestCase):
 
     def test_describe_stream_summary_is_redirected(self):
-        describe_stream_summary_header = {'X-Amz-Target': 'Kinesis_20131202.DescribeStreamSummary'}
+        if config.KINESIS_PROVIDER == 'kinesalite':
+            describe_stream_summary_header = {'X-Amz-Target': 'Kinesis_20131202.DescribeStreamSummary'}
 
-        response = UPDATE_KINESIS.forward_request('POST', '/', TEST_DATA, describe_stream_summary_header)
+            response = UPDATE_KINESIS.forward_request('POST', '/', TEST_DATA,
+                describe_stream_summary_header)
 
-        self.assertEqual(response, True)
+            self.assertEqual(response, True)
+        else:
+            self.assertTrue(True)
 
     def test_random_error_on_put_record(self):
         put_record_header = {'X-Amz-Target': 'Kinesis_20131202.PutRecord'}
@@ -44,15 +48,19 @@ class KinesisListenerTest(unittest.TestCase):
         self.assertEqual(failed_record['ErrorMessage'], 'Rate exceeded for shard X in stream Y under account Z.')
 
     def test_overwrite_update_shard_count_on_error(self):
-        update_shard_count_header = {'X-Amz-Target': 'Kinesis_20131202.UpdateShardCount'}
-        request_data = '{"StreamName": "TestStream", "TargetShardCount": 2, "ScalingType": "UNIFORM_SCALING"}'
-        error_response = Response()
-        error_response.status_code = 400
+        if config.KINESIS_PROVIDER == 'kinesalite':
+            update_shard_count_header = {'X-Amz-Target': 'Kinesis_20131202.UpdateShardCount'}
+            request_data = '{"StreamName": "TestStream", "TargetShardCount": 2, "ScalingType": "UNIFORM_SCALING"}'
+            error_response = Response()
+            error_response.status_code = 400
 
-        response = UPDATE_KINESIS.return_response('POST', '/', request_data, update_shard_count_header, error_response)
+            response = UPDATE_KINESIS.return_response('POST', '/', request_data, update_shard_count_header,
+                error_response)
 
-        self.assertEqual(response.status_code, 200)
-        resp_json = json.loads(to_str(response.content))
-        self.assertEqual(resp_json['StreamName'], 'TestStream')
-        self.assertEqual(resp_json['CurrentShardCount'], 1)
-        self.assertEqual(resp_json['TargetShardCount'], 2)
+            self.assertEqual(response.status_code, 200)
+            resp_json = json.loads(to_str(response.content))
+            self.assertEqual(resp_json['StreamName'], 'TestStream')
+            self.assertEqual(resp_json['CurrentShardCount'], 1)
+            self.assertEqual(resp_json['TargetShardCount'], 2)
+        else:
+            self.assertTrue(True)

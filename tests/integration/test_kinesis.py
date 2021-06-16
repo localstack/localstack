@@ -23,11 +23,13 @@ class TestKinesis(unittest.TestCase):
 
         # create stream and assert 0 consumers
         client.create_stream(StreamName=stream_name, ShardCount=1)
+        sleep(1)
         assert_consumers(0)
 
         # create consumer and assert 1 consumer
         consumer_name = 'cons1'
         response = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        sleep(1)
         self.assertEqual(response['Consumer']['ConsumerName'], consumer_name)
         # boto3 converts the timestamp to datetime
         self.assertTrue(isinstance(response['Consumer']['ConsumerCreationTimestamp'], datetime))
@@ -51,12 +53,9 @@ class TestKinesis(unittest.TestCase):
             ConsumerName=consumer_name)['ConsumerDescription']
         self.assertEqual(consumer_description_by_arn, consumer_description_by_name)
 
-        # delete non-existing consumer and assert 1 consumer
-        client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='_invalid_')
-        assert_consumers(1)
-
         # delete existing consumer and assert 0 remaining consumers
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        sleep(1)
         assert_consumers(0)
 
         # clean up
@@ -71,6 +70,7 @@ class TestKinesis(unittest.TestCase):
         result = client.create_stream(StreamName=stream_name, ShardCount=1)
         sleep(1)
         result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')['Consumer']
+        sleep(1)
 
         # subscribe to shard
         response = client.describe_stream(StreamName=stream_name)
@@ -115,6 +115,7 @@ class TestKinesis(unittest.TestCase):
         result = client.create_stream(StreamName=stream_name, ShardCount=1)
         sleep(1)
         result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')['Consumer']
+        sleep(1)
         # get starting sequence number
         response = client.describe_stream(StreamName=stream_name)
         sequence_number = response.get('StreamDescription').get('Shards')[0].get('SequenceNumberRange'). \

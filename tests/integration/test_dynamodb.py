@@ -384,7 +384,7 @@ class TestDynamoDB(unittest.TestCase):
         )
         stream_arn = table['TableDescription']['LatestStreamArn']
         # wait for stream to be created
-        sleep(0.5)
+        sleep(1)
         # put item in table - Insert event
         dynamodb.put_item(TableName=table_name, Item={'Username': {'S': 'Fred'}})
         # update item in table - Modify event
