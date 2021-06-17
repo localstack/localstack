@@ -19,8 +19,8 @@ from localstack import config
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker, long_uid,
-    now, to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port, rm_docker_container)
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker, last_index_of,
+    long_uid, now, to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port, rm_docker_container)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
 from localstack.utils.aws.dead_letter_queue import sqs_error_to_dead_letter_queue
@@ -41,6 +41,8 @@ LAMBDA_API_UNIQUE_PORTS = 500
 LAMBDA_API_PORT_OFFSET = 9000
 
 MAX_ENV_ARGS_LENGTH = 20000
+
+INTERNAL_LOG_PREFIX = 'ls-daemon: '
 
 # logger
 LOG = logging.getLogger(__name__)
@@ -255,8 +257,12 @@ class LambdaExecutor(object):
         # will be part of the "result" variable here. Hence, make sure that we extract
         # only the *last* line of "result" and consider anything above that as log output.
         if isinstance(result, six.string_types) and '\n' in result:
-            additional_logs, _, result = result.rpartition('\n')
-            log_output += '\n%s' % additional_logs
+            lines = result.split('\n')
+            idx = last_index_of(lines, lambda line: line and not line.startswith(INTERNAL_LOG_PREFIX))
+            if idx >= 0:
+                result = lines[idx]
+                additional_logs = '\n'.join(lines[:idx] + lines[idx + 1:])
+                log_output += '\n%s' % additional_logs
 
         log_formatted = log_output.strip().replace('\n', '\n> ')
         func_arn = func_details and func_details.arn()

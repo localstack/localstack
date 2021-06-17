@@ -1083,6 +1083,16 @@ def str_remove(string, index, end_index=None):
     return '%s%s' % (string[:index], string[end_index:])
 
 
+def last_index_of(array, value):
+    """ Return the last index of `value` in the given list, or -1 if it does not exist. """
+    result = -1
+    for i in reversed(range(len(array))):
+        entry = array[i]
+        if entry == value or (callable(value) and value(entry)):
+            return i
+    return result
+
+
 def is_sub_dict(child_dict, parent_dict):
     """ Returns whether the first dict is a sub-dict (subset) of the second dict. """
     return all(parent_dict.get(key) == val for key, val in child_dict.items())
