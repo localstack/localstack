@@ -344,7 +344,6 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
         is_presign_valid = True
 
     if not is_presign_valid:
-
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',
