@@ -98,7 +98,7 @@ class TestS3(unittest.TestCase):
         bucket_name = 'test-%s' % short_uid()
         headers['Host'] = s3_utils.get_bucket_hostname(bucket_name)
         response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
-        self.assertEquals(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         response = self.s3_client.get_bucket_location(Bucket=bucket_name)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('LocationConstraint', response)
@@ -155,12 +155,65 @@ class TestS3(unittest.TestCase):
         messages = [json.loads(to_str(m['Body'])) for m in response['Messages']]
         record = messages[0]['Records'][0]
         self.assertIsNotNone(record['s3']['object']['versionId'])
-        self.assertEquals(record['s3']['object']['versionId'], obj['VersionId'])
+        self.assertEqual(record['s3']['object']['versionId'], obj['VersionId'])
 
         # clean up
         self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Disabled'})
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(bucket_name, [key_by_path, key_by_host])
+
+    def test_s3_create_bucket_notification_with_invalid_filter_rules(self):
+        bucket_name = 'notif-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        queue_url, queue_attributes = self._create_test_queue()
+
+        cfg = {'QueueConfigurations': [{
+            'QueueArn': queue_attributes['Attributes']['QueueArn'],
+            'Events': ['s3:ObjectCreated:*'],
+            'Filter': {'Key': {'FilterRules': [{'Name': 'INVALID', 'Value': 'does not matter'}]}}
+        }]}
+
+        try:
+            with self.assertRaises(ClientError) as error:
+                self.s3_client.put_bucket_notification_configuration(
+                    Bucket=bucket_name, NotificationConfiguration=cfg
+                )
+            self.assertIn('InvalidArgument', str(error.exception))
+        finally:
+            self.sqs_client.delete_queue(QueueUrl=queue_url)
+            self._delete_bucket(bucket_name)
+
+    def test_s3_create_and_get_bucket_notification_with_filter_rules(self):
+        bucket_name = 'notif-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        queue_url, queue_attributes = self._create_test_queue()
+
+        cfg = {'QueueConfigurations': [{
+            'QueueArn': queue_attributes['Attributes']['QueueArn'],
+            'Events': ['s3:ObjectCreated:*'],
+            'Filter': {'Key': {'FilterRules': [
+                {'Name': 'suffix', 'Value': '.txt'},  # different casing should be normalized to Suffix/Prefix
+                {'Name': 'PREFIX', 'Value': 'notif-'}
+            ]}}
+        }]}
+
+        try:
+            self.s3_client.put_bucket_notification_configuration(
+                Bucket=bucket_name, NotificationConfiguration=cfg
+            )
+            response = self.s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+            # verify casing of filter rule names
+            rules = response['QueueConfigurations'].pop()['Filter']['Key']['FilterRules']
+            valid = ['Prefix', 'Suffix']
+
+            self.assertIn(rules[0]['Name'], valid)
+            self.assertIn(rules[1]['Name'], valid)
+
+        finally:
+            self.sqs_client.delete_queue(QueueUrl=queue_url)
+            self._delete_bucket(bucket_name)
 
     def test_s3_upload_fileobj_with_large_file_notification(self):
         bucket_name = 'notif-large-%s' % short_uid()
@@ -264,10 +317,10 @@ class TestS3(unittest.TestCase):
         def check_permissions(key, expected_perms):
             grants = self.s3_client.get_object_acl(Bucket=bucket_name, Key=key)['Grants']
             grants = [g for g in grants if 'AllUsers' in g.get('Grantee', {}).get('URI', '')]
-            self.assertEquals(len(grants), 1)
+            self.assertEqual(len(grants), 1)
             permissions = grants[0]['Permission']
             permissions = permissions if isinstance(permissions, list) else [permissions]
-            self.assertEquals(len(permissions), expected_perms)
+            self.assertEqual(len(permissions), expected_perms)
 
         # perform uploads (multipart and regular) and check ACLs
         self.s3_client.put_object(Bucket=bucket_name, Key='acl-key0', Body='something')
@@ -336,7 +389,7 @@ class TestS3(unittest.TestCase):
         # response body should be empty, see https://github.com/localstack/localstack/issues/1317
         self.assertEqual('', to_str(response.content))
         response = client.head_object(Bucket=bucket_name, Key=object_key)
-        self.assertEquals('bar', response.get('Metadata', {}).get('foo'))
+        self.assertEqual('bar', response.get('Metadata', {}).get('foo'))
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
@@ -504,7 +557,7 @@ class TestS3(unittest.TestCase):
         range_header = 'bytes=0-%s' % (chunk_size - 1)
         resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key, Range=range_header)
         content = resp['Body'].read()
-        self.assertEquals(len(content), chunk_size)
+        self.assertEqual(len(content), chunk_size)
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
@@ -853,7 +906,7 @@ class TestS3(unittest.TestCase):
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         response = requests.get(url, verify=False)
-        self.assertEquals(response.headers['Access-Control-Expose-Headers'], 'ETag,x-amz-version-id')
+        self.assertEqual(response.headers['Access-Control-Expose-Headers'], 'ETag,x-amz-version-id')
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
