@@ -101,6 +101,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * `python` (Python 2.x up to 3.8 supported)
 * `pip` (python package manager)
 * `Docker`
+* `JDK` (If `KINESIS_PROVIDER` is `kinesis-mock` and the system is not an amd64 system. 8+ supported)
 
 ## Installing
 
@@ -187,10 +188,20 @@ You can pass the following environment variables to LocalStack:
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.
+* `KINESIS_PROVIDER`: Determines which mock is in use. Valid values are `kinesalite` and `kinesis-mock` (default).
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
 * `KINESIS_SHARD_LIMIT`: Integer value (default: `100`) or `Infinity` (to disable), causing the Kinesis API to start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
-* `KINESIS_LATENCY`: Integer value (default: `500`) or `0` (to disable), causing the Kinesis API to delay returning a response in order to mimick latency from a live AWS call.
+* `KINESIS_LATENCY`: Integer value of milliseconds (default: `500`) or `0` (to disable), causing the Kinesis API to delay returning a response in order to mimick latency from a live AWS call. The following API calls are affected by this:
+  - CreateStream
+  - DeleteStream
+  - RegisterStreamConsumer
+  - StartStreamEncryption
+  - StopStreamEncryption
+  - DeregisterStreamConsumer
+  - MergeShards
+  - SplitShard
+  - UpdateShardCount
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
 * `DYNAMODB_HEAP_SIZE`: Sets the JAVA EE maximum memory size for dynamodb values are (integer)m for MB, (integer)G for GB default(256m), full table scans require more memory
 * `STEPFUNCTIONS_LAMBDA_ENDPOINT`: URL to use as the Lambda service endpoint in Step Functions. By default this is the LocalStack Lambda endpoint. Use `default` to select the original AWS Lambda endpoint.
@@ -717,3 +728,4 @@ kinesalite                | MIT License
 **Other tools:**          |
 Elasticsearch             | Apache License 2.0
 local-kms                 | MIT License
+kinesis-mock              | MIT License

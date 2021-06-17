@@ -429,6 +429,8 @@ def get_service_name(resource):
         return 'es'
     if parts[-2] == 'KinesisFirehose':
         return 'firehose'
+    if parts[-2] == 'ResourceGroups':
+        return 'resource-groups'
     return parts[1].lower()
 
 
