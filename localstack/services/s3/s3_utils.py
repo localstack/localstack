@@ -287,7 +287,6 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
         signature = query_sig
 
     if query_sig != signature:
-
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',
