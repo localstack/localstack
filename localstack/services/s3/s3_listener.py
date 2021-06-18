@@ -6,6 +6,8 @@ import codecs
 import random
 import logging
 import datetime
+
+import pytz
 import xmltodict
 import collections
 import dateutil.parser
@@ -1026,9 +1028,13 @@ class ProxyListenerS3(PersistingProxyListener):
     @staticmethod
     def parse_policy_expiration_date(expiration_string):
         try:
-            return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT1)
+            dt = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT1)
         except Exception:
-            return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
+            dt = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
+
+        # both date formats assume a UTC timezone ('Z' suffix), but it's not parsed as tzinfo into the datetime object
+        dt = dt.replace(tzinfo=pytz.UTC)
+        return dt
 
     def forward_request(self, method, path, data, headers):
         # Create list of query parameteres from the url

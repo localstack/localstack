@@ -728,8 +728,8 @@ def now(millis=False):
 
 def mktime(ts, millis=False):
     if millis:
-        return time.mktime(ts.timetuple()) * 1e3 + ts.microsecond / 1e3
-    return time.mktime(ts.timetuple())
+        return ts.timestamp() * 1000
+    return ts.timestamp()
 
 
 def mkdir(folder):

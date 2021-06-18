@@ -1,5 +1,6 @@
 import time
 
+import pytz
 import yaml
 import unittest
 from datetime import datetime, date
@@ -28,7 +29,12 @@ class TestCommon(unittest.TestCase):
     def test_now(self):
         env = common.now()
         test = common.mktime(datetime.now())
-        self.assertEqual(env, test)
+        self.assertAlmostEqual(env, test, delta=1)
+
+    def test_now_utc(self):
+        env = common.now_utc()
+        test = common.mktime(datetime.utcnow())
+        self.assertAlmostEqual(env, test, delta=1)
 
     def test_is_number(self):
         env = common.is_number(5)
@@ -47,6 +53,22 @@ class TestCommon(unittest.TestCase):
     def test_mktime(self):
         now = common.mktime(datetime.now())
         self.assertEquals(int(time.time()), int(now))
+
+    def test_mktime_with_tz(self):
+        # see https://en.wikipedia.org/wiki/File:1000000000seconds.jpg
+        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.UTC)
+        self.assertEquals(1000000000, int(common.mktime(dt)))
+
+        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.timezone('EST'))
+        self.assertEquals(1000000000 + (5 * 60 * 60), int(common.mktime(dt)))  # EST is UTC-5
+
+    def test_mktime_millis_with_tz(self):
+        # see https://en.wikipedia.org/wiki/File:1000000000
+        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.UTC)
+        self.assertEquals(1000000000, int(common.mktime(dt, millis=True) / 1000))
+
+        dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.timezone('EST'))
+        self.assertEquals(1000000000 + (5 * 60 * 60), int(common.mktime(dt, millis=True)) / 1000)  # EST is UTC-5
 
     def test_mktime_millis(self):
         now = common.mktime(datetime.now(), millis=True)

@@ -56,7 +56,7 @@ BATCH_DELETE_BODY = """
 class PutRequest(Request):
     """ Class to handle putting with urllib """
     def __init__(self, *args, **kwargs):
-        return Request.__init__(self, *args, **kwargs)
+        Request.__init__(self, *args, **kwargs)
 
     def get_method(self, *args, **kwargs):
         return 'PUT'
