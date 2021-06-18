@@ -161,7 +161,7 @@ You can use [Helm](https://helm.sh/) to install LocalStack in a Kubernetes clust
 (the Helm charts are maintained in [this repo](https://github.com/localstack/helm-charts)):
 
 ```
-helm repo add localstack-repo http://helm.localstack.cloud
+helm repo add localstack-repo https://helm.localstack.cloud
 
 helm upgrade --install localstack localstack-repo/localstack
 ```
