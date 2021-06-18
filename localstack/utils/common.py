@@ -20,14 +20,13 @@ import functools
 import threading
 import subprocess
 
-import pytz
 import six
 import shutil
 import requests
 import dns.resolver
 import platform
 from io import BytesIO
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from contextlib import closing
 from six import with_metaclass
 from six.moves import cStringIO as StringIO
@@ -721,7 +720,7 @@ def obj_to_xml(obj):
 
 
 def now_utc(millis=False):
-    return now(millis, pytz.utc)
+    return now(millis, timezone.utc)
 
 
 def now(millis=False, tz=None):

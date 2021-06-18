@@ -7,7 +7,6 @@ import random
 import logging
 import datetime
 
-import pytz
 import xmltodict
 import collections
 import dateutil.parser
@@ -1027,7 +1026,7 @@ class ProxyListenerS3(PersistingProxyListener):
             dt = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
 
         # both date formats assume a UTC timezone ('Z' suffix), but it's not parsed as tzinfo into the datetime object
-        dt = dt.replace(tzinfo=pytz.UTC)
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
         return dt
 
     def forward_request(self, method, path, data, headers):
@@ -1117,7 +1116,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # if the Expires key in the url is already expired then return error
         if method == 'GET' and 'Expires' in query_map:
-            ts = datetime.datetime.fromtimestamp(int(query_map.get('Expires')[0]), tz=pytz.utc)
+            ts = datetime.datetime.fromtimestamp(int(query_map.get('Expires')[0]), tz=datetime.timezone.utc)
             print(ts)
             if is_expired(ts):
                 return token_expired_error(path, headers.get('x-amz-request-id'), 400)

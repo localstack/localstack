@@ -46,7 +46,6 @@ pympler>=0.6
 pyopenssl==17.5.0
 python-coveralls>=2.9.1
 pyyaml>=5.1                    #basic-lib
-pytz>=2021.1
 Quart>=0.6.15
 requests>=2.20.0               #basic-lib
 requests-aws4auth==0.9

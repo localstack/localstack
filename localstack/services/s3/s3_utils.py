@@ -3,8 +3,6 @@ import time
 import logging
 import datetime
 
-import pytz
-
 from localstack import config
 from collections import namedtuple
 from botocore.compat import urlsplit
@@ -335,7 +333,7 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
 
         expiration_time = datetime.datetime.strptime(query_params['X-Amz-Date'][0], '%Y%m%dT%H%M%SZ') + \
             datetime.timedelta(seconds=int(query_params['X-Amz-Expires'][0]))
-        expiration_time = expiration_time.replace(tzinfo=pytz.UTC)
+        expiration_time = expiration_time.replace(tzinfo=datetime.timezone.utc)
 
         # Comparing the signature in url with signature we calculated
         query_sig = urlparse.unquote(query_params['X-Amz-Signature'][0])
