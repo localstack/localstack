@@ -19,6 +19,8 @@ import tempfile
 import functools
 import threading
 import subprocess
+
+import pytz
 import six
 import shutil
 import requests
@@ -719,11 +721,11 @@ def obj_to_xml(obj):
 
 
 def now_utc(millis=False):
-    return mktime(datetime.utcnow(), millis=millis)
+    return now(millis, pytz.utc)
 
 
-def now(millis=False):
-    return mktime(datetime.now(), millis=millis)
+def now(millis=False, tz=None):
+    return mktime(datetime.now(tz=tz), millis=millis)
 
 
 def mktime(ts, millis=False):
