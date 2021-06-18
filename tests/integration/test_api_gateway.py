@@ -92,6 +92,23 @@ class TestAPIGateway(unittest.TestCase):
             'value': 'test1'
         }
     ]
+    TEST_S3_ROLE_POLICY = """{
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "apigateway.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+        """
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
@@ -1022,9 +1039,51 @@ class TestAPIGateway(unittest.TestCase):
         client.delete_rest_api(restApiId=api_id)
         proxy.stop()
 
+    def test_api_gateway_s3_get_integration(self):
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        s3_client = aws_stack.connect_to_service('s3')
+
+        bucket_name = 'test-bucket'
+        file_name = 'test.json'
+        file_content = '{ "success": "true" }'
+        file_content_type = 'application/json'
+
+        api = apigw_client.create_rest_api(name='test')
+        api_id = api['id']
+
+        s3_client.create_bucket(Bucket=bucket_name)
+        s3_client.put_object(Bucket=bucket_name, Key=file_name, Body=file_content, ContentType=file_content_type)
+
+        self.connect_api_gateway_to_s3(bucket_name, file_name, api_id)
+
+        apigw_client.create_deployment(restApiId=api_id, stageName='test')
+        url = gateway_request_url(api_id, 'test', '/')
+        result = requests.get(url)
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.text, file_content)
+        self.assertEqual(result.headers['content-type'], file_content_type)
+
     # =====================================================================
     # Helper methods
     # =====================================================================
+
+    def connect_api_gateway_to_s3(self, bucket_name, file_name, api_id, method='GET'):
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        iam_client = aws_stack.connect_to_service('iam')
+
+        s3_uri = 'arn:aws:apigateway:us-east-1:s3:path/{}/{}'.format(bucket_name, file_name)
+
+        role = iam_client.create_role(RoleName='test-s3-role', AssumeRolePolicyDocument=self.TEST_S3_ROLE_POLICY)
+        iam_client.attach_role_policy(RoleName='test-s3-role',
+            PolicyArn='arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess')
+        resources = apigw_client.get_resources(restApiId=api_id)
+        # using the root resource '/' directly for this test
+        root_resource_id = resources['items'][0]['id']
+        apigw_client.put_method(
+            restApiId=api_id, resourceId=root_resource_id, httpMethod=method, authorizationType='NONE',
+            apiKeyRequired=False, requestParameters={})
+        apigw_client.put_integration(restApiId=api_id, resourceId=root_resource_id, httpMethod=method,
+            type='AWS', integrationHttpMethod=method, uri=s3_uri, credentials=role['Role']['Arn'])
 
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         resources = {}
