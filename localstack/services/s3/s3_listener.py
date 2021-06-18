@@ -1129,8 +1129,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 expiration_string = policy.get('expiration', None)  # Example: 2020-06-05T13:37:12Z
                 if expiration_string:
                     expiration_datetime = self.parse_policy_expiration_date(expiration_string)
-                    expiration_timestamp = expiration_datetime.timestamp()
-                    if is_expired(expiration_timestamp):
+                    if is_expired(expiration_datetime):
                         return token_expired_error(path, headers.get('x-amz-request-id'), 400)
 
         if query == 'cors' or 'cors' in query_map:
