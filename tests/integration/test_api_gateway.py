@@ -1054,7 +1054,7 @@ class TestAPIGateway(unittest.TestCase):
         s3_client.create_bucket(Bucket=bucket_name)
         s3_client.put_object(Bucket=bucket_name, Key=file_name, Body=file_content, ContentType=file_content_type)
 
-        self.connect_api_gateway_to_s3(bucket_name, file_name, api_id)
+        self.connect_api_gateway_to_s3(bucket_name, file_name, api_id, 'GET')
 
         apigw_client.create_deployment(restApiId=api_id, stageName='test')
         url = gateway_request_url(api_id, 'test', '/')
@@ -1067,23 +1067,31 @@ class TestAPIGateway(unittest.TestCase):
     # Helper methods
     # =====================================================================
 
-    def connect_api_gateway_to_s3(self, bucket_name, file_name, api_id, method='GET'):
+    def connect_api_gateway_to_s3(self, bucket_name, file_name, api_id, method):
         apigw_client = aws_stack.connect_to_service('apigateway')
         iam_client = aws_stack.connect_to_service('iam')
 
         s3_uri = 'arn:aws:apigateway:us-east-1:s3:path/{}/{}'.format(bucket_name, file_name)
 
-        role = iam_client.create_role(RoleName='test-s3-role', AssumeRolePolicyDocument=self.TEST_S3_ROLE_POLICY)
-        iam_client.attach_role_policy(RoleName='test-s3-role',
-            PolicyArn='arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess')
+        test_role = 'test-s3-role'
+        role_result = iam_client.create_role(RoleName=test_role,
+            AssumeRolePolicyDocument=self.TEST_S3_ROLE_POLICY)
+        iam_client.attach_role_policy(RoleName=test_role,
+            PolicyArn='arn:aws:iam::aws:policy/AmazonS3FullAccess')
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources['items'][0]['id']
         apigw_client.put_method(
             restApiId=api_id, resourceId=root_resource_id, httpMethod=method, authorizationType='NONE',
             apiKeyRequired=False, requestParameters={})
-        apigw_client.put_integration(restApiId=api_id, resourceId=root_resource_id, httpMethod=method,
-            type='AWS', integrationHttpMethod=method, uri=s3_uri, credentials=role['Role']['Arn'])
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod=method,
+            type='AWS',
+            integrationHttpMethod=method,
+            uri=s3_uri,
+            credentials=role_result['Role']['Arn'])
 
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         resources = {}
