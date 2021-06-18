@@ -48,8 +48,8 @@ class TestMisc(unittest.TestCase):
 
     def test_timstamp_millis(self):
         t1 = now_utc()
-        t2 = now_utc(millis=True)
-        self.assertLessEqual(t2 - t1, 1)
+        t2 = now_utc(millis=True) / 1000
+        self.assertAlmostEqual(t1, t2, delta=1)
 
     def test_port_mappings(self):
         map = PortMappings()

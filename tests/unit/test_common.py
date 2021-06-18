@@ -1,3 +1,5 @@
+import time
+
 import yaml
 import unittest
 from datetime import datetime, date
@@ -43,8 +45,12 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(env, None)
 
     def test_mktime(self):
-        env = common.mktime(datetime(2010, 3, 20, 7, 24, 00, 0), True)
-        self.assertEqual(env, 1269069840.0)
+        now = common.mktime(datetime.now())
+        self.assertEquals(int(time.time()), int(now))
+
+    def test_mktime_millis(self):
+        now = common.mktime(datetime.now(), millis=True)
+        self.assertEquals(int(time.time()), int(now / 1000))
 
     def test_timestamp_millis(self):
         result = common.timestamp_millis(datetime.now())
