@@ -15,7 +15,6 @@ import logging
 import tarfile
 import zipfile
 import binascii
-import calendar
 import tempfile
 import functools
 import threading
@@ -727,11 +726,10 @@ def now(millis=False):
     return mktime(datetime.now(), millis=millis)
 
 
-def mktime(timestamp, millis=False):
+def mktime(ts, millis=False):
     if millis:
-        epoch = datetime.utcfromtimestamp(0)
-        return (timestamp - epoch).total_seconds()
-    return calendar.timegm(timestamp.timetuple())
+        return time.mktime(ts.timetuple()) * 1e3 + ts.microsecond / 1e3
+    return time.mktime(ts.timetuple())
 
 
 def mkdir(folder):
