@@ -26,7 +26,7 @@ import requests
 import dns.resolver
 import platform
 from io import BytesIO
-from datetime import datetime, date, timezone
+from datetime import datetime, date
 from contextlib import closing
 from six import with_metaclass
 from six.moves import cStringIO as StringIO
@@ -38,6 +38,26 @@ from localstack.utils import bootstrap
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
 from localstack.utils.bootstrap import FuncThread
+
+# this is very ugly, but necessary to make timezone work with python 2.7 (which is used in lambdas)
+try:
+    from datetime import timezone
+
+    utc = timezone.utc
+except ImportError:
+    from datetime import tzinfo, timedelta
+
+    class UTC(tzinfo):
+        def utcoffset(self, dt):
+            return timedelta(0)
+
+        def tzname(self, dt):
+            return 'UTC'
+
+        def dst(self, dt):
+            return timedelta(0)
+
+    utc = UTC()
 
 # arrays for temporary files and resources
 TMP_FILES = []
@@ -719,12 +739,12 @@ def obj_to_xml(obj):
     return str(obj)
 
 
-def now_utc(millis=False):
-    return now(millis, timezone.utc)
-
-
 def now(millis=False, tz=None):
     return mktime(datetime.now(tz=tz), millis=millis)
+
+
+def now_utc(millis=False):
+    return now(millis, utc)
 
 
 def mktime(ts, millis=False):
