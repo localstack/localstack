@@ -18,7 +18,8 @@ from localstack.services.kinesis import kinesis_listener
 from localstack.services.awslambda import lambda_api
 from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse, request_response_stream
+from localstack.utils.aws.aws_responses import (flask_to_requests_response, requests_response, LambdaResponse,
+    request_response_stream)
 from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
     handle_accounts, handle_vpc_links, extract_query_string_params, extract_path_params, make_error_response,
     get_cors_response, hande_base_path_mappings)
@@ -439,7 +440,8 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                     LOGGER.debug(msg)
                     return make_error_response(msg, 404)
 
-                headers = {}
+                headers = aws_stack.mock_aws_request_headers(service='s3')
+
                 if object.get('ContentType'):
                     headers['Content-Type'] = object['ContentType']
 

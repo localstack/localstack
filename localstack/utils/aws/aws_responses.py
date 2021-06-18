@@ -133,6 +133,7 @@ def requests_response(content, status_code=200, headers={}):
     resp.headers.update(headers or {})
     return resp
 
+
 def request_response_stream(stream, status_code=200, headers={}):
     resp = RequestsResponse()
     resp.raw = stream
@@ -140,7 +141,6 @@ def request_response_stream(stream, status_code=200, headers={}):
     # Note: update headers (instead of assigning directly), to ensure we're using a case-insensitive dict
     resp.headers.update(headers or {})
     return resp
-    
 
 
 def flask_to_requests_response(r):
