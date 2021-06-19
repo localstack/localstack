@@ -1,7 +1,7 @@
 version: 2.1
 
 jobs:
-  build-test-push:
+  install:
     machine:
       image: ubuntu-2004:202101-01
     steps:
@@ -14,14 +14,68 @@ jobs:
       - run:
           command: virtualenv --python=`which python3.8` .venv; make ci-build-prepare
           name: Setup environment
+  preflight:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
       - run:
-          command: . /opt/circleci/.nvm/nvm.sh; make ci-build-test
-          name: Run integration tests
+          command: |
+            echo "preflight: $(pwd)"
+            ls -la .
+  unit-tests:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
       - run:
-          command: make ci-build-push
-          name: Build and push Docker image
+          command: |
+            echo "unit-tests: $(pwd)"
+            sleep 2
+            ls -la .
+  integration-tests:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
+      - run:
+          command: |
+            echo "integration-tests: $(pwd)"
+            sleep 5
+            ls -la .
+  docker-build:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
+      - run:
+          command: |
+            echo "docker-build: $(pwd)"
+            sleep 10
+            ls -la .
+  docker-push:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
+      - run:
+          command: |
+            echo "docker-push: $(pwd)"
+            ls -la .
 
 workflows:
   main:
     jobs:
-      - build-test-push
+      - install
+      - preflight:
+          requires:
+            - install
+      - unit-tests:
+          requires:
+            - preflight
+      - integration-tests:
+          requires:
+            - preflight
+      - docker-build:
+          requires:
+            - preflight
+      - docker-push:
+          requires:
+            - unit-tests
+            - integration-tests
+            - docker-build
