@@ -92,23 +92,6 @@ class TestAPIGateway(unittest.TestCase):
             'value': 'test1'
         }
     ]
-    TEST_S3_ROLE_POLICY = """{
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": [
-                                    "apigateway.amazonaws.com"
-                                ]
-                            },
-                            "Action": [
-                                "sts:AssumeRole"
-                            ]
-                        }
-                    ]
-                }
-        """
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
@@ -1044,40 +1027,42 @@ class TestAPIGateway(unittest.TestCase):
         s3_client = aws_stack.connect_to_service('s3')
 
         bucket_name = 'test-bucket'
-        file_name = 'test.json'
-        file_content = '{ "success": "true" }'
-        file_content_type = 'application/json'
+        object_name = 'test.json'
+        object_content = '{ "success": "true" }'
+        object_content_type = 'application/json'
 
         api = apigw_client.create_rest_api(name='test')
         api_id = api['id']
 
         s3_client.create_bucket(Bucket=bucket_name)
-        s3_client.put_object(Bucket=bucket_name, Key=file_name, Body=file_content, ContentType=file_content_type)
+        s3_client.put_object(Bucket=bucket_name, Key=object_name, Body=object_content, ContentType=object_content_type)
 
-        self.connect_api_gateway_to_s3(bucket_name, file_name, api_id, 'GET')
+        self.connect_api_gateway_to_s3(bucket_name, object_name, api_id, 'GET')
 
         apigw_client.create_deployment(restApiId=api_id, stageName='test')
         url = gateway_request_url(api_id, 'test', '/')
         result = requests.get(url)
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(result.text, file_content)
-        self.assertEqual(result.headers['content-type'], file_content_type)
+        self.assertEqual(result.text, object_content)
+        self.assertEqual(result.headers['content-type'], object_content_type)
+        # clean up
+        apigw_client.delete_rest_api(restApiId=api_id)
+        s3_client.delete_object(Bucket=bucket_name, Key=object_name)
+        s3_client.delete_bucket(Bucket=bucket_name)
 
     # =====================================================================
     # Helper methods
     # =====================================================================
 
     def connect_api_gateway_to_s3(self, bucket_name, file_name, api_id, method):
-        apigw_client = aws_stack.connect_to_service('apigateway')
-        iam_client = aws_stack.connect_to_service('iam')
+        """Connects the root resource of an api gateway to the given object of an s3 bucket.
 
-        s3_uri = 'arn:aws:apigateway:us-east-1:s3:path/{}/{}'.format(bucket_name, file_name)
+        """
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        s3_uri = 'arn:aws:apigateway:{}:s3:path/{}/{}'.format(aws_stack.get_region(), bucket_name, file_name)
 
         test_role = 'test-s3-role'
-        role_result = iam_client.create_role(RoleName=test_role,
-            AssumeRolePolicyDocument=self.TEST_S3_ROLE_POLICY)
-        iam_client.attach_role_policy(RoleName=test_role,
-            PolicyArn='arn:aws:iam::aws:policy/AmazonS3FullAccess')
+        role_arn = aws_stack.role_arn(role_name=test_role)
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources['items'][0]['id']
@@ -1091,7 +1076,7 @@ class TestAPIGateway(unittest.TestCase):
             type='AWS',
             integrationHttpMethod=method,
             uri=s3_uri,
-            credentials=role_result['Role']['Arn'])
+            credentials=role_arn)
 
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         resources = {}
