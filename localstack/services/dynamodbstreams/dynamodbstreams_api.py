@@ -164,7 +164,7 @@ def stream_name_from_stream_arn(stream_arn):
 
 
 def shard_id(stream_arn, kinesis_shard_id):
-    timestamp = str(now_utc())
+    timestamp = str(int(now_utc()))
     timestamp = '%s00000000' % timestamp[:-5]
     timestamp = '%s%s' % ('0' * (20 - len(timestamp)), timestamp)
     suffix = kinesis_shard_id.replace('shardId-', '')[:32]
