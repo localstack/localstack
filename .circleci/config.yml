@@ -4,7 +4,12 @@ jobs:
   install:
     machine:
       image: ubuntu-2004:202101-01
+    working_directory: /workspace
     steps:
+      - run:
+          command: |
+            pwd
+            ls -la .
       - checkout
       - restore_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
@@ -24,10 +29,19 @@ jobs:
           key: python-requirements-{{ checksum "requirements.txt" }}
           paths:
             - "~/.cache/pip"
+      - persist_to_workspace:
+          root:
+            /workspace
+          paths:
+            - localstack
   preflight:
     docker:
-      - image: buildpack-deps:trusty
+      - image: buildpack-deps:focal
+    working_directory: /workspace
     steps:
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: localstack
       - run:
           command: |
             echo "preflight: $(pwd)"
@@ -35,7 +49,7 @@ jobs:
             ls -la .
   unit-tests:
     docker:
-      - image: buildpack-deps:trusty
+      - image: buildpack-deps:focal
     steps:
       - run:
           command: |
@@ -86,6 +100,9 @@ workflows:
           requires:
             - preflight
       - docker-push:
+          filters:
+            branches:
+              only: main
           requires:
             - unit-tests
             - integration-tests
