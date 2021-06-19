@@ -152,6 +152,7 @@ def is_real_s3_url(url):
 
 
 def is_expired(expiry_timestamp):
+    print('is_expired? X < Y?', expiry_timestamp, mktime(expiry_timestamp), now(tz=expiry_timestamp.tzinfo))
     return int(now(tz=expiry_timestamp.tzinfo)) > int(mktime(expiry_timestamp))
 
 
