@@ -2,8 +2,8 @@ version: 2.1
 
 jobs:
   install:
-    machine:
-      image: ubuntu-2004:202101-01
+    docker:
+      - image: buildpack-deps:focal
     working_directory: /tmp/workspace/repo
     steps:
       - checkout
@@ -16,15 +16,14 @@ jobs:
       - run:
           command: |
             sudo apt-get update
-            sudo apt install -y python3.8 libsasl2-dev
+            sudo apt install -y libsasl2-dev
           name: Install prerequisites
       - run:
           command: |
             python3 -m venv .venv
             source .venv/bin/activate
             pip install wheel
-            # pip install -r requirements.txt
-            ls -la ~/.cache/pip
+            pip install -r requirements.txt
           name: Setup environment
       - save_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
@@ -35,6 +34,7 @@ jobs:
             /tmp/workspace
           paths:
             - repo
+
   preflight:
     docker:
       - image: buildpack-deps:focal
@@ -43,21 +43,18 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: |
-            echo "preflight: $(pwd)"
-            python3 --version
-            ls -la .
-            ls -la workspace || true
-            ls -la repo || true
+          command: make lint
+
   unit-tests:
     docker:
       - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
     steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
-          command: |
-            echo "unit-tests: $(pwd)"
-            sleep 2
-            ls -la .
+          command: DEBUG=0 TEST_PATH=tests/unit make test
+
   integration-tests:
     machine:
       image: ubuntu-2004:202101-01
@@ -70,19 +67,27 @@ jobs:
             echo "integration-tests: $(pwd)"
             sleep 5
             ls -la .
+
   docker-build:
     machine:
       image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
     steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           command: |
             echo "docker-build: $(pwd)"
             sleep 10
             ls -la .
+
   docker-push:
     machine:
       image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
     steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           command: |
             echo "docker-push: $(pwd)"
