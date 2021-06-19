@@ -2,8 +2,8 @@ version: 2.1
 
 jobs:
   install:
-    machine:
-      image: ubuntu-2004:202101-01
+    docker:
+      - image: buildpack-deps:focal
     working_directory: /tmp/workspace/repo
     steps:
       - checkout
@@ -11,8 +11,8 @@ jobs:
           key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
           command: |
-            sudo apt-get update
-            sudo apt install -y libsasl2-dev python3.8-venv
+            apt-get update
+            apt-get install -y libsasl2-dev python3-venv python3-dev
           name: Install prerequisites
       - run:
           command: |
@@ -20,6 +20,8 @@ jobs:
             source .venv/bin/activate
             which python
             realpath $(which python)
+            pip install --upgrade pip
+            pip install wheel setuptools
             pip install -r requirements.txt
             # python -m localstack.services.install libs
             # python -m localstack.services.install testlibs
@@ -42,12 +44,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: |
-            source .venv/bin/activate
-            which python || true
-            which flake8 || true
-            python --version
-            make lint
+          command: make lint
 
   unit-tests:
     docker:
