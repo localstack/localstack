@@ -42,8 +42,11 @@ jobs:
       - run:
           command: |
             ls -la .venv/lib/python*/site-packages/
+            which python
+            which python3
             source .venv/bin/activate
-            pip install flake8
+            which python
+            which python3
             make lint
 
   unit-tests:
