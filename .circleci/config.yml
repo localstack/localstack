@@ -16,10 +16,8 @@ jobs:
           name: Install prerequisites
       - run:
           command: |
-            python3 -m venv .venv
-            source .venv/bin/activate
-            pip install wheel
-            pip install -r requirements.txt
+            make setup-venv
+            make init
           name: Setup environment
       - save_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
