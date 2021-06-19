@@ -4,7 +4,7 @@ jobs:
   install:
     machine:
       image: ubuntu-2004:202101-01
-    working_directory: /workspace
+    working_directory: /tmp/workspace
     steps:
       - run:
           command: |
@@ -31,13 +31,13 @@ jobs:
             - "~/.cache/pip"
       - persist_to_workspace:
           root:
-            /workspace
+            /tmp/workspace
           paths:
             - localstack
   preflight:
     docker:
       - image: buildpack-deps:focal
-    working_directory: /workspace
+    working_directory: /tmp/workspace
     steps:
       - attach_workspace:
           # Must be absolute path or relative path from working_directory
