@@ -134,6 +134,15 @@ def requests_response(content, status_code=200, headers={}):
     return resp
 
 
+def request_response_stream(stream, status_code=200, headers={}):
+    resp = RequestsResponse()
+    resp.raw = stream
+    resp.status_code = int(status_code)
+    # Note: update headers (instead of assigning directly), to ensure we're using a case-insensitive dict
+    resp.headers.update(headers or {})
+    return resp
+
+
 def flask_to_requests_response(r):
     return requests_response(r.data, status_code=r.status_code, headers=r.headers)
 
