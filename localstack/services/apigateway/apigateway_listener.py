@@ -34,7 +34,7 @@ PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
 PATH_REGEX_PATH_MAPPINGS = r'/domainnames/([^/]+)/basepathmappings(/.*)?'
 HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
-S3_REGEX_URI = r'^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path\/(?P<bucket>[a-zA-Z0-9_\-]+)\/(?P<object>.+)$'
+TARGET_REGEX_S3_URI = r'^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$'
 
 # Maps API IDs to list of gateway responses
 GATEWAY_RESPONSES = {}
@@ -429,7 +429,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             return response
         elif 's3:path/' in uri and method == 'GET':
             s3 = aws_stack.connect_to_service('s3')
-            uri_match = re.match(S3_REGEX_URI, uri)
+            uri_match = re.match(TARGET_REGEX_S3_URI, uri)
             if uri_match:
                 bucket, object_key = uri_match.group('bucket', 'object')
                 LOGGER.debug('Getting request for bucket %s object %s', bucket, object_key)
@@ -454,7 +454,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             else:
                 msg = 'Request URI does not match s3 specifications'
                 LOGGER.warning(msg)
-                return make_error_response(msg, 500)
+                return make_error_response(msg, 400)
 
         if method == 'POST':
             if uri.startswith('arn:aws:apigateway:') and ':sqs:path' in uri:
