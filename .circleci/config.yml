@@ -23,8 +23,6 @@ jobs:
             pip install --upgrade pip
             pip install wheel setuptools
             pip install -r requirements.txt
-            # python -m localstack.services.install libs
-            # python -m localstack.services.install testlibs
           name: Setup environment
       - save_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
@@ -45,14 +43,6 @@ jobs:
           at: /tmp/workspace
       - run:
           command: make lint
-
-  unit-tests:
-    docker:
-      - image: buildpack-deps:focal
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
       - run:
           command: DEBUG=0 TEST_PATH=tests/unit make test
 
@@ -64,10 +54,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: |
-            echo "integration-tests: $(pwd)"
-            sleep 5
-            ls -la .
+          command: DEBUG=0 TEST_PATH=tests/integration make test
 
   docker-build:
     machine:
@@ -101,9 +88,6 @@ workflows:
       - preflight:
           requires:
             - install
-      - unit-tests:
-          requires:
-            - preflight
       - integration-tests:
           requires:
             - preflight
@@ -115,6 +99,5 @@ workflows:
             branches:
               only: main
           requires:
-            - unit-tests
             - integration-tests
             - docker-build
