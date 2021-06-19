@@ -16,15 +16,13 @@ jobs:
           name: Install prerequisites
       - run:
           command: |
-            which python3
-            which python3.8
-            realpath $(which python3.8)
             /usr/bin/python3.8 -m venv .venv
-            ls -la .venv/bin
-            # export PIP_CMD=pip3
-            # export VENV_OPTS="-p '`which python3`'"
-            # make install
-            # make init
+            source .venv/bin/activate
+            which python
+            realpath $(which python)
+            pip install -r requirements.txt
+            # python -m localstack.services.install libs
+            # python -m localstack.services.install testlibs
           name: Setup environment
       - save_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
@@ -45,12 +43,11 @@ jobs:
           at: /tmp/workspace
       - run:
           command: |
-            which python3
-            which python3.8
-            realpath $(which python3.8)
-            python3.8 -m venv --help
-            ls -la /opt/circleci/.pyenv/versions
-            ls -la .venv/bin
+            source .venv/bin/activate
+            which python || true
+            which flake8 || true
+            python --version
+            make lint
 
   unit-tests:
     docker:
