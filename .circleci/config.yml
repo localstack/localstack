@@ -23,6 +23,8 @@ jobs:
             pip install --upgrade pip
             pip install wheel setuptools
             pip install -r requirements.txt
+            python -m localstack.services.install libs
+            python -m localstack.services.install testlibs
           name: Setup environment
       - save_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
@@ -43,10 +45,12 @@ jobs:
           at: /tmp/workspace
       - run:
           command: make lint
+          name: run linter
       - run:
           command: DEBUG=0 TEST_PATH=tests/unit make test
+          name: run unit tests
 
-  integration-tests:
+  itest-lambda-reuse:
     machine:
       image: ubuntu-2004:202101-01
     working_directory: /tmp/workspace/repo
@@ -54,7 +58,30 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: DEBUG=0 TEST_PATH=tests/integration make test
+          command: LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+          name: test docker-reuse executor
+
+  itest-lambda-docker:
+    machine:
+      image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          command: DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+          name: test docker executor
+
+  itest-elasticmq:
+    docker:
+      - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          command: DEBUG=1 SQS_PROVIDER=elasticmq TEST_PATH="tests/integration/test_sns.py:SNSTest.test_publish_sqs_from_sns_with_xray_propagation" make test
+          name: test elasticmq sqs provider
 
   docker-build:
     machine:
@@ -88,7 +115,13 @@ workflows:
       - preflight:
           requires:
             - install
-      - integration-tests:
+      - itest-lambda-docker:
+          requires:
+            - preflight
+      - itest-lambda-reuse:
+          requires:
+            - preflight
+      - itest-elasticmq:
           requires:
             - preflight
       - docker-build:
@@ -99,5 +132,7 @@ workflows:
             branches:
               only: main
           requires:
-            - integration-tests
+            - itest-lambda-docker
+            - itest-lambda-reuse
+            - itest-elasticmq
             - docker-build
