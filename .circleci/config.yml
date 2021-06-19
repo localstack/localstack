@@ -16,7 +16,7 @@ jobs:
       - run:
           command: |
             apt-get update
-            apt-get install -y libsasl2-dev
+            apt-get install -y python3-venv libsasl2-dev
           name: Install prerequisites
       - run:
           command: |
