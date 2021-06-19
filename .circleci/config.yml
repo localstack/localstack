@@ -99,10 +99,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: |
-            echo "docker-build: $(pwd)"
-            sleep 10
-            ls -la .
+          command: make docker-build
 
   docker-push:
     machine:
