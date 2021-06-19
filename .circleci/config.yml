@@ -2,8 +2,8 @@ version: 2.1
 
 jobs:
   install:
-    docker:
-      - image: buildpack-deps:focal
+    machine:
+      image: ubuntu-2004:202101-01
     working_directory: /tmp/workspace/repo
     steps:
       - checkout
@@ -11,11 +11,13 @@ jobs:
           key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
           command: |
-            apt-get update
-            apt-get install -y libsasl2-dev python3-venv python3-dev
+            sudo apt-get update
+            sudo apt-get install -y libsasl2-dev python3.8-venv python3.8-dev
           name: Install prerequisites
       - run:
           command: |
+            which npm
+            which docker
             /usr/bin/python3.8 -m venv .venv
             source .venv/bin/activate
             which python
