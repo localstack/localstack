@@ -56,7 +56,7 @@ BATCH_DELETE_BODY = """
 class PutRequest(Request):
     """ Class to handle putting with urllib """
     def __init__(self, *args, **kwargs):
-        return Request.__init__(self, *args, **kwargs)
+        Request.__init__(self, *args, **kwargs)
 
     def get_method(self, *args, **kwargs):
         return 'PUT'
@@ -1812,7 +1812,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
 
         # Expired requests
-        time.sleep(4)
+        time.sleep(4.5)
 
         # GET
         response = requests.get(presign_get_url)

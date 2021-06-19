@@ -15,11 +15,11 @@ import logging
 import tarfile
 import zipfile
 import binascii
-import calendar
 import tempfile
 import functools
 import threading
 import subprocess
+
 import six
 import shutil
 import requests
@@ -38,6 +38,26 @@ from localstack.utils import bootstrap
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
 from localstack.utils.bootstrap import FuncThread
+
+# this is very ugly, but necessary to make timezone work with python 2.7 (which is used in lambdas)
+try:
+    from datetime import timezone
+
+    utc = timezone.utc
+except ImportError:
+    from datetime import tzinfo, timedelta
+
+    class UTC(tzinfo):
+        def utcoffset(self, dt):
+            return timedelta(0)
+
+        def tzname(self, dt):
+            return 'UTC'
+
+        def dst(self, dt):
+            return timedelta(0)
+
+    utc = UTC()
 
 # arrays for temporary files and resources
 TMP_FILES = []
@@ -719,19 +739,18 @@ def obj_to_xml(obj):
     return str(obj)
 
 
+def now(millis=False, tz=None):
+    return mktime(datetime.now(tz=tz), millis=millis)
+
+
 def now_utc(millis=False):
-    return mktime(datetime.utcnow(), millis=millis)
+    return now(millis, utc)
 
 
-def now(millis=False):
-    return mktime(datetime.now(), millis=millis)
-
-
-def mktime(timestamp, millis=False):
+def mktime(ts, millis=False):
     if millis:
-        epoch = datetime.utcfromtimestamp(0)
-        return (timestamp - epoch).total_seconds()
-    return calendar.timegm(timestamp.timetuple())
+        return ts.timestamp() * 1000
+    return ts.timestamp()
 
 
 def mkdir(folder):
