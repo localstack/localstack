@@ -12,15 +12,19 @@ jobs:
       - run:
           command: |
             sudo apt-get update
-            sudo apt install -y libsasl2-dev
+            sudo apt install -y libsasl2-dev python3.8-venv
           name: Install prerequisites
       - run:
           command: |
-            python3 -m venv .venv
-            export PIP_CMD=pip3
-            export VENV_OPTS="-p '`which python3`'"
-            make install
-            make init
+            which python3
+            which python3.8
+            realpath $(which python3.8)
+            /usr/bin/python3.8 -m venv .venv
+            ls -la .venv/bin
+            # export PIP_CMD=pip3
+            # export VENV_OPTS="-p '`which python3`'"
+            # make install
+            # make init
           name: Setup environment
       - save_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
@@ -41,13 +45,12 @@ jobs:
           at: /tmp/workspace
       - run:
           command: |
-            ls -la .venv/lib/python*/site-packages/
-            which python
             which python3
-            source .venv/bin/activate
-            which python
-            which python3
-            make lint
+            which python3.8
+            realpath $(which python3.8)
+            python3.8 -m venv --help
+            ls -la /opt/circleci/.pyenv/versions
+            ls -la .venv/bin
 
   unit-tests:
     docker:
