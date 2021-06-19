@@ -4,7 +4,7 @@ jobs:
   install:
     machine:
       image: ubuntu-2004:202101-01
-    working_directory: /tmp/workspace
+    working_directory: /tmp/workspace/repo
     steps:
       - checkout
       - run:
@@ -32,13 +32,13 @@ jobs:
             - "~/.cache/pip"
       - persist_to_workspace:
           root:
-            /tmp/
+            /tmp/workspace
           paths:
-            - workspace
+            - repo
   preflight:
     docker:
       - image: buildpack-deps:focal
-    working_directory: /tmp/workspace
+    working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -47,6 +47,8 @@ jobs:
             echo "preflight: $(pwd)"
             python3 --version
             ls -la .
+            ls -la workspace || true
+            ls -la repo || true
   unit-tests:
     docker:
       - image: buildpack-deps:focal
@@ -59,7 +61,7 @@ jobs:
   integration-tests:
     machine:
       image: ubuntu-2004:202101-01
-    working_directory: /tmp/workspace
+    working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
           at: /tmp/workspace
