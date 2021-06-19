@@ -15,8 +15,8 @@ jobs:
           key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
           command: |
-            sudo apt-get update
-            sudo apt install -y libsasl2-dev
+            apt-get update
+            apt-get install -y libsasl2-dev
           name: Install prerequisites
       - run:
           command: |
