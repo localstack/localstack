@@ -6,11 +6,11 @@ jobs:
       image: ubuntu-2004:202101-01
     working_directory: /tmp/workspace
     steps:
+      - checkout
       - run:
           command: |
             pwd
             ls -la .
-      - checkout
       - restore_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
@@ -22,7 +22,8 @@ jobs:
           command: |
             python3 -m venv .venv
             source .venv/bin/activate
-            pip3 install -r requirements.txt
+            pip install wheel
+            # pip install -r requirements.txt
             ls -la ~/.cache/pip
           name: Setup environment
       - save_cache:
@@ -31,9 +32,9 @@ jobs:
             - "~/.cache/pip"
       - persist_to_workspace:
           root:
-            /tmp/workspace
+            /tmp/
           paths:
-            - localstack
+            - workspace
   preflight:
     docker:
       - image: buildpack-deps:focal
