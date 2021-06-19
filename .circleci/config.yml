@@ -2,21 +2,17 @@ version: 2.1
 
 jobs:
   install:
-    docker:
-      - image: buildpack-deps:focal
+    machine:
+      image: ubuntu-2004:202101-01
     working_directory: /tmp/workspace/repo
     steps:
       - checkout
-      - run:
-          command: |
-            pwd
-            ls -la .
       - restore_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
           command: |
-            apt-get update
-            apt-get install -y python3-venv libsasl2-dev
+            sudo apt-get update
+            sudo apt install -y libsasl2-dev
           name: Install prerequisites
       - run:
           command: |
