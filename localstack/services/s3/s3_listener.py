@@ -1117,7 +1117,6 @@ class ProxyListenerS3(PersistingProxyListener):
         # if the Expires key in the url is already expired then return error
         if method == 'GET' and 'Expires' in query_map:
             ts = datetime.datetime.fromtimestamp(int(query_map.get('Expires')[0]), tz=datetime.timezone.utc)
-            print(ts)
             if is_expired(ts):
                 return token_expired_error(path, headers.get('x-amz-request-id'), 400)
 

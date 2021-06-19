@@ -14,7 +14,6 @@ from localstack.utils.auth import HmacV1QueryAuth, S3SigV4QueryAuth
 from localstack.utils.aws.aws_responses import requests_error_response_xml_signature_calculation
 from localstack.constants import (
     S3_VIRTUAL_HOSTNAME, S3_STATIC_WEBSITE_HOSTNAME, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
-from localstack.utils.common import mktime, now
 
 LOGGER = logging.getLogger(__name__)
 
@@ -151,9 +150,9 @@ def is_real_s3_url(url):
     return re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url or '')
 
 
-def is_expired(expiry_timestamp):
-    print('is_expired? X < Y?', expiry_timestamp, mktime(expiry_timestamp), now(tz=expiry_timestamp.tzinfo))
-    return int(now(tz=expiry_timestamp.tzinfo)) > int(mktime(expiry_timestamp))
+def is_expired(expiry_datetime):
+    now_datetime = datetime.datetime.now(tz=expiry_datetime.tzinfo)
+    return now_datetime > expiry_datetime
 
 
 def authenticate_presign_url(method, path, headers, data=None):

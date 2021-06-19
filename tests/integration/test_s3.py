@@ -1812,7 +1812,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
 
         # Expired requests
-        time.sleep(4)
+        time.sleep(4.5)
 
         # GET
         response = requests.get(presign_get_url)
