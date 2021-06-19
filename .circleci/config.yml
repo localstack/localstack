@@ -41,8 +41,7 @@ jobs:
     working_directory: /tmp/workspace
     steps:
       - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: localstack
+          at: /tmp/workspace
       - run:
           command: |
             echo "preflight: $(pwd)"
@@ -60,7 +59,10 @@ jobs:
   integration-tests:
     machine:
       image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace
     steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           command: |
             echo "integration-tests: $(pwd)"
