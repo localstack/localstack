@@ -52,17 +52,6 @@ jobs:
           command: DEBUG=0 TEST_PATH=tests/unit make test
           name: run unit tests
 
-  itest-lambda-reuse:
-    machine:
-      image: ubuntu-2004:202101-01
-    working_directory: /tmp/workspace/repo
-    steps:
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          command: LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
-          name: test docker-reuse executor
-
   itest-lambda-docker:
     machine:
       image: ubuntu-2004:202101-01
@@ -70,13 +59,30 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+
+      - run:
+          command: |
+            docker pull lambci/lambda:20191117-nodejs8.10
+            docker pull lambci/lambda:20191117-ruby2.5
+            docker pull lambci/lambda:20210129-ruby2.7
+            docker pull lambci/lambda:20191117-python2.7
+            docker pull lambci/lambda:20191117-python3.6
+            docker pull lambci/lambda:20191117-dotnetcore2.0
+            docker pull lambci/lambda:dotnetcore3.1
+            docker pull lambci/lambda:20191117-provided
+            docker pull lambci/lambda:java8
+            docker pull lambci/lambda:python3.8
+          name: pull lambda runtimes
       - run:
           command: DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
           name: test docker executor
+      - run:
+          command: LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+          name: test docker-reuse executor
 
   itest-elasticmq:
-    docker:
-      - image: buildpack-deps:focal
+    machine:
+      image: ubuntu-2004:202101-01
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -120,9 +126,6 @@ workflows:
       - itest-lambda-docker:
           requires:
             - preflight
-      - itest-lambda-reuse:
-          requires:
-            - preflight
       - itest-elasticmq:
           requires:
             - preflight
@@ -135,6 +138,5 @@ workflows:
               only: main
           requires:
             - itest-lambda-docker
-            - itest-lambda-reuse
             - itest-elasticmq
             - docker-build
