@@ -40,7 +40,11 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: make lint
+          command: |
+            ls -la .venv/lib/python*/site-packages/
+            source .venv/bin/activate
+            pip install flake8
+            make lint
 
   unit-tests:
     docker:
