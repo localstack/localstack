@@ -16,7 +16,10 @@ jobs:
           name: Install prerequisites
       - run:
           command: |
-            make setup-venv
+            python3 -m venv .venv
+            export PIP_CMD=pip3
+            export VENV_OPTS="-p '`which python3`'"
+            make install
             make init
           name: Setup environment
       - save_cache:
