@@ -6,25 +6,36 @@ jobs:
       image: ubuntu-2004:202101-01
     steps:
       - checkout
+      - restore_cache:
+          key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
           command: |
             sudo apt-get update
             sudo apt install -y python3.8 libsasl2-dev
           name: Install prerequisites
       - run:
-          command: virtualenv --python=`which python3.8` .venv; make ci-build-prepare
+          command: |
+            python3 -m venv .venv
+            source .venv/bin/activate
+            pip3 install -r requirements.txt
+            ls -la ~/.cache/pip
           name: Setup environment
+      - save_cache:
+          key: python-requirements-{{ checksum "requirements.txt" }}
+          paths:
+            - "~/.cache/pip"
   preflight:
-    machine:
-      image: ubuntu-2004:202101-01
+    docker:
+      - image: buildpack-deps:trusty
     steps:
       - run:
           command: |
             echo "preflight: $(pwd)"
+            python3 --version
             ls -la .
   unit-tests:
-    machine:
-      image: ubuntu-2004:202101-01
+    docker:
+      - image: buildpack-deps:trusty
     steps:
       - run:
           command: |
