@@ -18,7 +18,8 @@ from localstack.services.kinesis import kinesis_listener
 from localstack.services.awslambda import lambda_api
 from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
+from localstack.utils.aws.aws_responses import (flask_to_requests_response, requests_response, LambdaResponse,
+    request_response_stream)
 from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
     handle_accounts, handle_vpc_links, extract_query_string_params, extract_path_params, make_error_response,
     get_cors_response, hande_base_path_mappings)
@@ -33,6 +34,7 @@ PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
 PATH_REGEX_PATH_MAPPINGS = r'/domainnames/([^/]+)/basepathmappings(/.*)?'
 HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
+TARGET_REGEX_S3_URI = r'^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$'
 
 # Maps API IDs to list of gateway responses
 GATEWAY_RESPONSES = {}
@@ -425,6 +427,34 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             )
             response.headers['content-type'] = APPLICATION_JSON
             return response
+        elif 's3:path/' in uri and method == 'GET':
+            s3 = aws_stack.connect_to_service('s3')
+            uri_match = re.match(TARGET_REGEX_S3_URI, uri)
+            if uri_match:
+                bucket, object_key = uri_match.group('bucket', 'object')
+                LOGGER.debug('Getting request for bucket %s object %s', bucket, object_key)
+                try:
+                    object = s3.get_object(Bucket=bucket, Key=object_key)
+                except s3.exceptions.NoSuchKey:
+                    msg = 'Object %s not found' % object_key
+                    LOGGER.debug(msg)
+                    return make_error_response(msg, 404)
+
+                headers = aws_stack.mock_aws_request_headers(service='s3')
+
+                if object.get('ContentType'):
+                    headers['Content-Type'] = object['ContentType']
+
+                # stream used so large files do not fill memory
+                response = request_response_stream(
+                    stream=object['Body'],
+                    headers=headers
+                )
+                return response
+            else:
+                msg = 'Request URI does not match s3 specifications'
+                LOGGER.warning(msg)
+                return make_error_response(msg, 400)
 
         if method == 'POST':
             if uri.startswith('arn:aws:apigateway:') and ':sqs:path' in uri:

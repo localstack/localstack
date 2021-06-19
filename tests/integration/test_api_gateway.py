@@ -1022,9 +1022,61 @@ class TestAPIGateway(unittest.TestCase):
         client.delete_rest_api(restApiId=api_id)
         proxy.stop()
 
+    def test_api_gateway_s3_get_integration(self):
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        s3_client = aws_stack.connect_to_service('s3')
+
+        bucket_name = 'test-bucket'
+        object_name = 'test.json'
+        object_content = '{ "success": "true" }'
+        object_content_type = 'application/json'
+
+        api = apigw_client.create_rest_api(name='test')
+        api_id = api['id']
+
+        s3_client.create_bucket(Bucket=bucket_name)
+        s3_client.put_object(Bucket=bucket_name, Key=object_name, Body=object_content, ContentType=object_content_type)
+
+        self.connect_api_gateway_to_s3(bucket_name, object_name, api_id, 'GET')
+
+        apigw_client.create_deployment(restApiId=api_id, stageName='test')
+        url = gateway_request_url(api_id, 'test', '/')
+        result = requests.get(url)
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.text, object_content)
+        self.assertEqual(result.headers['content-type'], object_content_type)
+        # clean up
+        apigw_client.delete_rest_api(restApiId=api_id)
+        s3_client.delete_object(Bucket=bucket_name, Key=object_name)
+        s3_client.delete_bucket(Bucket=bucket_name)
+
     # =====================================================================
     # Helper methods
     # =====================================================================
+
+    def connect_api_gateway_to_s3(self, bucket_name, file_name, api_id, method):
+        """Connects the root resource of an api gateway to the given object of an s3 bucket.
+
+        """
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        s3_uri = 'arn:aws:apigateway:{}:s3:path/{}/{}'.format(aws_stack.get_region(), bucket_name, file_name)
+
+        test_role = 'test-s3-role'
+        role_arn = aws_stack.role_arn(role_name=test_role)
+        resources = apigw_client.get_resources(restApiId=api_id)
+        # using the root resource '/' directly for this test
+        root_resource_id = resources['items'][0]['id']
+        apigw_client.put_method(
+            restApiId=api_id, resourceId=root_resource_id, httpMethod=method, authorizationType='NONE',
+            apiKeyRequired=False, requestParameters={})
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod=method,
+            type='AWS',
+            integrationHttpMethod=method,
+            uri=s3_uri,
+            credentials=role_arn)
 
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         resources = {}
