@@ -1,13 +1,16 @@
 #!/usr/bin/env python
-
 import re
 import os
 import sys
 import glob
+import platform
 import time
 import shutil
 import logging
 import tempfile
+
+import requests
+
 from localstack import config
 from localstack.constants import MODULE_MAIN_PATH, INSTALL_DIR_INFRA
 from localstack.utils.common import is_windows
@@ -15,7 +18,7 @@ from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_URLS, ELASTICSEARCH_DEFAULT_VERSION, ELASTICSEARCH_PLUGIN_LIST,
     ELASTICSEARCH_DELETE_MODULES, DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION,
-    STEPFUNCTIONS_ZIP_URL, KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
+    KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
@@ -36,6 +39,7 @@ INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, 'StepFu
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, 'local-kms.<arch>.bin')
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, 'elasticmq-server.jar')
 INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, 'kinesalite', 'cli.js')
+INSTALL_PATH_KINESIS_MOCK = os.path.join(INSTALL_DIR_INFRA, 'kinesis-mock')
 URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
 MARKER_FILE_LIGHT_VERSION = '%s/.light-version' % INSTALL_DIR_INFRA
@@ -43,9 +47,12 @@ IMAGE_NAME_SFN_LOCAL = 'amazon/aws-stepfunctions-local'
 ARTIFACTS_REPO = 'https://github.com/localstack/localstack-artifacts'
 SFN_PATCH_CLASS = 'com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class'
 SFN_PATCH_CLASS_URL = '%s/raw/master/stepfunctions-local-patch/%s' % (ARTIFACTS_REPO, SFN_PATCH_CLASS)
+# kinesis-mock version
+KINESIS_MOCK_VERSION = os.environ.get('KINESIS_MOCK_VERSION', '0.0.16')
+KINESIS_MOCK_RELEASE_URL = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/' + KINESIS_MOCK_VERSION
 
-DEBUGPY_MODULE='debugpy'
-DEBUGPY_DEPENDENCIES=['gcc', 'python3-dev', 'musl-dev']
+DEBUGPY_MODULE = 'debugpy'
+DEBUGPY_DEPENDENCIES = ['gcc', 'python3-dev', 'musl-dev']
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
@@ -149,6 +156,58 @@ def install_kinesalite():
         run('cd "%s" && npm install' % MODULE_MAIN_PATH)
 
 
+def install_kinesis_mock():
+    target_dir = INSTALL_PATH_KINESIS_MOCK
+
+    machine = platform.machine().lower()
+    system = platform.system().lower()
+
+    LOG.info('installing kinesis-mock for %s %s', system, machine)
+    if machine == 'x86_64' or machine == 'amd64':
+        if system == 'windows':
+            bin_file = 'kinesis-mock-mostly-static.exe'
+        elif system == 'linux':
+            bin_file = 'kinesis-mock-linux-amd64-static'
+        elif system == 'darwin':
+            bin_file = 'kinesis-mock-macos-amd64-dynamic'
+        else:
+            bin_file = 'kinesis-mock.jar'
+    else:
+        bin_file = 'kinesis-mock.jar'
+
+    bin_file_path = os.path.join(target_dir, bin_file)
+    if os.path.exists(bin_file_path):
+        LOG.info('kinesis-mock found at %s', bin_file_path)
+        return bin_file_path
+
+    response = requests.get(KINESIS_MOCK_RELEASE_URL)
+    if not response.ok:
+        raise ValueError('could not get list of releases from %s: %s' %(KINESIS_MOCK_RELEASE_URL, response.text))
+
+    github_release = response.json()
+    download_url = None
+    for asset in github_release.get('assets', []):
+        # find the correct binary in the release
+        if asset['name'] == bin_file:
+            download_url = asset['browser_download_url']
+            break
+
+    if download_url is None:
+        raise ValueError('could not find required binary %s in release %s' % (bin_file, KINESIS_MOCK_RELEASE_URL))
+
+    mkdir(target_dir)
+    LOG.info('downloading kinesis-mock binary from %s', download_url)
+    download(download_url, bin_file_path)
+    return bin_file_path
+
+
+def main2():
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+    print(install_kinesis_mock())
+    pass
+
+
 def install_local_kms():
     local_arch = get_arch()
     binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace('<arch>', local_arch)
@@ -248,6 +307,7 @@ def install_component(name):
         'cloudformation': install_cloudformation_libs,
         'dynamodb': install_dynamodb_local,
         'kinesis': install_kinesalite,
+        'kinesis-mock': install_kinesis_mock(),
         'kms': install_local_kms,
         'sqs': install_elasticmq,
         'stepfunctions': install_stepfunctions_local,
@@ -336,4 +396,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main2()
