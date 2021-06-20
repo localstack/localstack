@@ -855,10 +855,9 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         rs = client.get_resources(restApiId=rest_api_id)
-        self.assertEqual(len(rs['items']), 1)
+        self.assertEqual(len(rs['items']), 2)  # should contain 2 resources (including the root resource)
 
-        resource = rs['items'][0]
-        self.assertEqual(resource['path'], '/test')
+        resource = [res for res in rs['items'] if res['path'] == '/test'][0]
         self.assertIn('GET', resource['resourceMethods'])
 
         # clean up
@@ -874,9 +873,10 @@ class TestAPIGateway(unittest.TestCase):
 
         rs = client.get_resources(restApiId=rest_api_id)
         resources = rs['items']
-        self.assertEqual(len(resources), 2)
+        self.assertEqual(len(resources), 3)
 
         paths = [res['path'] for res in resources]
+        self.assertIn('/', paths)
         self.assertIn('/pets', paths)
         self.assertIn('/pets/{petId}', paths)
 

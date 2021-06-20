@@ -69,7 +69,7 @@ def apply_patches():
         rest_api.resources = {}
 
         def get_or_create_path(path):
-            parts = path.replace('//', '/').split('/')
+            parts = path.rstrip('/').replace('//', '/').split('/')
             parent_id = ''
             if len(parts) > 1:
                 parent_path = '/'.join(parts[:-1])
@@ -427,7 +427,7 @@ def apply_patches():
 
         function_id = json.loads(rest_api)['id']
         body = json.loads(request.data.decode('utf-8'))
-        self.backend.put_rest_api(function_id, body)
+        self.backend.put_rest_api(function_id, body, parsed_qs)
 
         return 200, {}, rest_api
 
