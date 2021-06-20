@@ -80,12 +80,13 @@ class ProxyListenerApiGateway(ProxyListener):
             result = None
             if path == '/account':
                 result = handle_accounts(method, path, data, headers)
-            if path.startswith('/vpclinks'):
+            elif path.startswith('/vpclinks'):
                 result = handle_vpc_links(method, path, data, headers)
-            if re.match(PATH_REGEX_PATH_MAPPINGS, path):
+            elif re.match(PATH_REGEX_PATH_MAPPINGS, path):
                 result = handle_base_path_mappings(method, path, data, headers)
-            if re.match(PATH_REGEX_CLIENT_CERTS, path):
+            elif re.match(PATH_REGEX_CLIENT_CERTS, path):
                 result = handle_client_certificates(method, path, data, headers)
+
             if result is not None:
                 response.status_code = 200
                 aws_responses.set_response_content(response, result, getattr(result, 'headers', {}))
