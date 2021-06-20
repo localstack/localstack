@@ -64,6 +64,7 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         cmd = 'KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s --gc=G1' \
               % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
                  log_level_param, kinesis_mock_bin)
+    LOGGER.info('starting kinesis-mock proxy %d:%d with cmd: %s', port, backend_port, cmd)
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
 

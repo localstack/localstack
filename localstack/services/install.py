@@ -50,7 +50,7 @@ SFN_PATCH_CLASS = 'com/amazonaws/stepfunctions/local/runtime/executors/task/Lamb
 SFN_PATCH_CLASS_URL = '%s/raw/master/stepfunctions-local-patch/%s' % (ARTIFACTS_REPO, SFN_PATCH_CLASS)
 
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get('KINESIS_MOCK_VERSION') or '0.0.16'
+KINESIS_MOCK_VERSION = os.environ.get('KINESIS_MOCK_VERSION') or '0.1.0'
 KINESIS_MOCK_RELEASE_URL = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/' + KINESIS_MOCK_VERSION
 
 DEBUGPY_MODULE = 'debugpy'
