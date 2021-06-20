@@ -182,8 +182,6 @@ def install_stepfunctions_local():
         run(cmd)
 
 
-
-
 def install_dynamodb_local():
     if OVERWRITE_DDB_FILES_IN_DOCKER and in_docker():
         rm_rf(INSTALL_DIR_DDB)
@@ -271,6 +269,7 @@ def install_all_components():
     # install all components
     install_components(DEFAULT_SERVICE_PORTS.keys())
 
+
 def install_debugpy_and_dependencies():
     try:
         import debugpy
@@ -322,8 +321,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
 
 
-if __name__ == '__main__':
-
+def main():
     if len(sys.argv) > 1:
         os.environ['LOCALSTACK_API_KEY'] = os.environ.get('LOCALSTACK_API_KEY') or 'test'
         if sys.argv[1] == 'libs':
@@ -335,3 +333,7 @@ if __name__ == '__main__':
             # Install additional libraries for testing
             install_amazon_kinesis_client_libs()
         print('Done.')
+
+
+if __name__ == '__main__':
+    main()
