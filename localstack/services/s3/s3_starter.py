@@ -17,8 +17,8 @@ from urllib.parse import urlparse
 
 LOG = logging.getLogger(__name__)
 
-# max file size for S3 objects (in MB)
-S3_MAX_FILE_SIZE_MB = 2048
+# max file size for S3 objects kept in memory (500 KB by default)
+S3_MAX_FILE_SIZE_BYTES = 512 * 1024
 
 # temporary state
 TMP_STATE = {}
@@ -67,8 +67,8 @@ def apply_patches():
 
     TMP_STATE[PATCHES_APPLIED] = True
 
-    if os.environ.get('MOTO_S3_DEFAULT_KEY_BUFFER_SIZE', None) is None:
-        os.environ['MOTO_S3_DEFAULT_KEY_BUFFER_SIZE'] = '1024'
+    if not os.environ.get('MOTO_S3_DEFAULT_KEY_BUFFER_SIZE'):
+        os.environ['MOTO_S3_DEFAULT_KEY_BUFFER_SIZE'] = str(S3_MAX_FILE_SIZE_BYTES)
 
     def s3_update_acls(self, request, query, bucket_name, key_name):
         # fix for - https://github.com/localstack/localstack/issues/1733

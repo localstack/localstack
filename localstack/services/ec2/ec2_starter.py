@@ -226,7 +226,7 @@ def patch_ec2():
         }
         configs[service_id] = entry
         result = {
-            'CreateVpcEndpointServiceConfiguration': {
+            'CreateVpcEndpointServiceConfigurationResponse': {
                 '@xmlns': XMLNS_EC2,
                 'serviceConfiguration': entry
             }
@@ -234,7 +234,23 @@ def patch_ec2():
         result = xmltodict.unparse(result)
         return result
 
-    vpcs.VPCs.create_vpc_endpoint_service_configuration = create_vpc_endpoint_service_configuration
+    if not hasattr(vpcs.VPCs, 'delete_vpc_endpoints'):
+        vpcs.VPCs.create_vpc_endpoint_service_configuration = create_vpc_endpoint_service_configuration
+
+    def delete_vpc_endpoints(self):
+        vpc_endpoints_ids = self._get_multi_param('VpcEndpointId')
+        for ep_id in vpc_endpoints_ids:
+            self.ec2_backend.vpc_end_points.pop(ep_id, None)
+        result = {
+            'DeleteVpcEndpointsResponse': {
+                '@xmlns': XMLNS_EC2,
+                'unsuccessful': []
+            }
+        }
+        return xmltodict.unparse(result)
+
+    if not hasattr(vpcs.VPCs, 'delete_vpc_endpoints'):
+        vpcs.VPCs.delete_vpc_endpoints = delete_vpc_endpoints
 
 
 def start_ec2(port=None, asynchronous=False, update_listener=None):
