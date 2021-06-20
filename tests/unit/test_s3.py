@@ -1,4 +1,7 @@
+import datetime
 import unittest
+
+import pytz
 from moto.s3 import models as s3_models
 from localstack.services.s3 import s3_listener, s3_starter, multipart_content, s3_utils
 from requests.models import Response
@@ -187,6 +190,16 @@ class S3UtilsTest (unittest.TestCase):
 
         for bucket_name, expected_result in bucket_names:
             self.assertEqual(expected_result, s3_utils.validate_bucket_name(bucket_name))
+
+    def test_is_expired(self):
+        offset = datetime.timedelta(seconds=5)
+        self.assertTrue(s3_utils.is_expired(datetime.datetime.now() - offset))
+        self.assertFalse(s3_utils.is_expired(datetime.datetime.now() + offset))
+
+    def test_is_expired_with_tz(self):
+        offset = datetime.timedelta(seconds=5)
+        self.assertTrue(s3_utils.is_expired(datetime.datetime.now(tz=pytz.timezone('EST')) - offset))
+        self.assertFalse(s3_utils.is_expired(datetime.datetime.now(tz=pytz.timezone('EST')) + offset))
 
     def test_bucket_name(self):
         # array description : 'path', 'header', 'expected_ouput'

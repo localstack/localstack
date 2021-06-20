@@ -2,6 +2,7 @@ import re
 import time
 import logging
 import datetime
+
 from localstack import config
 from collections import namedtuple
 from botocore.compat import urlsplit
@@ -13,7 +14,6 @@ from localstack.utils.auth import HmacV1QueryAuth, S3SigV4QueryAuth
 from localstack.utils.aws.aws_responses import requests_error_response_xml_signature_calculation
 from localstack.constants import (
     S3_VIRTUAL_HOSTNAME, S3_STATIC_WEBSITE_HOSTNAME, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -148,6 +148,11 @@ def get_forwarded_for_host(headers):
 
 def is_real_s3_url(url):
     return re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url or '')
+
+
+def is_expired(expiry_datetime):
+    now_datetime = datetime.datetime.now(tz=expiry_datetime.tzinfo)
+    return now_datetime > expiry_datetime
 
 
 def authenticate_presign_url(method, path, headers, data=None):
@@ -308,7 +313,6 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
 
 
 def authenticate_presign_url_signv4(method, path, headers, data, url, query_params, request_dict):
-
     is_presign_valid = False
     for port in PORT_REPLACEMENT:
         match = re.match(HOST_COMBINATION_REGEX, urlparse.urlparse(request_dict['url']).netloc)
@@ -329,6 +333,7 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
 
         expiration_time = datetime.datetime.strptime(query_params['X-Amz-Date'][0], '%Y%m%dT%H%M%SZ') + \
             datetime.timedelta(seconds=int(query_params['X-Amz-Expires'][0]))
+        expiration_time = expiration_time.replace(tzinfo=datetime.timezone.utc)
 
         # Comparing the signature in url with signature we calculated
         query_sig = urlparse.unquote(query_params['X-Amz-Signature'][0])
@@ -344,7 +349,6 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
         is_presign_valid = True
 
     if not is_presign_valid:
-
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',
@@ -354,7 +358,7 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
                     Check your key and signing method.')
 
     # Checking whether the url is expired or not
-    if expiration_time < datetime.datetime.utcnow():
+    if is_expired(expiration_time):
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='AccessDenied',

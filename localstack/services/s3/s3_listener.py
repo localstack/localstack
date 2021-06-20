@@ -6,6 +6,7 @@ import codecs
 import random
 import logging
 import datetime
+
 import xmltodict
 import collections
 import dateutil.parser
@@ -24,10 +25,10 @@ from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
     is_static_website, extract_bucket_name, extract_key_name, validate_bucket_name, uses_host_addressing,
     SIGNATURE_V2_PARAMS, SIGNATURE_V4_PARAMS, authenticate_presign_url, get_forwarded_for_host,
-    ALLOWED_HEADER_OVERRIDES
+    ALLOWED_HEADER_OVERRIDES, is_expired
 )
 from localstack.utils.common import (
-    short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc, is_base64
+    short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, is_base64
 )
 from localstack.utils.analytics import event_publisher
 from localstack.utils.persistence import PersistingProxyListener
@@ -461,12 +462,6 @@ def set_object_expiry(path, headers):
 
 def get_object_expiry(path):
     return OBJECT_EXPIRY.get(path)
-
-
-def is_url_already_expired(expiry_timestamp):
-    if int(expiry_timestamp) < int(now_utc()):
-        return True
-    return False
 
 
 def add_response_metadata_headers(response):
@@ -1026,9 +1021,13 @@ class ProxyListenerS3(PersistingProxyListener):
     @staticmethod
     def parse_policy_expiration_date(expiration_string):
         try:
-            return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT1)
+            dt = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT1)
         except Exception:
-            return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
+            dt = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
+
+        # both date formats assume a UTC timezone ('Z' suffix), but it's not parsed as tzinfo into the datetime object
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
 
     def forward_request(self, method, path, data, headers):
         # Create list of query parameteres from the url
@@ -1117,7 +1116,8 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # if the Expires key in the url is already expired then return error
         if method == 'GET' and 'Expires' in query_map:
-            if is_url_already_expired(query_map.get('Expires')[0]):
+            ts = datetime.datetime.fromtimestamp(int(query_map.get('Expires')[0]), tz=datetime.timezone.utc)
+            if is_expired(ts):
                 return token_expired_error(path, headers.get('x-amz-request-id'), 400)
 
         # If multipart POST with policy in the params, return error if the policy has expired
@@ -1128,8 +1128,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 expiration_string = policy.get('expiration', None)  # Example: 2020-06-05T13:37:12Z
                 if expiration_string:
                     expiration_datetime = self.parse_policy_expiration_date(expiration_string)
-                    expiration_timestamp = expiration_datetime.timestamp()
-                    if is_url_already_expired(expiration_timestamp):
+                    if is_expired(expiration_datetime):
                         return token_expired_error(path, headers.get('x-amz-request-id'), 400)
 
         if query == 'cors' or 'cors' in query_map:
