@@ -13,7 +13,7 @@ from localstack.services.infra import start_proxy_for_service, do_run, log_start
 
 LOGGER = logging.getLogger(__name__)
 
-KINESIS_MOCK_RELEASES = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/0.0.16'
+KINESIS_MOCK_RELEASES = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/0.1.0'
 
 
 def apply_patches_kinesalite():
@@ -82,12 +82,12 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         'UPDATE_SHARD_COUNT_DURATION=%s' \
         % (latency, latency, latency, latency, latency, latency, latency, latency, latency)
     if target_file_name.endswith('.jar'):
-        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s java -XX:+UseG1GC -jar %s' \
+        cmd = 'KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s java -XX:+UseG1GC -jar %s' \
             % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
             log_level_param, target_file)
     else:
         chmod_r(target_file, 0o777)
-        cmd = 'KINESIS_MOCK_HTTP1_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s --gc=G1' \
+        cmd = 'KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s --gc=G1' \
             % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
             log_level_param, target_file)
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
