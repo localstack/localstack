@@ -16,8 +16,6 @@ jobs:
           name: Install prerequisites
       - run:
           command: |
-            which npm
-            which docker
             /usr/bin/python3.8 -m venv .venv
             source .venv/bin/activate
             which python
@@ -66,6 +64,7 @@ jobs:
 
       - run:
           command: |
+            make init
             docker pull lambci/lambda:20191117-nodejs8.10
             docker pull lambci/lambda:20191117-ruby2.5
             docker pull lambci/lambda:20210129-ruby2.7
@@ -77,6 +76,8 @@ jobs:
             docker pull lambci/lambda:java8
             docker pull lambci/lambda:python3.8
           name: pull lambda runtimes
+      - run:
+          command: docker image ls
       - run:
           command: DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
           name: test docker executor
@@ -103,7 +104,14 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
+          command: docker image ls
+      - run:
+          command: make init
+          name: Initialize build environment
+      - run:
           command: make docker-build
+          name: Build localstack docker image
+
 
   docker-push:
     machine:
@@ -116,6 +124,7 @@ jobs:
           command: |
             echo "docker-push: $(pwd)"
             ls -la .
+            docker image ls
 
 workflows:
   main:
@@ -134,9 +143,9 @@ workflows:
           requires:
             - preflight
       - docker-push:
-          filters:
-            branches:
-              only: main
+          # filters:
+          #   branches:
+          #     only: main
           requires:
             - itest-lambda-docker
             - itest-elasticmq
