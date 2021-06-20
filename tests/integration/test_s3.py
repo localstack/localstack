@@ -162,59 +162,6 @@ class TestS3(unittest.TestCase):
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(bucket_name, [key_by_path, key_by_host])
 
-    def test_s3_create_bucket_notification_with_invalid_filter_rules(self):
-        bucket_name = 'notif-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        queue_url, queue_attributes = self._create_test_queue()
-
-        cfg = {'QueueConfigurations': [{
-            'QueueArn': queue_attributes['Attributes']['QueueArn'],
-            'Events': ['s3:ObjectCreated:*'],
-            'Filter': {'Key': {'FilterRules': [{'Name': 'INVALID', 'Value': 'does not matter'}]}}
-        }]}
-
-        try:
-            with self.assertRaises(ClientError) as error:
-                self.s3_client.put_bucket_notification_configuration(
-                    Bucket=bucket_name, NotificationConfiguration=cfg
-                )
-            self.assertIn('InvalidArgument', str(error.exception))
-        finally:
-            self.sqs_client.delete_queue(QueueUrl=queue_url)
-            self._delete_bucket(bucket_name)
-
-    def test_s3_create_and_get_bucket_notification_with_filter_rules(self):
-        bucket_name = 'notif-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-
-        queue_url, queue_attributes = self._create_test_queue()
-
-        cfg = {'QueueConfigurations': [{
-            'QueueArn': queue_attributes['Attributes']['QueueArn'],
-            'Events': ['s3:ObjectCreated:*'],
-            'Filter': {'Key': {'FilterRules': [
-                {'Name': 'suffix', 'Value': '.txt'},  # different casing should be normalized to Suffix/Prefix
-                {'Name': 'PREFIX', 'Value': 'notif-'}
-            ]}}
-        }]}
-
-        try:
-            self.s3_client.put_bucket_notification_configuration(
-                Bucket=bucket_name, NotificationConfiguration=cfg
-            )
-            response = self.s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
-            # verify casing of filter rule names
-            rules = response['QueueConfigurations'].pop()['Filter']['Key']['FilterRules']
-            valid = ['Prefix', 'Suffix']
-
-            self.assertIn(rules[0]['Name'], valid)
-            self.assertIn(rules[1]['Name'], valid)
-
-        finally:
-            self.sqs_client.delete_queue(QueueUrl=queue_url)
-            self._delete_bucket(bucket_name)
-
     def test_s3_upload_fileobj_with_large_file_notification(self):
         bucket_name = 'notif-large-%s' % short_uid()
         queue_url, queue_attributes = self._create_test_queue()
