@@ -12,6 +12,7 @@ import tempfile
 import requests
 
 from localstack import config
+from localstack.config import KINESIS_PROVIDER
 from localstack.constants import MODULE_MAIN_PATH, INSTALL_DIR_INFRA
 from localstack.utils.common import is_windows
 from localstack.utils import bootstrap
@@ -47,8 +48,9 @@ IMAGE_NAME_SFN_LOCAL = 'amazon/aws-stepfunctions-local'
 ARTIFACTS_REPO = 'https://github.com/localstack/localstack-artifacts'
 SFN_PATCH_CLASS = 'com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class'
 SFN_PATCH_CLASS_URL = '%s/raw/master/stepfunctions-local-patch/%s' % (ARTIFACTS_REPO, SFN_PATCH_CLASS)
+
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get('KINESIS_MOCK_VERSION', '0.0.16')
+KINESIS_MOCK_VERSION = os.environ.get('KINESIS_MOCK_VERSION') or '0.0.16'
 KINESIS_MOCK_RELEASE_URL = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/' + KINESIS_MOCK_VERSION
 
 DEBUGPY_MODULE = 'debugpy'
@@ -150,6 +152,15 @@ def install_elasticmq():
         shutil.copy(tmp_archive, INSTALL_DIR_ELASTICMQ)
 
 
+def install_kinesis():
+    if KINESIS_PROVIDER == 'kinesalite':
+        return install_kinesalite()
+    elif KINESIS_PROVIDER == 'kinesis-mock':
+        return install_kinesis_mock()
+    else:
+        raise ValueError('unknown kinesis provider %s' % KINESIS_PROVIDER)
+
+
 def install_kinesalite():
     if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
         log_install_msg('Kinesis')
@@ -162,7 +173,7 @@ def install_kinesis_mock():
     machine = platform.machine().lower()
     system = platform.system().lower()
 
-    LOG.info('installing kinesis-mock for %s %s', system, machine)
+    LOG.debug('getting kinesis-mock for %s %s', system, machine)
     if machine == 'x86_64' or machine == 'amd64':
         if system == 'windows':
             bin_file = 'kinesis-mock-mostly-static.exe'
@@ -177,7 +188,7 @@ def install_kinesis_mock():
 
     bin_file_path = os.path.join(target_dir, bin_file)
     if os.path.exists(bin_file_path):
-        LOG.info('kinesis-mock found at %s', bin_file_path)
+        LOG.debug('kinesis-mock found at %s', bin_file_path)
         return bin_file_path
 
     response = requests.get(KINESIS_MOCK_RELEASE_URL)
@@ -199,13 +210,6 @@ def install_kinesis_mock():
     LOG.info('downloading kinesis-mock binary from %s', download_url)
     download(download_url, bin_file_path)
     return bin_file_path
-
-
-def main2():
-    logging.basicConfig(level=logging.INFO)
-    logging.getLogger('requests').setLevel(logging.WARNING)
-    print(install_kinesis_mock())
-    pass
 
 
 def install_local_kms():
@@ -306,8 +310,7 @@ def install_component(name):
     installers = {
         'cloudformation': install_cloudformation_libs,
         'dynamodb': install_dynamodb_local,
-        'kinesis': install_kinesalite,
-        'kinesis-mock': install_kinesis_mock(),
+        'kinesis': install_kinesis,
         'kms': install_local_kms,
         'sqs': install_elasticmq,
         'stepfunctions': install_stepfunctions_local,
@@ -396,4 +399,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main2()
+    main()
