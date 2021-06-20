@@ -13,7 +13,7 @@ from localstack.services.infra import start_proxy_for_service, do_run, log_start
 
 LOGGER = logging.getLogger(__name__)
 
-KINESIS_MOCK_RELEASES = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/latest'
+KINESIS_MOCK_RELEASES = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/0.0.16'
 
 
 def apply_patches_kinesalite():
