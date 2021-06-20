@@ -154,7 +154,7 @@ def http_exception_to_response(e: HTTPException):
     response.status_code = e.code
     response.headers.update(dict(e.get_headers()))
     body = e.get_body()
-    response.headers['Content-Length'] = str(len(body))
+    response.headers['Content-Length'] = str(len(str(body or '')))
     response._content = body
     return response
 
