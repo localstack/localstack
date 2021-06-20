@@ -1,14 +1,10 @@
-import os
-import json
 import logging
-import platform
 import traceback
-import requests
 from localstack import config
 from localstack.services import install
-from localstack.constants import MODULE_MAIN_PATH, INSTALL_DIR_INFRA
+from localstack.constants import MODULE_MAIN_PATH
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import chmod_r, mkdir, get_free_tcp_port, replace_in_file, to_str, download
+from localstack.utils.common import chmod_r, mkdir, get_free_tcp_port, replace_in_file
 from localstack.services.infra import start_proxy_for_service, do_run, log_startup_message
 
 LOGGER = logging.getLogger(__name__)
@@ -36,31 +32,8 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
 
 
 def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
-    target_dir = os.path.join(INSTALL_DIR_INFRA, 'kinesis-mock')
+    kinesis_mock_bin = install.install_kinesis_mock()
 
-    machine = platform.machine().lower()
-    system = platform.system().lower()
-
-    if machine == 'x86_64' or machine == 'amd64':
-        if system == 'windows':
-            target_file_name = 'kinesis-mock-mostly-static.exe'
-        elif system == 'linux':
-            target_file_name = 'kinesis-mock-linux-amd64-static'
-        elif system == 'darwin':
-            target_file_name = 'kinesis-mock-macos-amd64-dynamic'
-        else:
-            target_file_name = 'kinesis-mock.jar'
-    else:
-        target_file_name = 'kinesis-mock.jar'
-
-    target_file = os.path.join(target_dir, target_file_name)
-    if not os.path.exists(target_file):
-        response = requests.get(KINESIS_MOCK_RELEASES)
-        content = json.loads(to_str(response.content))
-        assets = content.get('assets', [])
-        filtered = [x for x in assets if x['name'] == target_file_name]
-        archive_url = filtered[0].get('browser_download_url')
-        download(archive_url, target_file)
     port = port or config.PORT_KINESIS
     backend_port = get_free_tcp_port()
     kinesis_data_dir_param = ''
@@ -74,22 +47,24 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         log_level = 'WARN'
     else:
         log_level = config.LS_LOG.upper
-    log_level_param = 'LOG_LEVEL=%s' % (log_level)
+    log_level_param = 'LOG_LEVEL=%s' % log_level
     latency = config.KINESIS_LATENCY + 'ms'
     latency_param = 'CREATE_STREAM_DURATION=%s DELETE_STREAM_DURATION=%s REGISTER_STREAM_CONSUMER_DURATION=%s ' \
         'START_STREAM_ENCRYPTION_DURATION=%s STOP_STREAM_ENCRYPTION_DURATION=%s ' \
         'DEREGISTER_STREAM_CONSUMER_DURATION=%s MERGE_SHARDS_DURATION=%s SPLIT_SHARD_DURATION=%s ' \
         'UPDATE_SHARD_COUNT_DURATION=%s' \
         % (latency, latency, latency, latency, latency, latency, latency, latency, latency)
-    if target_file_name.endswith('.jar'):
+
+    if kinesis_mock_bin.endswith('.jar'):
         cmd = 'KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s java -XX:+UseG1GC -jar %s' \
-            % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
-            log_level_param, target_file)
+              % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
+                 log_level_param, kinesis_mock_bin)
     else:
-        chmod_r(target_file, 0o777)
+        chmod_r(kinesis_mock_bin, 0o777)
         cmd = 'KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s --gc=G1' \
-            % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
-            log_level_param, target_file)
+              % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
+                 log_level_param, kinesis_mock_bin)
+    LOGGER.info('starting kinesis-mock proxy %d:%d with cmd: %s', port, backend_port, cmd)
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
 
