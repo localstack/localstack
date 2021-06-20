@@ -13,6 +13,7 @@ import dateutil.parser
 import urllib.parse
 import six
 import botocore.config
+from moto.s3.exceptions import InvalidFilterRuleName
 from pytz import timezone
 from urllib.parse import parse_qs
 from moto.s3.models import s3_backend
@@ -900,59 +901,115 @@ def normalize_bucket_name(bucket_name):
     return S3Bucket.normalize_bucket_name(bucket_name)
 
 
-def handle_notification_request(bucket, method, data):
+def empty_response():
     response = Response()
     response.status_code = 200
     response._content = ''
-    if method == 'GET':
-        # TODO check if bucket exists
-        result = '<NotificationConfiguration xmlns="%s">' % XMLNS_S3
-        if bucket in S3_NOTIFICATIONS:
-            notifs = S3_NOTIFICATIONS[bucket]
-            for notif in notifs:
-                for dest in NOTIFICATION_DESTINATION_TYPES:
-                    if dest in notif:
-                        dest_dict = {
-                            '%sConfiguration' % dest: {
-                                'Id': notif['Id'],
-                                dest: notif[dest],
-                                'Event': notif['Event'],
-                                'Filter': notif['Filter']
-                            }
-                        }
-                        result += xmltodict.unparse(dest_dict, full_document=False)
-        result += '</NotificationConfiguration>'
-        response._content = result
-
-    if method == 'PUT':
-        parsed = xmltodict.parse(data)
-        notif_config = parsed.get('NotificationConfiguration')
-        S3_NOTIFICATIONS[bucket] = []
-        for dest in NOTIFICATION_DESTINATION_TYPES:
-            config = notif_config.get('%sConfiguration' % (dest))
-            configs = config if isinstance(config, list) else [config] if config else []
-            for config in configs:
-                events = config.get('Event')
-                if isinstance(events, six.string_types):
-                    events = [events]
-                event_filter = config.get('Filter', {})
-                # make sure FilterRule is an array
-                s3_filter = _get_s3_filter(event_filter)
-                if s3_filter and not isinstance(s3_filter.get('FilterRule', []), list):
-                    s3_filter['FilterRule'] = [s3_filter['FilterRule']]
-                # create final details dict
-                notification_details = {
-                    'Id': config.get('Id', str(uuid.uuid4())),
-                    'Event': events,
-                    dest: config.get(dest),
-                    'Filter': event_filter
-                }
-                S3_NOTIFICATIONS[bucket].append(clone(notification_details))
     return response
 
 
+def handle_notification_request(bucket, method, data):
+    if method == 'GET':
+        return handle_get_bucket_notification(bucket)
+    if method == 'PUT':
+        return handle_put_bucket_notification(bucket, data)
+
+    return empty_response()
+
+
+def handle_get_bucket_notification(bucket):
+    response = Response()
+    response.status_code = 200
+    response._content = ''
+
+    # TODO check if bucket exists
+    result = '<NotificationConfiguration xmlns="%s">' % XMLNS_S3
+    if bucket in S3_NOTIFICATIONS:
+        notifs = S3_NOTIFICATIONS[bucket]
+        for notif in notifs:
+            for dest in NOTIFICATION_DESTINATION_TYPES:
+                if dest in notif:
+                    dest_dict = {
+                        '%sConfiguration' % dest: {
+                            'Id': notif['Id'],
+                            dest: notif[dest],
+                            'Event': notif['Event'],
+                            'Filter': notif['Filter']
+                        }
+                    }
+                    result += xmltodict.unparse(dest_dict, full_document=False)
+    result += '</NotificationConfiguration>'
+    response._content = result
+    return response
+
+
+def _validate_filter_rules(filter_doc):
+    rules = filter_doc.get('FilterRule')
+    if not rules:
+        return
+
+    for rule in rules:
+        name = rule.get('Name', '')
+        if name.lower() not in ['suffix', 'prefix']:
+            raise InvalidFilterRuleName(name)
+
+        # TODO: check what other rules there are
+
+
+def _sanitize_notification_filter_rules(filter_doc):
+    rules = filter_doc.get('FilterRule')
+    if not rules:
+        return
+
+    for rule in rules:
+        name = rule.get('Name', '')
+        if name.lower() not in ['suffix', 'prefix']:
+            raise InvalidFilterRuleName(name)
+
+        rule['Name'] = name.title()
+
+
+def handle_put_bucket_notification(bucket, data):
+    parsed = xmltodict.parse(data)
+    notif_config = parsed.get('NotificationConfiguration')
+
+    notifications = []
+
+    for dest in NOTIFICATION_DESTINATION_TYPES:
+        config = notif_config.get('%sConfiguration' % dest)
+        configs = config if isinstance(config, list) else [config] if config else []
+        for config in configs:
+            events = config.get('Event')
+            if isinstance(events, six.string_types):
+                events = [events]
+            event_filter = config.get('Filter', {})
+            # make sure FilterRule is an array
+            s3_filter = _get_s3_filter(event_filter)
+
+            if s3_filter and not isinstance(s3_filter.get('FilterRule', []), list):
+                s3_filter['FilterRule'] = [s3_filter['FilterRule']]
+
+            # make sure FilterRules are valid and sanitize if necessary
+            _sanitize_notification_filter_rules(s3_filter)
+
+            # create final details dict
+            notification_details = {
+                'Id': config.get('Id', str(uuid.uuid4())),
+                'Event': events,
+                dest: config.get(dest),
+                'Filter': event_filter
+            }
+
+            notifications.append(clone(notification_details))
+
+    S3_NOTIFICATIONS[bucket] = notifications
+
+    return empty_response()
+
+
 def remove_bucket_notification(bucket):
-    S3_NOTIFICATIONS.pop(bucket, None)
+    if bucket in S3_NOTIFICATIONS:
+        del S3_NOTIFICATIONS[bucket]
 
 
 def not_none_or(value, alternative):
