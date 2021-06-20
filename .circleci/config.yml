@@ -23,7 +23,7 @@ jobs:
             which python
             realpath $(which python)
             pip install --upgrade pip
-            pip install wheel setuptools
+            pip install wheel setuptools pytest
             pip install -r requirements.txt
             python -m localstack.services.install libs
             python -m localstack.services.install testlibs
@@ -49,8 +49,12 @@ jobs:
           command: make lint
           name: run linter
       - run:
-          command: DEBUG=0 TEST_PATH=tests/unit make test
+          command: |
+            source .venv/bin/activate
+            pytest tests/unit --junitxml=target/tests/TESTS-unit.xml -o junit_suite_name=unit-tests
           name: run unit tests
+      - store_test_results:
+          path: target/tests/
 
   itest-lambda-docker:
     machine:
