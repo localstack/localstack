@@ -667,7 +667,8 @@ class TestLambdaAPI(unittest.TestCase):
         expected_response['CodeSha256'] = self.CODE_SHA_256
         expected_response['Handler'] = self.HANDLER
         expected_response.update(updated_config)
-        self.assertDictContainsSubset(expected_response, response)
+        subset = {k: v for k, v in response.items() if k in expected_response.keys()}
+        self.assertDictEqual(expected_response, subset)
 
         get_response = json.loads(self.client.get('{0}/functions/{1}/configuration'.format(lambda_api.PATH_ROOT,
                             self.FUNCTION_NAME)).get_data())

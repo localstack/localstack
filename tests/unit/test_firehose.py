@@ -19,9 +19,9 @@ class FirehoseApiTest(unittest.TestCase):
 
     def test_delivery_stream_tags(self):
         result = firehose_api.get_delivery_stream_tags(TEST_STREAM_NAME)
-        self.assertEquals(TEST_TAGS, result['Tags'])
+        self.assertEqual(TEST_TAGS, result['Tags'])
         result = firehose_api.get_delivery_stream_tags(TEST_STREAM_NAME, exclusive_start_tag_key='MyTag')
-        self.assertEquals([TEST_TAG_2], result['Tags'])
+        self.assertEqual([TEST_TAG_2], result['Tags'])
         result = firehose_api.get_delivery_stream_tags(TEST_STREAM_NAME, limit=1)
-        self.assertEquals([TEST_TAG_1], result['Tags'])
-        self.assertEquals(True, result['HasMore'])
+        self.assertEqual([TEST_TAG_1], result['Tags'])
+        self.assertEqual(True, result['HasMore'])
