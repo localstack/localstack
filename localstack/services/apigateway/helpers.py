@@ -207,11 +207,11 @@ def delete_authorizer(path):
 def handle_authorizers(method, path, data, headers):
     if method == 'GET':
         return get_authorizers(path)
-    elif method == 'POST':
+    if method == 'POST':
         return add_authorizer(path, data)
-    elif method == 'PATCH':
+    if method == 'PATCH':
         return update_authorizer(path, data)
-    elif method == 'DELETE':
+    if method == 'DELETE':
         return delete_authorizer(path)
     return make_error_response('Not implemented for API Gateway authorizers: %s' % method, code=404)
 
@@ -310,11 +310,11 @@ def delete_base_path_mapping(path):
 def handle_base_path_mappings(method, path, data, headers):
     if method == 'GET':
         return get_base_path_mapping(path)
-    elif method == 'POST':
+    if method == 'POST':
         return add_base_path_mapping(path, data)
     if method == 'PATCH':
         return update_base_path_mapping(path, data)
-    elif method == 'DELETE':
+    if method == 'DELETE':
         return delete_base_path_mapping(path)
     return make_error_response('Not implemented for API Gateway base path mappings: %s' % method, code=404)
 
@@ -370,11 +370,11 @@ def delete_client_certificate(path):
 def handle_client_certificates(method, path, data, headers):
     if method == 'GET':
         return get_client_certificate(path)
-    elif method == 'POST':
+    if method == 'POST':
         return add_client_certificate(path, data)
     if method == 'PATCH':
         return update_client_certificate(path, data)
-    elif method == 'DELETE':
+    if method == 'DELETE':
         return delete_client_certificate(path)
     return make_error_response('Not implemented for API Gateway base path mappings: %s' % method, code=404)
 
@@ -433,11 +433,11 @@ def get_vpc_link_id_from_path(path):
 def handle_vpc_links(method, path, data, headers):
     if method == 'GET':
         return get_vpc_links(path)
-    elif method == 'POST':
+    if method == 'POST':
         return add_vpc_link(path, data)
     if method == 'PATCH':
         return update_vpc_link(path, data)
-    elif method == 'DELETE':
+    if method == 'DELETE':
         return delete_vpc_link(path)
     return make_error_response('Not implemented for API Gateway VPC links: %s' % method, code=404)
 
@@ -531,11 +531,11 @@ def delete_validator(path):
 def handle_validators(method, path, data, headers):
     if method == 'GET':
         return get_validators(path)
-    elif method == 'POST':
+    if method == 'POST':
         return add_validator(path, data)
-    elif method == 'PATCH':
+    if method == 'PATCH':
         return update_validator(path, data)
-    elif method == 'DELETE':
+    if method == 'DELETE':
         return delete_validator(path)
     return make_error_response('Not implemented for API Gateway validators: %s' % method, code=404)
 

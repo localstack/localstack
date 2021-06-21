@@ -5,7 +5,7 @@ import uuid
 import logging
 from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
-from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID, HEADER_AMZN_ERROR_TYPE
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, obj_to_xml, timestamp_millis
 from localstack.utils.analytics import event_publisher
@@ -21,7 +21,7 @@ MOTO_CLOUDFORMATION_ACCOUNT_ID = '123456789'
 def error_response(message, code=400, error_type='ValidationError'):
     response = Response()
     response.status_code = code
-    response.headers['x-amzn-errortype'] = error_type
+    response.headers[HEADER_AMZN_ERROR_TYPE] = error_type
     response._content = """<ErrorResponse xmlns="%s">
           <Error>
             <Type>Sender</Type>
