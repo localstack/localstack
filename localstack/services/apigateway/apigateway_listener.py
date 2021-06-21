@@ -22,19 +22,17 @@ from localstack.utils.aws.aws_responses import (flask_to_requests_response, requ
     request_response_stream)
 from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
     handle_accounts, handle_vpc_links, extract_query_string_params, extract_path_params, make_error_response,
-    get_cors_response, hande_base_path_mappings)
+    get_cors_response, handle_base_path_mappings, handle_client_certificates,
+    PATH_REGEX_AUTHORIZERS, PATH_REGEX_CLIENT_CERTS, PATH_REGEX_PATH_MAPPINGS, PATH_REGEX_RESPONSES,
+    PATH_REGEX_VALIDATORS)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
 # regex path patterns
-PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
-PATH_REGEX_VALIDATORS = r'^/restapis/([A-Za-z0-9_\-]+)/requestvalidators(\?.*)?'
-PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?'
-PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
-PATH_REGEX_PATH_MAPPINGS = r'/domainnames/([^/]+)/basepathmappings(/.*)?'
 HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
 TARGET_REGEX_S3_URI = r'^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$'
+PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
 
 # Maps API IDs to list of gateway responses
 GATEWAY_RESPONSES = {}
@@ -82,10 +80,13 @@ class ProxyListenerApiGateway(ProxyListener):
             result = None
             if path == '/account':
                 result = handle_accounts(method, path, data, headers)
-            if path.startswith('/vpclinks'):
+            elif path.startswith('/vpclinks'):
                 result = handle_vpc_links(method, path, data, headers)
-            if re.match(PATH_REGEX_PATH_MAPPINGS, path):
-                result = hande_base_path_mappings(method, path, data, headers)
+            elif re.match(PATH_REGEX_PATH_MAPPINGS, path):
+                result = handle_base_path_mappings(method, path, data, headers)
+            elif re.match(PATH_REGEX_CLIENT_CERTS, path):
+                result = handle_client_certificates(method, path, data, headers)
+
             if result is not None:
                 response.status_code = 200
                 aws_responses.set_response_content(response, result, getattr(result, 'headers', {}))

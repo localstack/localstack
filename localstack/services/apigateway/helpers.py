@@ -19,9 +19,12 @@ PATH_REGEX_MAIN = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?'
 PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
 PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
 
-PATH_REGEX_AUTHORIZER = r'^/restapis/[A-Za-z0-9_\-]+/authorizers/(.*)'
-PATH_REGEX_VALIDATOR = r'^/restapis/[A-Za-z0-9_\-]+/requestvalidators/?(.*)'
-PATH_REGEX_PATH_MAPPING = r'/domainnames/([^/]+)/basepathmappings/?(.*)'
+# path regex patterns
+PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers/?([^?/]+)?(\?.*)?'
+PATH_REGEX_VALIDATORS = r'^/restapis/([A-Za-z0-9_\-]+)/requestvalidators/?([^?/]+)?(\?.*)?'
+PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?'
+PATH_REGEX_PATH_MAPPINGS = r'/domainnames/([^/]+)/basepathmappings/?(.*)'
+PATH_REGEX_CLIENT_CERTS = r'/clientcertificates/?([^/]+)?$'
 PATH_REGEX_VPC_LINKS = r'/vpclinks/([^/]+)?(.*)'
 
 # template for SQS inbound data
@@ -50,6 +53,8 @@ class APIGatewayRegion(RegionBackend):
         self.base_path_mappings = {}
         # maps ID to VPC link details
         self.vpc_links = {}
+        # maps cert ID to client certificate details
+        self.client_certificates = {}
 
 
 def make_json_response(message):
@@ -104,8 +109,8 @@ def handle_accounts(method, path, data, headers):
 # -----------------
 
 def get_authorizer_id_from_path(path):
-    match = re.match(PATH_REGEX_AUTHORIZER, path)
-    return match.group(1) if match else None
+    match = re.match(PATH_REGEX_AUTHORIZERS, path)
+    return match.group(2) if match else None
 
 
 def _find_authorizer(api_id, authorizer_id):
@@ -216,12 +221,12 @@ def handle_authorizers(method, path, data, headers):
 # -----------------------
 
 def get_domain_from_path(path):
-    matched = re.match(PATH_REGEX_PATH_MAPPING, path)
+    matched = re.match(PATH_REGEX_PATH_MAPPINGS, path)
     return matched.group(1) if matched else None
 
 
 def get_base_path_from_path(path):
-    return re.match(PATH_REGEX_PATH_MAPPING, path).group(2)
+    return re.match(PATH_REGEX_PATH_MAPPINGS, path).group(2)
 
 
 def get_base_path_mapping(path):
@@ -302,7 +307,7 @@ def delete_base_path_mapping(path):
     return make_error_response('Base path mapping %s for domain %s not found' % (base_path, domain_name), code=404)
 
 
-def hande_base_path_mappings(method, path, data, headers):
+def handle_base_path_mappings(method, path, data, headers):
     if method == 'GET':
         return get_base_path_mapping(path)
     elif method == 'POST':
@@ -311,6 +316,66 @@ def hande_base_path_mappings(method, path, data, headers):
         return update_base_path_mapping(path, data)
     elif method == 'DELETE':
         return delete_base_path_mapping(path)
+    return make_error_response('Not implemented for API Gateway base path mappings: %s' % method, code=404)
+
+
+# ------------------------
+# CLIENT CERTIFICATE APIs
+# ------------------------
+
+def get_cert_id_from_path(path):
+    matched = re.match(PATH_REGEX_CLIENT_CERTS, path)
+    return matched.group(1) if matched else None
+
+
+def get_client_certificate(path):
+    region_details = APIGatewayRegion.get()
+    cert_id = get_cert_id_from_path(path)
+    result = region_details.client_certificates.get(cert_id)
+    if result is None:
+        return make_error_response('Client certificate ID "%s" not found' % cert_id, code=404)
+    return result
+
+
+def add_client_certificate(path, data):
+    region_details = APIGatewayRegion.get()
+    result = common.clone(data)
+    result['clientCertificateId'] = cert_id = common.short_uid()
+    result['createdDate'] = common.now_utc()
+    result['expirationDate'] = result['createdDate'] + 60 * 60 * 24 * 30  # assume 30 days validity
+    result['pemEncodedCertificate'] = 'testcert-123'  # TODO return proper certificate!
+    region_details.client_certificates[cert_id] = result
+    return make_json_response(to_client_cert_response_json(result))
+
+
+def update_client_certificate(path, data):
+    region_details = APIGatewayRegion.get()
+    entity_id = get_cert_id_from_path(path)
+    entity = region_details.client_certificates.get(entity_id)
+    if entity is None:
+        return make_error_response('Client certificate ID "%s" not found' % entity_id, code=404)
+    result = apply_json_patch_safe(entity, data['patchOperations'])
+    return make_json_response(to_client_cert_response_json(result))
+
+
+def delete_client_certificate(path):
+    region_details = APIGatewayRegion.get()
+    entity_id = get_cert_id_from_path(path)
+    entity = region_details.client_certificates.pop(entity_id, None)
+    if entity is None:
+        return make_error_response('VPC link ID "%s" not found for deletion' % entity_id, code=404)
+    return make_accepted_response()
+
+
+def handle_client_certificates(method, path, data, headers):
+    if method == 'GET':
+        return get_client_certificate(path)
+    elif method == 'POST':
+        return add_client_certificate(path, data)
+    if method == 'PATCH':
+        return update_client_certificate(path, data)
+    elif method == 'DELETE':
+        return delete_client_certificate(path)
     return make_error_response('Not implemented for API Gateway base path mappings: %s' % method, code=404)
 
 
@@ -382,8 +447,8 @@ def handle_vpc_links(method, path, data, headers):
 # ----------------
 
 def get_validator_id_from_path(path):
-    match = re.match(PATH_REGEX_VALIDATOR, path)
-    return match.group(1) if match else None
+    match = re.match(PATH_REGEX_VALIDATORS, path)
+    return match.group(2) if match else None
 
 
 def _find_validator(api_id, validator_id):
@@ -500,12 +565,17 @@ def to_vpc_link_response_json(data):
     return to_response_json('vpclink', data)
 
 
-def to_response_json(model_type, data, api_id=None, self_link=None):
+def to_client_cert_response_json(data):
+    return to_response_json('clientcertificate', data, id_attr='clientCertificateId')
+
+
+def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None):
     if isinstance(data, list) and len(data) == 1:
         data = data[0]
+    id_attr = id_attr or 'id'
     result = common.clone(data)
     if not self_link:
-        self_link = '/%ss/%s' % (model_type, data['id'])
+        self_link = '/%ss/%s' % (model_type, data[id_attr])
         if api_id:
             self_link = '/restapis/%s/%s' % (api_id, self_link)
     if '_links' not in result:
