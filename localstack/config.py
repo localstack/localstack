@@ -241,6 +241,11 @@ LAMBDA_FALLBACK_URL = os.environ.get('LAMBDA_FALLBACK_URL', '').strip()
 # endpoint (can use useful for advanced test setups)
 LAMBDA_FORWARD_URL = os.environ.get('LAMBDA_FORWARD_URL', '').strip()
 
+# A comma-delimited string of stream names and its corresponding shard count to
+# initialize during startup.
+# For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
+KINESIS_INITIALIZE_STREAMS = os.environ.get('KINESIS_INITIALIZE_STREAMS', '').strip()
+
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
@@ -255,7 +260,8 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS', 'BUCKET_MARKER_LOCAL',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
                    'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS', 'PERSISTENCE_SINGLE_FILE',
-                   'S3_SKIP_SIGNATURE_VALIDATION', 'DEVELOP', 'DEVELOP_PORT', 'WAIT_FOR_DEBUGGER']
+                   'S3_SKIP_SIGNATURE_VALIDATION', 'DEVELOP', 'DEVELOP_PORT', 'WAIT_FOR_DEBUGGER',
+                   'KINESIS_INITIALIZE_STREAMS']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
