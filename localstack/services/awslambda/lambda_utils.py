@@ -47,7 +47,8 @@ def multi_value_dict_for_list(elements):
     return dict((k, tuple(v)) for k, v in temp_mv_dict.items())
 
 
-def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
+def get_handler_file_from_name(handler_name, runtime=None):
+    runtime = runtime or LAMBDA_DEFAULT_RUNTIME
     if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
         return 'bootstrap'
     delimiter = '.'

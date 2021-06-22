@@ -359,6 +359,7 @@ class CaptureOutput(object):
 # ----------------
 
 def start_thread(method, *args, **kwargs):
+    """ Start the given method in a background thread, and add the thread to the TMP_THREADS shutdown hook """
     _shutdown_hook = kwargs.pop('_shutdown_hook', True)
     thread = FuncThread(method, *args, **kwargs)
     thread.start()
