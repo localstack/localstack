@@ -47,6 +47,9 @@ PROXY_LISTENERS = {}
 # set up logger
 LOG = logging.getLogger(__name__)
 
+# event flag indicating the the infrastructure has been started and that the ready marker has been printed
+INFRA_READY = threading.Event()
+
 # event flag indicating that the infrastructure has been shut down
 SHUTDOWN_INFRA = threading.Event()
 
@@ -475,5 +478,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         thread = start_api_services()
     print(READY_MARKER_OUTPUT)
     sys.stdout.flush()
+
+    INFRA_READY.set()
 
     return thread
