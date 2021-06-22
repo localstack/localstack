@@ -55,15 +55,20 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         'UPDATE_SHARD_COUNT_DURATION=%s' \
         % (latency, latency, latency, latency, latency, latency, latency, latency, latency)
 
+    if config.KINESIS_INITIALIZE_STREAMS != '':
+        initialize_streams_param = 'INITIALIZE_STREAMS=%s' % (config.KINESIS_INITIALIZE_STREAMS)
+    else:
+        initialize_streams_param = ''
+
     if kinesis_mock_bin.endswith('.jar'):
-        cmd = 'KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s java -XX:+UseG1GC -jar %s' \
+        cmd = 'KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s java -XX:+UseG1GC -jar %s' \
               % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
-                 log_level_param, kinesis_mock_bin)
+                 log_level_param, initialize_streams_param, kinesis_mock_bin)
     else:
         chmod_r(kinesis_mock_bin, 0o777)
-        cmd = 'KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s --gc=G1' \
+        cmd = 'KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s %s --gc=G1' \
               % (backend_port, config.KINESIS_SHARD_LIMIT, latency_param, kinesis_data_dir_param,
-                 log_level_param, kinesis_mock_bin)
+                 log_level_param, initialize_streams_param, kinesis_mock_bin)
     LOGGER.info('starting kinesis-mock proxy %d:%d with cmd: %s', port, backend_port, cmd)
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
