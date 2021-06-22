@@ -55,7 +55,7 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
         'UPDATE_SHARD_COUNT_DURATION=%s' \
         % (latency, latency, latency, latency, latency, latency, latency, latency, latency)
 
-    if config.KINESIS_INITIALIZE_STREAMS is not None:
+    if config.KINESIS_INITIALIZE_STREAMS != '':
         initialize_streams_param = 'INITIALIZE_STREAMS=%s' % (config.KINESIS_INITIALIZE_STREAMS)
     else:
         initialize_streams_param = ''

@@ -244,7 +244,7 @@ LAMBDA_FORWARD_URL = os.environ.get('LAMBDA_FORWARD_URL', '').strip()
 # A comma-delimited string of stream names and its corresponding shard count to
 # initialize during startup.
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
-KINESIS_INITIALIZE_STREAMS = os.environ.get('KINESIS_INITIALIZE_STREAMS', None).strip()
+KINESIS_INITIALIZE_STREAMS = os.environ.get('KINESIS_INITIALIZE_STREAMS', '').strip()
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
