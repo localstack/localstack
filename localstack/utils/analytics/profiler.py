@@ -157,7 +157,7 @@ def log_duration(name=None):
             finally:
                 end_time = now_utc(millis=True)
                 func_name = name or f.__name__
-                duration = (end_time - start_time) * 1000
+                duration = end_time - start_time
                 if duration > 500:
                     LOG.info('Execution of "%s" took %.2fms', func_name, duration)
         return wrapped
