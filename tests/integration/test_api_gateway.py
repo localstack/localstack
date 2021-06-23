@@ -832,7 +832,7 @@ class TestAPIGateway(unittest.TestCase):
         # when the api key is not passed as part of the header
         self.assertEqual(response.status_code, 403)
 
-        # Check All API Keys work
+        # check that all API keys work
         for key in api_keys:
             response = requests.put(
                 url,
@@ -1050,6 +1050,20 @@ class TestAPIGateway(unittest.TestCase):
         s3_client.delete_object(Bucket=bucket_name, Key=object_name)
         s3_client.delete_bucket(Bucket=bucket_name)
 
+    def test_api_mock_integration_response_params(self):
+        # apigw_client = aws_stack.connect_to_service('apigateway')
+
+        resps = [{'statusCode': '204', 'httpMethod': 'OPTIONS', 'responseParameters': {
+            'method.response.header.Access-Control-Allow-Methods': "'POST,OPTIONS'",
+            'method.response.header.Vary': "'Origin'",
+        }}]
+        api_id = self.create_api_gateway_and_deploy(integration_type='MOCK', integration_responses=resps)
+
+        url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path='/')
+        result = requests.options(url)
+        self.assertLess(result.status_code, 400)
+        self.assertEqual(result.headers.get('vary'), 'Origin')
+
     # =====================================================================
     # Helper methods
     # =====================================================================
@@ -1159,7 +1173,10 @@ class TestAPIGateway(unittest.TestCase):
         return proxy
 
     @staticmethod
-    def create_api_gateway_and_deploy(response_template, is_api_key_required=False):
+    def create_api_gateway_and_deploy(response_templates=None, is_api_key_required=False,
+            integration_type=None, integration_responses=None):
+        response_templates = response_templates or {}
+        integration_type = integration_type or 'AWS_PROXY'
         apigw_client = aws_stack.connect_to_service('apigateway')
         response = apigw_client.create_rest_api(name='my_api', description='this is my api')
         api_id = response['id']
@@ -1167,34 +1184,44 @@ class TestAPIGateway(unittest.TestCase):
         root_resources = [resource for resource in resources['items'] if resource['path'] == '/']
         root_id = root_resources[0]['id']
 
-        apigw_client.put_method(
-            restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE',
-            apiKeyRequired=is_api_key_required
-        )
+        kwargs = {}
+        if integration_type == 'AWS_PROXY':
+            aws_stack.create_dynamodb_table('MusicCollection', partition_key='id')
+            kwargs['uri'] = 'arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection'
 
-        apigw_client.put_method_response(
-            restApiId=api_id, resourceId=root_id, httpMethod='PUT', statusCode='200',
-        )
+        if not integration_responses:
+            integration_responses = [{
+                'httpMethod': 'PUT',
+                'statusCode': '200'
+            }]
 
-        aws_stack.create_dynamodb_table('MusicCollection', partition_key='id')
+        for resp_details in integration_responses:
 
-        # Ensure that it works fine when providing the integrationHttpMethod-argument
-        apigw_client.put_integration(
-            restApiId=api_id,
-            resourceId=root_id,
-            httpMethod='PUT',
-            integrationHttpMethod='PUT',
-            type='AWS_PROXY',
-            uri='arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection',
-        )
+            apigw_client.put_method(
+                restApiId=api_id, resourceId=root_id, httpMethod=resp_details['httpMethod'],
+                authorizationType='NONE', apiKeyRequired=is_api_key_required
+            )
 
-        apigw_client.put_integration_response(
-            restApiId=api_id,
-            resourceId=root_id,
-            httpMethod='PUT',
-            statusCode='200',
-            selectionPattern='',
-            responseTemplates=response_template)
+            apigw_client.put_method_response(
+                restApiId=api_id, resourceId=root_id, httpMethod=resp_details['httpMethod'], statusCode='200',
+            )
+
+            apigw_client.put_integration(
+                restApiId=api_id,
+                resourceId=root_id,
+                httpMethod=resp_details['httpMethod'],
+                integrationHttpMethod=resp_details['httpMethod'],
+                type=integration_type,
+                **kwargs
+            )
+
+            apigw_client.put_integration_response(
+                restApiId=api_id,
+                resourceId=root_id,
+                selectionPattern='',
+                responseTemplates=response_templates,
+                **resp_details
+            )
 
         apigw_client.create_deployment(restApiId=api_id, stageName='staging')
 

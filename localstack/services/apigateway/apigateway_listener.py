@@ -27,7 +27,7 @@ from localstack.services.apigateway.helpers import (get_resource_for_path, handl
     PATH_REGEX_VALIDATORS)
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 # regex path patterns
 HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
@@ -45,7 +45,9 @@ class AuthorizationError(Exception):
 class ProxyListenerApiGateway(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if re.match(PATH_REGEX_USER_REQUEST, path):
-            return invoke_rest_api_from_request(method, path, data, headers)
+            result = invoke_rest_api_from_request(method, path, data, headers)
+            if result is not None:
+                return result
 
         data = data and json.loads(to_str(data))
 
@@ -253,6 +255,26 @@ def apply_template(integration, req_res_type, data, path_params={}, query_params
     return data
 
 
+def apply_response_parameters(response, integration, api_id=None):
+    int_responses = integration.get('integrationResponses') or {}
+    if not int_responses:
+        return response
+    entries = list(int_responses.keys())
+    return_code = str(response.status_code)
+    if return_code not in entries:
+        if len(entries) > 1:
+            LOG.info('Found multiple integration response status codes: %s' % entries)
+            return response
+        return_code = entries[0]
+    response_params = int_responses[return_code].get('responseParameters', {})
+    for key, value in response_params.items():
+        # TODO: add support for method.response.body, etc ...
+        if str(key).lower().startswith('method.response.header.'):
+            header_name = key[len('method.response.header.'):]
+            response.headers[header_name] = value.strip("'")
+    return response
+
+
 def get_api_id_stage_invocation_path(path, headers):
     path_match = re.search(PATH_REGEX_USER_REQUEST, path)
     host_header = headers.get('Host', '')
@@ -316,6 +338,21 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
 
 def invoke_rest_api_integration(api_id, stage, integration, method, path, invocation_path, data, headers,
         resource_path, context={}, resource_id=None, response_templates={}):
+    response = None
+    try:
+        response = invoke_rest_api_integration_backend(
+            api_id, stage, integration, method, path, invocation_path,
+            data, headers, resource_path, context=context, resource_id=resource_id,
+            response_templates=response_templates)
+        response = apply_response_parameters(response, integration, api_id=api_id)
+        return response
+    except Exception as e:
+        LOG.warning(str(e))
+        return make_error_response(str(e), 400)
+
+
+def invoke_rest_api_integration_backend(api_id, stage, integration, method, path, invocation_path,
+        data, headers, resource_path, context={}, resource_id=None, response_templates={}):
 
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get('type') or integration.get('integrationType') or ''
@@ -380,10 +417,8 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
 
             return response
 
-        msg = 'API Gateway %s integration action "%s", method "%s" not yet implemented' % (
-            integration_type, uri, method)
-        LOGGER.warning(msg)
-        return make_error_response(msg, 404)
+        raise Exception('API Gateway %s integration action "%s", method "%s" not yet implemented' % (
+            integration_type, uri, method))
 
     elif integration_type == 'AWS':
         if 'kinesis:action/' in uri:
@@ -433,12 +468,12 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             uri_match = re.match(TARGET_REGEX_S3_URI, uri)
             if uri_match:
                 bucket, object_key = uri_match.group('bucket', 'object')
-                LOGGER.debug('Getting request for bucket %s object %s', bucket, object_key)
+                LOG.debug('Getting request for bucket %s object %s', bucket, object_key)
                 try:
                     object = s3.get_object(Bucket=bucket, Key=object_key)
                 except s3.exceptions.NoSuchKey:
                     msg = 'Object %s not found' % object_key
-                    LOGGER.debug(msg)
+                    LOG.debug(msg)
                     return make_error_response(msg, 404)
 
                 headers = aws_stack.mock_aws_request_headers(service='s3')
@@ -454,7 +489,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                 return response
             else:
                 msg = 'Request URI does not match s3 specifications'
-                LOGGER.warning(msg)
+                LOG.warning(msg)
                 return make_error_response(msg, 400)
 
         if method == 'POST':
@@ -470,9 +505,8 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                 result = common.make_http_request(url, method='POST', headers=headers, data=new_request)
                 return result
 
-        msg = 'API Gateway AWS integration action URI "%s", method "%s" not yet implemented' % (uri, method)
-        LOGGER.warning(msg)
-        return make_error_response(msg, 404)
+        raise Exception('API Gateway AWS integration action URI "%s", method "%s" not yet implemented' %
+            (uri, method))
 
     elif integration_type == 'AWS_PROXY':
         if uri.startswith('arn:aws:apigateway:') and ':dynamodb:action' in uri:
@@ -481,10 +515,11 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             action = uri.split(':dynamodb:action')[1].split('&Table=')[0]
 
             if 'PutItem' in action and method == 'PUT':
-                response_template = response_templates.get('application/json', None)
+                response_template = response_templates.get('application/json')
 
                 if response_template is None:
                     msg = 'Invalid response template defined in integration response.'
+                    LOG.info('%s Existing: %s' % (msg, response_templates))
                     return make_error_response(msg, 404)
 
                 response_template = json.loads(response_template)
@@ -504,9 +539,8 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                 response = requests_response(event_data, headers=aws_stack.mock_aws_request_headers())
                 return response
         else:
-            msg = 'API Gateway action uri "%s", integration type %s not yet implemented' % (uri, integration_type)
-            LOGGER.warning(msg)
-            return make_error_response(msg, 404)
+            raise Exception('API Gateway action uri "%s", integration type %s not yet implemented' %
+                (uri, integration_type))
 
     elif integration_type in ['HTTP_PROXY', 'HTTP']:
 
@@ -531,17 +565,15 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
         return result
 
     elif integration_type == 'MOCK':
-        # TODO: add logic for MOCK responses
-        pass
+        # return empty response - details filled in via requestParameters above...
+        return requests_response({})
 
     if method == 'OPTIONS':
         # fall back to returning CORS headers if this is an OPTIONS request
         return get_cors_response(headers)
 
-    msg = ('API Gateway integration type "%s", method "%s", URI "%s" not yet implemented' %
+    raise Exception('API Gateway integration type "%s", method "%s", URI "%s" not yet implemented' %
            (integration_type, method, uri))
-    LOGGER.warning(msg)
-    return make_error_response(msg, 404)
 
 
 def get_stage_variables(api_id, stage):
