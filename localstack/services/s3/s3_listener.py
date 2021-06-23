@@ -411,6 +411,7 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
             allowed_origins = convert_origins_into_list(allowed_origins)
 
             for allowed in allowed_origins:
+                allowed = allowed or ''
                 if origin in allowed or re.match(allowed.replace('*', '.*'), origin):
 
                     response.headers['Access-Control-Allow-Origin'] = origin
@@ -1261,7 +1262,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
             if response.status_code == 201 and key:
                 response._content = self.get_201_response(key, bucket_name)
-                response.headers['Content-Length'] = str(len(response._content))
+                response.headers['Content-Length'] = str(len(response._content or ''))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'
                 return response
         if response.status_code == 416:
@@ -1400,7 +1401,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 reset_content_length = True
 
             if reset_content_length:
-                response.headers['Content-Length'] = str(len(response._content))
+                response.headers['Content-Length'] = str(len(response._content or ''))
 
             # convert to chunked encoding, for compatibility with certain SDKs (e.g., AWS PHP SDK)
             convert_to_chunked_encoding(method, path, response)

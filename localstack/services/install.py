@@ -22,7 +22,7 @@ from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_
     KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
-# flake8: noqa: E402
+# noqa: E402
 from localstack.utils.common import (
     download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf,
     chmod_r, is_alpine, in_docker, get_arch, new_tmp_file)
@@ -196,7 +196,7 @@ def install_kinesis_mock():
 
     response = requests.get(KINESIS_MOCK_RELEASE_URL)
     if not response.ok:
-        raise ValueError('could not get list of releases from %s: %s' %(KINESIS_MOCK_RELEASE_URL, response.text))
+        raise ValueError('Could not get list of releases from %s: %s' % (KINESIS_MOCK_RELEASE_URL, response.text))
 
     github_release = response.json()
     download_url = None
@@ -234,7 +234,7 @@ def install_stepfunctions_local():
         run('{dc} pull {img}'.format(dc=config.DOCKER_CMD, img=IMAGE_NAME_SFN_LOCAL))
         docker_name = 'tmp-ls-sfn'
         run(('{dc} run --name={dn} --entrypoint= -d --rm {img} sleep 15').format(
-                dc=config.DOCKER_CMD, dn=docker_name, img=IMAGE_NAME_SFN_LOCAL))
+            dc=config.DOCKER_CMD, dn=docker_name, img=IMAGE_NAME_SFN_LOCAL))
         time.sleep(5)
         run('{dc} cp {dn}:/home/stepfunctionslocal/ {tgt}'.format(dc=config.DOCKER_CMD,
             dn=docker_name, tgt=INSTALL_DIR_INFRA))
@@ -339,10 +339,11 @@ def install_all_components():
 def install_debugpy_and_dependencies():
     try:
         import debugpy
+        assert debugpy
     except ModuleNotFoundError:
-        run('apk fetch %s --output %s'%  (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER))
-        run('apk add %s --cache-dir %s' %  (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER ) )
-        run('pip install %s' % DEBUGPY_MODULE )
+        run('apk fetch %s --output %s' % (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER))
+        run('apk add %s --cache-dir %s' % (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER))
+        run('pip install %s' % DEBUGPY_MODULE)
 
 
 # -----------------
