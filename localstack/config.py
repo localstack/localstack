@@ -143,6 +143,10 @@ WAIT_FOR_DEBUGGER = is_env_true('WAIT_FOR_DEBUGGER')
 # whether to use SSL encryption for the services
 USE_SSL = is_env_true('USE_SSL')
 
+# whether to run in TF compatibility mode for TF integration tests
+# (e.g., returning verbatim ports for ELB resources, rather than edge port 4566, etc.)
+TF_COMPAT_MODE = is_env_true('TF_COMPAT_MODE')
+
 # default encoding used to convert strings to byte arrays (mainly for Python 3 compatibility)
 DEFAULT_ENCODING = 'utf-8'
 
@@ -261,7 +265,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
                    'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS', 'PERSISTENCE_SINGLE_FILE',
                    'S3_SKIP_SIGNATURE_VALIDATION', 'DEVELOP', 'DEVELOP_PORT', 'WAIT_FOR_DEBUGGER',
-                   'KINESIS_INITIALIZE_STREAMS']
+                   'KINESIS_INITIALIZE_STREAMS', 'TF_COMPAT_MODE']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
