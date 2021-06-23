@@ -172,9 +172,12 @@ def install_kinesis_mock():
 
     machine = platform.machine().lower()
     system = platform.system().lower()
+    version = platform.version().lower()
+
+    is_probably_m1 = system == 'darwin' and ('arm64' in version or 'arm32' in version)
 
     LOG.debug('getting kinesis-mock for %s %s', system, machine)
-    if machine == 'x86_64' or machine == 'amd64':
+    if ((machine == 'x86_64' or machine == 'amd64') and not is_probably_m1):
         if system == 'windows':
             bin_file = 'kinesis-mock-mostly-static.exe'
         elif system == 'linux':
