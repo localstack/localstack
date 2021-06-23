@@ -46,7 +46,7 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     elif config.LS_LOG == 'warning':
         log_level = 'WARN'
     else:
-        log_level = config.LS_LOG.upper
+        log_level = config.LS_LOG.upper()
     log_level_param = 'LOG_LEVEL=%s' % log_level
     latency = config.KINESIS_LATENCY + 'ms'
     latency_param = 'CREATE_STREAM_DURATION=%s DELETE_STREAM_DURATION=%s REGISTER_STREAM_CONSUMER_DURATION=%s ' \
