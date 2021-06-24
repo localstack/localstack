@@ -13,7 +13,6 @@ from localstack.utils.common import (
     load_file, save_file, short_uid, clone, to_bytes, to_str, run_safe, retry, new_tmp_file)
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.testutil import get_lambda_log_events
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON27
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_LIBS, LambdaTestBase
 
@@ -365,7 +364,7 @@ class IntegrationTest(unittest.TestCase):
         # deploy test lambda connected to DynamoDB Stream
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=TEST_LAMBDA_NAME_DDB,
-            event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27, delete=True)
+            event_source_arn=ddb_event_source_arn, delete=True)
 
         # submit a batch with writes
         dynamodb.batch_write_item(RequestItems={table_name: [
@@ -504,11 +503,11 @@ class IntegrationTest(unittest.TestCase):
 
         # deploy test lambdas connected to Kinesis streams
         zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
-            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
+            libs=TEST_LAMBDA_LIBS)
         testutil.create_lambda_function(func_name=TEST_CHAIN_LAMBDA1_NAME, zip_file=zip_file,
-            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME), runtime=LAMBDA_RUNTIME_PYTHON27)
+            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME))
         testutil.create_lambda_function(func_name=TEST_CHAIN_LAMBDA2_NAME, zip_file=zip_file,
-            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME), runtime=LAMBDA_RUNTIME_PYTHON27)
+            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME))
 
         # publish test record
         test_data = {'test_data': 'forward_chain_data_%s with \'quotes\\"' % short_uid()}
@@ -540,7 +539,6 @@ class IntegrationTest(unittest.TestCase):
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=lambda_name_queue_batch,
             event_source_arn=sqs_queue_info['QueueArn'],
-            runtime=LAMBDA_RUNTIME_PYTHON27,
             libs=TEST_LAMBDA_LIBS
         )
 

@@ -168,7 +168,6 @@ ci-build-prepare:
 	nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
 	nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
 	nohup docker pull lambci/lambda:20210129-ruby2.7 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-python2.7 > /dev/null &
 	nohup docker pull lambci/lambda:20191117-python3.6 > /dev/null &
 	nohup docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null &
 	nohup docker pull lambci/lambda:dotnetcore3.1 > /dev/null &
@@ -205,7 +204,7 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); flake8 --inline-quotes=single --show-source --max-line-length=120 --ignore=E128,W504 --exclude=node_modules,$(VENV_DIR)*,dist,fixes .)
+	($(VENV_RUN); python -m flake8 --inline-quotes=single --show-source --max-line-length=120 --ignore=E128,W504 --exclude=node_modules,$(VENV_DIR)*,dist,fixes .)
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/

@@ -30,7 +30,7 @@ from localstack.services.awslambda.lambda_api import (
     use_docker, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION, LAMBDA_DEFAULT_HANDLER)
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY27,
-    LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11,
+    LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS14X)
 from .lambdas import lambda_integration
 
@@ -841,8 +841,7 @@ class TestPythonRuntimes(LambdaTestBase):
         cls.s3_client = aws_stack.connect_to_service('s3')
         cls.sns_client = aws_stack.connect_to_service('sns')
 
-        Util.create_function(TEST_LAMBDA_PYTHON, TEST_LAMBDA_NAME_PY,
-                             runtime=LAMBDA_RUNTIME_PYTHON27, libs=TEST_LAMBDA_LIBS)
+        Util.create_function(TEST_LAMBDA_PYTHON, TEST_LAMBDA_NAME_PY, libs=TEST_LAMBDA_LIBS)
 
     @classmethod
     def tearDownClass(cls):
@@ -893,7 +892,7 @@ class TestPythonRuntimes(LambdaTestBase):
     def test_lambda_environment(self):
         vars = {'Hello': 'World'}
         testutil.create_lambda_function(handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS,
-                                        func_name=TEST_LAMBDA_NAME_ENV, runtime=LAMBDA_RUNTIME_PYTHON27, envvars=vars)
+                                        func_name=TEST_LAMBDA_NAME_ENV, envvars=vars)
 
         # invoke function and assert result contains env vars
         result = self.lambda_client.invoke(
@@ -918,14 +917,14 @@ class TestPythonRuntimes(LambdaTestBase):
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON), get_content=True,
-            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
+            libs=TEST_LAMBDA_LIBS)
         self.s3_client.create_bucket(Bucket=bucket_name)
         self.s3_client.upload_fileobj(
             BytesIO(zip_file), bucket_name, bucket_key)
 
         # create lambda function
         response = self.lambda_client.create_function(
-            FunctionName=lambda_name, Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1', Publish=True,
+            FunctionName=lambda_name, Runtime=LAMBDA_RUNTIME_PYTHON37, Role='r1', Publish=True,
             Handler='handler.handler', Code={'S3Bucket': bucket_name, 'S3Key': bucket_key}
         )
         self.assertIn('Version', response)
@@ -999,15 +998,14 @@ class TestPythonRuntimes(LambdaTestBase):
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON), get_content=True,
-            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
+            libs=TEST_LAMBDA_LIBS)
         self.s3_client.create_bucket(Bucket=bucket_name)
         self.s3_client.upload_fileobj(
             BytesIO(zip_file), bucket_name, bucket_key)
 
         # create lambda function
         self.lambda_client.create_function(
-            FunctionName=lambda_name, Handler='handler.handler',
-            Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1',
+            FunctionName=lambda_name, Runtime=LAMBDA_RUNTIME_PYTHON37, Handler='handler.handler', Role='r1',
             Code={'S3Bucket': bucket_name, 'S3Key': bucket_key}
         )
 
@@ -1684,8 +1682,7 @@ class TestDockerBehaviour(LambdaTestBase):
 
         # deploy and invoke lambda without Docker
         testutil.create_lambda_function(
-            func_name=func_name, handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27, envvars={'Hello': 'World'})
+            func_name=func_name, handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS, envvars={'Hello': 'World'})
 
         self.assertEqual(len(executor.get_all_container_names()), 0)
         self.assertDictEqual(executor.function_invoke_times, {})
@@ -1782,8 +1779,7 @@ class TestDockerBehaviour(LambdaTestBase):
 
         # deploy and invoke lambda without Docker
         testutil.create_lambda_function(
-            func_name=func_name, handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27, envvars={'Hello': 'World'})
+            func_name=func_name, handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS, envvars={'Hello': 'World'})
 
         self.assertEqual(len(executor.get_all_container_names()), 0)
 
@@ -1806,6 +1802,6 @@ class TestDockerBehaviour(LambdaTestBase):
 class Util(object):
     @classmethod
     def create_function(cls, file, name, runtime=None, libs=None):
-        runtime = runtime or LAMBDA_RUNTIME_PYTHON27
-        testutil.create_lambda_function(
-            func_name=name, handler_file=file, libs=TEST_LAMBDA_LIBS, runtime=runtime)
+        runtime = runtime or LAMBDA_RUNTIME_PYTHON37
+        libs = libs or TEST_LAMBDA_LIBS
+        testutil.create_lambda_function(func_name=name, handler_file=file, libs=libs, runtime=runtime)
