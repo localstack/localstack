@@ -25,6 +25,7 @@ jobs:
             pip install -r requirements.txt
             python -m localstack.services.install libs
             python -m localstack.services.install testlibs
+            mkdir -p target/reports
           name: Setup environment
       - save_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
@@ -62,9 +63,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: |
-            make ci-build-prepare
-            mkdir -p target/reports
+          command: make ci-build-prepare
           name: preparing ci tests
       - run:
           command: docker image ls
