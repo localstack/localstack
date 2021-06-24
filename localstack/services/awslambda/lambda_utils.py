@@ -3,7 +3,6 @@ from collections import defaultdict
 from localstack.utils.common import to_str
 
 # Lambda runtime constants
-LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
 LAMBDA_RUNTIME_PYTHON36 = 'python3.6'
 LAMBDA_RUNTIME_PYTHON37 = 'python3.7'
 LAMBDA_RUNTIME_PYTHON38 = 'python3.8'
