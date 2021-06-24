@@ -784,7 +784,12 @@ def resolve_refs_recursively(stack_name, value, resources):
         if stripped_fn_lower == 'importvalue':
             import_value_key = resolve_refs_recursively(stack_name, value[keys_list[0]], resources)
             stack = find_stack(stack_name)
-            return stack.exports_map[import_value_key]['Value']
+            stack_export = stack.exports_map.get(import_value_key) or {}
+            if not stack_export.get('Value'):
+                LOG.info('Unable to find export "%s" in stack "%s", existing export names: %s' %
+                    (import_value_key, stack_name, list(stack.exports_map.keys())))
+                return None
+            return stack_export['Value']
 
         if stripped_fn_lower == 'if':
             condition, option1, option2 = value[keys_list[0]]
