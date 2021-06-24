@@ -924,7 +924,7 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # create lambda function
         response = self.lambda_client.create_function(
-            FunctionName=lambda_name, Role='r1', Publish=True,
+            FunctionName=lambda_name, Runtime=LAMBDA_RUNTIME_PYTHON37, Role='r1', Publish=True,
             Handler='handler.handler', Code={'S3Bucket': bucket_name, 'S3Key': bucket_key}
         )
         self.assertIn('Version', response)
@@ -1005,7 +1005,7 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # create lambda function
         self.lambda_client.create_function(
-            FunctionName=lambda_name, Handler='handler.handler', Role='r1',
+            FunctionName=lambda_name, Runtime=LAMBDA_RUNTIME_PYTHON37, Handler='handler.handler', Role='r1',
             Code={'S3Bucket': bucket_name, 'S3Key': bucket_key}
         )
 
@@ -1803,5 +1803,5 @@ class Util(object):
     @classmethod
     def create_function(cls, file, name, runtime=None, libs=None):
         runtime = runtime or LAMBDA_RUNTIME_PYTHON37
-        testutil.create_lambda_function(
-            func_name=name, handler_file=file, libs=libs, runtime=runtime)
+        libs = libs or TEST_LAMBDA_LIBS
+        testutil.create_lambda_function(func_name=name, handler_file=file, libs=libs, runtime=runtime)

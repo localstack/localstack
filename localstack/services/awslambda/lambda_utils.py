@@ -26,7 +26,7 @@ LAMBDA_RUNTIME_PROVIDED = 'provided'
 
 # default handler and runtime
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
-LAMBDA_DEFAULT_RUNTIME = 'python3.8'
+LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON37
 LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 
 # List of Dotnet Lambda runtime names
