@@ -117,8 +117,12 @@ jobs:
           command: make docker-build
           name: Build localstack docker image
       - run:
-          command: docker pull localstack/localstack:latest
-          name: Build localstack docker image
+          command: |
+            cid=$(docker create localstack/localstack)
+            docker cp ${cid}:/opt/code/localstack/.coverage target/
+            docker cp ${cid}:/opt/code/localstack/nosetests.xml target/reports
+            docker rm ${cid}
+          name: Extract build reports
       - run:
           command: |
             test "$CIRCLE_BRANCH" = "master" \
@@ -129,6 +133,8 @@ jobs:
             /tmp/workspace
           paths:
             - repo
+      - store_test_results:
+          path: target/reports/
 
   docker-push:
     machine:
