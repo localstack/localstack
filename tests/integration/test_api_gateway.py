@@ -1063,6 +1063,7 @@ class TestAPIGateway(unittest.TestCase):
         result = requests.options(url)
         self.assertLess(result.status_code, 400)
         self.assertEqual(result.headers.get('vary'), 'Origin')
+        self.assertEqual(result.headers.get('Access-Control-Allow-Methods'), 'POST,OPTIONS')
 
     # =====================================================================
     # Helper methods
