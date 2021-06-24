@@ -161,9 +161,9 @@ workflows:
           requires:
             - preflight
       - docker-push:
-           filters:
-             branches:
-               only: main
+          filters:
+            branches:
+              only: main
           requires:
             - itest-lambda-docker
             - itest-elasticmq
