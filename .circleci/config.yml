@@ -61,18 +61,32 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
-
       - run:
-          command: make ci-build-prepare
+          command: |
+            make ci-build-prepare
+            mkdir -p target/reports
           name: preparing ci tests
       - run:
           command: docker image ls
       - run:
-          command: DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
           name: test docker executor
+          environment:
+            DEUBG: 1
+            LAMBDA_EXECUTOR: "docker"
+            USE_SSL: 1
+            TEST_ERROR_INJECTION: 1
+            TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
+            NOSE_ARGS: "--with-xunit --xunit-testsuite-name='lambda-docker' --xunit-file=target/reports/lambda-docker.xml"
+          command: make test
       - run:
-          command: LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
           name: test docker-reuse executor
+          environment:
+            LAMBDA_EXECUTOR: "docker-reuse"
+            TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
+            NOSE_ARGS: "--with-xunit --xunit-testsuite-name='lambda-docker-reuse' --xunit-file=target/reports/lambda-docker-reuse.xml"
+          command: make test
+      - store_test_results:
+          path: target/reports/
 
   itest-elasticmq:
     machine:
@@ -82,8 +96,15 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: DEBUG=1 SQS_PROVIDER=elasticmq TEST_PATH="tests/integration/test_sns.py:SNSTest.test_publish_sqs_from_sns_with_xray_propagation" make test
           name: test elasticmq sqs provider
+          environment:
+            DEBUG: 1
+            SQS_PROVIDER: "elasticmq"
+            TEST_PATH: "tests/integration/test_sns.py:SNSTest.test_publish_sqs_from_sns_with_xray_propagation"
+            NOSE_ARGS: "--with-xunit --xunit-testsuite-name='elasticmq' --xunit-file=target/reports/elasticmq.xml"
+          command:  make test
+      - store_test_results:
+          path: target/reports/
 
   docker-build:
     machine:
