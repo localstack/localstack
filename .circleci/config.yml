@@ -46,12 +46,12 @@ jobs:
           at: /tmp/workspace
       - run:
           command: make lint
-          name: run linter
+          name: Run linter
       - run:
           command: |
             source .venv/bin/activate
             pytest tests/unit --junitxml=target/tests/TESTS-unit.xml -o junit_suite_name=unit-tests
-          name: run unit tests
+          name: Unit tests
       - store_test_results:
           path: target/tests/
 
@@ -64,11 +64,9 @@ jobs:
           at: /tmp/workspace
       - run:
           command: make ci-build-prepare
-          name: preparing ci tests
+          name: Preparing CI tests
       - run:
-          command: docker image ls
-      - run:
-          name: test docker executor
+          name: Test docker lambda executor
           environment:
             DEUBG: 1
             LAMBDA_EXECUTOR: "docker"
@@ -78,7 +76,7 @@ jobs:
             NOSE_ARGS: "--with-xunit --xunit-testsuite-name='lambda-docker' --xunit-file=target/reports/lambda-docker.xml"
           command: make test
       - run:
-          name: test docker-reuse executor
+          name: Test docker-reuse lambda executor
           environment:
             LAMBDA_EXECUTOR: "docker-reuse"
             TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
@@ -95,7 +93,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: test elasticmq sqs provider
+          name: Test elasticmq SQS provider
           environment:
             DEBUG: 1
             SQS_PROVIDER: "elasticmq"
@@ -113,14 +111,24 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: docker image ls
-      - run:
           command: make init
-          name: Initialize build environment
+          name: Initializing build environment
       - run:
           command: make docker-build
           name: Build localstack docker image
-
+      - run:
+          command: docker pull localstack/localstack:latest
+          name: Build localstack docker image
+      - run:
+          command: |
+            test "$CIRCLE_BRANCH" = "master" \
+              && docker save localstack/localstack:latest -o target/localstack-docker-image.tar || true
+          name: Saving docker image
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo
 
   docker-push:
     machine:
@@ -130,10 +138,11 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: |
-            echo "docker-push: $(pwd)"
-            ls -la .
-            docker image ls
+          name: Loading docker image
+          command: docker load -i target/localstack-docker-image.tar
+      - run:
+          name: Push docker image
+          command: make docker-push-master
 
 workflows:
   main:
@@ -152,9 +161,9 @@ workflows:
           requires:
             - preflight
       - docker-push:
-          # filters:
-          #   branches:
-          #     only: main
+           filters:
+             branches:
+               only: main
           requires:
             - itest-lambda-docker
             - itest-elasticmq
