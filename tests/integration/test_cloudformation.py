@@ -1874,14 +1874,17 @@ class CloudFormationTest(unittest.TestCase):
     def test_deploy_stack_with_sub_select_and_sub_getaz(self):
         stack_name = 'stack-%s' % short_uid()
         template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template28.yaml'))
-        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn_client = aws_stack.connect_to_service('cloudformation')
+        sns_client = aws_stack.connect_to_service('sns')
+        cw_client = aws_stack.connect_to_service('cloudwatch')
 
-        create_and_await_stack(
-            StackName=stack_name,
-            TemplateBody=template
-        )
+        # list resources before stack deployment
+        metric_alarms = cw_client.describe_alarms().get('MetricAlarms', [])
+        composite_alarms = cw_client.describe_alarms().get('CompositeAlarms', [])
 
-        exports = cfn.list_exports()['Exports']
+        # deploy stack
+        create_and_await_stack(StackName=stack_name, TemplateBody=template)
+        exports = cfn_client.list_exports()['Exports']
 
         subnets = [export for export in exports if export['Name'] == 'public-sn-a']
         instances = [export for export in exports if export['Name'] == 'RegmonEc2InstanceId']
@@ -1903,11 +1906,16 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
 
-        sns_client = aws_stack.connect_to_service('sns')
+        # assert creation of further resources
         resp = sns_client.list_topics()
         topic_arns = [tp['TopicArn'] for tp in resp['Topics']]
         self.assertIn(aws_stack.sns_topic_arn('companyname-slack-topic'), topic_arns)
+        metric_alarms_after = cw_client.describe_alarms().get('MetricAlarms', [])
+        composite_alarms_after = cw_client.describe_alarms().get('CompositeAlarms', [])
+        self.assertEqual(len(metric_alarms) + 1, len(metric_alarms_after))
+        self.assertEqual(len(composite_alarms) + 1, len(composite_alarms_after))
 
+        # clean up
         self.cleanup(stack_name)
 
     def test_cfn_update_ec2_instance_type(self):

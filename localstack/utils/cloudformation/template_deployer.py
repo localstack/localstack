@@ -1519,6 +1519,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
         update_dynamodb_index_resource(resource)
         props['TableName'] = props.get('TableName') or _generate_res_name()
 
+    elif res_type == 'AWS::CloudWatch::Alarm':
+        props['AlarmName'] = props.get('AlarmName') or _generate_res_name()
+
     elif res_type == 'AWS::SecretsManager::Secret':
         props['Name'] = props.get('Name') or _generate_res_name()
 

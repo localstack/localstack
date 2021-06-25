@@ -27,6 +27,14 @@ def apply_patches():
     get_all_metrics_orig = cloudwatch_models.CloudWatchBackend.get_all_metrics
     cloudwatch_models.CloudWatchBackend.get_all_metrics = get_all_metrics
 
+    # add put_composite_alarm
+
+    def put_composite_alarm(self):
+        return self.put_metric_alarm()
+
+    if not hasattr(cloudwatch_responses.CloudWatchResponse, 'put_composite_alarm'):
+        cloudwatch_responses.CloudWatchResponse.put_composite_alarm = put_composite_alarm
+
 
 def start_cloudwatch(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_CLOUDWATCH

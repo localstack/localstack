@@ -91,6 +91,18 @@ Resources:
       SubnetId:
         Ref: PublicSubnetA
 
+  CloudWatchAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+
+  CloudWatchCompositeAlarm:
+    Type: AWS::CloudWatch::CompositeAlarm
+    Properties:
+      AlarmName: comp-alarm-7391
+      AlarmRule: 'ALARM("alarm-name or alarm-ARN") is TRUE'
+
 Outputs:
   InstanceId:
     Value: !Ref Ec2Instance
