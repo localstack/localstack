@@ -169,7 +169,7 @@ workflows:
       - docker-push:
           filters:
             branches:
-              only: main
+              only: master
           requires:
             - itest-lambda-docker
             - itest-elasticmq
