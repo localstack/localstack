@@ -21,7 +21,7 @@ from localstack.services.cloudformation.service_models import (
     GenericBaseModel, DependencyNotYetSatisfied, KEY_RESOURCE_STATE)
 from localstack.services.cloudformation.deployment_utils import (
     dump_json_params, select_parameters, param_defaults, remove_none_values,
-    lambda_keys_to_lower, PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
+    PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -251,12 +251,6 @@ RESOURCE_TO_FUNCTION = {
     'ApiGateway::Method::Integration': {
     },
     'ApiGateway::Account': {
-    },
-    'ApiGateway::Stage': {
-        'create': {
-            'function': 'create_stage',
-            'parameters': lambda_keys_to_lower()
-        }
     },
     'ApiGateway::Model': {
         'create': {
