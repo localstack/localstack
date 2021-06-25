@@ -109,7 +109,10 @@ def run_pip_main(args):
 @log_duration()
 def load_plugin_from_path(file_path, scope=None):
     if os.path.exists(file_path):
-        module = re.sub(r'(^|.+/)([^/]+)/plugins.py', r'\2', file_path)
+        delimiters = r'[\\/]'
+        not_delimiters = r'[^\\/]'
+        regex = r'(^|.+{d})({n}+){d}plugins.py'.format(d=delimiters, n=not_delimiters)
+        module = re.sub(regex, r'\2', file_path)
         method_name = 'register_localstack_plugins'
         scope = scope or PLUGIN_SCOPE_SERVICES
         if scope == PLUGIN_SCOPE_COMMANDS:
