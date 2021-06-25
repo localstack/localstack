@@ -155,9 +155,9 @@ jobs:
       - run:
           name: Loading docker image
           command: docker load -i target/localstack-docker-image.tar
-      - run:
-          name: Push docker image
-          command: make docker-push-master
+#      - run:
+#          name: Push docker image
+#          command: make docker-push-master
       - run:
           name: Report build metrics
           command: make coveralls || true
@@ -179,9 +179,9 @@ workflows:
           requires:
             - preflight
       - docker-push:
-          filters:
-            branches:
-              only: master
+          # filters:
+          #   branches:
+          #     only: master
           requires:
             - itest-lambda-docker
             - itest-elasticmq
