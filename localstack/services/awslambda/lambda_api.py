@@ -666,7 +666,8 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
     return module_vars[handler_function]
 
 
-def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
+def get_handler_function_from_name(handler_name, runtime=None):
+    runtime = runtime or LAMBDA_DEFAULT_RUNTIME
     if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
         return handler_name.split(':')[-1]
     return handler_name.split('.')[-1]

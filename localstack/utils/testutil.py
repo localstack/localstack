@@ -19,7 +19,7 @@ from localstack.services.awslambda.lambda_utils import (
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
-LAMBDA_TIMEOUT_SEC = 6
+LAMBDA_TIMEOUT_SEC = 8
 
 
 def is_local_test_mode():

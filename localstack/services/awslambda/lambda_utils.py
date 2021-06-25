@@ -3,7 +3,6 @@ from collections import defaultdict
 from localstack.utils.common import to_str
 
 # Lambda runtime constants
-LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
 LAMBDA_RUNTIME_PYTHON36 = 'python3.6'
 LAMBDA_RUNTIME_PYTHON37 = 'python3.7'
 LAMBDA_RUNTIME_PYTHON38 = 'python3.8'
@@ -27,7 +26,7 @@ LAMBDA_RUNTIME_PROVIDED = 'provided'
 
 # default handler and runtime
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
-LAMBDA_DEFAULT_RUNTIME = 'python3.8'
+LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON37
 LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 
 # List of Dotnet Lambda runtime names
@@ -47,7 +46,8 @@ def multi_value_dict_for_list(elements):
     return dict((k, tuple(v)) for k, v in temp_mv_dict.items())
 
 
-def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
+def get_handler_file_from_name(handler_name, runtime=None):
+    runtime = runtime or LAMBDA_DEFAULT_RUNTIME
     if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
         return 'bootstrap'
     delimiter = '.'

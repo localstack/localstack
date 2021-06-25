@@ -13,7 +13,7 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     camel_to_snake_case, select_attributes, canonical_json, md5, is_base64,
-    new_tmp_dir, save_file, rm_rf, mkdir, cp_r, short_uid)
+    new_tmp_dir, save_file, rm_rf, mkdir, cp_r, short_uid, keys_to_lower)
 from localstack.utils.testutil import create_zip_file
 from localstack.services.awslambda.lambda_api import (
     get_handler_file_from_name, LAMBDA_POLICY_NAME_PATTERN)
@@ -1060,6 +1060,23 @@ class GatewayStage(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get('id')
+
+    @staticmethod
+    def get_deploy_templates():
+        def get_params(params, **kwargs):
+            result = keys_to_lower(params)
+            param_names = ['restApiId', 'stageName', 'deploymentId', 'description',
+                'cacheClusterEnabled', 'cacheClusterSize', 'variables', 'documentationVersion',
+                'canarySettings', 'tracingEnabled', 'tags']
+            result = select_attributes(result, param_names)
+            result['tags'] = {t['key']: t['value'] for t in result.get('tags', [])}
+            return result
+        return {
+            'create': {
+                'function': 'create_stage',
+                'parameters': get_params
+            }
+        }
 
 
 class GatewayUsagePlan(GenericBaseModel):

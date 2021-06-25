@@ -714,8 +714,6 @@ class FuncThread(threading.Thread):
 
     def stop(self, quiet=False):
         self._stop_event.set()
-        if not quiet and not self.quiet:
-            LOG.warning('Not implemented: FuncThread.stop(..)')
 
 
 def run(cmd, print_error=True, asynchronous=False, stdin=False, stderr=subprocess.STDOUT,

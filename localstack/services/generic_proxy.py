@@ -11,6 +11,8 @@ from flask_cors import CORS
 from flask_cors.core import ACL_ORIGIN, ACL_METHODS, ACL_ALLOW_HEADERS, ACL_EXPOSE_HEADERS, ACL_REQUEST_HEADERS
 from requests.models import Response, Request
 from six.moves.urllib.parse import urlparse
+from werkzeug.exceptions import HTTPException
+
 from localstack import config
 from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL
@@ -146,6 +148,17 @@ def append_cors_headers(response=None):
             del headers[header]
 
 
+def http_exception_to_response(e: HTTPException):
+    """ Convert a werkzeug HTTP exception to a requests.Response object """
+    response = Response()
+    response.status_code = e.code
+    response.headers.update(dict(e.get_headers()))
+    body = e.get_body()
+    response.headers['Content-Length'] = str(len(str(body or '')))
+    response._content = body
+    return response
+
+
 def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
         listeners=None, request_handler=None, client_address=None, server_address=None):
     """ This is the central function that coordinates the incoming/outgoing messages
@@ -180,8 +193,12 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
 
     # update listener (pre-invocation)
     for listener in listeners:
-        listener_result = listener.forward_request(method=method,
-            path=path, data=data, headers=headers)
+        try:
+            listener_result = listener.forward_request(method=method, path=path, data=data, headers=headers)
+        except HTTPException as e:
+            # TODO: implement properly using exception handlers
+            return http_exception_to_response(e)
+
         if isinstance(listener_result, Response):
             response = listener_result
             break
@@ -223,9 +240,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
 
         # make sure we drop "chunked" transfer encoding from the headers to be forwarded
         headers.pop('Transfer-Encoding', None)
-        requests_method = getattr(requests, method.lower())
-        response = requests_method(request_url, data=data_to_send,
-            headers=headers, stream=True, verify=False)
+        response = requests.request(method, request_url, data=data_to_send, headers=headers, stream=True, verify=False)
 
     # prevent requests from processing response body (e.g., to pass-through gzip encoded content unmodified)
     pass_raw = ((hasattr(response, '_content_consumed') and not response._content_consumed) or

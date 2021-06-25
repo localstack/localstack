@@ -919,8 +919,8 @@ class Util:
         docker_tag = runtime
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
         # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
-        # See https://github.com/lambci/docker-lambda/pull/218
-        lambdas_to_add_prefix = ['dotnetcore2.0', 'dotnetcore2.1', 'python2.7', 'python3.6', 'python3.7']
+        #  See https://github.com/lambci/docker-lambda/pull/218
+        lambdas_to_add_prefix = ['dotnetcore2.0', 'dotnetcore2.1', 'python3.6', 'python3.7']
         if docker_image == 'lambci/lambda' and any(img in docker_tag for img in lambdas_to_add_prefix):
             docker_tag = '20191117-%s' % docker_tag
         if runtime == 'nodejs14.x':

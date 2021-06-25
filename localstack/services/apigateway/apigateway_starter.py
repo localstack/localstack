@@ -63,20 +63,36 @@ def apply_patches():
         if request_templates:
             self['requestTemplates'] = request_templates
 
-    def apigateway_models_backend_put_rest_api(self, function_id, body):
+    def apigateway_models_backend_put_rest_api(self, function_id, body, query_params):
         rest_api = self.get_rest_api(function_id)
         # Remove default root, then add paths from API spec
         rest_api.resources = {}
-        for path in body.get('paths', {}):
+
+        def get_or_create_path(path):
+            parts = path.rstrip('/').replace('//', '/').split('/')
+            parent_id = ''
+            if len(parts) > 1:
+                parent_path = '/'.join(parts[:-1])
+                parent = get_or_create_path(parent_path)
+                parent_id = parent.id
+            existing = [r for r in rest_api.resources.values() if
+                r.path_part == (parts[-1] or '/') and
+                (r.parent_id or '') == (parent_id or '')]
+            if existing:
+                return existing[0]
+            return add_path(path, parts, parent_id=parent_id)
+
+        def add_path(path, parts, parent_id=''):
             child_id = create_id()
+            path = path or '/'
             child = Resource(
                 id=child_id,
                 region_name=rest_api.region_name,
                 api_id=rest_api.id,
-                path_part=path,
-                parent_id='',
+                path_part=parts[-1] or '/',
+                parent_id=parent_id
             )
-            for m, payload in body['paths'][path].items():
+            for m, payload in body['paths'].get(path, {}).items():
                 m = m.upper()
                 payload = payload['x-amazon-apigateway-integration']
 
@@ -99,16 +115,25 @@ def apply_patches():
                 child.resource_methods[m]['methodIntegration'] = integration
 
             rest_api.resources[child_id] = child
+            return child
+
+        basepath_mode = (query_params.get('basepath') or ['prepend'])[0]
+        base_path = (body.get('basePath') or '') if basepath_mode == 'prepend' else ''
+        for path in body.get('paths', {}):
+            get_or_create_path(base_path + path)
 
         policy = body.get('x-amazon-apigateway-policy')
         if policy:
             policy = json.dumps(policy) if isinstance(policy, dict) else str(policy)
             rest_api.policy = policy
+        minimum_compression_size = body.get('x-amazon-apigateway-minimum-compression-size')
+        if minimum_compression_size is not None:
+            rest_api.minimum_compression_size = int(minimum_compression_size)
 
         return rest_api
 
-    # Implement import rest_api
-    # https://github.com/localstack/localstack/issues/2763
+    # import rest_api
+
     def apigateway_response_restapis_individual(self, request, full_url, headers):
         if request.method in ['GET', 'DELETE']:
             return apigateway_response_restapis_individual_orig(self, request, full_url, headers)
@@ -138,12 +163,16 @@ def apply_patches():
             rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
             apply_json_patch_safe(rest_api.__dict__, patch_operations, in_place=True)
 
+            # fix data types after patches have been applied
+            # if rest_api.minimum_compression_size:
+            rest_api.minimum_compression_size = int(rest_api.minimum_compression_size or -1)
+
             return 200, {}, json.dumps(self.backend.get_rest_api(function_id).to_dict())
 
         # handle import rest_api via swagger file
         if self.method == 'PUT':
             body = json.loads(to_str(self.body))
-            rest_api = self.backend.put_rest_api(function_id, body)
+            rest_api = self.backend.put_rest_api(function_id, body, self.querystring)
             return 200, {}, json.dumps(rest_api.to_dict())
 
         return 400, {}, ''
@@ -373,8 +402,9 @@ def apply_patches():
         resp = apigateway_models_RestAPI_to_dict_orig(self)
         resp['policy'] = None
         if self.policy:
-            # Currently still not found any document about apigateway policy escaped format, just a workaround
-            resp['policy'] = json.dumps(json.dumps(json.loads(self.policy)))[1:-1]
+            # Strip whitespaces for TF compatibility (not entirely sure why we need double-dumps,
+            # but otherwise: "error normalizing policy JSON: invalid character 'V' after top-level value")
+            resp['policy'] = json.dumps(json.dumps(json.loads(self.policy), separators=(',', ':')))[1:-1]
         for attr in REST_API_ATTRIBUTES:
             if attr not in resp:
                 resp[attr] = getattr(self, camelcase_to_underscores(attr), None)
@@ -397,7 +427,7 @@ def apply_patches():
 
         function_id = json.loads(rest_api)['id']
         body = json.loads(request.data.decode('utf-8'))
-        self.backend.put_rest_api(function_id, body)
+        self.backend.put_rest_api(function_id, body, parsed_qs)
 
         return 200, {}, rest_api
 

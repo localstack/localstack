@@ -1,6 +1,9 @@
 import json
 import unittest
 from io import BytesIO
+
+from botocore.exceptions import ClientError
+
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, short_uid, retry
@@ -16,16 +19,21 @@ PUBLICATION_RETRIES = 4
 
 class TestNotifications(unittest.TestCase):
 
+    def setUp(self):
+        self.s3_client = aws_stack.connect_to_service('s3')
+        self.sqs_client = aws_stack.connect_to_service('sqs')
+        self.sns_client = aws_stack.connect_to_service('sns')
+
     def test_sqs_queue_names(self):
-        sqs_client = aws_stack.connect_to_service('sqs')
+        sqs_client = self.sqs_client
         queue_name = '%s.fifo' % short_uid()
         # make sure we can create *.fifo queues
         queue_url = sqs_client.create_queue(QueueName=queue_name, Attributes={'FifoQueue': 'true'})['QueueUrl']
         sqs_client.delete_queue(QueueUrl=queue_url)
 
     def test_sns_to_sqs(self):
-        sqs_client = aws_stack.connect_to_service('sqs')
-        sns_client = aws_stack.connect_to_service('sns')
+        sqs_client = self.sqs_client
+        sns_client = self.sns_client
 
         # create topic and queue
         queue_info = sqs_client.create_queue(QueueName=TEST_QUEUE_NAME_FOR_SNS)
@@ -49,11 +57,59 @@ class TestNotifications(unittest.TestCase):
             self._receive_assert_delete(queue_url, assertions, sqs_client)
         retry(assert_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
-    def test_bucket_notifications(self):
+    def test_put_bucket_notification_with_invalid_filter_rules(self):
+        bucket_name = self.create_test_bucket()
+        queue_url, queue_attributes = self.create_test_queue()
 
+        cfg = {'QueueConfigurations': [{
+            'QueueArn': queue_attributes['Attributes']['QueueArn'],
+            'Events': ['s3:ObjectCreated:*'],
+            'Filter': {'Key': {'FilterRules': [{'Name': 'INVALID', 'Value': 'does not matter'}]}}
+        }]}
+
+        try:
+            with self.assertRaises(ClientError) as error:
+                self.s3_client.put_bucket_notification_configuration(
+                    Bucket=bucket_name, NotificationConfiguration=cfg
+                )
+            self.assertIn('InvalidArgument', str(error.exception))
+        finally:
+            self.sqs_client.delete_queue(QueueUrl=queue_url)
+            self.s3_client.delete_bucket(Bucket=bucket_name)
+
+    def test_put_and_get_bucket_notification_with_filter_rules(self):
+        bucket_name = self.create_test_bucket()
+        queue_url, queue_attributes = self.create_test_queue()
+
+        cfg = {'QueueConfigurations': [{
+            'QueueArn': queue_attributes['Attributes']['QueueArn'],
+            'Events': ['s3:ObjectCreated:*'],
+            'Filter': {'Key': {'FilterRules': [
+                {'Name': 'suffix', 'Value': '.txt'},  # different casing should be normalized to Suffix/Prefix
+                {'Name': 'PREFIX', 'Value': 'notif-'}
+            ]}}
+        }]}
+
+        try:
+            self.s3_client.put_bucket_notification_configuration(
+                Bucket=bucket_name, NotificationConfiguration=cfg
+            )
+            response = self.s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+            # verify casing of filter rule names
+            rules = response['QueueConfigurations'].pop()['Filter']['Key']['FilterRules']
+            valid = ['Prefix', 'Suffix']
+
+            self.assertIn(rules[0]['Name'], valid)
+            self.assertIn(rules[1]['Name'], valid)
+
+        finally:
+            self.sqs_client.delete_queue(QueueUrl=queue_url)
+            self.s3_client.delete_bucket(Bucket=bucket_name)
+
+    def test_bucket_notifications(self):
         s3_resource = aws_stack.connect_to_resource('s3')
-        s3_client = aws_stack.connect_to_service('s3')
-        sqs_client = aws_stack.connect_to_service('sqs')
+        s3_client = self.s3_client
+        sqs_client = self.sqs_client
 
         # create test bucket and queue
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
@@ -65,10 +121,10 @@ class TestNotifications(unittest.TestCase):
         events = ['s3:ObjectCreated:*', 's3:ObjectRemoved:Delete']
         filter_rules = {
             'FilterRules': [{
-                'Name': 'prefix',
+                'Name': 'Prefix',
                 'Value': 'testupload/'
             }, {
-                'Name': 'suffix',
+                'Name': 'Suffix',
                 'Value': 'testfile.txt'
             }]
         }
@@ -137,7 +193,7 @@ class TestNotifications(unittest.TestCase):
         event = 's3:ObjectCreated:*'
         filter_rules = {
             'FilterRules': [{
-                'Name': 'prefix',
+                'Name': 'Prefix',
                 'Value': 'testupload/'
             }]
         }
@@ -230,3 +286,14 @@ class TestNotifications(unittest.TestCase):
         testutil.assert_objects(assertions, messages)
         for message in response['Messages']:
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['ReceiptHandle'])
+
+    def create_test_queue(self):
+        queue_name = 'test-queue-%s' % short_uid()
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+        return queue_url, queue_attributes
+
+    def create_test_bucket(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        return bucket_name

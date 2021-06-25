@@ -1,7 +1,7 @@
 import select
 import socket
 import asyncio
-from localstack.constants import LOCALHOST_IP
+from localstack.constants import LOCALHOST_IP, BIND_HOST
 from localstack.utils.common import start_worker_thread, is_number, run_safe
 
 BUFFER_SIZE = 2 ** 10  # 1024
@@ -17,7 +17,7 @@ def start_tcp_proxy(src, dst, handler, **kwargs):
     handler -- a handler function to intercept requests (returns tuple (forward_value, response_value))
     """
 
-    src = '%s:%s' % (LOCALHOST_IP, src) if is_number(src) else src
+    src = '%s:%s' % (BIND_HOST, src) if is_number(src) else src
     dst = '%s:%s' % (LOCALHOST_IP, dst) if is_number(dst) else dst
     thread = kwargs.get('_thread')
 

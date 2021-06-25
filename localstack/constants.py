@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.12.12'
+VERSION = '0.12.13'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
@@ -14,6 +14,7 @@ ENV_DEV = 'dev'
 HEADER_LOCALSTACK_EDGE_URL = 'x-localstack-edge'
 HEADER_LOCALSTACK_REQUEST_URL = 'x-localstack-request-url'
 HEADER_LOCALSTACK_TARGET = 'x-localstack-target'
+HEADER_AMZN_ERROR_TYPE = 'X-Amzn-Errortype'
 
 # backend service ports, for services that are behind a proxy (counting down from 4566)
 DEFAULT_PORT_EDGE = 4566

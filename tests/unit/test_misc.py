@@ -77,7 +77,7 @@ class TestMisc(unittest.TestCase):
 
     def test_update_config_variable(self):
         infra.update_config_variable('foo', 'bar')
-        self.assertEquals(config.foo, 'bar')
+        self.assertEqual(config.foo, 'bar')
 
     def test_async_parallelization(self):
         def handler():

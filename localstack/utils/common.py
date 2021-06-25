@@ -359,6 +359,7 @@ class CaptureOutput(object):
 # ----------------
 
 def start_thread(method, *args, **kwargs):
+    """ Start the given method in a background thread, and add the thread to the TMP_THREADS shutdown hook """
     _shutdown_hook = kwargs.pop('_shutdown_hook', True)
     thread = FuncThread(method, *args, **kwargs)
     thread.start()
@@ -701,9 +702,15 @@ def recurse_object(obj, func, path=''):
     return obj
 
 
-def keys_to_lower(obj):
-    """ Recursively changes all dict keys to first character lowercase. """
-    def fix_keys(o, **kwargs):
+def keys_to_lower(obj, skip_children_of=None):
+    """ Recursively changes all dict keys to first character lowercase. Skip children
+        of any elements whose names are contained in skip_children_of (e.g., ['Tags']) """
+    skip_children_of = skip_children_of or []
+    skip_children_of = skip_children_of if isinstance(skip_children_of, list) else [skip_children_of]
+
+    def fix_keys(o, path='', **kwargs):
+        if any([re.match(r'(^|.*\.)%s($|[.\[].*)' % k, path) for k in skip_children_of]):
+            return o
         if isinstance(o, dict):
             for k, v in dict(o).items():
                 o.pop(k)
@@ -993,6 +1000,20 @@ def short_uid():
 
 def long_uid():
     return str(uuid.uuid4())
+
+
+def parse_json_or_yaml(markup):
+    import yaml  # leave import here, to avoid breaking our Lambda tests!
+    try:
+        return json.loads(markup)
+    except Exception:
+        try:
+            return clone_safe(yaml.safe_load(markup))
+        except Exception:
+            try:
+                return clone_safe(yaml.load(markup, Loader=yaml.SafeLoader))
+            except Exception:
+                raise
 
 
 def json_safe(item):

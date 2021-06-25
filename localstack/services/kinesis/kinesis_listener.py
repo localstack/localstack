@@ -7,7 +7,7 @@ import logging
 import cbor2
 from requests.models import Response
 from localstack import config
-from localstack.constants import APPLICATION_JSON, APPLICATION_CBOR
+from localstack.constants import APPLICATION_JSON, APPLICATION_CBOR, HEADER_AMZN_ERROR_TYPE
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc
 from localstack.utils.analytics import event_publisher
@@ -37,6 +37,21 @@ class ProxyListenerKinesis(ProxyListener):
     def forward_request(self, method, path, data, headers):
         data, encoding_type = self.decode_content(data or '{}', True)
         action = headers.get('X-Amz-Target', '').split('.')[-1]
+
+        if action == 'SubscribeToShard':
+            result = subscribe_to_shard(data, headers)
+            return result
+
+        if random.random() < config.KINESIS_ERROR_PROBABILITY:
+            if action in ['PutRecord', 'PutRecords']:
+                return kinesis_error_response(data, action)
+
+        if config.KINESIS_PROVIDER == 'kinesalite':
+            return self.forward_request_kinesalite(method, path, data, headers, action, encoding_type)
+
+        return True
+
+    def forward_request_kinesalite(self, method, path, data, headers, action, encoding_type):
         if action == 'RegisterStreamConsumer' and config.KINESIS_PROVIDER == 'kinesalite':
             stream_arn = data.get('StreamARN', '').strip('" ')
             cons_arn = data.get('ConsumerARN', '').strip('" ')
@@ -102,10 +117,6 @@ class ProxyListenerKinesis(ProxyListener):
             }
             return encoded_response(result, encoding_type)
 
-        elif action == 'SubscribeToShard':
-            result = subscribe_to_shard(data, headers)
-            return result
-
         elif action == 'EnableEnhancedMonitoring' and config.KINESIS_PROVIDER == 'kinesalite':
             stream_name = data.get('StreamName', '').strip('" ')
             metrics = data.get('ShardLevelMetrics', [])
@@ -122,10 +133,6 @@ class ProxyListenerKinesis(ProxyListener):
             enhanced_metrics[stream_name] = [m for m in stream_metrics if m not in metrics]
             return result
 
-        if random.random() < config.KINESIS_ERROR_PROBABILITY:
-            if action in ['PutRecord', 'PutRecords']:
-                return kinesis_error_response(data, action)
-
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -133,6 +140,7 @@ class ProxyListenerKinesis(ProxyListener):
         data, encoding_type = self.decode_content(data or '{}', True)
         response._content = self.replace_in_encoded(response.content or '')
         records = []
+
         if action in ('CreateStream', 'DeleteStream'):
             event_type = (event_publisher.EVENT_KINESIS_CREATE_STREAM if action == 'CreateStream'
                           else event_publisher.EVENT_KINESIS_DELETE_STREAM)
@@ -222,6 +230,11 @@ class ProxyListenerKinesis(ProxyListener):
 
             response._content = cbor2.dumps(results) if encoding_type == APPLICATION_CBOR else json.dumps(results)
             return response
+
+        if response.status_code >= 400:
+            response_body = self.decode_content(response.content)
+            if response_body and response_body.get('__type') and not headers.get(HEADER_AMZN_ERROR_TYPE):
+                response.headers[HEADER_AMZN_ERROR_TYPE] = str(response_body.get('__type'))
 
     def sdk_is_v2(self, user_agent):
         if re.search(r'\/2.\d+.\d+', user_agent):

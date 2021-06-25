@@ -21,7 +21,7 @@ from localstack.services.cloudformation.service_models import (
     GenericBaseModel, DependencyNotYetSatisfied, KEY_RESOURCE_STATE)
 from localstack.services.cloudformation.deployment_utils import (
     dump_json_params, select_parameters, param_defaults, remove_none_values,
-    lambda_keys_to_lower, PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
+    PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -251,12 +251,6 @@ RESOURCE_TO_FUNCTION = {
     'ApiGateway::Method::Integration': {
     },
     'ApiGateway::Account': {
-    },
-    'ApiGateway::Stage': {
-        'create': {
-            'function': 'create_stage',
-            'parameters': lambda_keys_to_lower()
-        }
     },
     'ApiGateway::Model': {
         'create': {
@@ -784,7 +778,12 @@ def resolve_refs_recursively(stack_name, value, resources):
         if stripped_fn_lower == 'importvalue':
             import_value_key = resolve_refs_recursively(stack_name, value[keys_list[0]], resources)
             stack = find_stack(stack_name)
-            return stack.exports_map[import_value_key]['Value']
+            stack_export = stack.exports_map.get(import_value_key) or {}
+            if not stack_export.get('Value'):
+                LOG.info('Unable to find export "%s" in stack "%s", existing export names: %s' %
+                    (import_value_key, stack_name, list(stack.exports_map.keys())))
+                return None
+            return stack_export['Value']
 
         if stripped_fn_lower == 'if':
             condition, option1, option2 = value[keys_list[0]]
