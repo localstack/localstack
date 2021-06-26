@@ -285,6 +285,7 @@ class TestAPIGateway(unittest.TestCase):
             data_mutator_fn=_mutate_data)
 
         # Ensure that `invoke_rest_api_integration_backend` correctly decodes the base64 content
+        self.assertEquals(test_result.result.status_code, 203)
         self.assertEquals(test_result.result.content, content)
 
     def _test_api_gateway_lambda_proxy_integration_no_asserts(
@@ -300,7 +301,6 @@ class TestAPIGateway(unittest.TestCase):
         :param data_mutator_fn: a Callable[[Dict], None] that lets us mutate the
           data dictionary before sending it off to the lambda.
         """
-        self.maxDiff = None
         self.create_lambda_function(fn_name)
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
