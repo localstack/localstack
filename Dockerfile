@@ -95,7 +95,7 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN LAMBDA_EXECUTOR=local make test
+RUN LAMBDA_EXECUTOR=local TEST_PATH='tests/unit' make test
 
 # clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \

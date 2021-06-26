@@ -121,14 +121,19 @@ jobs:
           command: |
             docker image ls
             docker ps -a
+
             if `docker image inspect localstack/localstack` &> /dev/null; then
               cid=$(docker create localstack/localstack)
             else
               cid=$(docker ps -aq | head -n1)
             fi
-            if [ ! -z $cid ]; then
-              docker cp ${cid}:/opt/code/localstack/.coverage target/
-              docker cp ${cid}:/opt/code/localstack/nosetests.xml target/reports
+
+            docker ps -a
+            echo "extracting from ${cid}"
+
+            if [ ! -z ${cid} ]; then
+              docker cp ${cid}:/opt/code/localstack/nosetests.xml target/reports || true
+              docker cp ${cid}:/opt/code/localstack/.coverage target/ || true
             fi
           when: always
       - run:
