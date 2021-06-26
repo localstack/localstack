@@ -119,12 +119,12 @@ jobs:
       - run:
           name: Extract build reports
           command: |
-            docker image ls || true
+            docker image ls localstack/localstack || true
             docker ps -a || true
 
-            if [[ "$(docker image ls -q mytest/mytest 2> /dev/null)" != "" ]]; then
+            if [[ "$(docker image ls -q localstack/localstack 2> /dev/null)" != "" ]]; then
               echo "creating docker container for image"
-              cid=$(docker create mytest/mytest)
+              cid=$(docker create localstack/localstack)
             else
               echo "getting container from docker image"
               cid=$(docker ps -aq | head -n1)
