@@ -312,7 +312,6 @@ class TestAPIGateway(unittest.TestCase):
 
         api_id = result['id']
         path_map = get_rest_api_paths(api_id)
-        # _, resource = get_resource_for_path('/lambda/foo1', path_map)
         _, resource = get_resource_for_path(path, path_map)
 
         # make test request to gateway and check response
