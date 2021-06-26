@@ -119,10 +119,10 @@ jobs:
       - run:
           name: Extract build reports
           command: |
-            docker images
-            docker ps -a
+            docker image ls || true
+            docker ps -a || true
 
-            if [[ "$(docker images -q mytest/mytest 2> /dev/null)" != "" ]]; then
+            if [[ "$(docker image ls -q mytest/mytest 2> /dev/null)" != "" ]]; then
               echo "creating docker container for image"
               cid=$(docker create mytest/mytest)
             else
@@ -130,7 +130,7 @@ jobs:
               cid=$(docker ps -aq | head -n1)
             fi
 
-            docker ps -a
+            docker ps -a || true
             echo "extracting from ${cid}"
 
             [[ "$cid" != "" ]] || { echo "could not create build container"; exit 1; }
