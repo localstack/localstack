@@ -71,7 +71,7 @@ class TestAPIGateway(unittest.TestCase):
     API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD = '/lambda-any-method/foo1'
     API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = '/lambda-any-method/{test_param1}'
 
-    API_PATH_LAMBDA_PROXY_BACKEND_WITH_ISBASE64 = '/lambda-is-base64/foo1'
+    API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64 = '/lambda-is-base64/foo1'
 
     # name of Kinesis stream connected to API Gateway
     TEST_STREAM_KINESIS_API_GW = 'test-stream-api-gw'
@@ -80,7 +80,7 @@ class TestAPIGateway(unittest.TestCase):
     TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = 'test_lambda_apigw_backend_path_param'
     TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_lambda_apigw_backend_any_method'
     TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_lambda_apigw_backend_any_method_path_param'
-    TEST_LAMBDA_PROXY_BACKEND_WITH_ISBASE64 = 'test_lambda_apigw_backend_with_isbase64'
+    TEST_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64 = 'test_lambda_apigw_backend_with_is_base64'
     TEST_LAMBDA_SQS_HANDLER_NAME = 'lambda_sqs_handler'
     TEST_LAMBDA_AUTHORIZER_HANDLER_NAME = 'lambda_authorizer_handler'
     TEST_API_GATEWAY_ID = 'fugvjdxtri'
@@ -280,8 +280,8 @@ class TestAPIGateway(unittest.TestCase):
             data['return_raw_body'] = base64.b64encode(content).decode('utf8')
 
         test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
-            self.TEST_LAMBDA_PROXY_BACKEND_WITH_ISBASE64,
-            self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_ISBASE64,
+            self.TEST_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
+            self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
             data_mutator_fn=_mutate_data)
 
         # Ensure that `invoke_rest_api_integration_backend` correctly decodes the base64 content
