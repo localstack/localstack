@@ -119,19 +119,11 @@ jobs:
       - run:
           name: Extract build reports
           command: |
-            docker image ls localstack/localstack || true
-            docker ps -a || true
-
             if [[ "$(docker image ls -q localstack/localstack 2> /dev/null)" != "" ]]; then
-              echo "creating docker container for image"
               cid=$(docker create localstack/localstack)
             else
-              echo "getting container from docker image"
               cid=$(docker ps -aq | head -n1)
             fi
-
-            docker ps -a || true
-            echo "extracting from ${cid}"
 
             [[ "$cid" != "" ]] || { echo "could not create build container"; exit 1; }
 
