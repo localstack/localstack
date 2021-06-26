@@ -106,6 +106,7 @@ jobs:
   docker-build:
     machine:
       image: ubuntu-2004:202101-01
+      docker_layer_caching: true
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
