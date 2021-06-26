@@ -30,22 +30,23 @@ def filter_event_with_target_input_path(target, event):
 
 
 def handle_prefix_filtering(event_pattern, value):
-    if isinstance(event_pattern, list):
-        for element in event_pattern:
-            if isinstance(element, (int, str)):
-                if str(element) == str(value):
-                    return True
-            elif isinstance(element, dict) and 'prefix' in element:
-                if value.startswith(element.get('prefix')):
-                    return True
-            elif isinstance(element, dict) and 'anything-but' in element:
-                if element.get('anything-but') != value:
-                    return True
-            elif 'numeric' in element:
-                return handle_numeric_conditions(element.get('numeric'), value)
-            elif isinstance(element, list):
-                if value in list:
-                    return True
+
+    for element in event_pattern:
+        if isinstance(element, (int, str)):
+            if str(element) == str(value):
+                return True
+        elif isinstance(element, dict) and 'prefix' in element:
+            if value.startswith(element.get('prefix')):
+                return True
+        elif isinstance(element, dict) and 'anything-but' in element:
+            if element.get('anything-but') != value:
+                return True
+        elif 'numeric' in element:
+            return handle_numeric_conditions(element.get('numeric'), value)
+        elif isinstance(element, list):
+            if value in list:
+                return True
+
     return False
 
 
@@ -77,8 +78,9 @@ def filter_event_based_on_event_format(self, rule, event):
                     if isinstance(value.get(key_a), (int, str)):
                         if value_a != value.get(key_a):
                             return False
-                    if not handle_prefix_filtering(value.get(key_a), value_a):
-                        return False
+                    if isinstance(value.get(key_a), list) and value_a not in value.get(key_a):
+                        if not handle_prefix_filtering(value.get(key_a), value_a):
+                            return False
 
             elif isinstance(value, list) and not identify_content_base_parameter_in_pattern(value):
                 if isinstance(event_value, list) and \
