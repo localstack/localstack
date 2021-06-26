@@ -117,12 +117,19 @@ jobs:
           command: make docker-build
           name: Build localstack docker image
       - run:
-          command: |
-            cid=$(docker create localstack/localstack)
-            docker cp ${cid}:/opt/code/localstack/.coverage target/
-            docker cp ${cid}:/opt/code/localstack/nosetests.xml target/reports
-            docker rm ${cid}
           name: Extract build reports
+          command: |
+            if [[ "$(docker image ls -q localstack/localstack 2> /dev/null)" != "" ]]; then
+              cid=$(docker create localstack/localstack)
+            else
+              cid=$(docker ps -aq | head -n1)
+            fi
+
+            [[ "$cid" != "" ]] || { echo "could not create build container"; exit 1; }
+
+            docker cp ${cid}:/opt/code/localstack/nosetests.xml target/reports || true
+            docker cp ${cid}:/opt/code/localstack/.coverage target/ || true
+          when: always
       - run:
           command: |
             test "$CIRCLE_BRANCH" = "master" \
