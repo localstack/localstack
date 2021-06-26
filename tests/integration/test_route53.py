@@ -14,6 +14,7 @@ class TestRoute53(unittest.TestCase):
 
         response = route53.get_change(Id='string')
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertFalse(True)
 
     def test_associate_vpc_with_hosted_zone(self):
         ec2 = aws_stack.connect_to_service('ec2')
