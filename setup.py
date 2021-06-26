@@ -59,7 +59,7 @@ if __name__ == '__main__':
     setup(
         name='localstack',
         version=version,
-        description='An easy-to-use test/mocking framework for developing Cloud applications',
+        description='LocalStack - A fully functional local Cloud stack',
         author='Waldemar Hummer',
         author_email='waldemar.hummer@gmail.com',
         url='https://github.com/localstack/localstack',

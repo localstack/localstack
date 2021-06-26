@@ -488,7 +488,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 LOG.debug('Creating container: %s' % container_name)
                 cmd = self.get_container_startup_command(func_details, env_vars, lambda_cwd)
                 LOG.debug(cmd)
-                run(cmd)
+                run(cmd, env_vars=env_vars)
 
                 if config.LAMBDA_REMOTE_DOCKER:
                     LOG.debug('Copying files to container "%s" from "%s".' % (container_name, lambda_cwd))
@@ -514,6 +514,11 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         rm_flag = Util.get_docker_remove_flag()
         docker_cmd = self._docker_cmd()
         container_name = self.get_container_name(func_details.arn())
+
+        # make sure we set LOCALSTACK_HOSTNAME
+        if not env_vars.get('LOCALSTACK_HOSTNAME'):
+            main_endpoint = get_main_endpoint_from_container()
+            env_vars['LOCALSTACK_HOSTNAME'] = main_endpoint
 
         # make sure AWS_LAMBDA_EVENT_BODY is not set (otherwise causes issues with "docker exec ..." above)
         env_vars.pop('AWS_LAMBDA_EVENT_BODY', None)
