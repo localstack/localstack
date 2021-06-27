@@ -57,14 +57,14 @@ class FirehoseTest(unittest.TestCase):
         stream_description = firehose.describe_delivery_stream(DeliveryStreamName=TEST_STREAM_NAME)
         stream_description = stream_description['DeliveryStreamDescription']
         destination_description = stream_description['Destinations'][0]['HttpEndpointDestinationDescription']
-        self.assertEquals(1, len(stream_description['Destinations']))
-        self.assertEquals(f'http://localhost:{local_port}', destination_description['EndpointConfiguration']['Url'])
+        self.assertEqual(1, len(stream_description['Destinations']))
+        self.assertEqual(f'http://localhost:{local_port}', destination_description['EndpointConfiguration']['Url'])
 
         # put record
         firehose.put_record(DeliveryStreamName=TEST_STREAM_NAME, Record={'Data': 'Hello World!'})
         record_received = to_str(base64.b64decode(to_bytes(records[0]['records'][0]['data'])))
         # wait for the result to arrive with proper content
-        retry(lambda: self.assertEquals('Hello World!', record_received), retries=5, sleep=1)
+        retry(lambda: self.assertEqual('Hello World!', record_received), retries=5, sleep=1)
 
         # update stream destination
         destination_id = stream_description['Destinations'][0]['DestinationId']
@@ -74,8 +74,8 @@ class FirehoseTest(unittest.TestCase):
         stream_description = firehose.describe_delivery_stream(DeliveryStreamName=TEST_STREAM_NAME)
         stream_description = stream_description['DeliveryStreamDescription']
         destination_description = stream_description['Destinations'][0]['HttpEndpointDestinationDescription']
-        self.assertEquals('test_update', destination_description['EndpointConfiguration']['Name'])
+        self.assertEqual('test_update', destination_description['EndpointConfiguration']['Name'])
 
         # delete stream
         stream = firehose.delete_delivery_stream(DeliveryStreamName=TEST_STREAM_NAME)
-        self.assertEquals(200, stream['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(200, stream['ResponseMetadata']['HTTPStatusCode'])

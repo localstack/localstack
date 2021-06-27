@@ -400,7 +400,7 @@ class TestDynamoDB(unittest.TestCase):
         dynamodb.delete_item(TableName=table_name, Key={'Username': {'S': 'Fred'}})
         result = ddbstreams.describe_stream(StreamArn=stream_arn)
         # assert stream_view_type of the table
-        self.assertEquals('KEYS_ONLY', result['StreamDescription']['StreamViewType'])
+        self.assertEqual('KEYS_ONLY', result['StreamDescription']['StreamViewType'])
 
         # get shard iterator
         response = ddbstreams.get_shard_iterator(StreamArn=stream_arn,
@@ -414,13 +414,13 @@ class TestDynamoDB(unittest.TestCase):
         record = ddbstreams.get_records(ShardIterator=response['ShardIterator'])
 
         # assert stream_view_type of records forwarded to the stream
-        self.assertEquals('KEYS_ONLY', record['Records'][0]['dynamodb']['StreamViewType'])
-        self.assertEquals('KEYS_ONLY', record['Records'][1]['dynamodb']['StreamViewType'])
-        self.assertEquals('KEYS_ONLY', record['Records'][2]['dynamodb']['StreamViewType'])
+        self.assertEqual('KEYS_ONLY', record['Records'][0]['dynamodb']['StreamViewType'])
+        self.assertEqual('KEYS_ONLY', record['Records'][1]['dynamodb']['StreamViewType'])
+        self.assertEqual('KEYS_ONLY', record['Records'][2]['dynamodb']['StreamViewType'])
         # assert Keys present in the record for all insert, modify and delete events
-        self.assertEquals({'Username': {'S': 'Fred'}}, record['Records'][0]['dynamodb']['Keys'])
-        self.assertEquals({'Username': {'S': 'Fred'}}, record['Records'][1]['dynamodb']['Keys'])
-        self.assertEquals({'Username': {'S': 'Fred'}}, record['Records'][2]['dynamodb']['Keys'])
+        self.assertEqual({'Username': {'S': 'Fred'}}, record['Records'][0]['dynamodb']['Keys'])
+        self.assertEqual({'Username': {'S': 'Fred'}}, record['Records'][1]['dynamodb']['Keys'])
+        self.assertEqual({'Username': {'S': 'Fred'}}, record['Records'][2]['dynamodb']['Keys'])
         # assert oldImage not in the records
         self.assertNotIn('OldImage', record['Records'][0]['dynamodb'])
         self.assertNotIn('OldImage', record['Records'][1]['dynamodb'])
@@ -470,15 +470,15 @@ class TestDynamoDB(unittest.TestCase):
         # get records from the stream
         rec = kinesis.get_records(ShardIterator=shard_iterator)['Records']
         # assert records in stream
-        self.assertEquals(1, len(rec))
+        self.assertEqual(1, len(rec))
 
         # describe kinesis streaming destination of the table
         describe = dynamodb.describe_kinesis_streaming_destination(
             TableName=table_name)['KinesisDataStreamDestinations'][0]
 
         # assert kinesis streaming destination status
-        self.assertEquals(stream_description['StreamARN'], describe['StreamArn'])
-        self.assertEquals('ACTIVE', describe['DestinationStatus'])
+        self.assertEqual(stream_description['StreamARN'], describe['StreamArn'])
+        self.assertEqual('ACTIVE', describe['DestinationStatus'])
 
         # Disable kinesis destination
         dynamodb.disable_kinesis_streaming_destination(
@@ -490,8 +490,8 @@ class TestDynamoDB(unittest.TestCase):
             TableName=table_name)['KinesisDataStreamDestinations'][0]
 
         # assert kinesis streaming destination status
-        self.assertEquals(stream_description['StreamARN'], describe['StreamArn'])
-        self.assertEquals('DISABLED', describe['DestinationStatus'])
+        self.assertEqual(stream_description['StreamARN'], describe['StreamArn'])
+        self.assertEqual('DISABLED', describe['DestinationStatus'])
 
         # clean up
         delete_table(table_name)

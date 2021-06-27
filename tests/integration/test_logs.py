@@ -267,9 +267,9 @@ class CloudWatchLogsTest(unittest.TestCase):
             StartTime=datetime.utcnow() - timedelta(hours=1),
             EndTime=datetime.utcnow(),
         )['MetricDataResults']
-        self.assertEquals(len(metric_data), 1)
-        self.assertEquals(metric_data[0]['Values'], [1])
-        self.assertEquals(metric_data[0]['StatusCode'], 'Complete')
+        self.assertEqual(len(metric_data), 1)
+        self.assertEqual(metric_data[0]['Values'], [1])
+        self.assertEqual(metric_data[0]['StatusCode'], 'Complete')
 
         # delete filters
         result = self.logs_client.delete_metric_filter(logGroupName=log_group, filterName=filter_name)

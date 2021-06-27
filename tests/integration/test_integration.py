@@ -83,7 +83,7 @@ class IntegrationTest(unittest.TestCase):
         self.assertTrue(stream)
         self.assertIn(TEST_FIREHOSE_NAME, firehose.list_delivery_streams()['DeliveryStreamNames'])
         tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=TEST_FIREHOSE_NAME)
-        self.assertEquals(TEST_TAGS, tags['Tags'])
+        self.assertEqual(TEST_TAGS, tags['Tags'])
         # create target S3 bucket
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 

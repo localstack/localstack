@@ -419,13 +419,13 @@ class TestS3(unittest.TestCase):
     def test_bucket_availability(self):
         bucket_name = 'test-bucket-lifecycle'
         returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
-        self.assertRegexpMatches(returned_empty_lifecycle._content, r'The bucket does not exist')
+        self.assertRegex(returned_empty_lifecycle._content, r'The bucket does not exist')
 
         response = s3_listener.get_replication(bucket_name)
-        self.assertRegexpMatches(response._content, r'The bucket does not exist')
+        self.assertRegex(response._content, r'The bucket does not exist')
 
         response = s3_listener.get_object_lock(bucket_name)
-        self.assertRegexpMatches(response._content, r'The bucket does not exist')
+        self.assertRegex(response._content, r'The bucket does not exist')
 
     def test_delete_bucket_lifecycle_configuration(self):
         bucket_name = 'test-bucket-%s' % short_uid()

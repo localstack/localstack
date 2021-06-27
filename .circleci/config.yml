@@ -50,10 +50,10 @@ jobs:
       - run:
           command: |
             source .venv/bin/activate
-            pytest tests/unit --junitxml=target/tests/TESTS-unit.xml -o junit_suite_name=unit-tests
+            pytest tests/unit --junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests
           name: Unit tests
       - store_test_results:
-          path: target/tests/
+          path: target/reports/
 
   itest-lambda-docker:
     machine:
@@ -73,14 +73,14 @@ jobs:
             USE_SSL: 1
             TEST_ERROR_INJECTION: 1
             TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
-            NOSE_ARGS: "--with-xunit --xunit-testsuite-name='lambda-docker' --xunit-file=target/reports/lambda-docker.xml"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
           command: make test
       - run:
           name: Test docker-reuse lambda executor
           environment:
             LAMBDA_EXECUTOR: "docker-reuse"
             TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
-            NOSE_ARGS: "--with-xunit --xunit-testsuite-name='lambda-docker-reuse' --xunit-file=target/reports/lambda-docker-reuse.xml"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
           command: make test
       - store_test_results:
           path: target/reports/
@@ -97,8 +97,8 @@ jobs:
           environment:
             DEBUG: 1
             SQS_PROVIDER: "elasticmq"
-            TEST_PATH: "tests/integration/test_sns.py:SNSTest.test_publish_sqs_from_sns_with_xray_propagation"
-            NOSE_ARGS: "--with-xunit --xunit-testsuite-name='elasticmq' --xunit-file=target/reports/elasticmq.xml"
+            TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
+            PYTEST_ARGS: "--junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
           command:  make test
       - store_test_results:
           path: target/reports/
@@ -127,7 +127,7 @@ jobs:
 
             [[ "$cid" != "" ]] || { echo "could not create build container"; exit 1; }
 
-            docker cp ${cid}:/opt/code/localstack/nosetests.xml target/reports || true
+            docker cp ${cid}:/opt/code/localstack/target/test-report.xml target/reports || true
             docker cp ${cid}:/opt/code/localstack/.coverage target/ || true
           when: always
       - run:
