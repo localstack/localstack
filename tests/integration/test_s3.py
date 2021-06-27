@@ -1625,10 +1625,12 @@ class TestS3(unittest.TestCase):
         finally:
             config.S3_SKIP_SIGNATURE_VALIDATION = old_config
 
-    def add_query_param(self, request, **kwargs):
-        request.url += 'requestedBy=abcDEF123'
-
+    # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
+    # may not be suitable for parallel execution
     def test_presign_with_query_params(self):
+        def add_query_param(self, request, **kwargs):
+            request.url += 'requestedBy=abcDEF123'
+
         bucket_name = short_uid()
         s3_client = aws_stack.connect_to_service('s3')
         s3_presign = boto3.client('s3',
@@ -1641,16 +1643,17 @@ class TestS3(unittest.TestCase):
         s3_client.create_bucket(Bucket=bucket_name)
         s3_client.put_object(Body='test-value', Bucket=bucket_name, Key='test')
         response = s3_client.head_object(Bucket=bucket_name, Key='test')
-        s3_client.meta.events.register('before-sign.s3.GetObject', self.add_query_param)
-
-        presign_url = s3_presign.generate_presigned_url(
-            ClientMethod='get_object',
-            Params={'Bucket': bucket_name, 'Key': 'test'},
-            ExpiresIn=86400
-        )
-        response = requests.get(presign_url)
-        self.assertEqual(response._content, b'test-value')
-        s3_client.meta.events.unregister('before-sign.s3.GetObject', self.add_query_param)
+        s3_client.meta.events.register('before-sign.s3.GetObject', add_query_param)
+        try:
+            presign_url = s3_presign.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={'Bucket': bucket_name, 'Key': 'test'},
+                ExpiresIn=86400
+            )
+            response = requests.get(presign_url)
+            self.assertEqual(response._content, b'test-value')
+        finally:
+            s3_client.meta.events.unregister('before-sign.s3.GetObject', add_query_param)
 
     def run_presigned_url_signature_authentication(self):
 
