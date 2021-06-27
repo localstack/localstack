@@ -131,6 +131,13 @@ jobs:
             docker cp ${cid}:/opt/code/localstack/.coverage target/ || true
           when: always
       - run:
+          name: Report coverage statistics
+          command: |
+            source .venv/bin/activate
+            coverage report || true
+            coveralls || true
+          when: always
+      - run:
           command: |
             test "$CIRCLE_BRANCH" = "master" \
               && docker save localstack/localstack:latest -o target/localstack-docker-image.tar || true
@@ -155,12 +162,10 @@ jobs:
       - run:
           name: Loading docker image
           command: docker load -i target/localstack-docker-image.tar
-#      - run:
-#          name: Push docker image
-#          command: make docker-push-master
       - run:
-          name: Report build metrics
-          command: make coveralls || true
+          name: Push docker image
+          command: make docker-push-master
+
 
 workflows:
   main:
@@ -179,9 +184,9 @@ workflows:
           requires:
             - preflight
       - docker-push:
-          # filters:
-          #   branches:
-          #     only: master
+          filters:
+            branches:
+              only: master
           requires:
             - itest-lambda-docker
             - itest-elasticmq
