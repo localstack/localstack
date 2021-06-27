@@ -285,8 +285,8 @@ class TestAPIGateway(unittest.TestCase):
             data_mutator_fn=_mutate_data)
 
         # Ensure that `invoke_rest_api_integration_backend` correctly decodes the base64 content
-        self.assertEquals(test_result.result.status_code, 203)
-        self.assertEquals(test_result.result.content, content)
+        self.assertEqual(test_result.result.status_code, 203)
+        self.assertEqual(test_result.result.content, content)
 
     def _test_api_gateway_lambda_proxy_integration_no_asserts(
         self,
