@@ -150,7 +150,8 @@ test:
 		($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
 testcov:
-	($(VENV_RUN); DEBUG=$(DEBUG) \
+	($(VENV_RUN); coverage --version; \
+		DEBUG=$(DEBUG) \
 		coverage run --source=localstack/ --omit=localstack/infra/,localstack/node_modules/ \
 		-m pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
