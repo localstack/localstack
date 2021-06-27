@@ -118,6 +118,7 @@ jobs:
             make testcov || true
             source .venv/bin/activate
             coverage report
+            coveralls || true
       - store_test_results:
           path: target/reports/
 
