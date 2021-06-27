@@ -260,7 +260,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
             'headers': headers,
             'response': response
         }
-        if 'request_handler' in inspect.getargspec(update_listener.return_response)[0]:
+        if 'request_handler' in inspect.getfullargspec(update_listener.return_response).args:
             # some listeners (e.g., sqs_listener.py) require additional details like the original
             # request port, hence we pass in a reference to this request handler as well.
             kwargs['request_handler'] = request_handler

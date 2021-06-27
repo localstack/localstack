@@ -835,7 +835,7 @@ def cp_r(src, dst, rm_dest_on_conflict=False):
     if os.path.isfile(src):
         return shutil.copy(src, dst)
     kwargs = {}
-    if 'dirs_exist_ok' in inspect.getargspec(shutil.copytree)[0]:
+    if 'dirs_exist_ok' in inspect.getfullargspec(shutil.copytree).args:
         kwargs['dirs_exist_ok'] = True
     try:
         return shutil.copytree(src, dst, **kwargs)
