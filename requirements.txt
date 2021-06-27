@@ -18,7 +18,8 @@ boto3>=1.14.33                 #basic-lib
 botocore>=1.12.13
 cachetools>=3.1.1,<4.0.0
 cbor2>=5.2.0
-coverage==5.5
+# coverage version should be synced with bin/Dockerfile.base
+coverage>=5.5
 coveralls==3.1.0
 crontab>=0.22.6
 # pin version to avoid Rust build issues: https://github.com/pyca/cryptography/issues/5771
