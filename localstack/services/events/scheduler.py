@@ -38,8 +38,8 @@ class JobScheduler(object):
         self.jobs = []
         self.thread = None
 
-    def add_job(self, job_func, schedule, enabled):
-        job = Job(job_func, schedule, enabled)
+    def add_job(self, job_func, schedule, enabled=True):
+        job = Job(job_func, schedule, enabled=enabled)
         self.jobs.append(job)
         return job.job_id
 

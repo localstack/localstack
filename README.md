@@ -68,6 +68,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Application AutoScaling**
 * **AppSync**
 * **Athena**
+* **Backup**
 * **Batch**
 * **CloudFront**
 * **CloudTrail**
