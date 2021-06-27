@@ -111,8 +111,8 @@ class SQSTest(unittest.TestCase):
                                               ReceiptHandle=messages[0]['ReceiptHandle'], VisibilityTimeout=0)
         for i in range(2):
             messages = self.client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages']
-            self.assertEquals(len(messages), 1)
-            self.assertEquals(messages[0]['Body'], 'msg234')
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(messages[0]['Body'], 'msg234')
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
@@ -248,7 +248,7 @@ class SQSTest(unittest.TestCase):
 
         result = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
         messages = result['Messages']
-        self.assertEquals(messages[0]['MessageAttributes'], attrs)
+        self.assertEqual(messages[0]['MessageAttributes'], attrs)
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)

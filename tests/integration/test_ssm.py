@@ -121,4 +121,4 @@ class SSMTest(unittest.TestCase):
                 }
             ]
         )
-        self.assertEquals(list_of_params['Parameters'][0]['Name'], '/my/path')
+        self.assertEqual(list_of_params['Parameters'][0]['Name'], '/my/path')

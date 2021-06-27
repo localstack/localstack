@@ -35,7 +35,7 @@ class CloudWatchTest(unittest.TestCase):
             Namespace=namespace,
             MetricData=data
         )
-        self.assertEquals(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         # Get metric statistics
         rs = client.get_metric_statistics(
@@ -121,13 +121,13 @@ class CloudWatchTest(unittest.TestCase):
             EndTime=datetime.utcnow(),
         )
 
-        self.assertEquals(len(response['MetricDataResults']), 2)
+        self.assertEqual(len(response['MetricDataResults']), 2)
 
         for data_metric in response['MetricDataResults']:
             if data_metric['Id'] == 'some':
-                self.assertEquals(data_metric['Values'][0], 41.0)
+                self.assertEqual(data_metric['Values'][0], 41.0)
             if data_metric['Id'] == 'part':
-                self.assertEquals(data_metric['Values'][0], 23.0)
+                self.assertEqual(data_metric['Values'][0], 23.0)
 
         # filtering metric data with current time interval
         response = conn.get_metric_data(
@@ -141,9 +141,9 @@ class CloudWatchTest(unittest.TestCase):
 
         for data_metric in response['MetricDataResults']:
             if data_metric['Id'] == 'some':
-                self.assertEquals(len(data_metric['Values']), 0)
+                self.assertEqual(len(data_metric['Values']), 0)
             if data_metric['Id'] == 'part':
-                self.assertEquals(len(data_metric['Values']), 0)
+                self.assertEqual(len(data_metric['Values']), 0)
 
         # get raw metric data
         url = '%s%s' % (config.get_edge_url(), PATH_GET_RAW_METRICS)
@@ -165,7 +165,7 @@ class CloudWatchTest(unittest.TestCase):
                         'Dimensions': [{'Name': 'foo', 'Value': 'bar-%s' % (i % num_dimensions)}]
                     }]
                 )
-                self.assertEquals(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+                self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         rs = client.list_metrics()
         metrics = [m for m in rs['Metrics'] if m.get('Namespace') in namespaces]

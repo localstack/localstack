@@ -18,7 +18,7 @@ boto3>=1.14.33                 #basic-lib
 botocore>=1.12.13
 cachetools>=3.1.1,<4.0.0
 cbor2>=5.2.0
-coverage>=5.2.1
+#coverage>=5.2.1
 crontab>=0.22.6
 # pin version to avoid Rust build issues: https://github.com/pyca/cryptography/issues/5771
 cryptography<3.4
@@ -42,9 +42,10 @@ moto-ext[all]>=2.0.3.23
 psutil>=5.4.8,<6.0.0
 pympler>=0.6
 pyopenssl==17.5.0
-pytest-cov==2.11.1
-pytest==6.2.0
-python-coveralls>=2.9.1
+pytest==6.2.4
+#pytest-cov==2.12.1
+pytest-rerunfailures==10.0
+#python-coveralls>=2.9.1
 pyyaml>=5.1                    #basic-lib
 Quart>=0.6.15
 requests>=2.20.0               #basic-lib

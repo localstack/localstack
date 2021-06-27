@@ -3,6 +3,7 @@
 *.class
 *.log
 *.iml
+.coverage.*
 
 /infra/
 localstack/infra/

@@ -510,7 +510,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # checking if 'MaximumEventAgeInSeconds' is removed
         self.assertNotIn('MaximumEventAgeInSeconds', response)
-        self.assertEquals(isinstance(response['LastModified'], datetime), True)
+        self.assertEqual(isinstance(response['LastModified'], datetime), True)
 
         # updating event invoke config
         response = lambda_client.update_function_event_invoke_config(
