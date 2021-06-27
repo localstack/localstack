@@ -359,7 +359,7 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
                     Check your key and signing method.",
         )
 
-    if config.S3_SKIP_SIGNATURE_VALIDATION == 0:
+    if config.S3_SKIP_SIGNATURE_VALIDATION:
         # Checking whether the url is expired or not
         if int(query_params['Expires'][0]) < time.time():
             return requests_error_response_xml_signature_calculation(
@@ -425,7 +425,7 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
                     Check your key and signing method.",
         )
 
-    if config.S3_SKIP_SIGNATURE_VALIDATION == 0:
+    if config.S3_SKIP_SIGNATURE_VALIDATION:
         # Checking whether the url is expired or not
         if is_expired(expiration_time):
             return requests_error_response_xml_signature_calculation(
