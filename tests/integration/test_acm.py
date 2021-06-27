@@ -38,7 +38,7 @@ class TestACM(unittest.TestCase):
         self.assertIn('CertificateArn', result)
 
         certs_after = acm.list_certificates().get('CertificateSummaryList', [])
-        self.assertEqual(len(certs_after), len(certs_before) + 1)
+        self.assertEqual(len(certs_before) + 1, len(certs_after))
 
     def test_domain_validation(self):
         acm = aws_stack.connect_to_service('acm')
@@ -50,4 +50,4 @@ class TestACM(unittest.TestCase):
 
         result = acm.describe_certificate(CertificateArn=result['CertificateArn'])
         options = result['Certificate']['DomainValidationOptions']
-        self.assertEqual(len(options), 1)
+        self.assertEqual(1, len(options))
