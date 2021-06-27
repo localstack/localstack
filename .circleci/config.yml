@@ -11,7 +11,6 @@ jobs:
           key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
           command: |
-            mkdir -p /opt/code
             sudo apt-get update
             sudo apt-get install -y libsasl2-dev python3.8-venv python3.8-dev
           name: Install prerequisites
@@ -129,11 +128,14 @@ jobs:
             [[ "$cid" != "" ]] || { echo "could not create build container"; exit 1; }
 
             docker cp ${cid}:/opt/code/localstack/target/test-report.xml target/reports || true
-            docker cp ${cid}:/opt/code/localstack/.coverage target/.coverage || true
+            docker cp ${cid}:/opt/code/localstack/.coverage ./ || true
           when: always
       - run:
           name: Report coverage statistics
           command: |
+            # hacky workaround for the issue that coverage file is generated in docker under /opt/code
+            sudo mkdir -p /opt/code/localstack
+            sudo cp -r localstack/ /opt/code/localstack/
             source .venv/bin/activate
             coverage report || true
             coveralls || true
