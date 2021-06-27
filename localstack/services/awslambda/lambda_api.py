@@ -1,6 +1,6 @@
 import re
 import os
-import imp
+import importlib.machinery
 import sys
 import json
 import uuid
@@ -621,6 +621,10 @@ def run_lambda(func_arn, event, context={}, version=None,
     return result
 
 
+def load_source(name, file):
+    return importlib.machinery.SourceFileLoader(name, file).load_module()
+
+
 def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda_env=None):
     if lambda_cwd or lambda_env:
         EXEC_MUTEX.acquire()
@@ -641,7 +645,7 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
     try:
         pre_sys_modules_keys = set(sys.modules.keys())
         try:
-            handler_module = imp.load_source(lambda_id, lambda_file)
+            handler_module = load_source(lambda_id, lambda_file)
             module_vars = handler_module.__dict__
         finally:
             # the above import can bring files for the function
