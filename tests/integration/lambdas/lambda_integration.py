@@ -58,14 +58,22 @@ def handler(event, context):
         if body['httpMethod'] == 'DELETE':
             return {'statusCode': 204}
 
+        # This parameter is often just completely excluded from the response.
+        base64_response = {}
+        is_base_64_encoded = body.get('return_is_base_64_encoded')
+        if is_base_64_encoded is not None:
+            base64_response['isBase64Encoded'] = is_base_64_encoded
+
         status_code = body.get('return_status_code', 200)
         headers = body.get('return_headers', {})
         body = body.get('return_raw_body') or body
+
         return {
             'body': body,
             'statusCode': status_code,
             'headers': headers,
             'multiValueHeaders': {'set-cookie': ['language=en-US', 'theme=blue moon']},
+            **base64_response,
         }
 
     if 'Records' not in event:

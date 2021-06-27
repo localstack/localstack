@@ -1,4 +1,5 @@
 import re
+import base64
 import json
 import time
 import logging
@@ -405,8 +406,12 @@ def invoke_rest_api_integration_backend(api_id, stage, integration, method, path
                     if isinstance(parsed_result['body'], dict):
                         response._content = json.dumps(parsed_result['body'])
                     else:
-                        response._content = to_bytes(parsed_result['body'])
+                        body_bytes = to_bytes(parsed_result['body'])
+                        if parsed_result.get('isBase64Encoded', False):
+                            body_bytes = base64.b64decode(body_bytes)
+                        response._content = body_bytes
                 except Exception:
+                    LOG.warning("Couldn't set lambda response content")
                     response._content = '{}'
                 update_content_length(response)
                 response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}

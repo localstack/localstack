@@ -6,9 +6,11 @@ import base64
 import unittest
 import xmltodict
 from botocore.exceptions import ClientError
+from collections import namedtuple
 from jsonpatch import apply_patch
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
+from typing import Optional, Callable
 from localstack import config
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -28,6 +30,15 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, 'files', 'swagger.json')
 TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, 'files', 'pets.json')
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
+
+
+ApiGatewayLambdaProxyIntegrationTestResult = namedtuple('ApiGatewayLambdaProxyIntegrationTestResult', [
+    'data',
+    'resource',
+    'result',
+    'url',
+    'path_with_replace',
+])
 
 
 class TestAPIGateway(unittest.TestCase):
@@ -60,6 +71,8 @@ class TestAPIGateway(unittest.TestCase):
     API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD = '/lambda-any-method/foo1'
     API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = '/lambda-any-method/{test_param1}'
 
+    API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64 = '/lambda-is-base64/foo1'
+
     # name of Kinesis stream connected to API Gateway
     TEST_STREAM_KINESIS_API_GW = 'test-stream-api-gw'
     TEST_STAGE_NAME = 'testing'
@@ -67,6 +80,7 @@ class TestAPIGateway(unittest.TestCase):
     TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = 'test_lambda_apigw_backend_path_param'
     TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_lambda_apigw_backend_any_method'
     TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_lambda_apigw_backend_any_method_path_param'
+    TEST_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64 = 'test_lambda_apigw_backend_with_is_base64'
     TEST_LAMBDA_SQS_HANDLER_NAME = 'lambda_sqs_handler'
     TEST_LAMBDA_AUTHORIZER_HANDLER_NAME = 'lambda_authorizer_handler'
     TEST_API_GATEWAY_ID = 'fugvjdxtri'
@@ -257,7 +271,36 @@ class TestAPIGateway(unittest.TestCase):
             self.TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM)
 
-    def _test_api_gateway_lambda_proxy_integration(self, fn_name, path):
+    def test_api_gateway_lambda_proxy_integration_with_is_base_64_encoded(self):
+        # Test the case where `isBase64Encoded` is enabled.
+        content = b'hello, please base64 encode me'
+
+        def _mutate_data(data) -> None:
+            data['return_is_base_64_encoded'] = True
+            data['return_raw_body'] = base64.b64encode(content).decode('utf8')
+
+        test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(
+            self.TEST_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
+            self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_IS_BASE64,
+            data_mutator_fn=_mutate_data)
+
+        # Ensure that `invoke_rest_api_integration_backend` correctly decodes the base64 content
+        self.assertEquals(test_result.result.status_code, 203)
+        self.assertEquals(test_result.result.content, content)
+
+    def _test_api_gateway_lambda_proxy_integration_no_asserts(
+        self,
+        fn_name: str,
+        path: str,
+        data_mutator_fn: Optional[Callable] = None,
+    ) -> ApiGatewayLambdaProxyIntegrationTestResult:
+        """
+        Perform the setup needed to do a POST against a Lambda Proxy Integration;
+        then execute the POST.
+
+        :param data_mutator_fn: a Callable[[Dict], None] that lets us mutate the
+          data dictionary before sending it off to the lambda.
+        """
         self.create_lambda_function(fn_name)
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
@@ -269,23 +312,46 @@ class TestAPIGateway(unittest.TestCase):
 
         api_id = result['id']
         path_map = get_rest_api_paths(api_id)
-        _, resource = get_resource_for_path('/lambda/foo1', path_map)
+        _, resource = get_resource_for_path(path, path_map)
 
         # make test request to gateway and check response
-        path = path.replace('{test_param1}', 'foo1')
-        path = path + '?foo=foo&bar=bar&bar=baz'
+        path_with_replace = path.replace('{test_param1}', 'foo1')
+        path_with_params = path_with_replace + '?foo=foo&bar=bar&bar=baz'
 
-        url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path)
+        url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path_with_params)
 
+        # These values get read in `lambda_integration.py`
         data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
+        if data_mutator_fn:
+            assert callable(data_mutator_fn)
+            data_mutator_fn(data)
         result = requests.post(url, data=json.dumps(data),
             headers={'User-Agent': 'python-requests/testing'})
+
+        return ApiGatewayLambdaProxyIntegrationTestResult(
+            data=data,
+            resource=resource,
+            result=result,
+            url=url,
+            path_with_replace=path_with_replace
+        )
+
+    def _test_api_gateway_lambda_proxy_integration(
+        self,
+        fn_name: str,
+        path: str,
+    ) -> None:
+        test_result = self._test_api_gateway_lambda_proxy_integration_no_asserts(fn_name, path)
+        data, resource, result, url, path_with_replace = test_result
 
         self.assertEqual(result.status_code, 203)
         self.assertEqual(result.headers.get('foo'), 'bar123')
         self.assertIn('set-cookie', result.headers)
 
-        parsed_body = json.loads(to_str(result.content))
+        try:
+            parsed_body = json.loads(to_str(result.content))
+        except json.decoder.JSONDecodeError as e:
+            raise Exception("Couldn't json-decode content: {}".format(to_str(result.content))) from e
         self.assertEqual(parsed_body.get('return_status_code'), 203)
         self.assertDictEqual(parsed_body.get('return_headers'), {'foo': 'bar123'})
         self.assertDictEqual(parsed_body.get('queryStringParameters'), {'foo': 'foo', 'bar': ['bar', 'baz']})
@@ -295,7 +361,7 @@ class TestAPIGateway(unittest.TestCase):
 
         self.assertTrue(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', source_ip))
 
-        self.assertEqual(request_context['path'], '/' + self.TEST_STAGE_NAME + '/lambda/foo1')
+        self.assertEqual(request_context['path'], '/' + self.TEST_STAGE_NAME + path_with_replace)
         self.assertEqual(request_context.get('stageVariables'), None)
         self.assertEqual(request_context['accountId'], TEST_AWS_ACCOUNT_ID)
         self.assertEqual(request_context['resourceId'], resource.get('id'))
