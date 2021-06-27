@@ -103,6 +103,24 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  coverage:
+    machine:
+      image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Run tests with coverage
+          environment:
+            DEBUG: 0
+          command: |
+            make testcov || true
+            source .venv/bin/activate
+            coverage report
+      - store_test_results:
+          path: target/reports/
+
   docker-build:
     machine:
       image: ubuntu-2004:202101-01
@@ -181,6 +199,9 @@ workflows:
           requires:
             - preflight
       - docker-build:
+          requires:
+            - preflight
+      - coverage:
           requires:
             - preflight
       - docker-push:
