@@ -100,7 +100,7 @@ class IntegrationTest(unittest.TestCase):
         # check file layout in target bucket
         all_objects = testutil.map_all_s3_objects(buckets=[TEST_BUCKET_NAME])
         for key in all_objects.keys():
-            self.assertRegexpMatches(key, r'.*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*')
+            self.assertRegex(key, r'.*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*')
 
     def test_firehose_kinesis_to_s3(self):
         kinesis = aws_stack.connect_to_service('kinesis')
