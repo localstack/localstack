@@ -99,7 +99,7 @@ ADD tests/ tests/
 RUN pip uninstall -y argparse
 RUN LAMBDA_EXECUTOR=local \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \
-    make test
+    make testcov
 
 # clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
