@@ -51,14 +51,15 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
             self.assertEqual(
                 self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn('non_existent_function_name'),
-                result['message'])
+                result['message']
+            )
 
     def test_get_event_source_mapping(self):
         region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
             region.event_source_mappings.append({'UUID': self.TEST_UUID})
             result = lambda_api.get_event_source_mapping(self.TEST_UUID)
-            self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
+            self.assertEqual(self.TEST_UUID, json.loads(result.get_data()).get('UUID'))
 
     def test_get_event_sources(self):
         region = lambda_api.LambdaRegion.get()
@@ -71,12 +72,12 @@ class TestLambdaAPI(unittest.TestCase):
 
             # Match source ARN
             result = lambda_api.get_event_sources(source_arn='the_arn')
-            self.assertEqual(len(result), 1)
-            self.assertEqual(result[0].get('UUID'), self.TEST_UUID)
+            self.assertEqual(1, len(result))
+            self.assertEqual(self.TEST_UUID, result[0].get('UUID'))
 
             # No partial match on source ARN
             result = lambda_api.get_event_sources(source_arn='the_')
-            self.assertEqual(len(result), 0)
+            self.assertEqual(0, len(result))
 
     def test_get_event_sources_with_paths(self):
         region = lambda_api.LambdaRegion.get()
@@ -89,16 +90,16 @@ class TestLambdaAPI(unittest.TestCase):
 
             # Do partial match on paths
             result = lambda_api.get_event_sources(source_arn='the_arn')
-            self.assertEqual(len(result), 1)
+            self.assertEqual(1, len(result))
             result = lambda_api.get_event_sources(source_arn='the_arn/path')
-            self.assertEqual(len(result), 1)
+            self.assertEqual(1, len(result))
 
     def test_delete_event_source_mapping(self):
         region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
             region.event_source_mappings.append({'UUID': self.TEST_UUID})
             result = lambda_api.delete_event_source_mapping(self.TEST_UUID)
-            self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
+            self.assertEqual(self.TEST_UUID, json.loads(result.get_data()).get('UUID'))
             self.assertEqual(0, len(region.event_source_mappings))
 
     def test_invoke_RETURNS_415_WHEN_not_json_input(self):
@@ -121,7 +122,9 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual('~notjsonresponse~', response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'text/plain'}, response[2])
+
+            headers = response[2]
+            self.assertEqual('text/plain', headers['Content-Type'])
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_empty_plain_text_response(self, mock_run_lambda):
@@ -131,7 +134,9 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual('', response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'text/plain'}, response[2])
+
+            headers = response[2]
+            self.assertEqual('text/plain', headers['Content-Type'])
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_empty_map_json_response(self, mock_run_lambda):
@@ -141,7 +146,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'{}\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
+            self.assertEqual('application/json', response[0].headers['Content-Type'])
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_populated_map_json_response(self, mock_run_lambda):

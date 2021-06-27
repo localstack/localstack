@@ -13,10 +13,10 @@ class S3ListenerTest (unittest.TestCase):
 
     def test_expand_redirect_url(self):
         url1 = s3_listener.expand_redirect_url('http://example.org', 'K', 'B')
-        self.assertEqual(url1, 'http://example.org?key=K&bucket=B')
+        self.assertEqual('http://example.org?key=K&bucket=B', url1)
 
         url2 = s3_listener.expand_redirect_url('http://example.org/?id=I', 'K', 'B')
-        self.assertEqual(url2, 'http://example.org/?id=I&key=K&bucket=B')
+        self.assertEqual('http://example.org/?id=I&key=K&bucket=B', url2)
 
     def test_find_multipart_key_value(self):
         headers = {'Host': '10.0.1.19:4572', 'User-Agent': 'curl/7.51.0',
@@ -43,13 +43,13 @@ class S3ListenerTest (unittest.TestCase):
 
         key1, url1 = multipart_content.find_multipart_key_value(data1, headers)
 
-        self.assertEqual(key1, 'uploads/20170826T181315.679087009Z/upload/pixel.png')
-        self.assertEqual(url1, 'http://127.0.0.1:5000/?id=20170826T181315.679087009Z')
+        self.assertEqual('uploads/20170826T181315.679087009Z/upload/pixel.png', key1)
+        self.assertEqual('http://127.0.0.1:5000/?id=20170826T181315.679087009Z', url1)
 
         key2, url2 = multipart_content.find_multipart_key_value(data2, headers)
 
-        self.assertEqual(key2, 'uploads/20170826T181315.679087009Z/upload/pixel.png')
-        self.assertIsNone(url2, 'Should not get a redirect URL without success_action_redirect')
+        self.assertEqual('uploads/20170826T181315.679087009Z/upload/pixel.png', key2)
+        self.assertIsNone('Should not get a redirect URL without success_action_redirect', url2)
 
         key3, url3 = multipart_content.find_multipart_key_value(data3, headers)
 
@@ -58,8 +58,8 @@ class S3ListenerTest (unittest.TestCase):
 
         key4, status_code = multipart_content.find_multipart_key_value(data4, headers, 'success_action_status')
 
-        self.assertEqual(key4, 'uploads/20170826T181315.679087009Z/upload/pixel.png')
-        self.assertEqual(status_code, '201')
+        self.assertEqual('uploads/20170826T181315.679087009Z/upload/pixel.png', key4)
+        self.assertEqual('201', status_code)
 
     def test_expand_multipart_filename(self):
         headers = {'Host': '10.0.1.19:4572', 'User-Agent': 'curl/7.51.0',
@@ -304,9 +304,9 @@ class S3BackendTest (unittest.TestCase):
 
         key = s3_backend.get_object(bucket_name, file2_name)
 
-        self.assertEqual(key in (key.instances or []), False)
+        self.assertFalse(key in (key.instances or []))
 
-    def test_no_bucket_in_instances_(self):
+    def test_no_bucket_in_instances(self):
         s3_backend = s3_models.S3Backend()
 
         bucket_name = 'test'
@@ -317,4 +317,4 @@ class S3BackendTest (unittest.TestCase):
         s3_backend.delete_bucket(bucket_name)
         bucket = s3_backend.create_bucket(bucket_name, region)
 
-        self.assertGreaterEqual(bucket in (bucket.instances or []), False)
+        self.assertIn(bucket, (bucket.instances or []))
