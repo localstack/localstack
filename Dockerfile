@@ -99,6 +99,7 @@ ADD .coveragerc ./
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
 RUN pip uninstall -y argparse
 RUN LAMBDA_EXECUTOR=local \
+    TEST_PATH='tests/unit' \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \
     make testcov
 
