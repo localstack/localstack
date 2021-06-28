@@ -563,6 +563,7 @@ class EventsTest(unittest.TestCase):
             entries = [{'Source': 'source-123', 'DetailType': 'type-123', 'Detail': '{"i": %s}' % i}]
             self.events_client.put_events(Entries=entries)
 
+        # assert that all events have been received in the HTTP server listener
         def check():
             self.assertEqual(len(events), num_events)
         retry(check, sleep=0.5, retries=5)

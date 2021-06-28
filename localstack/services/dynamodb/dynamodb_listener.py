@@ -10,7 +10,8 @@ from cachetools import TTLCache
 from requests.models import Request, Response
 from localstack import config, constants
 from localstack.utils.aws import aws_stack, aws_responses
-from localstack.utils.common import to_bytes, to_str, clone, select_attributes, short_uid, json_safe
+from localstack.utils.common import (
+    to_bytes, to_str, clone, select_attributes, short_uid, json_safe)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.services.awslambda import lambda_api
@@ -57,17 +58,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
     @staticmethod
     def table_exists(ddb_client, table_name):
-        paginator = ddb_client.get_paginator('list_tables')
-        pages = paginator.paginate(
-            PaginationConfig={
-                'PageSize': 100
-            }
-        )
-        for page in pages:
-            table_names = page['TableNames']
-            if to_str(table_name) in table_names:
-                return True
-        return False
+        return aws_stack.dynamodb_table_exists(table_name, client=ddb_client)
 
     def action_should_throttle(self, action, actions):
         throttled = ['%s%s' % (ACTION_PREFIX, a) for a in actions]
