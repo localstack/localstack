@@ -100,7 +100,7 @@ ADD .coveragerc ./
 RUN pip uninstall -y argparse
 RUN LAMBDA_EXECUTOR=local \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \
-    make testcov
+    make test-coverage
 
 # clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
