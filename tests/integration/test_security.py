@@ -12,7 +12,7 @@ class TestCSRF(unittest.TestCase):
         }
         # Test if lambdas are enumerable
         response = requests.get(f'{config.get_edge_url()}/2015-03-31/functions/', headers=headers)
-        self.assertEquals(403, response.status_code)
+        self.assertEqual(403, response.status_code)
 
         # Test if config endpoint is reachable
         config_body = {
@@ -21,20 +21,20 @@ class TestCSRF(unittest.TestCase):
         }
 
         response = requests.post(f'{config.get_edge_url()}/?_config_', headers=headers, json=config_body)
-        self.assertEquals(403, response.status_code)
+        self.assertEqual(403, response.status_code)
 
         # Test if endpoints are reachable without origin header
         response = requests.get(f'{config.get_edge_url()}/2015-03-31/functions/')
-        self.assertEquals(200, response.status_code)
-        self.assertEquals('*', response.headers['access-control-allow-origin'])
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('*', response.headers['access-control-allow-origin'])
 
     def test_default_cors_headers(self):
         headers = {
             'Origin': 'https://app.localstack.cloud'
         }
         response = requests.get(f'{config.get_edge_url()}/2015-03-31/functions/', headers=headers)
-        self.assertEquals(200, response.status_code)
-        self.assertEquals('https://app.localstack.cloud', response.headers['access-control-allow-origin'])
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('https://app.localstack.cloud', response.headers['access-control-allow-origin'])
         self.assertIn('GET', response.headers['access-control-allow-methods'].split(','))
 
     def test_cors_s3_override(self):
@@ -83,12 +83,12 @@ class TestCSRF(unittest.TestCase):
                 'Origin': 'https://invalid.localstack.cloud'
             }
             response = requests.get(f'{config.get_edge_url()}/2015-03-31/functions/', headers=headers)
-            self.assertEquals(403, response.status_code)
+            self.assertEqual(403, response.status_code)
 
             config.DISABLE_CORS_CHECKS = True
             response = requests.get(f'{config.get_edge_url()}/2015-03-31/functions/', headers=headers)
-            self.assertEquals(200, response.status_code)
-            self.assertEquals(headers['Origin'], response.headers['access-control-allow-origin'])
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(headers['Origin'], response.headers['access-control-allow-origin'])
             self.assertIn('GET', response.headers['access-control-allow-methods'].split(','))
         finally:
             # cleanup
