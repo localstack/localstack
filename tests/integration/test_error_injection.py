@@ -1,4 +1,3 @@
-import os
 import unittest
 
 import pytest
@@ -14,7 +13,7 @@ TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 
 
 def should_run():
-    return os.environ.get('TEST_ERROR_INJECTION') in ('true', '1')
+    return config.is_env_true('TEST_ERROR_INJECTION')
 
 
 class TestErrorInjection(unittest.TestCase):
