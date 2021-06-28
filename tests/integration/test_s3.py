@@ -1313,22 +1313,23 @@ class TestS3(unittest.TestCase):
                 'AllowedHeaders': ['*'],
             }]
         }
-
-        client.create_bucket(Bucket='my-s3-bucket')
-        client.put_bucket_cors(Bucket='my-s3-bucket', CORSConfiguration=BUCKET_CORS_CONFIG)
+        bucket_name = 'my-s3-bucket'
+        client.create_bucket(Bucket=bucket_name)
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=BUCKET_CORS_CONFIG)
 
         # create signed url
         url = client.generate_presigned_url(
             ClientMethod='put_object',
             Params={
-                'Bucket': 'my-s3-bucket',
+                'Bucket': bucket_name,
                 'Key': '424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf',
                 'ContentType': 'application/pdf',
                 'ACL': 'bucket-owner-full-control'
             },
             ExpiresIn=3600
         )
-
+        old_config = config.DISABLE_CUSTOM_CORS_S3
+        config.DISABLE_CUSTOM_CORS_S3 = False
         result = requests.put(url, data='something', verify=False,
                               headers={'Origin': 'https://localhost:4200', 'Content-Type': 'application/pdf'})
         self.assertEqual(result.status_code, 200)
@@ -1342,13 +1343,13 @@ class TestS3(unittest.TestCase):
             }]
         }
 
-        client.put_bucket_cors(Bucket='my-s3-bucket', CORSConfiguration=BUCKET_CORS_CONFIG)
+        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=BUCKET_CORS_CONFIG)
 
         # create signed url
         url = client.generate_presigned_url(
             ClientMethod='put_object',
             Params={
-                'Bucket': 'my-s3-bucket',
+                'Bucket': bucket_name,
                 'Key': '424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf',
                 'ContentType': 'application/pdf',
                 'ACL': 'bucket-owner-full-control'
@@ -1363,6 +1364,11 @@ class TestS3(unittest.TestCase):
         result = requests.put(url, data='something', verify=False,
                               headers={'Origin': 'https://localhost:4201', 'Content-Type': 'application/pdf'})
         self.assertEqual(result.status_code, 200)
+
+        # cleanup
+        config.DISABLE_CUSTOM_CORS_S3 = old_config
+        client.delete_object(Bucket=bucket_name, Key='424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf')
+        client.delete_bucket(Bucket=bucket_name)
 
     def test_s3_put_object_notification_with_lambda(self):
         bucket_name = 'bucket-%s' % short_uid()
@@ -2138,7 +2144,7 @@ class TestS3(unittest.TestCase):
         client.delete_object(Bucket=bucket, Key='foo')
         client.delete_bucket(Bucket=bucket)
 
-    def test_cors_configurtaions(self):
+    def test_cors_configurations(self):
         client = self._get_test_client()
         bucket = 'test-cors'
         object_key = 'index.html'
@@ -2158,6 +2164,8 @@ class TestS3(unittest.TestCase):
 
         client.put_object(Bucket=bucket, Key=object_key, Body='<h1>Index</html>')
 
+        old_config = config.DISABLE_CUSTOM_CORS_S3
+        config.DISABLE_CUSTOM_CORS_S3 = False
         response = requests.get(url,
                               headers={'Origin': config.get_edge_url(), 'Content-Type': 'text/html'})
         self.assertEqual(response.status_code, 200)
@@ -2191,6 +2199,7 @@ class TestS3(unittest.TestCase):
         self.assertNotIn('Access-Control-MaxAge', response.headers)
 
         # cleaning
+        config.DISABLE_CUSTOM_CORS_S3 = old_config
         client.delete_object(Bucket=bucket, Key=object_key)
         client.delete_bucket(Bucket=bucket)
 

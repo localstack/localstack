@@ -86,7 +86,8 @@ class ConfigUpdateProxyListener(ProxyListener):
         return response
 
 
-ProxyListener.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
+if config.ENABLE_CONFIG_UPDATES:
+    ProxyListener.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
 
 
 # -----------------

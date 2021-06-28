@@ -210,6 +210,8 @@ class TestAPIGateway(unittest.TestCase):
         test_port = get_free_tcp_port()
         backend_url = 'http://localhost:%s%s' % (test_port, self.API_PATH_HTTP_BACKEND)
 
+        old_config = config.DISABLE_CUSTOM_CORS_APIGATEWAY
+        config.DISABLE_CUSTOM_CORS_APIGATEWAY = False
         # start test HTTP backend
         proxy = self.start_http_backend(test_port)
 
@@ -259,6 +261,7 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(headers['content-type'], ctype)
 
         # clean up
+        config.DISABLE_CUSTOM_CORS_APIGATEWAY = old_config
         proxy.stop()
 
     def test_api_gateway_lambda_proxy_integration(self):

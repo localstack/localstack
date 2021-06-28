@@ -14,7 +14,7 @@ from six.moves.urllib.parse import urlparse
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
-from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
+from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_ALLOWED_ORIGINS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.utils.aws import aws_stack
 from localstack.utils.server import http2_server
@@ -43,6 +43,12 @@ if EXTRA_CORS_EXPOSE_HEADERS:
 ALLOWED_CORS_RESPONSE_HEADERS = ['Access-Control-Allow-Origin', 'Access-Control-Allow-Methods',
     'Access-Control-Allow-Headers', 'Access-Control-Max-Age', 'Access-Control-Allow-Credentials',
     'Access-Control-Expose-Headers']
+
+ALLOWED_CORS_ORIGINS = ['https://app.localstack.cloud', 'http://app.localstack.cloud',
+    f'http://localhost:{config.PORT_WEB_UI}', f'https://localhost:{config.PORT_WEB_UI_SSL}',
+    f'http://127.0.0.1:{config.PORT_WEB_UI}', f'https://127.0.0.1:{config.PORT_WEB_UI_SSL}']
+if EXTRA_CORS_ALLOWED_ORIGINS:
+    ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(',')
 
 
 class ProxyListener(object):
@@ -118,7 +124,7 @@ class RegionBackend(object):
 # ---------------------
 
 
-def append_cors_headers(response=None):
+def append_cors_headers(request_headers=None, response=None):
     # Note: Use "response is not None" here instead of "not response"!
     headers = {} if response is None else response.headers
 
@@ -133,7 +139,8 @@ def append_cors_headers(response=None):
         response.multi_value_headers = {}
 
     if ACL_ORIGIN not in headers:
-        headers[ACL_ORIGIN] = '*'
+        headers[ACL_ORIGIN] = (request_headers['origin'] if request_headers.get('origin') and
+            not config.DISABLE_CORS_CHECKS else '*')
     if ACL_METHODS not in headers:
         headers[ACL_METHODS] = ','.join(CORS_ALLOWED_METHODS)
     if ACL_ALLOW_HEADERS not in headers:
@@ -159,10 +166,50 @@ def http_exception_to_response(e: HTTPException):
     return response
 
 
+def cors_error_response():
+    response = Response()
+    response.status_code = 403
+    return response
+
+
+def is_cors_origin_allowed(headers, allowed_origins=None):
+    """Returns true if origin is allowed to perform cors requests, false otherwise"""
+    allowed_origins = ALLOWED_CORS_ORIGINS if allowed_origins is None else allowed_origins
+    origin = headers.get('origin')
+    referer = headers.get('referer')
+    if origin:
+        LOG.debug('Checking origin %s', origin)
+        return origin in allowed_origins
+    elif referer:
+        LOG.debug('Checking referer %s', referer)
+        return '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(referer)) in allowed_origins
+    else:
+        # If both headers are not set, let it through (awscli etc. do not send these headers)
+        return True
+
+
+def should_enforce_self_managed_service(method, path, headers, data):
+    if config.DISABLE_CUSTOM_CORS_S3 and config.DISABLE_CUSTOM_CORS_APIGATEWAY:
+        return True
+    # allow only certain api calls without checking origin
+    import localstack.services.edge
+    api, _ = localstack.services.edge.get_api_from_custom_rules(method, path, data, headers) or ('', None)
+    if not config.DISABLE_CUSTOM_CORS_S3 and api == 's3':
+        return False
+    if not config.DISABLE_CUSTOM_CORS_APIGATEWAY and api == 'apigateway':
+        return False
+    return True
+
+
 def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
         listeners=None, request_handler=None, client_address=None, server_address=None):
     """ This is the central function that coordinates the incoming/outgoing messages
         with the proxy listeners (message interceptors). """
+    # Check origin / referer header before anything else happens.
+    if (not config.DISABLE_CORS_CHECKS and should_enforce_self_managed_service(method, path, headers, data_bytes) and
+            not is_cors_origin_allowed(headers)):
+        LOG.info('Blocked cors request from forbidden origin %s', headers.get('origin') or headers.get('referer'))
+        return cors_error_response()
 
     listeners = ProxyListener.DEFAULT_LISTENERS + (listeners or [])
     listeners = [lis for lis in listeners if lis]
@@ -225,7 +272,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
             response.status_code = code
             response._content = ''
             response.headers['Content-Length'] = '0'
-            append_cors_headers(response)
+            append_cors_headers(request_headers=headers, response=response)
             return response
 
     # perform the actual invocation of the backend service
@@ -273,7 +320,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
     from localstack.services.s3.s3_listener import ProxyListenerS3
     is_s3_listener = any([isinstance(service_listener, ProxyListenerS3) for service_listener in listeners])
     if not is_s3_listener:
-        append_cors_headers(response)
+        append_cors_headers(request_headers=headers, response=response)
 
     return response
 
