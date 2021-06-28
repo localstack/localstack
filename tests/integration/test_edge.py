@@ -55,24 +55,24 @@ class TestEdgeAPI(unittest.TestCase):
 
         client.create_bucket(Bucket=bucket_name)
         result = client.head_bucket(Bucket=bucket_name)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
         client.delete_bucket(Bucket=bucket_name)
 
         bucket_name = 'edge-%s' % short_uid()
         object_name = 'testobject'
         bucket_url = '%s/%s' % (edge_url, bucket_name)
         result = requests.put(bucket_url, verify=False)
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
         result = client.head_bucket(Bucket=bucket_name)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         result = requests.post(bucket_url, data='key=%s&file=file_content_123' % object_name,
-            headers=headers, verify=False)
-        self.assertEqual(result.status_code, 204)
+                               headers=headers, verify=False)
+        self.assertEqual(204, result.status_code)
 
-        bucket_url = '%s/example' % (bucket_url)
+        bucket_url = '%s/example' % bucket_url
         result = requests.put(bucket_url, data='hello', verify=False)
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
 
         result = io.BytesIO()
         client.download_fileobj(bucket_name, object_name, result)
@@ -89,7 +89,7 @@ class TestEdgeAPI(unittest.TestCase):
 
         files = {'file': object_data}
         r = requests.post(presigned_post['url'], data=presigned_post['fields'], files=files, verify=False)
-        self.assertEqual(r.status_code, 204)
+        self.assertEqual(204, r.status_code)
 
         result = io.BytesIO()
         client.download_fileobj(bucket_name, object_name, result)
@@ -141,7 +141,7 @@ class TestEdgeAPI(unittest.TestCase):
             VisibilityTimeout=2,
             WaitTimeSeconds=2,
         )
-        self.assertEqual(len(response['Messages']), 1)
+        self.assertEqual(1, len(response['Messages']))
 
         os.environ.pop('DEFAULT_REGION')
         if region_original is not None:
