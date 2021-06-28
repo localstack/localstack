@@ -154,8 +154,6 @@ jobs:
     machine:
       image: ubuntu-2004:202101-01
     working_directory: /tmp/workspace/repo
-    environment:
-      COVERALLS_REPO_TOKEN: D9Tg4c2TGmHUBQIWbixm9NtIosNUDJeRo
     steps:
       - attach_workspace:
           at: /tmp/workspace
