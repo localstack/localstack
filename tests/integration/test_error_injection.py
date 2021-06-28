@@ -68,7 +68,7 @@ class TestErrorInjection(unittest.TestCase):
 
         # with a probability of 1, always throw errors
         config.DYNAMODB_ERROR_PROBABILITY = 1.0
-        with pytest.raises(ClientError):
+        with self.assertRaises(ClientError):
             table.get_item(Key={PARTITION_KEY: partition_key})
 
         # reset probability to zero
@@ -82,7 +82,7 @@ class TestErrorInjection(unittest.TestCase):
 
         # with a probability of 1, always throw errors
         config.DYNAMODB_READ_ERROR_PROBABILITY = 1.0
-        with pytest.raises(ClientError):
+        with self.assertRaises(ClientError):
             table.get_item(Key={PARTITION_KEY: partition_key})
 
         # reset probability to zero
@@ -97,11 +97,11 @@ class TestErrorInjection(unittest.TestCase):
 
         # with a probability of 1, always throw errors
         config.DYNAMODB_WRITE_ERROR_PROBABILITY = 1.0
-        with pytest.raises(ClientError):
+        with self.assertRaises(ClientError):
             table.put_item(Item={PARTITION_KEY: short_uid(), 'data': 'foobar123'})
 
         # BatchWriteItem throws ProvisionedThroughputExceededException if ALL items in Batch are Throttled
-        with pytest.raises(ClientError):
+        with self.assertRaises(ClientError):
             table.batch_write_item(RequestItems={table: [{
                 'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}}]})
 
