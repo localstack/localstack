@@ -9,7 +9,7 @@ from localstack.constants import S3_VIRTUAL_HOSTNAME, LOCALHOST
 from localstack.services.infra import patch_instance_tracker_meta
 
 
-class S3ListenerTest (unittest.TestCase):
+class S3ListenerTest(unittest.TestCase):
 
     def test_expand_redirect_url(self):
         url1 = s3_listener.expand_redirect_url('http://example.org', 'K', 'B')
@@ -20,8 +20,8 @@ class S3ListenerTest (unittest.TestCase):
 
     def test_find_multipart_key_value(self):
         headers = {'Host': '10.0.1.19:4572', 'User-Agent': 'curl/7.51.0',
-            'Accept': '*/*', 'Content-Length': '992', 'Expect': '100-continue',
-            'Content-Type': 'multipart/form-data; boundary=------------------------3c48c744237517ac'}
+                   'Accept': '*/*', 'Content-Length': '992', 'Expect': '100-continue',
+                   'Content-Type': 'multipart/form-data; boundary=------------------------3c48c744237517ac'}
 
         data1 = (b'--------------------------3c48c744237517ac\r\nContent-Disposition: form-data; name="key"\r\n\r\n'
                  b'uploads/20170826T181315.679087009Z/upload/pixel.png\r\n--------------------------3c48c744237517ac'
@@ -63,8 +63,8 @@ class S3ListenerTest (unittest.TestCase):
 
     def test_expand_multipart_filename(self):
         headers = {'Host': '10.0.1.19:4572', 'User-Agent': 'curl/7.51.0',
-            'Accept': '*/*', 'Content-Length': '992', 'Expect': '100-continue',
-            'Content-Type': 'multipart/form-data; boundary=------------------------3c48c744237517ac'}
+                   'Accept': '*/*', 'Content-Length': '992', 'Expect': '100-continue',
+                   'Content-Type': 'multipart/form-data; boundary=------------------------3c48c744237517ac'}
 
         data1 = (b'--------------------------3c48c744237517ac\r\nContent-Disposition: form-data; name="key"\r\n\r\n'
                  b'uploads/20170826T181315.679087009Z/upload/${filename}\r\n--------------------------3c48c744237517ac'
@@ -108,7 +108,7 @@ class S3ListenerTest (unittest.TestCase):
         expanded1 = multipart_content.expand_multipart_filename(data1, headers)
         self.assertIsNot(expanded1, data1, 'Should have changed content of data with filename to interpolate')
         self.assertIn(b'uploads/20170826T181315.679087009Z/upload/pixel.png', expanded1,
-            'Should see the interpolated filename')
+                      'Should see the interpolated filename')
 
         expanded2 = multipart_content.expand_multipart_filename(data2, headers)
         self.assertIs(expanded2, data2, 'Should not have changed content of data with no filename to interpolate')
@@ -116,7 +116,7 @@ class S3ListenerTest (unittest.TestCase):
         expanded3 = multipart_content.expand_multipart_filename(data3, headers)
         self.assertIsNot(expanded3, data3, 'Should have changed content of string data with filename to interpolate')
         self.assertIn(b'uploads/20170826T181315.679087009Z/upload/pixel.txt', expanded3,
-            'Should see the interpolated filename')
+                      'Should see the interpolated filename')
 
     def test_event_type_matching(self):
         match = s3_listener.event_type_matches
@@ -172,7 +172,7 @@ class S3ListenerTest (unittest.TestCase):
         self.assertNotEqual('No header', response.headers.get('Last-Modified', 'No header'))
 
 
-class S3UtilsTest (unittest.TestCase):
+class S3UtilsTest(unittest.TestCase):
 
     def test_s3_bucket_name(self):
         # array description : 'bucket_name', 'expected_ouput'
@@ -281,7 +281,7 @@ class S3UtilsTest (unittest.TestCase):
             self.assertEqual(expected_result, s3_utils.extract_key_name(headers, path))
 
 
-class S3BackendTest (unittest.TestCase):
+class S3BackendTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -304,7 +304,7 @@ class S3BackendTest (unittest.TestCase):
 
         key = s3_backend.get_object(bucket_name, file2_name)
 
-        self.assertFalse(key in (key.instances or []))
+        self.assertNotIn(key, key.instances or [])
 
     def test_no_bucket_in_instances(self):
         s3_backend = s3_models.S3Backend()
@@ -317,4 +317,4 @@ class S3BackendTest (unittest.TestCase):
         s3_backend.delete_bucket(bucket_name)
         bucket = s3_backend.create_bucket(bucket_name, region)
 
-        self.assertGreaterEqual(bucket in (bucket.instances or []), False)
+        self.assertNotIn(bucket, (bucket.instances or []))
