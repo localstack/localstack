@@ -1,9 +1,11 @@
 import os
 import threading
 import unittest
+import re
 
 import pytest
 
+from packaging import version
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import run, start_worker_thread, is_command_available, rm_rf
 
@@ -23,16 +25,11 @@ def check_terraform_version():
     if not is_command_available('terraform'):
         return False, None
 
-    ver_string = run('terraform -version').split()[1]
-    ver = ver_string.lstrip('v')
-    ver = [int(i) for i in ver.split('.')]
-
-    if ver[0] > 0:
-        return False, ver_string
-    if ver[1] > 14:
-        return False, ver_string
-
-    return True, ver_string
+    ver_string = run('terraform -version')
+    ver_string = re.search(r'v(\d+\.\d+\.\d+)', ver_string).group(1)
+    if ver_string is None:
+        return False, None
+    return version.parse(ver_string) < version.parse('0.15'), ver_string
 
 
 class TestTerraform(unittest.TestCase):
