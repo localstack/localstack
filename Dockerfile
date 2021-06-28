@@ -13,6 +13,9 @@ ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 ENV LOCALSTACK_HOSTNAME=localhost
 
+# Set edge bind host so localstack can be reached by other containers
+ENV EDGE_BIND_HOST=0.0.0.0
+
 # add trusted CA certificates to the cert store
 RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ssl/certs/ca-certificates.crt
 
