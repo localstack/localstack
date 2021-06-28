@@ -54,13 +54,13 @@ class ElasticsearchTest(unittest.TestCase):
         es_client = aws_stack.connect_to_service('es')
 
         status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)['DomainStatus']
-        self.assertEqual(status['ElasticsearchVersion'], DEFAULT_ES_VERSION)
+        self.assertEqual(DEFAULT_ES_VERSION, status['ElasticsearchVersion'])
 
         domain_name = 'es-%s' % short_uid()
         self._create_domain(name=domain_name, version='6.8', es_cluster_config=ES_CLUSTER_CONFIG)
         status = es_client.describe_elasticsearch_domain(DomainName=domain_name)['DomainStatus']
-        self.assertEqual(status['ElasticsearchVersion'], '6.8')
-        self.assertEqual(status['ElasticsearchClusterConfig'], ES_CLUSTER_CONFIG)
+        self.assertEqual('6.8', status['ElasticsearchVersion'])
+        self.assertEqual(ES_CLUSTER_CONFIG, status['ElasticsearchClusterConfig'])
 
     def test_create_indexes_and_domains(self):
         indexes = ['index1', 'index2']
@@ -70,10 +70,10 @@ class ElasticsearchTest(unittest.TestCase):
             endpoint = 'http://localhost:{}/_cat/indices/{}?format=json&pretty'.format(
                 config.PORT_ELASTICSEARCH, index_name)
             req = requests.get(endpoint)
-            self.assertEqual(req.status_code, 200)
+            self.assertEqual(200, req.status_code)
             req_result = json.loads(req.text)
-            self.assertTrue(req_result[0]['health'] in ['green', 'yellow'])
-            self.assertTrue(req_result[0]['index'] in indexes)
+            self.assertIn(req_result[0]['health'], ['green', 'yellow'])
+            self.assertIn(req_result[0]['index'], indexes)
 
         es_client = aws_stack.connect_to_service('es')
         test_domain_name_1 = 'test1-%s' % short_uid()
@@ -93,16 +93,16 @@ class ElasticsearchTest(unittest.TestCase):
 
         # get domain status
         status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
-        self.assertEqual(status['DomainStatus']['DomainName'], TEST_DOMAIN_NAME)
+        self.assertEqual(TEST_DOMAIN_NAME, status['DomainStatus']['DomainName'])
         self.assertTrue(status['DomainStatus']['Created'])
         self.assertFalse(status['DomainStatus']['Processing'])
         self.assertFalse(status['DomainStatus']['Deleted'])
-        self.assertEqual(status['DomainStatus']['Endpoint'], 'http://localhost:%s' % config.PORT_ELASTICSEARCH)
+        self.assertEqual('http://localhost:%s' % config.PORT_ELASTICSEARCH, status['DomainStatus']['Endpoint'])
         self.assertTrue(status['DomainStatus']['EBSOptions']['EBSEnabled'])
 
         # make sure we can fake adding tags to a domain
         response = es_client.add_tags(ARN='string', TagList=[{'Key': 'SOME_TAG', 'Value': 'SOME_VALUE'}])
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
     def test_elasticsearch_get_document(self):
         article_path = '{}/{}/employee/{}?pretty'.format(
