@@ -425,7 +425,7 @@ def get_service_port_for_account(service, headers):
     return config.service_port(service)
 
 
-def do_start_edge(port, use_ssl, asynchronous=False):
+def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
     try:
         # start local DNS server, if present
         from localstack_ext.services import dns_server
@@ -436,7 +436,7 @@ def do_start_edge(port, use_ssl, asynchronous=False):
     # get port and start Edge
     print('Starting edge router (http%s port %s)...' % ('s' if use_ssl else '', port))
     # use use=True here because our proxy allows both, HTTP and HTTPS traffic
-    proxy = start_proxy_server(port, use_ssl=True, update_listener=ProxyListenerEdge())
+    proxy = start_proxy_server(port, bind_address=bind_address, use_ssl=True, update_listener=ProxyListenerEdge())
     if not asynchronous:
         proxy.join()
     return proxy
@@ -462,9 +462,9 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
     if not port:
         port = config.EDGE_PORT
     if config.EDGE_PORT_HTTP:
-        do_start_edge(config.EDGE_PORT_HTTP, use_ssl=False, asynchronous=True)
+        do_start_edge(config.EDGE_BIND_HOST, config.EDGE_PORT_HTTP, use_ssl=False, asynchronous=True)
     if port > 1024 or is_root():
-        return do_start_edge(port, use_ssl, asynchronous=asynchronous)
+        return do_start_edge(config.EDGE_BIND_HOST, port, use_ssl, asynchronous=asynchronous)
 
     # process requires priviledged port but we're not root -> try running as sudo
 

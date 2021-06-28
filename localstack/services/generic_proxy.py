@@ -411,7 +411,7 @@ def get_cert_pem_file_path():
     return os.path.join(config.TMP_FOLDER, SERVER_CERT_PEM_FILE)
 
 
-def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=None,
+def start_proxy_server(port, bind_address='0.0.0.0', forward_url=None, use_ssl=None, update_listener=None,
         quiet=False, params={}, asynchronous=True):
     def handler(request, data):
         parsed_url = urlparse(request.url)
@@ -434,7 +434,7 @@ def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=Non
         _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
         ssl_creds = (cert_file_name, key_file_name)
 
-    return http2_server.run_server(port, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds)
+    return http2_server.run_server(port, bind_address, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds)
 
 
 def serve_flask_app(app, port, quiet=True, host=None, cors=True):
