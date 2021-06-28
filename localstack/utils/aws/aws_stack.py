@@ -15,7 +15,7 @@ from localstack.constants import (
 from localstack.utils.aws import templating
 from localstack.utils.generic import dict_utils
 from localstack.utils.common import (
-    run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
+    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, safe_requests as requests,
     is_port_open, get_service_protocol, retry, to_bytes)
 from localstack.utils.aws.aws_models import KinesisStream
 
@@ -621,16 +621,26 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
             Record={'Data': to_bytes(json.dumps(event))})
 
     elif ':events:' in arn:
-        bus_name = arn.split(':')[-1].split('/')[-1]
         events_client = connect_to_service('events', region_name=region)
-        events_client.put_events(
-            Entries=[{
-                'EventBusName': bus_name,
-                'Source': event.get('source'),
-                'DetailType': event.get('detail-type'),
-                'Detail': event.get('detail')
-            }]
-        )
+        target_name = arn.split(':')[-1].split('/')[-1]
+        if ':destination/' in arn:
+            destination = events_client.describe_api_destination(Name=target_name)
+            method = destination.get('HttpMethod', 'GET')
+            endpoint = destination.get('InvocationEndpoint')
+            state = destination.get('ApiDestinationState') or 'ACTIVE'
+            LOG.debug('Calling EventBridge API destination (state "%s"): %s %s' % (state, method, endpoint))
+            result = requests.request(method=method, url=endpoint, data=json.dumps(event or {}))
+            if result.status_code >= 400:
+                LOG.debug('Received code %s forwarding events: %s %s' % (result.status_code, method, endpoint))
+        else:
+            events_client.put_events(
+                Entries=[{
+                    'EventBusName': target_name,
+                    'Source': event.get('source'),
+                    'DetailType': event.get('detail-type'),
+                    'Detail': event.get('detail')
+                }]
+            )
 
     elif ':kinesis:' in arn:
         partition_key_path = dict_utils.get_safe(

@@ -529,6 +529,47 @@ class EventsTest(unittest.TestCase):
         self.sns_client.delete_topic(TopicArn=topic_arn)
         self.sfn_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
+    def test_api_destinations(self):
+        class HttpEndpointListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                event = json.loads(to_str(data))
+                events.append(event)
+                return 200
+
+        events = []
+        local_port = get_free_tcp_port()
+        proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
+        wait_for_port_open(local_port)
+
+        # create api destination
+        dest_name = 'd-%s' % short_uid()
+        url = 'http://localhost:%s' % local_port
+        result = self.events_client.create_api_destination(Name=dest_name,
+            ConnectionArn='c1', InvocationEndpoint=url, HttpMethod='POST')
+
+        # create rule and target
+        rule_name = 'r-%s' % short_uid()
+        target_id = 'target-{}'.format(short_uid())
+        pattern = json.dumps({'source': ['source-123'], 'detail-type': ['type-123']})
+        self.events_client.put_rule(Name=rule_name, EventPattern=pattern)
+        self.events_client.put_targets(
+            Rule=rule_name,
+            Targets=[{'Id': target_id, 'Arn': result['ApiDestinationArn']}]
+        )
+
+        # put events, to trigger rules
+        num_events = 5
+        for i in range(num_events):
+            entries = [{'Source': 'source-123', 'DetailType': 'type-123', 'Detail': '{"i": %s}' % i}]
+            self.events_client.put_events(Entries=entries)
+
+        def check():
+            self.assertEqual(len(events), num_events)
+        retry(check, sleep=0.5, retries=5)
+
+        # clean up
+        proxy.stop()
+
     def test_put_events_with_target_firehose(self):
         s3_bucket = 's3-{}'.format(short_uid())
         s3_prefix = 'testeventdata'

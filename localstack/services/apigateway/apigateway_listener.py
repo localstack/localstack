@@ -410,8 +410,8 @@ def invoke_rest_api_integration_backend(api_id, stage, integration, method, path
                         if parsed_result.get('isBase64Encoded', False):
                             body_bytes = base64.b64decode(body_bytes)
                         response._content = body_bytes
-                except Exception:
-                    LOG.warning("Couldn't set lambda response content")
+                except Exception as e:
+                    LOG.warning("Couldn't set lambda response content: %s" % e)
                     response._content = '{}'
                 update_content_length(response)
                 response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
