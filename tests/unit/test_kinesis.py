@@ -17,7 +17,7 @@ class KinesisListenerTest(unittest.TestCase):
             response = UPDATE_KINESIS.forward_request('POST', '/', TEST_DATA,
                 describe_stream_summary_header)
 
-            self.assertEqual(True, response)
+            self.assertTrue(response)
         else:
             self.assertTrue(True)
 

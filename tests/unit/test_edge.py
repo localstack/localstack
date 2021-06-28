@@ -7,7 +7,7 @@ class EdgeServiceTest(unittest.TestCase):
 
     def test_data_contains_key_equal_is_true(self):
         data_bytes = b'AWSAccessKeyId=someId&policy=somePolicy&key=someKey&signature=someSig'
-        self.assertEqual(True, is_s3_form_data(data_bytes))
+        self.assertTrue(is_s3_form_data(data_bytes))
 
     def test_s3_form_data_is_true(self):
         data_bytes = b"""--28f72589b2be0c9de84386b52c615990
@@ -36,11 +36,11 @@ class EdgeServiceTest(unittest.TestCase):
         Hello World!
         --28f72589b2be0c9de84386b52c615990--
         """
-        self.assertEqual(True, is_s3_form_data(data_bytes))
+        self.assertTrue(is_s3_form_data(data_bytes))
 
     def test_other_query_params_is_false(self):
         data_bytes = b'AWSAccessKeyId=someId&policy=somePolicy&param=value&signature=someSig'
-        self.assertEqual(False, is_s3_form_data(data_bytes))
+        self.assertFalse(is_s3_form_data(data_bytes))
 
     def test_other_form_data_is_false(self):
         data_bytes = b"""--28f72589b2be0c9de84386b52c615990
@@ -57,7 +57,7 @@ class EdgeServiceTest(unittest.TestCase):
         hTahNRfuCxL5HEKdhXxJPwvC6IQ=
         --28f72589b2be0c9de84386b52c615990--
         """
-        self.assertEqual(False, is_s3_form_data(data_bytes))
+        self.assertFalse(is_s3_form_data(data_bytes))
 
     def test_get_auth_string(self):
         # Typical Header with Authorization

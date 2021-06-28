@@ -36,10 +36,7 @@ class GenericDictUtilsTest(unittest.TestCase):
             get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'level_three_1'])
         )
 
-        self.assertEqual(
-            None,
-            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'random', 'value'])
-        )
+        self.assertIsNone(get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'random', 'value']))
 
         self.assertEqual(
             'default_value',

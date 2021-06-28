@@ -38,17 +38,17 @@ class TestCommon(unittest.TestCase):
 
     def test_is_number(self):
         env = common.is_number(5)
-        self.assertEqual(True, env)
+        self.assertTrue(env)
 
     def test_is_ip_address(self):
         env = common.is_ip_address('10.0.0.1')
-        self.assertEqual(True, env)
+        self.assertTrue(env)
         env = common.is_ip_address('abcde')
-        self.assertEqual(False, env)
+        self.assertFalse(env)
 
     def test_is_base64(self):
         env = common.is_base64('foobar')
-        self.assertEqual(None, env)
+        self.assertIsNone(env)
 
     def test_mktime(self):
         now = common.mktime(datetime.now())
