@@ -77,7 +77,7 @@ class TestDynamoDB(unittest.TestCase):
 
         # Retrieve the items. The data will be transmitted to the client with chunked transfer encoding
         result = table.scan(TableName=TEST_DDB_TABLE_NAME_2)
-        self.assertEqual(len(result['Items']), num_items)
+        self.assertEqual(num_items, len(result['Items']))
 
         # clean up
         delete_table(TEST_DDB_TABLE_NAME_2)
@@ -97,37 +97,37 @@ class TestDynamoDB(unittest.TestCase):
 
         # Describe TTL when still unset
         response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         self.assertEqual(json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'], 'DISABLED')
 
         # Enable TTL for given table
         response = testutil.send_update_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3, True)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         self.assertTrue(json.loads(response._content)['TimeToLiveSpecification']['Enabled'])
 
         # Describe TTL status after being enabled.
         response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         self.assertEqual(json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'], 'ENABLED')
 
         # Disable TTL for given table
         response = testutil.send_update_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3, False)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         self.assertFalse(json.loads(response._content)['TimeToLiveSpecification']['Enabled'])
 
         # Describe TTL status after being disabled.
         response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         self.assertEqual(json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'], 'DISABLED')
 
         # Enable TTL for given table again
         response = testutil.send_update_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3, True)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         self.assertTrue(json.loads(response._content)['TimeToLiveSpecification']['Enabled'])
 
         # Describe TTL status after being enabled again.
         response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         self.assertEqual(json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'], 'ENABLED')
 
         # clean up
@@ -156,7 +156,7 @@ class TestDynamoDB(unittest.TestCase):
             ResourceArn=table_arn
         )
 
-        self.assertEqual(rs['Tags'], TEST_DDB_TAGS)
+        self.assertEqual(TEST_DDB_TAGS, rs['Tags'])
 
         dynamodb.tag_resource(
             ResourceArn=table_arn,
@@ -172,11 +172,11 @@ class TestDynamoDB(unittest.TestCase):
             ResourceArn=table_arn
         )
 
-        self.assertEqual(len(rs['Tags']), len(TEST_DDB_TAGS) + 1)
+        self.assertEqual(len(TEST_DDB_TAGS) + 1, len(rs['Tags']))
 
         tags = {tag['Key']: tag['Value'] for tag in rs['Tags']}
         self.assertIn('NewKey', tags.keys())
-        self.assertEqual(tags['NewKey'], 'TestValue')
+        self.assertEqual('TestValue', tags['NewKey'])
 
         dynamodb.untag_resource(
             ResourceArn=table_arn,
@@ -241,7 +241,7 @@ class TestDynamoDB(unittest.TestCase):
                 ':v1': {'S': 'value1'},
                 ':v2': {'S': 'value2'}
             })
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         item = table.get_item(Key={PARTITION_KEY: item_id})['Item']
         self.assertEqual(item['attr1'], 'value1')
@@ -295,8 +295,8 @@ class TestDynamoDB(unittest.TestCase):
         # it should give us attributes
         response = table.put_item(Item=item1, ReturnValues='ALL_OLD')
         self.assertTrue(response.get('Attributes'))
-        self.assertEqual(response.get('Attributes').get('id'), item1.get('id'))
-        self.assertEqual(response.get('Attributes').get('data'), item1.get('data'))
+        self.assertEqual(item1.get('id'), response.get('Attributes').get('id'))
+        self.assertEqual(item1.get('data'), response.get('Attributes').get('data'))
 
         response = table.put_item(Item=item2)
         # we do not have any same item as item2 already so when we add this by default
@@ -318,10 +318,10 @@ class TestDynamoDB(unittest.TestCase):
         item2 = {PARTITION_KEY: 'id2', 'data': b'foobar'}
 
         response = table.put_item(Item=item1)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         response = table.put_item(Item=item2)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
     def test_dynamodb_stream_shard_iterator(self):
         def wait_for_stream_created(table_name):
@@ -774,7 +774,7 @@ class TestDynamoDB(unittest.TestCase):
                 ':username': {'S': 'test'}
             }
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         dynamodb.delete_table(TableName=table_name)
 
@@ -822,13 +822,13 @@ class TestDynamoDB(unittest.TestCase):
         events = retry(check_expected_lambda_log_events_length, retries=3,
                        sleep=1, function_name=function_name, expected_length=1)
 
-        self.assertEqual(len(events), 1)
-        self.assertEqual(len(events[0]['Records']), 1)
+        self.assertEqual(1, len(events))
+        self.assertEqual(1, len(events[0]['Records']))
 
         dynamodb_event = events[0]['Records'][0]['dynamodb']
-        self.assertEqual(dynamodb_event['StreamViewType'], 'NEW_AND_OLD_IMAGES')
-        self.assertEqual(dynamodb_event['Keys'], {'SK': {'S': item['SK']}})
-        self.assertEqual(dynamodb_event['NewImage']['Name'], {'S': item['Name']})
+        self.assertEqual('NEW_AND_OLD_IMAGES', dynamodb_event['StreamViewType'])
+        self.assertEqual({'SK': {'S': item['SK']}}, dynamodb_event['Keys'])
+        self.assertEqual({'S': item['Name']}, dynamodb_event['NewImage']['Name'])
 
         dynamodb = aws_stack.connect_to_service('dynamodb')
         dynamodb.delete_table(TableName=table_name)
@@ -858,7 +858,7 @@ class TestDynamoDB(unittest.TestCase):
 
         ]})
 
-        self.assertEqual(result.get('UnprocessedItems'), {})
+        self.assertEqual({}, result.get('UnprocessedItems'))
 
 
 def delete_table(name):
