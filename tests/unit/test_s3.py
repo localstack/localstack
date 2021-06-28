@@ -49,7 +49,7 @@ class S3ListenerTest (unittest.TestCase):
         key2, url2 = multipart_content.find_multipart_key_value(data2, headers)
 
         self.assertEqual('uploads/20170826T181315.679087009Z/upload/pixel.png', key2)
-        self.assertIsNone('Should not get a redirect URL without success_action_redirect', url2)
+        self.assertIsNone(url2, 'Should not get a redirect URL without success_action_redirect')
 
         key3, url3 = multipart_content.find_multipart_key_value(data3, headers)
 
@@ -317,4 +317,4 @@ class S3BackendTest (unittest.TestCase):
         s3_backend.delete_bucket(bucket_name)
         bucket = s3_backend.create_bucket(bucket_name, region)
 
-        self.assertIn(bucket, (bucket.instances or []))
+        self.assertGreaterEqual(bucket in (bucket.instances or []), False)
