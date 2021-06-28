@@ -95,11 +95,12 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
+ADD .coveragerc ./
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
 RUN pip uninstall -y argparse
 RUN LAMBDA_EXECUTOR=local \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \
-    make test
+    make test-coverage
 
 # clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \

@@ -99,7 +99,7 @@ jobs:
             SQS_PROVIDER: "elasticmq"
             TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
             PYTEST_ARGS: "--junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
-          command:  make test
+          command: make test
       - store_test_results:
           path: target/reports/
 
@@ -128,7 +128,14 @@ jobs:
             [[ "$cid" != "" ]] || { echo "could not create build container"; exit 1; }
 
             docker cp ${cid}:/opt/code/localstack/target/test-report.xml target/reports || true
-            docker cp ${cid}:/opt/code/localstack/.coverage target/ || true
+            docker cp ${cid}:/opt/code/localstack/.coverage ./ || true
+          when: always
+      - run:
+          name: Report coverage statistics
+          command: |
+            source .venv/bin/activate
+            coverage report || true
+            coveralls || true
           when: always
       - run:
           command: |
@@ -147,6 +154,8 @@ jobs:
     machine:
       image: ubuntu-2004:202101-01
     working_directory: /tmp/workspace/repo
+    environment:
+      COVERALLS_REPO_TOKEN: D9Tg4c2TGmHUBQIWbixm9NtIosNUDJeRo
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -156,6 +165,7 @@ jobs:
       - run:
           name: Push docker image
           command: make docker-push-master
+
 
 workflows:
   main:

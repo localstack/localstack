@@ -149,6 +149,12 @@ test:
 	make lint && \
 		($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
+test-coverage:
+	($(VENV_RUN); coverage --version; \
+		DEBUG=$(DEBUG) \
+		coverage run --source=localstack/ --omit=localstack/infra/,localstack/node_modules/ \
+		-m pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
+
 test-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
 
@@ -196,4 +202,4 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
-.PHONY: usage compile clean install web install-web infra test
+.PHONY: usage compile clean install web install-web infra test test-coverage
