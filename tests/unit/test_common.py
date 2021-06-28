@@ -12,47 +12,47 @@ class TestCommon(unittest.TestCase):
 
     def test_first_char_to_lower(self):
         env = common.first_char_to_lower('Foobar')
-        self.assertEqual(env, 'foobar')
+        self.assertEqual('foobar', env)
 
     def test_truncate(self):
         env = common.truncate('foobar', 3)
-        self.assertEqual(env, 'foo...')
+        self.assertEqual('foo...', env)
 
     def test_isoformat_milliseconds(self):
         env = common.isoformat_milliseconds(datetime(2010, 3, 20, 7, 24, 00, 0))
-        self.assertEqual(env, '2010-03-20T07:24:00.000')
+        self.assertEqual('2010-03-20T07:24:00.000', env)
 
     def test_base64_to_hex(self):
         env = common.base64_to_hex('Zm9vIGJhcg ==')
-        self.assertEqual(env, b'666f6f20626172')
+        self.assertEqual(b'666f6f20626172', env)
 
     def test_now(self):
         env = common.now()
         test = time.time()
-        self.assertAlmostEqual(env, test, delta=1)
+        self.assertAlmostEqual(test, env, delta=1)
 
     def test_now_utc(self):
         env = common.now_utc()
         test = datetime.now(pytz.UTC).timestamp()
-        self.assertAlmostEqual(env, test, delta=1)
+        self.assertAlmostEqual(test, env, delta=1)
 
     def test_is_number(self):
         env = common.is_number(5)
-        self.assertEqual(env, True)
+        self.assertTrue(env)
 
     def test_is_ip_address(self):
         env = common.is_ip_address('10.0.0.1')
-        self.assertEqual(env, True)
+        self.assertTrue(env)
         env = common.is_ip_address('abcde')
-        self.assertEqual(env, False)
+        self.assertFalse(env)
 
     def test_is_base64(self):
         env = common.is_base64('foobar')
-        self.assertEqual(env, None)
+        self.assertIsNone(env)
 
     def test_mktime(self):
         now = common.mktime(datetime.now())
-        self.assertEqual(int(time.time()), int(now))
+        self.assertEqual(int(now), int(time.time()))
 
     def test_mktime_with_tz(self):
         # see https://en.wikipedia.org/wiki/File:1000000000seconds.jpg
@@ -72,7 +72,7 @@ class TestCommon(unittest.TestCase):
 
     def test_mktime_millis(self):
         now = common.mktime(datetime.now(), millis=True)
-        self.assertEqual(int(time.time()), int(now / 1000))
+        self.assertEqual(int(now / 1000), int(time.time()))
 
     def test_timestamp_millis(self):
         result = common.timestamp_millis(datetime.now())
@@ -84,24 +84,24 @@ class TestCommon(unittest.TestCase):
     def test_extract_jsonpath(self):
         obj = {'a': {'b': [{'c': 123}, 'foo']}, 'e': 234}
         result = common.extract_jsonpath(obj, '$.a.b')
-        self.assertEqual(result, [{'c': 123}, 'foo'])
+        self.assertEqual([{'c': 123}, 'foo'], result)
         result = common.extract_jsonpath(obj, '$.a.b.c')
         self.assertFalse(result)
         result = common.extract_jsonpath(obj, '$.foobar')
         self.assertFalse(result)
         result = common.extract_jsonpath(obj, '$.e')
-        self.assertEqual(result, 234)
+        self.assertEqual(234, result)
         result = common.extract_jsonpath(obj, '$.a.b[0]')
-        self.assertEqual(result, {'c': 123})
+        self.assertEqual({'c': 123}, result)
         result = common.extract_jsonpath(obj, '$.a.b[0].c')
-        self.assertEqual(result, 123)
+        self.assertEqual(123, result)
         result = common.extract_jsonpath(obj, '$.a.b[1]')
-        self.assertEqual(result, 'foo')
+        self.assertEqual('foo', result)
 
     def test_parse_yaml_nodes(self):
         obj = {'test': yaml.ScalarNode('tag:yaml.org,2002:int', '123')}
         result = common.clone_safe(obj)
-        self.assertEqual(result, {'test': 123})
+        self.assertEqual({'test': 123}, result)
         obj = {'foo': [
             yaml.ScalarNode('tag:yaml.org,2002:str', 'value'),
             yaml.ScalarNode('tag:yaml.org,2002:int', '123'),
@@ -109,7 +109,7 @@ class TestCommon(unittest.TestCase):
             yaml.ScalarNode('tag:yaml.org,2002:bool', 'true')
         ]}
         result = common.clone_safe(obj)
-        self.assertEqual(result, {'foo': ['value', 123, 1.23, True]})
+        self.assertEqual({'foo': ['value', 123, 1.23, True]}, result)
 
 
 class TestCommandLine(unittest.TestCase):

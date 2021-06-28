@@ -17,7 +17,7 @@ class KinesisListenerTest(unittest.TestCase):
             response = UPDATE_KINESIS.forward_request('POST', '/', TEST_DATA,
                 describe_stream_summary_header)
 
-            self.assertEqual(response, True)
+            self.assertTrue(response)
         else:
             self.assertTrue(True)
 
@@ -29,8 +29,8 @@ class KinesisListenerTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         resp_json = json.loads(to_str(response.content))
-        self.assertEqual(resp_json['ErrorCode'], 'ProvisionedThroughputExceededException')
-        self.assertEqual(resp_json['ErrorMessage'], 'Rate exceeded for shard X in stream Y under account Z.')
+        self.assertEqual('ProvisionedThroughputExceededException', resp_json['ErrorCode'])
+        self.assertEqual('Rate exceeded for shard X in stream Y under account Z.', resp_json['ErrorMessage'])
 
     def test_random_error_on_put_records(self):
         put_records_header = {'X-Amz-Target': 'Kinesis_20131202.PutRecords'}
@@ -39,13 +39,13 @@ class KinesisListenerTest(unittest.TestCase):
 
         response = UPDATE_KINESIS.forward_request('POST', '/', data_with_one_record, put_records_header)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         resp_json = json.loads(to_str(response.content))
-        self.assertEqual(resp_json['FailedRecordCount'], 1)
-        self.assertEqual(len(resp_json['Records']), 1)
+        self.assertEqual(1, resp_json['FailedRecordCount'])
+        self.assertEqual(1, len(resp_json['Records']))
         failed_record = resp_json['Records'][0]
-        self.assertEqual(failed_record['ErrorCode'], 'ProvisionedThroughputExceededException')
-        self.assertEqual(failed_record['ErrorMessage'], 'Rate exceeded for shard X in stream Y under account Z.')
+        self.assertEqual('ProvisionedThroughputExceededException', failed_record['ErrorCode'])
+        self.assertEqual('Rate exceeded for shard X in stream Y under account Z.', failed_record['ErrorMessage'])
 
     def test_overwrite_update_shard_count_on_error(self):
         if config.KINESIS_PROVIDER == 'kinesalite':
@@ -57,10 +57,10 @@ class KinesisListenerTest(unittest.TestCase):
             response = UPDATE_KINESIS.return_response('POST', '/', request_data, update_shard_count_header,
                 error_response)
 
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(200, response.status_code)
             resp_json = json.loads(to_str(response.content))
-            self.assertEqual(resp_json['StreamName'], 'TestStream')
-            self.assertEqual(resp_json['CurrentShardCount'], 1)
-            self.assertEqual(resp_json['TargetShardCount'], 2)
+            self.assertEqual('TestStream', resp_json['StreamName'])
+            self.assertEqual(1, resp_json['CurrentShardCount'])
+            self.assertEqual(2, resp_json['TargetShardCount'])
         else:
             self.assertTrue(True)

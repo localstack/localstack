@@ -20,7 +20,7 @@ class SNSTests(unittest.TestCase):
         sns = sns_listener.ProxyListenerSNS()
         error = sns.forward_request('POST', '/', 'Action=Unsubscribe', '')
         self.assertTrue(error is not None)
-        self.assertEqual(error.status_code, 400)
+        self.assertEqual(400, error.status_code)
 
     def test_unsubscribe_should_remove_listener(self):
         sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
@@ -58,7 +58,7 @@ class SNSTests(unittest.TestCase):
             'Message': ['msg']
         }
         result = sns_listener.create_sns_message_body(self.subscriber, action)
-        self.assertEqual(result, 'msg')
+        self.assertEqual('msg', result)
 
     def test_create_sns_message_body(self):
         action = {
@@ -81,7 +81,7 @@ class SNSTests(unittest.TestCase):
         except ValueError:
             assert False, 'SNS response Timestamp not a valid ISO 8601 date'
 
-        self.assertEqual(result, {
+        expected_sns_body = {
             'Message': 'msg',
             'Signature': 'EXAMPLEpH+..',
             'SignatureVersion': '1',
@@ -89,7 +89,8 @@ class SNSTests(unittest.TestCase):
                 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
             'TopicArn': 'arn',
             'Type': 'Notification'
-        })
+        }
+        self.assertEqual(expected_sns_body, result)
 
         # Now add a subject
         action = {
@@ -127,8 +128,7 @@ class SNSTests(unittest.TestCase):
                 }
             }
         }
-        expected = json.dumps(msg)
-        self.assertEqual(result, json.loads(expected))
+        self.assertEqual(msg, result)
 
     def test_create_sns_message_body_json_structure(self):
         action = {
@@ -138,7 +138,7 @@ class SNSTests(unittest.TestCase):
         result_str = sns_listener.create_sns_message_body(self.subscriber, action)
         result = json.loads(result_str)
 
-        self.assertEqual(result['Message'], {'message': 'abc'})
+        self.assertEqual({'message': 'abc'}, result['Message'])
 
     def test_create_sns_message_body_json_structure_raw_delivery(self):
         self.subscriber['RawMessageDelivery'] = 'true'
@@ -148,7 +148,7 @@ class SNSTests(unittest.TestCase):
         }
         result = sns_listener.create_sns_message_body(self.subscriber, action)
 
-        self.assertEqual(result, {'message': 'abc'})
+        self.assertEqual({'message': 'abc'}, result)
 
     def test_create_sns_message_body_json_structure_without_default_key(self):
         action = {
@@ -157,7 +157,7 @@ class SNSTests(unittest.TestCase):
         }
         with self.assertRaises(Exception) as exc:
             sns_listener.create_sns_message_body(self.subscriber, action)
-        self.assertEqual(str(exc.exception), "Unable to find 'default' key in message payload")
+        self.assertEqual("Unable to find 'default' key in message payload", str(exc.exception))
 
     def test_create_sns_message_body_json_structure_sqs_protocol(self):
         action = {
@@ -167,7 +167,7 @@ class SNSTests(unittest.TestCase):
         result_str = sns_listener.create_sns_message_body(self.subscriber, action)
         result = json.loads(result_str)
 
-        self.assertEqual(result['Message'], 'sqs message')
+        self.assertEqual('sqs message', result['Message'])
 
     def test_create_sns_message_body_json_structure_raw_delivery_sqs_protocol(self):
         self.subscriber['RawMessageDelivery'] = 'true'
@@ -177,7 +177,7 @@ class SNSTests(unittest.TestCase):
         }
         result = sns_listener.create_sns_message_body(self.subscriber, action)
 
-        self.assertEqual(result, {'message': 'sqs version'})
+        self.assertEqual({'message': 'sqs version'}, result)
 
     def test_create_sqs_message_attributes(self):
         self.subscriber['RawMessageDelivery'] = 'true'
@@ -199,12 +199,12 @@ class SNSTests(unittest.TestCase):
         attributes = sns_listener.get_message_attributes(action)
         result = sns_listener.create_sqs_message_attributes(self.subscriber, attributes)
 
-        self.assertEqual(result['attr1']['DataType'], 'String')
-        self.assertEqual(result['attr1']['StringValue'], 'value1')
-        self.assertEqual(result['attr2']['DataType'], 'Binary')
-        self.assertEqual(result['attr2']['BinaryValue'], 'value2'.encode('utf-8'))
-        self.assertEqual(result['attr3']['DataType'], 'Number')
-        self.assertEqual(result['attr3']['StringValue'], '3')
+        self.assertEqual('String', result['attr1']['DataType'])
+        self.assertEqual('value1', result['attr1']['StringValue'])
+        self.assertEqual('Binary', result['attr2']['DataType'])
+        self.assertEqual('value2'.encode('utf-8'), result['attr2']['BinaryValue'])
+        self.assertEqual('Number', result['attr3']['DataType'])
+        self.assertEqual('3', result['attr3']['StringValue'])
 
     def test_create_sns_message_timestamp_millis(self):
         action = {
@@ -216,7 +216,7 @@ class SNSTests(unittest.TestCase):
         end = timestamp[-5:]
         matcher = re.compile(r'\.[0-9]{3}Z')
         match = matcher.match(end)
-        self.assertTrue(match is not None)
+        self.assertIsNotNone(match)
 
     def test_only_one_subscription_per_topic_per_endpoint(self):
         sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
@@ -230,7 +230,7 @@ class SNSTests(unittest.TestCase):
                 sub_arn,
                 {}
             )
-            self.assertEqual(len(sns_backend.sns_subscriptions[topic_arn]), 1)
+            self.assertEqual(1, len(sns_backend.sns_subscriptions[topic_arn]))
 
     def test_filter_policy(self):
         test_data = [
@@ -517,7 +517,7 @@ class SNSTests(unittest.TestCase):
             filter_policy = test[1]
             attributes = test[2]
             expected = test[3]
-            self.assertEqual(sns_listener.check_filter_policy(filter_policy, attributes), expected, test_name)
+            self.assertEqual(expected, sns_listener.check_filter_policy(filter_policy, attributes), test_name)
 
     def test_is_raw_message_delivery(self):
         valid_true_values = ['true', 'True', True]

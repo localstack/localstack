@@ -24,4 +24,4 @@ class FirehoseApiTest(unittest.TestCase):
         self.assertEqual([TEST_TAG_2], result['Tags'])
         result = firehose_api.get_delivery_stream_tags(TEST_STREAM_NAME, limit=1)
         self.assertEqual([TEST_TAG_1], result['Tags'])
-        self.assertEqual(True, result['HasMore'])
+        self.assertTrue(result['HasMore'])

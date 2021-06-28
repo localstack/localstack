@@ -22,4 +22,4 @@ class CloudWatchTest(unittest.TestCase):
                             '<StateUpdatedTimestamp>'
                             '2020-10-15T21:33:48.343651Z'
                             '</StateUpdatedTimestamp>')
-        self.assertEqual(response.content, response_content)
+        self.assertEqual(response_content, response.content)
