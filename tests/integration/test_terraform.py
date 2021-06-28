@@ -1,6 +1,7 @@
 import os
 import threading
 import unittest
+import re
 
 import pytest
 
@@ -23,7 +24,11 @@ def check_terraform_version():
     if not is_command_available('terraform'):
         return False, None
 
-    ver_string = run('terraform -version').split()[1]
+    ver_string = run('terraform -version')
+    ver_string = re.search(r'v(\d+)\.(\d+)\.(\d+)', ver_string).group()
+    if ver_string is None:
+        return False, None
+
     ver = ver_string.lstrip('v')
     ver = [int(i) for i in ver.split('.')]
 
