@@ -104,7 +104,7 @@ class TestKinesis(unittest.TestCase):
 
         # clean up
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')
-        client.delete_stream(StreamName=stream_name)
+        client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
 
     def test_subscribe_to_shard_with_sequence_number_as_iterator(self):
         client = aws_stack.connect_to_service('kinesis')
@@ -146,7 +146,7 @@ class TestKinesis(unittest.TestCase):
 
         # clean up
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')
-        client.delete_stream(StreamName=stream_name)
+        client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
 
     def test_get_records(self):
         client = aws_stack.connect_to_service('kinesis')

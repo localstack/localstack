@@ -633,6 +633,27 @@ class KinesisStream(GenericBaseModel):
         result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
         return result
 
+    @staticmethod
+    def get_deploy_templates():
+        def get_delete_params(params, **kwargs):
+            return {'StreamName': params['Name'], 'EnforceConsumerDeletion': True}
+        return {
+            'create': {
+                'function': 'create_stream',
+                'parameters': {
+                    'StreamName': 'Name',
+                    'ShardCount': 'ShardCount'
+                },
+                'defaults': {
+                    'ShardCount': 1
+                }
+            },
+            'delete': {
+                'function': 'delete_stream',
+                'parameters': get_delete_params
+            }
+        }
+
 
 class KinesisStreamConsumer(GenericBaseModel):
     @staticmethod
@@ -649,6 +670,7 @@ class KinesisStreamConsumer(GenericBaseModel):
         result = [r for r in result['Consumers'] if r['ConsumerName'] == props['ConsumerName']]
         return (result or [None])[0]
 
+    @staticmethod
     def get_deploy_templates():
         return {
             'create': {
@@ -675,6 +697,7 @@ class Route53RecordSet(GenericBaseModel):
         result = [r for r in result if r['Name'] == props['Name'] and r['Type'] == props['Type']]
         return (result or [None])[0]
 
+    @staticmethod
     def get_deploy_templates():
         def param_change_batch(params, **kwargs):
             attr_names = ['Name', 'Type', 'SetIdentifier', 'Weight', 'Region', 'GeoLocation',

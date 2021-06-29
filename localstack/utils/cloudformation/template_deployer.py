@@ -287,24 +287,6 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
-    'Kinesis::Stream': {
-        'create': {
-            'function': 'create_stream',
-            'parameters': {
-                'StreamName': 'Name',
-                'ShardCount': 'ShardCount'
-            },
-            'defaults': {
-                'ShardCount': 1
-            }
-        },
-        'delete': {
-            'function': 'delete_stream',
-            'parameters': {
-                'StreamName': 'Name'
-            }
-        }
-    },
     'StepFunctions::StateMachine': {
         'create': {
             'function': 'create_state_machine',
