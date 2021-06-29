@@ -28,39 +28,39 @@ class SecretsManagerTest(unittest.TestCase):
             Name=secret_name, SecretString='my_secret', Description='testing creation of secrets')
         secret_arn = rs['ARN']
 
-        self.assertEqual(len(secret_arn.rpartition('-')[2]), 6)
+        self.assertEqual(6, len(secret_arn.rpartition('-')[2]))
 
         rs = self.secretsmanager_client.get_secret_value(SecretId=secret_name)
-        self.assertEqual(rs['Name'], secret_name)
-        self.assertEqual(rs['SecretString'], 'my_secret')
-        self.assertEqual(rs['ARN'], secret_arn)
+        self.assertEqual(secret_name, rs['Name'])
+        self.assertEqual('my_secret', rs['SecretString'])
+        self.assertEqual(secret_arn, rs['ARN'])
         self.assertTrue(isinstance(rs['CreatedDate'], datetime))
 
         rs = self.secretsmanager_client.get_secret_value(SecretId=secret_arn)
-        self.assertEqual(rs['Name'], secret_name)
-        self.assertEqual(rs['SecretString'], 'my_secret')
-        self.assertEqual(rs['ARN'], secret_arn)
+        self.assertEqual(secret_name, rs['Name'])
+        self.assertEqual('my_secret', rs['SecretString'])
+        self.assertEqual(secret_arn, rs['ARN'])
 
         rs = self.secretsmanager_client.get_secret_value(SecretId=secret_arn[:len(secret_arn) - 6])
-        self.assertEqual(rs['Name'], secret_name)
-        self.assertEqual(rs['SecretString'], 'my_secret')
-        self.assertEqual(rs['ARN'], secret_arn)
+        self.assertEqual(secret_name, rs['Name'])
+        self.assertEqual('my_secret', rs['SecretString'])
+        self.assertEqual(secret_arn, rs['ARN'])
 
         rs = self.secretsmanager_client.get_secret_value(SecretId=secret_arn[:len(secret_arn) - 7])
-        self.assertEqual(rs['Name'], secret_name)
-        self.assertEqual(rs['SecretString'], 'my_secret')
-        self.assertEqual(rs['ARN'], secret_arn)
+        self.assertEqual(secret_name, rs['Name'])
+        self.assertEqual('my_secret', rs['SecretString'])
+        self.assertEqual(secret_arn, rs['ARN'])
 
         self.secretsmanager_client.put_secret_value(SecretId=secret_name, SecretString='new_secret')
 
         rs = self.secretsmanager_client.get_secret_value(SecretId=secret_name)
-        self.assertEqual(rs['Name'], secret_name)
-        self.assertEqual(rs['SecretString'], 'new_secret')
+        self.assertEqual(secret_name, rs['Name'])
+        self.assertEqual('new_secret', rs['SecretString'])
 
         # update secret by ARN
         rs = self.secretsmanager_client.update_secret(SecretId=secret_arn, KmsKeyId='test123', Description='d1')
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(rs['ARN'], secret_arn)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(secret_arn, rs['ARN'])
 
         # clean up
         self.secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
@@ -76,7 +76,7 @@ class SecretsManagerTest(unittest.TestCase):
             secrets = [
                 secret for secret in rs['SecretList'] if secret['Name'] == secret_name
             ]
-            self.assertEqual(len(secrets), 1)
+            self.assertEqual(1, len(secrets))
 
         # clean up
         self.secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
@@ -98,7 +98,7 @@ class SecretsManagerTest(unittest.TestCase):
             for secret in rs['SecretList'] if secret['Name'] in secret_names
         }
 
-        self.assertEqual(len(secrets.keys()), len(secret_names))
+        self.assertEqual(len(secret_names), len(secrets.keys()))
         for arn in arns:
             self.assertIn(arn, secrets.values())
 
@@ -127,11 +127,11 @@ class SecretsManagerTest(unittest.TestCase):
 
         policy = json.loads(rs['ResourcePolicy'])
 
-        self.assertEqual(policy['Version'], RESOURCE_POLICY['Version'])
-        self.assertEqual(policy['Statement'], RESOURCE_POLICY['Statement'])
+        self.assertEqual(RESOURCE_POLICY['Version'], policy['Version'])
+        self.assertEqual(RESOURCE_POLICY['Statement'], policy['Statement'])
 
         rs = self.secretsmanager_client.delete_resource_policy(SecretId=secret_name)
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         # clean up
         self.secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)

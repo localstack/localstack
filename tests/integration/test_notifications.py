@@ -40,11 +40,17 @@ class TestNotifications(unittest.TestCase):
         topic_info = sns_client.create_topic(Name=TEST_TOPIC_NAME)
 
         # subscribe SQS to SNS, publish message
-        sns_client.subscribe(TopicArn=topic_info['TopicArn'], Protocol='sqs',
-            Endpoint=aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_FOR_SNS))
+        sns_client.subscribe(
+            TopicArn=topic_info['TopicArn'],
+            Protocol='sqs',
+            Endpoint=aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_FOR_SNS)
+        )
         test_value = short_uid()
-        sns_client.publish(TopicArn=topic_info['TopicArn'], Message='test message for SQS',
-            MessageAttributes={'attr1': {'DataType': 'String', 'StringValue': test_value}})
+        sns_client.publish(
+            TopicArn=topic_info['TopicArn'],
+            Message='test message for SQS',
+            MessageAttributes={'attr1': {'DataType': 'String', 'StringValue': test_value}}
+        )
 
         def assert_message():
             # receive, assert, and delete message from SQS
@@ -152,7 +158,7 @@ class TestNotifications(unittest.TestCase):
 
         # retrieve and check notification config
         config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
-        self.assertEqual(len(config['QueueConfigurations']), 2)
+        self.assertEqual(2, len(config['QueueConfigurations']))
         config = [c for c in config['QueueConfigurations'] if c['Events']][0]
         self.assertEqual(events, config['Events'])
         self.assertEqual(filter_rules, config['Filter']['Key'])
@@ -187,7 +193,7 @@ class TestNotifications(unittest.TestCase):
         )
         config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
         config = config['QueueConfigurations'][0]
-        self.assertEqual(config['Events'], [event])
+        self.assertEqual([event], config['Events'])
 
         # put notification config with single event type
         event = 's3:ObjectCreated:*'
@@ -197,7 +203,8 @@ class TestNotifications(unittest.TestCase):
                 'Value': 'testupload/'
             }]
         }
-        s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS,
+        s3_client.put_bucket_notification_configuration(
+            Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS,
             NotificationConfiguration={
                 'QueueConfigurations': [{
                     'Id': 'id123456',
@@ -211,7 +218,7 @@ class TestNotifications(unittest.TestCase):
         )
         config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
         config = config['QueueConfigurations'][0]
-        self.assertEqual(config['Events'], [event])
+        self.assertEqual([event], config['Events'])
         self.assertEqual(filter_rules, config['Filter']['Key'])
 
         # upload file to S3 (this should trigger a notification)
@@ -254,14 +261,16 @@ class TestNotifications(unittest.TestCase):
         def verify():
             response = sqs_client.receive_message(QueueUrl=queue_url)
             for message in response['Messages']:
-                snsObj = json.loads(message['Body'])
-                testutil.assert_object({'Subject': 'Amazon S3 Notification'}, snsObj)
-                notificationObj = json.loads(snsObj['Message'])
+                sns_obj = json.loads(message['Body'])
+                testutil.assert_object({'Subject': 'Amazon S3 Notification'}, sns_obj)
+                notification_obj = json.loads(sns_obj['Message'])
                 testutil.assert_objects(
                     [
                         {'key': test_key2},
                         {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}
-                    ], notificationObj['Records'])
+                    ],
+                    notification_obj['Records']
+                )
 
                 sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['ReceiptHandle'])
 

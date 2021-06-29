@@ -13,7 +13,7 @@ class TestRGSAIntegrations(unittest.TestCase):
 
         def assert_response(resp):
             results = resp.get('ResourceTagMappingList', [])
-            self.assertEqual(len(results), 1)
-            self.assertEqual(results[0].get('Tags'), [{'Key': 'test', 'Value': 'test'}])
+            self.assertEqual(1, len(results))
+            self.assertEqual([{'Key': 'test', 'Value': 'test'}], results[0].get('Tags'))
         resp = self.rgsa_client.get_resources(ResourceTypeFilters=['ec2'])
         assert_response(resp)

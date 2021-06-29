@@ -26,20 +26,20 @@ class TestResourceGroups(unittest.TestCase):
             },
             Tags={'resource_group_tag_key': 'resource_group_tag_value'},
         )
-        self.assertEqual(response['Group']['Name'], name)
-        self.assertEqual(response['ResourceQuery']['Type'], 'TAG_FILTERS_1_0')
-        self.assertEqual(response['Tags']['resource_group_tag_key'], 'resource_group_tag_value')
+        self.assertEqual(name, response['Group']['Name'])
+        self.assertEqual('TAG_FILTERS_1_0', response['ResourceQuery']['Type'])
+        self.assertEqual('resource_group_tag_value', response['Tags']['resource_group_tag_key'])
 
         response = self.resource_group_client.get_group(GroupName=name)
-        self.assertEqual(response['Group']['Description'], 'description')
+        self.assertEqual('description', response['Group']['Description'])
 
         response = self.resource_group_client.list_groups()
-        self.assertEqual(len(response['GroupIdentifiers']), 1)
-        self.assertEqual(len(response['Groups']), 1)
+        self.assertEqual(1, len(response['GroupIdentifiers']))
+        self.assertEqual(1, len(response['Groups']))
 
         response = self.resource_group_client.delete_group(GroupName=name)
-        self.assertEqual(response['Group']['Name'], name)
+        self.assertEqual(name, response['Group']['Name'])
 
         response = self.resource_group_client.list_groups()
-        self.assertEqual(len(response['GroupIdentifiers']), 0)
-        self.assertEqual(len(response['Groups']), 0)
+        self.assertEqual(0, len(response['GroupIdentifiers']))
+        self.assertEqual(0, len(response['Groups']))
