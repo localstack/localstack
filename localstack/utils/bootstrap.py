@@ -495,8 +495,8 @@ class PortMappings(object):
     def to_str(self):
         def entry(k, v):
             if k[0] == k[1] and v[0] == v[1]:
-                return '-p %s:%s' % (k[0], v[0])
-            return '-p %s-%s:%s-%s' % (k[0], k[1], v[0], v[1])
+                return '-p %s:%s:%s' % (config.EDGE_BIND_HOST, k[0], v[0])
+            return '-p %s:%s-%s:%s-%s' % (config.EDGE_BIND_HOST, k[0], k[1], v[0], v[1])
 
         return ' '.join([entry(k, v) for k, v in self.mappings.items()])
 
