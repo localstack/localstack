@@ -18,7 +18,7 @@ class TestKinesis(unittest.TestCase):
 
         def assert_consumers(count):
             consumers = client.list_stream_consumers(StreamARN=stream_arn).get('Consumers')
-            self.assertEqual(len(consumers), count)
+            self.assertEqual(count, len(consumers))
             return consumers
 
         # create stream and assert 0 consumers
@@ -30,12 +30,12 @@ class TestKinesis(unittest.TestCase):
         consumer_name = 'cons1'
         response = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
         sleep(1)
-        self.assertEqual(response['Consumer']['ConsumerName'], consumer_name)
+        self.assertEqual(consumer_name, response['Consumer']['ConsumerName'])
         # boto3 converts the timestamp to datetime
         self.assertTrue(isinstance(response['Consumer']['ConsumerCreationTimestamp'], datetime))
         consumers = assert_consumers(1)
         consumer_arn = consumers[0]['ConsumerARN']
-        self.assertEqual(consumers[0]['ConsumerName'], consumer_name)
+        self.assertEqual(consumer_name, consumers[0]['ConsumerName'])
         self.assertIn('/%s' % consumer_name, consumer_arn)
         self.assertTrue(isinstance(consumers[0]['ConsumerCreationTimestamp'], datetime))
 
@@ -43,10 +43,10 @@ class TestKinesis(unittest.TestCase):
         consumer_description_by_arn = client.describe_stream_consumer(
             StreamARN=stream_arn,
             ConsumerARN=consumer_arn)['ConsumerDescription']
-        self.assertEqual(consumer_description_by_arn['ConsumerName'], consumer_name)
-        self.assertEqual(consumer_description_by_arn['ConsumerARN'], consumer_arn)
-        self.assertEqual(consumer_description_by_arn['StreamARN'], stream_arn)
-        self.assertEqual(consumer_description_by_arn['ConsumerStatus'], 'ACTIVE')
+        self.assertEqual(consumer_name, consumer_description_by_arn['ConsumerName'])
+        self.assertEqual(consumer_arn, consumer_description_by_arn['ConsumerARN'])
+        self.assertEqual(stream_arn, consumer_description_by_arn['StreamARN'])
+        self.assertEqual('ACTIVE', consumer_description_by_arn['ConsumerStatus'])
         self.assertTrue(isinstance(consumer_description_by_arn['ConsumerCreationTimestamp'], datetime))
         consumer_description_by_name = client.describe_stream_consumer(
             StreamARN=stream_arn,
@@ -98,9 +98,9 @@ class TestKinesis(unittest.TestCase):
                 break
 
         # assert results
-        self.assertEqual(len(results), num_records)
+        self.assertEqual(num_records, len(results))
         for record in results:
-            self.assertEqual(record['Data'], msg)
+            self.assertEqual(msg, record['Data'])
 
         # clean up
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')
@@ -140,9 +140,9 @@ class TestKinesis(unittest.TestCase):
                 break
 
         # assert results
-        self.assertEqual(len(results), num_records)
+        self.assertEqual(num_records, len(results))
         for record in results:
-            self.assertEqual(record['Data'], b'Hello world')
+            self.assertEqual(b'Hello world', record['Data'])
 
         # clean up
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')
@@ -168,7 +168,7 @@ class TestKinesis(unittest.TestCase):
                                              StartingSequenceNumber=sequence_number)
 
         response = client.get_records(ShardIterator=response.get('ShardIterator'))
-        self.assertEqual(len(response.get('Records')), 1)
+        self.assertEqual(1, len(response.get('Records')))
         self.assertIn('Data', response.get('Records')[0])
 
         # clean up
@@ -195,7 +195,7 @@ class TestKinesisPythonClient(unittest.TestCase):
         kinesis = aws_stack.connect_to_service('kinesis')
 
         stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
-        self.assertEqual(stream_summary['StreamDescriptionSummary']['OpenShardCount'], 1)
+        self.assertEqual(1, stream_summary['StreamDescriptionSummary']['OpenShardCount'])
 
         num_events_kinesis = 10
         kinesis.put_records(Records=[
@@ -206,6 +206,6 @@ class TestKinesisPythonClient(unittest.TestCase):
         ], StreamName=stream_name)
 
         def check_events():
-            self.assertEqual(len(result), num_events_kinesis)
+            self.assertEqual(num_events_kinesis, len(result))
 
         retry(check_events, retries=4, sleep=2)

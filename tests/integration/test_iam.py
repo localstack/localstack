@@ -56,8 +56,8 @@ class TestIAMIntegrations(unittest.TestCase):
         self.iam_client.attach_user_policy(UserName=test_user_name, PolicyArn=test_policy_arn)
         attached_user_policies = self.iam_client.list_attached_user_policies(UserName=test_user_name)
 
-        self.assertEqual(len(attached_user_policies['AttachedPolicies']), 1)
-        self.assertEqual(attached_user_policies['AttachedPolicies'][0]['PolicyArn'], test_policy_arn)
+        self.assertEqual(1, len(attached_user_policies['AttachedPolicies']))
+        self.assertEqual(test_policy_arn, attached_user_policies['AttachedPolicies'][0]['PolicyArn'])
 
         # clean up
         self.iam_client.detach_user_policy(
@@ -88,7 +88,7 @@ class TestIAMIntegrations(unittest.TestCase):
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(assume_policy_document)
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         try:
             # Create role with same name
@@ -99,7 +99,7 @@ class TestIAMIntegrations(unittest.TestCase):
             self.fail('This call should not be successful as the role already exists')
 
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'EntityAlreadyExists')
+            self.assertEqual('EntityAlreadyExists', e.response['Error']['Code'])
 
         # clean up
         self.iam_client.delete_role(
@@ -117,14 +117,14 @@ class TestIAMIntegrations(unittest.TestCase):
         )
 
         self.assertIn('Tags', rs['User'])
-        self.assertEqual(rs['User']['Tags'][0]['Key'], 'env')
+        self.assertEqual('env', rs['User']['Tags'][0]['Key'])
 
         rs = self.iam_client.get_user(
             UserName=user_name
         )
 
         self.assertIn('Tags', rs['User'])
-        self.assertEqual(rs['User']['Tags'][0]['Value'], 'production')
+        self.assertEqual('production', rs['User']['Tags'][0]['Value'])
 
         # clean up
         self.iam_client.delete_user(
@@ -182,7 +182,7 @@ class TestIAMIntegrations(unittest.TestCase):
                 RoleName=role_name,
                 PolicyArn=policy_arn
             )
-            self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+            self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         try:
             # Try to delete role
@@ -192,20 +192,20 @@ class TestIAMIntegrations(unittest.TestCase):
             self.fail('This call should not be successful as the role has policies attached')
 
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'DeleteConflict')
+            self.assertEqual('DeleteConflict', e.response['Error']['Code'])
 
         for policy_arn in policy_arns:
             rs = self.iam_client.detach_role_policy(
                 RoleName=role_name,
                 PolicyArn=policy_arn
             )
-            self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+            self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         # clean up
         rs = self.iam_client.delete_role(
             RoleName=role_name
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         self.iam_client.delete_policy(
             PolicyArn=policy_arn
@@ -245,18 +245,18 @@ class TestIAMIntegrations(unittest.TestCase):
                 'arn:aws:s3:::bucket_name'
             ]
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
         evaluation_results = rs['EvaluationResults']
-        self.assertEqual(len(evaluation_results), 2)
+        self.assertEqual(2, len(evaluation_results))
 
         actions = {
             evaluation['EvalActionName']: evaluation
             for evaluation in evaluation_results
         }
         self.assertIn('s3:PutObject', actions)
-        self.assertEqual(actions['s3:PutObject']['EvalDecision'], 'explicitDeny')
+        self.assertEqual('explicitDeny', actions['s3:PutObject']['EvalDecision'])
         self.assertIn('s3:GetObjectVersion', actions)
-        self.assertEqual(actions['s3:GetObjectVersion']['EvalDecision'], 'allowed')
+        self.assertEqual('allowed', actions['s3:GetObjectVersion']['EvalDecision'])
 
     def test_create_role_with_assume_role_policy(self):
         role_name_1 = 'role-{}'.format(short_uid())
@@ -282,7 +282,7 @@ class TestIAMIntegrations(unittest.TestCase):
         roles = self.iam_client.list_roles()['Roles']
         for role in roles:
             if role['RoleName'] == role_name_1:
-                self.assertEqual(role['AssumeRolePolicyDocument'], assume_role_policy_doc)
+                self.assertEqual(assume_role_policy_doc, role['AssumeRolePolicyDocument'])
 
         self.iam_client.create_role(
             Path='/',
@@ -294,7 +294,7 @@ class TestIAMIntegrations(unittest.TestCase):
         roles = self.iam_client.list_roles()['Roles']
         for role in roles:
             if role['RoleName'] in [role_name_1, role_name_2]:
-                self.assertEqual(role['AssumeRolePolicyDocument'], assume_role_policy_doc)
+                self.assertEqual(assume_role_policy_doc, role['AssumeRolePolicyDocument'])
                 self.iam_client.delete_role(RoleName=role['RoleName'])
 
         self.iam_client.create_role(
@@ -305,6 +305,6 @@ class TestIAMIntegrations(unittest.TestCase):
         )
 
         roles = self.iam_client.list_roles(PathPrefix='my')
-        self.assertEqual(roles['Roles'][0]['Path'], 'myPath')
-        self.assertEqual(roles['Roles'][0]['RoleName'], role_name_2)
-        self.assertEqual(len(roles['Roles']), 1)
+        self.assertEqual('myPath', roles['Roles'][0]['Path'])
+        self.assertEqual(role_name_2, roles['Roles'][0]['RoleName'])
+        self.assertEqual(1, len(roles['Roles']))

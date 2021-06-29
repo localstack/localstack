@@ -20,10 +20,10 @@ class CloudWatchLogsTest(unittest.TestCase):
 
         groups_before = len(self.logs_client.describe_log_groups()['logGroups'])
 
-        response = self.create_log_group_and_stream(group, stream)
+        self.create_log_group_and_stream(group, stream)
 
         groups_after = len(self.logs_client.describe_log_groups()['logGroups'])
-        self.assertEqual(groups_after, groups_before + 1)
+        self.assertEqual(groups_before + 1, groups_after)
 
         # send message with non-ASCII (multi-byte) chars
         body_msg = '🙀 - 参よ - 日本語'
@@ -32,10 +32,10 @@ class CloudWatchLogsTest(unittest.TestCase):
             'message': body_msg
         }]
         response = self.logs_client.put_log_events(logGroupName=group, logStreamName=stream, logEvents=events)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         events = self.logs_client.get_log_events(logGroupName=group, logStreamName=stream)['events']
-        self.assertEqual(events[0]['message'], body_msg)
+        self.assertEqual(body_msg, events[0]['message'])
 
         # clean up
         self.logs_client.delete_log_group(logGroupName=group)
@@ -53,8 +53,8 @@ class CloudWatchLogsTest(unittest.TestCase):
         self.logs_client.put_log_events(logGroupName=group, logStreamName=stream, logEvents=events)
 
         rs = self.logs_client.filter_log_events(logGroupName=group)
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(rs['ResponseMetadata']['HTTPHeaders']['content-type'], APPLICATION_AMZ_JSON_1_1)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(APPLICATION_AMZ_JSON_1_1, rs['ResponseMetadata']['HTTPHeaders']['content-type'])
 
         # clean up
         self.logs_client.delete_log_group(logGroupName=group)
@@ -70,9 +70,9 @@ class CloudWatchLogsTest(unittest.TestCase):
         rs = self.logs_client.list_tags_log_group(
             logGroupName=group
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
         self.assertIn('tags', rs)
-        self.assertEqual(rs['tags']['env'], 'testing1')
+        self.assertEqual('testing1', rs['tags']['env'])
 
         # clean up
         self.logs_client.delete_log_group(logGroupName=group)
@@ -85,7 +85,9 @@ class CloudWatchLogsTest(unittest.TestCase):
             func_name=TEST_LAMBDA_NAME_PY3, runtime=LAMBDA_RUNTIME_PYTHON36)
 
         lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
+            FunctionName=TEST_LAMBDA_NAME_PY3,
+            Payload=b'{}'
+        )
 
         log_group_name = '/aws/lambda/{}'.format(TEST_LAMBDA_NAME_PY3)
 
@@ -108,11 +110,11 @@ class CloudWatchLogsTest(unittest.TestCase):
         )
 
         resp2 = self.logs_client.describe_subscription_filters(logGroupName=log_group_name)
-        self.assertEqual(len(resp2['subscriptionFilters']), 1)
+        self.assertEqual(1, len(resp2['subscriptionFilters']))
 
         def check_invocation():
             events = testutil.get_lambda_log_events(TEST_LAMBDA_NAME_PY3)
-            self.assertEqual(len(events), 2)
+            self.assertEqual(2, len(events))
 
         retry(check_invocation, retries=6, sleep=3.0)
 
@@ -166,7 +168,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         response = s3_client.list_objects(
             Bucket=s3_bucket
         )
-        self.assertEqual(len(response['Contents']), 2)
+        self.assertEqual(2, len(response['Contents']))
 
         # clean up
         self.cleanup(log_group, log_stream)
@@ -221,7 +223,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         response = kinesis_client.get_records(
             ShardIterator=shard_iterator
         )
-        self.assertEqual(len(response['Records']), 1)
+        self.assertEqual(1, len(response['Records']))
 
         # clean up
         self.cleanup(log_group, log_stream)
@@ -244,12 +246,12 @@ class CloudWatchLogsTest(unittest.TestCase):
         }
         result = self.logs_client.put_metric_filter(logGroupName=log_group,
             filterName=filter_name, filterPattern='*', metricTransformations=[transforms])
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
 
         result = self.logs_client.describe_metric_filters(logGroupName=log_group, filterNamePrefix='f-')
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
         result = [mf for mf in result['metricFilters'] if mf['filterName'] == filter_name]
-        self.assertEqual(len(result), 1)
+        self.assertEqual(1, len(result))
 
         # put log events and assert metrics being published
         events = [
@@ -267,24 +269,24 @@ class CloudWatchLogsTest(unittest.TestCase):
             StartTime=datetime.utcnow() - timedelta(hours=1),
             EndTime=datetime.utcnow(),
         )['MetricDataResults']
-        self.assertEqual(len(metric_data), 1)
-        self.assertEqual(metric_data[0]['Values'], [1])
-        self.assertEqual(metric_data[0]['StatusCode'], 'Complete')
+        self.assertEqual(1, len(metric_data))
+        self.assertEqual([1], metric_data[0]['Values'])
+        self.assertEqual('Complete', metric_data[0]['StatusCode'])
 
         # delete filters
         result = self.logs_client.delete_metric_filter(logGroupName=log_group, filterName=filter_name)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
 
         result = self.logs_client.describe_metric_filters(logGroupName=log_group, filterNamePrefix='f-')
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
         result = [mf for mf in result['metricFilters'] if mf['filterName'] == filter_name]
-        self.assertEqual(len(result), 0)
+        self.assertEqual(0, len(result))
 
     def create_log_group_and_stream(self, log_group, log_stream):
         response = self.logs_client.create_log_group(logGroupName=log_group)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         response = self.logs_client.create_log_stream(logGroupName=log_group, logStreamName=log_stream)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
     def cleanup(self, log_group, log_stream):
         self.logs_client.delete_log_stream(logGroupName=log_group, logStreamName=log_stream)
