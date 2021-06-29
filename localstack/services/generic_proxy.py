@@ -414,6 +414,7 @@ def get_cert_pem_file_path():
 def start_proxy_server(port, bind_address=None, forward_url=None, use_ssl=None, update_listener=None,
         quiet=False, params={}, asynchronous=True):
     bind_address = bind_address if bind_address else BIND_HOST
+
     def handler(request, data):
         parsed_url = urlparse(request.url)
         path_with_params = path_from_url(request.url)
