@@ -1,7 +1,7 @@
 name: ❓ Question
 description: Ask a question about LocalStack
 title: "question: <title>"
-labels: [questions]
+labels: [question]
 body:
 - type: markdown
   attributes:
