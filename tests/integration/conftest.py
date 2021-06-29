@@ -93,6 +93,7 @@ def run_localstack():
     os.environ[ENV_INTERNAL_TEST_RUN] = '1'
     safe_requests.verify_ssl = False
     config.FORCE_SHUTDOWN = False
+    config.EDGE_BIND_HOST = '0.0.0.0'
 
     def watchdog():
         logger.info('waiting stop event')
