@@ -1,4 +1,5 @@
 import logging
+import os
 import traceback
 from localstack import config
 from localstack.services import install
@@ -40,6 +41,13 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     if config.DATA_DIR:
         kinesis_data_dir = '%s/kinesis' % config.DATA_DIR
         mkdir(kinesis_data_dir)
+
+        # FIXME: workaround for https://github.com/localstack/localstack/issues/4227
+        streams_file = os.path.join(kinesis_data_dir, 'kinesis-data.json')
+        if not os.path.exists(streams_file):
+            with open(streams_file, 'w') as fd:
+                fd.write('{"streams":{}}')
+
         kinesis_data_dir_param = 'SHOULD_PERSIST_DATA=true PERSIST_PATH=%s' % kinesis_data_dir
     if not config.LS_LOG:
         log_level = 'INFO'
