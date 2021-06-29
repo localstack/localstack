@@ -705,7 +705,7 @@ class FuncThread(threading.Thread):
         except Exception as e:
             result = e
             if not self.quiet:
-                LOG.warning('Thread run method %s(%s) failed: %s %s' %
+                LOG.info('Thread run method %s(%s) failed: %s %s' %
                     (self.func, self.params, e, traceback.format_exc()))
         finally:
             try:

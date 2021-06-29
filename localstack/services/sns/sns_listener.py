@@ -302,10 +302,12 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, headers, su
     subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
 
     async def wait_for_messages_sent():
-        await asyncio.wait([
-            message_to_subscriber(message_id, message, topic_arn, req_data, headers, subscription_arn, skip_checks,
-            sns_backend, subscriber, subscriptions) for subscriber in list(subscriptions)
-        ])
+        subs = [
+            message_to_subscriber(message_id, message, topic_arn, req_data, headers, subscription_arn,
+            skip_checks, sns_backend, subscriber, subscriptions) for subscriber in list(subscriptions)
+        ]
+        if subs:
+            await asyncio.wait(subs)
 
     asyncio.run(wait_for_messages_sent())
 

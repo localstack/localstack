@@ -406,7 +406,7 @@ def invoke_rest_api_integration_backend(api_id, stage, integration, method, path
                     if isinstance(parsed_result['body'], dict):
                         response._content = json.dumps(parsed_result['body'])
                     else:
-                        body_bytes = to_bytes(parsed_result['body'])
+                        body_bytes = to_bytes(parsed_result.get('body') or '')
                         if parsed_result.get('isBase64Encoded', False):
                             body_bytes = base64.b64decode(body_bytes)
                         response._content = body_bytes
