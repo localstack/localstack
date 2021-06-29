@@ -36,7 +36,8 @@ logging.addLevelName(logging.FATAL, 'FATAL')
 LOG_LEVELS = [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL, logging.SEVERE]
 
 # default log level for the KCL log output
-DEFAULT_KCL_LOG_LEVEL = logging.WARNING
+DEFAULT_KCL_LOG_LEVEL = logging.INFO
+MAX_KCL_LOG_LEVEL = logging.INFO
 
 # set up local logger
 LOGGER = logging.getLogger(__name__)
@@ -144,6 +145,7 @@ class OutputReaderThread(FuncThread):
         if self.log_level is None:
             self.log_level = DEFAULT_KCL_LOG_LEVEL
         if self.log_level > 0:
+            self.log_level = min(self.log_level, MAX_KCL_LOG_LEVEL)
             levels = OutputReaderThread.get_log_level_names(self.log_level)
             # regular expression to filter the printed output
             self.filter_regex = r'.*(%s):.*' % ('|'.join(levels))
@@ -164,6 +166,8 @@ class OutputReaderThread(FuncThread):
             if lvl >= level:
                 level_name = logging.getLevelName(lvl)
                 if re.match(r'.*(%s):.*' % level_name, line):
+                    level = min(level, MAX_KCL_LOG_LEVEL)
+                    level_name = logging.getLevelName(level)
                     return getattr(self.logger, level_name.lower())
         return None
 
