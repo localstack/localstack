@@ -178,14 +178,12 @@ def is_cors_origin_allowed(headers, allowed_origins=None):
     origin = headers.get('origin')
     referer = headers.get('referer')
     if origin:
-        LOG.debug('Checking origin %s', origin)
         return origin in allowed_origins
     elif referer:
-        LOG.debug('Checking referer %s', referer)
-        return '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(referer)) in allowed_origins
-    else:
-        # If both headers are not set, let it through (awscli etc. do not send these headers)
-        return True
+        referer_uri = '{uri.scheme}://{uri.netloc}'.format(uri=urlparse(referer))
+        return referer_uri in allowed_origins
+    # If both headers are not set, let it through (awscli etc. do not send these headers)
+    return True
 
 
 def should_enforce_self_managed_service(method, path, headers, data):
