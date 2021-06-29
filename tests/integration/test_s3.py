@@ -98,9 +98,9 @@ class TestS3(unittest.TestCase):
         bucket_name = 'test-%s' % short_uid()
         headers['Host'] = s3_utils.get_bucket_hostname(bucket_name)
         response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         response = self.s3_client.get_bucket_location(Bucket=bucket_name)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         self.assertIn('LocationConstraint', response)
 
     # @test_host_and_path_addressing
@@ -124,11 +124,11 @@ class TestS3(unittest.TestCase):
             Bucket=TEST_BUCKET_NAME_WITH_POLICY,
             Policy=json.dumps(policy)
         )
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 204)
+        self.assertEqual(204, response['ResponseMetadata']['HTTPStatusCode'])
 
         # retrieve and check policy config
         saved_policy = self.s3_client.get_bucket_policy(Bucket=TEST_BUCKET_NAME_WITH_POLICY)['Policy']
-        self.assertEqual(json.loads(saved_policy), policy)
+        self.assertEqual(policy, json.loads(saved_policy))
 
     def test_s3_put_object_notification(self):
         bucket_name = 'notif-%s' % short_uid()
@@ -149,13 +149,13 @@ class TestS3(unittest.TestCase):
         response = requests.put(url, data='something else', headers=headers, verify=False)
         self.assertTrue(response.ok)
 
-        self.assertEqual(self._get_test_queue_message_count(queue_url), '2')
+        self.assertEqual('2', self._get_test_queue_message_count(queue_url))
 
         response = self.sqs_client.receive_message(QueueUrl=queue_url)
         messages = [json.loads(to_str(m['Body'])) for m in response['Messages']]
         record = messages[0]['Records'][0]
         self.assertIsNotNone(record['s3']['object']['versionId'])
-        self.assertEqual(record['s3']['object']['versionId'], obj['VersionId'])
+        self.assertEqual(obj['VersionId'], record['s3']['object']['versionId'])
 
         # clean up
         self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Disabled'})
@@ -174,16 +174,16 @@ class TestS3(unittest.TestCase):
         try:
             self.s3_client.upload_file(Bucket=bucket_name, Key=large_file.name, Filename=large_file.name)
 
-            self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
+            self.assertEqual('1', self._get_test_queue_message_count(queue_url))
 
             # ensure that the first message's eventName is ObjectCreated:CompleteMultipartUpload
             messages = self.sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=['All'])
             message = json.loads(messages['Messages'][0]['Body'])
-            self.assertEqual(message['Records'][0]['eventName'], 'ObjectCreated:CompleteMultipartUpload')
+            self.assertEqual('ObjectCreated:CompleteMultipartUpload', message['Records'][0]['eventName'])
 
             # download the file, check file size
             self.s3_client.download_file(Bucket=bucket_name, Key=large_file.name, Filename=download_file)
-            self.assertEqual(os.path.getsize(download_file), file_size)
+            self.assertEqual(file_size, os.path.getsize(download_file))
 
             # clean up
             self.sqs_client.delete_queue(QueueUrl=queue_url)
@@ -206,7 +206,7 @@ class TestS3(unittest.TestCase):
         # perform upload
         self._perform_multipart_upload(bucket=bucket_name, key=key_by_path, zip=True)
 
-        self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
+        self.assertEqual('1', self._get_test_queue_message_count(queue_url))
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
@@ -222,7 +222,7 @@ class TestS3(unittest.TestCase):
         try:
             self.s3_client.get_object(Bucket=bucket_name, Key='steve', Range='bytes=1024-4096')
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'InvalidRange')
+            self.assertEqual('InvalidRange', e.response['Error']['Code'])
 
         # clean up
         self._delete_bucket(bucket_name, ['steve'])
@@ -250,7 +250,7 @@ class TestS3(unittest.TestCase):
 
         downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=key_name)
         downloaded_content = to_str(downloaded_object['Body'].read())
-        self.assertEqual(to_str(downloaded_content), to_str(content))
+        self.assertEqual(to_str(content), to_str(downloaded_content))
 
         # clean up
         self._delete_bucket(bucket_name, [key_name])
@@ -264,10 +264,10 @@ class TestS3(unittest.TestCase):
         def check_permissions(key, expected_perms):
             grants = self.s3_client.get_object_acl(Bucket=bucket_name, Key=key)['Grants']
             grants = [g for g in grants if 'AllUsers' in g.get('Grantee', {}).get('URI', '')]
-            self.assertEqual(len(grants), 1)
+            self.assertEqual(1, len(grants))
             permissions = grants[0]['Permission']
             permissions = permissions if isinstance(permissions, list) else [permissions]
-            self.assertEqual(len(permissions), expected_perms)
+            self.assertEqual(expected_perms, len(permissions))
 
         # perform uploads (multipart and regular) and check ACLs
         self.s3_client.put_object(Bucket=bucket_name, Key='acl-key0', Body='something')
@@ -285,7 +285,7 @@ class TestS3(unittest.TestCase):
 
         self._perform_presigned_url_upload(bucket=bucket_name, key=key_by_path)
 
-        self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
+        self.assertEqual('1', self._get_test_queue_message_count(queue_url))
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
@@ -308,7 +308,7 @@ class TestS3(unittest.TestCase):
 
         # get object and assert headers
         response = requests.get(url, verify=False)
-        self.assertEqual(response.headers['content-type'], 'binary/octet-stream')
+        self.assertEqual('binary/octet-stream', response.headers['content-type'])
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -397,8 +397,8 @@ class TestS3(unittest.TestCase):
         )
         # retrieving it before expiry
         resp = requests.get(url, verify=False)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(to_str(resp.content), 'something')
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual('something', to_str(resp.content))
 
         # waiting for the url to expire
         time.sleep(3)
@@ -410,8 +410,8 @@ class TestS3(unittest.TestCase):
         )
 
         resp = requests.get(url, verify=False)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(to_str(resp.content), 'something')
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual('something', to_str(resp.content))
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
@@ -451,7 +451,7 @@ class TestS3(unittest.TestCase):
         try:
             client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'NoSuchLifecycleConfiguration')
+            self.assertEqual('NoSuchLifecycleConfiguration', e.response['Error']['Code'])
 
         # clean up
         client.delete_bucket(Bucket=bucket_name)
@@ -482,7 +482,7 @@ class TestS3(unittest.TestCase):
         try:
             client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'NoSuchLifecycleConfiguration')
+            self.assertEqual('NoSuchLifecycleConfiguration', e.response['Error']['Code'])
 
         # clean up
         client.delete_bucket(Bucket=bucket_name)
@@ -504,7 +504,7 @@ class TestS3(unittest.TestCase):
         range_header = 'bytes=0-%s' % (chunk_size - 1)
         resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key, Range=range_header)
         content = resp['Body'].read()
-        self.assertEqual(len(content), chunk_size)
+        self.assertEqual(chunk_size, len(content))
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
@@ -517,10 +517,12 @@ class TestS3(unittest.TestCase):
         # put object
         object_key = 'foo/bar/key-by-hostname'
         content_type = 'foo/bar; charset=utf-8'
-        client.put_object(Bucket=bucket_name,
+        client.put_object(
+            Bucket=bucket_name,
             Key=object_key,
             Body='something ' * 20,
-            ContentType=content_type)
+            ContentType=content_type
+        )
 
         url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
@@ -528,12 +530,12 @@ class TestS3(unittest.TestCase):
 
         # get object and assert headers
         response = requests.get(url, verify=False)
-        self.assertEqual(response.headers['content-type'], content_type)
+        self.assertEqual(content_type, response.headers['content-type'])
 
         # get object using range query and assert headers
         response = requests.get(url, headers={'Range': 'bytes=0-18'}, verify=False)
-        self.assertEqual(response.headers['content-type'], content_type)
-        self.assertEqual(to_str(response.content), 'something something')
+        self.assertEqual(content_type, response.headers['content-type'])
+        self.assertEqual('something something', to_str(response.content))
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
@@ -552,7 +554,7 @@ class TestS3(unittest.TestCase):
 
         range_header = 'bytes=0-%s' % (chunk_size - 1)
         resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key, Range=range_header)
-        self.assertEqual(resp.get('AcceptRanges'), 'bytes')
+        self.assertEqual('bytes', resp.get('AcceptRanges'))
         self.assertIn('x-amz-request-id', resp['ResponseMetadata']['HTTPHeaders'])
         self.assertIn('x-amz-id-2', resp['ResponseMetadata']['HTTPHeaders'])
         self.assertIn('content-language', resp['ResponseMetadata']['HTTPHeaders'])
@@ -579,7 +581,7 @@ class TestS3(unittest.TestCase):
         )
         # get object and assert headers
         response = requests.head(url, verify=False)
-        self.assertEqual(response.headers['content-length'], str(len(body)))
+        self.assertEqual(str(len(body)), response.headers['content-length'])
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -596,10 +598,16 @@ class TestS3(unittest.TestCase):
             X-Amz-Date: 20190918T051509Z
             X-Amz-Decoded-Content-Length: %s
         """ % (aws_stack.mock_aws_request_headers('s3')['Authorization'], len(body))
-        headers = dict([[field.strip() for field in pair.strip().split(':', 1)]
-            for pair in headers.strip().split('\n')])
+        headers = dict(
+            [
+                [
+                    field.strip()
+                    for field in pair.strip().split(':', 1)]
+                    for pair in headers.strip().split('\n')
+            ]
+        )
         data = ('d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n' +
-            '%s\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n') % body
+                '%s\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n') % body
         # put object
         url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, object_key)
         req = PutRequest(url, to_bytes(data), headers)
@@ -607,8 +615,8 @@ class TestS3(unittest.TestCase):
         # get object and assert content length
         downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
         download_file_object = to_str(downloaded_object['Body'].read())
-        self.assertEqual(len(str(download_file_object)), len(body))
-        self.assertEqual(str(download_file_object), body)
+        self.assertEqual(len(body), len(str(download_file_object)))
+        self.assertEqual(body, str(download_file_object))
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -624,7 +632,7 @@ class TestS3(unittest.TestCase):
         )
         # put object
         response = requests.put(url, data=body, verify=False)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         # get object and compare results
         downloaded_object = client.get_object(Bucket=bucket_name, Key=object_key)
         download_object = downloaded_object['Body'].read()
@@ -681,8 +689,8 @@ class TestS3(unittest.TestCase):
             key='key-my-file',
             etag='d41d8cd98f00b204e9800998ecf8427f'
         )
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.text, expected_response_content)
+        self.assertEqual(201, response.status_code)
+        self.assertEqual(expected_response_content, response.text)
         # clean up
         self._delete_bucket(bucket_name, ['key-my-file'])
 
@@ -706,7 +714,7 @@ class TestS3(unittest.TestCase):
         files = {'file': 'file content'}
         response = requests.post(presigned_request['url'], data=presigned_request['fields'], files=files, verify=False)
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(400, response.status_code)
         self.assertTrue('ExpiredToken' in response.text)
 
         # clean up
@@ -720,10 +728,12 @@ class TestS3(unittest.TestCase):
         for encoding in None, 'gzip':
             # put object
             object_key = 'key-by-hostname'
-            client.put_object(Bucket=bucket_name,
+            client.put_object(
+                Bucket=bucket_name,
                 Key=object_key,
                 Body='something',
-                ContentType='text/html; charset=utf-8')
+                ContentType='text/html; charset=utf-8'
+            )
             url = client.generate_presigned_url(
                 'delete_object',
                 Params={'Bucket': bucket_name, 'Key': object_key}
@@ -735,9 +745,11 @@ class TestS3(unittest.TestCase):
                 headers['Accept-Encoding'] = encoding
             response = requests.delete(url, headers=headers, verify=False)
 
-            self.assertEqual(response.headers['content-length'],
+            self.assertEqual(
                 '0',
-                f'Unexpected response Content-Length for encoding {encoding}')
+                response.headers['content-length'],
+                f'Unexpected response Content-Length for encoding {encoding}'
+            )
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
@@ -750,12 +762,12 @@ class TestS3(unittest.TestCase):
         # get object and assert response
         url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, object_key)
         response = requests.get(url, verify=False)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         # delete object tagging
         self.s3_client.delete_object_tagging(Bucket=bucket_name, Key=object_key)
         # assert that the object still exists
         response = requests.get(url, verify=False)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -764,9 +776,11 @@ class TestS3(unittest.TestCase):
         self.s3_client.create_bucket(Bucket=bucket_name)
         object_key = 'test-key-nonexistent'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
-        response = self.s3_client.delete_objects(Bucket=bucket_name,
-            Delete={'Objects': [{'Key': object_key}, {'Key': 'dummy1'}, {'Key': 'dummy2'}]})
-        self.assertEqual(len(response['Deleted']), 3)
+        response = self.s3_client.delete_objects(
+            Bucket=bucket_name,
+            Delete={'Objects': [{'Key': object_key}, {'Key': 'dummy1'}, {'Key': 'dummy2'}]}
+        )
+        self.assertEqual(3, len(response['Deleted']))
         self.assertNotIn('Errors', response)
         # clean up
         self._delete_bucket(bucket_name)
@@ -781,20 +795,20 @@ class TestS3(unittest.TestCase):
                 'Payer': 'Requester'
             }
         )
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         response = self.s3_client.get_bucket_request_payment(
             Bucket=bucket_name
         )
-        self.assertEqual(response['Payer'], 'Requester')
+        self.assertEqual('Requester', response['Payer'])
         self._delete_bucket(bucket_name)
 
     def delete_non_existing_bucket(self):
         bucket_name = 'test-%s' % short_uid()
         with self.assertRaises(ClientError) as ctx:
             self.s3_client.delete_bucket(Bucket=bucket_name)
-        self.assertEqual(ctx.exception.response['Error']['Code'], 'NoSuchBucket')
-        self.assertEqual(ctx.exception.response['Error']['Message'], 'The specified bucket does not exist')
+        self.assertEqual('NoSuchBucket', ctx.exception.response['Error']['Code'])
+        self.assertEqual('The specified bucket does not exist', ctx.exception.response['Error']['Message'])
 
     def test_bucket_exists(self):
         # Test setup
@@ -811,7 +825,7 @@ class TestS3(unittest.TestCase):
         )
 
         response = s3_client.get_bucket_cors(Bucket=bucket)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         # Cleanup
         s3_client.delete_bucket(Bucket=bucket)
@@ -826,7 +840,7 @@ class TestS3(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
         res = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        self.assertEqual(res['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, res['ResponseMetadata']['HTTPStatusCode'])
 
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -836,7 +850,8 @@ class TestS3(unittest.TestCase):
         # put object and CORS configuration
         object_key = 'key-by-hostname'
         client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
-        client.put_bucket_cors(Bucket=bucket_name,
+        client.put_bucket_cors(
+            Bucket=bucket_name,
             CORSConfiguration={
                 'CORSRules': [{
                     'AllowedMethods': ['GET', 'PUT', 'POST'],
@@ -853,7 +868,7 @@ class TestS3(unittest.TestCase):
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         response = requests.get(url, verify=False)
-        self.assertEqual(response.headers['Access-Control-Expose-Headers'], 'ETag,x-amz-version-id')
+        self.assertEqual('ETag,x-amz-version-id', response.headers['Access-Control-Expose-Headers'])
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -884,11 +899,11 @@ class TestS3(unittest.TestCase):
         )
         response = requests.get(url, verify=False)
 
-        self.assertEqual(response.headers['cache-control'], 'max-age=74')
-        self.assertEqual(response.headers['content-disposition'], 'attachment; filename="foo.jpg"')
-        self.assertEqual(response.headers['content-encoding'], 'identity')
-        self.assertEqual(response.headers['content-language'], 'de-DE')
-        self.assertEqual(response.headers['content-type'], 'image/jpeg')
+        self.assertEqual('max-age=74', response.headers['cache-control'])
+        self.assertEqual('attachment; filename="foo.jpg"', response.headers['content-disposition'])
+        self.assertEqual('identity', response.headers['content-encoding'])
+        self.assertEqual('de-DE', response.headers['content-language'])
+        self.assertEqual('image/jpeg', response.headers['content-type'])
         # Note: looks like depending on the environment/libraries, we can get different date formats...
         possible_date_formats = ['2015-10-21T07:28:00Z', expiry_date]
         self.assertIn(response.headers['expires'], possible_date_formats)
@@ -914,17 +929,21 @@ class TestS3(unittest.TestCase):
             },
             Key=dest_key
         )
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         # Create copy object to try to match s3a setting Content-MD5
         dest_key2 = 'dest'
         url = client.generate_presigned_url(
-            'copy_object', Params={'Bucket': bucket_name, 'CopySource': {'Bucket': bucket_name, 'Key': src_key},
-                                   'Key': dest_key2}
+            'copy_object',
+            Params={
+                'Bucket': bucket_name,
+                'CopySource': {'Bucket': bucket_name, 'Key': src_key},
+                'Key': dest_key2
+            }
         )
 
         request_response = requests.put(url, verify=False)
-        self.assertEqual(request_response.status_code, 200)
+        self.assertEqual(200, request_response.status_code)
 
         # Cleanup
         self._delete_bucket(bucket_name, [src_key, dest_key, dest_key2])
@@ -940,10 +959,14 @@ class TestS3(unittest.TestCase):
             'not base64 encoded checksum': 'InvalidDigest',  # InvalidDigest
             'MTIz': 'BadDigest'  # "123" base64 encoded
         }
-        for hash, error in hashes.items():
+        for md5hash, error in hashes.items():
             with self.assertRaises(Exception) as ctx:
-                self.s3_client.put_object(Bucket=bucket_name, Key='test-key',
-                    Body='something', ContentMD5=hash)
+                self.s3_client.put_object(
+                    Bucket=bucket_name,
+                    Key='test-key',
+                    Body='something',
+                    ContentMD5=md5hash
+                )
             self.assertIn(error, str(ctx.exception))
 
         # Cleanup
@@ -961,8 +984,12 @@ class TestS3(unittest.TestCase):
             filestream.write(data.encode('utf-8'))
 
         # Upload gzip
-        self.s3_client.put_object(Bucket=bucket_name, Key='test.gz',
-            ContentEncoding='gzip', Body=upload_file_object.getvalue())
+        self.s3_client.put_object(
+            Bucket=bucket_name,
+            Key='test.gz',
+            ContentEncoding='gzip',
+            Body=upload_file_object.getvalue()
+        )
 
         # Download gzip
         downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key='test.gz')
@@ -970,7 +997,7 @@ class TestS3(unittest.TestCase):
         with gzip.GzipFile(fileobj=download_file_object, mode='rb') as filestream:
             downloaded_data = filestream.read().decode('utf-8')
 
-        self.assertEqual(downloaded_data, data)
+        self.assertEqual(data, downloaded_data)
 
     def test_multipart_copy_object_etag(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -1008,18 +1035,18 @@ class TestS3(unittest.TestCase):
             # upload file
             response = self._perform_multipart_upload(bucket=bucket_name, key=key, data=content, acl=acl)
             expected_url = '%s://%s:%s/%s/%s' % (get_service_protocol(), config.HOSTNAME_EXTERNAL,
-                config.PORT_S3, bucket_name, key)
+                                                 config.PORT_S3, bucket_name, key)
             self.assertEqual(expected_url, response['Location'])
             # fix object ACL - currently not directly support for multipart uploads
             self.s3_client.put_object_acl(Bucket=bucket_name, Key=key, ACL=acl)
             # download object via API
             downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=key)
-            self.assertEqual(to_str(downloaded_object['Body'].read()), content)
+            self.assertEqual(content, to_str(downloaded_object['Body'].read()))
             # download object directly from download link
             download_url = response['Location'].replace('%s:' % config.HOSTNAME_EXTERNAL, 'localhost:')
             response = safe_requests.get(download_url)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(to_str(response.content), content)
+            self.assertEqual(200, response.status_code)
+            self.assertEqual(content, to_str(response.content))
         finally:
             config.HOSTNAME_EXTERNAL = hostname_before
 
@@ -1033,8 +1060,10 @@ class TestS3(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key='actual/key.html', Body='key')
         self.s3_client.put_bucket_website(
             Bucket=bucket_name,
-            WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'},
-                'ErrorDocument': {'Key': 'test/error.html'}}
+            WebsiteConfiguration={
+                'IndexDocument': {'Suffix': 'index.html'},
+                'ErrorDocument': {'Key': 'test/error.html'}
+            }
         )
 
         headers = aws_stack.mock_aws_request_headers('s3')
@@ -1042,28 +1071,28 @@ class TestS3(unittest.TestCase):
 
         # actual key
         url = 'https://{}.{}:{}/actual/key.html'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME,
-            config.EDGE_PORT)
+                                                        config.EDGE_PORT)
         response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.text, 'key')
+        self.assertEqual(200, response.status_code)
+        self.assertEqual('key', response.text)
 
         # index document
         url = 'https://{}.{}:{}/test'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT)
         response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.text, 'index')
+        self.assertEqual(302, response.status_code)
+        self.assertEqual('index', response.text)
 
         # root path test
         url = 'https://{}.{}:{}/'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT)
         response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.text, 'error')
+        self.assertEqual(404, response.status_code)
+        self.assertEqual('error', response.text)
 
         # error document
         url = 'https://{}.{}:{}/something'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT)
         response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.text, 'error')
+        self.assertEqual(404, response.status_code)
+        self.assertEqual('error', response.text)
 
     def test_s3_event_notification_with_sqs(self):
         key_by_path = 'aws/bucket=2020/test1.txt'
@@ -1078,7 +1107,7 @@ class TestS3(unittest.TestCase):
         # put an object
         self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body=body)
 
-        self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
+        self.assertEqual('1', self._get_test_queue_message_count(queue_url))
 
         rs = self.sqs_client.receive_message(QueueUrl=queue_url)
         record = [json.loads(to_str(m['Body'])) for m in rs['Messages']][0]['Records'][0]
@@ -1114,8 +1143,8 @@ class TestS3(unittest.TestCase):
                                            Delete={'Objects': [{'Key': test_1st_key, 'VersionId': version_id}]})
 
         deleted = rs['Deleted'][0]
-        self.assertEqual(deleted['Key'], test_1st_key)
-        self.assertEqual(deleted['VersionId'], version_id)
+        self.assertEqual(test_1st_key, deleted['Key'])
+        self.assertEqual(version_id, deleted['VersionId'])
 
         rs = self.s3_client.list_object_versions(Bucket=TEST_BUCKET_WITH_VERSIONING)
         object_versions = [object['VersionId'] for object in rs['Versions']]
@@ -1140,7 +1169,7 @@ class TestS3(unittest.TestCase):
         )
         self.assertIn('ETag', rs)
         self.assertEqual(etag, rs['ETag'])
-        self.assertEqual(rs['ContentLength'], len(body))
+        self.assertEqual(len(body), rs['ContentLength'])
 
         rs = self.s3_client.get_object(
             Bucket=TEST_BUCKET_NAME_2,
@@ -1149,7 +1178,7 @@ class TestS3(unittest.TestCase):
         )
         self.assertIn('ETag', rs)
         self.assertEqual(etag, rs['ETag'])
-        self.assertEqual(rs['ContentLength'], TEST_GET_OBJECT_RANGE)
+        self.assertEqual(TEST_GET_OBJECT_RANGE, rs['ContentLength'])
 
         # clean up
         self._delete_bucket(TEST_BUCKET_NAME_2, [TEST_KEY_2])
@@ -1163,8 +1192,8 @@ class TestS3(unittest.TestCase):
             EncodingType='url'
         )
 
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(rs['Name'], bucket_name)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(bucket_name, rs['Name'])
 
         # clean up
         self._delete_bucket(bucket_name, [])
@@ -1175,7 +1204,7 @@ class TestS3(unittest.TestCase):
                                              VersioningConfiguration={'Status': 'Enabled'})
 
         result = self.s3_client.get_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING)
-        self.assertEqual(result['Status'], 'Enabled')
+        self.assertEqual('Enabled', result['Status'])
 
     def test_get_bucket_versioning_order(self):
         bucket_name = 'version-order-%s' % short_uid()
@@ -1189,10 +1218,10 @@ class TestS3(unittest.TestCase):
             Bucket=bucket_name,
         )
 
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(rs['Name'], bucket_name)
-        self.assertEqual(rs['Versions'][0]['IsLatest'], True)
-        self.assertEqual(rs['Versions'][2]['IsLatest'], True)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(bucket_name, rs['Name'])
+        self.assertTrue(rs['Versions'][0]['IsLatest'])
+        self.assertTrue(rs['Versions'][2]['IsLatest'])
 
     def test_upload_big_file(self):
         bucket_name = 'bucket-big-file-%s' % short_uid()
@@ -1203,17 +1232,17 @@ class TestS3(unittest.TestCase):
 
         body1 = '\x01' * 10000000
         rs = self.s3_client.put_object(Bucket=bucket_name, Key=key1, Body=body1)
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         body2 = 'a' * 10000000
         rs = self.s3_client.put_object(Bucket=bucket_name, Key=key2, Body=body2)
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         rs = self.s3_client.head_object(Bucket=bucket_name, Key=key1)
-        self.assertEqual(rs['ContentLength'], len(body1))
+        self.assertEqual(len(body1), rs['ContentLength'])
 
         rs = self.s3_client.head_object(Bucket=bucket_name, Key=key2)
-        self.assertEqual(rs['ContentLength'], len(body2))
+        self.assertEqual(len(body2), rs['ContentLength'])
 
         # clean up
         self._delete_bucket(bucket_name, [key1, key2])
@@ -1227,45 +1256,53 @@ class TestS3(unittest.TestCase):
 
         # trying to get the last item of 1010 items added.
         resp = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key='test-key-1009')
-        self.assertEqual(to_str(resp['Body'].read()), 'test-1009')
+        self.assertEqual('test-1009', to_str(resp['Body'].read()))
 
         # trying to get the first item of 1010 items added.
         resp = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key='test-key-0')
-        self.assertEqual(to_str(resp['Body'].read()), 'test-0')
+        self.assertEqual('test-0', to_str(resp['Body'].read()))
 
         resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, MaxKeys=1010)
-        self.assertEqual(len(resp['Contents']), 1010)
+        self.assertEqual(1010, len(resp['Contents']))
 
         resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2)
-        self.assertEqual(len(resp['Contents']), 1000)
+        self.assertEqual(1000, len(resp['Contents']))
         next_marker = resp['NextMarker']
 
         # Second list
         resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, Marker=next_marker)
-        self.assertEqual(len(resp['Contents']), 10)
+        self.assertEqual(10, len(resp['Contents']))
 
     def test_s3_list_objects_empty_marker(self):
         bucket_name = 'test' + short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
         resp = self.s3_client.list_objects(Bucket=bucket_name, Marker='')
-        self.assertEqual(resp['Marker'], '')
+        self.assertEqual('', resp['Marker'])
 
     def test_create_bucket_with_exsisting_name(self):
         bucket_name = 'bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name,
-                             CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+        self.s3_client.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={'LocationConstraint': 'us-west-1'}
+        )
 
         with self.assertRaises(ClientError) as error:
-            self.s3_client.create_bucket(Bucket=bucket_name,
-                                 CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+            self.s3_client.create_bucket(
+                Bucket=bucket_name,
+                CreateBucketConfiguration={'LocationConstraint': 'us-west-1'}
+            )
         self.assertIn('BucketAlreadyExists', str(error.exception))
 
-        self.s3_client.create_bucket(Bucket=bucket_name,
-                             CreateBucketConfiguration={'LocationConstraint': 'us-east-1'})
+        self.s3_client.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={'LocationConstraint': 'us-east-1'}
+        )
         self.s3_client.delete_bucket(Bucket=bucket_name)
         bucket_name = 'bucket-%s' % short_uid()
-        response = self.s3_client.create_bucket(Bucket=bucket_name,
-                                CreateBucketConfiguration={'LocationConstraint': 'us-east-1'})
+        response = self.s3_client.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={'LocationConstraint': 'us-east-1'}
+        )
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         self.s3_client.delete_bucket(Bucket=bucket_name)
 
@@ -1298,14 +1335,14 @@ class TestS3(unittest.TestCase):
         keys = []
         for obj in objects:
             keys.append(obj.key)
-            self.assertEqual(obj.storage_class, 'DEEP_ARCHIVE')
+            self.assertEqual('DEEP_ARCHIVE', obj.storage_class)
 
         self._delete_bucket(bucket_name, keys)
 
     def test_cors_with_single_origin_error(self):
         client = self._get_test_client()
 
-        BUCKET_CORS_CONFIG = {
+        bucket_cors_config = {
             'CORSRules': [{
                 'AllowedOrigins': ['https://localhost:4200'],
                 'AllowedMethods': ['GET', 'PUT'],
@@ -1315,7 +1352,7 @@ class TestS3(unittest.TestCase):
         }
 
         client.create_bucket(Bucket='my-s3-bucket')
-        client.put_bucket_cors(Bucket='my-s3-bucket', CORSConfiguration=BUCKET_CORS_CONFIG)
+        client.put_bucket_cors(Bucket='my-s3-bucket', CORSConfiguration=bucket_cors_config)
 
         # create signed url
         url = client.generate_presigned_url(
@@ -1331,9 +1368,9 @@ class TestS3(unittest.TestCase):
 
         result = requests.put(url, data='something', verify=False,
                               headers={'Origin': 'https://localhost:4200', 'Content-Type': 'application/pdf'})
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
 
-        BUCKET_CORS_CONFIG = {
+        bucket_cors_config = {
             'CORSRules': [{
                 'AllowedOrigins': ['https://localhost:4200', 'https://localhost:4201'],
                 'AllowedMethods': ['GET', 'PUT'],
@@ -1342,7 +1379,7 @@ class TestS3(unittest.TestCase):
             }]
         }
 
-        client.put_bucket_cors(Bucket='my-s3-bucket', CORSConfiguration=BUCKET_CORS_CONFIG)
+        client.put_bucket_cors(Bucket='my-s3-bucket', CORSConfiguration=bucket_cors_config)
 
         # create signed url
         url = client.generate_presigned_url(
@@ -1358,11 +1395,11 @@ class TestS3(unittest.TestCase):
 
         result = requests.put(url, data='something', verify=False,
                               headers={'Origin': 'https://localhost:4200', 'Content-Type': 'application/pdf'})
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
 
         result = requests.put(url, data='something', verify=False,
                               headers={'Origin': 'https://localhost:4201', 'Content-Type': 'application/pdf'})
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
 
     def test_s3_put_object_notification_with_lambda(self):
         bucket_name = 'bucket-%s' % short_uid()
@@ -1403,14 +1440,14 @@ class TestS3(unittest.TestCase):
 
         def check_table():
             rs = table.scan()
-            self.assertEqual(len(rs['Items']), 1)
+            self.assertEqual(1, len(rs['Items']))
             return rs
 
         rs = retry(check_table, retries=4, sleep=3)
 
         record = rs['Items'][0]
-        self.assertEqual(record['data']['s3']['bucket']['name'], bucket_name)
-        self.assertEqual(record['data']['s3']['object']['eTag'], etag)
+        self.assertEqual(bucket_name, record['data']['s3']['bucket']['name'])
+        self.assertEqual(etag, record['data']['s3']['object']['eTag'])
 
         # clean up
         self._delete_bucket(bucket_name, [table_name])
@@ -1464,14 +1501,14 @@ class TestS3(unittest.TestCase):
 
         message = retry(get_message, retries=3, sleep=2, q_url=queue_url)
         # We got a notification message in sqs queue (from s3 source)
-        self.assertEqual(message['Type'], 'Notification')
-        self.assertEqual(message['TopicArn'], topic_arn)
-        self.assertEqual(message['Subject'], 'Amazon S3 Notification')
+        self.assertEqual('Notification', message['Type'])
+        self.assertEqual(topic_arn, message['TopicArn'])
+        self.assertEqual('Amazon S3 Notification', message['Subject'])
 
         r = json.loads(message['Message'])['Records'][0]
-        self.assertEqual(r['eventSource'], 'aws:s3')
-        self.assertEqual(r['s3']['bucket']['name'], bucket_name)
-        self.assertEqual(r['s3']['object']['key'], key_name)
+        self.assertEqual('aws:s3', r['eventSource'])
+        self.assertEqual(bucket_name, r['s3']['bucket']['name'])
+        self.assertEqual(key_name, r['s3']['object']['key'])
 
         # clean up
         self._delete_bucket(bucket_name, [key_name])
@@ -1560,7 +1597,7 @@ class TestS3(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
 
         response = self.sqs_client.receive_message(QueueUrl=queue_url)
-        self.assertEqual(json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'], 'a%40b')
+        self.assertEqual('a%40b', json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'])
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
 
@@ -1585,8 +1622,10 @@ class TestS3(unittest.TestCase):
                                                    AttributeNames=['AWSTraceHeader'],
                                                    MessageAttributeNames=['All'])
 
-            self.assertEqual(resp['Messages'][0]['Attributes']['AWSTraceHeader'],
-                         'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1')
+            self.assertEqual(
+                'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1',
+                resp['Messages'][0]['Attributes']['AWSTraceHeader']
+            )
 
         retry(get_message, retries=3, sleep=10, queue_url=queue_url)
 
@@ -1606,13 +1645,13 @@ class TestS3(unittest.TestCase):
         url = '{}/{}?delete='.format(base_url, bucket_name)
         r = requests.post(url=url, data=BATCH_DELETE_BODY % (object_key_1, object_key_2))
 
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(200, r.status_code)
 
         s3_resource = aws_stack.connect_to_resource('s3')
         bucket = s3_resource.Bucket(bucket_name)
 
         total_keys = sum(1 for _ in bucket.objects.all())
-        self.assertEqual(total_keys, 0)
+        self.assertEqual(0, total_keys)
 
         # clean up
         self._delete_bucket(bucket_name, [])
@@ -1633,7 +1672,8 @@ class TestS3(unittest.TestCase):
 
         bucket_name = short_uid()
         s3_client = aws_stack.connect_to_service('s3')
-        s3_presign = boto3.client('s3',
+        s3_presign = boto3.client(
+            's3',
             endpoint_url=config.get_edge_url(),
             aws_access_key_id='test',
             aws_secret_access_key='test',
@@ -1651,7 +1691,7 @@ class TestS3(unittest.TestCase):
                 ExpiresIn=86400
             )
             response = requests.get(presign_url)
-            self.assertEqual(response._content, b'test-value')
+            self.assertEqual(b'test-value', response._content)
         finally:
             s3_client.meta.events.unregister('before-sign.s3.GetObject', add_query_param)
 
@@ -1710,15 +1750,15 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.get(presign_get_url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         response = requests.get(presign_get_url_v4)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         presign_get_url = client.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain',
-                'ResponseContentDisposition': 'attachment;  filename=test.txt'},
+                    'ResponseContentDisposition': 'attachment;  filename=test.txt'},
             ExpiresIn=EXPIRES
         )
 
@@ -1730,19 +1770,19 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.get(presign_get_url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         response = requests.get(presign_get_url_v4)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         # Invalid request
         url = make_v2_url_invalid(presign_get_url)
         response = requests.get(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         url = make_v4_url_invalid(presign_get_url_v4)
         response = requests.get(url, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # PUT Requests
         presign_put_url = client.generate_presigned_url(
@@ -1759,10 +1799,10 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.put(presign_put_url, data=OBJECT_DATA)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         response = requests.put(presign_put_url_v4, data=OBJECT_DATA)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         presign_put_url = client.generate_presigned_url(
             'put_object',
@@ -1778,19 +1818,19 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         # Invalid request
         url = make_v2_url_invalid(presign_put_url)
         response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         url = make_v4_url_invalid(presign_put_url_v4)
         response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # DELETE Requests
         presign_delete_url = client.generate_presigned_url(
@@ -1808,10 +1848,10 @@ class TestS3(unittest.TestCase):
         # Valid request
 
         response = requests.delete(presign_delete_url)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
 
         response = requests.delete(presign_delete_url_v4)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
 
         presign_delete_url = client.generate_presigned_url(
             'delete_object',
@@ -1827,47 +1867,47 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.delete(presign_delete_url)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
 
         response = requests.delete(presign_delete_url_v4)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
 
         # Invalid request
         url = make_v2_url_invalid(presign_delete_url)
         response = requests.delete(url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         url = make_v4_url_invalid(presign_delete_url_v4)
         response = requests.delete(url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # Expired requests
         time.sleep(4.5)
 
         # GET
         response = requests.get(presign_get_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
         response = requests.get(presign_get_url_v4)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # PUT
         response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
         response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # DELETE
         response = requests.delete(presign_delete_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         response = requests.delete(presign_delete_url_v4)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # Multipart uploading
         response = self._perform_multipart_upload_with_presign(BUCKET, OBJECT_KEY, client)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         response = self._perform_multipart_upload_with_presign(BUCKET, OBJECT_KEY, client_v4)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
         client.delete_bucket(Bucket=BUCKET)
@@ -1938,10 +1978,10 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.get(presign_get_url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         response = requests.get(presign_get_url_v4)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         presign_get_url = client.generate_presigned_url(
             'get_object',
@@ -1957,19 +1997,19 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.get(presign_get_url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         response = requests.get(presign_get_url_v4)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         # Invalid request
         url = make_v2_url_invalid(presign_get_url)
         response = requests.get(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         url = make_v4_url_invalid(presign_get_url_v4)
         response = requests.get(url, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # PUT Requests
         presign_put_url = client.generate_presigned_url(
@@ -1986,10 +2026,10 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.put(presign_put_url, data=OBJECT_DATA)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         response = requests.put(presign_put_url_v4, data=OBJECT_DATA)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         presign_put_url = client.generate_presigned_url(
             'put_object',
@@ -2005,19 +2045,19 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
         # Invalid request
         url = make_v2_url_invalid(presign_put_url)
         response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         url = make_v4_url_invalid(presign_put_url_v4)
         response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # DELETE Requests
         presign_delete_url = client.generate_presigned_url(
@@ -2035,10 +2075,10 @@ class TestS3(unittest.TestCase):
         # Valid request
 
         response = requests.delete(presign_delete_url)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
 
         response = requests.delete(presign_delete_url_v4)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
 
         presign_delete_url = client.generate_presigned_url(
             'delete_object',
@@ -2054,46 +2094,46 @@ class TestS3(unittest.TestCase):
 
         # Valid request
         response = requests.delete(presign_delete_url)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
 
         response = requests.delete(presign_delete_url_v4)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(204, response.status_code)
 
         # Invalid request
         url = make_v2_url_invalid(presign_delete_url)
         response = requests.delete(url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         url = make_v4_url_invalid(presign_delete_url_v4)
         response = requests.delete(url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # Expired requests
         time.sleep(4)
 
         # GET
         response = requests.get(presign_get_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
         response = requests.get(presign_get_url_v4)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # PUT
         response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
         response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # DELETE
         response = requests.delete(presign_delete_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
         response = requests.delete(presign_delete_url_v4)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # Multipart uploading
         response = self._perform_multipart_upload_with_presign(bucket_name, OBJECT_KEY, client)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         response = self._perform_multipart_upload_with_presign(bucket_name, OBJECT_KEY, client_v4)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         client.delete_object(Bucket=bucket_name, Key=OBJECT_KEY)
         client.delete_bucket(Bucket=bucket_name)
@@ -2131,9 +2171,11 @@ class TestS3(unittest.TestCase):
         try:
             client.get_object(Bucket=bucket, Key='foo', IfMatch='"not good etag"')
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'PreconditionFailed')
-            self.assertEqual(e.response['Error']['Message'], 'At least one of the pre-conditions you '
-                                                             'specified did not hold')
+            self.assertEqual('PreconditionFailed', e.response['Error']['Code'])
+            self.assertEqual(
+                'At least one of the pre-conditions you specified did not hold',
+                e.response['Error']['Message']
+            )
 
         client.delete_object(Bucket=bucket, Key='foo')
         client.delete_bucket(Bucket=bucket)
@@ -2159,18 +2201,18 @@ class TestS3(unittest.TestCase):
         client.put_object(Bucket=bucket, Key=object_key, Body='<h1>Index</html>')
 
         response = requests.get(url,
-                              headers={'Origin': config.get_edge_url(), 'Content-Type': 'text/html'})
-        self.assertEqual(response.status_code, 200)
+                                headers={'Origin': config.get_edge_url(), 'Content-Type': 'text/html'})
+        self.assertEqual(200, response.status_code)
         self.assertIn('Access-Control-Allow-Origin'.lower(), response.headers)
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'], config.get_edge_url())
+        self.assertEqual(config.get_edge_url(), response.headers['Access-Control-Allow-Origin'])
         self.assertIn('Access-Control-Allow-Methods'.lower(), response.headers)
         self.assertIn('GET', response.headers['Access-Control-Allow-Methods'])
         self.assertIn('Access-Control-Allow-Headers', response.headers)
-        self.assertEqual(response.headers['Access-Control-Allow-Headers'], 'x-amz-tagging')
+        self.assertEqual('x-amz-tagging', response.headers['Access-Control-Allow-Headers'])
         self.assertIn('Access-Control-Max-Age'.lower(), response.headers)
-        self.assertEqual(response.headers['Access-Control-Max-Age'], '3000')
+        self.assertEqual('3000', response.headers['Access-Control-Max-Age'])
         self.assertIn('Access-Control-Allow-Credentials'.lower(), response.headers)
-        self.assertEqual(response.headers['Access-Control-Allow-Credentials'].lower(), 'true')
+        self.assertEqual('true', response.headers['Access-Control-Allow-Credentials'].lower())
 
         BUCKET_CORS_CONFIG = {
             'CORSRules': [{
@@ -2183,8 +2225,8 @@ class TestS3(unittest.TestCase):
 
         client.put_bucket_cors(Bucket=bucket, CORSConfiguration=BUCKET_CORS_CONFIG)
         response = requests.get(url,
-                              headers={'Origin': config.get_edge_url(), 'Content-Type': 'text/html'})
-        self.assertEqual(response.status_code, 200)
+                                headers={'Origin': config.get_edge_url(), 'Content-Type': 'text/html'})
+        self.assertEqual(200, response.status_code)
         self.assertNotIn('Access-Control-Allow-Origin'.lower(), response.headers)
         self.assertNotIn('Access-Control-Allow-Methods'.lower(), response.headers)
         self.assertNotIn('Access-Control-Allow-Headers', response.headers)
@@ -2264,7 +2306,7 @@ class TestS3(unittest.TestCase):
 
         response = requests.put(presigned_url, verify=False)
         response = s3_client.head_object(Bucket=function_name, Key='key.png')
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         s3_client.delete_object(Bucket=function_name, Key='key.png')
         s3_client.delete_bucket(Bucket=function_name)
@@ -2275,7 +2317,8 @@ class TestS3(unittest.TestCase):
         port2 = 4566
         s3_client = aws_stack.connect_to_service('s3')
 
-        s3_presign = boto3.client('s3',
+        s3_presign = boto3.client(
+            's3',
             endpoint_url='http://127.0.0.1:%s' % port1,
             aws_access_key_id='test',
             aws_secret_access_key='test',
@@ -2294,7 +2337,7 @@ class TestS3(unittest.TestCase):
         presign_url = presign_url.replace(':%s' % port1, ':%s' % port2)
 
         response = requests.get(presign_url)
-        self.assertEqual(response._content, b'test-value')
+        self.assertEqual(b'test-value', response._content)
 
     def test_terraform_request_sequence(self):
 
@@ -2370,8 +2413,13 @@ class TestS3(unittest.TestCase):
             with gzip.GzipFile(fileobj=upload_file_object, mode='w') as filestream:
                 filestream.write(data)
 
-        response = self.s3_client.upload_part(Bucket=bucket, Key=key,
-            Body=upload_file_object, PartNumber=1, UploadId=upload_id)
+        response = self.s3_client.upload_part(
+            Bucket=bucket,
+            Key=key,
+            Body=upload_file_object,
+            PartNumber=1,
+            UploadId=upload_id
+        )
 
         multipart_upload_parts = [{'ETag': response['ETag'], 'PartNumber': 1}]
 
@@ -2397,7 +2445,8 @@ class TestS3(unittest.TestCase):
                 filestream.write(data)
 
         signed_url = s3_client.generate_presigned_url(ClientMethod='upload_part',
-            Params={'Bucket': bucket, 'Key': key, 'UploadId': upload_id, 'PartNumber': 1})
+                                                      Params={'Bucket': bucket, 'Key': key, 'UploadId': upload_id,
+                                                              'PartNumber': 1})
         response = requests.put(signed_url, data=upload_file_object)
 
         multipart_upload_parts = [{'ETag': response.headers['ETag'], 'PartNumber': 1}]
