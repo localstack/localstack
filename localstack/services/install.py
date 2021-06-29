@@ -341,10 +341,14 @@ def install_debugpy_and_dependencies():
     try:
         import debugpy
         assert debugpy
+        logging.debug('Debugpy module already Installed')
     except ModuleNotFoundError:
-        run('apk fetch %s --output %s' % (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER))
-        run('apk add %s --cache-dir %s' % (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER))
-        run('pip install %s' % DEBUGPY_MODULE)
+        logging.debug('Installing Debugpy module')
+        import pip
+        if hasattr(pip, 'main'):
+            pip.main(['install', DEBUGPY_MODULE])
+        else:
+            pip._internal.main(['install', DEBUGPY_MODULE])
 
 
 # -----------------
