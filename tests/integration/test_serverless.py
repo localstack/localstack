@@ -39,12 +39,12 @@ class TestServerless(unittest.TestCase):
         self.assertTrue(rule)
         self.assertIn('Arn', rule)
         pattern = json.loads(rule['EventPattern'])
-        self.assertEqual(pattern['source'], ['aws.cloudformation'])
+        self.assertEqual(['aws.cloudformation'], pattern['source'])
         self.assertIn('detail-type', pattern)
 
         rule = ([r for r in rules if r['EventBusName'] == 'customBus'] or [None])[0]
         self.assertTrue(rule)
-        self.assertEqual(json.loads(rule['EventPattern']), {'source': ['customSource']})
+        self.assertEqual({'source': ['customSource']}, json.loads(rule['EventPattern']))
 
     def test_dynamodb_stream_handler_deployed(self):
         function_name = 'sls-test-local-dynamodbStreamHandler'
@@ -55,15 +55,15 @@ class TestServerless(unittest.TestCase):
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
-        self.assertEqual(function['Handler'], 'handler.processItem')
+        self.assertEqual('handler.processItem', function['Handler'])
 
         resp = lambda_client.list_event_source_mappings(FunctionName=function_name)
         events = resp['EventSourceMappings']
-        self.assertEqual(len(events), 1)
+        self.assertEqual(1, len(events))
         event_source_arn = events[0]['EventSourceArn']
 
         resp = dynamodb_client.describe_table(TableName=table_name)
-        self.assertEqual(resp['Table']['LatestStreamArn'], event_source_arn)
+        self.assertEqual(event_source_arn, resp['Table']['LatestStreamArn'])
 
     def test_kinesis_stream_handler_deployed(self):
         function_name = 'sls-test-local-kinesisStreamHandler'
@@ -75,20 +75,20 @@ class TestServerless(unittest.TestCase):
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
-        self.assertEqual(function['Handler'], 'handler.processKinesis')
+        self.assertEqual('handler.processKinesis', function['Handler'])
 
         resp = lambda_client.list_event_source_mappings(FunctionName=function_name)
         mappings = resp['EventSourceMappings']
-        self.assertEqual(len(mappings), 1)
+        self.assertEqual(1, len(mappings))
         event_source_arn = mappings[0]['EventSourceArn']
 
         resp = kinesis_client.describe_stream(StreamName=stream_name)
-        self.assertEqual(resp['StreamDescription']['StreamARN'], event_source_arn)
+        self.assertEqual(event_source_arn, resp['StreamDescription']['StreamARN'])
 
         # assert that stream consumer is properly connected and Lambda gets invoked
         def assert_invocations():
             events = get_lambda_log_events(function_name2)
-            self.assertEqual(len(events), 1)
+            self.assertEqual(1, len(events))
         kinesis_client.put_record(StreamName=stream_name, Data=b'test123', PartitionKey='key1')
         retry(assert_invocations, sleep=1, retries=5)
 
@@ -100,14 +100,14 @@ class TestServerless(unittest.TestCase):
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
-        self.assertEqual(function['Handler'], 'src/sqs.create')
+        self.assertEqual('src/sqs.create', function['Handler'])
 
         resp = lambda_client.list_event_source_mappings(FunctionName=function_name)
         events = resp['EventSourceMappings']
-        self.assertEqual(len(events), 1)
+        self.assertEqual(1, len(events))
         event_source_arn = events[0]['EventSourceArn']
 
-        self.assertEqual(aws_stack.sqs_queue_arn(queue_name), event_source_arn)
+        self.assertEqual(event_source_arn, aws_stack.sqs_queue_arn(queue_name))
 
     def test_lambda_with_configs_deployed(self):
         function_name = 'sls-test-local-test'
@@ -120,8 +120,8 @@ class TestServerless(unittest.TestCase):
         version = function['Version']
 
         resp = lambda_client.get_function_event_invoke_config(FunctionName=function_name, Qualifier=version)
-        self.assertEqual(resp.get('MaximumRetryAttempts'), 2)
-        self.assertEqual(resp.get('MaximumEventAgeInSeconds'), 7200)
+        self.assertEqual(2, resp.get('MaximumRetryAttempts'))
+        self.assertEqual(7200, resp.get('MaximumEventAgeInSeconds'))
 
     def test_apigateway_deployed(self):
         function_name = 'sls-test-local-router'
@@ -130,16 +130,16 @@ class TestServerless(unittest.TestCase):
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
-        self.assertEqual(function['Handler'], 'src/http.router')
+        self.assertEqual('src/http.router', function['Handler'])
 
         apigw_client = aws_stack.connect_to_service('apigateway')
         apis = apigw_client.get_rest_apis()['items']
         api_ids = [api['id'] for api in apis if api['id'] not in self.api_ids]
-        self.assertEqual(len(api_ids), 1)
+        self.assertEqual(1, len(api_ids))
 
         resources = apigw_client.get_resources(restApiId=api_ids[0])['items']
         proxy_resources = [res for res in resources if res['path'] == '/foo/bar']
-        self.assertEqual(len(proxy_resources), 1)
+        self.assertEqual(1, len(proxy_resources))
 
         proxy_resource = proxy_resources[0]
         for method in ['DELETE', 'POST', 'PUT']:
