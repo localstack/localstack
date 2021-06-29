@@ -138,3 +138,11 @@ class TestCommandLine(unittest.TestCase):
         result = port_mappings.to_str()
         # assert that ranges are non-overlapping, i.e., no duplicate ports
         self.assertEqual('-p 4590-4592:4590-4592 -p 4593:4593', result)
+
+    def test_port_ranges_with_bind_host(self):
+        port_mappings = PortMappings(bind_host='0.0.0.0')
+        port_mappings.add(5000)
+        port_mappings.add(5001)
+        port_mappings.add(5003)
+        result = port_mappings.to_str()
+        self.assertEqual('-p 0.0.0.0:5000-5001:5000-5001 -p 0.0.0.0:5003:5003', result)

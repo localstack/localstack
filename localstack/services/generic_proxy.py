@@ -15,7 +15,7 @@ from werkzeug.exceptions import HTTPException
 
 from localstack import config
 from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_ALLOWED_ORIGINS, EXTRA_CORS_EXPOSE_HEADERS
-from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL
+from localstack.constants import APPLICATION_JSON, HEADER_LOCALSTACK_REQUEST_URL, BIND_HOST
 from localstack.utils.aws import aws_stack
 from localstack.utils.server import http2_server
 from localstack.utils.common import generate_ssl_cert, json_safe, path_from_url, Mock
@@ -409,8 +409,10 @@ def get_cert_pem_file_path():
     return os.path.join(config.TMP_FOLDER, SERVER_CERT_PEM_FILE)
 
 
-def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=None,
+def start_proxy_server(port, bind_address=None, forward_url=None, use_ssl=None, update_listener=None,
         quiet=False, params={}, asynchronous=True):
+    bind_address = bind_address if bind_address else BIND_HOST
+
     def handler(request, data):
         parsed_url = urlparse(request.url)
         path_with_params = path_from_url(request.url)
@@ -432,7 +434,7 @@ def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=Non
         _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
         ssl_creds = (cert_file_name, key_file_name)
 
-    return http2_server.run_server(port, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds)
+    return http2_server.run_server(port, bind_address, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds)
 
 
 def serve_flask_app(app, port, quiet=True, host=None, cors=True):

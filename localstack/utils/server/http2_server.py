@@ -111,7 +111,7 @@ def get_async_generator_result(result):
     return gen, headers
 
 
-def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
+def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=None):
 
     ensure_event_loop()
     app = Quart(__name__)
@@ -179,7 +179,7 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
             kwargs['keyfile'] = key_file_name
             config.keyfile = key_file_name
         setup_quart_logging()
-        config.bind = ['0.0.0.0:%s' % port]
+        config.bind = ['%s:%s' % (bind_address, port)]
         loop = loop or ensure_event_loop()
         run_kwargs = {}
         if shutdown_event:

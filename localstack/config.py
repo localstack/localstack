@@ -165,6 +165,8 @@ START_WEB = os.environ.get('START_WEB', '').strip() in TRUE_STRINGS
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
+# Default bind address for the edge service
+EDGE_BIND_HOST = os.environ.get('EDGE_BIND_HOST', '').strip() or '127.0.0.1'
 # port number for the edge service, the main entry point for all API invocations
 EDGE_PORT = int(os.environ.get('EDGE_PORT') or 0) or DEFAULT_PORT_EDGE
 # fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)

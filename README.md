@@ -182,6 +182,7 @@ You can pass the following environment variables to LocalStack:
   In addition, the following shorthand values can be specified to run a predefined ensemble of services:
   - `serverless`: run services often used for Serverless apps (`iam`, `lambda`, `dynamodb`, `apigateway`, `s3`, `sns`)
 * `DEFAULT_REGION`: AWS region to use when talking to the API (default: `us-east-1`).
+* `EDGE_BIND_HOST`: Address the edge service binds to. (default: `127.0.0.1`, in docker containers `0.0.0.0`)
 * `HOSTNAME`: Name of the host to expose the services internally (default: `localhost`).
   Use this to customize the framework-internal communication, e.g., if services are
   started in different containers using docker-compose.
