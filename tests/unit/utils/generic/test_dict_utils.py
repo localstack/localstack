@@ -17,43 +17,40 @@ class GenericDictUtilsTest(unittest.TestCase):
         }
 
         self.assertEqual(
-            get_safe(dictionary, '$.level_one_1.level_two_1'),
-            dictionary['level_one_1']['level_two_1']
+            dictionary['level_one_1']['level_two_1'],
+            get_safe(dictionary, '$.level_one_1.level_two_1')
         )
 
         self.assertEqual(
-            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1']),
-            dictionary['level_one_1']['level_two_1']
+            dictionary['level_one_1']['level_two_1'],
+            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1'])
         )
 
         self.assertEqual(
-            get_safe(dictionary, '$.level_one_1.level_two_1.level_three_1'),
-            'level_three_1_value'
+            'level_three_1_value',
+            get_safe(dictionary, '$.level_one_1.level_two_1.level_three_1')
         )
 
         self.assertEqual(
-            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'level_three_1']),
-            'level_three_1_value'
+            'level_three_1_value',
+            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'level_three_1'])
+        )
+
+        self.assertIsNone(get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'random', 'value']))
+
+        self.assertEqual(
+            'default_value',
+            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'random', 'value'], 'default_value')
         )
 
         self.assertEqual(
-            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'random', 'value']),
-            None
+            'one',
+            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'level_three_2', '0'])
         )
 
         self.assertEqual(
-            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'random', 'value'], 'default_value'),
-            'default_value'
-        )
-
-        self.assertEqual(
-            get_safe(dictionary, ['$', 'level_one_1', 'level_two_1', 'level_three_2', '0']),
-            'one'
-        )
-
-        self.assertEqual(
-            get_safe(dictionary, '$.level_one_1.level_two_1.level_three_2.1'),
-            'two'
+            'two',
+            get_safe(dictionary, '$.level_one_1.level_two_1.level_three_2.1')
         )
 
     def test_set_safe_mutable(self):
@@ -72,7 +69,7 @@ class GenericDictUtilsTest(unittest.TestCase):
         set_safe_mutable(mutable_dictionary, ['$', 'level_one_1', 'level_two_2'], 'level_two_2_value')
         set_safe_mutable(mutable_dictionary, '$.level_one_2', 'level_one_2_value')
 
-        self.assertEqual(mutable_dictionary, expected_dictionary)
+        self.assertEqual(expected_dictionary, mutable_dictionary)
 
     def test_pick_attributes(self):
         dictionary = {
@@ -94,11 +91,12 @@ class GenericDictUtilsTest(unittest.TestCase):
             ]
         )
 
-        self.assertEqual(whitelisted_dictionary, {
+        expected_whitelisted_dictionary = {
             'level_one_1': {
                 'level_two_1': {
                     'level_three_1': 'level_three_1_value'
                 },
             },
             'level_one_2': 'level_one_2_value'
-        })
+        }
+        self.assertEqual(expected_whitelisted_dictionary, whitelisted_dictionary)

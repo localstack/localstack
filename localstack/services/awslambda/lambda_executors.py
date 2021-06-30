@@ -881,7 +881,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         class_name = handler.split('::')[0]
         classpath = '%s:%s:%s' % (main_file, Util.get_java_classpath(main_file), LAMBDA_EXECUTOR_JAR)
         cmd = 'java %s -cp %s %s %s %s' % (opts, classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
-        LOG.warning(cmd)
+        LOG.info(cmd)
         result = self.run_lambda_executor(cmd, func_details=func_details)
         return result
 

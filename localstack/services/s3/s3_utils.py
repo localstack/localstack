@@ -268,7 +268,7 @@ def authenticate_presign_url(method, path, headers, data=None):
         response = authenticate_presign_url_signv4(method, path, headers, data, url, query_params, request_dict)
 
     if response is not None:
-        LOGGER.error('Presign signature calculation failed: %s' % response)
+        LOGGER.info('Presign signature calculation failed: %s' % response)
         return response
     LOGGER.debug('Valid presign url.')
 

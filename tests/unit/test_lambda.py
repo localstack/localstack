@@ -51,14 +51,15 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
             self.assertEqual(
                 self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn('non_existent_function_name'),
-                result['message'])
+                result['message']
+            )
 
     def test_get_event_source_mapping(self):
         region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
             region.event_source_mappings.append({'UUID': self.TEST_UUID})
             result = lambda_api.get_event_source_mapping(self.TEST_UUID)
-            self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
+            self.assertEqual(self.TEST_UUID, json.loads(result.get_data()).get('UUID'))
 
     def test_get_event_sources(self):
         region = lambda_api.LambdaRegion.get()
@@ -71,12 +72,12 @@ class TestLambdaAPI(unittest.TestCase):
 
             # Match source ARN
             result = lambda_api.get_event_sources(source_arn='the_arn')
-            self.assertEqual(len(result), 1)
-            self.assertEqual(result[0].get('UUID'), self.TEST_UUID)
+            self.assertEqual(1, len(result))
+            self.assertEqual(self.TEST_UUID, result[0].get('UUID'))
 
             # No partial match on source ARN
             result = lambda_api.get_event_sources(source_arn='the_')
-            self.assertEqual(len(result), 0)
+            self.assertEqual(0, len(result))
 
     def test_get_event_sources_with_paths(self):
         region = lambda_api.LambdaRegion.get()
@@ -89,16 +90,16 @@ class TestLambdaAPI(unittest.TestCase):
 
             # Do partial match on paths
             result = lambda_api.get_event_sources(source_arn='the_arn')
-            self.assertEqual(len(result), 1)
+            self.assertEqual(1, len(result))
             result = lambda_api.get_event_sources(source_arn='the_arn/path')
-            self.assertEqual(len(result), 1)
+            self.assertEqual(1, len(result))
 
     def test_delete_event_source_mapping(self):
         region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
             region.event_source_mappings.append({'UUID': self.TEST_UUID})
             result = lambda_api.delete_event_source_mapping(self.TEST_UUID)
-            self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
+            self.assertEqual(self.TEST_UUID, json.loads(result.get_data()).get('UUID'))
             self.assertEqual(0, len(region.event_source_mappings))
 
     def test_invoke_RETURNS_415_WHEN_not_json_input(self):
@@ -121,7 +122,9 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual('~notjsonresponse~', response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'text/plain'}, response[2])
+
+            headers = response[2]
+            self.assertEqual('text/plain', headers['Content-Type'])
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_empty_plain_text_response(self, mock_run_lambda):
@@ -131,7 +134,9 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual('', response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'text/plain'}, response[2])
+
+            headers = response[2]
+            self.assertEqual('text/plain', headers['Content-Type'])
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_empty_map_json_response(self, mock_run_lambda):
@@ -141,7 +146,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = lambda_api.invoke_function(self.FUNCTION_NAME)
             self.assertEqual(b'{}\n', response[0].response[0])
             self.assertEqual(200, response[1])
-            self._assert_contained({'Content-Type': 'application/json'}, response[0].headers)
+            self.assertEqual('application/json', response[0].headers['Content-Type'])
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_populated_map_json_response(self, mock_run_lambda):
@@ -420,8 +425,10 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             result = json.loads(lambda_api.list_versions(self.FUNCTION_NAME).get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
-            self.assertEqual(self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
-                             result['message'])
+            self.assertEqual(
+                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                result['message']
+            )
 
     def test_create_alias(self):
         self._create_function(self.FUNCTION_NAME)
@@ -441,8 +448,10 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             result = json.loads(lambda_api.create_alias(self.FUNCTION_NAME).get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
-            self.assertEqual(self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
-                             result['message'])
+            self.assertEqual(
+                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                result['message']
+            )
 
     def test_create_alias_returns_error_if_already_exists(self):
         self._create_function(self.FUNCTION_NAME)
@@ -456,8 +465,10 @@ class TestLambdaAPI(unittest.TestCase):
 
         alias_arn = lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME
         self.assertEqual(self.ALIASEXISTS_EXCEPTION, result['__type'])
-        self.assertEqual(self.ALIASEXISTS_MESSAGE % alias_arn,
-                         result['message'])
+        self.assertEqual(
+            self.ALIASEXISTS_MESSAGE % alias_arn,
+            result['message']
+        )
 
     def test_update_alias(self):
         self._create_function(self.FUNCTION_NAME)
@@ -481,8 +492,10 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             result = json.loads(lambda_api.update_alias(self.FUNCTION_NAME, self.ALIAS_NAME).get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
-            self.assertEqual(self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
-                             result['message'])
+            self.assertEqual(
+                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                result['message']
+            )
 
     def test_update_alias_on_non_existant_alias_returns_error(self):
         with self.app.test_request_context():
@@ -513,8 +526,10 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             result = json.loads(lambda_api.get_alias(self.FUNCTION_NAME, self.ALIAS_NAME).get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
-            self.assertEqual(self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
-                             result['message'])
+            self.assertEqual(
+                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                result['message']
+            )
 
     def test_get_alias_on_non_existant_alias_returns_error(self):
         with self.app.test_request_context():
@@ -558,8 +573,10 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             result = json.loads(lambda_api.list_aliases(self.FUNCTION_NAME).get_data())
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
-            self.assertEqual(self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
-                             result['message'])
+            self.assertEqual(
+                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                result['message']
+            )
 
     def test_get_container_name(self):
         executor = lambda_executors.EXECUTOR_CONTAINERS_REUSE
@@ -635,7 +652,8 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
             self.assertEqual(
                 self.RESOURCENOTFOUND_MESSAGE % arn,
-                result['message'])
+                result['message']
+            )
 
     def test_untag_resource(self):
         with self.app.test_request_context():
@@ -863,7 +881,7 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
         response = self.LAMBDA_OBJ.get_function_event_invoke_config()
 
         # verifying set values
-        self.assertEqual(response['FunctionArn'], self.LAMBDA_OBJ.id)
-        self.assertEqual(response['MaximumRetryAttempts'], self.RETRY_ATTEMPTS)
-        self.assertEqual(response['MaximumEventAgeInSeconds'], self.EVENT_AGE)
-        self.assertEqual(response['DestinationConfig']['OnFailure']['Destination'], self.DL_QUEUE)
+        self.assertEqual(self.LAMBDA_OBJ.id, response['FunctionArn'])
+        self.assertEqual(self.RETRY_ATTEMPTS, response['MaximumRetryAttempts'])
+        self.assertEqual(self.EVENT_AGE, response['MaximumEventAgeInSeconds'])
+        self.assertEqual(self.DL_QUEUE, response['DestinationConfig']['OnFailure']['Destination'])

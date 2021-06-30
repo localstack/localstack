@@ -1,4 +1,7 @@
-[![CircleCI](https://circleci.com/gh/localstack/localstack.svg?style=svg)](https://circleci.com/gh/localstack/localstack) [![Backers on Open Collective](https://opencollective.com/localstack/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/localstack/sponsors/badge.svg)](#sponsors) [![Coverage Status](https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master)](https://coveralls.io/github/localstack/localstack?branch=master)
+[![CircleCI](https://circleci.com/gh/localstack/localstack.svg?style=shield)](https://circleci.com/gh/localstack/localstack)
+[![Backers on Open Collective](https://opencollective.com/localstack/backers/badge.svg)](#backers)
+[![Sponsors on Open Collective](https://opencollective.com/localstack/sponsors/badge.svg)](#sponsors)
+[![Coverage Status](https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master)](https://coveralls.io/github/localstack/localstack?branch=master)
 [![Gitter](https://img.shields.io/gitter/room/localstack/Platform.svg)](https://gitter.im/localstack/Platform)
 [![PyPI Version](https://badge.fury.io/py/localstack.svg)](https://badge.fury.io/py/localstack)
 [![PyPI License](https://img.shields.io/pypi/l/localstack.svg)](https://img.shields.io/pypi/l/localstack.svg)
@@ -179,6 +182,7 @@ You can pass the following environment variables to LocalStack:
   In addition, the following shorthand values can be specified to run a predefined ensemble of services:
   - `serverless`: run services often used for Serverless apps (`iam`, `lambda`, `dynamodb`, `apigateway`, `s3`, `sns`)
 * `DEFAULT_REGION`: AWS region to use when talking to the API (default: `us-east-1`).
+* `EDGE_BIND_HOST`: Address the edge service binds to. (default: `127.0.0.1`, in docker containers `0.0.0.0`)
 * `HOSTNAME`: Name of the host to expose the services internally (default: `localhost`).
   Use this to customize the framework-internal communication, e.g., if services are
   started in different containers using docker-compose.
@@ -250,6 +254,10 @@ with the `kinesis-mock` KINESIS_PROVIDER.
 * `START_WEB`: Flag to control whether the Web UI should be started in Docker (default: `false`; deprecated).
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
 * `LAMBDA_FORWARD_URL`: URL used to forward all Lambda invocations (useful to run Lambdas via an external service).
+* `DISABLE_CORS_CHECKS`: Whether to disable all CSRF mitigations (default: 0).
+* `DISABLE_CUSTOM_CORS_S3`: Whether to disable CORS override by S3 (default: 0).
+* `DISABLE_CUSTOM_CORS_APIGATEWAY`: Whteher to disable CORS override by apigateway (default: 0).
+* `EXTRA_CORS_ALLOWED_ORIGINS`: Comma-separated list of origins that are allowed to communicate with localstack.
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
 * `LAMBDA_JAVA_OPTS`: Allow passing custom JVM options (e.g., `-Xmx512M`) to Java Lambdas executed in Docker. Use `_debug_port_` placeholder to configure the debug port (e.g., `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_`).
@@ -292,6 +300,8 @@ localstack config validate --file=localstack-docker-compose.yml
 Each of the service APIs listed [above](https://github.com/localstack/localstack#overview) defines
 a backdoor API under the path `/?_config_` which allows to dynamically update configuration variables
 defined in [`config.py`](https://github.com/localstack/localstack/blob/master/localstack/config.py).
+
+You need to enable this endpoint by setting `ENABLE_CONFIG_UPDATES=1`.
 
 For example, to dynamically set `KINESIS_ERROR_PROBABILITY=1` at runtime, use the following command:
 ```

@@ -831,7 +831,7 @@ def rm_rf(path):
 
 
 def cp_r(src, dst, rm_dest_on_conflict=False):
-    """Recursively copies file/directory"""
+    """ Recursively copies file/directory """
     if os.path.isfile(src):
         return shutil.copy(src, dst)
     kwargs = {}
@@ -1548,7 +1548,8 @@ class _RequestsSafe(type):
         def _wrapper(*args, **kwargs):
             if 'auth' not in kwargs:
                 kwargs['auth'] = NetrcBypassAuth()
-            if not self.verify_ssl and args[0].startswith('https://') and 'verify' not in kwargs:
+            url = kwargs.get('url') or (args[1] if name == 'request' else args[0])
+            if not self.verify_ssl and url.startswith('https://') and 'verify' not in kwargs:
                 kwargs['verify'] = False
             return method(*args, **kwargs)
         return _wrapper

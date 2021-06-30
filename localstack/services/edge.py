@@ -54,7 +54,7 @@ class ProxyListenerEdge(ProxyListener):
             return serve_resource_graph(data)
 
         # kill the process if we receive this header
-        headers.get(HEADER_KILL_SIGNAL) and os._exit(0)
+        headers.get(HEADER_KILL_SIGNAL) and sys.exit(0)
 
         target = headers.get('x-amz-target', '')
         auth_header = get_auth_string(method, path, headers, data)
@@ -127,8 +127,8 @@ class ProxyListenerEdge(ProxyListener):
         if config.LS_LOG:
             # print response trace for debugging, if enabled
             if api and api != API_UNKNOWN:
-                LOG.debug('OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s' %
-                    (api, method, path, response.status_code, dict(response.headers), response.content))
+                LOG.debug('OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s',
+                          api, method, path, response.status_code, dict(response.headers), response.content)
 
         # Fix Go SDK issue
         # https://github.com/localstack/localstack/issues/3833
@@ -280,9 +280,9 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
 
 
 def is_s3_form_data(data_bytes):
-    if(to_bytes('key=') in data_bytes):
+    if to_bytes('key=') in data_bytes:
         return True
-    if(to_bytes('Content-Disposition: form-data') in data_bytes and to_bytes('name="key"') in data_bytes):
+    if to_bytes('Content-Disposition: form-data') in data_bytes and to_bytes('name="key"') in data_bytes:
         return True
     return False
 
@@ -322,7 +322,7 @@ def terminate_all_processes_in_docker():
             except Exception:
                 pass
     # kill the process itself
-    os._exit(0)
+    sys.exit(0)
 
 
 def serve_resource_graph(data):
@@ -425,7 +425,7 @@ def get_service_port_for_account(service, headers):
     return config.service_port(service)
 
 
-def do_start_edge(port, use_ssl, asynchronous=False):
+def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
     try:
         # start local DNS server, if present
         from localstack_ext.services import dns_server
@@ -436,7 +436,7 @@ def do_start_edge(port, use_ssl, asynchronous=False):
     # get port and start Edge
     print('Starting edge router (http%s port %s)...' % ('s' if use_ssl else '', port))
     # use use=True here because our proxy allows both, HTTP and HTTPS traffic
-    proxy = start_proxy_server(port, use_ssl=True, update_listener=ProxyListenerEdge())
+    proxy = start_proxy_server(port, bind_address=bind_address, use_ssl=True, update_listener=ProxyListenerEdge())
     if not asynchronous:
         proxy.join()
     return proxy
@@ -462,9 +462,9 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
     if not port:
         port = config.EDGE_PORT
     if config.EDGE_PORT_HTTP:
-        do_start_edge(config.EDGE_PORT_HTTP, use_ssl=False, asynchronous=True)
+        do_start_edge(config.EDGE_BIND_HOST, config.EDGE_PORT_HTTP, use_ssl=False, asynchronous=True)
     if port > 1024 or is_root():
-        return do_start_edge(port, use_ssl, asynchronous=asynchronous)
+        return do_start_edge(config.EDGE_BIND_HOST, port, use_ssl, asynchronous=asynchronous)
 
     # process requires priviledged port but we're not root -> try running as sudo
 

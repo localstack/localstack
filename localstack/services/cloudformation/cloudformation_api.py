@@ -148,6 +148,7 @@ class Stack(object):
         for res in [resource, state]:
             for attr, default in attr_defaults:
                 res[attr] = res.get(attr) or default
+        state['PreviousResourceStatus'] = state.get('ResourceStatus')
         state['ResourceStatus'] = status
         state['StackName'] = state.get('StackName') or self.stack_name
         state['StackId'] = state.get('StackId') or self.stack_id

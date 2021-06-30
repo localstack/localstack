@@ -508,12 +508,14 @@ def get_event_sources(func_name=None, source_arn=None):
     result = []
     for m in region.event_source_mappings:
         if not func_name or (m['FunctionArn'] in [func_name, func_arn(func_name)]):
-            if _arn_match(mapped=m['EventSourceArn'], searched=source_arn):
+            if _arn_match(mapped=m.get('EventSourceArn'), searched=source_arn):
                 result.append(m)
     return result
 
 
 def _arn_match(mapped, searched):
+    if not mapped:
+        return False
     if not searched or mapped == searched:
         return True
     # Some types of ARNs can end with a path separated by slashes, for

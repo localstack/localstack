@@ -10,4 +10,4 @@ class SQSListenerTest (unittest.TestCase):
             'MessageAttribute.1.Value.DataType': 'Number'
         }
         md5 = sqs_listener.ProxyListenerSQS.get_message_attributes_md5(msg_attrs)
-        self.assertEqual(md5, '235c5c510d26fb653d073faed50ae77c')
+        self.assertEqual('235c5c510d26fb653d073faed50ae77c', md5)

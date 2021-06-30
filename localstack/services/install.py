@@ -50,7 +50,7 @@ SFN_PATCH_CLASS = 'com/amazonaws/stepfunctions/local/runtime/executors/task/Lamb
 SFN_PATCH_CLASS_URL = '%s/raw/master/stepfunctions-local-patch/%s' % (ARTIFACTS_REPO, SFN_PATCH_CLASS)
 
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get('KINESIS_MOCK_VERSION') or '0.1.0'
+KINESIS_MOCK_VERSION = os.environ.get('KINESIS_MOCK_VERSION') or '0.1.2'
 KINESIS_MOCK_RELEASE_URL = 'https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/' + KINESIS_MOCK_VERSION
 
 DEBUGPY_MODULE = 'debugpy'
@@ -212,6 +212,7 @@ def install_kinesis_mock():
     mkdir(target_dir)
     LOG.info('downloading kinesis-mock binary from %s', download_url)
     download(download_url, bin_file_path)
+    chmod_r(bin_file_path, 0o777)
     return bin_file_path
 
 
@@ -340,10 +341,14 @@ def install_debugpy_and_dependencies():
     try:
         import debugpy
         assert debugpy
+        logging.debug('Debugpy module already Installed')
     except ModuleNotFoundError:
-        run('apk fetch %s --output %s' % (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER))
-        run('apk add %s --cache-dir %s' % (' '.join(DEBUGPY_DEPENDENCIES), config.TMP_FOLDER))
-        run('pip install %s' % DEBUGPY_MODULE)
+        logging.debug('Installing Debugpy module')
+        import pip
+        if hasattr(pip, 'main'):
+            pip.main(['install', DEBUGPY_MODULE])
+        else:
+            pip._internal.main(['install', DEBUGPY_MODULE])
 
 
 # -----------------

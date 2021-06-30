@@ -23,7 +23,7 @@ def start_tcp_proxy(src, dst, handler, **kwargs):
 
     def ip_to_tuple(ip):
         ip, port = ip.split(':')
-        return (ip, int(port))
+        return ip, int(port)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(ip_to_tuple(src))

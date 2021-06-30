@@ -165,6 +165,8 @@ START_WEB = os.environ.get('START_WEB', '').strip() in TRUE_STRINGS
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
+# Default bind address for the edge service
+EDGE_BIND_HOST = os.environ.get('EDGE_BIND_HOST', '').strip() or '127.0.0.1'
 # port number for the edge service, the main entry point for all API invocations
 EDGE_PORT = int(os.environ.get('EDGE_PORT') or 0) or DEFAULT_PORT_EDGE
 # fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
@@ -177,9 +179,16 @@ PORT_WEB_UI_SSL = PORT_WEB_UI + 1
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get('DOCKER_BRIDGE_IP', '').strip()
 
+# whether to enable API-based updates of configuration variables at runtime
+ENABLE_CONFIG_UPDATES = is_env_true('ENABLE_CONFIG_UPDATES')
+
 # CORS settings
+DISABLE_CORS_CHECKS = is_env_true('DISABLE_CORS_CHECKS')
+DISABLE_CUSTOM_CORS_S3 = is_env_true('DISABLE_CUSTOM_CORS_S3')
+DISABLE_CUSTOM_CORS_APIGATEWAY = is_env_true('DISABLE_CUSTOM_CORS_APIGATEWAY')
 EXTRA_CORS_ALLOWED_HEADERS = os.environ.get('EXTRA_CORS_ALLOWED_HEADERS', '').strip()
 EXTRA_CORS_EXPOSE_HEADERS = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS', '').strip()
+EXTRA_CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').strip()
 
 # whether to disable publishing events to the API
 DISABLE_EVENTS = is_env_true('DISABLE_EVENTS')

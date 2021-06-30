@@ -7,7 +7,7 @@ class TestTaggingService(unittest.TestCase):
 
     def test_list_empty(self):
         result = self.svc.list_tags_for_resource('test')
-        self.assertEqual(result, {'Tags': []})
+        self.assertEqual({'Tags': []}, result)
 
     def test_create_tag(self):
         tags = [{'Key': 'key_key', 'Value': 'value_value'}]
@@ -21,11 +21,9 @@ class TestTaggingService(unittest.TestCase):
         self.svc.tag_resource('arn', tags)
         self.svc.untag_resource('arn', ['key_key'])
         result = self.svc.list_tags_for_resource('arn')
-        self.assertEqual(
-            result, {'Tags': []})
+        self.assertEqual({'Tags': []}, result)
 
     def test_list_empty_delete(self):
         self.svc.untag_resource('arn', ['key_key'])
         result = self.svc.list_tags_for_resource('arn')
-        self.assertEqual(
-            result, {'Tags': []})
+        self.assertEqual({'Tags': []}, result)
