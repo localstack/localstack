@@ -831,7 +831,7 @@ def rm_rf(path):
 
 
 def cp_r(src, dst, rm_dest_on_conflict=False):
-    """Recursively copies file/directory"""
+    """ Recursively copies file/directory """
     if os.path.isfile(src):
         return shutil.copy(src, dst)
     kwargs = {}

@@ -362,7 +362,7 @@ async def message_to_subscriber(message_id, message, topic_arn, req_data,
                 **kwargs
             )
         except Exception as exc:
-            LOG.warning('Unable to forward SNS message to SQS: %s %s' % (exc, traceback.format_exc()))
+            LOG.info('Unable to forward SNS message to SQS: %s %s' % (exc, traceback.format_exc()))
             sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
             if 'NonExistentQueue' in str(exc):
                 LOG.info('Removing non-existent queue "%s" subscribed to topic "%s"' % (queue_url, topic_arn))
@@ -390,7 +390,7 @@ async def message_to_subscriber(message_id, message, topic_arn, req_data,
                 if response.status_code >= 400:
                     raise Exception('Error response (code %s): %s' % (response.status_code, response.data))
         except Exception as exc:
-            LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
+            LOG.info('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
             sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
         return
 
