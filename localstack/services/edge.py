@@ -54,7 +54,7 @@ class ProxyListenerEdge(ProxyListener):
             return serve_resource_graph(data)
 
         # kill the process if we receive this header
-        headers.get(HEADER_KILL_SIGNAL) and os._exit(0)
+        headers.get(HEADER_KILL_SIGNAL) and sys.exit(0)
 
         target = headers.get('x-amz-target', '')
         auth_header = get_auth_string(method, path, headers, data)
@@ -127,8 +127,8 @@ class ProxyListenerEdge(ProxyListener):
         if config.LS_LOG:
             # print response trace for debugging, if enabled
             if api and api != API_UNKNOWN:
-                LOG.debug('OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s' %
-                    (api, method, path, response.status_code, dict(response.headers), response.content))
+                LOG.debug('OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s',
+                          api, method, path, response.status_code, dict(response.headers), response.content)
 
         # Fix Go SDK issue
         # https://github.com/localstack/localstack/issues/3833
@@ -280,9 +280,9 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
 
 
 def is_s3_form_data(data_bytes):
-    if(to_bytes('key=') in data_bytes):
+    if to_bytes('key=') in data_bytes:
         return True
-    if(to_bytes('Content-Disposition: form-data') in data_bytes and to_bytes('name="key"') in data_bytes):
+    if to_bytes('Content-Disposition: form-data') in data_bytes and to_bytes('name="key"') in data_bytes:
         return True
     return False
 
@@ -322,7 +322,7 @@ def terminate_all_processes_in_docker():
             except Exception:
                 pass
     # kill the process itself
-    os._exit(0)
+    sys.exit(0)
 
 
 def serve_resource_graph(data):

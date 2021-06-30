@@ -386,7 +386,7 @@ class GenericProxy(object):
     def get_flask_ssl_context(cls, serial_number=None):
         if config.USE_SSL:
             _, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
-            return (cert_file_name, key_file_name)
+            return cert_file_name, key_file_name
         return None
 
 
@@ -410,7 +410,7 @@ def get_cert_pem_file_path():
 
 
 def start_proxy_server(port, bind_address=None, forward_url=None, use_ssl=None, update_listener=None,
-        quiet=False, params={}, asynchronous=True):
+        quiet=False, params=None, asynchronous=True):
     bind_address = bind_address if bind_address else BIND_HOST
 
     def handler(request, data):

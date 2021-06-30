@@ -208,6 +208,7 @@ def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=No
     class ProxyThread(FuncThread):
         def __init__(self):
             FuncThread.__init__(self, self.run_proxy, None)
+            self.shutdown_event = None
 
         def run_proxy(self, *args):
             loop = ensure_event_loop()
