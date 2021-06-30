@@ -1219,7 +1219,7 @@ class CloudFormationTest(unittest.TestCase):
         )
 
         outputs = details.get('Outputs', [])
-        self.assertEqual(1,  len(outputs))
+        self.assertEqual(1, len(outputs))
 
         kinesis_client = aws_stack.connect_to_service('kinesis')
         firehose_client = aws_stack.connect_to_service('firehose')
