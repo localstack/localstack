@@ -44,7 +44,7 @@ class ProxyListenerKinesis(ProxyListener):
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
             if action in ['PutRecord', 'PutRecords']:
-                return kinesis_error_response(data, action)
+                return kinesis_error_response(data, action, encoding_type)
 
         if config.KINESIS_PROVIDER == 'kinesalite':
             return self.forward_request_kinesalite(method, path, data, headers, action, encoding_type)
@@ -228,7 +228,7 @@ class ProxyListenerKinesis(ProxyListener):
                         tmp = tmp[1:-1]
                     record['Data'] = to_str(base64.b64encode(tmp))
 
-            response._content = cbor2.dumps(results) if encoding_type == APPLICATION_CBOR else json.dumps(results)
+            response._content = encode_data(results, encoding_type)
             return response
 
         if response.status_code >= 400:
@@ -367,13 +367,13 @@ def simple_error_response(msg, code, type_error, encoding_type=APPLICATION_JSON)
     return encoded_response(body, encoding_type, code)
 
 
-def kinesis_error_response(data, action):
+def kinesis_error_response(data, action, encoding_type):
     error_response = Response()
 
     if action == 'PutRecord':
         error_response.status_code = 400
         content = {
-            'ErrorCode': 'ProvisionedThroughputExceededException',
+            '__type': 'ProvisionedThroughputExceededException',
             'ErrorMessage': 'Rate exceeded for shard X in stream Y under account Z.'
         }
     else:
@@ -385,7 +385,8 @@ def kinesis_error_response(data, action):
                 'ErrorMessage': 'Rate exceeded for shard X in stream Y under account Z.'
             })
 
-    error_response._content = json.dumps(content)
+    error_response.headers.update({'content-type': encoding_type})
+    error_response._content = encode_data(content, encoding_type)
     return error_response
 
 
