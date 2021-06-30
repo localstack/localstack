@@ -570,7 +570,7 @@ def invoke_rest_api_integration_backend(api_id, stage, integration, method, path
         return result
 
     elif integration_type == 'MOCK':
-        # return empty response - details filled in via requestParameters above...
+        # return empty response - details filled in via responseParameters above...
         return requests_response({})
 
     if method == 'OPTIONS':

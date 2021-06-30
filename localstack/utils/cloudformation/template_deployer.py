@@ -1315,6 +1315,10 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
             )
 
 
+def get_action_name_for_resource_change(res_change):
+    return {'Add': 'CREATE', 'Remove': 'DELETE', 'Modify': 'UPDATE'}.get(res_change)
+
+
 def is_none_or_empty_value(value):
     return not value or value == PLACEHOLDER_AWS_NO_VALUE
 
@@ -1614,6 +1618,7 @@ class TemplateDeployer(object):
             # TODO: cache condition value in resource details on deployment and use cached value here
             if evaluate_resource_condition(resource, stack_name, resources):
                 delete_resource(resource_id, resources, stack_name)
+                self.stack.set_resource_status(resource_id, 'DELETE_COMPLETE')
         # update status
         self.stack.set_stack_status('DELETE_COMPLETE')
 
@@ -1730,7 +1735,8 @@ class TemplateDeployer(object):
 
     def resource_config_differs(self, resource_new):
         """ Return whether the given resource properties differ from the existing config (for stack updates). """
-        resource_old = self.resources[resource_new['LogicalResourceId']]
+        resource_id = resource_new['LogicalResourceId']
+        resource_old = self.resources[resource_id]
         props_old = resource_old['Properties']
         props_new = resource_new['Properties']
         ignored_keys = ['LogicalResourceId', 'PhysicalResourceId']
@@ -1741,6 +1747,10 @@ class TemplateDeployer(object):
         for key in old_keys:
             if props_old[key] != props_new[key]:
                 return True
+        old_status = self.stack.resource_states.get(resource_id) or {}
+        previous_state = old_status.get('PreviousResourceStatus') or old_status.get('ResourceStatus') or ''
+        if old_status and 'DELETE' in previous_state:
+            return True
 
     def merge_properties(self, resource_id, old_stack, new_stack):
         old_resources = old_stack.template['Resources']
@@ -1881,6 +1891,8 @@ class TemplateDeployer(object):
                             action, resource_id, j + 1, len(changes), res_change['ResourceType'], i + 1))
                         if not should_deploy:
                             del changes[j]
+                            stack_action = get_action_name_for_resource_change(action)
+                            stack.set_resource_status(resource_id, '%s_COMPLETE' % stack_action)
                             continue
                         if not self.all_resource_dependencies_satisfied(resource):
                             j += 1
@@ -1944,7 +1956,7 @@ class TemplateDeployer(object):
         elif action == 'Modify':
             result = update_resource(resource_id, new_resources, stack_name)
         # update resource status and physical resource id
-        stack_action = {'Add': 'CREATE', 'Remove': 'DELETE', 'Modify': 'UPDATE'}.get(action)
+        stack_action = get_action_name_for_resource_change(action)
         self.update_resource_details(resource_id, result, stack=old_stack, action=stack_action)
 
         return result
