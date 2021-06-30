@@ -361,7 +361,7 @@ class TestAPIGateway(unittest.TestCase):
 
         self.assertTrue(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', source_ip))
 
-        expected_path = f'/' + self.TEST_STAGE_NAME + '/lambda/foo1'
+        expected_path = '/' + self.TEST_STAGE_NAME + '/lambda/foo1'
         self.assertEqual(expected_path, request_context['path'])
         self.assertIsNone(request_context.get('stageVariables'))
         self.assertEqual(TEST_AWS_ACCOUNT_ID, request_context['accountId'])
