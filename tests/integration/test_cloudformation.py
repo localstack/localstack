@@ -1329,7 +1329,7 @@ class CloudFormationTest(unittest.TestCase):
 
         outputs = cloudformation.describe_stacks(StackName=stack_name2)['Stacks'][0]['Outputs']
         output = [out['OutputValue'] for out in outputs if out['OutputKey'] == 'MessageQueueUrl1'][0]
-        self.assertEqual(queue_url1, output)
+        self.assertEqual(aws_stack.sqs_queue_arn(queue_url1), output)
         output = [out['OutputValue'] for out in outputs if out['OutputKey'] == 'MessageQueueUrl2'][0]
         self.assertEqual(queue_url2, output)
 

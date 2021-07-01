@@ -150,7 +150,7 @@ class CloudWatchTest(unittest.TestCase):
         result = requests.get(url)
         self.assertEqual(200, result.status_code)
         result = json.loads(to_str(result.content))
-        self.assertGreaterEqual(3, len(result['metrics']))
+        self.assertGreaterEqual(len(result['metrics']), 3)
 
     def test_multiple_dimensions(self):
         client = aws_stack.connect_to_service('cloudwatch')

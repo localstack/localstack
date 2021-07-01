@@ -49,7 +49,7 @@ class TestEc2Integrations(unittest.TestCase):
         self.assertEqual('com.amazonaws.us-east-1.s3', vpc_end_point['VpcEndpoint']['ServiceName'])
         self.assertEqual(subnet['Subnet']['SubnetId'], vpc_end_point['VpcEndpoint']['SubnetIds'][0])
         self.assertEqual(vpc['Vpc']['VpcId'], vpc_end_point['VpcEndpoint']['VpcId'])
-        self.assertGreater(0, len(vpc_end_point['VpcEndpoint']['DnsEntries']))
+        self.assertGreater(len(vpc_end_point['VpcEndpoint']['DnsEntries']), 0)
 
     def test_reserved_instance_api(self):
         rs = self.ec2_client.describe_reserved_instances_offerings(
