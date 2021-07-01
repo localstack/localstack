@@ -65,6 +65,9 @@ def patch_moto():
     def _set_attributes(self, attributes, now=None):
         _set_attributes_orig(self, attributes, now)
 
+        if attributes == {}:
+            self.policy = None
+
         integer_fields = [
             'ReceiveMessageWaitTimeSeconds'
         ]

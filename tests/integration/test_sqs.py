@@ -233,6 +233,11 @@ class SQSTest(unittest.TestCase):
         attrs = self.client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['Policy'])['Attributes']
         self.assertIn('sqs:SendMessage', attrs['Policy'])
 
+        # Passing empty attributes resets the to defaults attributes with no Policy
+        empty_attributes = {}
+        self.client.set_queue_attributes(QueueUrl=queue_url, Attributes=empty_attributes)
+        self.assertNotIn('sqs:SendMessage', attrs['Policy'])
+
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
