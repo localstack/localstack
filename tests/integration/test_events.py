@@ -405,7 +405,7 @@ class EventsTest(unittest.TestCase):
 
         response = self.events_client.list_rules()
         self.assertEqual('ENABLED', response['Rules'][0]['State'])
-
+        _ = self.events_client.disable_rule(Name=rule_name)
         response = self.events_client.list_rules(NamePrefix=rule_name)
         self.assertEqual('DISABLED', response['Rules'][0]['State'])
 
