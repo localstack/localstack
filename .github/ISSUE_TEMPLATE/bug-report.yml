@@ -41,11 +41,11 @@ body:
     label: Steps To Reproduce
     description: Steps to reproduce the behavior.
     value: |
-      ## How are you starting localstack (e.g., `bin/localstack` command, arguments, or `docker-compose.yml`)
+      #### How are you starting localstack (e.g., `bin/localstack` command, arguments, or `docker-compose.yml`)
       
           docker run localstack/localstack
       
-      ## Client commands (e.g., AWS SDK code snippet, or sequence of "awslocal" commands)
+      #### Client commands (e.g., AWS SDK code snippet, or sequence of "awslocal" commands)
       
           awslocal s3 mb s3://mybucket
 
