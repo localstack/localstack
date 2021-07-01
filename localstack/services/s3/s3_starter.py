@@ -2,6 +2,7 @@ import os
 import types
 import logging
 import traceback
+from urllib.parse import urlparse
 from moto.s3 import models as s3_models, responses as s3_responses
 from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, S3_ALL_MULTIPARTS, is_delete_keys
 from moto.s3.exceptions import S3ClientError
@@ -13,7 +14,6 @@ from localstack.utils.server import multiserver
 from localstack.utils.common import wait_for_port_open, get_free_tcp_port
 from localstack.utils.generic.dict_utils import get_safe
 from localstack.services.infra import start_moto_server
-from urllib.parse import urlparse
 
 LOG = logging.getLogger(__name__)
 
