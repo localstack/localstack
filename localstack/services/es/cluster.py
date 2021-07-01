@@ -28,38 +28,33 @@ Here's how you can use it:
 import multiprocessing
 import os
 import threading
-from typing import Dict, List, Optional, NamedTuple
+from typing import Dict, List, NamedTuple, Optional
 
 import requests
 
-from localstack import constants, config
+from localstack import config, constants
 from localstack.services import install
 from localstack.services.infra import do_run
-from localstack.utils.common import get_service_protocol, chmod_r, mkdir, rm_rf
+from localstack.utils.common import chmod_r, get_service_protocol, mkdir, rm_rf
 
 CommandSettings = Dict[str, str]
 
-Directories = NamedTuple('Directories', [
-    ('base', str),
-    ('tmp', str),
-    ('mods', str),
-    ('data', str),
-    ('backup', str)
-])
+Directories = NamedTuple(
+    "Directories", [("base", str), ("tmp", str), ("mods", str), ("data", str), ("backup", str)]
+)
 
 
-def _install(cluster: 'ElasticsearchCluster'):
+def _install(cluster: "ElasticsearchCluster"):
     install.install_elasticsearch(cluster.version)
 
 
 def _build_elasticsearch_run_command(es_bin: str, settings: CommandSettings) -> List[str]:
-    cmd_settings = [f'-E {k}={v}' for k, v, in settings.items()]
+    cmd_settings = [f"-E {k}={v}" for k, v, in settings.items()]
     return [es_bin] + cmd_settings
 
 
 class ElasticsearchCluster:
-
-    def __init__(self, port=9200, host='localhost', version=None) -> None:
+    def __init__(self, port=9200, host="localhost", version=None) -> None:
         super().__init__()
         self._port = port
         self._host = host
@@ -91,7 +86,7 @@ class ElasticsearchCluster:
 
     @property
     def url(self):
-        return '%s://%s:%s' % (get_service_protocol(), self.host, self.port)
+        return "%s://%s:%s" % (get_service_protocol(), self.host, self.port)
 
     def is_up(self):
         if not self._started:
@@ -142,10 +137,10 @@ class ElasticsearchCluster:
 
             self._init_directories()
             cmd = self._create_run_command(additional_settings=self.command_settings)
-            cmd = ' '.join(cmd)
+            cmd = " ".join(cmd)
             env_vars = self._create_env_vars()
 
-            print('running %s with env %s' % (cmd, env_vars))
+            print("running %s with env %s" % (cmd, env_vars))
             # use asynchronous=True to get a ShellCommandThread
             self._elasticsearch_thread = do_run(cmd, asynchronous=True, env_vars=env_vars)
             self._starting.set()
@@ -154,27 +149,29 @@ class ElasticsearchCluster:
         try:
             self._elasticsearch_thread.join()
         finally:
-            print('_elasticsearch_thread returns')
+            print("_elasticsearch_thread returns")
             self._stopped.set()
 
-    def _create_run_command(self, additional_settings: Optional[CommandSettings] = None) -> List[str]:
+    def _create_run_command(
+        self, additional_settings: Optional[CommandSettings] = None
+    ) -> List[str]:
         # delete Elasticsearch data that may be cached locally from a previous test run
         dirs = self.directories
 
-        bin_path = os.path.join(dirs.base, 'bin/elasticsearch')
+        bin_path = os.path.join(dirs.base, "bin/elasticsearch")
 
         # build command settings for bin/elasticsearch
         settings = {
-            'http.port': self.port,
-            'http.publish_port': self.port,
-            'transport.port': '0',
-            'network.host': self.host,
-            'http.compression': 'false',
-            'path.data': f'"{dirs.data}"',
-            'path.repo': f'"{dirs.backup}"'
+            "http.port": self.port,
+            "http.publish_port": self.port,
+            "transport.port": "0",
+            "network.host": self.host,
+            "http.compression": "false",
+            "path.data": f'"{dirs.data}"',
+            "path.repo": f'"{dirs.backup}"',
         }
-        if os.path.exists(os.path.join(dirs.mods, 'x-pack-ml')):
-            settings['xpack.ml.enabled'] = 'false'
+        if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
+            settings["xpack.ml.enabled"] = "false"
 
         if additional_settings:
             settings.update(additional_settings)
@@ -185,21 +182,21 @@ class ElasticsearchCluster:
 
     def _create_env_vars(self) -> Dict:
         return {
-            'ES_JAVA_OPTS': os.environ.get('ES_JAVA_OPTS', '-Xms200m -Xmx600m'),
-            'ES_TMPDIR': self.directories.tmp
+            "ES_JAVA_OPTS": os.environ.get("ES_JAVA_OPTS", "-Xms200m -Xmx600m"),
+            "ES_TMPDIR": self.directories.tmp,
         }
 
     def _resolve_directories(self) -> Directories:
         # determine various directory paths
         base_dir = install.get_elasticsearch_install_dir(self.version)
 
-        es_tmp_dir = os.path.join(base_dir, 'tmp')
-        es_mods_dir = os.path.join(base_dir, 'modules')
+        es_tmp_dir = os.path.join(base_dir, "tmp")
+        es_mods_dir = os.path.join(base_dir, "modules")
         if config.DATA_DIR:
-            es_data_dir = os.path.join(config.DATA_DIR, 'elasticsearch')
+            es_data_dir = os.path.join(config.DATA_DIR, "elasticsearch")
         else:
-            es_data_dir = os.path.join(base_dir, 'data')
-        backup_dir = os.path.join(config.TMP_FOLDER, 'es_backup')
+            es_data_dir = os.path.join(base_dir, "data")
+        backup_dir = os.path.join(config.TMP_FOLDER, "es_backup")
 
         return Directories(base_dir, es_tmp_dir, es_mods_dir, es_data_dir, backup_dir)
 
@@ -224,11 +221,11 @@ def get_elasticsearch_health_status(url: str) -> Optional[str]:
     Queries the health endpoint of elasticsearch and returns either the status ('green', 'yellow', ...) or None if the
     response returned a non-200 response.
     """
-    resp = requests.get(url + '/_cluster/health')
+    resp = requests.get(url + "/_cluster/health")
 
     if resp and resp.ok:
         es_status = resp.json()
-        es_status = es_status['status']
+        es_status = es_status["status"]
         return es_status
 
     return None

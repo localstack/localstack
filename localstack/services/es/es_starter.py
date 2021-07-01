@@ -1,7 +1,5 @@
-import json
 import logging
 import os
-import traceback
 
 import requests
 
@@ -21,6 +19,12 @@ from localstack.utils.common import (
 LOG = logging.getLogger(__name__)
 
 STATE = {}
+
+
+def start_elasticsearch_service(port=None, asynchronous=False):
+    """Starts the ElasticSearch management API (not the actual elasticsearch process."""
+    port = port or config.PORT_ES
+    return start_local_api("ES", port, api="es", method=es_api.serve, asynchronous=asynchronous)
 
 
 def delete_all_elasticsearch_data(version):
@@ -101,27 +105,58 @@ def start_elasticsearch(
     return thread
 
 
-def check_elasticsearch(expect_shutdown=False, print_error=True):
+def get_elasticsearch_health_status(endpoint=None):
+    """
+    Queries the health endpoint of elasticsearch and returns either the status ('green', 'yellow', ...) or None if the
+    response returned a non-200 response.
+    """
+    if endpoint is None:
+        endpoint = "%s://%s:%s" % (
+            get_service_protocol(),
+            constants.LOCALHOST,
+            config.PORT_ELASTICSEARCH,
+        )
+
+    resp = requests.get(endpoint + "/_cluster/health")
+
+    if resp and resp.ok:
+        es_status = resp.json()
+        es_status = es_status["status"]
+        return es_status
+
+    return None
+
+
+def check_elasticsearch(expect_shutdown=False, print_error=False):
     # Check internal endpoint for health
     endpoint = "%s://%s:%s" % (
         get_service_protocol(),
         constants.LOCALHOST,
         config.PORT_ELASTICSEARCH,
     )
+
+    if expect_shutdown:
+        return _check_elasticsearch_is_up(endpoint, print_error=print_error)
+    else:
+        return _check_elasticsearch_is_down(endpoint)
+
+
+def _check_elasticsearch_is_up(endpoint, print_error=True):
+    status = None
     try:
-        req = requests.get(endpoint + "/_cluster/health")
-        es_status = json.loads(req.text)
-        es_status = es_status["status"]
-        return es_status == "green" or es_status == "yellow"
-    except ValueError as e:
+        status = get_elasticsearch_health_status(endpoint=endpoint)
+    except Exception as e:
         if print_error:
-            LOG.error(
-                "Elasticsearch health check to endpoint %s failed (retrying...): %s %s"
-                % (endpoint, e, traceback.format_exc())
-            )
-        pass
+            LOG.error("Elasticsearch health check to endpoint %s failed (retrying...): %s", e)
+
+    assert status is not None
+    assert status == "green" or status == "yellow"
 
 
-def start_elasticsearch_service(port=None, asynchronous=False):
-    port = port or config.PORT_ES
-    return start_local_api("ES", port, api="es", method=es_api.serve, asynchronous=asynchronous)
+def _check_elasticsearch_is_down(endpoint):
+    try:
+        status = get_elasticsearch_health_status(endpoint=endpoint)
+    except Exception as e:
+        return
+
+    assert status is None
