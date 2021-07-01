@@ -81,7 +81,7 @@ class TestTerraform(unittest.TestCase):
         s3_client = aws_stack.connect_to_service('s3')
 
         response = s3_client.head_bucket(Bucket=BUCKET_NAME)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         cors = {
             'AllowedHeaders': ['*'],
@@ -92,28 +92,28 @@ class TestTerraform(unittest.TestCase):
         }
 
         response = s3_client.get_bucket_cors(Bucket=BUCKET_NAME)
-        self.assertEqual(response['CORSRules'][0], cors)
+        self.assertEqual(cors, response['CORSRules'][0])
 
         response = s3_client.get_bucket_versioning(Bucket=BUCKET_NAME)
-        self.assertEqual(response['Status'], 'Enabled')
+        self.assertEqual('Enabled', response['Status'])
 
     def test_sqs(self):
         sqs_client = aws_stack.connect_to_service('sqs')
         queue_url = sqs_client.get_queue_url(QueueName=QUEUE_NAME)['QueueUrl']
         response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
 
-        self.assertEqual(response['Attributes']['DelaySeconds'], '90')
-        self.assertEqual(response['Attributes']['MaximumMessageSize'], '2048')
-        self.assertEqual(response['Attributes']['MessageRetentionPeriod'], '86400')
-        self.assertEqual(response['Attributes']['ReceiveMessageWaitTimeSeconds'], '10')
+        self.assertEqual('90', response['Attributes']['DelaySeconds'])
+        self.assertEqual('2048', response['Attributes']['MaximumMessageSize'])
+        self.assertEqual('86400', response['Attributes']['MessageRetentionPeriod'])
+        self.assertEqual('10', response['Attributes']['ReceiveMessageWaitTimeSeconds'])
 
     def test_lambda(self):
         lambda_client = aws_stack.connect_to_service('lambda')
         response = lambda_client.get_function(FunctionName=LAMBDA_NAME)
-        self.assertEqual(response['Configuration']['FunctionName'], LAMBDA_NAME)
-        self.assertEqual(response['Configuration']['Handler'], LAMBDA_HANDLER)
-        self.assertEqual(response['Configuration']['Runtime'], LAMBDA_RUNTIME)
-        self.assertEqual(response['Configuration']['Role'], LAMBDA_ROLE)
+        self.assertEqual(LAMBDA_NAME, response['Configuration']['FunctionName'])
+        self.assertEqual(LAMBDA_HANDLER, response['Configuration']['Handler'])
+        self.assertEqual(LAMBDA_RUNTIME, response['Configuration']['Runtime'])
+        self.assertEqual(LAMBDA_ROLE, response['Configuration']['Role'])
 
     def test_apigateway(self):
         apigateway_client = aws_stack.connect_to_service('apigateway')
@@ -129,19 +129,19 @@ class TestTerraform(unittest.TestCase):
         resources = apigateway_client.get_resources(restApiId=rest_id)['items']
 
         # We always have 1 default root resource (with path "/")
-        self.assertEqual(len(resources), 3)
+        self.assertEqual(3, len(resources))
 
         res1 = [r for r in resources if r.get('pathPart') == 'mytestresource']
         self.assertTrue(res1)
-        self.assertEqual(res1[0]['path'], '/mytestresource')
-        self.assertEqual(len(res1[0]['resourceMethods']), 2)
-        self.assertEqual(res1[0]['resourceMethods']['GET']['methodIntegration']['type'], 'MOCK')
+        self.assertEqual('/mytestresource', res1[0]['path'])
+        self.assertEqual(2, len(res1[0]['resourceMethods']))
+        self.assertEqual('MOCK', res1[0]['resourceMethods']['GET']['methodIntegration']['type'])
 
         res2 = [r for r in resources if r.get('pathPart') == 'mytestresource1']
         self.assertTrue(res2)
-        self.assertEqual(res2[0]['path'], '/mytestresource1')
-        self.assertEqual(len(res2[0]['resourceMethods']), 2)
-        self.assertEqual(res2[0]['resourceMethods']['GET']['methodIntegration']['type'], 'AWS_PROXY')
+        self.assertEqual('/mytestresource1', res2[0]['path'])
+        self.assertEqual(2, len(res2[0]['resourceMethods']))
+        self.assertEqual('AWS_PROXY', res2[0]['resourceMethods']['GET']['methodIntegration']['type'])
         self.assertTrue(res2[0]['resourceMethods']['GET']['methodIntegration']['uri'])
 
     def test_route53(self):
@@ -159,7 +159,7 @@ class TestTerraform(unittest.TestCase):
 
         certs = acm.list_certificates()['CertificateSummaryList']
         certs = [c for c in certs if c.get('DomainName') == 'example.com']
-        self.assertEqual(len(certs), 1)
+        self.assertEqual(1, len(certs))
 
     def test_apigateway_escaped_policy(self):
         apigateway_client = aws_stack.connect_to_service('apigateway')
@@ -171,4 +171,4 @@ class TestTerraform(unittest.TestCase):
             if rest_api['name'] == 'service_api':
                 service_apis.append(rest_api)
 
-        self.assertEqual(len(service_apis), 1)
+        self.assertEqual(1, len(service_apis))

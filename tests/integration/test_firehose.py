@@ -4,8 +4,15 @@ import base64
 
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (short_uid, get_free_tcp_port, wait_for_port_open, get_service_protocol,
-    retry, to_bytes, to_str)
+from localstack.utils.common import (
+    short_uid,
+    get_free_tcp_port,
+    wait_for_port_open,
+    get_service_protocol,
+    retry,
+    to_bytes,
+    to_str
+)
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
 

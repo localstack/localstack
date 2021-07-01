@@ -22,14 +22,14 @@ class SESTest(unittest.TestCase):
         templ_list = client.list_templates()['TemplatesMetadata']
         self.assertEqual(1, len(templ_list))
         created_template = templ_list[0]
-        self.assertEqual(created_template['Name'], TEST_TEMPLATE_ATTRIBUTES['TemplateName'])
+        self.assertEqual(TEST_TEMPLATE_ATTRIBUTES['TemplateName'], created_template['Name'])
         self.assertIn(type(created_template['CreatedTimestamp']), (date, datetime))
 
         # Should not fail after 2 consecutive tries
         templ_list = client.list_templates()['TemplatesMetadata']
         self.assertEqual(1, len(templ_list))
         created_template = templ_list[0]
-        self.assertEqual(created_template['Name'], TEST_TEMPLATE_ATTRIBUTES['TemplateName'])
+        self.assertEqual(TEST_TEMPLATE_ATTRIBUTES['TemplateName'], created_template['Name'])
         self.assertIn(type(created_template['CreatedTimestamp']), (date, datetime))
 
     def test_delete_template(self):
@@ -58,18 +58,22 @@ class SESTest(unittest.TestCase):
         data_dir = config.DATA_DIR or config.TMP_FOLDER
         email = 'user@example.com'
         client.verify_email_address(EmailAddress=email)
-        message = client.send_email(Source=email, Message={
-            'Subject': {
-                'Data': 'A_SUBJECT',
-            },
-            'Body': {
-                'Text': {
-                    'Data': 'A_MESSAGE',
+        message = client.send_email(
+            Source=email,
+            Message={
+                'Subject': {
+                    'Data': 'A_SUBJECT',
+                },
+                'Body': {
+                    'Text': {
+                        'Data': 'A_MESSAGE',
+                    },
                 },
             },
-        }, Destination={
-            'ToAddresses': ['success@example.com'],
-        })
+            Destination={
+                'ToAddresses': ['success@example.com'],
+            }
+        )
 
         with open(os.path.join(data_dir, 'ses', message['MessageId'] + '.json'), 'r') as f:
             message = f.read()

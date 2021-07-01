@@ -127,8 +127,8 @@ class EventsTest(unittest.TestCase):
 
         self.assertIn('FailedEntryCount', rs)
         self.assertIn('FailedEntries', rs)
-        self.assertEqual(rs['FailedEntryCount'], 0)
-        self.assertEqual(rs['FailedEntries'], [])
+        self.assertEqual(0, rs['FailedEntryCount'])
+        self.assertEqual([], rs['FailedEntries'])
 
         self.events_client.put_events(
             Entries=[{
@@ -144,11 +144,11 @@ class EventsTest(unittest.TestCase):
             return resp['Messages']
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(len(messages), 1)
+        self.assertEqual(1, len(messages))
 
         actual_event = json.loads(messages[0]['Body'])
         self.assertIsValidEvent(actual_event)
-        self.assertEqual(actual_event['detail'], TEST_EVENT_PATTERN['Detail'][0])
+        self.assertEqual(TEST_EVENT_PATTERN['Detail'][0], actual_event['detail'])
 
         # clean up
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
@@ -187,8 +187,8 @@ class EventsTest(unittest.TestCase):
 
         self.assertIn('FailedEntryCount', rs)
         self.assertIn('FailedEntries', rs)
-        self.assertEqual(rs['FailedEntryCount'], 0)
-        self.assertEqual(rs['FailedEntries'], [])
+        self.assertEqual(0, rs['FailedEntryCount'])
+        self.assertEqual([], rs['FailedEntries'])
 
         self.events_client.put_events(
             Entries=[{
@@ -204,10 +204,10 @@ class EventsTest(unittest.TestCase):
             return resp.get('Messages')
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(len(messages), 1)
+        self.assertEqual(1, len(messages))
 
         actual_event = json.loads(messages[0]['Body'])
-        self.assertEqual(actual_event, {'EventType': '1'})
+        self.assertEqual({'EventType': '1'}, actual_event)
 
         self.events_client.put_events(
             Entries=[{
@@ -223,7 +223,7 @@ class EventsTest(unittest.TestCase):
             return resp.get('Messages', [])
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(len(messages), 0)
+        self.assertEqual(0, len(messages))
 
         # clean up
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
@@ -263,8 +263,8 @@ class EventsTest(unittest.TestCase):
 
         self.assertIn('FailedEntryCount', rs)
         self.assertIn('FailedEntries', rs)
-        self.assertEqual(rs['FailedEntryCount'], 0)
-        self.assertEqual(rs['FailedEntries'], [])
+        self.assertEqual(0, rs['FailedEntryCount'])
+        self.assertEqual([], rs['FailedEntries'])
 
         self.events_client.put_events(
             Entries=[{
@@ -280,11 +280,11 @@ class EventsTest(unittest.TestCase):
             return resp['Messages']
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(len(messages), 1)
+        self.assertEqual(1, len(messages))
 
         actual_event = json.loads(messages[0]['Body']).get('Message')
         self.assertIsValidEvent(actual_event)
-        self.assertEqual(json.loads(actual_event).get('detail'), TEST_EVENT_PATTERN['Detail'][0])
+        self.assertEqual(TEST_EVENT_PATTERN['Detail'][0], json.loads(actual_event).get('detail'))
 
         # clean up
         sns_client.delete_topic(TopicArn=topic_arn)
@@ -336,11 +336,11 @@ class EventsTest(unittest.TestCase):
             return resp['Messages']
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(len(messages), 1)
+        self.assertEqual(1, len(messages))
 
         actual_event = json.loads(messages[0]['Body'])
         self.assertIsValidEvent(actual_event)
-        self.assertEqual(actual_event['detail'], TEST_EVENT_PATTERN['Detail'][0])
+        self.assertEqual(TEST_EVENT_PATTERN['Detail'][0], actual_event['detail'])
 
         # clean up
         self.cleanup(bus_name_1, rule_name, target_id)
@@ -376,8 +376,8 @@ class EventsTest(unittest.TestCase):
 
         self.assertIn('FailedEntryCount', rs)
         self.assertIn('FailedEntries', rs)
-        self.assertEqual(rs['FailedEntryCount'], 0)
-        self.assertEqual(rs['FailedEntries'], [])
+        self.assertEqual(0, rs['FailedEntryCount'])
+        self.assertEqual([], rs['FailedEntries'])
 
         self.events_client.put_events(
             Entries=[{
@@ -404,11 +404,10 @@ class EventsTest(unittest.TestCase):
         self.events_client.put_rule(Name=rule_name, ScheduleExpression='rate(1 minutes)')
 
         response = self.events_client.list_rules()
-        self.assertEqual(response['Rules'][0]['State'], 'ENABLED')
-
-        response = self.events_client.disable_rule(Name=rule_name)
+        self.assertEqual('ENABLED', response['Rules'][0]['State'])
+        _ = self.events_client.disable_rule(Name=rule_name)
         response = self.events_client.list_rules(NamePrefix=rule_name)
-        self.assertEqual(response['Rules'][0]['State'], 'DISABLED')
+        self.assertEqual('DISABLED', response['Rules'][0]['State'])
 
         # clean up
         self.events_client.delete_rule(Name=rule_name, Force=True)
@@ -518,10 +517,10 @@ class EventsTest(unittest.TestCase):
         execution_input, notification, msgs_received = retry(
             received, retries=5, sleep=15, q_urls=[queue_url, fifo_queue_url]
         )
-        self.assertEqual(json.loads(notification), event)
-        self.assertEqual(json.loads(execution_input), event)
+        self.assertEqual(event, json.loads(notification))
+        self.assertEqual(event, json.loads(execution_input))
         for msg_received in msgs_received:
-            self.assertEqual(json.loads(msg_received['Body']), event)
+            self.assertEqual(event, json.loads(msg_received['Body']))
 
         # clean up
         proxy.stop()
@@ -612,8 +611,8 @@ class EventsTest(unittest.TestCase):
 
         self.assertIn('FailedEntryCount', rs)
         self.assertIn('FailedEntries', rs)
-        self.assertEqual(rs['FailedEntryCount'], 0)
-        self.assertEqual(rs['FailedEntries'], [])
+        self.assertEqual(0, rs['FailedEntryCount'])
+        self.assertEqual([], rs['FailedEntries'])
 
         self.events_client.put_events(
             Entries=[{
@@ -626,12 +625,12 @@ class EventsTest(unittest.TestCase):
 
         # run tests
         bucket_contents = s3_client.list_objects(Bucket=s3_bucket)['Contents']
-        self.assertEqual(len(bucket_contents), 1)
+        self.assertEqual(1, len(bucket_contents))
         key = bucket_contents[0]['Key']
         s3_object = s3_client.get_object(Bucket=s3_bucket, Key=key)
         actual_event = json.loads(s3_object['Body'].read().decode())
         self.assertIsValidEvent(actual_event)
-        self.assertEqual(actual_event['detail'], TEST_EVENT_PATTERN['Detail'][0])
+        self.assertEqual(TEST_EVENT_PATTERN['Detail'][0], actual_event['detail'])
 
         # clean up
         firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
@@ -680,7 +679,7 @@ class EventsTest(unittest.TestCase):
             }]
         )
         self.assertIn('Entries', response)
-        self.assertEqual(len(response.get('Entries')), 1)
+        self.assertEqual(1, len(response.get('Entries')))
         self.assertIn('EventId', response.get('Entries')[0])
 
     def test_put_events_with_target_kinesis(self):
@@ -717,8 +716,8 @@ class EventsTest(unittest.TestCase):
 
         self.assertIn('FailedEntryCount', put_response)
         self.assertIn('FailedEntries', put_response)
-        self.assertEqual(put_response['FailedEntryCount'], 0)
-        self.assertEqual(put_response['FailedEntries'], [])
+        self.assertEqual(0, put_response['FailedEntryCount'])
+        self.assertEqual([], put_response['FailedEntries'])
 
         def put_events(events_client):
             events_client.put_events(
@@ -747,8 +746,8 @@ class EventsTest(unittest.TestCase):
         partition_key = record['PartitionKey']
         data = json.loads(record['Data'].decode())
 
-        self.assertEqual(partition_key, TEST_EVENT_PATTERN['detail-type'][0])
-        self.assertEqual(data['detail'], EVENT_DETAIL)
+        self.assertEqual(TEST_EVENT_PATTERN['detail-type'][0], partition_key)
+        self.assertEqual(EVENT_DETAIL, data['detail'])
         self.assertIsValidEvent(data)
 
     def test_put_events_with_input_path(self):
@@ -793,8 +792,8 @@ class EventsTest(unittest.TestCase):
             return resp.get('Messages')
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(json.loads(messages[0].get('Body')), EVENT_DETAIL)
+        self.assertEqual(1, len(messages))
+        self.assertEqual(EVENT_DETAIL, json.loads(messages[0].get('Body')))
 
         self.events_client.put_events(
             Entries=[{
@@ -806,7 +805,7 @@ class EventsTest(unittest.TestCase):
         )
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(messages, None)
+        self.assertIsNone(messages)
 
         # clean up
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
@@ -864,12 +863,12 @@ class EventsTest(unittest.TestCase):
             return resp.get('Messages')
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(json.loads(messages[0].get('Body')), EVENT_DETAIL)
+        self.assertEqual(1, len(messages))
+        self.assertEqual(EVENT_DETAIL, json.loads(messages[0].get('Body')))
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url_1)
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(json.loads(messages[0].get('Body')).get('detail'), EVENT_DETAIL)
+        self.assertEqual(1, len(messages))
+        self.assertEqual(EVENT_DETAIL, json.loads(messages[0].get('Body')).get('detail'))
 
         self.events_client.put_events(
             Entries=[{
@@ -881,7 +880,7 @@ class EventsTest(unittest.TestCase):
         )
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(messages, None)
+        self.assertIsNone(messages)
 
         # clean up
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
@@ -989,8 +988,8 @@ class EventsTest(unittest.TestCase):
             return resp.get('Messages')
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(json.loads(messages[0].get('Body')), json.loads(event['Detail']))
+        self.assertEqual(1, len(messages))
+        self.assertEqual(json.loads(event['Detail']), json.loads(messages[0].get('Body')))
         event_details = json.loads(event['Detail'])
         event_details['admins'] = 'no'
         event['Detail'] = json.dumps(event_details)
@@ -998,7 +997,7 @@ class EventsTest(unittest.TestCase):
         self.events_client.put_events(Entries=[event])
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
-        self.assertEqual(messages, None)
+        self.assertIsNone(messages)
 
         # clean up
         self.cleanup(TEST_EVENT_BUS_NAME, rule_name, target_id, queue_url=queue_url)

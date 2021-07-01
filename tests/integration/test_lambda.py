@@ -93,8 +93,8 @@ def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_reque
             lambda_name = lambda_name or 'non-existing-lambda-%s' % i
             ctx = {'env': 'test'}
             tmp = lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"foo":"bar"}',
-                InvocationType='RequestResponse',
-                ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))))
+                                       InvocationType='RequestResponse',
+                                       ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))))
         result.append(tmp)
         return result
     finally:
@@ -139,9 +139,9 @@ class LambdaTestBase(unittest.TestCase):
         # Get function by Name, ARN and partial ARN
         for func_ref in [func_name, function_arn, partial_function_arn]:
             rs = client.get_function(FunctionName=func_ref)
-            self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
-            self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
-            self.assertEqual(rs['Tags'], tags)
+            self.assertEqual(kms_key_arn, rs['Configuration'].get('KMSKeyArn', ''))
+            self.assertEqual(vpc_config, rs['Configuration'].get('VpcConfig', {}))
+            self.assertEqual(tags, rs['Tags'])
 
         client.delete_function(FunctionName=func_name)
 
@@ -177,7 +177,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         items_before = num_items()
         _run_forward_to_fallback_url('dynamodb://%s' % db_table)
         items_after = num_items()
-        self.assertEqual(items_after, items_before + 3)
+        self.assertEqual(items_before + 3, items_after)
 
     def test_forward_to_fallback_url_http(self):
         class MyUpdateListener(ProxyListener):
@@ -197,7 +197,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         items_after = len(records)
         for record in records:
             self.assertIn('non-existing-lambda', record['headers']['lambda-function-name'])
-        self.assertEqual(items_after, 3)
+        self.assertEqual(3, items_after)
 
         # create test Lambda
         lambda_name = 'test-%s' % short_uid()
@@ -211,15 +211,15 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         for record in records:
             headers = record['headers']
             self.assertIn('/lambda/', headers['Authorization'])
-            self.assertEqual(record['method'], 'POST')
+            self.assertEqual('POST', record['method'])
             self.assertIn('/functions/%s/invocations' % lambda_name, record['path'])
             self.assertTrue(headers.get('X-Amz-Client-Context'))
-            self.assertEqual(headers.get('X-Amz-Invocation-Type'), 'RequestResponse')
-            self.assertEqual(json.loads(to_str(record['data'])), {'foo': 'bar'})
-        self.assertEqual(items_after, 3)
+            self.assertEqual('RequestResponse', headers.get('X-Amz-Invocation-Type'))
+            self.assertEqual({'foo': 'bar'}, json.loads(to_str(record['data'])))
+        self.assertEqual(3, items_after)
         # assert result payload matches
         response_payload = inv_results[0]['Payload'].read()
-        self.assertEqual(json.loads(response_payload), lambda_result)
+        self.assertEqual(lambda_result, json.loads(response_payload))
 
         # clean up / shutdown
         lambda_client = aws_stack.connect_to_service('lambda')
@@ -237,7 +237,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
                              Payload=b'{}', InvocationType='RequestResponse')
 
         result = run_safe(ddb_client.scan, TableName=db_table)
-        self.assertEqual(result['Items'][0]['function_name']['S'], 'non-existing-lambda')
+        self.assertEqual('non-existing-lambda', result['Items'][0]['function_name']['S'])
 
     def test_dead_letter_queue(self):
         sqs_client = aws_stack.connect_to_service('sqs')
@@ -297,7 +297,6 @@ class TestLambdaBaseFeatures(unittest.TestCase):
     def test_success_failure_destination(self):
 
         def test_destination(success=False):
-
             sqs_client = aws_stack.connect_to_service('sqs')
             lambda_client = aws_stack.connect_to_service('lambda')
 
@@ -333,7 +332,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
                 condition = 'Success'
                 payload = {}
             lambda_client.invoke(FunctionName=lambda_name,
-                                Payload=json.dumps(payload), InvocationType='Event')
+                                 Payload=json.dumps(payload), InvocationType='Event')
 
             def receive_message():
                 rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
@@ -373,12 +372,14 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         policy = lambda_client.get_policy(FunctionName=function_name)['Policy']
         self.assertIsInstance(policy, six.string_types)
         policy = json.loads(to_str(policy))
-        self.assertEqual(policy['Statement'][0]['Action'], action)
-        self.assertEqual(policy['Statement'][0]['Sid'], sid)
-        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(function_name))
-        self.assertEqual(policy['Statement'][0]['Principal']['Service'], principal)
-        self.assertEqual(policy['Statement'][0]['Condition']['ArnLike']['AWS:SourceArn'],
-                        aws_stack.s3_bucket_arn('test-bucket'))
+        self.assertEqual(action, policy['Statement'][0]['Action'])
+        self.assertEqual(sid, policy['Statement'][0]['Sid'])
+        self.assertEqual(lambda_api.func_arn(function_name), policy['Statement'][0]['Resource'])
+        self.assertEqual(principal, policy['Statement'][0]['Principal']['Service'])
+        self.assertEqual(
+            aws_stack.s3_bucket_arn('test-bucket'),
+            policy['Statement'][0]['Condition']['ArnLike']['AWS:SourceArn']
+        )
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
         matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % function_name]
@@ -387,8 +388,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # remove permission that we just added
         resp = lambda_client.remove_permission(FunctionName=function_name,
-                                            StatementId=sid, Qualifier='qual1', RevisionId='r1')
-        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+                                               StatementId=sid, Qualifier='qual1', RevisionId='r1')
+        self.assertEqual(200, resp['ResponseMetadata']['HTTPStatusCode'])
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_large_payloads(self):
@@ -402,10 +403,10 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         payload = {'test': 'test123456' * 100 * 1000 * 5}  # 5MB payload
         payload_bytes = to_bytes(json.dumps(payload))
         result = lambda_client.invoke(FunctionName=function_name, Payload=payload_bytes)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
         result_data = result['Payload'].read()
         result_data = json.loads(to_str(result_data))
-        self.assertEqual(result_data, payload)
+        self.assertEqual(payload, result_data)
 
         lambda_client.delete_function(FunctionName=function_name)
 
@@ -432,27 +433,29 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
         matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % function_name]
-        self.assertEqual(len(matching), 1)
+        self.assertEqual(1, len(matching))
         self.assertIn(':policy/', matching[0]['Arn'])
 
         # validate both statements
         policy = matching[0]
         versions = iam_client.list_policy_versions(PolicyArn=policy['Arn'])['Versions']
-        self.assertEqual(len(versions), 1)
+        self.assertEqual(1, len(versions))
         statements = versions[0]['Document']['Statement']
         for i in range(len(statement_ids)):
-            self.assertEqual(statements[i]['Action'], action)
-            self.assertEqual(statements[i]['Resource'], lambda_api.func_arn(function_name))
-            self.assertEqual(statements[i]['Principal']['Service'], principal)
-            self.assertEqual(statements[i]['Condition']['ArnLike']['AWS:SourceArn'],
-                             aws_stack.s3_bucket_arn('test-bucket'))
+            self.assertEqual(action, statements[i]['Action'])
+            self.assertEqual(lambda_api.func_arn(function_name), statements[i]['Resource'])
+            self.assertEqual(principal, statements[i]['Principal']['Service'])
+            self.assertEqual(
+                aws_stack.s3_bucket_arn('test-bucket'),
+                statements[i]['Condition']['ArnLike']['AWS:SourceArn']
+            )
             # check statement_ids in reverse order
-            self.assertEqual(statements[i]['Sid'], statement_ids[abs(i - 1)])
+            self.assertEqual(statement_ids[abs(i - 1)], statements[i]['Sid'])
 
         # remove permission that we just added
         resp = lambda_client.remove_permission(FunctionName=function_name,
                                                StatementId=sid, Qualifier='qual1', RevisionId='r1')
-        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, resp['ResponseMetadata']['HTTPStatusCode'])
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_lambda_asynchronous_invocations(self):
@@ -490,9 +493,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         }
 
         # checking for parameter configuration
-        self.assertEqual(response['MaximumRetryAttempts'], 123)
-        self.assertEqual(response['MaximumEventAgeInSeconds'], 123)
-        self.assertEqual(response['DestinationConfig'], destination_config)
+        self.assertEqual(123, response['MaximumRetryAttempts'])
+        self.assertEqual(123, response['MaximumEventAgeInSeconds'])
+        self.assertEqual(destination_config, response['DestinationConfig'])
 
         # over writing event invoke config
         response = lambda_client.put_function_event_invoke_config(
@@ -510,7 +513,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # checking if 'MaximumEventAgeInSeconds' is removed
         self.assertNotIn('MaximumEventAgeInSeconds', response)
-        self.assertEqual(isinstance(response['LastModified'], datetime), True)
+        self.assertIsInstance(response['LastModified'], datetime)
 
         # updating event invoke config
         response = lambda_client.update_function_event_invoke_config(
@@ -519,12 +522,13 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         )
 
         # checking for updated and existing configuration
-        self.assertEqual(response['MaximumRetryAttempts'], 111)
-        self.assertEqual(response['DestinationConfig'], destination_config)
+        self.assertEqual(111, response['MaximumRetryAttempts'])
+        self.assertEqual(destination_config, response['DestinationConfig'])
 
         # clean up
-        response = lambda_client.delete_function_event_invoke_config(
-            FunctionName=function_name)
+        _ = lambda_client.delete_function_event_invoke_config(
+            FunctionName=function_name
+        )
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_event_source_mapping_default_batch_size(self):
@@ -547,7 +551,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         rs = lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn_1, FunctionName=function_name)
-        self.assertEqual(rs['BatchSize'], BATCH_SIZE_RANGES['sqs'][0])
+        self.assertEqual(BATCH_SIZE_RANGES['sqs'][0], rs['BatchSize'])
         uuid = rs['UUID']
 
         try:
@@ -560,7 +564,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             self.fail('This call should not be successful as the batch size > MAX_BATCH_SIZE')
 
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], INVALID_PARAMETER_VALUE_EXCEPTION)
+            self.assertEqual(INVALID_PARAMETER_VALUE_EXCEPTION, e.response['Error']['Code'])
 
         queue_url_2 = sqs_client.create_queue(QueueName=queue_name_2)['QueueUrl']
         queue_arn_2 = aws_stack.sqs_queue_arn(queue_name_2)
@@ -575,14 +579,14 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             self.fail('This call should not be successful as the batch size > MAX_BATCH_SIZE')
 
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], INVALID_PARAMETER_VALUE_EXCEPTION)
+            self.assertEqual(INVALID_PARAMETER_VALUE_EXCEPTION, e.response['Error']['Code'])
 
         table_arn = aws_stack.create_dynamodb_table(ddb_table, partition_key='id')['TableDescription']['TableArn']
         rs = lambda_client.create_event_source_mapping(
             EventSourceArn=table_arn,
             FunctionName=function_name
         )
-        self.assertEqual(rs['BatchSize'], BATCH_SIZE_RANGES['dynamodb'][0])
+        self.assertEqual(BATCH_SIZE_RANGES['dynamodb'][0], rs['BatchSize'])
 
         # clean up
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
@@ -623,7 +627,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         events = get_lambda_log_events(function_name)
 
         # lambda was invoked 1 time
-        self.assertEqual(len(events[0]['Records']), 1)
+        self.assertEqual(1, len(events[0]['Records']))
 
         # disable event source mapping
         lambda_client.update_event_source_mapping(UUID=uuid, Enabled=False)
@@ -632,7 +636,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         events = get_lambda_log_events(function_name)
 
         # lambda no longer invoked, still have 1 event
-        self.assertEqual(len(events[0]['Records']), 1)
+        self.assertEqual(1, len(events[0]['Records']))
 
         # clean up
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
@@ -662,7 +666,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         dynamodb_client.delete_table(TableName=ddb_table)
 
         result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
-        self.assertEqual(len(result['EventSourceMappings']), 0)
+        self.assertEqual(0, len(result['EventSourceMappings']))
         # clean up
         lambda_client.delete_function(FunctionName=function_name)
 
@@ -691,9 +695,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         events = retry(get_lambda_log_events, sleep_before=3, function_name=function_name)
 
         # lambda was invoked 1 time
-        self.assertEqual(len(events[0]['Records']), 1)
+        self.assertEqual(1, len(events[0]['Records']))
         rs = sqs_client.receive_message(QueueUrl=queue_url_1)
-        self.assertEqual(rs.get('Messages'), None)
+        self.assertIsNone(rs.get('Messages'))
 
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url_1)
@@ -729,7 +733,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         kinesis = aws_stack.connect_to_service('kinesis')
         stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
-        self.assertEqual(stream_summary['StreamDescriptionSummary']['OpenShardCount'], 1)
+        self.assertEqual(1, stream_summary['StreamDescriptionSummary']['OpenShardCount'])
         num_events_kinesis = 10
         kinesis.put_records(Records=[
             {
@@ -739,7 +743,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         ], StreamName=stream_name)
 
         events = get_lambda_log_events(function_name)
-        self.assertEqual(len(events[0]['Records']), 10)
+        self.assertEqual(10, len(events[0]['Records']))
 
         self.assertIn('eventID', events[0]['Records'][0])
         self.assertIn('eventSourceARN', events[0]['Records'][0])
@@ -806,34 +810,34 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             }
         )
 
-        self.assertEqual(response['CodeSigningConfig']['CodeSigningPolicies']['UntrustedArtifactOnDeployment'], 'Warn')
+        self.assertEqual('Warn', response['CodeSigningConfig']['CodeSigningPolicies']['UntrustedArtifactOnDeployment'])
         response = lambda_client.get_code_signing_config(
             CodeSigningConfigArn=code_signing_arn
         )
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         response = lambda_client.put_function_code_signing_config(
             CodeSigningConfigArn=code_signing_arn,
             FunctionName=function_name
         )
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         response = lambda_client.get_function_code_signing_config(
             FunctionName=function_name
         )
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(response['CodeSigningConfigArn'], code_signing_arn)
-        self.assertEqual(response['FunctionName'], function_name)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(code_signing_arn, response['CodeSigningConfigArn'])
+        self.assertEqual(function_name, response['FunctionName'])
 
         response = lambda_client.delete_function_code_signing_config(
             FunctionName=function_name
         )
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 204)
+        self.assertEqual(204, response['ResponseMetadata']['HTTPStatusCode'])
 
         response = lambda_client.delete_code_signing_config(
             CodeSigningConfigArn=code_signing_arn
         )
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 204)
+        self.assertEqual(204, response['ResponseMetadata']['HTTPStatusCode'])
 
         testutil.delete_lambda_function(name=function_name)
 
@@ -856,8 +860,8 @@ class TestPythonRuntimes(LambdaTestBase):
         result_data = json.loads(result['Payload'].read())
 
         # assert response details
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(result_data['event'], {})
+        self.assertEqual(200, result['StatusCode'])
+        self.assertEqual({}, result_data['event'])
 
         # assert that logs are contained in response
         logs = result.get('LogResult', '')
@@ -874,9 +878,11 @@ class TestPythonRuntimes(LambdaTestBase):
         )
         result_data = result['Payload'].read()
         result_data = json.loads(to_str(result_data))
-        self.assertEqual(result['ResponseMetadata']['HTTPHeaders']['content-type'],
-            'application/json')
-        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(
+            'application/json',
+            result['ResponseMetadata']['HTTPHeaders']['content-type']
+        )
+        self.assertEqual(200, result['StatusCode'])
         self.assertIsInstance(result_data, dict)
 
     def test_invocation_type_event(self):
@@ -884,14 +890,14 @@ class TestPythonRuntimes(LambdaTestBase):
             FunctionName=TEST_LAMBDA_NAME_PY,
             Payload=b'{}', InvocationType='Event')
 
-        self.assertEqual(result['StatusCode'], 202)
+        self.assertEqual(202, result['StatusCode'])
 
     def test_invocation_type_dry_run(self):
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}',
             InvocationType='DryRun')
 
-        self.assertEqual(result['StatusCode'], 204)
+        self.assertEqual(204, result['StatusCode'])
 
     def test_lambda_environment(self):
         vars = {'Hello': 'World'}
@@ -900,14 +906,16 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # invoke function and assert result contains env vars
         result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_ENV, Payload=b'{}')
+            FunctionName=TEST_LAMBDA_NAME_ENV, Payload=b'{}'
+        )
         result_data = result['Payload']
-        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(200, result['StatusCode'])
         self.assertDictEqual(json.load(result_data), vars)
 
         # get function config and assert result contains env vars
         result = self.lambda_client.get_function_configuration(
-            FunctionName=TEST_LAMBDA_NAME_ENV)
+            FunctionName=TEST_LAMBDA_NAME_ENV
+        )
         self.assertEqual(result['Environment'], {'Variables': vars})
 
         # clean up
@@ -920,8 +928,10 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON), get_content=True,
-            libs=TEST_LAMBDA_LIBS)
+            load_file(TEST_LAMBDA_PYTHON),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS
+        )
         self.s3_client.create_bucket(Bucket=bucket_name)
         self.s3_client.upload_fileobj(
             BytesIO(zip_file), bucket_name, bucket_key)
@@ -986,10 +996,10 @@ class TestPythonRuntimes(LambdaTestBase):
         result = safe_requests.post(url, data=b'{}', headers={'User-Agent': 'python-requests/testing'})
         content = json.loads(result.content)
 
-        self.assertEqual(content['path'], lambda_path)
-        self.assertEqual(content['resource'], lambda_resource)
-        self.assertEqual(content['requestContext']['path'], lambda_request_context_path)
-        self.assertEqual(content['requestContext']['resourcePath'], lambda_request_context_resource_path)
+        self.assertEqual(lambda_path, content['path'])
+        self.assertEqual(lambda_resource, content['resource'])
+        self.assertEqual(lambda_request_context_path, content['requestContext']['path'])
+        self.assertEqual(lambda_request_context_resource_path, content['requestContext']['resourcePath'])
 
         # clean up
         testutil.delete_lambda_function(lambda_name)
@@ -1039,8 +1049,8 @@ class TestPythonRuntimes(LambdaTestBase):
             FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(to_str(result_data).strip(), '{}')
+        self.assertEqual(200, result['StatusCode'])
+        self.assertEqual('{}', to_str(result_data).strip())
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_PY3)
@@ -1057,8 +1067,8 @@ class TestPythonRuntimes(LambdaTestBase):
         # invoke function and assert result
         result = self.lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
         result_data = json.loads(result['Payload'].read())
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(result_data['event'], json.loads('{}'))
+        self.assertEqual(200, result['StatusCode'])
+        self.assertEqual(json.loads('{}'), result_data['event'])
 
     def test_python3_runtime_multiple_create_with_conflicting_module(self):
         original_do_use_docker = lambda_api.DO_USE_DOCKER
@@ -1087,10 +1097,10 @@ class TestPythonRuntimes(LambdaTestBase):
             result2 = self.lambda_client.invoke(FunctionName=lambda_name2, Payload=b'{}')
             result_data2 = result2['Payload'].read()
 
-            self.assertEqual(result1['StatusCode'], 200)
+            self.assertEqual(200, result1['StatusCode'])
             self.assertIn('setting1', to_str(result_data1))
 
-            self.assertEqual(result2['StatusCode'], 200)
+            self.assertEqual(200, result2['StatusCode'])
             self.assertIn('setting2', to_str(result_data2))
 
             # clean up
@@ -1127,7 +1137,7 @@ class TestPythonRuntimes(LambdaTestBase):
         notification = events[0]['Records'][0]['Sns']
 
         self.assertIn('Subject', notification)
-        self.assertEqual(notification['Subject'], subject)
+        self.assertEqual(subject, notification['Subject'])
 
     def test_lambda_send_message_to_sqs(self):
         function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
@@ -1159,7 +1169,7 @@ class TestPythonRuntimes(LambdaTestBase):
             return rs['Messages'][0]
 
         message = retry(receive_message, retries=3, sleep=2)
-        self.assertEqual(message['Body'], event['message'])
+        self.assertEqual(event['message'], message['Body'])
 
         # clean up
         testutil.delete_lambda_function(function_name)
@@ -1254,8 +1264,8 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # assert that state machine get executed 1 time
         self.assertEqual(
-            len([ex for ex in rs['executions'] if ex['stateMachineArn'] == sm_arn]),
-            1
+            1,
+            len([ex for ex in rs['executions'] if ex['stateMachineArn'] == sm_arn])
         )
 
         # clean up
@@ -1326,9 +1336,11 @@ class TestNodeJSRuntimes(LambdaTestBase):
             ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))))
 
         result_data = result['Payload'].read()
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(json.loads(json.loads(result_data)['context']['clientContext']).
-                         get('custom').get('foo'), 'bar')
+        self.assertEqual(200, result['StatusCode'])
+        self.assertEqual(
+            'bar',
+            json.loads(json.loads(result_data)['context']['clientContext']).get('custom').get('foo')
+        )
 
         # assert that logs are present
         expected = ['.*Node.js Lambda handler executing.']
@@ -1355,7 +1367,7 @@ class TestNodeJSRuntimes(LambdaTestBase):
                 'event_type': 'test_lambda'
             })
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         events = get_lambda_log_events(TEST_LAMBDA_NAME_JS)
         self.assertGreater(len(events), 0)
@@ -1384,10 +1396,11 @@ class TestCustomRuntimes(LambdaTestBase):
             Payload=b'{"text":"bar with \'quotes\\""}')
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(200, result['StatusCode'])
         self.assertEqual(
-            to_str(result_data).strip(),
-            """Echoing request: '{"text": "bar with \'quotes\\""}'""")
+            """Echoing request: '{"text": "bar with \'quotes\\""}'""",
+            to_str(result_data).strip()
+        )
 
         # assert that logs are present
         expected = ['.*Custom Runtime Lambda handler executing.']
@@ -1417,8 +1430,8 @@ class TestDotNetCoreRuntimes(LambdaTestBase):
         result = self.lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(to_str(result_data).strip(), '{}')
+        self.assertEqual(200, result['StatusCode'])
+        self.assertEqual('{}', to_str(result_data).strip())
         # TODO make lambda log checks more resilient to various formats
         # self.check_lambda_logs(func_name, expected_lines=expected_lines)
 
@@ -1460,8 +1473,8 @@ class TestRubyRuntimes(LambdaTestBase):
             FunctionName=TEST_LAMBDA_NAME_RUBY, Payload=b'{}')
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(to_str(result_data).strip(), '{}')
+        self.assertEqual(200, result['StatusCode'])
+        self.assertEqual('{}', to_str(result_data).strip())
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_RUBY)
@@ -1532,7 +1545,7 @@ class TestJavaRuntimes(LambdaTestBase):
         result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b'{}')
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(200, result['StatusCode'])
         # TODO: find out why the assertion below does not work in Travis-CI! (seems to work locally)
         # self.assertIn('LinkedHashMap', to_str(result_data))
         self.assertIsNotNone(result_data)
@@ -1563,7 +1576,7 @@ class TestJavaRuntimes(LambdaTestBase):
             result = self.lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
             result_data = result['Payload'].read()
 
-            self.assertEqual(result['StatusCode'], 200)
+            self.assertEqual(200, result['StatusCode'])
             self.assertIn('echo', to_str(result_data))
 
             # clean up
@@ -1574,22 +1587,22 @@ class TestJavaRuntimes(LambdaTestBase):
             FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
             Payload=b'{"Records": [{"Sns": {"Message": "{}"}}]}')
 
-        self.assertEqual(result['StatusCode'], 202)
+        self.assertEqual(202, result['StatusCode'])
 
     def test_ddb_event(self):
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
             Payload=b'{"Records": [{"dynamodb": {"Message": "{}"}}]}')
 
-        self.assertEqual(result['StatusCode'], 202)
+        self.assertEqual(202, result['StatusCode'])
 
     def test_kinesis_invocation(self):
         payload = b'{"Records": [{"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"}}]}'
         result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_KINESIS, Payload=payload)
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(to_str(result_data).strip(), '"test "')
+        self.assertEqual(200, result['StatusCode'])
+        self.assertEqual('"test "', to_str(result_data).strip())
 
     def test_kinesis_event(self):
         result = self.lambda_client.invoke(
@@ -1597,16 +1610,16 @@ class TestJavaRuntimes(LambdaTestBase):
             Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}')
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 202)
-        self.assertEqual(to_str(result_data).strip(), '')
+        self.assertEqual(202, result['StatusCode'])
+        self.assertEqual('', to_str(result_data).strip())
 
     def test_stream_handler(self):
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM, Payload=b'{}')
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(to_str(result_data).strip(), '{}')
+        self.assertEqual(200, result['StatusCode'])
+        self.assertEqual('{}', to_str(result_data).strip())
 
     def test_serializable_input_object(self):
         result = self.lambda_client.invoke(
@@ -1614,7 +1627,7 @@ class TestJavaRuntimes(LambdaTestBase):
             Payload=b'{"bucket": "test_bucket", "key": "test_key"}')
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(200, result['StatusCode'])
         self.assertDictEqual(
             json.loads(to_str(result_data)),
             {'validated': True, 'bucket': 'test_bucket', 'key': 'test_key'}
@@ -1682,14 +1695,14 @@ class TestDockerBehaviour(LambdaTestBase):
 
         # make sure existing containers are gone
         executor.cleanup()
-        self.assertEqual(len(executor.get_all_container_names()), 0)
+        self.assertEqual(0, len(executor.get_all_container_names()))
 
         # deploy and invoke lambda without Docker
         testutil.create_lambda_function(
             func_name=func_name, handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS, envvars={'Hello': 'World'})
 
-        self.assertEqual(len(executor.get_all_container_names()), 0)
-        self.assertDictEqual(executor.function_invoke_times, {})
+        self.assertEqual(0, len(executor.get_all_container_names()))
+        self.assertDictEqual({}, executor.function_invoke_times)
 
         # invoke a few times.
         durations = []
@@ -1704,7 +1717,7 @@ class TestDockerBehaviour(LambdaTestBase):
             self.lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
             duration = time.time() - start_time
 
-            self.assertEqual(len(executor.get_all_container_names()), 1)
+            self.assertEqual(1, len(executor.get_all_container_names()))
 
             # ensure the last invoke time is being updated properly.
             if i > 0:
@@ -1719,16 +1732,16 @@ class TestDockerBehaviour(LambdaTestBase):
             self.assertLess(durations[i], durations[0])
 
         status = executor.get_docker_container_status(func_arn)
-        self.assertEqual(status, 1)
+        self.assertEqual(1, status)
 
         container_network = executor.get_docker_container_network(func_arn)
-        self.assertEqual(container_network, 'default')
+        self.assertEqual('default', container_network)
 
         executor.cleanup()
         status = executor.get_docker_container_status(func_arn)
-        self.assertEqual(status, 0)
+        self.assertEqual(0, status)
 
-        self.assertEqual(len(executor.get_all_container_names()), 0)
+        self.assertEqual(0, len(executor.get_all_container_names()))
 
         # clean up
         testutil.delete_lambda_function(func_name)
@@ -1779,25 +1792,25 @@ class TestDockerBehaviour(LambdaTestBase):
 
         # make sure existing containers are gone
         executor.destroy_existing_docker_containers()
-        self.assertEqual(len(executor.get_all_container_names()), 0)
+        self.assertEqual(0, len(executor.get_all_container_names()))
 
         # deploy and invoke lambda without Docker
         testutil.create_lambda_function(
             func_name=func_name, handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS, envvars={'Hello': 'World'})
 
-        self.assertEqual(len(executor.get_all_container_names()), 0)
+        self.assertEqual(0, len(executor.get_all_container_names()))
 
         self.lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
-        self.assertEqual(len(executor.get_all_container_names()), 1)
+        self.assertEqual(1, len(executor.get_all_container_names()))
 
         # try to destroy idle containers.
         executor.idle_container_destroyer()
-        self.assertEqual(len(executor.get_all_container_names()), 1)
+        self.assertEqual(1, len(executor.get_all_container_names()))
 
         # simulate an idle container
         executor.function_invoke_times[func_arn] = time.time() - lambda_executors.MAX_CONTAINER_IDLE_TIME_MS
         executor.idle_container_destroyer()
-        self.assertEqual(len(executor.get_all_container_names()), 0)
+        self.assertEqual(0, len(executor.get_all_container_names()))
 
         # clean up
         testutil.delete_lambda_function(func_name)

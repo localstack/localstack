@@ -178,13 +178,13 @@ class IntegrationTest(unittest.TestCase):
 
         # start the KCL client process in the background
         kinesis_connector.listen_to_kinesis(stream_name, listener_func=process_records,
-            wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
+                                            wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
 
         LOGGER.info('Kinesis consumer initialized.')
 
         # create table with stream forwarding config
         aws_stack.create_dynamodb_table(table_name, partition_key=PARTITION_KEY,
-            stream_view_type='NEW_AND_OLD_IMAGES')
+                                        stream_view_type='NEW_AND_OLD_IMAGES')
 
         # list DDB streams and make sure the table stream is there
         streams = dynamodbstreams.list_streams()
@@ -208,7 +208,7 @@ class IntegrationTest(unittest.TestCase):
         kinesis_event_source_arn = kinesis.describe_stream(
             StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
         testutil.create_lambda_function(func_name=lambda_stream_name,
-            zip_file=zip_file, event_source_arn=kinesis_event_source_arn)
+                                        zip_file=zip_file, event_source_arn=kinesis_event_source_arn)
 
         # deploy test lambda connected to SQS queue
         sqs_queue_info = testutil.create_sqs_queue(queue_name)
@@ -244,12 +244,14 @@ class IntegrationTest(unittest.TestCase):
         ]})
         # update some items, which also triggers notification events
         for i in range(0, num_updates_ddb):
-            dynamodb_service.update_item(TableName=table_name,
+            dynamodb_service.update_item(
+                TableName=table_name,
                 Key={PARTITION_KEY: {'S': 'testId%s' % i}},
                 AttributeUpdates={'data': {
                     'Action': 'PUT',
                     'Value': {'S': 'foobar123_updated'}
-                }})
+                }}
+            )
 
         # put items to stream
         num_events_kinesis = 1
@@ -268,20 +270,20 @@ class IntegrationTest(unittest.TestCase):
         num_events_kinesis_err = 1
         for i in range(num_events_kinesis_err):
             kinesis.put_record(Data='{"%s": 1}' % lambda_integration.MSG_BODY_RAISE_ERROR_FLAG,
-                PartitionKey='testIdError', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
+                               PartitionKey='testIdError', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
 
         # create SNS topic, connect it to the Lambda, publish test messages
         num_events_sns = 3
         response = sns.create_topic(Name=TEST_TOPIC_NAME)
         sns.subscribe(TopicArn=response['TopicArn'], Protocol='lambda',
-            Endpoint=aws_stack.lambda_function_arn(lambda_stream_name))
+                      Endpoint=aws_stack.lambda_function_arn(lambda_stream_name))
         for i in range(num_events_sns):
             sns.publish(TopicArn=response['TopicArn'], Subject='test_subject', Message='test message %s' % i)
 
         # get latest records
         latest = aws_stack.kinesis_get_latest_records(TEST_LAMBDA_SOURCE_STREAM_NAME,
-            shard_id='shardId-000000000000', count=10)
-        self.assertEqual(len(latest), 10)
+                                                      shard_id='shardId-000000000000', count=10)
+        self.assertEqual(10, len(latest))
 
         # send messages to SQS queue
         num_events_sqs = 4
@@ -296,15 +298,15 @@ class IntegrationTest(unittest.TestCase):
 
         def check_events():
             if len(events) != num_events:
-                LOGGER.warning(('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s') %
-                    (len(events), num_events))
-            self.assertEqual(len(events), num_events)
+                msg = 'DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(events), num_events)
+                LOGGER.warning(msg)
+            self.assertEqual(num_events, len(events))
             event_items = [json.loads(base64.b64decode(e['data'])) for e in events]
             # make sure the we have the right amount of INSERT/MODIFY event types
             inserts = [e for e in event_items if e.get('__action_type') == 'INSERT']
             modifies = [e for e in event_items if e.get('__action_type') == 'MODIFY']
-            self.assertEqual(len(inserts), num_put_new_items + num_batch_items)
-            self.assertEqual(len(modifies), num_put_existing_items + num_updates_ddb)
+            self.assertEqual(num_put_new_items + num_batch_items, len(inserts))
+            self.assertEqual(num_put_existing_items + num_updates_ddb, len(modifies))
 
         # this can take a long time in CI, make sure we give it enough time/retries
         retry(check_events, retries=15, sleep=2)
@@ -312,9 +314,10 @@ class IntegrationTest(unittest.TestCase):
         # check cloudwatch notifications
         def check_cw_invocations():
             num_invocations = get_lambda_invocations_count(lambda_stream_name)
-            self.assertEqual(num_invocations, num_events_kinesis + num_events_kinesis_err + num_events_sns)
+            expected_invocation_count = num_events_kinesis + num_events_kinesis_err + num_events_sns
+            self.assertEqual(expected_invocation_count, num_invocations)
             num_error_invocations = get_lambda_invocations_count(lambda_stream_name, 'Errors')
-            self.assertEqual(num_error_invocations, num_events_kinesis_err)
+            self.assertEqual(num_events_kinesis_err, num_error_invocations)
 
         # Lambda invocations are running asynchronously, hence sleep some time here to wait for results
         retry(check_cw_invocations, retries=7, sleep=2)
@@ -346,14 +349,21 @@ class IntegrationTest(unittest.TestCase):
             events.extend(records)
 
         # start the KCL client process in the background
-        kinesis_connector.listen_to_kinesis(stream_name, listener_func=process_records,
-            wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
+        kinesis_connector.listen_to_kinesis(
+            stream_name,
+            listener_func=process_records,
+            wait_until_started=True,
+            ddb_lease_table_suffix=ddb_lease_table_suffix
+        )
 
         LOGGER.info('Kinesis consumer initialized.')
 
         # create table with stream forwarding config
-        aws_stack.create_dynamodb_table(table_name, partition_key=PARTITION_KEY,
-            stream_view_type='NEW_AND_OLD_IMAGES')
+        aws_stack.create_dynamodb_table(
+            table_name,
+            partition_key=PARTITION_KEY,
+            stream_view_type='NEW_AND_OLD_IMAGES'
+        )
 
         # list DDB streams and make sure the table stream is there
         streams = dynamodbstreams.list_streams()
@@ -388,11 +398,11 @@ class IntegrationTest(unittest.TestCase):
         # submit a transaction with writes and delete
         dynamodb.transact_write_items(TransactItems=[
             {'Put': {'TableName': table_name,
-                'Item': {PARTITION_KEY: {'S': 'testId6'}, 'data': {'S': 'foobar123'}}}},
+                     'Item': {PARTITION_KEY: {'S': 'testId6'}, 'data': {'S': 'foobar123'}}}},
             {'Put': {'TableName': table_name,
-                'Item': {PARTITION_KEY: {'S': 'testId7'}, 'data': {'S': 'foobar123'}}}},
+                     'Item': {PARTITION_KEY: {'S': 'testId7'}, 'data': {'S': 'foobar123'}}}},
             {'Put': {'TableName': table_name,
-                'Item': {PARTITION_KEY: {'S': 'testId8'}, 'data': {'S': 'foobar123'}}}},
+                     'Item': {PARTITION_KEY: {'S': 'testId8'}, 'data': {'S': 'foobar123'}}}},
             {'Delete': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId3'}}}},
             {'Delete': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId4'}}}},
             {'Delete': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId5'}}}},
@@ -400,30 +410,34 @@ class IntegrationTest(unittest.TestCase):
 
         # submit a batch with a put over existing item
         dynamodb.transact_write_items(TransactItems=[
-            {'Put': {'TableName': table_name,
-                'Item': {PARTITION_KEY: {'S': 'testId6'}, 'data': {'S': 'foobar123_updated1'}}}},
+            {
+                'Put': {
+                    'TableName': table_name,
+                    'Item': {PARTITION_KEY: {'S': 'testId6'}, 'data': {'S': 'foobar123_updated1'}}
+                }
+            },
         ])
 
         # submit a transaction with a put over existing item
         dynamodb.transact_write_items(TransactItems=[
             {'Put': {'TableName': table_name,
-                'Item': {PARTITION_KEY: {'S': 'testId7'}, 'data': {'S': 'foobar123_updated1'}}}},
+                     'Item': {PARTITION_KEY: {'S': 'testId7'}, 'data': {'S': 'foobar123_updated1'}}}},
         ])
 
         # submit a transaction with updates
         dynamodb.transact_write_items(TransactItems=[
             {'Update': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId6'}},
-                'UpdateExpression': 'SET #0 = :0',
-                'ExpressionAttributeNames': {'#0': 'data'},
-                'ExpressionAttributeValues': {':0': {'S': 'foobar123_updated2'}}}},
+                        'UpdateExpression': 'SET #0 = :0',
+                        'ExpressionAttributeNames': {'#0': 'data'},
+                        'ExpressionAttributeValues': {':0': {'S': 'foobar123_updated2'}}}},
             {'Update': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId7'}},
-                'UpdateExpression': 'SET #0 = :0',
-                'ExpressionAttributeNames': {'#0': 'data'},
-                'ExpressionAttributeValues': {':0': {'S': 'foobar123_updated2'}}}},
+                        'UpdateExpression': 'SET #0 = :0',
+                        'ExpressionAttributeNames': {'#0': 'data'},
+                        'ExpressionAttributeValues': {':0': {'S': 'foobar123_updated2'}}}},
             {'Update': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId8'}},
-                'UpdateExpression': 'SET #0 = :0',
-                'ExpressionAttributeNames': {'#0': 'data'},
-                'ExpressionAttributeValues': {':0': {'S': 'foobar123_updated2'}}}},
+                        'UpdateExpression': 'SET #0 = :0',
+                        'ExpressionAttributeNames': {'#0': 'data'},
+                        'ExpressionAttributeValues': {':0': {'S': 'foobar123_updated2'}}}},
         ])
 
         LOGGER.info('Waiting some time before finishing test.')
@@ -436,17 +450,17 @@ class IntegrationTest(unittest.TestCase):
 
         def check_events():
             if len(events) != num_events:
-                LOGGER.warning(('DynamoDB updates retrieved (actual/expected): %s/%s') %
-                    (len(events), num_events))
-            self.assertEqual(len(events), num_events)
+                msg = 'DynamoDB updates retrieved (actual/expected): %s/%s' % (len(events), num_events)
+                LOGGER.warning(msg)
+            self.assertEqual(num_events, len(events))
             event_items = [json.loads(base64.b64decode(e['data'])) for e in events]
             # make sure the we have the right amount of expected event types
             inserts = [e for e in event_items if e.get('__action_type') == 'INSERT']
             modifies = [e for e in event_items if e.get('__action_type') == 'MODIFY']
             removes = [e for e in event_items if e.get('__action_type') == 'REMOVE']
-            self.assertEqual(len(inserts), num_insert)
-            self.assertEqual(len(modifies), num_modify)
-            self.assertEqual(len(removes), num_delete)
+            self.assertEqual(num_insert, len(inserts))
+            self.assertEqual(num_modify, len(modifies))
+            self.assertEqual(num_delete, len(removes))
 
             # assert that all inserts were received
 
@@ -454,7 +468,7 @@ class IntegrationTest(unittest.TestCase):
                 self.assertNotIn('old_image', event)
                 item_id = 'testId%d' % i
                 matching = [i for i in inserts if i['new_image']['id'] == item_id][0]
-                self.assertEqual(matching['new_image'], {'id': item_id, 'data': 'foobar123'})
+                self.assertEqual({'id': item_id, 'data': 'foobar123'}, matching['new_image'])
 
             # assert that all updates were received
 
@@ -487,7 +501,7 @@ class IntegrationTest(unittest.TestCase):
                 self.assertNotIn('new_image', event)
                 item_id = 'testId%d' % i
                 matching = [i for i in removes if i['old_image']['id'] == item_id][0]
-                self.assertEqual(matching['old_image'], {'id': item_id, 'data': 'foobar123'})
+                self.assertEqual({'id': item_id, 'data': 'foobar123'}, matching['old_image'])
 
         # this can take a long time in CI, make sure we give it enough time/retries
         retry(check_events, retries=9, sleep=4)
@@ -505,11 +519,11 @@ class IntegrationTest(unittest.TestCase):
 
         # deploy test lambdas connected to Kinesis streams
         zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
-            libs=TEST_LAMBDA_LIBS)
+                                                  libs=TEST_LAMBDA_LIBS)
         testutil.create_lambda_function(func_name=TEST_CHAIN_LAMBDA1_NAME, zip_file=zip_file,
-            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME))
+                                        event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME))
         testutil.create_lambda_function(func_name=TEST_CHAIN_LAMBDA2_NAME, zip_file=zip_file,
-            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME))
+                                        event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME))
 
         # publish test record
         test_data = {'test_data': 'forward_chain_data_%s with \'quotes\\"' % short_uid()}
@@ -582,7 +596,7 @@ class IntegrationTest(unittest.TestCase):
                 ],
             )['Attributes']
             msg_count = int(attributes.get('ApproximateNumberOfMessages'))
-            self.assertEqual(msg_count, 0, 'expecting queue to be empty')
+            self.assertEqual(0, msg_count, 'expecting queue to be empty')
 
             delayed_count = int(attributes.get('ApproximateNumberOfMessagesDelayed'))
             if delayed_count != 0:
@@ -592,14 +606,14 @@ class IntegrationTest(unittest.TestCase):
             if not_visible_count != 0:
                 LOGGER.warning('SQS messages not visible (actual/expected): %s/%s' % (not_visible_count, 0))
 
-            self.assertEqual(delayed_count, 0, 'no messages waiting for retry')
-            self.assertEqual(delayed_count + not_visible_count, 0, 'no in flight messages')
+            self.assertEqual(0, delayed_count, 'no messages waiting for retry')
+            self.assertEqual(0, delayed_count + not_visible_count, 'no in flight messages')
 
         # wait for the queue to drain (max 60s)
         retry(wait_for_done, retries=12, sleep=5.0)
 
         events = get_lambda_log_events(lambda_name_queue_batch, 10)
-        self.assertEqual(len(events), 3, 'expected 3 lambda invocations')
+        self.assertEqual(3, len(events), 'expected 3 lambda invocations')
 
         testutil.delete_lambda_function(lambda_name_queue_batch)
         sqs.delete_queue(QueueUrl=queue_url)

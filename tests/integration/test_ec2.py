@@ -20,10 +20,10 @@ class TestEc2Integrations(unittest.TestCase):
             RouteTableIds=[route_table['RouteTable']['RouteTableId']]
         )
 
-        self.assertEqual(vpc_end_point['VpcEndpoint']['ServiceName'], 'com.amazonaws.us-east-1.s3')
-        self.assertEqual(vpc_end_point['VpcEndpoint']['RouteTableIds'][0], route_table['RouteTable']['RouteTableId'])
-        self.assertEqual(vpc_end_point['VpcEndpoint']['VpcId'], vpc['Vpc']['VpcId'])
-        self.assertEqual(len(vpc_end_point['VpcEndpoint']['DnsEntries']), 0)
+        self.assertEqual('com.amazonaws.us-east-1.s3', vpc_end_point['VpcEndpoint']['ServiceName'])
+        self.assertEqual(route_table['RouteTable']['RouteTableId'], vpc_end_point['VpcEndpoint']['RouteTableIds'][0])
+        self.assertEqual(vpc['Vpc']['VpcId'], vpc_end_point['VpcEndpoint']['VpcId'])
+        self.assertEqual(0, len(vpc_end_point['VpcEndpoint']['DnsEntries']))
 
         # test with any end point type as gateway
         vpc_end_point = ec2.create_vpc_endpoint(
@@ -33,10 +33,10 @@ class TestEc2Integrations(unittest.TestCase):
             VpcEndpointType='gateway',
         )
 
-        self.assertEqual(vpc_end_point['VpcEndpoint']['ServiceName'], 'com.amazonaws.us-east-1.s3')
-        self.assertEqual(vpc_end_point['VpcEndpoint']['RouteTableIds'][0], route_table['RouteTable']['RouteTableId'])
-        self.assertEqual(vpc_end_point['VpcEndpoint']['VpcId'], vpc['Vpc']['VpcId'])
-        self.assertEqual(len(vpc_end_point['VpcEndpoint']['DnsEntries']), 0)
+        self.assertEqual('com.amazonaws.us-east-1.s3', vpc_end_point['VpcEndpoint']['ServiceName'])
+        self.assertEqual(route_table['RouteTable']['RouteTableId'], vpc_end_point['VpcEndpoint']['RouteTableIds'][0])
+        self.assertEqual(vpc['Vpc']['VpcId'], vpc_end_point['VpcEndpoint']['VpcId'])
+        self.assertEqual(0, len(vpc_end_point['VpcEndpoint']['DnsEntries']))
 
         # test with end point type as interface
         vpc_end_point = ec2.create_vpc_endpoint(
@@ -46,9 +46,9 @@ class TestEc2Integrations(unittest.TestCase):
             VpcEndpointType='interface',
         )
 
-        self.assertEqual(vpc_end_point['VpcEndpoint']['ServiceName'], 'com.amazonaws.us-east-1.s3')
-        self.assertEqual(vpc_end_point['VpcEndpoint']['SubnetIds'][0], subnet['Subnet']['SubnetId'])
-        self.assertEqual(vpc_end_point['VpcEndpoint']['VpcId'], vpc['Vpc']['VpcId'])
+        self.assertEqual('com.amazonaws.us-east-1.s3', vpc_end_point['VpcEndpoint']['ServiceName'])
+        self.assertEqual(subnet['Subnet']['SubnetId'], vpc_end_point['VpcEndpoint']['SubnetIds'][0])
+        self.assertEqual(vpc['Vpc']['VpcId'], vpc_end_point['VpcEndpoint']['VpcId'])
         self.assertGreater(len(vpc_end_point['VpcEndpoint']['DnsEntries']), 0)
 
     def test_reserved_instance_api(self):
@@ -63,7 +63,7 @@ class TestEc2Integrations(unittest.TestCase):
             ],
             OfferingType='Heavy Utilization'
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         rs = self.ec2_client.purchase_reserved_instances_offering(
             InstanceCount=1,
@@ -73,7 +73,7 @@ class TestEc2Integrations(unittest.TestCase):
                 'CurrencyCode': 'USD'
             }
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         rs = self.ec2_client.describe_reserved_instances(
             OfferingClass='standard',
@@ -82,12 +82,10 @@ class TestEc2Integrations(unittest.TestCase):
             ],
             OfferingType='Heavy Utilization'
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
     def test_vcp_peering_difference_regions(self):
         # Note: different regions currently not supported due to set_default_region_in_headers(..) in edge.py
-        region1 = 'ap-southeast-1'
-        region2 = 'us-east-2'
         region1 = region2 = aws_stack.get_region()
         ec2_client1 = aws_stack.connect_to_service(service_name='ec2', region_name=region1)
         ec2_client2 = aws_stack.connect_to_service(service_name='ec2', region_name=region2)
@@ -97,14 +95,14 @@ class TestEc2Integrations(unittest.TestCase):
         peer_vpc1 = ec2_client1.create_vpc(CidrBlock=cidr_block1)
         peer_vpc2 = ec2_client2.create_vpc(CidrBlock=cidr_block2)
 
-        self.assertEqual(peer_vpc1['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(peer_vpc1['Vpc']['CidrBlock'], cidr_block1)
-        self.assertEqual(peer_vpc2['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(peer_vpc2['Vpc']['CidrBlock'], cidr_block2)
+        self.assertEqual(200, peer_vpc1['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(cidr_block1, peer_vpc1['Vpc']['CidrBlock'])
+        self.assertEqual(200, peer_vpc2['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(cidr_block2, peer_vpc2['Vpc']['CidrBlock'])
 
         cross_region = ec2_client1.create_vpc_peering_connection(
             PeerVpcId=peer_vpc2['Vpc']['VpcId'], VpcId=peer_vpc1['Vpc']['VpcId'], PeerRegion=region2)
-        self.assertEqual(peer_vpc1['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, cross_region['ResponseMetadata']['HTTPStatusCode'])
         self.assertEqual(
             peer_vpc1['Vpc']['VpcId'],
             cross_region['VpcPeeringConnection']['RequesterVpcInfo']['VpcId']
@@ -117,7 +115,7 @@ class TestEc2Integrations(unittest.TestCase):
         accept_vpc = ec2_client2.accept_vpc_peering_connection(
             VpcPeeringConnectionId=cross_region['VpcPeeringConnection']['VpcPeeringConnectionId']
         )
-        self.assertEqual(accept_vpc['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, accept_vpc['ResponseMetadata']['HTTPStatusCode'])
         self.assertEqual(
             peer_vpc1['Vpc']['VpcId'],
             accept_vpc['VpcPeeringConnection']['RequesterVpcInfo']['VpcId']
@@ -134,23 +132,27 @@ class TestEc2Integrations(unittest.TestCase):
         requester_peer = ec2_client1.describe_vpc_peering_connections(
             VpcPeeringConnectionIds=[accept_vpc['VpcPeeringConnection']['VpcPeeringConnectionId']]
         )
-        self.assertEqual(len(requester_peer['VpcPeeringConnections']), 1)
+        self.assertEqual(1, len(requester_peer['VpcPeeringConnections']))
         self.assertEqual(
-            region1, requester_peer['VpcPeeringConnections'][0]['RequesterVpcInfo']['Region']
+            region1,
+            requester_peer['VpcPeeringConnections'][0]['RequesterVpcInfo']['Region']
         )
         self.assertEqual(
-            region2, requester_peer['VpcPeeringConnections'][0]['AccepterVpcInfo']['Region']
+            region2,
+            requester_peer['VpcPeeringConnections'][0]['AccepterVpcInfo']['Region']
         )
 
         accepter_peer = ec2_client2.describe_vpc_peering_connections(
             VpcPeeringConnectionIds=[accept_vpc['VpcPeeringConnection']['VpcPeeringConnectionId']]
         )
-        self.assertEqual(len(accepter_peer['VpcPeeringConnections']), 1)
+        self.assertEqual(1, len(accepter_peer['VpcPeeringConnections']))
         self.assertEqual(
-            region1, accepter_peer['VpcPeeringConnections'][0]['RequesterVpcInfo']['Region']
+            region1,
+            accepter_peer['VpcPeeringConnections'][0]['RequesterVpcInfo']['Region']
         )
         self.assertEqual(
-            region2, accepter_peer['VpcPeeringConnections'][0]['AccepterVpcInfo']['Region']
+            region2,
+            accepter_peer['VpcPeeringConnections'][0]['AccepterVpcInfo']['Region']
         )
 
         # Clean up

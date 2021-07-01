@@ -50,8 +50,8 @@ class SSMTest(unittest.TestCase):
 
         result = ssm_client.get_parameter(Name='/aws/reference/secretsmanager/{0}'.format(secret_name))
 
-        self.assertEqual(result.get('Parameter').get('Name'), '/aws/reference/secretsmanager/{0}'.format(secret_name))
-        self.assertEqual(result.get('Parameter').get('Value'), 'my_secret')
+        self.assertEqual('/aws/reference/secretsmanager/{0}'.format(secret_name), result.get('Parameter').get('Name'))
+        self.assertEqual('my_secret', result.get('Parameter').get('Value'))
 
         source_result = result.get('Parameter').get('SourceResult')
         self.assertTrue(source_result is not None, 'SourceResult should be present')
@@ -98,8 +98,8 @@ class SSMTest(unittest.TestCase):
 
         def do_assert(result):
             self.assertGreater(len(result), 0)
-            self.assertEqual(result[0]['Name'], param_name)
-            self.assertEqual(result[0]['Value'], '123')
+            self.assertEqual(param_name, result[0]['Name'])
+            self.assertEqual('123', result[0]['Value'])
 
         response = ssm_client.get_parameter(Name=search_name)
         do_assert([response['Parameter']])
@@ -113,7 +113,8 @@ class SSMTest(unittest.TestCase):
         value = 'value'
         param = ssm_client.put_parameter(Name=path, Value=value, Type='String')
         ssm_client.label_parameter_version(Name=path, ParameterVersion=param['Version'], Labels=['latest'])
-        list_of_params = ssm_client.get_parameters_by_path(Path='/my',
+        list_of_params = ssm_client.get_parameters_by_path(
+            Path='/my',
             ParameterFilters=[
                 {
                     'Key': 'Label',
@@ -121,4 +122,4 @@ class SSMTest(unittest.TestCase):
                 }
             ]
         )
-        self.assertEqual(list_of_params['Parameters'][0]['Name'], '/my/path')
+        self.assertEqual('/my/path', list_of_params['Parameters'][0]['Name'])

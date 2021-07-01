@@ -133,8 +133,8 @@ class TestAPIGateway(unittest.TestCase):
         # post test data to Kinesis via API Gateway
         result = requests.post(url, data=json.dumps(test_data))
         result = json.loads(to_str(result.content))
-        self.assertEqual(result['FailedRecordCount'], 0)
-        self.assertEqual(len(result['Records']), len(test_data['records']))
+        self.assertEqual(0, result['FailedRecordCount'])
+        self.assertEqual(len(test_data['records']), len(result['Records']))
 
         # clean up
         kinesis = aws_stack.connect_to_service('kinesis')
@@ -165,14 +165,14 @@ class TestAPIGateway(unittest.TestCase):
         url = gateway_request_url(
             api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=self.API_PATH_DATA_INBOUND)
         result = requests.post(url, data=json.dumps(test_data))
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
 
         parsed_json = xmltodict.parse(result.content)
         result = parsed_json['SendMessageResponse']['SendMessageResult']
 
         body_md5 = result['MD5OfMessageBody']
 
-        self.assertEqual(body_md5, 'b639f52308afd65866c86f274c59033f')
+        self.assertEqual('b639f52308afd65866c86f274c59033f', body_md5)
 
         # clean up
         sqs_client = aws_stack.connect_to_service('sqs')
@@ -196,11 +196,11 @@ class TestAPIGateway(unittest.TestCase):
         url = gateway_request_url(
             api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=self.API_PATH_DATA_INBOUND)
         result = requests.post(url, data=json.dumps(test_data))
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
 
         messages = aws_stack.sqs_receive_message(queue_name)['Messages']
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(json.loads(base64.b64decode(messages[0]['Body'])), test_data)
+        self.assertEqual(1, len(messages))
+        self.assertEqual(test_data, json.loads(base64.b64decode(messages[0]['Body'])))
 
     def test_api_gateway_http_integrations(self):
         self.run_api_gateway_http_integration('custom')
@@ -238,27 +238,27 @@ class TestAPIGateway(unittest.TestCase):
 
         # make test GET request to gateway
         result = requests.get(url)
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
         expected = custom_result if int_type == 'custom' else '{}'
-        self.assertEqual(json.loads(to_str(result.content))['data'], expected)
+        self.assertEqual(expected, json.loads(to_str(result.content))['data'])
 
         # make test POST request to gateway
         data = json.dumps({'data': 123})
         result = requests.post(url, data=data)
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
         expected = custom_result if int_type == 'custom' else data
-        self.assertEqual(json.loads(to_str(result.content))['data'], expected)
+        self.assertEqual(expected, json.loads(to_str(result.content))['data'])
 
         # make test POST request with non-JSON content type
         data = 'test=123'
         ctype = 'application/x-www-form-urlencoded'
         result = requests.post(url, data=data, headers={'content-type': ctype})
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
         content = json.loads(to_str(result.content))
         headers = CaseInsensitiveDict(content['headers'])
         expected = custom_result if int_type == 'custom' else data
-        self.assertEqual(content['data'], expected)
-        self.assertEqual(headers['content-type'], ctype)
+        self.assertEqual(expected, content['data'])
+        self.assertEqual(ctype, headers['content-type'])
 
         # clean up
         config.DISABLE_CUSTOM_CORS_APIGATEWAY = old_config
@@ -364,24 +364,25 @@ class TestAPIGateway(unittest.TestCase):
 
         self.assertTrue(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', source_ip))
 
-        self.assertEqual(request_context['path'], '/' + self.TEST_STAGE_NAME + path_with_replace)
-        self.assertEqual(request_context.get('stageVariables'), None)
-        self.assertEqual(request_context['accountId'], TEST_AWS_ACCOUNT_ID)
-        self.assertEqual(request_context['resourceId'], resource.get('id'))
-        self.assertEqual(request_context['stage'], self.TEST_STAGE_NAME)
-        self.assertEqual(request_context['identity']['userAgent'], 'python-requests/testing')
-        self.assertEqual(request_context['httpMethod'], 'POST')
-        self.assertEqual(request_context['protocol'], 'HTTP/1.1')
+        expected_path = '/' + self.TEST_STAGE_NAME + '/lambda/foo1'
+        self.assertEqual(expected_path, request_context['path'])
+        self.assertIsNone(request_context.get('stageVariables'))
+        self.assertEqual(TEST_AWS_ACCOUNT_ID, request_context['accountId'])
+        self.assertEqual(resource.get('id'), request_context['resourceId'])
+        self.assertEqual(self.TEST_STAGE_NAME, request_context['stage'])
+        self.assertEqual('python-requests/testing', request_context['identity']['userAgent'])
+        self.assertEqual('POST', request_context['httpMethod'])
+        self.assertEqual('HTTP/1.1', request_context['protocol'])
         self.assertIn('requestTimeEpoch', request_context)
         self.assertIn('requestTime', request_context)
 
         result = requests.delete(url, data=json.dumps(data))
-        self.assertEqual(result.status_code, 204)
+        self.assertEqual(204, result.status_code)
 
         # send message with non-ASCII chars
         body_msg = '🙀 - 参よ'
         result = requests.post(url, data=json.dumps({'return_raw_body': body_msg}))
-        self.assertEqual(to_str(result.content), body_msg)
+        self.assertEqual(body_msg, to_str(result.content))
 
     def test_api_gateway_lambda_proxy_integration_any_method(self):
         self._test_api_gateway_lambda_proxy_integration_any_method(
@@ -478,7 +479,7 @@ class TestAPIGateway(unittest.TestCase):
         )
         integration_keys = ['httpMethod', 'type', 'passthroughBehavior', 'cacheKeyParameters', 'uri', 'cacheNamespace',
             'timeoutInMillis', 'contentHandling', 'requestParameters']
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
         for key in integration_keys:
             self.assertIn(key, rs)
         self.assertNotIn('responseTemplates', rs)
@@ -490,20 +491,20 @@ class TestAPIGateway(unittest.TestCase):
             resourceId=api_resource['id'],
             httpMethod='GET'
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(rs['type'], 'AWS')
-        self.assertEqual(rs['httpMethod'], 'POST')
-        self.assertEqual(rs['uri'], target_uri)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual('AWS', rs['type'])
+        self.assertEqual('POST', rs['httpMethod'])
+        self.assertEqual(target_uri, rs['uri'])
 
         # invoke the gateway endpoint
         url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path='/test')
         response = requests.get('%s?param1=foobar' % url)
         self.assertLess(response.status_code, 400)
         content = json.loads(to_str(response.content))
-        self.assertEqual(content.get('httpMethod'), 'GET')
-        self.assertEqual(content.get('requestContext', {}).get('resourceId'), api_resource['id'])
-        self.assertEqual(content.get('requestContext', {}).get('stage'), self.TEST_STAGE_NAME)
-        self.assertEqual(content.get('body'), '{"param1": "foobar"}')
+        self.assertEqual('GET', content.get('httpMethod'))
+        self.assertEqual(api_resource['id'], content.get('requestContext', {}).get('resourceId'))
+        self.assertEqual(self.TEST_STAGE_NAME, content.get('requestContext', {}).get('stage'))
+        self.assertEqual('{"param1": "foobar"}', content.get('body'))
 
         # delete integration
         rs = apigw_client.delete_integration(
@@ -511,7 +512,7 @@ class TestAPIGateway(unittest.TestCase):
             resourceId=api_resource['id'],
             httpMethod='GET',
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         with self.assertRaises(ClientError) as ctx:
             # This call should not be successful as the integration is deleted
@@ -534,13 +535,13 @@ class TestAPIGateway(unittest.TestCase):
         rs = apigw_client.create_domain_name(
             domainName=domain_name
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         rs = apigw_client.get_domain_name(
             domainName=domain_name
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(rs['domainName'], domain_name)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(domain_name, rs['domainName'])
 
         # clean up
         apigw_client.delete_domain_name(domainName=domain_name)
@@ -564,11 +565,11 @@ class TestAPIGateway(unittest.TestCase):
             body = json.dumps(data) if method in ('POST', 'PUT', 'PATCH') else None
             result = getattr(requests, method.lower())(url, data=body)
             if method != 'DELETE':
-                self.assertEqual(result.status_code, 200)
+                self.assertEqual(200, result.status_code)
                 parsed_body = json.loads(to_str(result.content))
-                self.assertEqual(parsed_body.get('httpMethod'), method)
+                self.assertEqual(method, parsed_body.get('httpMethod'))
             else:
-                self.assertEqual(result.status_code, 204)
+                self.assertEqual(204, result.status_code)
 
     def test_apigateway_with_custom_authorization_method(self):
         apigw_client = aws_stack.connect_to_service('apigateway')
@@ -623,8 +624,8 @@ class TestAPIGateway(unittest.TestCase):
             description=description,
             contentType=content_type,
         )
-        self.assertEqual(response['name'], model_name)
-        self.assertEqual(response['description'], description)
+        self.assertEqual(model_name, response['name'])
+        self.assertEqual(description, response['description'])
 
         with self.assertRaises(Exception) as ctx:
             client.create_model(
@@ -633,8 +634,8 @@ class TestAPIGateway(unittest.TestCase):
                 description=description,
                 contentType=content_type,
             )
-        self.assertEqual(ctx.exception.response['Error']['Code'], 'NotFoundException')
-        self.assertEqual(ctx.exception.response['Error']['Message'], 'Invalid Rest API Id specified')
+        self.assertEqual('NotFoundException', ctx.exception.response['Error']['Code'])
+        self.assertEqual('Invalid Rest API Id specified', ctx.exception.response['Error']['Message'])
 
         with self.assertRaises(Exception) as ctx:
             client.create_model(
@@ -643,8 +644,8 @@ class TestAPIGateway(unittest.TestCase):
                 description=description,
                 contentType=content_type,
             )
-        self.assertEqual(ctx.exception.response['Error']['Code'], 'BadRequestException')
-        self.assertEqual(ctx.exception.response['Error']['Message'], 'No Model Name specified')
+        self.assertEqual('BadRequestException', ctx.exception.response['Error']['Code'])
+        self.assertEqual('No Model Name specified', ctx.exception.response['Error']['Message'])
 
         # clean up
         client.delete_rest_api(restApiId=rest_api_id)
@@ -658,7 +659,7 @@ class TestAPIGateway(unittest.TestCase):
         content_type = 'application/json'
         # when no models are present
         result = client.get_models(restApiId=rest_api_id)
-        self.assertEqual(result['items'], [])
+        self.assertEqual([], result['items'])
         # add a model
         client.create_model(
             restApiId=rest_api_id,
@@ -669,8 +670,8 @@ class TestAPIGateway(unittest.TestCase):
 
         # get models after adding
         result = client.get_models(restApiId=rest_api_id)
-        self.assertEqual(result['items'][0]['name'], model_name)
-        self.assertEqual(result['items'][0]['description'], description)
+        self.assertEqual(model_name, result['items'][0]['name'])
+        self.assertEqual(description, result['items'][0]['description'])
 
         # clean up
         client.delete_rest_api(restApiId=rest_api_id)
@@ -682,15 +683,15 @@ class TestAPIGateway(unittest.TestCase):
         # CREATE
         name = 'validator123'
         result = client.create_request_validator(restApiId=rest_api_id, name=name)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
         validator_id = result['id']
         # LIST
         result = client.get_request_validators(restApiId=rest_api_id)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(result['items'], [{'id': validator_id, 'name': name}])
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual([{'id': validator_id, 'name': name}], result['items'])
         # GET
         result = client.get_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
         self.assertEqual(select_attributes(result, ['id', 'name']), {'id': validator_id, 'name': name})
         # UPDATE
         result = client.update_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id,
@@ -715,16 +716,16 @@ class TestAPIGateway(unittest.TestCase):
         base_path = '/foo'
         result = client.create_base_path_mapping(
             domainName=domain_name, basePath=base_path, restApiId=rest_api_id, stage='dev')
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
         # LIST
         result = client.get_base_path_mappings(domainName=domain_name)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
         expected = {'basePath': base_path, 'restApiId': rest_api_id, 'stage': 'dev'}
-        self.assertEqual(result['items'], [expected])
+        self.assertEqual([expected], result['items'])
         # GET
         result = client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(select_attributes(result, ['basePath', 'restApiId', 'stage']), expected)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(expected, select_attributes(result, ['basePath', 'restApiId', 'stage']))
         # UPDATE
         result = client.update_base_path_mapping(domainName=domain_name, basePath=base_path,
             patchOperations=[])
@@ -766,16 +767,16 @@ class TestAPIGateway(unittest.TestCase):
 
         # get models after adding
         result = client.get_model(restApiId=rest_api_id, modelName=model_name)
-        self.assertEqual(result['name'], model_name)
-        self.assertEqual(result['description'], description)
+        self.assertEqual(model_name, result['name'])
+        self.assertEqual(description, result['description'])
 
         try:
             client.get_model(restApiId=dummy_rest_api_id, modelName=model_name)
             self.fail('This call should not be successful as the model is not created.')
 
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
-            self.assertEqual(e.response['Error']['Message'], 'Invalid Rest API Id specified')
+            self.assertEqual('NotFoundException', e.response['Error']['Code'])
+            self.assertEqual('Invalid Rest API Id specified', e.response['Error']['Message'])
 
     def test_get_model_with_invalid_name(self):
         client = aws_stack.connect_to_service('apigateway')
@@ -788,7 +789,7 @@ class TestAPIGateway(unittest.TestCase):
             self.fail('This call should not be successful as the model is not created.')
 
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
+            self.assertEqual('NotFoundException', e.response['Error']['Code'])
 
         # clean up
         client.delete_rest_api(restApiId=rest_api_id)
@@ -801,7 +802,7 @@ class TestAPIGateway(unittest.TestCase):
             json.dumps({'id': 'id1', 'data': 'foobar123'}),
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(404, response.status_code)
 
     def test_put_integration_dynamodb_proxy_validation_with_response_template(self):
         response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
@@ -815,11 +816,11 @@ class TestAPIGateway(unittest.TestCase):
             json.dumps({'id': 'id1', 'data': 'foobar123'}),
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
         dynamo_client = aws_stack.connect_to_resource('dynamodb')
         table = dynamo_client.Table('MusicCollection')
         result = table.get_item(Key={'id': 'id1'})
-        self.assertEqual(result['Item']['data'], 'foobar123')
+        self.assertEqual('foobar123', result['Item']['data'])
 
     def test_api_key_required_for_methods(self):
         response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
@@ -852,7 +853,7 @@ class TestAPIGateway(unittest.TestCase):
             json.dumps({'id': 'id1', 'data': 'foobar123'}),
         )
         # when the api key is not passed as part of the header
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         response = requests.put(
             url,
@@ -860,7 +861,7 @@ class TestAPIGateway(unittest.TestCase):
             headers={'X-API-Key': api_key['value']}
         )
         # when the api key is passed as part of the header
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(200, response.status_code)
 
     def test_multiple_api_keys_validate(self):
         response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
@@ -899,7 +900,7 @@ class TestAPIGateway(unittest.TestCase):
             json.dumps({'id': 'id1', 'data': 'foobar123'}),
         )
         # when the api key is not passed as part of the header
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(403, response.status_code)
 
         # check that all API keys work
         for key in api_keys:
@@ -909,7 +910,7 @@ class TestAPIGateway(unittest.TestCase):
                 headers={'X-API-Key': key}
             )
             # when the api key is passed as part of the header
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(200, response.status_code)
 
     def test_import_rest_api(self):
         rest_api_name = 'restapi-%s' % short_uid()
@@ -921,10 +922,10 @@ class TestAPIGateway(unittest.TestCase):
         rs = client.put_rest_api(
             restApiId=rest_api_id, body=spec_file, mode='overwrite'
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         rs = client.get_resources(restApiId=rest_api_id)
-        self.assertEqual(len(rs['items']), 2)  # should contain 2 resources (including the root resource)
+        self.assertEqual(2, len(rs['items']))  # should contain 2 resources (including the root resource)
 
         resource = [res for res in rs['items'] if res['path'] == '/test'][0]
         self.assertIn('GET', resource['resourceMethods'])
@@ -936,13 +937,13 @@ class TestAPIGateway(unittest.TestCase):
         rs = client.import_rest_api(
             body=spec_file
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         rest_api_id = rs['id']
 
         rs = client.get_resources(restApiId=rest_api_id)
         resources = rs['items']
-        self.assertEqual(len(resources), 3)
+        self.assertEqual(3, len(resources))
 
         paths = [res['path'] for res in resources]
         self.assertIn('/', paths)
@@ -1015,7 +1016,7 @@ class TestAPIGateway(unittest.TestCase):
         url = gateway_request_url(api_id=rest_api['id'], stage_name='dev', path='/')
         test_data = {'test': 'test-value'}
         resp = requests.post(url, data=json.dumps(test_data))
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(200, resp.status_code)
         self.assertIn('executionArn', resp.content.decode())
         self.assertIn('startDate', resp.content.decode())
 
@@ -1041,7 +1042,7 @@ class TestAPIGateway(unittest.TestCase):
         }
 
         resp = requests.post(url, data=json.dumps(test_data))
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(200, resp.status_code)
         self.assertIn('executionArn', resp.content.decode())
         self.assertIn('startDate', resp.content.decode())
 
@@ -1084,9 +1085,11 @@ class TestAPIGateway(unittest.TestCase):
         url = f'http://localhost:{config.EDGE_PORT}/restapis/{api_id}/test/_user_request_/person/123'
         result = requests.get(url)
         content = json.loads(result._content)
-        self.assertEqual(result.status_code, 200)
-        self.assertEqual(content['headers'].get(HEADER_LOCALSTACK_REQUEST_URL),
-            f'http://localhost:{config.EDGE_PORT}/person/123')
+        self.assertEqual(200, result.status_code)
+        self.assertEqual(
+            f'http://localhost:{config.EDGE_PORT}/person/123',
+            content['headers'].get(HEADER_LOCALSTACK_REQUEST_URL)
+        )
         # clean up
         client.delete_rest_api(restApiId=api_id)
         proxy.stop()
@@ -1111,9 +1114,9 @@ class TestAPIGateway(unittest.TestCase):
         apigw_client.create_deployment(restApiId=api_id, stageName='test')
         url = gateway_request_url(api_id, 'test', '/')
         result = requests.get(url)
-        self.assertEqual(result.status_code, 200)
-        self.assertEqual(result.text, object_content)
-        self.assertEqual(result.headers['content-type'], object_content_type)
+        self.assertEqual(200, result.status_code)
+        self.assertEqual(object_content, result.text)
+        self.assertEqual(object_content_type, result.headers['content-type'])
         # clean up
         apigw_client.delete_rest_api(restApiId=api_id)
         s3_client.delete_object(Bucket=bucket_name, Key=object_name)
@@ -1131,8 +1134,8 @@ class TestAPIGateway(unittest.TestCase):
         url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path='/')
         result = requests.options(url)
         self.assertLess(result.status_code, 400)
-        self.assertEqual(result.headers.get('vary'), 'Origin')
-        self.assertEqual(result.headers.get('Access-Control-Allow-Methods'), 'POST,OPTIONS')
+        self.assertEqual('Origin', result.headers.get('vary'))
+        self.assertEqual('POST,OPTIONS', result.headers.get('Access-Control-Allow-Methods'))
 
     # =====================================================================
     # Helper methods

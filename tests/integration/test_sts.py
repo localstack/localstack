@@ -17,7 +17,7 @@ class TestSTSIntegrations(unittest.TestCase):
         self.assertTrue(response['Credentials']['SecretAccessKey'])
         if response['AssumedRoleUser']['AssumedRoleId']:
             assume_role_id_parts = response['AssumedRoleUser']['AssumedRoleId'].split(':')
-            self.assertEqual(assume_role_id_parts[1], test_role_session_name)
+            self.assertEqual(test_role_session_name, assume_role_id_parts[1])
 
     def test_assume_role_with_web_identity(self):
         test_role_session_name = 'web_token'
@@ -31,7 +31,7 @@ class TestSTSIntegrations(unittest.TestCase):
         self.assertTrue(response['Credentials']['SecretAccessKey'])
         if response['AssumedRoleUser']['AssumedRoleId']:
             assume_role_id_parts = response['AssumedRoleUser']['AssumedRoleId'].split(':')
-            self.assertEqual(assume_role_id_parts[1], test_role_session_name)
+            self.assertEqual(test_role_session_name, assume_role_id_parts[1])
 
     def test_assume_role_with_saml(self):
         account_id = '000000000000'
@@ -135,7 +135,7 @@ class TestSTSIntegrations(unittest.TestCase):
         self.assertTrue(response['Credentials']['SecretAccessKey'])
         if response['AssumedRoleUser']['AssumedRoleId']:
             assume_role_id_parts = response['AssumedRoleUser']['AssumedRoleId'].split(':')
-            self.assertEqual(assume_role_id_parts[1], fed_name)
+            self.assertEqual(fed_name, assume_role_id_parts[1])
 
     def test_get_federation_token(self):
         token_name = 'TestName'
@@ -146,4 +146,4 @@ class TestSTSIntegrations(unittest.TestCase):
         self.assertTrue(response['Credentials']['SessionToken'])
         self.assertTrue(response['Credentials']['Expiration'])
         federated_user_info = response['FederatedUser']['FederatedUserId'].split(':')
-        self.assertEqual(federated_user_info[1], token_name)
+        self.assertEqual(token_name, federated_user_info[1])

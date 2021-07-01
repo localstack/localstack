@@ -10,20 +10,20 @@ class KMSTest(unittest.TestCase):
         client = aws_stack.connect_to_service('kms')
 
         response = client.list_keys()
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         keys_before = response['Keys']
 
         response = client.create_key(
             Policy='policy1',
             Description='test key 123',
             KeyUsage='ENCRYPT_DECRYPT')
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         key_id = response['KeyMetadata']['KeyId']
 
         response = client.list_keys()
-        self.assertEqual(len(response['Keys']), len(keys_before) + 1)
+        self.assertEqual(len(keys_before) + 1, len(response['Keys']))
 
         response = client.describe_key(KeyId=key_id)['KeyMetadata']
-        self.assertEqual(response['KeyId'], key_id)
+        self.assertEqual(key_id, response['KeyId'])
         self.assertIn(':%s:' % config.DEFAULT_REGION, response['Arn'])
         self.assertIn(':%s:' % TEST_AWS_ACCOUNT_ID, response['Arn'])

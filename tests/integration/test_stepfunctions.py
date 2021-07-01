@@ -236,7 +236,7 @@ class TestStateMachine(unittest.TestCase):
 
         def check_result():
             result = self._get_execution_results(sm_arn)
-            self.assertEqual(result, test_output)
+            self.assertEqual(test_output, result)
 
         # assert that the result is correct
         retry(check_result, sleep=2, retries=10)
@@ -256,7 +256,7 @@ class TestStateMachine(unittest.TestCase):
         definition['States']['ExampleMapState']['Iterator']['States']['CallLambda']['Resource'] = lambda_arn_3
         definition = json.dumps(definition)
         sm_name = 'map-%s' % short_uid()
-        result = self.sfn_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
+        _ = self.sfn_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
 
         # assert that the SM has been created
         self.assert_machine_created(state_machines_before)
@@ -271,7 +271,7 @@ class TestStateMachine(unittest.TestCase):
             self.assertIn(lambda_arn_3, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
             # assert that the result is correct
             result = self._get_execution_results(sm_arn)
-            self.assertEqual(result, test_output)
+            self.assertEqual(test_output, result)
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
@@ -307,7 +307,7 @@ class TestStateMachine(unittest.TestCase):
             self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
             # assert that the result is correct
             result = self._get_execution_results(sm_arn)
-            self.assertEqual(result['result_value'], {'Hello': TEST_RESULT_VALUE})
+            self.assertEqual({'Hello': TEST_RESULT_VALUE}, result['result_value'])
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=0.7, retries=25)
@@ -341,7 +341,7 @@ class TestStateMachine(unittest.TestCase):
             self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
             # assert that the result is correct
             result = self._get_execution_results(sm_arn)
-            self.assertEqual(result.get('handled'), {'Hello': TEST_RESULT_VALUE})
+            self.assertEqual({'Hello': TEST_RESULT_VALUE}, result.get('handled'))
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
@@ -376,7 +376,7 @@ class TestStateMachine(unittest.TestCase):
             self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
             # assert that the result is correct
             result = self._get_execution_results(sm_arn)
-            self.assertEqual(result.get('result_value'), {'payload': {'values': [1, 'v2']}})
+            self.assertEqual({'payload': {'values': [1, 'v2']}}, result.get('result_value'))
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
@@ -401,7 +401,7 @@ class TestStateMachine(unittest.TestCase):
     def _assert_machine_instances(self, expected_instances):
         def check():
             state_machines_after = self.sfn_client.list_state_machines()['stateMachines']
-            self.assertEqual(len(state_machines_after), expected_instances)
+            self.assertEqual(expected_instances, len(state_machines_after))
             return state_machines_after
         return retry(check, sleep=1, retries=4)
 

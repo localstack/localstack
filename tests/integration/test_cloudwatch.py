@@ -35,7 +35,7 @@ class CloudWatchTest(unittest.TestCase):
             Namespace=namespace,
             MetricData=data
         )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         # Get metric statistics
         rs = client.get_metric_statistics(
@@ -48,16 +48,16 @@ class CloudWatchTest(unittest.TestCase):
                 'Average'
             ]
         )
-        self.assertEqual(rs['Label'], metric_name)
-        self.assertEqual(len(rs['Datapoints']), 1)
-        self.assertEqual(rs['Datapoints'][0]['Timestamp'], data[0]['Timestamp'])
+        self.assertEqual(metric_name, rs['Label'])
+        self.assertEqual(1, len(rs['Datapoints']))
+        self.assertEqual(data[0]['Timestamp'], rs['Datapoints'][0]['Timestamp'])
 
         rs = client.list_metrics(
             Namespace=namespace,
             MetricName=metric_name
         )
-        self.assertEqual(len(rs['Metrics']), 1)
-        self.assertEqual(rs['Metrics'][0]['Namespace'], namespace)
+        self.assertEqual(1, len(rs['Metrics']))
+        self.assertEqual(namespace, rs['Metrics'][0]['Namespace'])
 
     def test_put_metric_data_gzip(self):
         metric_name = 'test-metric'
@@ -94,8 +94,8 @@ class CloudWatchTest(unittest.TestCase):
             Namespace=namespace,
             MetricName=metric_name
         )
-        self.assertEqual(len(rs['Metrics']), 1)
-        self.assertEqual(rs['Metrics'][0]['Namespace'], namespace)
+        self.assertEqual(1, len(rs['Metrics']))
+        self.assertEqual(namespace, rs['Metrics'][0]['Namespace'])
 
     def test_get_metric_data(self):
 
@@ -121,13 +121,13 @@ class CloudWatchTest(unittest.TestCase):
             EndTime=datetime.utcnow(),
         )
 
-        self.assertEqual(len(response['MetricDataResults']), 2)
+        self.assertEqual(2, len(response['MetricDataResults']))
 
         for data_metric in response['MetricDataResults']:
             if data_metric['Id'] == 'some':
-                self.assertEqual(data_metric['Values'][0], 41.0)
+                self.assertEqual(41.0, data_metric['Values'][0])
             if data_metric['Id'] == 'part':
-                self.assertEqual(data_metric['Values'][0], 23.0)
+                self.assertEqual(23.0, data_metric['Values'][0])
 
         # filtering metric data with current time interval
         response = conn.get_metric_data(
@@ -141,14 +141,14 @@ class CloudWatchTest(unittest.TestCase):
 
         for data_metric in response['MetricDataResults']:
             if data_metric['Id'] == 'some':
-                self.assertEqual(len(data_metric['Values']), 0)
+                self.assertEqual(0, len(data_metric['Values']))
             if data_metric['Id'] == 'part':
-                self.assertEqual(len(data_metric['Values']), 0)
+                self.assertEqual(0, len(data_metric['Values']))
 
         # get raw metric data
         url = '%s%s' % (config.get_edge_url(), PATH_GET_RAW_METRICS)
         result = requests.get(url)
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(200, result.status_code)
         result = json.loads(to_str(result.content))
         self.assertGreaterEqual(len(result['metrics']), 3)
 
@@ -165,7 +165,7 @@ class CloudWatchTest(unittest.TestCase):
                         'Dimensions': [{'Name': 'foo', 'Value': 'bar-%s' % (i % num_dimensions)}]
                     }]
                 )
-                self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+                self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         rs = client.list_metrics()
         metrics = [m for m in rs['Metrics'] if m.get('Namespace') in namespaces]
@@ -177,20 +177,20 @@ class CloudWatchTest(unittest.TestCase):
         alarm_name = 'a-%s' % short_uid()
         response = cloudwatch.put_metric_alarm(AlarmName=alarm_name,
             EvaluationPeriods=1, ComparisonOperator='GreaterThanThreshold')
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         alarm_arn = aws_stack.cloudwatch_alarm_arn(alarm_name)
 
         tags = [{'Key': 'tag1', 'Value': 'foo'}, {'Key': 'tag2', 'Value': 'bar'}]
         response = cloudwatch.tag_resource(ResourceARN=alarm_arn, Tags=tags)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         response = cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(response['Tags'], tags)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(tags, response['Tags'])
         response = cloudwatch.untag_resource(ResourceARN=alarm_arn, TagKeys=['tag1'])
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         response = cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(response['Tags'], [{'Key': 'tag2', 'Value': 'bar'}])
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual([{'Key': 'tag2', 'Value': 'bar'}], response['Tags'])
 
         # clean up
         cloudwatch.delete_alarms(AlarmNames=[alarm_name])

@@ -13,7 +13,7 @@ class TestRoute53(unittest.TestCase):
         self.assertEqual(201, response['ResponseMetadata']['HTTPStatusCode'])
 
         response = route53.get_change(Id='string')
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
     def test_associate_vpc_with_hosted_zone(self):
         ec2 = aws_stack.connect_to_service('ec2')
@@ -40,9 +40,9 @@ class TestRoute53(unittest.TestCase):
 
         # list zones by name
         result = route53.list_hosted_zones_by_name(DNSName=name).get('HostedZones')
-        self.assertEqual(result[0]['Name'], 'zone123.')
+        self.assertEqual('zone123.', result[0]['Name'])
         result = route53.list_hosted_zones_by_name(DNSName='%s.' % name).get('HostedZones')
-        self.assertEqual(result[0]['Name'], 'zone123.')
+        self.assertEqual('zone123.', result[0]['Name'])
 
         result = route53.disassociate_vpc_from_hosted_zone(
             HostedZoneId=zone_id, VPC={'VPCRegion': aws_stack.get_region(), 'VPCId': vpc_id}, Comment='test2')
@@ -62,15 +62,15 @@ class TestRoute53(unittest.TestCase):
         set_id = result['Id']
 
         result = client.get_reusable_delegation_set(Id=set_id)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(result['DelegationSet']['Id'], set_id)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(set_id, result['DelegationSet']['Id'])
 
         result = client.list_reusable_delegation_sets()
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(len(result['DelegationSets']), len(sets_before) + 1)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(len(sets_before) + 1, len(result['DelegationSets']))
 
         result = client.delete_reusable_delegation_set(Id=set_id)
-        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(200, result['ResponseMetadata']['HTTPStatusCode'])
 
         with self.assertRaises(Exception) as ctx:
             client.get_reusable_delegation_set(Id=set_id)
