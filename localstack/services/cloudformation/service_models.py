@@ -731,6 +731,9 @@ class SFNStateMachine(GenericBaseModel):
     def get_resource_name(self):
         return self.props.get('StateMachineName')
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('stateMachineArn')
+
     def fetch_state(self, stack_name, resources):
         sm_name = self.props.get('StateMachineName') or self.resource_id
         sm_name = self.resolve_refs_recursively(stack_name, sm_name, resources)
@@ -768,6 +771,43 @@ class SFNActivity(GenericBaseModel):
         client = aws_stack.connect_to_service('stepfunctions')
         result = client.describe_activity(activityArn=activity_arn)
         return result
+
+
+class CertificateManagerCertificate(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::CertificateManager::Certificate'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('acm')
+        result = client.list_certificates().get('CertificateSummaryList', [])
+        domain_name = self.resolve_refs_recursively(stack_name, self.props.get('DomainName'), resources)
+        result = [c for c in result if c['DomainName'] == domain_name]
+        return (result or [None])[0]
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('CertificateArn')
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create_params(params, *args, **kwargs):
+            result = select_attributes(params, ['CertificateAuthorityArn', 'DomainName',
+                'DomainValidationOptions', 'SubjectAlternativeNames', 'Tags', 'ValidationMethod'])
+            logging_pref = params.get('CertificateTransparencyLoggingPreference')
+            if logging_pref:
+                result['Options'] = {'CertificateTransparencyLoggingPreference': logging_pref}
+            return result
+
+        return {
+            'create': {
+                'function': 'request_certificate',
+                'parameters': _create_params
+            },
+            'delete': {
+                'function': 'delete_certificate',
+                'parameters': ['CertificateArn']
+            }
+        }
 
 
 class IAMRole(GenericBaseModel, MotoRole):

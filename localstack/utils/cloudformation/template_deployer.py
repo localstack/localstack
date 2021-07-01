@@ -407,6 +407,8 @@ def get_service_name(resource):
         return 'firehose'
     if parts[-2] == 'ResourceGroups':
         return 'resource-groups'
+    if parts[-2] == 'CertificateManager':
+        return 'acm'
     return parts[1].lower()
 
 
