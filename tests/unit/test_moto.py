@@ -22,7 +22,7 @@ class TestMoto(unittest.TestCase):
             {'Expression': 'e1/((1000*30*60)/100)', 'Id': 'expr_1'},
             {'Expression': 'FILL(m1,0)', 'Id': 'e1', 'ReturnData': 'false'},
             {'Id': 'm1', 'MetricStat':
-                {'Metric': {'Dimensions': [{'Name': 'StreamName', 'Value': 'arn:aws:kinesis:123'}],
+                {'Metric': {'Dimensions.member': [{'Name': 'StreamName', 'Value': 'arn:aws:kinesis:123'}],
                 'MetricName': 'PutRecords.TotalRecords', 'Namespace': 'AWS/Kinesis'},
                 'Period': '60', 'Stat': 'Sum'},
             'ReturnData': 'false'}

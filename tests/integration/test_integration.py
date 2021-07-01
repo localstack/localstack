@@ -6,7 +6,6 @@ import base64
 import logging
 import unittest
 from datetime import datetime, timedelta
-import pytest
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -19,8 +18,6 @@ from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBD
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
 TEST_TABLE_NAME = 'test_stream_table'
-TEST_LAMBDA_NAME_DDB = 'test_lambda_ddb'
-TEST_LAMBDA_NAME_QUEUE = 'test_lambda_queue'
 TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
 TEST_TOPIC_NAME = 'test_topic'
@@ -156,6 +153,9 @@ class IntegrationTest(unittest.TestCase):
         table_name = TEST_TABLE_NAME + 'klsdss' + ddb_lease_table_suffix
         stream_name = TEST_STREAM_NAME
         lambda_stream_name = 'lambda-stream-%s' % short_uid()
+        lambda_queue_name = 'lambda-queue-%s' % short_uid()
+        lambda_ddb_name = 'lambda-ddb-%s' % short_uid()
+        queue_name = 'queue-%s' % short_uid()
         dynamodb = aws_stack.connect_to_resource('dynamodb')
         dynamodb_service = aws_stack.connect_to_service('dynamodb')
         dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams')
@@ -197,12 +197,12 @@ class IntegrationTest(unittest.TestCase):
         # deploy test lambda connected to DynamoDB Stream
         zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
             libs=TEST_LAMBDA_LIBS)
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
+        testutil.create_lambda_function(func_name=lambda_ddb_name,
             zip_file=zip_file, event_source_arn=ddb_event_source_arn, delete=True)
         # make sure we cannot create Lambda with same name twice
-        with pytest.raises(Exception):
-            testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
-                                            zip_file=zip_file, event_source_arn=ddb_event_source_arn)
+        with self.assertRaises(Exception):
+            testutil.create_lambda_function(func_name=lambda_ddb_name, zip_file=zip_file,
+                                            event_source_arn=ddb_event_source_arn)
 
         # deploy test lambda connected to Kinesis Stream
         kinesis_event_source_arn = kinesis.describe_stream(
@@ -211,8 +211,8 @@ class IntegrationTest(unittest.TestCase):
             zip_file=zip_file, event_source_arn=kinesis_event_source_arn)
 
         # deploy test lambda connected to SQS queue
-        sqs_queue_info = testutil.create_sqs_queue(TEST_LAMBDA_NAME_QUEUE)
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_QUEUE,
+        sqs_queue_info = testutil.create_sqs_queue(queue_name)
+        testutil.create_lambda_function(func_name=lambda_queue_name,
             zip_file=zip_file, event_source_arn=sqs_queue_info['QueueArn'])
 
         # set number of items to update/put to table
@@ -317,18 +317,19 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(num_error_invocations, num_events_kinesis_err)
 
         # Lambda invocations are running asynchronously, hence sleep some time here to wait for results
-        retry(check_cw_invocations, retries=5, sleep=2)
+        retry(check_cw_invocations, retries=7, sleep=2)
 
         # clean up
         testutil.delete_lambda_function(lambda_stream_name)
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_QUEUE)
+        testutil.delete_lambda_function(lambda_ddb_name)
+        testutil.delete_lambda_function(lambda_queue_name)
         sqs.delete_queue(QueueUrl=sqs_queue_info['QueueUrl'])
 
     def test_lambda_streams_batch_and_transactions(self):
         ddb_lease_table_suffix = '-kclapp2'
         table_name = TEST_TABLE_NAME + 'lsbat' + ddb_lease_table_suffix
         stream_name = TEST_STREAM_NAME
+        lambda_ddb_name = 'lambda-ddb-%s' % short_uid()
         dynamodb = aws_stack.connect_to_service('dynamodb', client=True)
         dynamodb_service = aws_stack.connect_to_service('dynamodb')
         dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams')
@@ -364,7 +365,7 @@ class IntegrationTest(unittest.TestCase):
 
         # deploy test lambda connected to DynamoDB Stream
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=TEST_LAMBDA_NAME_DDB,
+            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=lambda_ddb_name,
             event_source_arn=ddb_event_source_arn, delete=True)
 
         # submit a batch with writes
@@ -492,7 +493,7 @@ class IntegrationTest(unittest.TestCase):
         retry(check_events, retries=9, sleep=4)
 
         # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
+        testutil.delete_lambda_function(lambda_ddb_name)
 
     def test_kinesis_lambda_forward_chain(self):
         kinesis = aws_stack.connect_to_service('kinesis')
