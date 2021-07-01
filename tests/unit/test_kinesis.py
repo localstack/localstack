@@ -29,7 +29,7 @@ class KinesisListenerTest(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         resp_json = json.loads(to_str(response.content))
-        self.assertEqual('ProvisionedThroughputExceededException', resp_json['ErrorCode'])
+        self.assertEqual('ProvisionedThroughputExceededException', resp_json['__type'])
         self.assertEqual('Rate exceeded for shard X in stream Y under account Z.', resp_json['ErrorMessage'])
 
     def test_random_error_on_put_records(self):
