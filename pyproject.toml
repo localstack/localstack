@@ -1,0 +1,11 @@
+# LocalStack project configuration
+
+[tool.black]
+line_length = 100
+include = '(localstack/.*\.py$|tests/.*\.py$)'
+extend_exclude = '(localstack/infra|localstack/node_modules)'
+
+[tool.isort]
+profile = 'black'
+extend_skip = ['localstack/infra/', 'localstack/node_modules', 'bin']
+line_length = 100

@@ -26,6 +26,11 @@ install-venv:
 	make setup-venv && \
 		test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt)
 
+install-venv-docker: # make install-venv for the docker environment (hack to remove black and isort)
+	make setup-venv && \
+		test ! -e requirements.txt || \
+		($(VENV_RUN);  $(PIP_CMD) install `grep -v '^ *#\|^black\|^isort\|^flake8' requirements.txt | cut -d' ' -f1 | grep .`)
+
 init:              ## Initialize the infrastructure, make sure all libs are downloaded
 	$(VENV_RUN); python -m localstack.services.install libs
 
@@ -146,8 +151,7 @@ web:
 
 ## Run automated tests
 test:
-	make lint && \
-		($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
+	($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
 test-coverage:
 	($(VENV_RUN); coverage --version; \
@@ -190,7 +194,10 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); python -m flake8 --inline-quotes=single --show-source --max-line-length=120 --ignore=E128,W504 --exclude=node_modules,$(VENV_DIR)*,dist,fixes .)
+	($(VENV_RUN); python -m flake8 --show-source --config .flake8 . )
+
+format:
+	($(VENV_RUN); python -m isort .; python -m black . )
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/
@@ -202,4 +209,4 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
-.PHONY: usage compile clean install web install-web infra test test-coverage
+.PHONY: usage compile clean install web install-web infra test test-coverage install-venv-docker

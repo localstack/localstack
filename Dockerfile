@@ -25,7 +25,7 @@ RUN apk add iputils
 
 # add files required to install virtualenv dependencies
 ADD Makefile requirements.txt ./
-RUN make install-venv
+RUN make install-venv-docker
 
 # add files required to run "make init"
 RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
@@ -98,6 +98,7 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
+# add configuration files
 ADD .coveragerc ./
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
 RUN pip uninstall -y argparse
