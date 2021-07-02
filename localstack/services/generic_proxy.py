@@ -534,10 +534,10 @@ def start_proxy_server(
     )
 
 
-def serve_flask_app(app, port, quiet=True, host=None, cors=True):
+def serve_flask_app(app, port, host=None, cors=True):
     if cors:
         CORS(app)
-    if quiet:
+    if not config.DEBUG:
         logging.getLogger("werkzeug").setLevel(logging.ERROR)
     if not host:
         host = "0.0.0.0"

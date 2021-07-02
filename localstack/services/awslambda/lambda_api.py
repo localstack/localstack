@@ -2201,10 +2201,10 @@ def update_code_signing_config(arn):
     return Response(json.dumps(result), status=200)
 
 
-def serve(port, quiet=True):
+def serve(port):
     from localstack.services import generic_proxy  # moved here to fix circular import errors
 
     # initialize the Lambda executor
     LAMBDA_EXECUTOR.startup()
 
-    generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
+    generic_proxy.serve_flask_app(app=app, port=port)

@@ -143,4 +143,4 @@ def serve(port):
     backend_url = "http://localhost:%s" % port
     services_infra.start_proxy(config.PORT_WEB_UI_SSL, backend_url, use_ssl=True)
 
-    generic_proxy.serve_flask_app(app=app, port=port, quiet=True)
+    generic_proxy.serve_flask_app(app=app, port=port)
