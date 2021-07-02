@@ -5,6 +5,7 @@
 [![Gitter](https://img.shields.io/gitter/room/localstack/Platform.svg)](https://gitter.im/localstack/Platform)
 [![PyPI Version](https://badge.fury.io/py/localstack.svg)](https://badge.fury.io/py/localstack)
 [![PyPI License](https://img.shields.io/pypi/l/localstack.svg)](https://img.shields.io/pypi/l/localstack.svg)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Code Climate](https://codeclimate.com/github/localstack/localstack/badges/gpa.svg)](https://codeclimate.com/github/localstack/localstack)
 [![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/_localstack)
 
