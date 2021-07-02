@@ -46,7 +46,10 @@ ALLOWED_CORS_RESPONSE_HEADERS = ['Access-Control-Allow-Origin', 'Access-Control-
 
 ALLOWED_CORS_ORIGINS = ['https://app.localstack.cloud', 'http://app.localstack.cloud',
     f'http://localhost:{config.PORT_WEB_UI}', f'https://localhost:{config.PORT_WEB_UI_SSL}',
-    f'http://127.0.0.1:{config.PORT_WEB_UI}', f'https://127.0.0.1:{config.PORT_WEB_UI_SSL}']
+    f'http://127.0.0.1:{config.PORT_WEB_UI}', f'https://127.0.0.1:{config.PORT_WEB_UI_SSL}',
+    f'https://localhost:{config.EDGE_PORT}', f'http://localhost:{config.EDGE_PORT}',
+    f'https://localhost.localstack.cloud:{config.EDGE_PORT}', f'http://localhost.localstack.cloud:{config.EDGE_PORT}',
+    'https://localhost', 'https://localhost.localstack.cloud']
 if EXTRA_CORS_ALLOWED_ORIGINS:
     ALLOWED_CORS_ORIGINS += EXTRA_CORS_ALLOWED_ORIGINS.split(',')
 
