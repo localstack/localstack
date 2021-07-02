@@ -87,8 +87,9 @@ KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
 
-DEBUGPY_MODULE = "debugpy"
-DEBUGPY_DEPENDENCIES = ["gcc", "python3-dev", "musl-dev"]
+# debugpy module
+DEBUGPY_MODULE = 'debugpy'
+DEBUGPY_DEPENDENCIES = ['gcc', 'python3-dev', 'musl-dev']
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = "1.8"
@@ -98,6 +99,11 @@ SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 
 # TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
 OVERWRITE_DDB_FILES_IN_DOCKER = False
+
+#GO Lambda runtime
+GO_RUNTIME_DOWNLOAD_URL = 'https://lambci.s3.amazonaws.com/fs/go1.x.tgz'
+GO_INSTALL_FOLDER = config.TMP_FOLDER + '/var/runtime'
+GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + '/aws-lambda-go'
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -355,6 +361,14 @@ def install_lambda_java_libs():
     if not os.path.exists(INSTALL_PATH_LOCALSTACK_FAT_JAR):
         log_install_msg("LocalStack Java libraries", verbatim=True)
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
+
+
+def install_go_lambda_runtime():
+    print('installing golang')
+    if not os.path.isfile(GO_INSTALL_FOLDER):
+        print('go lambda runtime not found')
+        mkdir(GO_INSTALL_FOLDER)
+        run('curl %s | tar -zx -C %s' % (GO_RUNTIME_DOWNLOAD_URL, GO_INSTALL_FOLDER))
 
 
 def install_cloudformation_libs():
