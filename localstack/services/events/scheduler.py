@@ -1,13 +1,14 @@
-import time
 import logging
+import time
+
 from crontab import CronTab
+
 from localstack.utils.common import FuncThread, short_uid
 
 LOG = logging.getLogger(__name__)
 
 
 class Job(object):
-
     def __init__(self, job_func, schedule, enabled):
         self.job_func = job_func
         self.schedule = schedule
@@ -19,7 +20,7 @@ class Job(object):
             if self.should_run_now() and self.is_enabled:
                 self.do_run()
         except Exception as e:
-            LOG.debug('Unable to run scheduled function %s: %s' % (self.job_func, e))
+            LOG.debug("Unable to run scheduled function %s: %s" % (self.job_func, e))
 
     def should_run_now(self):
         schedule = CronTab(self.schedule)

@@ -1,14 +1,15 @@
+import asyncio
 import select
 import socket
-import asyncio
-from localstack.constants import LOCALHOST_IP, BIND_HOST
-from localstack.utils.common import start_worker_thread, is_number, run_safe
+
+from localstack.constants import BIND_HOST, LOCALHOST_IP
+from localstack.utils.common import is_number, run_safe, start_worker_thread
 
 BUFFER_SIZE = 2 ** 10  # 1024
 
 
 def start_tcp_proxy(src, dst, handler, **kwargs):
-    """ Run a simple TCP proxy (tunneling raw connections from src to dst), using a message handler
+    """Run a simple TCP proxy (tunneling raw connections from src to dst), using a message handler
         that can be used to intercept messages and return predefined responses for certain requests.
 
     Arguments:
@@ -17,12 +18,12 @@ def start_tcp_proxy(src, dst, handler, **kwargs):
     handler -- a handler function to intercept requests (returns tuple (forward_value, response_value))
     """
 
-    src = '%s:%s' % (BIND_HOST, src) if is_number(src) else src
-    dst = '%s:%s' % (LOCALHOST_IP, dst) if is_number(dst) else dst
-    thread = kwargs.get('_thread')
+    src = "%s:%s" % (BIND_HOST, src) if is_number(src) else src
+    dst = "%s:%s" % (LOCALHOST_IP, dst) if is_number(dst) else dst
+    thread = kwargs.get("_thread")
 
     def ip_to_tuple(ip):
-        ip, port = ip.split(':')
+        ip, port = ip.split(":")
         return ip, int(port)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,7 +43,7 @@ def start_tcp_proxy(src, dst, handler, **kwargs):
 
                 for s in s_read:
                     data = s.recv(BUFFER_SIZE)
-                    if data in [b'', '', None]:
+                    if data in [b"", "", None]:
                         return
 
                     if s == s_src:
@@ -70,16 +71,17 @@ def start_tcp_proxy(src, dst, handler, **kwargs):
 
 def start_ssl_proxy(port, target, target_ssl=False):
     import pproxy
+
     from localstack.services.generic_proxy import GenericProxy
 
-    if ':' not in str(target):
-        target = '127.0.0.1:%s' % target
-    print('Starting SSL proxy server %s -> %s' % (port, target))
+    if ":" not in str(target):
+        target = "127.0.0.1:%s" % target
+    print("Starting SSL proxy server %s -> %s" % (port, target))
 
     # create server and remote connection
-    server = pproxy.Server('secure+tunnel://0.0.0.0:%s' % port)
-    target_proto = 'secure+tunnel' if target_ssl else 'tunnel'
-    remote = pproxy.Connection('%s://%s' % (target_proto, target))
+    server = pproxy.Server("secure+tunnel://0.0.0.0:%s" % port)
+    target_proto = "secure+tunnel" if target_ssl else "tunnel"
+    remote = pproxy.Connection("%s://%s" % (target_proto, target))
     args = dict(rserver=[remote], verbose=print)
 
     # set SSL contexts
@@ -92,7 +94,7 @@ def start_ssl_proxy(port, target, target_ssl=False):
     try:
         loop.run_forever()
     except KeyboardInterrupt:
-        print('exit!')
+        print("exit!")
 
     handler.close()
     loop.run_until_complete(handler.wait_closed())

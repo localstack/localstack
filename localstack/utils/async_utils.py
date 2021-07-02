@@ -1,18 +1,19 @@
-import time
 import asyncio
-import functools
 import concurrent.futures
+import functools
+import time
 from contextvars import copy_context
+
 from localstack.utils import common
-from localstack.utils.common import FuncThread, TMP_THREADS, start_worker_thread
+from localstack.utils.common import TMP_THREADS, FuncThread, start_worker_thread
 
 # reference to named event loop instances
 EVENT_LOOPS = {}
 
 
 class AdaptiveThreadPool(concurrent.futures.ThreadPoolExecutor):
-    """ Thread pool executor that maintains a maximum of 'core_size' reusable threads in
-        the core pool, and creates new thread instances as needed (if the core pool is full). """
+    """Thread pool executor that maintains a maximum of 'core_size' reusable threads in
+    the core pool, and creates new thread instances as needed (if the core pool is full)."""
 
     DEFAULT_CORE_POOL_SIZE = 30
 
@@ -27,11 +28,12 @@ class AdaptiveThreadPool(concurrent.futures.ThreadPoolExecutor):
 
         def _run(*tmpargs):
             return fn(*args, **kwargs)
+
         thread = start_worker_thread(_run)
         return thread.result_future
 
     def has_idle_threads(self):
-        if hasattr(self, '_idle_semaphore'):
+        if hasattr(self, "_idle_semaphore"):
             return self._idle_semaphore.acquire(timeout=0)
         num_threads = len(self._threads)
         return num_threads < self._max_workers
@@ -46,10 +48,9 @@ TMP_THREADS.append(THREAD_POOL)
 
 
 class AsyncThread(FuncThread):
-
     def __init__(self, async_func_gen=None, loop=None):
-        """ Pass a function that receives an event loop instance and a shutdown event,
-            and returns an async function. """
+        """Pass a function that receives an event loop instance and a shutdown event,
+        and returns an async function."""
         FuncThread.__init__(self, self.run_func, None)
         self.async_func_gen = async_func_gen
         self.loop = loop
@@ -85,14 +86,14 @@ async def run_sync(func, *args, thread_pool=None, **kwargs):
 
 
 def run_coroutine(coroutine, loop=None):
-    """ Run an async coroutine in a threadsafe way in the main event loop """
+    """Run an async coroutine in a threadsafe way in the main event loop"""
     loop = loop or get_main_event_loop()
     future = asyncio.run_coroutine_threadsafe(coroutine, loop)
     return future.result()
 
 
 def ensure_event_loop():
-    """ Ensure that an event loop is defined for the currently running thread """
+    """Ensure that an event loop is defined for the currently running thread"""
     try:
         return asyncio.get_event_loop()
     except Exception:
@@ -102,7 +103,7 @@ def ensure_event_loop():
 
 
 def get_main_event_loop():
-    return get_named_event_loop('_main_')
+    return get_named_event_loop("_main_")
 
 
 def get_named_event_loop(name):

@@ -37,7 +37,7 @@ def pytest_runtestloop(session):
     # second pytest lifecycle hook (before test runner starts)
     for item in session.items:
         # set flag that terraform will be used
-        if 'terraform' in str(item.parent).lower():
+        if "terraform" in str(item.parent).lower():
             will_run_terraform_tests.set()
             break
 
@@ -72,16 +72,16 @@ def startup_monitor() -> None:
     The startup monitor is a thread that waits for the startup_monitor_event and, once the event is true, starts a
     localstack instance in it's own thread context.
     """
-    logger.info('waiting on localstack_start signal')
+    logger.info("waiting on localstack_start signal")
     startup_monitor_event.wait()
 
     if localstack_stop.is_set():
         # this is called if _trigger_stop() is called before any test has requested the localstack_runtime fixture.
-        logger.info('ending startup_monitor')
+        logger.info("ending startup_monitor")
         localstack_stopped.set()
         return
 
-    logger.info('running localstack')
+    logger.info("running localstack")
     run_localstack()
 
 
@@ -90,15 +90,15 @@ def run_localstack():
     Start localstack and block until it terminates. Terminate localstack by calling _trigger_stop().
     """
     # configure
-    os.environ[ENV_INTERNAL_TEST_RUN] = '1'
+    os.environ[ENV_INTERNAL_TEST_RUN] = "1"
     safe_requests.verify_ssl = False
     config.FORCE_SHUTDOWN = False
-    config.EDGE_BIND_HOST = '0.0.0.0'
+    config.EDGE_BIND_HOST = "0.0.0.0"
 
     def watchdog():
-        logger.info('waiting stop event')
+        logger.info("waiting stop event")
         localstack_stop.wait()  # triggered by _trigger_stop()
-        logger.info('stopping infra')
+        logger.info("stopping infra")
         infra.stop_infra()
 
     def start_profiling(*args):
@@ -110,37 +110,37 @@ def run_localstack():
             # keep profiler active until tests have finished
             localstack_stopped.wait()
 
-        print('Start profiling...')
+        print("Start profiling...")
         profile_func()
-        print('Done profiling...')
+        print("Done profiling...")
 
     monitor = threading.Thread(target=watchdog)
     monitor.start()
 
-    logger.info('starting localstack infrastructure')
+    logger.info("starting localstack infrastructure")
     infra.start_infra(asynchronous=True)
 
     threading.Thread(target=start_profiling).start()
 
     if will_run_terraform_tests.is_set():
-        logger.info('running terraform init')
+        logger.info("running terraform init")
         # init terraform binary if necessary
         TestTerraform.init_async()
 
-    logger.info('waiting for infra to be ready')
+    logger.info("waiting for infra to be ready")
     infra.INFRA_READY.wait()  # wait for infra to start (threading event)
     localstack_started.set()  # set conftest inter-process Event
 
-    logger.info('waiting for shutdown')
+    logger.info("waiting for shutdown")
     try:
-        logger.info('waiting for watchdog to join')
+        logger.info("waiting for watchdog to join")
         monitor.join()
     finally:
-        logger.info('ok bye')
+        logger.info("ok bye")
         localstack_stopped.set()
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def localstack_runtime():
     """
     This is a dummy fixture. Each test requests the fixture, but it actually just makes sure that localstack is running,

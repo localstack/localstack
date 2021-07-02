@@ -1,26 +1,28 @@
 import json
+import logging
 import random
 import string
-import logging
-from moto.secretsmanager import models as secretsmanager_models
-from moto.secretsmanager.responses import SecretsManagerResponse
-from moto.secretsmanager.models import secretsmanager_backends, SecretsManagerBackend
-from moto.secretsmanager.exceptions import SecretNotFoundException
+
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
+from moto.secretsmanager import models as secretsmanager_models
+from moto.secretsmanager.exceptions import SecretNotFoundException
+from moto.secretsmanager.models import SecretsManagerBackend, secretsmanager_backends
+from moto.secretsmanager.responses import SecretsManagerResponse
+
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+
 # maps key names to ARNs
 SECRET_ARN_STORAGE = {}
 
 
 def apply_patches():
-
     def secretsmanager_models_secret_arn(region, secret_id):
-        k = '{}_{}'.format(region, secret_id)
+        k = "{}_{}".format(region, secret_id)
         if k not in SECRET_ARN_STORAGE:
-            id_string = ''.join(random.choice(string.ascii_letters) for _ in range(6))
-            arn = 'arn:aws:secretsmanager:{0}:{1}:secret:{2}-{3}'.format(
+            id_string = "".join(random.choice(string.ascii_letters) for _ in range(6))
+            arn = "arn:aws:secretsmanager:{0}:{1}:secret:{2}-{3}".format(
                 region, TEST_AWS_ACCOUNT_ID, secret_id, id_string
             )
             SECRET_ARN_STORAGE[k] = arn
@@ -33,47 +35,55 @@ def apply_patches():
     def get_resource_policy_model(self, secret_id):
         if self._is_valid_identifier(secret_id):
             result = {
-                'ARN': self.secrets[secret_id].arn,
-                'Name': self.secrets[secret_id].secret_id,
+                "ARN": self.secrets[secret_id].arn,
+                "Name": self.secrets[secret_id].secret_id,
             }
 
-            policy = getattr(self.secrets[secret_id], 'policy', None)
+            policy = getattr(self.secrets[secret_id], "policy", None)
             if policy:
-                result['ResourcePolicy'] = json.dumps(policy)
+                result["ResourcePolicy"] = json.dumps(policy)
 
             return json.dumps(result)
         else:
             raise SecretNotFoundException()
-    setattr(SecretsManagerBackend, 'get_resource_policy', get_resource_policy_model)
+
+    setattr(SecretsManagerBackend, "get_resource_policy", get_resource_policy_model)
 
     def get_resource_policy_response(self):
-        secret_id = self._get_param('SecretId')
-        return secretsmanager_backends[self.region].get_resource_policy(
-            secret_id=secret_id
-        )
-    setattr(SecretsManagerResponse, 'get_resource_policy', get_resource_policy_response)
+        secret_id = self._get_param("SecretId")
+        return secretsmanager_backends[self.region].get_resource_policy(secret_id=secret_id)
+
+    setattr(SecretsManagerResponse, "get_resource_policy", get_resource_policy_response)
 
     def delete_resource_policy_model(self, secret_id):
         if self._is_valid_identifier(secret_id):
             self.secrets[secret_id].policy = None
             return json.dumps(
                 {
-                    'ARN': self.secrets[secret_id].arn,
-                    'Name': self.secrets[secret_id].secret_id
+                    "ARN": self.secrets[secret_id].arn,
+                    "Name": self.secrets[secret_id].secret_id,
                 }
             )
         else:
             raise SecretNotFoundException()
-    if not hasattr(SecretsManagerBackend, 'delete_resource_policy'):
-        setattr(SecretsManagerBackend, 'delete_resource_policy', delete_resource_policy_model)
+
+    if not hasattr(SecretsManagerBackend, "delete_resource_policy"):
+        setattr(
+            SecretsManagerBackend,
+            "delete_resource_policy",
+            delete_resource_policy_model,
+        )
 
     def delete_resource_policy_response(self):
-        secret_id = self._get_param('SecretId')
-        return secretsmanager_backends[self.region].delete_resource_policy(
-            secret_id=secret_id
+        secret_id = self._get_param("SecretId")
+        return secretsmanager_backends[self.region].delete_resource_policy(secret_id=secret_id)
+
+    if not hasattr(SecretsManagerResponse, "delete_resource_policy"):
+        setattr(
+            SecretsManagerResponse,
+            "delete_resource_policy",
+            delete_resource_policy_response,
         )
-    if not hasattr(SecretsManagerResponse, 'delete_resource_policy'):
-        setattr(SecretsManagerResponse, 'delete_resource_policy', delete_resource_policy_response)
 
     def put_resource_policy_model(self, secret_id, resource_policy):
         policy_validator = IAMPolicyDocumentValidator(resource_policy)
@@ -83,35 +93,36 @@ def apply_patches():
             self.secrets[secret_id].policy = resource_policy
             return json.dumps(
                 {
-                    'ARN': self.secrets[secret_id].arn,
-                    'Name': self.secrets[secret_id].secret_id
+                    "ARN": self.secrets[secret_id].arn,
+                    "Name": self.secrets[secret_id].secret_id,
                 }
             )
         else:
             raise SecretNotFoundException()
-    if not hasattr(SecretsManagerBackend, 'put_resource_policy'):
-        setattr(SecretsManagerBackend, 'put_resource_policy', put_resource_policy_model)
+
+    if not hasattr(SecretsManagerBackend, "put_resource_policy"):
+        setattr(SecretsManagerBackend, "put_resource_policy", put_resource_policy_model)
 
     def put_resource_policy_response(self):
-        secret_id = self._get_param('SecretId')
-        resource_policy = self._get_param('ResourcePolicy')
+        secret_id = self._get_param("SecretId")
+        resource_policy = self._get_param("ResourcePolicy")
         return secretsmanager_backends[self.region].put_resource_policy(
-            secret_id=secret_id,
-            resource_policy=json.loads(resource_policy)
+            secret_id=secret_id, resource_policy=json.loads(resource_policy)
         )
-    if not hasattr(SecretsManagerResponse, 'put_resource_policy'):
-        setattr(SecretsManagerResponse, 'put_resource_policy', put_resource_policy_response)
+
+    if not hasattr(SecretsManagerResponse, "put_resource_policy"):
+        setattr(SecretsManagerResponse, "put_resource_policy", put_resource_policy_response)
 
 
 def start_secretsmanager(port=None, asynchronous=None, backend_port=None, update_listener=None):
     apply_patches()
     return start_moto_server(
-        key='secretsmanager',
-        name='Secrets Manager',
+        key="secretsmanager",
+        name="Secrets Manager",
         port=port,
         backend_port=backend_port,
         asynchronous=asynchronous,
-        update_listener=update_listener
+        update_listener=update_listener,
     )
 
 
@@ -120,14 +131,14 @@ def check_secretsmanager(expect_shutdown=False, print_error=False):
 
     # noinspection PyBroadException
     try:
-        out = aws_stack.connect_to_service(service_name='secretsmanager').list_secrets()
+        out = aws_stack.connect_to_service(service_name="secretsmanager").list_secrets()
     except Exception:
         if print_error:
             logger = logging.getLogger(__name__)
-            logger.exception('Secretsmanager health check failed')
+            logger.exception("Secretsmanager health check failed")
 
     if expect_shutdown:
         assert out is None
         return
 
-    assert isinstance(out['SecretList'], list)
+    assert isinstance(out["SecretList"], list)

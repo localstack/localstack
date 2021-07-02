@@ -1,8 +1,9 @@
+import inspect
 import json
+import logging
 import socket
 import traceback
-import logging
-import inspect
+
 from localstack.utils.common import FuncThread, truncate
 
 # set up local logger
@@ -29,7 +30,9 @@ class EventFileReaderThread(FuncThread):
                 thread = FuncThread(self.handle_connection, conn)
                 thread.start()
             except Exception as e:
-                LOGGER.error('Error dispatching client request: %s %s' % (e, traceback.format_exc()))
+                LOGGER.error(
+                    "Error dispatching client request: %s %s" % (e, traceback.format_exc())
+                )
         sock.close()
 
     def handle_connection(self, conn):
@@ -42,8 +45,8 @@ class EventFileReaderThread(FuncThread):
             line = line[:-1]
             try:
                 event = json.loads(line)
-                records = event['records']
-                shard_id = event['shard_id']
+                records = event["records"]
+                shard_id = event["shard_id"]
                 method_args = inspect.getfullargspec(self.callback).args
                 if len(method_args) > 2:
                     self.callback(records, shard_id=shard_id, fh_d_stream=self.fh_d_stream)
@@ -52,6 +55,8 @@ class EventFileReaderThread(FuncThread):
                 else:
                     self.callback(records)
             except Exception as e:
-                LOGGER.warning("Unable to process JSON line: '%s': %s %s. Callback: %s" %
-                               (truncate(line), e, traceback.format_exc(), self.callback))
+                LOGGER.warning(
+                    "Unable to process JSON line: '%s': %s %s. Callback: %s"
+                    % (truncate(line), e, traceback.format_exc(), self.callback)
+                )
         conn.close()

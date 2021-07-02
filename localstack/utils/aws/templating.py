@@ -1,9 +1,11 @@
-import re
-import json
 import base64
+import json
+import re
+
 from six.moves.urllib.parse import quote_plus, unquote_plus
+
 from localstack import config
-from localstack.utils.common import recurse_object, extract_jsonpath, short_uid
+from localstack.utils.common import extract_jsonpath, recurse_object, short_uid
 
 
 class VelocityInput(object):
@@ -26,7 +28,7 @@ class VelocityInput(object):
         return self.value.get(name)
 
     def __repr__(self):
-        return '$input'
+        return "$input"
 
 
 class VelocityUtil(object):
@@ -55,7 +57,7 @@ class VelocityUtil(object):
         return unquote_plus(s)
 
     def escapeJavaScript(self, s):
-        return str(str(s).replace('"', r'\"')).replace("'", r"\'")
+        return str(str(s).replace('"', r"\"")).replace("'", r"\'")
 
 
 def render_velocity_template(template, context, variables={}, as_json=False):
@@ -95,11 +97,16 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     airspeed.SubExpression.calculate = expr_calculate
 
     # fix "#set" commands
-    template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
+    template = re.sub(r"(^|\n)#\s+set(.*)", r"\1#set\2", template, re.MULTILINE)
 
     # enable syntax like "test#${foo.bar}"
-    empty_placeholder = ' __pLaCe-HoLdEr__ '
-    template = re.sub(r'([^\s]+)#\$({)?(.*)', r'\1#%s$\2\3' % empty_placeholder, template, re.MULTILINE)
+    empty_placeholder = " __pLaCe-HoLdEr__ "
+    template = re.sub(
+        r"([^\s]+)#\$({)?(.*)",
+        r"\1#%s$\2\3" % empty_placeholder,
+        template,
+        re.MULTILINE,
+    )
 
     # add extensions for common string functions below
 
@@ -125,18 +132,18 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     recurse_object(variables, apply)
 
     # prepare and render template
-    context_var = {'requestId': short_uid()}
+    context_var = {"requestId": short_uid()}
     t = airspeed.Template(template)
     var_map = {
-        'input': VelocityInput(context),
-        'util': VelocityUtil(),
-        'context': context_var
+        "input": VelocityInput(context),
+        "util": VelocityUtil(),
+        "context": context_var,
     }
     var_map.update(variables or {})
     replaced = t.merge(var_map)
 
     # revert temporary changes from the fixes above
-    replaced = replaced.replace(empty_placeholder, '')
+    replaced = replaced.replace(empty_placeholder, "")
 
     if as_json:
         replaced = json.loads(replaced)

@@ -6,38 +6,42 @@ from localstack.utils.aws import aws_stack
 
 class TestSTSIntegrations(unittest.TestCase):
     def setUp(self):
-        self.sts_client = aws_stack.connect_to_service('sts')
+        self.sts_client = aws_stack.connect_to_service("sts")
 
     def test_assume_role(self):
-        test_role_session_name = 's3-access-example'
-        test_role_arn = 'arn:aws:sts::000000000000:role/rd_role'
-        response = self.sts_client.assume_role(RoleArn=test_role_arn, RoleSessionName=test_role_session_name)
+        test_role_session_name = "s3-access-example"
+        test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
+        response = self.sts_client.assume_role(
+            RoleArn=test_role_arn, RoleSessionName=test_role_session_name
+        )
 
-        self.assertTrue(response['Credentials'])
-        self.assertTrue(response['Credentials']['SecretAccessKey'])
-        if response['AssumedRoleUser']['AssumedRoleId']:
-            assume_role_id_parts = response['AssumedRoleUser']['AssumedRoleId'].split(':')
+        self.assertTrue(response["Credentials"])
+        self.assertTrue(response["Credentials"]["SecretAccessKey"])
+        if response["AssumedRoleUser"]["AssumedRoleId"]:
+            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             self.assertEqual(test_role_session_name, assume_role_id_parts[1])
 
     def test_assume_role_with_web_identity(self):
-        test_role_session_name = 'web_token'
-        test_role_arn = 'arn:aws:sts::000000000000:role/rd_role'
-        test_web_identity_token = 'token'
-        response = self.sts_client.assume_role_with_web_identity(RoleArn=test_role_arn,
-                                                                 RoleSessionName=test_role_session_name,
-                                                                 WebIdentityToken=test_web_identity_token)
+        test_role_session_name = "web_token"
+        test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
+        test_web_identity_token = "token"
+        response = self.sts_client.assume_role_with_web_identity(
+            RoleArn=test_role_arn,
+            RoleSessionName=test_role_session_name,
+            WebIdentityToken=test_web_identity_token,
+        )
 
-        self.assertTrue(response['Credentials'])
-        self.assertTrue(response['Credentials']['SecretAccessKey'])
-        if response['AssumedRoleUser']['AssumedRoleId']:
-            assume_role_id_parts = response['AssumedRoleUser']['AssumedRoleId'].split(':')
+        self.assertTrue(response["Credentials"])
+        self.assertTrue(response["Credentials"]["SecretAccessKey"])
+        if response["AssumedRoleUser"]["AssumedRoleId"]:
+            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             self.assertEqual(test_role_session_name, assume_role_id_parts[1])
 
     def test_assume_role_with_saml(self):
-        account_id = '000000000000'
-        role_name = 'test-role'
-        provider_name = 'TestProvFed'
-        fed_name = 'testuser'
+        account_id = "000000000000"
+        role_name = "test-role"
+        provider_name = "TestProvFed"
+        fed_name = "testuser"
 
         saml_assertion = """
 <?xml version="1.0"?>
@@ -119,31 +123,35 @@ class TestSTSIntegrations(unittest.TestCase):
             provider_name=provider_name,
             fed_name=fed_name,
         ).replace(
-            '\n', ''
+            "\n", ""
         )
 
-        role_arn = 'arn:aws:iam::{account_id}:role/{role_name}' \
-            .format(account_id=account_id, role_name=role_name)
-        principal_arn = 'arn:aws:iam:{account_id}:saml-provider/{provider_name}' \
-            .format(account_id=account_id, provider_name=provider_name)
-        base64_saml_assertion = b64encode(saml_assertion.encode('utf-8')).decode('utf-8')
-        response = self.sts_client.assume_role_with_saml(RoleArn=role_arn,
-                                                         PrincipalArn=principal_arn,
-                                                         SAMLAssertion=base64_saml_assertion)
+        role_arn = "arn:aws:iam::{account_id}:role/{role_name}".format(
+            account_id=account_id, role_name=role_name
+        )
+        principal_arn = "arn:aws:iam:{account_id}:saml-provider/{provider_name}".format(
+            account_id=account_id, provider_name=provider_name
+        )
+        base64_saml_assertion = b64encode(saml_assertion.encode("utf-8")).decode("utf-8")
+        response = self.sts_client.assume_role_with_saml(
+            RoleArn=role_arn,
+            PrincipalArn=principal_arn,
+            SAMLAssertion=base64_saml_assertion,
+        )
 
-        self.assertTrue(response['Credentials'])
-        self.assertTrue(response['Credentials']['SecretAccessKey'])
-        if response['AssumedRoleUser']['AssumedRoleId']:
-            assume_role_id_parts = response['AssumedRoleUser']['AssumedRoleId'].split(':')
+        self.assertTrue(response["Credentials"])
+        self.assertTrue(response["Credentials"]["SecretAccessKey"])
+        if response["AssumedRoleUser"]["AssumedRoleId"]:
+            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
             self.assertEqual(fed_name, assume_role_id_parts[1])
 
     def test_get_federation_token(self):
-        token_name = 'TestName'
+        token_name = "TestName"
         response = self.sts_client.get_federation_token(Name=token_name)
 
-        self.assertTrue(response['Credentials'])
-        self.assertTrue(response['Credentials']['SecretAccessKey'])
-        self.assertTrue(response['Credentials']['SessionToken'])
-        self.assertTrue(response['Credentials']['Expiration'])
-        federated_user_info = response['FederatedUser']['FederatedUserId'].split(':')
+        self.assertTrue(response["Credentials"])
+        self.assertTrue(response["Credentials"]["SecretAccessKey"])
+        self.assertTrue(response["Credentials"]["SessionToken"])
+        self.assertTrue(response["Credentials"]["Expiration"])
+        federated_user_info = response["FederatedUser"]["FederatedUserId"].split(":")
         self.assertEqual(token_name, federated_user_info[1])

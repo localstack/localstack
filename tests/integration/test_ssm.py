@@ -1,125 +1,135 @@
 import unittest
+
 from localstack.utils.aws import aws_stack
 
 
 class SSMTest(unittest.TestCase):
-
     def test_describe_parameters(self):
-        ssm_client = aws_stack.connect_to_service('ssm')
+        ssm_client = aws_stack.connect_to_service("ssm")
 
         response = ssm_client.describe_parameters()
-        self.assertIn('Parameters', response)
-        self.assertIsInstance(response['Parameters'], list)
+        self.assertIn("Parameters", response)
+        self.assertIsInstance(response["Parameters"], list)
 
     def test_put_parameters(self):
-        ssm_client = aws_stack.connect_to_service('ssm')
+        ssm_client = aws_stack.connect_to_service("ssm")
 
         ssm_client.put_parameter(
-            Name='test_put',
-            Description='test',
-            Value='123',
-            Type='String',
+            Name="test_put",
+            Description="test",
+            Value="123",
+            Type="String",
         )
 
-        self._assert('test_put', 'test_put')
-        self._assert('/test_put', 'test_put')
+        self._assert("test_put", "test_put")
+        self._assert("/test_put", "test_put")
 
     def test_hierarchical_parameter(self):
-        ssm_client = aws_stack.connect_to_service('ssm')
+        ssm_client = aws_stack.connect_to_service("ssm")
 
         ssm_client.put_parameter(
-            Name='/a/b/c',
-            Value='123',
-            Type='String',
+            Name="/a/b/c",
+            Value="123",
+            Type="String",
         )
 
-        self._assert('/a/b/c', '/a/b/c')
-        self._assert('/a//b//c', '/a/b/c')
-        self._assert('a/b//c', '/a/b/c')
+        self._assert("/a/b/c", "/a/b/c")
+        self._assert("/a//b//c", "/a/b/c")
+        self._assert("a/b//c", "/a/b/c")
 
     def test_get_secret_parameter(self):
-        ssm_client = aws_stack.connect_to_service('ssm')
-        sec_client = aws_stack.connect_to_service('secretsmanager')
+        ssm_client = aws_stack.connect_to_service("ssm")
+        sec_client = aws_stack.connect_to_service("secretsmanager")
 
-        secret_name = 'test_secret'
+        secret_name = "test_secret"
         sec_client.create_secret(
             Name=secret_name,
-            SecretString='my_secret',
-            Description='testing creation of secrets'
+            SecretString="my_secret",
+            Description="testing creation of secrets",
         )
 
-        result = ssm_client.get_parameter(Name='/aws/reference/secretsmanager/{0}'.format(secret_name))
+        result = ssm_client.get_parameter(
+            Name="/aws/reference/secretsmanager/{0}".format(secret_name)
+        )
 
-        self.assertEqual('/aws/reference/secretsmanager/{0}'.format(secret_name), result.get('Parameter').get('Name'))
-        self.assertEqual('my_secret', result.get('Parameter').get('Value'))
+        self.assertEqual(
+            "/aws/reference/secretsmanager/{0}".format(secret_name),
+            result.get("Parameter").get("Name"),
+        )
+        self.assertEqual("my_secret", result.get("Parameter").get("Value"))
 
-        source_result = result.get('Parameter').get('SourceResult')
-        self.assertTrue(source_result is not None, 'SourceResult should be present')
-        self.assertTrue(type(source_result) is str, 'SourceResult should be a string')
+        source_result = result.get("Parameter").get("SourceResult")
+        self.assertTrue(source_result is not None, "SourceResult should be present")
+        self.assertTrue(type(source_result) is str, "SourceResult should be a string")
 
     def test_get_inexistent_secret(self):
-        ssm_client = aws_stack.connect_to_service('ssm')
-        self.assertRaises(ssm_client.exceptions.ParameterNotFound,
-            ssm_client.get_parameter, Name='/aws/reference/secretsmanager/inexistent')
-
-    def test_get_parameters_and_secrets(self):
-        ssm_client = aws_stack.connect_to_service('ssm')
-        sec_client = aws_stack.connect_to_service('secretsmanager')
-        secret_path = '/aws/reference/secretsmanager/'
-
-        param_name = 'test_param'
-        ssm_client.put_parameter(
-            Name=param_name,
-            Description='test',
-            Value='123',
-            Type='String',
+        ssm_client = aws_stack.connect_to_service("ssm")
+        self.assertRaises(
+            ssm_client.exceptions.ParameterNotFound,
+            ssm_client.get_parameter,
+            Name="/aws/reference/secretsmanager/inexistent",
         )
 
-        secret_name = 'test_secret_params'
+    def test_get_parameters_and_secrets(self):
+        ssm_client = aws_stack.connect_to_service("ssm")
+        sec_client = aws_stack.connect_to_service("secretsmanager")
+        secret_path = "/aws/reference/secretsmanager/"
+
+        param_name = "test_param"
+        ssm_client.put_parameter(
+            Name=param_name,
+            Description="test",
+            Value="123",
+            Type="String",
+        )
+
+        secret_name = "test_secret_params"
         sec_client.create_secret(
             Name=secret_name,
-            SecretString='my_secret',
-            Description='testing creation of secrets'
+            SecretString="my_secret",
+            Description="testing creation of secrets",
         )
 
         complete_secret = secret_path + secret_name
-        response = ssm_client.get_parameters(Names=[param_name, complete_secret,
-            'inexistent_param', secret_path + 'inexistent_secret'])
-        found = response.get('Parameters')
-        not_found = response.get('InvalidParameters')
+        response = ssm_client.get_parameters(
+            Names=[
+                param_name,
+                complete_secret,
+                "inexistent_param",
+                secret_path + "inexistent_secret",
+            ]
+        )
+        found = response.get("Parameters")
+        not_found = response.get("InvalidParameters")
 
         for param in found:
-            self.assertIn(param['Name'], [param_name, complete_secret])
+            self.assertIn(param["Name"], [param_name, complete_secret])
         for param in not_found:
-            self.assertIn(param, ['inexistent_param', secret_path + 'inexistent_secret'])
+            self.assertIn(param, ["inexistent_param", secret_path + "inexistent_secret"])
 
     def _assert(self, search_name, param_name):
-        ssm_client = aws_stack.connect_to_service('ssm')
+        ssm_client = aws_stack.connect_to_service("ssm")
 
         def do_assert(result):
             self.assertGreater(len(result), 0)
-            self.assertEqual(param_name, result[0]['Name'])
-            self.assertEqual('123', result[0]['Value'])
+            self.assertEqual(param_name, result[0]["Name"])
+            self.assertEqual("123", result[0]["Value"])
 
         response = ssm_client.get_parameter(Name=search_name)
-        do_assert([response['Parameter']])
+        do_assert([response["Parameter"]])
 
         response = ssm_client.get_parameters(Names=[search_name])
-        do_assert(response['Parameters'])
+        do_assert(response["Parameters"])
 
     def test_get_parameters_by_path_and_filter_by_labels(self):
-        ssm_client = aws_stack.connect_to_service('ssm')
-        path = '/my/path'
-        value = 'value'
-        param = ssm_client.put_parameter(Name=path, Value=value, Type='String')
-        ssm_client.label_parameter_version(Name=path, ParameterVersion=param['Version'], Labels=['latest'])
-        list_of_params = ssm_client.get_parameters_by_path(
-            Path='/my',
-            ParameterFilters=[
-                {
-                    'Key': 'Label',
-                    'Values': ['latest']
-                }
-            ]
+        ssm_client = aws_stack.connect_to_service("ssm")
+        path = "/my/path"
+        value = "value"
+        param = ssm_client.put_parameter(Name=path, Value=value, Type="String")
+        ssm_client.label_parameter_version(
+            Name=path, ParameterVersion=param["Version"], Labels=["latest"]
         )
-        self.assertEqual('/my/path', list_of_params['Parameters'][0]['Name'])
+        list_of_params = ssm_client.get_parameters_by_path(
+            Path="/my", ParameterFilters=[{"Key": "Label", "Values": ["latest"]}]
+        )
+        self.assertEqual("/my/path", list_of_params["Parameters"][0]["Name"])
