@@ -957,7 +957,7 @@ def _response(action, result):
 def serve(port, quiet=True):
     from localstack.services import generic_proxy  # moved here to fix circular import errors
 
-    return generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
+    return generic_proxy.serve_flask_app(app=app, port=port)
 
 
 def _get_status_filter_members(req_params):

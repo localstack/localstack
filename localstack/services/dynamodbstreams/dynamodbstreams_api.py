@@ -189,4 +189,4 @@ def kinesis_shard_id(dynamodbstream_shard_id):
 
 
 def serve(port, quiet=True):
-    generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
+    generic_proxy.serve_flask_app(app=app, port=port)
