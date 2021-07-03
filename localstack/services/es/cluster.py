@@ -34,17 +34,20 @@ import requests
 from localstack import config, constants
 from localstack.services import install
 from localstack.services.infra import DEFAULT_BACKEND_HOST, do_run, start_proxy_for_service
-from localstack.utils.common import chmod_r, get_free_tcp_port, get_service_protocol, mkdir, rm_rf
+from localstack.utils.common import (
+    chmod_r,
+    get_free_tcp_port,
+    get_service_protocol,
+    is_root,
+    mkdir,
+    rm_rf,
+)
 
 CommandSettings = Dict[str, str]
 
 Directories = NamedTuple(
     "Directories", [("base", str), ("tmp", str), ("mods", str), ("data", str), ("backup", str)]
 )
-
-
-def _install(cluster: "ElasticsearchCluster"):
-    install.install_elasticsearch(cluster.version)
 
 
 def _build_elasticsearch_run_command(es_bin: str, settings: CommandSettings) -> List[str]:
@@ -133,9 +136,18 @@ class ElasticsearchCluster:
             if self._elasticsearch_thread is not None:
                 return
 
+            # FIXME: if this fails the cluster could be left in a wonky state
+            # FIXME: this is not a good place to run install, and it only works because we're
+            #  assuming that there will only ever be one running Elasticsearch cluster
+            install.install_elasticsearch(self.version)
             self._init_directories()
+
             cmd = self._create_run_command(additional_settings=self.command_settings)
             cmd = " ".join(cmd)
+            if is_root():
+                # FIXME: this is a very strong assumption
+                cmd = f"su localstack -c '{cmd}'"
+
             env_vars = self._create_env_vars()
 
             print("running %s with env %s" % (cmd, env_vars))
@@ -314,6 +326,9 @@ class ProxiedElasticsearchCluster:
         with self._lifecycle_lock:
             if not self._started:
                 return
+
+        if not self._proxy_thread:
+            self._starting.wait()
 
         return self._cluster.join(timeout=timeout)
 

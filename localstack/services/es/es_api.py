@@ -1,22 +1,27 @@
+"""
+Serve the elasticsearch API as a threaded Flask app.
+"""
 import json
 import logging
+import threading
 import time
 from random import randint
+from typing import Dict, Optional
 
-import requests
 from flask import Flask, jsonify, make_response, request
 
-from localstack import config
+from localstack import config, constants
 from localstack.constants import (
     ELASTICSEARCH_DEFAULT_VERSION,
     ELASTICSEARCH_URLS,
     TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services import generic_proxy
+from localstack.services.es.cluster import ProxiedElasticsearchCluster
 from localstack.utils import persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import FuncThread, get_service_protocol, to_str
+from localstack.utils.common import get_service_protocol, poll, to_str
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -26,7 +31,9 @@ API_PREFIX = "/2015-01-01"
 
 DEFAULT_ES_VERSION = "7.7"
 
-ES_DOMAINS = {}
+# storage for domain resources. access should be protected with the _domain_mutex
+ES_DOMAINS: Dict[str, Dict] = {}
+_domain_mutex = threading.Lock()
 
 DEFAULT_ES_CLUSTER_CONFIG = {
     "InstanceType": "m3.medium.elasticsearch",
@@ -39,8 +46,73 @@ DEFAULT_ES_CLUSTER_CONFIG = {
 
 TAGS = TaggingService()
 
+# ideally, each domain gets its own cluster. to save resources, we currently re-use the same
+# cluster instance. this also means we lie to the client about the the elasticsearch domain
+# version. the first call to create_domain with a specific version will create the cluster
+# with that version. subsequent calls will believe they created a cluster with the version
+# they specified.
+_cluster: Optional[ProxiedElasticsearchCluster] = None
+ES_CLUSTERS: Dict[str, ProxiedElasticsearchCluster] = dict()
+
+# timeout in seconds when giving up on waiting for the cluster to start
+CLUSTER_STARTUP_TIMEOUT = 120
+
 app = Flask(APP_NAME)
 app.url_map.strict_slashes = False
+
+
+def _run_cluster_startup_monitor(cluster):
+    # wait until the cluster is started, or the timeout is reached
+    status = poll(cluster.is_up, timeout=CLUSTER_STARTUP_TIMEOUT, interval=5)
+
+    with _domain_mutex:
+        for domain, domain_cluster in ES_CLUSTERS.items():
+            if cluster is domain_cluster:
+                if domain in ES_DOMAINS:
+                    ES_DOMAINS[domain]["Created"] = status
+
+
+def _create_cluster(domain_name, data):
+    """
+    Create a new entry in ES_DOMAINS if the domain does not yet exist. Start a ElasticsearchCluster if this is the first
+    domain being created. NOT thread safe, needs to be called around _domain_mutex.
+    """
+    global _cluster
+
+    if _cluster:
+        # see comment on _cluster
+        ES_CLUSTERS[domain_name] = _cluster
+        data["Created"] = _cluster.is_up()
+        return
+
+    # creating cluster for the first time
+    version = data.get("ElasticsearchVersion") or DEFAULT_ES_VERSION
+    _cluster = ProxiedElasticsearchCluster(
+        port=config.PORT_ELASTICSEARCH, host=constants.LOCALHOST, version=version
+    )
+    _cluster.start()
+
+    # run a background thread that will update all domains that use this cluster to set
+    # data['Created'] = <status> once it is started, or the CLUSTER_STARTUP_TIMEOUT is reached
+    # FIXME: if the cluster doesn't start, these threads will stay open until the timeout is
+    #  reached, even if the cluster is already shut down. we could fix this with an additional
+    #  event, or a timer instead of Poll, but it seems like a rare case in the first place.
+    threading.Thread(target=_run_cluster_startup_monitor, daemon=True, args=(_cluster,))
+
+
+def _cleanup_cluster(domain_name):
+    global _cluster
+    cluster = ES_CLUSTERS.pop(domain_name)
+
+    if not ES_CLUSTERS:
+        # because cluster is currently always mapped to _cluster, we only shut it down if no other
+        # domains are using it
+        cluster.shutdown()
+        # FIXME: if delete_domain() is called, then immediately after, create_domain() (without
+        #  letting time pass for the proxy to shut down) there's a chance that there will be a bind
+        #  exception when trying to start the proxy again (which is currently always bound to
+        #  PORT_ELASTICSEARCH)
+        _cluster = None
 
 
 def error_response(error_type, code=400, message="Unknown error."):
@@ -168,7 +240,7 @@ def get_domain_status(domain_name, deleted=False):
         "DomainStatus": {
             "ARN": "arn:aws:es:%s:%s:domain/%s"
             % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, domain_name),
-            "Created": status.get("Created", True),
+            "Created": status.get("Created", False),
             "Deleted": deleted,
             "DomainId": "%s/%s" % (TEST_AWS_ACCOUNT_ID, domain_name),
             "DomainName": domain_name,
@@ -211,24 +283,8 @@ def get_install_version_for_api_version(version):
     elif version == "7.7":
         result = "7.7.0"
     if not result.startswith(result):
-        LOG.info("Elasticsearch version %s not yet supported, defaulting to %s" % (version, result))
+        LOG.warning("Elasticsearch version %s not yet supported, defaulting to %s", version, result)
     return result
-
-
-def start_elasticsearch_instance(version):
-    # Note: keep imports here to avoid circular dependencies
-    from localstack.services.es import es_starter
-
-    # install ES version
-    install_version = get_install_version_for_api_version(version)
-    es_starter.start_elasticsearch(asynchronous=False, version=install_version)
-
-
-def cleanup_elasticsearch_instance(status):
-    # Note: keep imports here to avoid circular dependencies
-    from localstack.services.es import es_starter
-
-    es_starter.stop_elasticsearch()
 
 
 @app.route("%s/domain" % API_PREFIX, methods=["GET"])
@@ -239,35 +295,23 @@ def list_domain_names():
 
 @app.route("%s/es/domain" % API_PREFIX, methods=["POST"])
 def create_domain():
-    from localstack.services.es import es_starter
-
     data = json.loads(to_str(request.data))
     domain_name = data["DomainName"]
-    if domain_name in ES_DOMAINS:
-        return error_response(error_type="ResourceAlreadyExistsException")
-    ES_DOMAINS[domain_name] = data
-    data["Created"] = False
 
-    def do_start(*args):
-        # start actual Elasticsearch instance
-        version = data.get("ElasticsearchVersion") or DEFAULT_ES_VERSION
-        start_elasticsearch_instance(version=version)
-        data["Created"] = True
+    with _domain_mutex:
+        if domain_name in ES_DOMAINS:
+            # domain already created
+            return error_response(error_type="ResourceAlreadyExistsException")
 
-    try:
-        if es_starter.check_elasticsearch():
-            data["Created"] = True
-        else:
-            LOG.error(
-                "Elasticsearch status is not healthy, please check the application status and logs"
-            )
-    except requests.exceptions.ConnectionError:
-        # Catch first run
-        FuncThread(do_start).start()
-        LOG.info("Elasticsearch is starting for the first time, please wait..")
-        data["Created"] = True
+        # "create" domain data
+        ES_DOMAINS[domain_name] = data
 
-    result = get_domain_status(domain_name)
+        # lazy-init the cluster, and set the data["Created"] flag
+        _create_cluster(domain_name, data)
+
+        # create result document
+        result = get_domain_status(domain_name)
+
     # record event
     event_publisher.fire_event(
         event_publisher.EVENT_ES_CREATE_DOMAIN,
@@ -280,10 +324,12 @@ def create_domain():
 
 @app.route("%s/es/domain/<domain_name>" % API_PREFIX, methods=["GET"])
 def describe_domain(domain_name):
-    if domain_name not in ES_DOMAINS:
-        return error_response(error_type="ResourceNotFoundException")
-    result = get_domain_status(domain_name)
-    return jsonify(result)
+    with _domain_mutex:
+        if domain_name not in ES_DOMAINS:
+            return error_response(error_type="ResourceNotFoundException")
+
+        result = get_domain_status(domain_name)
+        return jsonify(result)
 
 
 @app.route("%s/es/domain-info" % API_PREFIX, methods=["POST"])
@@ -291,29 +337,35 @@ def describe_domains():
     data = json.loads(to_str(request.data))
     result = []
     domain_names = data.get("DomainNames", [])
-    for domain_name in ES_DOMAINS:
-        if domain_name in domain_names:
-            status = get_domain_status(domain_name)
-            status = status.get("DomainStatus") or status
-            result.append(status)
-    result = {"DomainStatusList": result}
+
+    with _domain_mutex:
+        for domain_name in ES_DOMAINS:
+            if domain_name in domain_names:
+                status = get_domain_status(domain_name)
+                status = status.get("DomainStatus") or status
+                result.append(status)
+        result = {"DomainStatusList": result}
+
     return jsonify(result)
 
 
 @app.route("%s/es/domain/<domain_name>/config" % API_PREFIX, methods=["GET", "POST"])
 def domain_config(domain_name):
-    config = get_domain_config(domain_name)
-    return jsonify(config)
+    with _domain_mutex:
+        doc = get_domain_config(domain_name)
+
+    return jsonify(doc)
 
 
 @app.route("%s/es/domain/<domain_name>" % API_PREFIX, methods=["DELETE"])
 def delete_domain(domain_name):
-    if domain_name not in ES_DOMAINS:
-        return error_response(error_type="ResourceNotFoundException")
-    result = get_domain_status(domain_name, deleted=True)
-    status = ES_DOMAINS.pop(domain_name)
-    if not ES_DOMAINS:
-        cleanup_elasticsearch_instance(status)
+    with _domain_mutex:
+        if domain_name not in ES_DOMAINS:
+            return error_response(error_type="ResourceNotFoundException")
+
+        result = get_domain_status(domain_name, deleted=True)
+        del ES_DOMAINS[domain_name]
+        _cleanup_cluster(domain_name)
 
     # record event
     event_publisher.fire_event(
