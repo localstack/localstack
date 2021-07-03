@@ -8,6 +8,7 @@ VENV_DIR ?= .venv
 PIP_CMD ?= pip
 TEST_PATH ?= .
 PYTEST_LOGLEVEL ?= warning
+MAIN_CONTAINER_NAME ?= localstack_main
 
 ifeq ($(OS), Windows_NT)
 	VENV_RUN = . $(VENV_DIR)/Scripts/activate
@@ -184,6 +185,16 @@ ci-build-prepare:
 	docker pull lambci/lambda:20191117-provided > /dev/null
 	docker pull lambci/lambda:java8 > /dev/null
 	docker pull lambci/lambda:python3.8 > /dev/null
+
+ci-pro-smoke-tests:
+	which awslocal || pip install awscli-local
+	which localstack || pip install localstack
+	DOCKER_FLAGS='-d' SERVICES=rds,xray,qldb LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) localstack start
+	for i in {1..45}; do if docker logs $(MAIN_CONTAINER_NAME) | grep 'Ready.'; then break; fi; sleep 1; done
+	awslocal qldb list-ledgers
+	awslocal rds describe-db-instances
+	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
+	docker rm -f $(MAIN_CONTAINER_NAME)
 
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
 	rm -rf $(VENV_DIR)

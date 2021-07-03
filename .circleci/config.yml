@@ -161,6 +161,9 @@ jobs:
           name: Loading docker image
           command: docker load -i target/localstack-docker-image.tar
       - run:
+          name: Run pre-release smoke tests
+          command: make ci-pro-smoke-tests
+      - run:
           name: Push docker image
           command: make docker-push-master
 
