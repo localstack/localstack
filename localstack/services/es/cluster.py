@@ -281,6 +281,9 @@ class ProxiedElasticsearchCluster:
         if not self._proxy_thread.running:
             return False
 
+        if not self._cluster.is_up():
+            return False
+
         try:
             # calls health through the proxy to elasticsearch, making sure implicitly that both are
             # running
