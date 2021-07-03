@@ -24,6 +24,7 @@ Here's how you can use it:
     finally:
         print('ok, bye')
 """
+import logging
 import multiprocessing
 import os
 import threading
@@ -42,6 +43,8 @@ from localstack.utils.common import (
     mkdir,
     rm_rf,
 )
+
+LOG = logging.getLogger(__name__)
 
 CommandSettings = Dict[str, str]
 
@@ -97,7 +100,7 @@ class ElasticsearchCluster:
 
         try:
             return self.health() is not None
-        except:
+        except Exception:
             return False
 
     def health(self):
@@ -150,7 +153,7 @@ class ElasticsearchCluster:
 
             env_vars = self._create_env_vars()
 
-            print("running %s with env %s" % (cmd, env_vars))
+            LOG.info("starting elasticsearch: %s with env %s", cmd, env_vars)
             # use asynchronous=True to get a ShellCommandThread
             self._elasticsearch_thread = do_run(cmd, asynchronous=True, env_vars=env_vars)
             self._starting.set()
@@ -159,7 +162,7 @@ class ElasticsearchCluster:
         try:
             self._elasticsearch_thread.join()
         finally:
-            print("_elasticsearch_thread returns")
+            LOG.info("elasticsearch process ended")
             self._stopped.set()
 
     def _create_run_command(
@@ -212,6 +215,8 @@ class ElasticsearchCluster:
 
     def _init_directories(self):
         dirs = self.directories
+
+        LOG.debug("initializing elasticsearch directories %s", dirs)
         chmod_r(dirs.base, 0o777)
 
         if not dirs.data.startswith(config.DATA_DIR):
@@ -279,8 +284,9 @@ class ProxiedElasticsearchCluster:
         try:
             # calls health through the proxy to elasticsearch, making sure implicitly that both are
             # running
+            LOG.info("calling health endpoint %s", self.url)
             return self.health() is not None
-        except:
+        except Exception:
             return False
 
     def health(self):
@@ -317,6 +323,7 @@ class ProxiedElasticsearchCluster:
             self.port,
             self._backend_port,
             update_listener=None,
+            quiet=True,
             params={"protocol_version": "HTTP/1.0"},
         )
 
@@ -335,8 +342,8 @@ class ProxiedElasticsearchCluster:
 
 def get_elasticsearch_health_status(url: str) -> Optional[str]:
     """
-    Queries the health endpoint of elasticsearch and returns either the status ('green', 'yellow', ...) or None if the
-    response returned a non-200 response.
+    Queries the health endpoint of elasticsearch and returns either the status ('green', 'yellow',
+    ...) or None if the response returned a non-200 response.
     """
     resp = requests.get(url + "/_cluster/health")
 

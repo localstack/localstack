@@ -62,11 +62,16 @@ app.url_map.strict_slashes = False
 
 
 def _run_cluster_startup_monitor(cluster):
+    LOG.debug("running cluster startup monitor for cluster %s", cluster)
     # wait until the cluster is started, or the timeout is reached
     status = poll(cluster.is_up, timeout=CLUSTER_STARTUP_TIMEOUT, interval=5)
 
+    LOG.debug("cluster state polling returned! status = %s", status)
+
     with _domain_mutex:
+        LOG.debug("iterating over cluster domains %s", ES_CLUSTERS.keys())
         for domain, domain_cluster in ES_CLUSTERS.items():
+            LOG.debug("checking cluster for domain %s", domain)
             if cluster is domain_cluster:
                 if domain in ES_DOMAINS:
                     ES_DOMAINS[domain]["Created"] = status
@@ -91,13 +96,14 @@ def _create_cluster(domain_name, data):
         port=config.PORT_ELASTICSEARCH, host=constants.LOCALHOST, version=version
     )
     _cluster.start()
+    ES_CLUSTERS[domain_name] = _cluster
 
     # run a background thread that will update all domains that use this cluster to set
     # data['Created'] = <status> once it is started, or the CLUSTER_STARTUP_TIMEOUT is reached
     # FIXME: if the cluster doesn't start, these threads will stay open until the timeout is
     #  reached, even if the cluster is already shut down. we could fix this with an additional
     #  event, or a timer instead of Poll, but it seems like a rare case in the first place.
-    threading.Thread(target=_run_cluster_startup_monitor, daemon=True, args=(_cluster,))
+    threading.Thread(target=_run_cluster_startup_monitor, daemon=True, args=(_cluster,)).start()
 
 
 def _cleanup_cluster(domain_name):

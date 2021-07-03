@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 import unittest
 
@@ -10,6 +11,8 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
+
+LOG = logging.getLogger(__name__)
 
 TEST_INDEX = "megacorp"
 TEST_DOC_ID = 1
@@ -30,7 +33,7 @@ class ElasticsearchTest(unittest.TestCase):
     def setUpClass(cls):
         cls.es_url = aws_stack.get_local_service_url("elasticsearch")
         # create ES domain
-        cls._create_domain()
+        cls._create_domain(name=TEST_DOMAIN_NAME)
         document = {
             "first_name": "Jane",
             "last_name": "Smith",
@@ -51,6 +54,11 @@ class ElasticsearchTest(unittest.TestCase):
         assert TEST_DOMAIN_NAME not in [
             d["DomainName"] for d in es_client.list_domain_names()["DomainNames"]
         ]
+
+    def test_create_existing_domain_causes_exception(self):
+        # already created in
+        with self.assertRaises(ClientError):
+            self._create_domain(name=TEST_DOMAIN_NAME, es_cluster_config=ES_CLUSTER_CONFIG)
 
     def test_domain_es_version(self):
         es_client = aws_stack.connect_to_service("es")
@@ -170,12 +178,15 @@ class ElasticsearchTest(unittest.TestCase):
             kwargs["ElasticsearchVersion"] = version
         if es_cluster_config:
             kwargs["ElasticsearchClusterConfig"] = es_cluster_config
+        LOG.info("creating elasticsearch domain %s", name)
         es_client.create_elasticsearch_domain(DomainName=name, **kwargs)
         assert name in [d["DomainName"] for d in es_client.list_domain_names()["DomainNames"]]
 
         # wait for completion status
         def check_cluster_ready(*args):
             status = es_client.describe_elasticsearch_domain(DomainName=name)
-            assert status["DomainStatus"]["Created"]
+            created = status["DomainStatus"]["Created"]
+            LOG.info("asserting created state of domain %s (state = %s)", name, created)
+            assert created
 
         retry(check_cluster_ready, sleep=10, retries=12)
