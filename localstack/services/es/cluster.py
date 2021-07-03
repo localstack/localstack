@@ -22,7 +22,6 @@ Here's how you can use it:
     except KeyboardInterrupt:
         cluster.shutdown()
     finally:
-        stopper.cancel()
         print('ok, bye')
 """
 import multiprocessing
@@ -34,8 +33,8 @@ import requests
 
 from localstack import config, constants
 from localstack.services import install
-from localstack.services.infra import do_run
-from localstack.utils.common import chmod_r, get_service_protocol, mkdir, rm_rf
+from localstack.services.infra import DEFAULT_BACKEND_HOST, do_run, start_proxy_for_service
+from localstack.utils.common import chmod_r, get_free_tcp_port, get_service_protocol, mkdir, rm_rf
 
 CommandSettings = Dict[str, str]
 
@@ -64,10 +63,9 @@ class ElasticsearchCluster:
 
         self.directories = self._resolve_directories()
 
-        self._proxy_thread = None
         self._elasticsearch_thread = None
 
-        self._lifecycle_lock = multiprocessing.Lock()
+        self._lifecycle_lock = multiprocessing.RLock()
         self._started = False
         self._stopped = multiprocessing.Event()
         self._starting = multiprocessing.Event()
@@ -214,6 +212,110 @@ class ElasticsearchCluster:
         rm_rf(dirs.tmp)
         mkdir(dirs.tmp)
         chmod_r(dirs.tmp, 0o777)
+
+
+class ProxiedElasticsearchCluster:
+    """
+    Starts an ElasticsearchCluster behind a localstack service proxy. The ElasticsearchCluster
+    backend will be assigned a random port.
+    """
+
+    def __init__(self, port=9200, host="localhost", version=None) -> None:
+        super().__init__()
+        self._port = port
+        self._host = host
+        self._version = version or constants.ELASTICSEARCH_DEFAULT_VERSION
+
+        self._cluster = None
+        self._backend_port = None
+        self._proxy_thread = None
+
+        self._lifecycle_lock = multiprocessing.RLock()
+        self._started = False
+        self._stopped = multiprocessing.Event()
+        self._starting = multiprocessing.Event()
+
+    @property
+    def host(self):
+        return self._host
+
+    @property
+    def port(self):
+        return self._port
+
+    @property
+    def version(self):
+        return self._version
+
+    @property
+    def url(self):
+        return "%s://%s:%s" % (get_service_protocol(), self.host, self.port)
+
+    def is_up(self):
+        # check service lifecycle
+        if not self._started:
+            return False
+        if not self._starting.is_set():
+            return False
+        if not self._cluster or not self._proxy_thread:
+            return False
+
+        # check that proxy is running
+        if not self._proxy_thread.running:
+            return False
+
+        try:
+            # calls health through the proxy to elasticsearch, making sure implicitly that both are
+            # running
+            return self.health() is not None
+        except:
+            return False
+
+    def health(self):
+        """
+        calls the health endpoint of elasticsearch through the proxy, making sure implicitly that
+        both are running
+        """
+        return get_elasticsearch_health_status(self.url)
+
+    def shutdown(self):
+        with self._lifecycle_lock:
+            if not self._started:
+                return
+
+            if self._proxy_thread:
+                self._proxy_thread.stop()
+            if self._cluster:
+                self._cluster.shutdown()
+
+    def start(self):
+        with self._lifecycle_lock:
+            if self._started:
+                return
+            self._started = True
+
+        # start elasticsearch backend
+        self._backend_port = get_free_tcp_port()
+        self._cluster = ElasticsearchCluster(port=self._backend_port, host=DEFAULT_BACKEND_HOST)
+        self._cluster.start()
+
+        # start front-facing proxy
+        self._proxy_thread = start_proxy_for_service(
+            "elasticsearch",
+            self.port,
+            self._backend_port,
+            update_listener=None,
+            params={"protocol_version": "HTTP/1.0"},
+        )
+
+        self._starting.set()
+
+    def join(self, timeout=None):
+        with self._lifecycle_lock:
+            if not self._started:
+                return
+
+        return self._cluster.join(timeout=timeout)
 
 
 def get_elasticsearch_health_status(url: str) -> Optional[str]:

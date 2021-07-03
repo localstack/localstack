@@ -233,6 +233,7 @@ def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=No
 
         def stop(self, quiet=None):
             self.shutdown_event.set()
+            super().stop(quiet)
 
     def run_in_thread():
         thread = ProxyThread()

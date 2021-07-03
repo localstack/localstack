@@ -107,8 +107,8 @@ def start_elasticsearch(
 
 def get_elasticsearch_health_status(endpoint=None):
     """
-    Queries the health endpoint of elasticsearch and returns either the status ('green', 'yellow', ...) or None if the
-    response returned a non-200 response.
+    Queries the health endpoint of elasticsearch and returns either the status ('green', 'yellow',
+    ...) or None if the response returned a non-200 response.
     """
     if endpoint is None:
         endpoint = "%s://%s:%s" % (
