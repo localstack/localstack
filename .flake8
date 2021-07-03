@@ -1,5 +1,5 @@
 [flake8]
-ignore = E203, E266, E501, W503, F403, F401
+ignore = E203, E266, E501, W503, F403
 max-line-length = 110
 select = B,C,E,F,I,W,T4,B9
 exclude = node_modules,.venv*,dist,fixes,localstack/infra,localstack/node_modules
