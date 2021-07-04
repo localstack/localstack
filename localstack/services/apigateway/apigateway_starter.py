@@ -4,7 +4,7 @@ import re
 from urllib.parse import parse_qs, urlparse
 
 from moto.apigateway import models as apigateway_models
-from moto.apigateway.exceptions import NoIntegrationDefined
+from moto.apigateway.exceptions import NoIntegrationDefined, UsagePlanNotFoundException
 from moto.apigateway.models import Integration, Resource
 from moto.apigateway.responses import APIGatewayResponse
 from moto.apigateway.utils import create_id
@@ -314,6 +314,24 @@ def apply_patches():
 
         return result
 
+    def apigateway_response_usage_plan_individual(
+        self, request, full_url, headers, *args, **kwargs
+    ):
+        self.setup_class(request, full_url, headers)
+        if self.method == "PATCH":
+            url_path_parts = self.path.split("/")
+            usage_plan_id = url_path_parts[2]
+            patch_operations = self._get_param("patchOperations")
+            usage_plan = self.backend.usage_plans.get(usage_plan_id)
+            if not usage_plan:
+                raise UsagePlanNotFoundException()
+            apply_json_patch_safe(usage_plan, patch_operations, in_place=True)
+            return 200, {}, json.dumps(usage_plan)
+        result = apigateway_response_usage_plan_individual_orig(
+            self, request, full_url, headers, *args, **kwargs
+        )
+        return result
+
     def backend_update_deployment(self, function_id, deployment_id, patch_operations):
         rest_api = self.get_rest_api(function_id)
         deployment = rest_api.get_deployment(deployment_id)
@@ -510,6 +528,8 @@ def apply_patches():
         APIGatewayResponse.resource_method_responses
     )
     APIGatewayResponse.resource_method_responses = apigateway_response_resource_method_responses
+    apigateway_response_usage_plan_individual_orig = APIGatewayResponse.usage_plan_individual
+    APIGatewayResponse.usage_plan_individual = apigateway_response_usage_plan_individual
     apigateway_models_Integration_init_orig = apigateway_models.Integration.__init__
     apigateway_models.Integration.__init__ = apigateway_models_Integration_init
     apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict
