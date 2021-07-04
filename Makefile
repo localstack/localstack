@@ -189,13 +189,13 @@ ci-build-prepare:
 ci-pro-smoke-tests:
 	which awslocal || pip3 install awscli-local
 	which localstack || pip3 install localstack
-	DOCKER_FLAGS='-d' SERVICES=rds,xray,qldb LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) localstack start
+	DOCKER_FLAGS='-d' SERVICES=rds,xray,qldb LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DEBUG=1 localstack start
 	docker logs -f $(MAIN_CONTAINER_NAME) &
-	for i in {1..60}; do if docker logs $(MAIN_CONTAINER_NAME) | grep 'Ready.'; then break; fi; sleep 1; done
-	awslocal qldb list-ledgers
-	awslocal rds describe-db-instances
-	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
-	docker rm -f $(MAIN_CONTAINER_NAME)
+	for i in 0 1 2 3 4 5 6 7 8 9; do if docker logs $(MAIN_CONTAINER_NAME) | grep 'Ready.'; then break; fi; sleep 3; done
+	awslocal qldb list-ledgers || true
+	awslocal rds describe-db-instances || true
+	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31 || true
+	docker rm -f $(MAIN_CONTAINER_NAME) || true
 
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
 	rm -rf $(VENV_DIR)
