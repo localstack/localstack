@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 import time
 import unittest
 
@@ -7,12 +8,14 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.services.es.es_api import DEFAULT_ES_VERSION
+from localstack.services.install import install_elasticsearch
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry
 from localstack.utils.common import safe_requests as requests
-from localstack.utils.common import short_uid
+from localstack.utils.common import short_uid, start_worker_thread
 
 LOG = logging.getLogger(__name__)
+INIT_LOCK = threading.Lock()
 
 TEST_INDEX = "megacorp"
 TEST_DOC_ID = 1
@@ -30,19 +33,41 @@ ES_CLUSTER_CONFIG = {
 
 class ElasticsearchTest(unittest.TestCase):
     @classmethod
+    def init_async(cls):
+        """
+        Installs the default elasticsearch version in a worker thread. Used by conftest.py to make
+        sure elasticsearch is downloaded once the tests arrive here.
+        """
+
+        def run_install(*args):
+            with INIT_LOCK:
+                LOG.info("installing elasticsearch")
+                install_elasticsearch()
+                LOG.info("done installing elasticsearch")
+
+        start_worker_thread(run_install)
+
+    @classmethod
     def setUpClass(cls):
-        cls.es_url = aws_stack.get_local_service_url("elasticsearch")
-        # create ES domain
-        cls._create_domain(name=TEST_DOMAIN_NAME)
-        document = {
-            "first_name": "Jane",
-            "last_name": "Smith",
-            "age": 32,
-            "about": "I like to collect rock albums",
-            "interests": ["music"],
-        }
-        resp = cls._add_document(TEST_DOC_ID, document)
-        assert resp.status_code == 201, "Request failed({}): {}".format(resp.status_code, resp.text)
+        then = time.time()
+        LOG.info("waiting for initialization lock")
+        with INIT_LOCK:
+            LOG.info("initialization lock acquired in %.2f seconds", time.time() - then)
+
+            cls.es_url = aws_stack.get_local_service_url("elasticsearch")
+            # create ES domain
+            cls._create_domain(name=TEST_DOMAIN_NAME)
+            document = {
+                "first_name": "Jane",
+                "last_name": "Smith",
+                "age": 32,
+                "about": "I like to collect rock albums",
+                "interests": ["music"],
+            }
+            resp = cls._add_document(TEST_DOC_ID, document)
+            assert resp.status_code == 201, "Request failed({}): {}".format(
+                resp.status_code, resp.text
+            )
 
     @classmethod
     def tearDownClass(cls):
@@ -187,6 +212,6 @@ class ElasticsearchTest(unittest.TestCase):
             status = es_client.describe_elasticsearch_domain(DomainName=name)
             created = status["DomainStatus"]["Created"]
             LOG.info("asserting created state of domain %s (state = %s)", name, created)
-            assert created
+            assert created, "gave up waiting on cluster to be ready"
 
         retry(check_cluster_ready, sleep=10, retries=12)

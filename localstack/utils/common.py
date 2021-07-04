@@ -1770,20 +1770,6 @@ def isoformat_milliseconds(t):
         return t.isoformat()[:-3]
 
 
-def is_socket_up(port, host="localhost", timeout=0.5) -> bool:
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.settimeout(timeout)
-        s.connect((host, int(port)))
-        return True
-    except OSError:
-        return False
-    except Exception as e:
-        raise e
-    finally:
-        s.close()
-
-
 # TODO move to aws_responses.py?
 def replace_response_content(response, pattern, replacement):
     content = to_str(response.content or "")
