@@ -27,7 +27,6 @@ Here's how you can use it:
 import logging
 import multiprocessing
 import os
-import threading
 from typing import Dict, List, NamedTuple, Optional
 
 import requests
@@ -42,6 +41,7 @@ from localstack.utils.common import (
     is_root,
     mkdir,
     rm_rf,
+    start_thread,
 )
 
 LOG = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ class ElasticsearchCluster:
                 return
             self._started = True
 
-        threading.Thread(target=self._run_elasticsearch, daemon=True).start()
+        start_thread(self._run_elasticsearch)
 
     def join(self, timeout=None):
         with self._lifecycle_lock:
@@ -134,9 +134,10 @@ class ElasticsearchCluster:
 
         return self._elasticsearch_thread.join(timeout=timeout)
 
-    def _run_elasticsearch(self):
+    def _run_elasticsearch(self, *args):
+        # *args is necessary for start_thread to work
         with self._lifecycle_lock:
-            if self._elasticsearch_thread is not None:
+            if self._elasticsearch_thread:
                 return
 
             # FIXME: if this fails the cluster could be left in a wonky state
@@ -147,9 +148,11 @@ class ElasticsearchCluster:
 
             cmd = self._create_run_command(additional_settings=self.command_settings)
             cmd = " ".join(cmd)
-            if is_root():
-                # FIXME: this is a very strong assumption
-                cmd = f"su localstack -c '{cmd}'"
+
+            user = constants.OS_USER_ELASTICSEARCH
+            if is_root() and user:
+                # run the elasticsearch process as a non-root user (when running in docker)
+                cmd = f"su ${user} -c '{cmd}'"
 
             env_vars = self._create_env_vars()
 

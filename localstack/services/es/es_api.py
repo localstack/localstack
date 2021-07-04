@@ -21,7 +21,7 @@ from localstack.services.es.cluster import ProxiedElasticsearchCluster
 from localstack.utils import persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import get_service_protocol, poll, to_str
+from localstack.utils.common import get_service_protocol, poll_condition, to_str
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ app.url_map.strict_slashes = False
 def _run_cluster_startup_monitor(cluster):
     LOG.debug("running cluster startup monitor for cluster %s", cluster)
     # wait until the cluster is started, or the timeout is reached
-    status = poll(cluster.is_up, timeout=CLUSTER_STARTUP_TIMEOUT, interval=5)
+    status = poll_condition(cluster.is_up, timeout=CLUSTER_STARTUP_TIMEOUT, interval=5)
 
     LOG.debug("cluster state polling returned! status = %s", status)
 

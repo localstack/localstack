@@ -720,7 +720,7 @@ def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
     raise raise_error
 
 
-def poll(condition, timeout: float = None, interval: float = 0.5) -> bool:
+def poll_condition(condition, timeout: float = None, interval: float = 0.5) -> bool:
     """
     Poll evaluates the given condition until a truthy value is returned. It does this every `interval` seconds
     (0.5 by default), until the timeout (in seconds, if any) is reached.

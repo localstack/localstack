@@ -81,7 +81,7 @@ class ElasticsearchTest(unittest.TestCase):
         ]
 
     def test_create_existing_domain_causes_exception(self):
-        # already created in
+        # the domain was already created in TEST_DOMAIN_NAME
         with self.assertRaises(ClientError):
             self._create_domain(name=TEST_DOMAIN_NAME, es_cluster_config=ES_CLUSTER_CONFIG)
 
