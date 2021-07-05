@@ -720,6 +720,29 @@ def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
     raise raise_error
 
 
+def poll_condition(condition, timeout: float = None, interval: float = 0.5) -> bool:
+    """
+    Poll evaluates the given condition until a truthy value is returned. It does this every `interval` seconds
+    (0.5 by default), until the timeout (in seconds, if any) is reached.
+
+    Poll returns True once `condition()` returns a truthy value, or False if the timeout is reached.
+    """
+    remaining = 0
+    if timeout is not None:
+        remaining = timeout
+
+    while not condition():
+        if timeout is not None:
+            remaining -= interval
+
+            if remaining <= 0:
+                return False
+
+        time.sleep(interval)
+
+    return True
+
+
 def dump_thread_info():
     for t in threading.enumerate():
         print(t)

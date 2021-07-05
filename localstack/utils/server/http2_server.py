@@ -16,7 +16,7 @@ from quart import Quart, make_response, request
 from quart.app import _cancel_all_tasks
 
 from localstack import config
-from localstack.utils.async_utils import ensure_event_loop, run_sync
+from localstack.utils.async_utils import ensure_event_loop, run_coroutine, run_sync
 from localstack.utils.common import TMP_THREADS, FuncThread, load_file, retry
 from localstack.utils.http_utils import uses_chunked_encoding
 
@@ -225,14 +225,21 @@ def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=No
         def __init__(self):
             FuncThread.__init__(self, self.run_proxy, None)
             self.shutdown_event = None
+            self.loop = None
 
         def run_proxy(self, *args):
-            loop = ensure_event_loop()
+            self.loop = ensure_event_loop()
             self.shutdown_event = asyncio.Event()
-            run_app_sync(loop=loop, shutdown_event=self.shutdown_event)
+            run_app_sync(loop=self.loop, shutdown_event=self.shutdown_event)
 
         def stop(self, quiet=None):
-            self.shutdown_event.set()
+            event = self.shutdown_event
+
+            async def set_event():
+                event.set()
+
+            run_coroutine(set_event(), self.loop)
+            super().stop(quiet)
 
     def run_in_thread():
         thread = ProxyThread()

@@ -16,6 +16,7 @@ from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.services import infra
 from localstack.utils.analytics.profiler import profiled
 from localstack.utils.common import safe_requests
+from tests.integration.test_elasticsearch import ElasticsearchTest
 from tests.integration.test_terraform import TestTerraform
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,9 @@ localstack_started = mp.Event()  # event indicating whether localstack has been 
 localstack_stop = mp.Event()  # event that can be triggered to stop localstack
 localstack_stopped = mp.Event()  # event indicating that localstack has been stopped
 startup_monitor_event = mp.Event()  # event that can be triggered to start localstack
-will_run_terraform_tests = mp.Event()  # flag to indicate that terraform should be initialized
+
+# collection of functions that should be executed to initialize tests
+test_init_functions = set()
 
 
 @pytest.hookimpl()
@@ -35,11 +38,24 @@ def pytest_configure(config):
 
 def pytest_runtestloop(session):
     # second pytest lifecycle hook (before test runner starts)
+
+    # collect test classes
+    test_classes = set()
     for item in session.items:
+        if item.parent and item.parent.cls:
+            test_classes.add(item.parent.cls)
+
+    # add init functions for certain tests that download/install things
+    for test_class in test_classes:
         # set flag that terraform will be used
-        if "terraform" in str(item.parent).lower():
-            will_run_terraform_tests.set()
-            break
+        if TestTerraform is test_class:
+            logger.info("will initialize TestTerraform")
+            test_init_functions.add(TestTerraform.init_async)
+            continue
+        if ElasticsearchTest is test_class:
+            logger.info("will initialize ElasticsearchTest")
+            test_init_functions.add(ElasticsearchTest.init_async)
+            continue
 
     if not session.items:
         return
@@ -122,10 +138,12 @@ def run_localstack():
 
     threading.Thread(target=start_profiling).start()
 
-    if will_run_terraform_tests.is_set():
-        logger.info("running terraform init")
-        # init terraform binary if necessary
-        TestTerraform.init_async()
+    for fn in test_init_functions:
+        try:
+            # asynchronous init functions
+            fn()
+        except Exception:
+            logger.exception("exception while running init function for test")
 
     logger.info("waiting for infra to be ready")
     infra.INFRA_READY.wait()  # wait for infra to start (threading event)
