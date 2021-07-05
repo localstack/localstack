@@ -71,7 +71,7 @@ def filter_event_based_on_event_format(self, rule, event):
     def filter_event(event_pattern_filter, event):
         for key, value in event_pattern_filter.items():
             event_value = event.get(key.lower())
-            if not event_value:
+            if event_value is None:
                 return False
 
             if event_value and isinstance(event_value, dict):
