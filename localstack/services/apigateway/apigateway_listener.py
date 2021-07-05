@@ -451,7 +451,7 @@ def invoke_rest_api_integration_backend(
 
             # apply custom request template
             data_str = data
-            isBase64Encoded = False
+            is_base64_encoded = False
             try:
                 data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
                 data_str = apply_template(
@@ -462,11 +462,12 @@ def invoke_rest_api_integration_backend(
                     query_params=query_string_params,
                     headers=headers,
                 )
-            except Exception:
-                # Temporary fix to send binary data to Lambda api
-                # To do identify all content-type which needs to base64 encoded
+            except UnicodeDecodeError:
                 data_str = base64.b64encode(data_str)
-                isBase64Encoded = True
+                is_base64_encoded = True
+            except Exception as e:
+                LOGGER.warning("Unable to convert API Gateway payload to str: %s" % (e))
+                pass
 
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
@@ -488,7 +489,7 @@ def invoke_rest_api_integration_backend(
                 stage,
                 api_id,
                 headers,
-                isBase64Encoded=isBase64Encoded,
+                is_base64_encoded=is_base64_encoded,
                 path_params=path_params,
                 query_string_params=query_string_params,
                 method=method,
