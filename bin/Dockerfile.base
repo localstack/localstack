@@ -133,8 +133,8 @@ ADD localstack/dashboard/web/package.json localstack/dashboard/web/package.json
 # install web dashboard dependencies
 RUN make install-web
 
-# install libs that require dependencies cleaned up below (e.g., gcc)
-RUN (virtualenv .venv && source .venv/bin/activate && pip install 'cryptography<3.4' 'uamqp>=1.2.14')
+# install libs that require dependencies that are cleaned up below (e.g., gcc)
+RUN (virtualenv .venv && source .venv/bin/activate && pip install 'cryptography<3.4' 'uamqp>=1.2.14' 'coverage>=5.5')
 
 # clean up (layers are later squashed into a single one)
 RUN rm -rf localstack/infra/elasticsearch/jdk/

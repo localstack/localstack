@@ -1,1 +1,1 @@
-SETTING2 = 'setting2'
+SETTING2 = "setting2"

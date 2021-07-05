@@ -4,10 +4,11 @@ IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_NAME_FULL ?= localstack/localstack-full
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 DOCKER_SQUASH ?= --squash
-NOSE_LOG_LEVEL ?= WARNING
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
 TEST_PATH ?= .
+PYTEST_LOGLEVEL ?= warning
+MAIN_CONTAINER_NAME ?= localstack_main
 
 ifeq ($(OS), Windows_NT)
 	VENV_RUN = . $(VENV_DIR)/Scripts/activate
@@ -26,11 +27,16 @@ install-venv:
 	make setup-venv && \
 		test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt)
 
+install-venv-docker: # make install-venv for the docker environment (hack to remove black and isort)
+	make setup-venv && \
+		test ! -e requirements.txt || \
+		($(VENV_RUN);  $(PIP_CMD) install `grep -v '^ *#\|^black\|^isort\|^flake8' requirements.txt | cut -d' ' -f1 | grep .`)
+
 init:              ## Initialize the infrastructure, make sure all libs are downloaded
-	$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py libs
+	$(VENV_RUN); python -m localstack.services.install libs
 
 init-testlibs:
-	$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py testlibs
+	$(VENV_RUN); python -m localstack.services.install testlibs
 
 install:           ## Install full dependencies in virtualenv
 	(make install-venv && make init-testlibs) || exit 1
@@ -146,8 +152,13 @@ web:
 
 ## Run automated tests
 test:
-	make lint && \
-		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests $(NOSE_ARGS) --with-timer --with-coverage --logging-level=$(NOSE_LOG_LEVEL) --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' $(TEST_PATH))
+	($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
+
+test-coverage:
+	($(VENV_RUN); coverage --version; \
+		DEBUG=$(DEBUG) \
+		coverage run --source=localstack/ --omit=localstack/infra/,localstack/node_modules/ \
+		-m pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
 test-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
@@ -157,7 +168,7 @@ test-docker-mount: ## Run automated tests in Docker (mounting local code)
 
 test-docker-mount-code:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); \
-	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/ -e TEST_PATH=$(TEST_PATH) -e NOSE_ARGS=-v -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
+	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/ -e TEST_PATH=$(TEST_PATH) -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
 
 # Note: the ci-* targets below should only be used in CI builds!
 
@@ -165,36 +176,27 @@ ci-build-prepare:
 	sudo useradd localstack -s /bin/bash
 	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
 	make init
-	nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
-	nohup docker pull lambci/lambda:20210129-ruby2.7 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-python2.7 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-python3.6 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null &
-	nohup docker pull lambci/lambda:dotnetcore3.1 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-provided > /dev/null &
-	nohup docker pull lambci/lambda:java8 > /dev/null &
-	nohup docker pull lambci/lambda:python3.8 > /dev/null &
+	docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null
+	docker pull lambci/lambda:20191117-ruby2.5 > /dev/null
+	docker pull lambci/lambda:20210129-ruby2.7 > /dev/null
+	docker pull lambci/lambda:20191117-python3.6 > /dev/null
+	docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null
+	docker pull lambci/lambda:dotnetcore3.1 > /dev/null
+	docker pull lambci/lambda:20191117-provided > /dev/null
+	docker pull lambci/lambda:java8 > /dev/null
+	docker pull lambci/lambda:python3.8 > /dev/null
 
-ci-build-test:
-	# check if the build environment contains a special command via $$CUSTOM_CMD
-	if [ "$$CUSTOM_CMD" = rebuild-base-image ]; then make docker-build-base-ci; exit; fi
-	# run tests using Python 3 (limit the set of tests to reduce test duration)
-	DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
-	DEBUG=1 SQS_PROVIDER=elasticmq TEST_PATH="tests/integration/test_sns.py:SNSTest.test_publish_sqs_from_sns_with_xray_propagation" make test
-	# start pulling Docker base image in the background
-	nohup docker pull localstack/java-maven-node-python > /dev/null &
-	LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
-
-ci-build-push:
-	# build Docker image
-	make docker-build
-	# extract .coverage details from created image
-	make docker-cp-coverage
-	sed -i "s:/opt/code/localstack:`pwd`/localstack:g" .coverage
-	# push Docker image (if on master branch)
-	make docker-push-master
-	make coveralls || true
+ci-pro-smoke-tests:
+	which awslocal || pip3 install awscli-local
+	which localstack || pip3 install localstack
+	DOCKER_FLAGS='-d' SERVICES=lambda,qldb,rds,xray LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DEBUG=1 localstack start
+	docker logs -f $(MAIN_CONTAINER_NAME) &
+	for i in 0 1 2 3 4 5 6 7 8 9; do if docker logs $(MAIN_CONTAINER_NAME) | grep 'Ready.'; then break; fi; sleep 3; done
+	awslocal qldb list-ledgers
+	awslocal rds describe-db-instances
+	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
+	awslocal lambda list-layers
+	docker rm -f $(MAIN_CONTAINER_NAME)
 
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
 	rm -rf $(VENV_DIR)
@@ -205,7 +207,10 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); flake8 --inline-quotes=single --show-source --max-line-length=120 --ignore=E128,W504 --exclude=node_modules,$(VENV_DIR)*,dist,fixes .)
+	($(VENV_RUN); python -m flake8 --show-source --config .flake8 . )
+
+format:
+	($(VENV_RUN); python -m isort .; python -m black . )
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/
@@ -217,4 +222,4 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
-.PHONY: usage compile clean install web install-web infra test
+.PHONY: usage compile clean install web install-web infra test test-coverage install-venv-docker

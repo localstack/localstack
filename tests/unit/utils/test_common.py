@@ -1,6 +1,7 @@
-import unittest
 import threading
+import unittest
 from unittest.mock import MagicMock
+
 from localstack.utils.common import synchronized
 
 

@@ -23,16 +23,16 @@ def get_safe(dictionary, path, default_value=None):
     if not isinstance(dictionary, dict) or len(dictionary) == 0:
         return default_value
 
-    attribute_path = path if isinstance(path, list) else path.split('.')
-    if len(attribute_path) == 0 or attribute_path[0] != '$':
+    attribute_path = path if isinstance(path, list) else path.split(".")
+    if len(attribute_path) == 0 or attribute_path[0] != "$":
         raise AttributeError('Safe navigation must begin with a root node "$"')
 
     current_value = dictionary
     for path_node in attribute_path:
-        if path_node == '$':
+        if path_node == "$":
             continue
 
-        if re.compile('^\\d+$').search(str(path_node)):
+        if re.compile("^\\d+$").search(str(path_node)):
             path_node = int(path_node)
 
         if isinstance(current_value, dict) and path_node in current_value:
@@ -65,24 +65,26 @@ def set_safe_mutable(dictionary, path, value):
     if not isinstance(dictionary, dict):
         raise AttributeError('"dictionary" must be of type "dict"')
 
-    attribute_path = path if isinstance(path, list) else path.split('.')
+    attribute_path = path if isinstance(path, list) else path.split(".")
     attribute_path_len = len(attribute_path)
 
-    if attribute_path_len == 0 or attribute_path[0] != '$':
+    if attribute_path_len == 0 or attribute_path[0] != "$":
         raise AttributeError('Dict navigation must begin with a root node "$"')
 
     current_pointer = dictionary
     for i in range(attribute_path_len):
         path_node = attribute_path[i]
 
-        if path_node == '$':
+        if path_node == "$":
             continue
 
         if i < attribute_path_len - 1:
             if path_node not in current_pointer:
                 current_pointer[path_node] = {}
             if not isinstance(current_pointer, dict):
-                raise RuntimeError('Error while deeply setting a dict value. Supplied path is not of type "dict"')
+                raise RuntimeError(
+                    'Error while deeply setting a dict value. Supplied path is not of type "dict"'
+                )
         else:
             current_pointer[path_node] = value
 

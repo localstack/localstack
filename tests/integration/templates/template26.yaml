@@ -40,6 +40,11 @@ Resources:
     Properties:
       TopicName: !Sub '${Environment}-slack-sns-topic'
 
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: example.com
+
 Outputs:
   VpcId:
     Value: !Ref VPC

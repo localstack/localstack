@@ -13,6 +13,9 @@ ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 ENV LOCALSTACK_HOSTNAME=localhost
 
+# Set edge bind host so localstack can be reached by other containers
+ENV EDGE_BIND_HOST=0.0.0.0
+
 # add trusted CA certificates to the cert store
 RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ssl/certs/ca-certificates.crt
 
@@ -22,7 +25,7 @@ RUN apk add iputils
 
 # add files required to install virtualenv dependencies
 ADD Makefile requirements.txt ./
-RUN make install-venv
+RUN make install-venv-docker
 
 # add files required to run "make init"
 RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
@@ -95,7 +98,13 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN LAMBDA_EXECUTOR=local make test
+# add configuration files
+ADD .coveragerc ./
+# fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
+RUN pip uninstall -y argparse
+RUN LAMBDA_EXECUTOR=local \
+    PYTEST_ARGS='--junitxml=target/test-report.xml' \
+    make test-coverage
 
 # clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
