@@ -86,6 +86,7 @@ def _create_cluster(domain_name, data):
 
     if _cluster:
         # see comment on _cluster
+        LOG.info("elasticsearch cluster already created, using existing one for %s", domain_name)
         ES_CLUSTERS[domain_name] = _cluster
         data["Created"] = _cluster.is_up()
         return
@@ -95,6 +96,7 @@ def _create_cluster(domain_name, data):
     _cluster = ProxiedElasticsearchCluster(
         port=config.PORT_ELASTICSEARCH, host=constants.LOCALHOST, version=version
     )
+    LOG.info("starting %s on %s:%s", type(_cluster), _cluster.host, _cluster.port)
     _cluster.start()
     ES_CLUSTERS[domain_name] = _cluster
 
@@ -110,9 +112,12 @@ def _cleanup_cluster(domain_name):
     global _cluster
     cluster = ES_CLUSTERS.pop(domain_name)
 
+    LOG.debug("cleanup cluster for domain %s, %d domains remaining", domain_name, len(ES_CLUSTERS))
+
     if not ES_CLUSTERS:
         # because cluster is currently always mapped to _cluster, we only shut it down if no other
         # domains are using it
+        LOG.info("shutting down elasticsearch cluster after domain %s cleanup", domain_name)
         cluster.shutdown()
         # FIXME: if delete_domain() is called, then immediately after, create_domain() (without
         #  letting time pass for the proxy to shut down) there's a chance that there will be a bind

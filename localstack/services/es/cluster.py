@@ -2,6 +2,9 @@
 Higher-level abstraction to start elasticsearch using the elasticsearch binary.
 Here's how you can use it:
 
+    import time
+    import threading
+
     cluster = ElasticsearchCluster(7541)
 
     def monitor():
@@ -27,6 +30,7 @@ Here's how you can use it:
 import logging
 import multiprocessing
 import os
+import time
 from typing import Dict, List, NamedTuple, Optional
 
 import requests
@@ -343,7 +347,15 @@ class ProxiedElasticsearchCluster:
         if not self._proxy_thread:
             self._starting.wait()
 
-        return self._cluster.join(timeout=timeout)
+        then = time.time()
+
+        if self._proxy_thread:
+            self._proxy_thread.join(timeout=timeout)
+
+        # subtract time already spent waiting, but wait at least another 100 ms
+        timeout = max(0.1, (timeout - (time.time() - then)))
+
+        self._cluster.join(timeout=timeout)
 
 
 def get_elasticsearch_health_status(url: str) -> Optional[str]:
