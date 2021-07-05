@@ -10,6 +10,7 @@ import threading
 import time
 import traceback
 from multiprocessing import Process, Queue
+from typing import Tuple
 
 import six
 
@@ -248,7 +249,22 @@ class LambdaExecutor(object):
     def cleanup(self, arn=None):
         pass
 
-    def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars=None):
+
+class ContainerInfo:
+    """Contains basic information about a docker container."""
+
+    def __init__(self, name, entry_point):
+        self.name = name
+        self.entry_point = entry_point
+
+
+class LambdaExecutorContainers(LambdaExecutor):
+    """Abstract executor class for executing Lambda functions in Docker containers"""
+
+    def execute_in_container(self, func_details, env_vars, command, stdin=None) -> Tuple[str, str]:
+        raise Exception("Not implemented")
+
+    def run_lambda_executor(self, event=None, func_details=None, env_vars=None, command=None):
         env_vars = dict(env_vars or {})
         runtime = func_details.runtime or ""
 
@@ -315,12 +331,15 @@ class LambdaExecutor(object):
             cmd = add_env_var(cmd, "AWS_LAMBDA_EVENT_BODY")
             cmd = rm_env_var(cmd, "DOCKER_LAMBDA_USE_STDIN")
 
-        kwargs = {"stdin": True, "inherit_env": True, "asynchronous": True}
-        process = run(
-            cmd, env_vars=env_vars, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs
-        )
+        # kwargs = {"stdin": True, "inherit_env": True, "asynchronous": True}
+        # process = run(
+        #     cmd, env_vars=env_vars, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs
+        # )
         event_stdin_bytes = stdin_str and to_bytes(stdin_str)
-        result, log_output = process.communicate(input=event_stdin_bytes)
+        # result, log_output = process.communicate(input=event_stdin_bytes)
+        result, log_output = self.execute_in_container(
+            func_details, env_vars, command, event_stdin_bytes
+        )
         try:
             result = to_str(result).strip()
         except Exception:
@@ -359,21 +378,6 @@ class LambdaExecutor(object):
 
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
-
-
-class ContainerInfo:
-    """Contains basic information about a docker container."""
-
-    def __init__(self, name, entry_point):
-        self.name = name
-        self.entry_point = entry_point
-
-
-class LambdaExecutorContainers(LambdaExecutor):
-    """Abstract executor class for executing Lambda functions in Docker containers"""
-
-    def prepare_execution(self, func_details, env_vars, command):
-        raise Exception("Not implemented")
 
     def _docker_cmd(self):
         """Return the string to be used for running Docker commands."""
@@ -452,18 +456,15 @@ class LambdaExecutorContainers(LambdaExecutor):
         if is_nodejs_runtime(runtime):
             environment["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
 
-        # determine the command to be executed (implemented by subclasses)
-        cmd = self.prepare_execution(func_details, environment, command)
-
         # copy events file into container, if necessary
         if events_file_path:
             container_name = self.get_container_name(func_details.arn())
             self.copy_into_container(events_file_path, container_name, DOCKER_TASK_FOLDER)
 
         # run Lambda executor and fetch invocation result
-        LOG.info("Running lambda cmd: %s" % cmd)
+        LOG.info("Running lambda: %s" % func_details.arn())
         result = self.run_lambda_executor(
-            cmd, event=stdin, env_vars=environment, func_details=func_details
+            event=stdin, env_vars=environment, func_details=func_details, command=command
         )
 
         # clean up events file
@@ -489,7 +490,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.max_port = LAMBDA_SERVER_UNIQUE_PORTS
         self.port_offset = LAMBDA_SERVER_PORT_OFFSET
 
-    def prepare_execution(self, func_details, env_vars, command):
+    def execute_in_container(self, func_details, env_vars, command, stdin=None):
         func_arn = func_details.arn()
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
@@ -521,11 +522,13 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 container_info.name, f"{lambda_cwd}/.", DOCKER_TASK_FOLDER
             )
 
-        DOCKER_CLIENT.exec_in_container(
+        return DOCKER_CLIENT.exec_in_container(
             container_name_or_id=container_info.name,
             command=command,
             interactive=True,
             env_vars=env_vars,
+            asynchronous=True,
+            stdin=stdin,
         )
 
     def _execute(self, func_arn, *args, **kwargs):
@@ -765,7 +768,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         environment["DOCKER_LAMBDA_USE_STDIN"] = "1"
         return event_body.encode()
 
-    def prepare_execution(self, func_details, env_vars, command):
+    def execute_in_container(self, func_details, env_vars, command, stdin=None):
         lambda_cwd = func_details.cwd
         handler = func_details.handler
 
@@ -804,14 +807,16 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 command=command,
             )
             DOCKER_CLIENT.copy_into_container(container_id, f"{lambda_cwd}/.", DOCKER_TASK_FOLDER)
-            DOCKER_CLIENT.start_container(container_id, interactive=True, attach=True)
+            return DOCKER_CLIENT.start_container(
+                container_id, interactive=True, attach=True, asynchronous=True, stdin=stdin
+            )
         else:
             mount_volumes = None
             if lambda_cwd:
                 mount_volumes = [
                     (Util.get_host_path_for_path_in_docker(lambda_cwd), DOCKER_TASK_FOLDER)
                 ]
-            DOCKER_CLIENT.run_container(
+            return DOCKER_CLIENT.run_container(
                 image_name=docker_image,
                 interactive=True,
                 entrypoint=entrypoint,
@@ -822,10 +827,124 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 additional_flags=additional_flags,
                 command=command,
                 mount_volumes=mount_volumes,
+                asynchronous=True,
+                stdin=stdin,
             )
 
 
 class LambdaExecutorLocal(LambdaExecutor):
+    def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars=None):
+        env_vars = dict(env_vars or {})
+        runtime = func_details.runtime or ""
+
+        stdin_str = None
+        event_body = event if event is not None else env_vars.get("AWS_LAMBDA_EVENT_BODY")
+        event_body = json.dumps(event_body) if isinstance(event_body, dict) else event_body
+        event_body = event_body or ""
+        is_large_event = len(event_body) > MAX_ENV_ARGS_LENGTH
+
+        is_provided = runtime.startswith(LAMBDA_RUNTIME_PROVIDED)
+        if (
+            not is_large_event
+            and func_details
+            and is_provided
+            and env_vars.get("DOCKER_LAMBDA_USE_STDIN") == "1"
+        ):
+            # Note: certain "provided" runtimes (e.g., Rust programs) can block if we pass in
+            # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
+            env_updates = {
+                "PATH": env_vars.get("PATH") or os.environ.get("PATH", ""),
+                "AWS_LAMBDA_EVENT_BODY": to_str(
+                    event_body
+                ),  # Note: seems to be needed for provided runtimes!
+                "DOCKER_LAMBDA_USE_STDIN": "1",
+            }
+            env_vars.update(env_updates)
+            # Note: $AWS_LAMBDA_COGNITO_IDENTITY='{}' causes Rust Lambdas to hang
+            env_vars.pop("AWS_LAMBDA_COGNITO_IDENTITY", None)
+            cmd = re.sub(
+                r"(.*)(%s\s+(run|start|exec))" % self._docker_cmd(),
+                r"\1echo $AWS_LAMBDA_EVENT_BODY | \2",
+                cmd,
+            )
+
+        if is_large_event:
+            # in case of very large event payloads, we need to pass them via stdin
+            LOG.debug(
+                "Received large Lambda event payload (length %s) - passing via stdin"
+                % len(event_body)
+            )
+            env_vars["DOCKER_LAMBDA_USE_STDIN"] = "1"
+
+        def add_env_var(cmd, name, value=None):
+            value = value or "$%s" % name
+            return re.sub(
+                r"(%s)\s+(run|exec)\s+" % config.DOCKER_CMD,
+                r'\1 \2 -e %s="%s" ' % (name, value),
+                cmd,
+            )
+
+        def rm_env_var(cmd, name):
+            return re.sub(r'-e\s+%s="?[^"\s]+"?' % name, "", cmd)
+
+        if env_vars.get("DOCKER_LAMBDA_USE_STDIN") == "1":
+            stdin_str = event_body
+            if not is_provided:
+                env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
+            if "DOCKER_LAMBDA_USE_STDIN" not in cmd:
+                cmd = add_env_var(cmd, "DOCKER_LAMBDA_USE_STDIN", "1")
+                cmd = rm_env_var(cmd, "AWS_LAMBDA_EVENT_BODY")
+        else:
+            if "AWS_LAMBDA_EVENT_BODY" not in env_vars:
+                env_vars["AWS_LAMBDA_EVENT_BODY"] = to_str(event_body)
+            cmd = add_env_var(cmd, "AWS_LAMBDA_EVENT_BODY")
+            cmd = rm_env_var(cmd, "DOCKER_LAMBDA_USE_STDIN")
+
+        kwargs = {"stdin": True, "inherit_env": True, "asynchronous": True}
+        process = run(
+            cmd, env_vars=env_vars, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs
+        )
+        event_stdin_bytes = stdin_str and to_bytes(stdin_str)
+        result, log_output = process.communicate(input=event_stdin_bytes)
+        try:
+            result = to_str(result).strip()
+        except Exception:
+            pass
+        log_output = to_str(log_output).strip()
+        return_code = process.returncode
+        # Note: The user's code may have been logging to stderr, in which case the logs
+        # will be part of the "result" variable here. Hence, make sure that we extract
+        # only the *last* line of "result" and consider anything above that as log output.
+        if isinstance(result, six.string_types) and "\n" in result:
+            lines = result.split("\n")
+            idx = last_index_of(
+                lines, lambda line: line and not line.startswith(INTERNAL_LOG_PREFIX)
+            )
+            if idx >= 0:
+                result = lines[idx]
+                additional_logs = "\n".join(lines[:idx] + lines[idx + 1 :])
+                log_output += "\n%s" % additional_logs
+
+        log_formatted = log_output.strip().replace("\n", "\n> ")
+        func_arn = func_details and func_details.arn()
+        LOG.debug(
+            "Lambda %s result / log output:\n%s\n> %s" % (func_arn, result.strip(), log_formatted)
+        )
+
+        # store log output - TODO get live logs from `process` above?
+        _store_logs(func_details, log_output)
+
+        if return_code != 0:
+            raise InvocationException(
+                "Lambda process returned error status code: %s. Result: %s. Output:\n%s"
+                % (return_code, result, log_output),
+                log_output,
+                result,
+            )
+
+        invocation_result = InvocationResult(result, log_output=log_output)
+        return invocation_result
+
     def _execute(self, func_arn, func_details, event, context=None, version=None):
         lambda_cwd = func_details.cwd
         environment = self._prepare_environment(func_details)

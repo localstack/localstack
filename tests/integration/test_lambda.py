@@ -1880,6 +1880,7 @@ class TestDockerBehaviour(LambdaTestBase):
         # clean up
         testutil.delete_lambda_function(func_name)
 
+    # TODO this test is useless now
     def test_docker_command_for_separate_container_lambda_executor(self):
         # run these tests only for the "separate containers" Lambda executor
         if not isinstance(
@@ -1906,7 +1907,7 @@ class TestDockerBehaviour(LambdaTestBase):
         func_details.handler = handler
 
         try:
-            cmd = executor.prepare_execution(func_details, {}, "")
+            cmd = executor.execute_in_container(func_details, {}, "")
             expected = (
                 'docker run -v "%s":/var/task --network="%s" --dns="%s" --rm "lambci/lambda:%s" "%s"'
                 % (lambda_cwd, network, dns, LAMBDA_RUNTIME_NODEJS810, handler)

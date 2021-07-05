@@ -109,7 +109,7 @@ class CmdDockerClient:
         LOG.debug(cmd)
         safe_run(cmd)
 
-    def get_container_entrypoint(self, docker_image):
+    def get_container_entrypoint(self, docker_image: str) -> str:
         """Get the entry point for the given image"""
         LOG.debug("Getting the entrypoint for image: %s" % (docker_image))
         cmd = [
@@ -126,7 +126,7 @@ class CmdDockerClient:
         entry_point = run_result.strip("[]\n\r ")
         return entry_point
 
-    def has_docker(self):
+    def has_docker(self) -> bool:
         """Check if system has docker available"""
         try:
             safe_run([self._docker_cmd(), "ps"])
@@ -134,7 +134,7 @@ class CmdDockerClient:
         except Exception:
             return False
 
-    def create_container(self, image_name: str, **kwargs):
+    def create_container(self, image_name: str, **kwargs) -> str:
         cmd = self._build_run_create_cmd("create", image_name, **kwargs)
         container_id = safe_run(cmd)
         container_id = container_id.strip()
@@ -145,7 +145,7 @@ class CmdDockerClient:
     ) -> Union[Tuple[str, str], str]:
         cmd = self._build_run_create_cmd("run", image_name, **kwargs)
         kwargs = {}
-        if asynchronous and stdin:
+        if asynchronous:
             kwargs = {
                 "stdin": True,
                 "inherit_env": True,
@@ -154,7 +154,7 @@ class CmdDockerClient:
                 "stdout": subprocess.PIPE,
             }
         result = safe_run(cmd, **kwargs)
-        if asynchronous and stdin:
+        if asynchronous:
             return result.communicate(input=input)
         return result.strip()
 
@@ -175,7 +175,7 @@ class CmdDockerClient:
         cmd.append(container_name_or_id)
         cmd.append(command)
         kwargs = {}
-        if asynchronous and stdin:
+        if asynchronous:
             kwargs = {
                 "stdin": True,
                 "inherit_env": True,
@@ -184,7 +184,7 @@ class CmdDockerClient:
                 "stdout": subprocess.PIPE,
             }
         result = safe_run(cmd, **kwargs)
-        if asynchronous and stdin:
+        if asynchronous:
             return result.communicate(input=input)
         return result
 
@@ -206,7 +206,7 @@ class CmdDockerClient:
             cmd.append("--attach")
         cmd.append(container_name_or_id)
         kwargs = {}
-        if asynchronous and stdin:
+        if asynchronous:
             kwargs = {
                 "stdin": True,
                 "inherit_env": True,
@@ -215,7 +215,7 @@ class CmdDockerClient:
                 "stdout": subprocess.PIPE,
             }
         result = safe_run(cmd, **kwargs)
-        if asynchronous and stdin:
+        if asynchronous:
             return result.communicate(input=input)
         return result
 
@@ -272,7 +272,7 @@ class Util:  # TODO remove duplicated code in lambda_executors
     MAX_ENV_ARGS_LENGTH = 20000
 
     @classmethod
-    def create_env_vars_file_flag(cls, env_vars, use_env_variable_names=True):
+    def create_env_vars_file_flag(cls, env_vars):
         if not env_vars:
             return []
         result = []
@@ -291,17 +291,9 @@ class Util:  # TODO remove duplicated code in lambda_executors
             save_file(env_file, env_content)
             result += ["--env-file", env_file]
 
-        if use_env_variable_names:
-            env_vars_res = [
-                item
-                for k in env_vars.keys()
-                for item in ["-e", "{}={}".format(k, os.environ.get(k))]
-            ]
-        else:
-            # TODO: we should remove this mid-term - shouldn't be using cmd_quote directly
-            env_vars_res = [
-                item for k, v in env_vars.items() for item in ["-e", "{}={}".format(k, v)]
-            ]
+        env_vars_res = [
+            item for k, v in env_vars.items() for item in ["-e", "{}={}".format(k, v)]
+        ]
         result += env_vars_res
         return result
 
