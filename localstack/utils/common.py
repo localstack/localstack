@@ -24,12 +24,9 @@ import zipfile
 from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
-<<<<<<< HEAD
 from queue import Queue
+from typing import Callable, List, Union
 from urllib.parse import parse_qs, urlparse
-=======
-from typing import Callable, List
->>>>>>> 50c4839d (Start on new docker integration)
 
 import dns.resolver
 import requests
@@ -1600,7 +1597,7 @@ def run(cmd, cache_duration_secs=0, **kwargs):
     return do_run(cmd, run_cmd, cache_duration_secs)
 
 
-def safe_run(cmd: List[str], cache_duration_secs=0, **kwargs) -> str:
+def safe_run(cmd: List[str], cache_duration_secs=0, **kwargs) -> Union[str, subprocess.Popen]:
     def run_cmd():
         return bootstrap.run(cmd, shell=False, **kwargs).stdout
 

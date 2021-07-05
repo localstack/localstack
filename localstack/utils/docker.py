@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import subprocess
 from enum import Enum, unique
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -18,6 +19,11 @@ class DockerContainerStatus(Enum):
     UP = 1
 
 
+class ContainerCreationException(Exception):
+    def __init__(self, message) -> None:
+        self.message = message
+
+
 class CmdDockerClient:
     """Class for managing docker containers using the command line executable"""
 
@@ -26,7 +32,7 @@ class CmdDockerClient:
         return config.DOCKER_CMD
 
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
-        """Returns the status of the"""
+        """Returns the status of the container with the given name"""
         cmd = [
             self._docker_cmd(),
             "ps",
@@ -134,11 +140,23 @@ class CmdDockerClient:
         container_id = container_id.strip()
         return container_id
 
-    def run_container(self, image_name: str, **kwargs):
+    def run_container(
+        self, image_name: str, asynchronous=False, stdin=None, **kwargs
+    ) -> Union[Tuple[str, str], str]:
         cmd = self._build_run_create_cmd("run", image_name, **kwargs)
-        container_id = safe_run(cmd)
-        container_id = container_id.strip()
-        return container_id
+        kwargs = {}
+        if asynchronous and stdin:
+            kwargs = {
+                "stdin": True,
+                "inherit_env": True,
+                "asynchronous": True,
+                "stderr": subprocess.PIPE,
+                "stdout": subprocess.PIPE,
+            }
+        result = safe_run(cmd, **kwargs)
+        if asynchronous and stdin:
+            return result.communicate(input=input)
+        return result.strip()
 
     def exec_in_container(
         self,
@@ -146,7 +164,9 @@ class CmdDockerClient:
         command: str,
         interactive=False,
         env_vars: Optional[List[Tuple[str, str]]] = None,
-    ):
+        asynchronous=False,
+        stdin: Optional[str] = None,
+    ) -> Union[Tuple[str, str], str]:
         cmd = [self._docker_cmd(), "exec"]
         if interactive:
             cmd.append("--interactive")
@@ -154,10 +174,25 @@ class CmdDockerClient:
             cmd += Util.create_env_vars_file_flag(env_vars)
         cmd.append(container_name_or_id)
         cmd.append(command)
+        kwargs = {}
+        if asynchronous and stdin:
+            kwargs = {
+                "stdin": True,
+                "inherit_env": True,
+                "asynchronous": True,
+                "stderr": subprocess.PIPE,
+                "stdout": subprocess.PIPE,
+            }
+        result = safe_run(cmd, **kwargs)
+        if asynchronous and stdin:
+            return result.communicate(input=input)
+        return result
 
     def start_container(
         self,
         container_name_or_id: str,
+        asynchronous=False,
+        stdin=None,
         interactive: bool = False,
         attach: bool = False,
         flags: Optional[str] = None,
@@ -170,7 +205,18 @@ class CmdDockerClient:
         if attach:
             cmd.append("--attach")
         cmd.append(container_name_or_id)
-        result = safe_run(cmd)
+        kwargs = {}
+        if asynchronous and stdin:
+            kwargs = {
+                "stdin": True,
+                "inherit_env": True,
+                "asynchronous": True,
+                "stderr": subprocess.PIPE,
+                "stdout": subprocess.PIPE,
+            }
+        result = safe_run(cmd, **kwargs)
+        if asynchronous and stdin:
+            return result.communicate(input=input)
         return result
 
     def _build_run_create_cmd(
