@@ -152,7 +152,7 @@ class ElasticsearchCluster:
             user = constants.OS_USER_ELASTICSEARCH
             if is_root() and user:
                 # run the elasticsearch process as a non-root user (when running in docker)
-                cmd = f"su ${user} -c '{cmd}'"
+                cmd = f"su {user} -c '{cmd}'"
 
             env_vars = self._create_env_vars()
 
