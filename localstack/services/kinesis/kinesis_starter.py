@@ -11,7 +11,7 @@ from localstack.utils.common import chmod_r, get_free_tcp_port, mkdir, replace_i
 
 LOGGER = logging.getLogger(__name__)
 
-KINESIS_MOCK_RELEASES = "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/0.1.0"
+KINESIS_MOCK_RELEASES = "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/0.1.3"
 
 
 def apply_patches_kinesalite():
