@@ -821,6 +821,7 @@ def run(
     tty=False,
     shell=True,
 ):
+    LOG.debug("Executing command: %s", cmd)
     env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)

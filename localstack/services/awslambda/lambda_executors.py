@@ -53,7 +53,7 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
-from localstack.utils.docker import DOCKER_CLIENT
+from localstack.utils.docker import DOCKER_CLIENT, ContainerException
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -293,11 +293,6 @@ class LambdaExecutorContainers(LambdaExecutor):
             env_vars.update(env_updates)
             # Note: $AWS_LAMBDA_COGNITO_IDENTITY='{}' causes Rust Lambdas to hang
             env_vars.pop("AWS_LAMBDA_COGNITO_IDENTITY", None)
-            cmd = re.sub(
-                r"(.*)(%s\s+(run|start|exec))" % self._docker_cmd(),
-                r"\1echo $AWS_LAMBDA_EVENT_BODY | \2",
-                cmd,
-            )
 
         if is_large_event:
             # in case of very large event payloads, we need to pass them via stdin
@@ -307,49 +302,30 @@ class LambdaExecutorContainers(LambdaExecutor):
             )
             env_vars["DOCKER_LAMBDA_USE_STDIN"] = "1"
 
-        def add_env_var(cmd, name, value=None):
-            value = value or "$%s" % name
-            return re.sub(
-                r"(%s)\s+(run|exec)\s+" % config.DOCKER_CMD,
-                r'\1 \2 -e %s="%s" ' % (name, value),
-                cmd,
-            )
-
-        def rm_env_var(cmd, name):
-            return re.sub(r'-e\s+%s="?[^"\s]+"?' % name, "", cmd)
-
         if env_vars.get("DOCKER_LAMBDA_USE_STDIN") == "1":
             stdin_str = event_body
             if not is_provided:
                 env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
-            if "DOCKER_LAMBDA_USE_STDIN" not in cmd:
-                cmd = add_env_var(cmd, "DOCKER_LAMBDA_USE_STDIN", "1")
-                cmd = rm_env_var(cmd, "AWS_LAMBDA_EVENT_BODY")
-        else:
-            if "AWS_LAMBDA_EVENT_BODY" not in env_vars:
-                env_vars["AWS_LAMBDA_EVENT_BODY"] = to_str(event_body)
-            cmd = add_env_var(cmd, "AWS_LAMBDA_EVENT_BODY")
-            cmd = rm_env_var(cmd, "DOCKER_LAMBDA_USE_STDIN")
+        elif "AWS_LAMBDA_EVENT_BODY" not in env_vars:
+            env_vars["AWS_LAMBDA_EVENT_BODY"] = to_str(event_body)
 
-        # kwargs = {"stdin": True, "inherit_env": True, "asynchronous": True}
-        # process = run(
-        #     cmd, env_vars=env_vars, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs
-        # )
         event_stdin_bytes = stdin_str and to_bytes(stdin_str)
-        # result, log_output = process.communicate(input=event_stdin_bytes)
-        result, log_output = self.execute_in_container(
-            func_details, env_vars, command, event_stdin_bytes
-        )
+        error = None
+        try:
+            result, log_output = self.execute_in_container(
+                func_details, env_vars, command, event_stdin_bytes
+            )
+        except ContainerException as e:
+            error = e
         try:
             result = to_str(result).strip()
         except Exception:
             pass
         log_output = to_str(log_output).strip()
-        return_code = process.returncode
         # Note: The user's code may have been logging to stderr, in which case the logs
         # will be part of the "result" variable here. Hence, make sure that we extract
         # only the *last* line of "result" and consider anything above that as log output.
-        if isinstance(result, six.string_types) and "\n" in result:
+        if isinstance(result, str) and "\n" in result:
             lines = result.split("\n")
             idx = last_index_of(
                 lines, lambda line: line and not line.startswith(INTERNAL_LOG_PREFIX)
@@ -368,13 +344,13 @@ class LambdaExecutorContainers(LambdaExecutor):
         # store log output - TODO get live logs from `process` above?
         _store_logs(func_details, log_output)
 
-        if return_code != 0:
+        if error:
             raise InvocationException(
-                "Lambda process returned error status code: %s. Result: %s. Output:\n%s"
-                % (return_code, result, log_output),
+                "Lambda process returned with error. Result: %s. Output:\n%s"
+                % (result, log_output),
                 log_output,
                 result,
-            )
+            ) from error
 
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result

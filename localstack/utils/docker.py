@@ -19,7 +19,7 @@ class DockerContainerStatus(Enum):
     UP = 1
 
 
-class ContainerCreationException(Exception):
+class ContainerException(Exception):
     def __init__(self, message) -> None:
         self.message = message
 
@@ -291,9 +291,7 @@ class Util:  # TODO remove duplicated code in lambda_executors
             save_file(env_file, env_content)
             result += ["--env-file", env_file]
 
-        env_vars_res = [
-            item for k, v in env_vars.items() for item in ["-e", "{}={}".format(k, v)]
-        ]
+        env_vars_res = [item for k, v in env_vars.items() for item in ["-e", "{}={}".format(k, v)]]
         result += env_vars_res
         return result
 
