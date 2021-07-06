@@ -46,10 +46,6 @@ install-basic:     ## Install basic dependencies for CLI usage in virtualenv
 		($(VENV_RUN); cat requirements.txt | grep -ve '^#' | grep '#\(basic\|extended\)' | sed 's/ #.*//' \
 			| xargs $(PIP_CMD) install)
 
-# deprecated - TODO remove
-install-web:
-	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent > /dev/null))
-
 publish:           ## Publish the library to the central PyPi repository
 	# build and upload archive
 	($(VENV_RUN) && ./setup.py sdist upload)
@@ -146,10 +142,6 @@ docker-cp-coverage:
 		docker cp $$id:/opt/code/localstack/.coverage .coverage; \
 		docker rm -v $$id
 
-# deprecated - TODO remove
-web:
-	($(VENV_RUN); bin/localstack web)
-
 ## Run automated tests
 test:
 	($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
@@ -222,4 +214,4 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
-.PHONY: usage compile clean install web install-web infra test test-coverage install-venv-docker
+.PHONY: usage compile clean install infra test test-coverage install-venv-docker

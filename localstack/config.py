@@ -252,12 +252,7 @@ def has_docker():
 
 
 def is_linux():
-    try:
-        out = subprocess.check_output("uname -a", shell=True)
-        out = out.decode("utf-8") if isinstance(out, six.binary_type) else out
-        return "Linux" in out
-    except Exception:
-        return False
+    return platform.system() == "Linux"
 
 
 # whether to use Lambda functions in a Docker container
@@ -516,8 +511,8 @@ def service_port(service_key):
     if FORWARD_EDGE_INMEM:
         if service_key == "elasticsearch":
             # TODO Elasticsearch domains are a special case - we do not want to route them through
-            # the edge service, as that would require too many route mappings. In the future, we
-            # should integrate them with the port range for external services (4510-4530)
+            #  the edge service, as that would require too many route mappings. In the future, we
+            #  should integrate them with the port range for external services (4510-4530)
             return SERVICE_PORTS.get(service_key, 0)
         return EDGE_PORT_HTTP or EDGE_PORT
     return SERVICE_PORTS.get(service_key, 0)

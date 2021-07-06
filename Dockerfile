@@ -46,10 +46,6 @@ RUN make init-testlibs
 ADD localstack/infra/stepfunctions localstack/infra/stepfunctions
 RUN make init
 
-# (re-)install web dashboard dependencies (already installed in base image)
-ADD localstack/dashboard/web localstack/dashboard/web
-RUN make install-web
-
 # install supervisor config file and entrypoint script
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
@@ -103,6 +99,7 @@ ADD .coveragerc ./
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
 RUN pip uninstall -y argparse
 RUN LAMBDA_EXECUTOR=local \
+    PYTEST_LOGLEVEL=info \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \
     make test-coverage
 

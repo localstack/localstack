@@ -174,3 +174,6 @@ DEFAULT_DEVELOP_PORT = 5678
 
 # Default bucket name of the s3 bucket used for local lambda development
 DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
+
+# user that starts the elasticsearch process if the current user is root
+OS_USER_ELASTICSEARCH = "localstack"
