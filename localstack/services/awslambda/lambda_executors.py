@@ -284,7 +284,6 @@ class LambdaExecutorContainers(LambdaExecutor):
             # Note: certain "provided" runtimes (e.g., Rust programs) can block if we pass in
             # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
             env_updates = {
-                "PATH": env_vars.get("PATH") or os.environ.get("PATH", ""),
                 "AWS_LAMBDA_EVENT_BODY": to_str(
                     event_body
                 ),  # Note: seems to be needed for provided runtimes!
