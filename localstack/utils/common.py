@@ -47,7 +47,7 @@ CACHE_CLEAN_TIMEOUT = 60 * 5
 CACHE_MAX_AGE = 60 * 60
 CACHE_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "_random_dir_", "cache.*.json")
 last_cache_clean_time = {"time": 0}
-MUTEX_CLEAN = threading.Semaphore(1)
+MUTEX_CLEAN = threading.Lock()
 
 # misc. constants
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -1560,14 +1560,11 @@ def run(cmd, cache_duration_secs=0, **kwargs):
         mod_time = os.path.getmtime(cache_file)
         time_now = now()
         if mod_time > (time_now - cache_duration_secs):
-            f = open(cache_file)
-            result = f.read()
-            f.close()
-            return result
+            with open(cache_file) as fd:
+                return fd.read()
     result = do_run(cmd)
-    f = open(cache_file, "w+")
-    f.write(result)
-    f.close()
+    with open(cache_file, "w+") as fd:
+        fd.write(result)
     clean_cache()
     return result
 
