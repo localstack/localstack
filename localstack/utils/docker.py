@@ -48,7 +48,7 @@ class CmdDockerClient:
         cmd_result = safe_run(cmd)
 
         # filter empty / invalid lines from docker ps output
-        cmd_result = next(line for line in cmd_result if container_name in line)
+        cmd_result = next((line for line in cmd_result if container_name in line), '')
         container_status = cmd_result.strip().lower()
         if len(container_status) == 0:
             return DockerContainerStatus.NOT_EXISTANT
@@ -85,25 +85,27 @@ class CmdDockerClient:
         cmd = [self._docker_cmd(), "rm", "-f", container_name]
         safe_run(cmd, print_error=False)
 
-    def list_containers(self, filters: Union[List[str], str, None] = None) -> List[dict]:
+    def list_containers(self, filter: Union[List[str], str, None] = None) -> List[dict]:
         """List all containers matching the given filters
 
         Returns a list of dicts with keys id, image, name, labels, status
         """
-        filters = [filters] if isinstance(filters, str) else filters
+        filter = [filter] if isinstance(filter, str) else filter
         cmd = [self._docker_cmd(), "ps", "-a"]
         options = []
-        if filters:
-            options += [y for filter in filters for y in ["--filter", filter]]
+        if filter:
+            options += [y for filter_item in filter for y in ["--filter", filter_item]]
         cmd += options
         cmd.append("--format")
         cmd.append(
-            '\'{"id":"{{ .ID }}","image":"{{ .Image }}","name":"{{ .Names }}",'
-            '"labels":"{{ .Labels }}","status":"{{ .State }}"}\''
+            '{"id":"{{ .ID }}","image":"{{ .Image }}","name":"{{ .Names }}",'
+            '"labels":"{{ .Labels }}","status":"{{ .State }}"}'
         )
         LOG.debug(cmd)
         cmd_result = safe_run(cmd).strip()
-        container_list = list(cmd_result.split("\n").map(lambda line: json.loads(line)))
+        container_list = []
+        if cmd_result:
+            container_list = list(map(lambda line: json.loads(line), cmd_result.split("\n")))
         return container_list
 
     def copy_into_container(self, container_name: str, local_path: str, container_path: str):
@@ -125,7 +127,7 @@ class CmdDockerClient:
         LOG.debug(cmd)
         run_result = safe_run(cmd)
 
-        entry_point = run_result.strip("[]\n\r ")
+        entry_point = run_result.strip("\"[]\n\r ")
         return entry_point
 
     def has_docker(self) -> bool:
@@ -138,9 +140,13 @@ class CmdDockerClient:
 
     def create_container(self, image_name: str, **kwargs) -> str:
         cmd = self._build_run_create_cmd("create", image_name, **kwargs)
-        container_id = safe_run(cmd)
-        container_id = container_id.strip()
-        return container_id
+        try:
+            container_id = safe_run(cmd)
+            return container_id.strip()
+        except subprocess.CalledProcessError as e:
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            )
 
     def run_container(
         self, image_name: str, asynchronous=False, stdin=None, **kwargs
@@ -232,6 +238,7 @@ class CmdDockerClient:
             cmd.append("--interactive")
         if attach:
             cmd.append("--attach")
+        cmd.append('start')
         cmd.append(container_name_or_id)
         kwargs = {}
         if asynchronous:

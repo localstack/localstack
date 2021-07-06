@@ -3,6 +3,7 @@ import functools
 import hashlib
 import importlib.machinery
 import json
+from localstack.utils.docker import DOCKER_CLIENT
 import logging
 import os
 import re
@@ -302,11 +303,7 @@ def use_docker():
     if DO_USE_DOCKER is None:
         DO_USE_DOCKER = False
         if "docker" in config.LAMBDA_EXECUTOR:
-            try:
-                run("docker images", print_error=False)
-                DO_USE_DOCKER = True
-            except Exception:
-                pass
+            return DOCKER_CLIENT.has_docker()
     return DO_USE_DOCKER
 
 

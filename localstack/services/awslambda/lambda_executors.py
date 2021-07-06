@@ -308,8 +308,8 @@ class LambdaExecutorContainers(LambdaExecutor):
                 func_details, env_vars, command, event_stdin_bytes
             )
         except ContainerException as e:
-            result = e.stdout
-            log_output = e.stderr
+            result = e.stdout or ''
+            log_output = e.stderr or ''
             error = e
         try:
             result = to_str(result).strip()
@@ -584,15 +584,15 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         additional_flags = config.LAMBDA_DOCKER_FLAGS
         dns = config.LAMBDA_DOCKER_DNS
 
-        mount_volume = not config.LAMBDA_REMOTE_DOCKER
+        mount_volumes = not config.LAMBDA_REMOTE_DOCKER
         lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
         if ":" in lambda_cwd and "\\" in lambda_cwd:
             lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
-        mount_volume = (lambda_cwd_on_host, DOCKER_TASK_FOLDER) if mount_volume else None
+        mount_volumes = [(lambda_cwd_on_host, DOCKER_TASK_FOLDER)] if mount_volumes else None
 
-        env_vars["HOSTNAME"] = "$HOSTNAME"
-        env_vars["LOCALSTACK_HOSTNAME"] = "$LOCALSTACK_HOSTNAME"
-        env_vars["EDGE_PORT"] = "$EDGE_PORT"
+        if os.environ.get('HOSTNAME'):
+            env_vars["HOSTNAME"] = os.environ.get("HOSTNAME")
+        env_vars["EDGE_PORT"] = config.EDGE_PORT
 
         DOCKER_CLIENT.create_container(
             image_name=docker_image,
@@ -603,7 +603,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             network=network,
             env_vars=env_vars,
             dns=dns,
-            mount_volumes=mount_volume,
+            mount_volumes=mount_volumes,
             additional_flags=additional_flags,
         )
 
