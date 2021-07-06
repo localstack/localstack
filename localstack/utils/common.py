@@ -720,12 +720,6 @@ def poll_condition(condition, timeout: float = None, interval: float = 0.5) -> b
     return True
 
 
-def dump_thread_info():
-    for t in threading.enumerate():
-        print(t)
-    print(run("ps aux | grep 'node\\|java\\|python'"))
-
-
 def merge_recursive(source, destination, none_values=[None]):
     for key, value in source.items():
         if isinstance(value, dict):
