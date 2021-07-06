@@ -1,37 +1,37 @@
-[![CircleCI](https://circleci.com/gh/localstack/localstack.svg?style=shield)](https://circleci.com/gh/localstack/localstack)
-[![Backers on Open Collective](https://opencollective.com/localstack/backers/badge.svg)](#backers)
-[![Sponsors on Open Collective](https://opencollective.com/localstack/sponsors/badge.svg)](#sponsors)
-[![Coverage Status](https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master)](https://coveralls.io/github/localstack/localstack?branch=master)
-[![Gitter](https://img.shields.io/gitter/room/localstack/Platform.svg)](https://gitter.im/localstack/Platform)
-[![PyPI Version](https://badge.fury.io/py/localstack.svg)](https://badge.fury.io/py/localstack)
-[![PyPI License](https://img.shields.io/pypi/l/localstack.svg)](https://img.shields.io/pypi/l/localstack.svg)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Code Climate](https://codeclimate.com/github/localstack/localstack/badges/gpa.svg)](https://codeclimate.com/github/localstack/localstack)
-[![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/_localstack)
+<p align="center">
+  <img src="doc/localstack-readme-header.png" alt="LocalStack - A fully functional local cloud stack">
+</p>
 
-# LocalStack - A fully functional local AWS cloud stack
+<p align="center">
+  <a href="https://circleci.com/gh/localstack/localstack"><img alt="CircleCI" src="https://circleci.com/gh/localstack/localstack.svg?style=shield"></a>
+  <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/localstack/backers/badge.svg"></a>
+  <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/localstack/sponsors/badge.svg"></a>
+  <a href="https://coveralls.io/github/localstack/localstack?branch=master"><img alt="Coverage Status" src="https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master"></a>
+  <a href="https://gitter.im/localstack/Platform"><img alt="Gitter" src="https://img.shields.io/gitter/room/localstack/Platform.svg"></a>
+  <a href="https://badge.fury.io/py/localstack"><img alt="PyPI Version" src="https://badge.fury.io/py/localstack.svg"></a>
+  <a href="https://img.shields.io/pypi/l/localstack.svg"><img alt="PyPI License" src="https://img.shields.io/pypi/l/localstack.svg"></a>
+  <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+  <a href="https://codeclimate.com/github/localstack/localstack"><img alt="Code Climate" src="https://codeclimate.com/github/localstack/localstack/badges/gpa.svg"></a>
+  <a href="https://twitter.com/_localstack"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>
+</p>
 
-![LocalStack](https://github.com/localstack/localstack/raw/master/localstack/dashboard/web/img/localstack.png)
+<p align="center">
+  <i>LocalStack</i> provides an easy-to-use test/mocking framework for developing Cloud applications.
+</p>
 
-*LocalStack* provides an easy-to-use test/mocking framework for developing Cloud applications.
+<p align="center">
+  <a href="#overview">Overview</a> •
+  <a href="#installing">Install</a> •
+  <a href="#running">Run</a> •
+  <a href="#configurations">Configure</a>
+  <br>–<br>
+  <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
+  <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
+  <a href="#announcements">📢 Announcements</a>
 
-Currently, the focus is primarily on supporting the AWS cloud stack.
+</p>
 
-# Announcements
-
-* **2021-04-24**: **We're hiring!** - If you love what we're doing at LocalStack, check out our [jobs board](https://localstack.cloud/jobs) and shoot us an email with your CV/background/portfolio. We look forward to hearing from you!
-* **2020-12-28**: Check out the LocalStack Pro **feature roadmap** here: https://roadmap.localstack.cloud - please help us prioritize our backlog by creating and upvoting feature requests. Looking forward to getting your feedback!
-* **2020-09-15**: A major (breaking) change has been merged in PR #2905 - starting with releases after `v0.11.5`, all services are now exposed via the edge service (port 4566) only! Please update your client configurations to use this new endpoint.
-* **2019-10-09**: **LocalStack Pro is out!** We're incredibly excited to announce the launch of LocalStack Pro - the enterprise version of LocalStack with additional APIs and advanced features. Check out the free trial at https://localstack.cloud
-* **2018-01-10**: **Help wanted!** Please [fill out this survey](https://lambdastudy.typeform.com/to/kDUvvy?source=localstack-github) to support a research study on the usage of Serverless and Function-as-a-Service (FaaS) services, conducted at the Chalmers University of Technology. The survey only takes 5-10 minutes of your time. Many thanks for your participation!!
-  * The result from this study can be found [here](https://research.chalmers.se/en/publication/508147)
-* **2017-08-27**: **We need your support!** LocalStack is growing fast, we now have thousands of developers using the platform regularly. Last month we have recorded a staggering 100k test runs, with 25k+ DynamoDB tables, 20k+ SQS queues, 15k+ Kinesis streams, 13k+ S3 buckets, and 10k+ Lambda functions created locally - for 0$ costs (more details to be published soon). Bug and feature requests are pouring in, and we now need some support from _you_ to keep the open-source version actively maintained. Please check out [Open Collective](https://opencollective.com/localstack) and become a [backer](https://github.com/localstack/localstack#backers) or [supporter](https://github.com/localstack/localstack#backers) of the project today! Thanks, everybody for contributing. ♥
-* **2017-07-20**: Please note: Starting with version `0.7.0`, the Docker image will be pushed
-and kept up to date under the **new name** `localstack/localstack`. (This means that you may
-have to update your CI configurations.) Please refer to the updated
-**[End-User License Agreement (EULA)](doc/end_user_license_agreement)** for the new versions.
-The old Docker image (`atlassianlabs/localstack`) is still available but will not be maintained
-any longer.
+---
 
 # Overview
 
@@ -743,3 +743,19 @@ kinesalite                | MIT License
 Elasticsearch             | Apache License 2.0
 local-kms                 | MIT License
 kinesis-mock              | MIT License
+
+# Announcements
+
+* **2021-04-24**: **We're hiring!** - If you love what we're doing at LocalStack, check out our [jobs board](https://localstack.cloud/jobs) and shoot us an email with your CV/background/portfolio. We look forward to hearing from you!
+* **2020-12-28**: Check out the LocalStack Pro **feature roadmap** here: https://roadmap.localstack.cloud - please help us prioritize our backlog by creating and upvoting feature requests. Looking forward to getting your feedback!
+* **2020-09-15**: A major (breaking) change has been merged in PR #2905 - starting with releases after `v0.11.5`, all services are now exposed via the edge service (port 4566) only! Please update your client configurations to use this new endpoint.
+* **2019-10-09**: **LocalStack Pro is out!** We're incredibly excited to announce the launch of LocalStack Pro - the enterprise version of LocalStack with additional APIs and advanced features. Check out the free trial at https://localstack.cloud
+* **2018-01-10**: **Help wanted!** Please [fill out this survey](https://lambdastudy.typeform.com/to/kDUvvy?source=localstack-github) to support a research study on the usage of Serverless and Function-as-a-Service (FaaS) services, conducted at the Chalmers University of Technology. The survey only takes 5-10 minutes of your time. Many thanks for your participation!!
+  * The result from this study can be found [here](https://research.chalmers.se/en/publication/508147)
+* **2017-08-27**: **We need your support!** LocalStack is growing fast, we now have thousands of developers using the platform regularly. Last month we have recorded a staggering 100k test runs, with 25k+ DynamoDB tables, 20k+ SQS queues, 15k+ Kinesis streams, 13k+ S3 buckets, and 10k+ Lambda functions created locally - for 0$ costs (more details to be published soon). Bug and feature requests are pouring in, and we now need some support from _you_ to keep the open-source version actively maintained. Please check out [Open Collective](https://opencollective.com/localstack) and become a [backer](https://github.com/localstack/localstack#backers) or [supporter](https://github.com/localstack/localstack#backers) of the project today! Thanks, everybody for contributing. ♥
+* **2017-07-20**: Please note: Starting with version `0.7.0`, the Docker image will be pushed
+and kept up to date under the **new name** `localstack/localstack`. (This means that you may
+have to update your CI configurations.) Please refer to the updated
+**[End-User License Agreement (EULA)](doc/end_user_license_agreement)** for the new versions.
+The old Docker image (`atlassianlabs/localstack`) is still available but will not be maintained
+any longer.
