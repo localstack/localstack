@@ -12,13 +12,6 @@ import traceback
 from multiprocessing import Process, Queue
 from typing import Tuple
 
-import six
-
-try:
-    from shlex import quote as cmd_quote
-except ImportError:
-    from pipes import quote as cmd_quote  # for Python 2.7
-
 from localstack import config
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA8,
@@ -889,7 +882,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         # Note: The user's code may have been logging to stderr, in which case the logs
         # will be part of the "result" variable here. Hence, make sure that we extract
         # only the *last* line of "result" and consider anything above that as log output.
-        if isinstance(result, six.string_types) and "\n" in result:
+        if isinstance(result, str) and "\n" in result:
             lines = result.split("\n")
             idx = last_index_of(
                 lines, lambda line: line and not line.startswith(INTERNAL_LOG_PREFIX)
