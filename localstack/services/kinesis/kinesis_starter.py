@@ -1,6 +1,4 @@
 import logging
-import os
-import traceback
 
 from localstack import config
 from localstack.constants import MODULE_MAIN_PATH
@@ -10,8 +8,6 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import chmod_r, get_free_tcp_port, mkdir, replace_in_file
 
 LOGGER = logging.getLogger(__name__)
-
-KINESIS_MOCK_RELEASES = "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/0.1.3"
 
 
 def apply_patches_kinesalite():
@@ -46,13 +42,6 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     if config.DATA_DIR:
         kinesis_data_dir = "%s/kinesis" % config.DATA_DIR
         mkdir(kinesis_data_dir)
-
-        # FIXME: workaround for https://github.com/localstack/localstack/issues/4227
-        streams_file = os.path.join(kinesis_data_dir, "kinesis-data.json")
-        if not os.path.exists(streams_file):
-            with open(streams_file, "w") as fd:
-                fd.write('{"streams":{}}')
-
         kinesis_data_dir_param = "SHOULD_PERSIST_DATA=true PERSIST_PATH=%s" % kinesis_data_dir
     if not config.LS_LOG:
         log_level = "INFO"
@@ -81,7 +70,7 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     )
 
     if config.KINESIS_INITIALIZE_STREAMS != "":
-        initialize_streams_param = "INITIALIZE_STREAMS=%s" % (config.KINESIS_INITIALIZE_STREAMS)
+        initialize_streams_param = "INITIALIZE_STREAMS=%s" % config.KINESIS_INITIALIZE_STREAMS
     else:
         initialize_streams_param = ""
 
@@ -148,7 +137,7 @@ def check_kinesis(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(service_name="kinesis").list_streams()
     except Exception as e:
         if print_error:
-            LOGGER.error("Kinesis health check failed: %s %s" % (e, traceback.format_exc()))
+            LOGGER.exception("Kinesis health check failed: %s", e)
     if expect_shutdown:
         assert out is None
     else:
