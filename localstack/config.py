@@ -252,12 +252,7 @@ def has_docker():
 
 
 def is_linux():
-    try:
-        out = subprocess.check_output("uname -a", shell=True)
-        out = out.decode("utf-8") if isinstance(out, six.binary_type) else out
-        return "Linux" in out
-    except Exception:
-        return False
+    return platform.system() == "Linux"
 
 
 # whether to use Lambda functions in a Docker container

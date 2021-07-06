@@ -115,6 +115,49 @@ class TestCommon(unittest.TestCase):
         result = common.clone_safe(obj)
         self.assertEqual({"foo": ["value", 123, 1.23, True]}, result)
 
+    def test_to_unique_item_list(self):
+        self.assertListEqual([1, 2, 3], common.to_unique_items_list([1, 1, 2, 2, 3]))
+        self.assertListEqual(["a"], common.to_unique_items_list(["a"]))
+        self.assertListEqual(["a", "b"], common.to_unique_items_list(["a", "b", "a"]))
+        self.assertListEqual(["a", "b"], common.to_unique_items_list("aba"))
+        self.assertListEqual([], common.to_unique_items_list([]))
+
+        def comparator_lower(first, second):
+            return first.lower() == second.lower()
+
+        self.assertListEqual(["a", "A"], common.to_unique_items_list(["a", "A", "a"]))
+        self.assertListEqual(["a"], common.to_unique_items_list(["a", "A", "a"], comparator_lower))
+        self.assertListEqual(["a"], common.to_unique_items_list(["a", "A", "a"], comparator_lower))
+
+        def comparator_str_int(first, second):
+            return int(first) - int(second)
+
+        self.assertListEqual(
+            ["1", "2"], common.to_unique_items_list(["1", "2", "1", "2"], comparator_str_int)
+        )
+
+    def test_run(self):
+        t = time.time()
+        d = float(common.run("date +%s.%N"))
+        self.assertAlmostEqual(t, d, delta=1)
+
+    def test_run_with_cache(self):
+        d1 = float(common.run("date +%s.%N"))
+        d2 = float(common.run("date +%s.%N", cache_duration_secs=1))
+        d3 = float(common.run("date +%s.%N", cache_duration_secs=1))
+
+        self.assertNotEqual(d1, d2)
+        self.assertEqual(d2, d3)
+
+    def test_run_with_cache_expiry(self):
+        d1 = float(common.run("date +%s.%N", cache_duration_secs=0.5))
+        d2 = float(common.run("date +%s.%N", cache_duration_secs=0.5))
+        time.sleep(0.8)
+        d3 = float(common.run("date +%s.%N", cache_duration_secs=0.5))
+
+        self.assertEqual(d1, d2)
+        self.assertNotEqual(d2, d3)
+
 
 class TestCommandLine(unittest.TestCase):
     def test_extract_port_flags(self):

@@ -2,6 +2,7 @@ import logging
 import os
 import traceback
 import types
+from html import escape
 
 from moto.core.utils import camelcase_to_underscores
 from moto.sqs import responses as sqs_responses
@@ -20,7 +21,6 @@ from localstack.services.install import INSTALL_DIR_ELASTICMQ, SQS_BACKEND_IMPL,
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     TMP_FILES,
-    escape_html,
     get_free_tcp_port,
     save_file,
     short_uid,
@@ -93,7 +93,7 @@ def patch_moto():
 
         def _escape(val):
             try:
-                return val and escape_html(to_str(val))
+                return val and escape(to_str(val))
             except Exception:
                 return val
 

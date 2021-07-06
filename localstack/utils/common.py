@@ -22,43 +22,20 @@ import time
 import uuid
 import zipfile
 from contextlib import closing
-from datetime import date, datetime
-from io import BytesIO
+from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
+from queue import Queue
+from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
 import requests
 import six
-from six import with_metaclass
-from six.moves import cStringIO as StringIO
-from six.moves.queue import Queue
-from six.moves.urllib.parse import parse_qs, urlparse
 
 from localstack import config
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import FuncThread
-
-# this is very ugly, but necessary to make timezone work with python 2.7 (which is used in lambdas)
-try:
-    from datetime import timezone
-
-    utc = timezone.utc
-except ImportError:
-    from datetime import timedelta, tzinfo
-
-    class UTC(tzinfo):
-        def utcoffset(self, dt):
-            return timedelta(0)
-
-        def tzname(self, dt):
-            return "UTC"
-
-        def dst(self, dt):
-            return timedelta(0)
-
-    utc = UTC()
 
 # arrays for temporary files and resources
 TMP_FILES = []
@@ -70,7 +47,7 @@ CACHE_CLEAN_TIMEOUT = 60 * 5
 CACHE_MAX_AGE = 60 * 60
 CACHE_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "_random_dir_", "cache.*.json")
 last_cache_clean_time = {"time": 0}
-MUTEX_CLEAN = threading.Semaphore(1)
+MUTEX_CLEAN = threading.Lock()
 
 # misc. constants
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -511,13 +488,13 @@ def md5(string):
     return m.hexdigest()
 
 
-def select_attributes(object, attributes):
+def select_attributes(obj, attributes):
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
-    return dict([(k, v) for k, v in object.items() if k in attributes])
+    return dict([(k, v) for k, v in obj.items() if k in attributes])
 
 
-def is_list_or_tuple(object):
-    return isinstance(object, (list, tuple))
+def is_list_or_tuple(obj):
+    return isinstance(obj, (list, tuple))
 
 
 def in_docker():
@@ -707,7 +684,7 @@ def epoch_timestamp():
     return time.time()
 
 
-def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
+def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
     raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)
@@ -743,12 +720,6 @@ def poll_condition(condition, timeout: float = None, interval: float = 0.5) -> b
     return True
 
 
-def dump_thread_info():
-    for t in threading.enumerate():
-        print(t)
-    print(run("ps aux | grep 'node\\|java\\|python'"))
-
-
 def merge_recursive(source, destination, none_values=[None]):
     for key, value in source.items():
         if isinstance(value, dict):
@@ -758,7 +729,7 @@ def merge_recursive(source, destination, none_values=[None]):
         else:
             if not isinstance(destination, dict):
                 LOG.warning(
-                    "Destination for merging %s=%s is not dict: %s" % (key, value, destination)
+                    "Destination for merging %s=%s is not dict: %s", key, value, destination
                 )
             if destination.get(key) in none_values:
                 destination[key] = value
@@ -843,7 +814,7 @@ def now(millis=False, tz=None):
 
 
 def now_utc(millis=False):
-    return now(millis, utc)
+    return now(millis, timezone.utc)
 
 
 def mktime(ts, millis=False):
@@ -854,12 +825,7 @@ def mktime(ts, millis=False):
 
 def mkdir(folder):
     if not os.path.exists(folder):
-        try:
-            os.makedirs(folder)
-        except OSError as err:
-            # Ignore rare 'File exists' race conditions.
-            if err.errno != 17:
-                raise
+        os.makedirs(folder, exist_ok=True)
 
 
 def ensure_readable(file_path, default_perms=None):
@@ -939,7 +905,7 @@ def cp_r(src, dst, rm_dest_on_conflict=False):
         raise
 
 
-def disk_usage(path, include_hidden=False):
+def disk_usage(path):
     total_size = 0
     for dirpath, dirnames, filenames in os.walk(path):
         for f in filenames:
@@ -1298,7 +1264,7 @@ def kill_process_tree(parent_pid):
 
 def items_equivalent(list1, list2, comparator):
     """Returns whether two lists are equivalent (i.e., same items contained in both lists,
-    irresepective of the items' order) with respect to a comparator function."""
+    irrespective of the items' order) with respect to a comparator function."""
 
     def contained(item):
         for _item in list2:
@@ -1346,7 +1312,7 @@ def is_ip_address(addr):
 
 
 def is_zip_file(content):
-    stream = BytesIO(content)
+    stream = io.BytesIO(content)
     return zipfile.is_zipfile(stream)
 
 
@@ -1394,44 +1360,6 @@ def untar(path, target_dir):
     mode = "r:gz" if path.endswith("gz") else "r"
     with tarfile.open(path, mode) as tar:
         tar.extractall(path=target_dir)
-
-
-def zip_contains_jar_entries(content, jar_path_prefix=None, match_single_jar=True):
-    try:
-        with tempfile.NamedTemporaryFile() as tf:
-            tf.write(content)
-            tf.flush()
-            with zipfile.ZipFile(tf.name, "r") as zf:
-                jar_entries = [e for e in zf.infolist() if e.filename.lower().endswith(".jar")]
-                if match_single_jar and len(jar_entries) == 1 and len(zf.infolist()) == 1:
-                    return True
-                matching_prefix = [
-                    e
-                    for e in jar_entries
-                    if not jar_path_prefix or e.filename.lower().startswith(jar_path_prefix)
-                ]
-                return len(matching_prefix) > 0
-    except Exception:
-        return False
-
-
-def is_jar_archive(content):
-    """Determine whether `content` contains valid zip bytes representing a JAR archive
-    that contains at least one *.class file and a META-INF/MANIFEST.MF file."""
-    try:
-        with tempfile.NamedTemporaryFile() as tf:
-            tf.write(content)
-            tf.flush()
-            with zipfile.ZipFile(tf.name, "r") as zf:
-                class_files = [e for e in zf.infolist() if e.filename.endswith(".class")]
-                manifest_file = [
-                    e for e in zf.infolist() if e.filename.upper() == "META-INF/MANIFEST.MF"
-                ]
-                if not class_files or not manifest_file:
-                    return False
-    except Exception:
-        return False
-    return True
 
 
 def is_root():
@@ -1534,8 +1462,8 @@ def generate_ssl_cert(
     )
     cert.sign(k, "SHA256")
 
-    cert_file = StringIO()
-    key_file = StringIO()
+    cert_file = io.StringIO()
+    key_file = io.StringIO()
     cert_file.write(to_str(crypto.dump_certificate(crypto.FILETYPE_PEM, cert)))
     key_file.write(to_str(crypto.dump_privatekey(crypto.FILETYPE_PEM, k)))
     cert_file_content = cert_file.getvalue().strip()
@@ -1590,14 +1518,14 @@ def run_for_max_seconds(max_secs, _function, *args, **kwargs):
     in a background thread if the function does not finish in time."""
 
     def _worker(*_args):
-        result = None
         try:
-            result = _function(*args, **kwargs)
+            fn_result = _function(*args, **kwargs)
         except Exception as e:
-            result = e
-        result = True if result is None else result
-        q.put(result)
-        return result
+            fn_result = e
+
+        fn_result = True if fn_result is None else fn_result
+        q.put(fn_result)
+        return fn_result
 
     start = now()
     q = Queue()
@@ -1624,22 +1552,19 @@ def run(cmd, cache_duration_secs=0, **kwargs):
     if cache_duration_secs <= 0:
         return do_run(cmd)
 
-    hash = md5(cmd)
-    cache_file = CACHE_FILE_PATTERN.replace("*", hash)
+    hashcode = md5(cmd)
+    cache_file = CACHE_FILE_PATTERN.replace("*", hashcode)
     mkdir(os.path.dirname(CACHE_FILE_PATTERN))
     if os.path.isfile(cache_file):
         # check file age
         mod_time = os.path.getmtime(cache_file)
         time_now = now()
         if mod_time > (time_now - cache_duration_secs):
-            f = open(cache_file)
-            result = f.read()
-            f.close()
-            return result
+            with open(cache_file) as fd:
+                return fd.read()
     result = do_run(cmd)
-    f = open(cache_file, "w+")
-    f.write(result)
-    f.close()
+    with open(cache_file, "w+") as fd:
+        fd.write(result)
     clean_cache()
     return result
 
@@ -1650,14 +1575,6 @@ def clone(item):
 
 def clone_safe(item):
     return clone(json_safe(item))
-
-
-def remove_non_ascii(text):
-    # text = unicode(text, "utf-8")
-    text = text.decode("utf-8", CODEC_HANDLER_UNDERSCORE)
-    # text = unicodedata.normalize('NFKD', text)
-    text = text.encode("ascii", CODEC_HANDLER_UNDERSCORE)
-    return text
 
 
 class NetrcBypassAuth(requests.auth.AuthBase):
@@ -1688,15 +1605,14 @@ class _RequestsSafe(type):
 
 
 # create class-of-a-class
-class safe_requests(with_metaclass(_RequestsSafe)):
+class safe_requests(six.with_metaclass(_RequestsSafe)):
     pass
 
 
 def make_http_request(url, data=None, headers=None, method="GET"):
-    if is_string(method):
-        method = requests.__dict__[method.lower()]
-
-    return method(url, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False)
+    return requests.request(
+        url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
+    )
 
 
 class SafeStringIO(io.StringIO):
@@ -1708,11 +1624,9 @@ class SafeStringIO(io.StringIO):
         return super(SafeStringIO, self).write(obj)
 
 
-def clean_cache(
-    file_pattern=CACHE_FILE_PATTERN,
-    last_clean_time=last_cache_clean_time,
-    max_age=CACHE_MAX_AGE,
-):
+def clean_cache(file_pattern=CACHE_FILE_PATTERN, last_clean_time=None, max_age=CACHE_MAX_AGE):
+    if last_clean_time is None:
+        last_clean_time = last_cache_clean_time
 
     with MUTEX_CLEAN:
         time_now = now()
@@ -1731,16 +1645,6 @@ def truncate(data, max_length=100):
     return ("%s..." % data[:max_length]) if len(data) > max_length else data
 
 
-def escape_html(string, quote=False):
-    if six.PY2:
-        import cgi
-
-        return cgi.escape(string, quote=quote)
-    import html
-
-    return html.escape(string, quote=quote)
-
-
 def get_all_subclasses(clazz):
     """Recursively get all subclasses of the given class."""
     result = set()
@@ -1751,16 +1655,14 @@ def get_all_subclasses(clazz):
     return result
 
 
-def parallelize(func, list, size=None):
+def parallelize(func, arr, size=None):
     if not size:
-        size = len(list)
+        size = len(arr)
     if size <= 0:
         return None
-    pool = Pool(size)
-    result = pool.map(func, list)
-    pool.close()
-    pool.join()
-    return result
+
+    with Pool(size) as pool:
+        return pool.map(func, arr)
 
 
 def isoformat_milliseconds(t):
