@@ -1599,7 +1599,7 @@ def run(cmd, cache_duration_secs=0, **kwargs):
 
 def safe_run(cmd: List[str], cache_duration_secs=0, **kwargs) -> Union[str, subprocess.Popen]:
     def run_cmd():
-        return bootstrap.run(cmd, shell=False, **kwargs).stdout
+        return bootstrap.run(cmd, shell=False, **kwargs)
 
     return do_run(" ".join(cmd), run_cmd, cache_duration_secs)
 

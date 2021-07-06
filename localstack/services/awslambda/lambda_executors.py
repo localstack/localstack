@@ -750,9 +750,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
         entrypoint = None
         if command:
-            entrypoint = '""'
+            entrypoint = ''
         elif handler:
-            command = '"%s"' % handler
+            command = handler
         else:
             command = None
 
@@ -766,7 +766,8 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         additional_flags = config.LAMBDA_DOCKER_FLAGS or ""
         dns = config.LAMBDA_DOCKER_DNS
         docker_java_ports = bootstrap.PortMappings()
-        docker_java_ports.add(Util.debug_java_port)
+        if Util.debug_java_port:
+            docker_java_ports.add(Util.debug_java_port)
         docker_image = Util.docker_image_for_lambda(func_details)
 
         if config.LAMBDA_REMOTE_DOCKER:
@@ -1079,7 +1080,7 @@ class Util:
         if runtime == "nodejs14.x":
             # TODO temporary fix until lambci image for nodejs14.x becomes available
             docker_image = "localstack/lambda-js"
-        return '"%s:%s"' % (docker_image, docker_tag)
+        return '%s:%s' % (docker_image, docker_tag)
 
     @staticmethod
     def get_docker_remove_flag():

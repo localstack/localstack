@@ -151,11 +151,12 @@ class CmdDockerClient:
                 "inherit_env": True,
                 "asynchronous": True,
                 "stderr": subprocess.PIPE,
-                "stdout": subprocess.PIPE,
+                "outfile": subprocess.PIPE,
             }
         result = safe_run(cmd, **kwargs)
         if asynchronous:
-            return result.communicate(input=input)
+            LOG.debug('Input: %s', stdin)
+            return result.communicate(input=stdin)
         return result.strip()
 
     def exec_in_container(
@@ -181,11 +182,11 @@ class CmdDockerClient:
                 "inherit_env": True,
                 "asynchronous": True,
                 "stderr": subprocess.PIPE,
-                "stdout": subprocess.PIPE,
+                "outfile": subprocess.PIPE,
             }
         result = safe_run(cmd, **kwargs)
         if asynchronous:
-            return result.communicate(input=input)
+            return result.communicate(input=stdin)
         return result
 
     def start_container(
@@ -212,11 +213,11 @@ class CmdDockerClient:
                 "inherit_env": True,
                 "asynchronous": True,
                 "stderr": subprocess.PIPE,
-                "stdout": subprocess.PIPE,
+                "outfile": subprocess.PIPE,
             }
         result = safe_run(cmd, **kwargs)
         if asynchronous:
-            return result.communicate(input=input)
+            return result.communicate(input=stdin)
         return result
 
     def _build_run_create_cmd(
@@ -262,7 +263,7 @@ class CmdDockerClient:
             cmd += ["--dns", dns]
         if additional_flags:
             cmd += additional_flags.split()
-        cmd += image_name
+        cmd.append(image_name)
         if command:
             cmd.append(command)
         return cmd
