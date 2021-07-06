@@ -315,6 +315,8 @@ class LambdaExecutorContainers(LambdaExecutor):
                 func_details, env_vars, command, event_stdin_bytes
             )
         except ContainerException as e:
+            result = e.stdout
+            log_output = e.stderr
             error = e
         try:
             result = to_str(result).strip()
@@ -749,7 +751,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
         entrypoint = None
         if command:
-            entrypoint = ''
+            entrypoint = ""
         elif handler:
             command = handler
         else:
@@ -1079,7 +1081,7 @@ class Util:
         if runtime == "nodejs14.x":
             # TODO temporary fix until lambci image for nodejs14.x becomes available
             docker_image = "localstack/lambda-js"
-        return '%s:%s' % (docker_image, docker_tag)
+        return "%s:%s" % (docker_image, docker_tag)
 
     @staticmethod
     def get_docker_remove_flag():

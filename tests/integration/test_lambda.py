@@ -1881,6 +1881,7 @@ class TestDockerBehaviour(LambdaTestBase):
         testutil.delete_lambda_function(func_name)
 
     # TODO this test is useless now
+    @unittest.skip("test completely invalid now")
     def test_docker_command_for_separate_container_lambda_executor(self):
         # run these tests only for the "separate containers" Lambda executor
         if not isinstance(

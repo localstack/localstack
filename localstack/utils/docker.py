@@ -20,8 +20,10 @@ class DockerContainerStatus(Enum):
 
 
 class ContainerException(Exception):
-    def __init__(self, message) -> None:
+    def __init__(self, message, stdout, stderr) -> None:
         self.message = message
+        self.stdout = stdout
+        self.stderr = stderr
 
 
 class CmdDockerClient:
@@ -153,11 +155,23 @@ class CmdDockerClient:
                 "stderr": subprocess.PIPE,
                 "outfile": subprocess.PIPE,
             }
-        result = safe_run(cmd, **kwargs)
-        if asynchronous:
-            LOG.debug('Input: %s', stdin)
-            return result.communicate(input=stdin)
-        return result.strip()
+        try:
+            process = safe_run(cmd, **kwargs)
+            if asynchronous:
+                stdout, stderr = process.communicate(input=stdin)
+                if process.returncode != 0:
+                    raise ContainerException(
+                        "Docker process returned with error code %s" % process.returncode,
+                        stdout,
+                        stderr,
+                    )
+                else:
+                    return (stdout, stderr)
+        except subprocess.CalledProcessError as e:
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            )
+        return process
 
     def exec_in_container(
         self,
@@ -184,10 +198,23 @@ class CmdDockerClient:
                 "stderr": subprocess.PIPE,
                 "outfile": subprocess.PIPE,
             }
-        result = safe_run(cmd, **kwargs)
-        if asynchronous:
-            return result.communicate(input=stdin)
-        return result
+        try:
+            process = safe_run(cmd, **kwargs)
+            if asynchronous:
+                stdout, stderr = process.communicate(input=stdin)
+                if process.returncode != 0:
+                    raise ContainerException(
+                        "Docker process returned with error code %s" % process.returncode,
+                        stdout,
+                        stderr,
+                    )
+                else:
+                    return (stdout, stderr)
+        except subprocess.CalledProcessError as e:
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            )
+        return process
 
     def start_container(
         self,
@@ -215,10 +242,23 @@ class CmdDockerClient:
                 "stderr": subprocess.PIPE,
                 "outfile": subprocess.PIPE,
             }
-        result = safe_run(cmd, **kwargs)
-        if asynchronous:
-            return result.communicate(input=stdin)
-        return result
+        try:
+            process = safe_run(cmd, **kwargs)
+            if asynchronous:
+                stdout, stderr = process.communicate(input=stdin)
+                if process.returncode != 0:
+                    raise ContainerException(
+                        "Docker process returned with error code %s" % process.returncode,
+                        stdout,
+                        stderr,
+                    )
+                else:
+                    return (stdout, stderr)
+        except subprocess.CalledProcessError as e:
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            )
+        return process
 
     def _build_run_create_cmd(
         self,
