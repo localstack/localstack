@@ -466,7 +466,7 @@ def invoke_rest_api_integration_backend(
                 data_str = base64.b64encode(data_str)
                 is_base64_encoded = True
             except Exception as e:
-                LOGGER.warning("Unable to convert API Gateway payload to str: %s" % (e))
+                LOG.warning("Unable to convert API Gateway payload to str: %s" % (e))
                 pass
 
             # Sample request context:
