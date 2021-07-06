@@ -137,23 +137,26 @@ class TestCommon(unittest.TestCase):
         )
 
     def test_run(self):
-        t = time.time()
-        d = float(common.run("date +%s.%N"))
-        self.assertAlmostEqual(t, d, delta=1)
+        cmd = "echo 'foobar'"
+        result = common.run(cmd)
+        self.assertEqual("foobar", result.strip())
 
     def test_run_with_cache(self):
-        d1 = float(common.run("date +%s.%N"))
-        d2 = float(common.run("date +%s.%N", cache_duration_secs=1))
-        d3 = float(common.run("date +%s.%N", cache_duration_secs=1))
+        cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
+        d1 = float(common.run(cmd))
+        d2 = float(common.run(cmd, cache_duration_secs=1))
+        d3 = float(common.run(cmd, cache_duration_secs=1))
 
         self.assertNotEqual(d1, d2)
         self.assertEqual(d2, d3)
 
     def test_run_with_cache_expiry(self):
-        d1 = float(common.run("date +%s.%N", cache_duration_secs=0.5))
-        d2 = float(common.run("date +%s.%N", cache_duration_secs=0.5))
+        cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
+
+        d1 = float(common.run(cmd, cache_duration_secs=0.5))
+        d2 = float(common.run(cmd, cache_duration_secs=0.5))
         time.sleep(0.8)
-        d3 = float(common.run("date +%s.%N", cache_duration_secs=0.5))
+        d3 = float(common.run(cmd, cache_duration_secs=0.5))
 
         self.assertEqual(d1, d2)
         self.assertNotEqual(d2, d3)
