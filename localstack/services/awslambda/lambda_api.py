@@ -331,6 +331,7 @@ def process_apigateway_invocation(
     stage,
     api_id,
     headers={},
+    is_base64_encoded=False,
     resource_path=None,
     method=None,
     path_params={},
@@ -341,7 +342,9 @@ def process_apigateway_invocation(
 ):
     try:
         resource_path = resource_path or path
-        event = construct_invocation_event(method, path, headers, payload, query_string_params)
+        event = construct_invocation_event(
+            method, path, headers, payload, query_string_params, is_base64_encoded
+        )
         path_params = dict(path_params)
         fix_proxy_path_params(path_params)
         event["pathParameters"] = path_params
@@ -367,14 +370,16 @@ def process_apigateway_invocation(
         )
 
 
-def construct_invocation_event(method, path, headers, data, query_string_params={}):
+def construct_invocation_event(
+    method, path, headers, data, query_string_params={}, is_base64_encoded=False
+):
     query_string_params = query_string_params or parse_request_data(method, path, "")
     event = {
         "path": path,
         "headers": dict(headers),
         "multiValueHeaders": multi_value_dict_for_list(headers),
         "body": data,
-        "isBase64Encoded": False,
+        "isBase64Encoded": is_base64_encoded,
         "httpMethod": method,
         "queryStringParameters": query_string_params,
         "multiValueQueryStringParameters": multi_value_dict_for_list(query_string_params),
