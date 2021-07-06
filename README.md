@@ -3,16 +3,16 @@
 </p>
 
 <p align="center">
-  <a href="https://circleci.com/gh/localstack/localstack"><img alt="CircleCI" src="https://circleci.com/gh/localstack/localstack.svg?style=shield"></a>
+  <a href="https://circleci.com/gh/localstack/localstack"><img alt="CircleCI" src="https://img.shields.io/circleci/build/gh/localstack/localstack/master?logo=circleci"></a>
+  <a href="https://coveralls.io/github/localstack/localstack?branch=master"><img alt="Coverage Status" src="https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master"></a>
+  <a href="https://pypi.org/project/localstack/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/localstack?color=blue"></a>
+  <a href="https://hub.docker.com/r/localstack/localstack"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/localstack/localstack"></a>
   <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/localstack/backers/badge.svg"></a>
   <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/localstack/sponsors/badge.svg"></a>
-  <a href="https://coveralls.io/github/localstack/localstack?branch=master"><img alt="Coverage Status" src="https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master"></a>
   <a href="https://gitter.im/localstack/Platform"><img alt="Gitter" src="https://img.shields.io/gitter/room/localstack/Platform.svg"></a>
-  <a href="https://badge.fury.io/py/localstack"><img alt="PyPI Version" src="https://badge.fury.io/py/localstack.svg"></a>
   <a href="https://img.shields.io/pypi/l/localstack.svg"><img alt="PyPI License" src="https://img.shields.io/pypi/l/localstack.svg"></a>
   <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
-  <a href="https://codeclimate.com/github/localstack/localstack"><img alt="Code Climate" src="https://codeclimate.com/github/localstack/localstack/badges/gpa.svg"></a>
-  <a href="https://twitter.com/_localstack"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>
+  <!--<a href="https://twitter.com/_localstack"><img alt="Twitter" src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social"></a>-->
 </p>
 
 <p align="center">
@@ -28,7 +28,6 @@
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
   <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
   <a href="#announcements">📢 Announcements</a>
-
 </p>
 
 ---
@@ -103,7 +102,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 
 ## Requirements
 
-* `python` (Python 2.x up to 3.8 supported)
+* `python` (Python 3.6 up to 3.8 supported)
 * `pip` (python package manager)
 * `Docker`
 * `JDK` (If `KINESIS_PROVIDER` is `kinesis-mock` and the system is not an amd64 system. 8+ supported)
