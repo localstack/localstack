@@ -101,9 +101,10 @@ SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 OVERWRITE_DDB_FILES_IN_DOCKER = False
 
 #GO Lambda runtime
-GO_RUNTIME_DOWNLOAD_URL = 'https://lambci.s3.amazonaws.com/fs/go1.x.tgz'
-GO_INSTALL_FOLDER = config.TMP_FOLDER + '/var/runtime'
-GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + '/aws-lambda-go'
+GO_RUNTIME_DOWNLOAD_URL = 'https://github.com/localstack/awslamba-go-runtime/releases/download/first/runtime.zip'
+GO_INSTALL_FOLDER = config.TMP_FOLDER + '/runtime'
+GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + '/aws-lambda-mock'
+GO_ZIP_NAME = 'runtime.zip'
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -364,11 +365,10 @@ def install_lambda_java_libs():
 
 
 def install_go_lambda_runtime():
-    print('installing golang')
-    if not os.path.isfile(GO_INSTALL_FOLDER):
-        print('go lambda runtime not found')
-        mkdir(GO_INSTALL_FOLDER)
-        run('curl %s | tar -zx -C %s' % (GO_RUNTIME_DOWNLOAD_URL, GO_INSTALL_FOLDER))
+    if not os.path.isfile(GO_LAMBDA_RUNTIME):
+        log_install_msg("Installing golang runtime")
+        run('curl -L -o %s %s' % (config.TMP_FOLDER+'/'+GO_ZIP_NAME, GO_RUNTIME_DOWNLOAD_URL))
+        run('unzip %s -d %s' % (config.TMP_FOLDER+'/'+GO_ZIP_NAME, config.TMP_FOLDER))
 
 
 def install_cloudformation_libs():
