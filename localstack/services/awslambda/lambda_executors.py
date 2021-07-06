@@ -356,10 +356,6 @@ class LambdaExecutorContainers(LambdaExecutor):
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
 
-    def _docker_cmd(self):
-        """Return the string to be used for running Docker commands."""
-        return config.DOCKER_CMD
-
     def prepare_event(self, environment, event_body):
         """Return the event as a stdin string."""
         # amend the environment variables for execution
@@ -1113,43 +1109,6 @@ class Util:
         entries.append("java/lib/*.jar")
         result = ":".join(entries)
         return result
-
-    @classmethod
-    def create_env_vars_file_flag(cls, env_vars, use_env_variable_names=True):
-        if not env_vars:
-            return ""
-        result = ""
-        env_vars = dict(env_vars)
-        if len(str(env_vars)) > MAX_ENV_ARGS_LENGTH:
-            # default ARG_MAX=131072 in Docker - let's create an env var file if the string becomes too long...
-            env_file = cls.mountable_tmp_file()
-            env_content = ""
-            for name, value in dict(env_vars).items():
-                if len(value) > MAX_ENV_ARGS_LENGTH:
-                    # each line in the env file has a max size as well (error "bufio.Scanner: token too long")
-                    continue
-                env_vars.pop(name)
-                value = value.replace("\n", "\\")
-                env_content += "%s=%s\n" % (name, value)
-            save_file(env_file, env_content)
-            result += "--env-file %s " % env_file
-
-        if use_env_variable_names:
-            env_vars_str = " ".join(['-e {k}="${k}"'.format(k=k) for k in env_vars.keys()])
-        else:
-            # TODO: we should remove this mid-term - shouldn't be using cmd_quote directly
-            env_vars_str = " ".join(
-                ["-e {}={}".format(k, cmd_quote(v)) for k, v in env_vars.items()]
-            )
-        result += env_vars_str
-        return result
-
-    @staticmethod
-    def rm_env_vars_file(env_vars_file_flag):
-        if not env_vars_file_flag or "--env-file" not in env_vars_file_flag:
-            return
-        env_vars_file = env_vars_file_flag.replace("--env-file", "").strip()
-        return rm_rf(env_vars_file)
 
     @staticmethod
     def mountable_tmp_file():
