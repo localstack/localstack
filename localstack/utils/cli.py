@@ -92,28 +92,6 @@ def cmd_config(argv, args):
         raise Exception("Please specify a valid command")
 
 
-def cmd_web(argv, args):
-    """
-    Usage:
-      localstack web <subcommand> [options]
-
-    Commands:
-      web start           Start the Web dashboard (Note: deprecated and no longer supported!)
-
-    Options:
-      --port=<>           Network port for running the Web server (default: 8080)
-    """
-    if len(argv) <= 1 or argv[1] != "start":
-        argv = ["web", "start"] + argv[1:]
-        args["<args>"] = ["start"] + args["<args>"]
-    args.update(docopt(cmd_web.__doc__.strip(), argv=argv))
-    if args["<subcommand>"] == "start":
-        import localstack.dashboard.api
-
-        port = args["--port"] or config.PORT_WEB_UI
-        localstack.dashboard.api.serve(port)
-
-
 def cmd_ssh(argv, args):
     """
     Usage:
@@ -187,10 +165,6 @@ def main():
     config.CLI_COMMANDS["start"] = {
         "description": "Shorthand to start the infrastructure",
         "function": cmd_infra,
-    }
-    config.CLI_COMMANDS["web"] = {
-        "description": "Commands to manage the Web dashboard (deprecated)",
-        "function": cmd_web,
     }
     config.CLI_COMMANDS["ssh"] = {
         "description": "Shorthand to obtain a shell in the running container",
