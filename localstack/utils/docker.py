@@ -48,7 +48,7 @@ class CmdDockerClient:
         cmd_result = safe_run(cmd)
 
         # filter empty / invalid lines from docker ps output
-        cmd_result = next((line for line in cmd_result if container_name in line), '')
+        cmd_result = next((line for line in cmd_result if container_name in line), "")
         container_status = cmd_result.strip().lower()
         if len(container_status) == 0:
             return DockerContainerStatus.NOT_EXISTANT
@@ -127,7 +127,7 @@ class CmdDockerClient:
         LOG.debug(cmd)
         run_result = safe_run(cmd)
 
-        entry_point = run_result.strip("\"[]\n\r ")
+        entry_point = run_result.strip('"[]\n\r ')
         return entry_point
 
     def has_docker(self) -> bool:
@@ -238,7 +238,7 @@ class CmdDockerClient:
             cmd.append("--interactive")
         if attach:
             cmd.append("--attach")
-        cmd.append('start')
+        cmd.append("start")
         cmd.append(container_name_or_id)
         kwargs = {}
         if asynchronous:

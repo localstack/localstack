@@ -3,7 +3,6 @@ import functools
 import hashlib
 import importlib.machinery
 import json
-from localstack.utils.docker import DOCKER_CLIENT
 import logging
 import os
 import re
@@ -60,6 +59,7 @@ from localstack.utils.common import (
     to_str,
     unzip,
 )
+from localstack.utils.docker import DOCKER_CLIENT
 from localstack.utils.http_utils import parse_chunked_data
 
 # logger

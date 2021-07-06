@@ -308,8 +308,8 @@ class LambdaExecutorContainers(LambdaExecutor):
                 func_details, env_vars, command, event_stdin_bytes
             )
         except ContainerException as e:
-            result = e.stdout or ''
-            log_output = e.stderr or ''
+            result = e.stdout or ""
+            log_output = e.stderr or ""
             error = e
         try:
             result = to_str(result).strip()
@@ -590,7 +590,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
         mount_volumes = [(lambda_cwd_on_host, DOCKER_TASK_FOLDER)] if mount_volumes else None
 
-        if os.environ.get('HOSTNAME'):
+        if os.environ.get("HOSTNAME"):
             env_vars["HOSTNAME"] = os.environ.get("HOSTNAME")
         env_vars["EDGE_PORT"] = config.EDGE_PORT
 
