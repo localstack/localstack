@@ -325,7 +325,17 @@ def apply_patches():
             usage_plan = self.backend.usage_plans.get(usage_plan_id)
             if not usage_plan:
                 raise UsagePlanNotFoundException()
+
             apply_json_patch_safe(usage_plan, patch_operations, in_place=True)
+            # fix certain attributes after running the patch updates
+            if isinstance(usage_plan.get("apiStages"), (dict, str)):
+                usage_plan["apiStages"] = [usage_plan["apiStages"]]
+            api_stages = usage_plan.get("apiStages") or []
+            for i in range(len(api_stages)):
+                if isinstance(api_stages[i], str) and ":" in api_stages[i]:
+                    api_id, stage = api_stages[i].split(":")
+                    api_stages[i] = {"apiId": api_id, "stage": stage}
+
             return 200, {}, json.dumps(usage_plan)
         result = apigateway_response_usage_plan_individual_orig(
             self, request, full_url, headers, *args, **kwargs
