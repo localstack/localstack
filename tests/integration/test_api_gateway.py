@@ -424,7 +424,7 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(body_msg, to_str(result.content))
 
         # send message with binary data
-        binary_msg = b'\xff \xaa \x11'
+        binary_msg = b"\xff \xaa \x11"
         result = requests.post(url, data=binary_msg)
         self.assertEqual("/yCqIBE=", result.content)
 
