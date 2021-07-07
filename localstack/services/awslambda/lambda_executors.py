@@ -478,8 +478,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         )
         container_info = self.prime_docker_container(func_details, env_vars, lambda_cwd)
 
-        if not command:
-            command = "%s %s" % (container_info.entry_point, handler)
+        if not command and handler:
+            command = container_info.entry_point.split()
+            command.append(handler)
 
         # determine files to be copied into the container
         if not has_been_invoked_before and config.LAMBDA_REMOTE_DOCKER:

@@ -77,13 +77,14 @@ class CmdDockerClient:
     def stop_container(self, container_name: str) -> None:
         """Stops container with given name"""
         cmd = [self._docker_cmd(), "stop", "-t0", container_name]
-        LOG.debug(cmd)
+        LOG.debug("Stopping container with cmd %s", cmd)
         safe_run(cmd)
 
     def remove_container(self, container_name: str) -> None:
         """Removes container with given name"""
         cmd = [self._docker_cmd(), "rm", "-f", container_name]
-        safe_run(cmd, print_error=False)
+        LOG.debug("Removing container with cmd %s", cmd)
+        safe_run(cmd)
 
     def list_containers(self, filter: Union[List[str], str, None] = None) -> List[dict]:
         """List all containers matching the given filters
@@ -182,19 +183,20 @@ class CmdDockerClient:
     def exec_in_container(
         self,
         container_name_or_id: str,
-        command: str,
+        command: Union[List[str], str],
         interactive=False,
         env_vars: Optional[List[Tuple[str, str]]] = None,
         asynchronous=False,
         stdin: Optional[str] = None,
     ) -> Union[Tuple[str, str], str]:
+        LOG.debug('Called with stdin: %s', stdin)
         cmd = [self._docker_cmd(), "exec"]
         if interactive:
             cmd.append("--interactive")
         if env_vars:
             cmd += Util.create_env_vars_file_flag(env_vars)
         cmd.append(container_name_or_id)
-        cmd.append(command)
+        cmd += command if isinstance(command, List) else [command]
         kwargs = {}
         if asynchronous:
             kwargs = {
@@ -276,7 +278,7 @@ class CmdDockerClient:
         entrypoint: Optional[str] = None,
         remove: bool = False,
         interactive: bool = False,
-        command: Optional[str] = None,
+        command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[Tuple[str, str]]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
@@ -312,7 +314,7 @@ class CmdDockerClient:
             cmd += additional_flags.split()
         cmd.append(image_name)
         if command:
-            cmd.append(command)
+            cmd += command if isinstance(command, List) else [command]
         return cmd
 
 
