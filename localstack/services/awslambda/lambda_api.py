@@ -1025,6 +1025,18 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
             except Exception as e:
                 raise ClientError("Unable to get handler function from lambda code.", e)
 
+        if runtime.startswith("node") and not use_docker():
+            ensure_readable(main_file)
+            zip_file_content = load_file(main_file, mode="rb")
+
+            def execute(event, context):
+                result = lambda_executors.EXECUTOR_LOCAL.execute_javascript_lambda(
+                    event, context, main_file=main_file, func_details=lambda_details
+                )
+                return result
+
+            lambda_handler = execute
+
     return lambda_handler
 
 
