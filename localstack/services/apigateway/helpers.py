@@ -791,7 +791,9 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                     operation["op"] = "add"
                     return apply_patch(subject, [operation], in_place=in_place)
                 if operation["op"] == "remove" and isinstance(subject, dict):
-                    subject.pop(operation["path"], None)
+                    result = subject.pop(operation["path"], None)
+                    results.append(result)
+                    continue
             raise
     if return_list:
         return results
