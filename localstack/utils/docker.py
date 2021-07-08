@@ -40,15 +40,15 @@ class CmdDockerClient:
             "ps",
             "-a",
             "--filter",
-            f"name='{container_name}'",
+            f"name={container_name}",
             "--format",
             "{{ .Status }} - {{ .Names }}",
         ]
-        LOG.debug('Getting status for container "%s": %s' % (container_name, cmd))
+        LOG.debug('Getting status for container "%s"' % (container_name))
         cmd_result = safe_run(cmd)
 
         # filter empty / invalid lines from docker ps output
-        cmd_result = next((line for line in cmd_result if container_name in line), "")
+        cmd_result = next((line for line in cmd_result.splitlines() if container_name in line), "")
         container_status = cmd_result.strip().lower()
         if len(container_status) == 0:
             return DockerContainerStatus.NOT_EXISTANT

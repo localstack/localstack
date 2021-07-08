@@ -476,7 +476,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             runtime,
             func_arn,
         )
-        container_info = self.prime_docker_container(func_details, env_vars, lambda_cwd)
+        container_info = self.prime_docker_container(func_details, dict(env_vars), lambda_cwd)
 
         if not command and handler:
             command = container_info.entry_point.split()
@@ -619,7 +619,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
             # Get the container name and id.
             container_name = self.get_container_name(func_arn)
-
             if status == 1:
                 LOG.debug("Stopping container: %s" % container_name)
                 DOCKER_CLIENT.stop_container(container_name)
