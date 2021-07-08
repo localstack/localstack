@@ -22,6 +22,7 @@ from localstack.services.apigateway import helpers
 from localstack.services.apigateway.helpers import (
     PATH_REGEX_AUTHORIZERS,
     PATH_REGEX_CLIENT_CERTS,
+    PATH_REGEX_DOC_PARTS,
     PATH_REGEX_PATH_MAPPINGS,
     PATH_REGEX_RESPONSES,
     PATH_REGEX_VALIDATORS,
@@ -33,6 +34,7 @@ from localstack.services.apigateway.helpers import (
     handle_authorizers,
     handle_base_path_mappings,
     handle_client_certificates,
+    handle_documentation_parts,
     handle_validators,
     handle_vpc_links,
     make_error_response,
@@ -82,6 +84,9 @@ class ProxyListenerApiGateway(ProxyListener):
 
         if re.match(PATH_REGEX_AUTHORIZERS, path):
             return handle_authorizers(method, path, data, headers)
+
+        if re.match(PATH_REGEX_DOC_PARTS, path):
+            return handle_documentation_parts(method, path, data, headers)
 
         if re.match(PATH_REGEX_VALIDATORS, path):
             return handle_validators(method, path, data, headers)

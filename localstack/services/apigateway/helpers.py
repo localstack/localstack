@@ -25,6 +25,7 @@ PATH_REGEX_SUB = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*"
 PATH_REGEX_AUTHORIZERS = r"^/restapis/([A-Za-z0-9_\-]+)/authorizers/?([^?/]+)?(\?.*)?"
 PATH_REGEX_VALIDATORS = r"^/restapis/([A-Za-z0-9_\-]+)/requestvalidators/?([^?/]+)?(\?.*)?"
 PATH_REGEX_RESPONSES = r"^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?"
+PATH_REGEX_DOC_PARTS = r"^/restapis/([A-Za-z0-9_\-]+)/documentation/parts/?([^?/]+)?(\?.*)?"
 PATH_REGEX_PATH_MAPPINGS = r"/domainnames/([^/]+)/basepathmappings/?(.*)"
 PATH_REGEX_CLIENT_CERTS = r"/clientcertificates/?([^/]+)?$"
 PATH_REGEX_VPC_LINKS = r"/vpclinks/([^/]+)?(.*)"
@@ -43,6 +44,8 @@ class APIGatewayRegion(RegionBackend):
         self.authorizers = {}
         # maps (API id) -> [validators]
         self.validators = {}
+        # maps (API id) -> [documentation_parts]
+        self.documentation_parts = {}
         # account details
         self.account = {
             "cloudwatchRoleArn": aws_stack.role_arn("api-gw-cw-role"),
@@ -117,10 +120,7 @@ def get_authorizer_id_from_path(path):
 
 
 def _find_authorizer(api_id, authorizer_id):
-    region_details = APIGatewayRegion.get()
-    auth_list = region_details.authorizers.get(api_id) or []
-    authorizer = ([a for a in auth_list if a["id"] == authorizer_id] or [None])[0]
-    return authorizer
+    return find_api_subentity_by_id(api_id, authorizer_id, "authorizers")
 
 
 def normalize_authorizer(data):
@@ -167,9 +167,7 @@ def add_authorizer(path, data):
 
     result["id"] = authorizer_id
     result = normalize_authorizer(result)
-
-    region_details.authorizers[api_id] = region_details.authorizers.get(api_id) or []
-    region_details.authorizers[api_id].append(result)
+    region_details.authorizers.setdefault(api_id, []).append(result)
 
     return make_json_response(to_authorizer_response_json(api_id, result))
 
@@ -222,6 +220,106 @@ def handle_authorizers(method, path, data, headers):
     return make_error_response("Not implemented for API Gateway authorizers: %s" % method, code=404)
 
 
+# -------------------------
+# DOCUMENTATION PARTS APIs
+# -------------------------
+
+
+def get_documentation_part_id_from_path(path):
+    match = re.match(PATH_REGEX_DOC_PARTS, path)
+    return match.group(2) if match else None
+
+
+def _find_documentation_part(api_id, documentation_part_id):
+    return find_api_subentity_by_id(api_id, documentation_part_id, "documentation_parts")
+
+
+def get_documentation_parts(path):
+    region_details = APIGatewayRegion.get()
+
+    # This function returns either a list or a single entity (depending on the path)
+    api_id = get_api_id_from_path(path)
+    entity_id = get_documentation_part_id_from_path(path)
+
+    auth_list = region_details.documentation_parts.get(api_id) or []
+
+    if entity_id:
+        entity = _find_documentation_part(api_id, entity_id)
+        if entity is None:
+            return make_error_response(
+                "Documentation part not found: %s" % entity_id,
+                code=404,
+                error_type="NotFoundException",
+            )
+        return to_documentation_part_response_json(api_id, entity)
+
+    result = [to_documentation_part_response_json(api_id, a) for a in auth_list]
+    result = {"item": result}
+    return result
+
+
+def add_documentation_part(path, data):
+    region_details = APIGatewayRegion.get()
+
+    api_id = get_api_id_from_path(path)
+    entity_id = common.short_uid()[:6]  # length 6 to make TF tests pass
+    result = common.clone(data)
+
+    result["id"] = entity_id
+    region_details.documentation_parts.setdefault(api_id, []).append(result)
+
+    return make_json_response(to_documentation_part_response_json(api_id, result))
+
+
+def update_documentation_part(path, data):
+    region_details = APIGatewayRegion.get()
+
+    api_id = get_api_id_from_path(path)
+    entity_id = get_documentation_part_id_from_path(path)
+
+    entity = _find_documentation_part(api_id, entity_id)
+    if entity is None:
+        return make_error_response("Documentation part not found for API: %s" % api_id, code=404)
+
+    result = apply_json_patch_safe(entity, data["patchOperations"])
+
+    auth_list = region_details.documentation_parts[api_id]
+    for i in range(len(auth_list)):
+        if auth_list[i]["id"] == entity_id:
+            auth_list[i] = result
+
+    return make_json_response(to_documentation_part_response_json(api_id, result))
+
+
+def delete_documentation_part(path):
+    region_details = APIGatewayRegion.get()
+
+    api_id = get_api_id_from_path(path)
+    entity_id = get_documentation_part_id_from_path(path)
+
+    auth_list = region_details.documentation_parts[api_id]
+    for i in range(len(auth_list)):
+        if auth_list[i]["id"] == entity_id:
+            del auth_list[i]
+            break
+
+    return make_accepted_response()
+
+
+def handle_documentation_parts(method, path, data, headers):
+    if method == "GET":
+        return get_documentation_parts(path)
+    if method == "POST":
+        return add_documentation_part(path, data)
+    if method == "PATCH":
+        return update_documentation_part(path, data)
+    if method == "DELETE":
+        return delete_documentation_part(path)
+    return make_error_response(
+        "Not implemented for API Gateway documentation parts: %s" % method, code=404
+    )
+
+
 # -----------------------
 # BASE PATH MAPPING APIs
 # -----------------------
@@ -269,10 +367,7 @@ def add_base_path_mapping(path, data):
     base_path = data["basePath"] = data.get("basePath") or "(none)"
     result = common.clone(data)
 
-    region_details.base_path_mappings[domain_name] = (
-        region_details.base_path_mappings.get(domain_name) or []
-    )
-    region_details.base_path_mappings[domain_name].append(result)
+    region_details.base_path_mappings.setdefault(domain_name, []).append(result)
 
     return make_json_response(to_base_mapping_response_json(domain_name, base_path, result))
 
@@ -515,8 +610,7 @@ def add_validator(path, data):
     result = common.clone(data)
     result["id"] = validator_id
 
-    region_details.validators[api_id] = region_details.validators.get(api_id) or []
-    region_details.validators[api_id].append(result)
+    region_details.validators.setdefault(api_id, []).append(result)
 
     return result
 
@@ -586,6 +680,10 @@ def to_validator_response_json(api_id, data):
     return to_response_json("validator", data, api_id=api_id)
 
 
+def to_documentation_part_response_json(api_id, data):
+    return to_response_json("documentationpart", data, api_id=api_id)
+
+
 def to_base_mapping_response_json(domain_name, base_path, data):
     self_link = "/domainnames/%s/basepathmappings/%s" % (domain_name, base_path)
     return to_response_json("basepathmapping", data, self_link=self_link)
@@ -622,6 +720,13 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
     }
     result["_links"]["%s:delete" % model_type] = {"href": self_link}
     return result
+
+
+def find_api_subentity_by_id(api_id, entity_id, map_name):
+    region_details = APIGatewayRegion.get()
+    auth_list = getattr(region_details, map_name).get(api_id) or []
+    entity = ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
+    return entity
 
 
 def gateway_request_url(api_id, stage_name, path):

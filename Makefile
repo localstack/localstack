@@ -202,7 +202,7 @@ lint:              ## Run code linter to check code style
 	($(VENV_RUN); python -m flake8 --show-source --config .flake8 . )
 
 format:
-	($(VENV_RUN); python -m isort .; python -m black . )
+	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/
