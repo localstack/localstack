@@ -189,7 +189,6 @@ class CmdDockerClient:
         asynchronous=False,
         stdin: Optional[str] = None,
     ) -> Union[Tuple[str, str], str]:
-        LOG.debug('Called with stdin: %s', stdin)
         cmd = [self._docker_cmd(), "exec"]
         if interactive:
             cmd.append("--interactive")
