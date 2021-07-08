@@ -1178,6 +1178,14 @@ def to_bytes(obj, encoding=DEFAULT_ENCODING, errors="strict"):
     return obj.encode(encoding, errors) if isinstance(obj, six.text_type) else obj
 
 
+def str_to_bool(value):
+    """Return the boolean value of the given string, or the verbatim value if it is not a string"""
+    true_strings = ["true", "True"]
+    if isinstance(value, str):
+        return value in true_strings
+    return value
+
+
 def str_insert(string, index, content):
     """Insert a substring into an existing string at a certain index."""
     return "%s%s%s" % (string[:index], content, string[index:])

@@ -14,11 +14,9 @@ from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import apply_json_patch_safe
 from localstack.services.infra import start_moto_server
-from localstack.utils.common import DelSafeDict, short_uid, to_str
+from localstack.utils.common import DelSafeDict, short_uid, str_to_bool, to_str
 
 LOG = logging.getLogger(__name__)
-
-TRUE_STRINGS = ["true", "True"]
 
 # additional REST API attributes
 REST_API_ATTRIBUTES = [
@@ -267,8 +265,8 @@ def apply_patches():
                 integration["timeoutInMillis"] = int(integration.get("timeoutInMillis"))
             skip_verification = (integration.get("tlsConfig") or {}).get("insecureSkipVerification")
             if skip_verification:
-                integration["tlsConfig"]["insecureSkipVerification"] = (
-                    str(skip_verification) in TRUE_STRINGS
+                integration["tlsConfig"]["insecureSkipVerification"] = str_to_bool(
+                    skip_verification
                 )
 
         return result
@@ -352,7 +350,18 @@ def apply_patches():
     # define json-patch operations for backend models
 
     def backend_model_apply_operations(self, patch_operations):
+        # run pre-actions
+        if isinstance(self, apigateway_models.Stage):
+            if [op for op in patch_operations if "/accessLogSettings" in op.get("path", "")]:
+                self["accessLogSettings"] = self.get("accessLogSettings") or {}
+        # apply patches
         apply_json_patch_safe(self, patch_operations, in_place=True)
+        # run post-actions
+        if isinstance(self, apigateway_models.Stage):
+            bool_params = ["cacheClusterEnabled", "tracingEnabled"]
+            for bool_param in bool_params:
+                if self.get(bool_param):
+                    self[bool_param] = str_to_bool(self.get(bool_param))
         return self
 
     model_classes = [
@@ -373,8 +382,8 @@ def apply_patches():
         list_params = ["authorizationScopes"]
         for param, value in params.items():
             for param_prefix in bool_params_prefixes:
-                if param.startswith(param_prefix) and not isinstance(value, bool):
-                    params[param] = str(value) in TRUE_STRINGS
+                if param.startswith(param_prefix):
+                    params[param] = str_to_bool(value)
         for list_param in list_params:
             value = self.get(list_param)
             if value and not isinstance(value, list):
