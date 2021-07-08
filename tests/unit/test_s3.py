@@ -368,7 +368,12 @@ class S3UtilsTest(unittest.TestCase):
             ({"host": "https://s3.eu-west-1.localhost.localstack.cloud/bucket/key"}, False),
             ({"host": "https://s3.localhost.localstack.cloud/bucket"}, False),
             ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key"}, True),
-            ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key/key/content.png"}, True),
+            (
+                {
+                    "host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key/key/content.png"
+                },
+                True,
+            ),
             ({"host": "https://s3.localhost.localstack.cloud/bucket/key"}, False),
             ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud"}, True),
             ({"host": "https://bucket.s3.localhost.localstack.cloud/key"}, True),

@@ -30,7 +30,9 @@ S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expr
     r"(((s3(-website)?\.({}\.)?)localhost(\.localstack\.cloud)?)|"
     r"(s3((-website)|(-external-1))?[\.-](dualstack\.)?"
     r"({}\.)?amazonaws\.com(.cn)?)){}(/[\w\-. ]*)*$"
-).format(REGION_REGEX, REGION_REGEX, PORT_REGEX)
+).format(
+    REGION_REGEX, REGION_REGEX, PORT_REGEX
+)
 BUCKET_NAME_REGEX = (
     r"(?=^.{3,63}$)(?!^(\d+\.)+\d+$)"
     + r"(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)"
