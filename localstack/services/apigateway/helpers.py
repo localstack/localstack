@@ -46,6 +46,8 @@ class APIGatewayRegion(RegionBackend):
         self.validators = {}
         # maps (API id) -> [documentation_parts]
         self.documentation_parts = {}
+        # maps (API id) -> [gateway_responses]
+        self.gateway_responses = {}
         # account details
         self.account = {
             "cloudwatchRoleArn": aws_stack.role_arn("api-gw-cw-role"),
@@ -665,6 +667,119 @@ def handle_validators(method, path, data, headers):
     if method == "DELETE":
         return delete_validator(path)
     return make_error_response("Not implemented for API Gateway validators: %s" % method, code=404)
+
+
+# -----------------------
+# GATEWAY RESPONSES APIs
+# -----------------------
+
+
+# TODO: merge with to_response_json(..) above
+def gateway_response_to_response_json(item, api_id):
+    base_path = "/restapis/%s/gatewayresponses" % api_id
+    item["_links"] = {
+        "self": {"href": "%s/%s" % (base_path, item["responseType"])},
+        "gatewayresponse:put": {
+            "href": "%s/{response_type}" % base_path,
+            "templated": True,
+        },
+        "gatewayresponse:update": {"href": "%s/%s" % (base_path, item["responseType"])},
+    }
+    item["responseParameters"] = item.get("responseParameters", {})
+    item["responseTemplates"] = item.get("responseTemplates", {})
+    return item
+
+
+def get_gateway_responses(api_id):
+    region_details = APIGatewayRegion.get()
+    result = region_details.gateway_responses.get(api_id, [])
+
+    href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{rel}.html"
+    base_path = "/restapis/%s/gatewayresponses" % api_id
+
+    result = {
+        "_links": {
+            "curies": {"href": href, "name": "gatewayresponse", "templated": True},
+            "self": {"href": base_path},
+            "first": {"href": base_path},
+            "gatewayresponse:by-type": {
+                "href": "%s/{response_type}" % base_path,
+                "templated": True,
+            },
+            "item": [{"href": "%s/%s" % (base_path, r["responseType"])} for r in result],
+        },
+        "_embedded": {"item": [gateway_response_to_response_json(i, api_id) for i in result]},
+        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the docs:
+        # https://docs.aws.amazon.com/apigateway/api-reference/resource/gateway-responses/
+        "item": [gateway_response_to_response_json(i, api_id) for i in result],
+    }
+    return result
+
+
+def get_gateway_response(api_id, response_type):
+    region_details = APIGatewayRegion.get()
+    responses = region_details.gateway_responses.get(api_id, [])
+    result = [r for r in responses if r["responseType"] == response_type]
+    if result:
+        return result[0]
+    return make_error_response(
+        "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
+        code=404,
+    )
+
+
+def put_gateway_response(api_id, response_type, data):
+    region_details = APIGatewayRegion.get()
+    responses = region_details.gateway_responses.setdefault(api_id, [])
+    existing = ([r for r in responses if r["responseType"] == response_type] or [None])[0]
+    if existing:
+        existing.update(data)
+    else:
+        data["responseType"] = response_type
+        responses.append(data)
+    return data
+
+
+def delete_gateway_response(api_id, response_type):
+    region_details = APIGatewayRegion.get()
+    responses = region_details.gateway_responses.get(api_id) or []
+    region_details.gateway_responses[api_id] = [
+        r for r in responses if r["responseType"] != response_type
+    ]
+    return make_accepted_response()
+
+
+def update_gateway_response(api_id, response_type, data):
+    region_details = APIGatewayRegion.get()
+    responses = region_details.gateway_responses.setdefault(api_id, [])
+
+    existing = ([r for r in responses if r["responseType"] == response_type] or [None])[0]
+    if existing is None:
+        return make_error_response(
+            "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
+            code=404,
+        )
+    result = apply_json_patch_safe(existing, data["patchOperations"])
+    return result
+
+
+def handle_gateway_responses(method, path, data, headers):
+    search_match = re.search(PATH_REGEX_RESPONSES, path)
+    api_id = search_match.group(1)
+    response_type = (search_match.group(2) or "").lstrip("/")
+    if method == "GET":
+        if response_type:
+            return get_gateway_response(api_id, response_type)
+        return get_gateway_responses(api_id)
+    if method == "PUT":
+        return put_gateway_response(api_id, response_type, data)
+    if method == "PATCH":
+        return update_gateway_response(api_id, response_type, data)
+    if method == "DELETE":
+        return delete_gateway_response(api_id, response_type)
+    return make_error_response(
+        "Not implemented for API Gateway gateway responses: %s" % method, code=404
+    )
 
 
 # ---------------

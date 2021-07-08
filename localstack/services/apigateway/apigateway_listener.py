@@ -35,6 +35,7 @@ from localstack.services.apigateway.helpers import (
     handle_base_path_mappings,
     handle_client_certificates,
     handle_documentation_parts,
+    handle_gateway_responses,
     handle_validators,
     handle_vpc_links,
     make_error_response,
@@ -65,9 +66,6 @@ PATH_REGEX_USER_REQUEST = (
     r"^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$" % PATH_USER_REQUEST
 )
 
-# Maps API IDs to list of gateway responses
-GATEWAY_RESPONSES = {}
-
 
 class AuthorizationError(Exception):
     pass
@@ -92,15 +90,7 @@ class ProxyListenerApiGateway(ProxyListener):
             return handle_validators(method, path, data, headers)
 
         if re.match(PATH_REGEX_RESPONSES, path):
-            search_match = re.search(PATH_REGEX_RESPONSES, path)
-            api_id = search_match.group(1)
-            response_type = (search_match.group(2) or "").lstrip("/")
-            if method == "GET":
-                if response_type:
-                    return get_gateway_response(api_id, response_type)
-                return get_gateway_responses(api_id)
-            if method == "PUT":
-                return put_gateway_response(api_id, response_type, data)
+            return handle_gateway_responses(method, path, data, headers)
 
         return True
 
@@ -146,56 +136,6 @@ class ProxyListenerApiGateway(ProxyListener):
 # ------------
 # API METHODS
 # ------------
-
-
-def get_gateway_responses(api_id):
-    result = GATEWAY_RESPONSES.get(api_id, [])
-    base_path = "/restapis/%s/gatewayresponses" % api_id
-    href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{rel}.html"
-
-    def item(i):
-        i["_links"] = {
-            "self": {"href": "%s/%s" % (base_path, i["responseType"])},
-            "gatewayresponse:put": {
-                "href": "%s/{response_type}" % base_path,
-                "templated": True,
-            },
-            "gatewayresponse:update": {"href": "%s/%s" % (base_path, i["responseType"])},
-        }
-        i["responseParameters"] = i.get("responseParameters", {})
-        i["responseTemplates"] = i.get("responseTemplates", {})
-        return i
-
-    result = {
-        "_links": {
-            "curies": {"href": href, "name": "gatewayresponse", "templated": True},
-            "self": {"href": base_path},
-            "first": {"href": base_path},
-            "gatewayresponse:by-type": {
-                "href": "%s/{response_type}" % base_path,
-                "templated": True,
-            },
-            "item": [{"href": "%s/%s" % (base_path, r["responseType"])} for r in result],
-        },
-        "_embedded": {"item": [item(i) for i in result]},
-        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the docs:
-        # https://docs.aws.amazon.com/apigateway/api-reference/resource/gateway-responses/
-        "item": [item(i) for i in result],
-    }
-    return result
-
-
-def get_gateway_response(api_id, response_type):
-    responses = GATEWAY_RESPONSES.get(api_id, [])
-    result = [r for r in responses if r["responseType"] == response_type]
-    return result[0] if result else 404
-
-
-def put_gateway_response(api_id, response_type, data):
-    GATEWAY_RESPONSES[api_id] = GATEWAY_RESPONSES.get(api_id, [])
-    data["responseType"] = response_type
-    GATEWAY_RESPONSES[api_id].append(data)
-    return data
 
 
 def run_authorizer(api_id, headers, authorizer):
