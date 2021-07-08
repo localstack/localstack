@@ -789,7 +789,9 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                 if operation["op"] == "replace":
                     # fall back to an ADD operation if the REPLACE fails
                     operation["op"] = "add"
-                    return apply_patch(subject, [operation], in_place=in_place)
+                    result = apply_patch(subject, [operation], in_place=in_place)
+                    results.append(result)
+                    continue
                 if operation["op"] == "remove" and isinstance(subject, dict):
                     result = subject.pop(operation["path"], None)
                     results.append(result)
