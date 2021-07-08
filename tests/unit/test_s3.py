@@ -344,7 +344,7 @@ class S3UtilsTest(unittest.TestCase):
                 {"host": "bucket-1.s3-website.localhost.localstack.cloud"},
                 "bucket-1",
             ),
-            ("/", {"host": "bucket.localhost.localstack.cloud"}, "bucket"),
+            ("/", {"host": "bucket.localhost.localstack.cloud"}, None),
             ("/", {"host": "localhost.localstack.cloud"}, None),
             ("/", {"host": "test.dynamodb.amazonaws.com"}, None),
             ("/", {"host": "dynamodb.amazonaws.com"}, None),
