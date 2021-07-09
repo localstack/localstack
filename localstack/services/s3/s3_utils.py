@@ -27,7 +27,7 @@ PORT_REGEX = r"(:[\d]{0,6})?"
 S3_STATIC_WEBSITE_HOST_REGEX = r"^([^.]+)\.s3-website\.localhost\.localstack\.cloud(:[\d]{0,6})?$"
 S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expression (separated by .) followed by .s3
     r"^(http(s)?://)?((?!s3\.)[^\./]+)\."  # the negative lookahead part is for considering buckets
-    r"(((s3(-website)?\.({}\.)?)localhost(\.localstack\.cloud)?)|"
+    r"(((s3(-website)?\.({}\.)?)localhost(\.localstack\.cloud)?)|(localhost\.localstack\.cloud)|"
     r"(s3((-website)|(-external-1))?[\.-](dualstack\.)?"
     r"({}\.)?amazonaws\.com(.cn)?)){}(/[\w\-. ]*)*$"
 ).format(
