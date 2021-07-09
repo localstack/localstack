@@ -698,8 +698,10 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
 
     elif ":events:" in arn:
         events_client = connect_to_service("events", region_name=region)
-        target_name = arn.split(":")[-1].split("/")[-1]
-        if ":destination/" in arn:
+        arn_suffix_parts = arn.split(":")[-1].split("/")
+        target_name = arn_suffix_parts[-1]
+        if ":destination/" in arn or ":api-destination/" in arn:
+            target_name = arn_suffix_parts[1]  # extract name from ...:api-destination/<name>/<uuid>
             destination = events_client.describe_api_destination(Name=target_name)
             method = destination.get("HttpMethod", "GET")
             endpoint = destination.get("InvocationEndpoint")
