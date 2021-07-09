@@ -442,11 +442,9 @@ def apply_patches():
                 if operation["op"] not in ["add", "replace"]:
                     continue
                 key1 = "/".join(parts[:-2])
-                key2 = "/%s" % key1
                 setting_key = "%s/%s" % (parts[-2], parts[-1])
                 setting_name, setting_type = key_mappings.get(setting_key)
-                # keys = [key1, key2]  # TODO remove?
-                keys = [key2]
+                keys = [key1]
                 for key in keys:
                     setting = method_settings[key] = method_settings.get(key) or {}
                     value = operation.get("value")
@@ -454,6 +452,7 @@ def apply_patches():
                     setting[setting_name] = value
             if operation["op"] == "remove":
                 method_settings.pop(path, None)
+                method_settings.pop(path.lstrip("/"), None)
         return result
 
     stage_apply_operations_orig = apigateway_models.Stage.apply_operations

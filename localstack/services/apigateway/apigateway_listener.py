@@ -460,15 +460,16 @@ def invoke_rest_api_integration_backend(
                 if parsed_headers is not None:
                     response.headers.update(parsed_headers)
                 try:
-                    if isinstance(parsed_result["body"], dict):
-                        response._content = json.dumps(parsed_result["body"])
+                    result_body = parsed_result.get("body")
+                    if isinstance(result_body, dict):
+                        response._content = json.dumps(result_body)
                     else:
-                        body_bytes = to_bytes(parsed_result.get("body") or "")
+                        body_bytes = to_bytes(to_str(result_body or ""))
                         if parsed_result.get("isBase64Encoded", False):
                             body_bytes = base64.b64decode(body_bytes)
                         response._content = body_bytes
                 except Exception as e:
-                    LOG.warning("Couldn't set lambda response content: %s" % e)
+                    LOG.warning("Couldn't set Lambda response content: %s" % e)
                     response._content = "{}"
                 update_content_length(response)
                 response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
