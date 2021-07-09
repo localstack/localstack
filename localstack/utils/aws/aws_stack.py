@@ -665,44 +665,48 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
     return pattern % (region_name, account_id, name)
 
 
-def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
-    region = arn.split(":")[3]
+def send_event_to_target(target_arn, event, target_attributes=None, asynchronous=True):
+    region = target_arn.split(":")[3]
 
-    if ":lambda:" in arn:
+    if ":lambda:" in target_arn:
         from localstack.services.awslambda import lambda_api
 
-        lambda_api.run_lambda(func_arn=arn, event=event, context={}, asynchronous=asynchronous)
+        lambda_api.run_lambda(
+            func_arn=target_arn, event=event, context={}, asynchronous=asynchronous
+        )
 
-    elif ":sns:" in arn:
+    elif ":sns:" in target_arn:
         sns_client = connect_to_service("sns", region_name=region)
-        sns_client.publish(TopicArn=arn, Message=json.dumps(event))
+        sns_client.publish(TopicArn=target_arn, Message=json.dumps(event))
 
-    elif ":sqs:" in arn:
+    elif ":sqs:" in target_arn:
         sqs_client = connect_to_service("sqs", region_name=region)
-        queue_url = get_sqs_queue_url(arn)
+        queue_url = get_sqs_queue_url(target_arn)
         msg_group_id = dict_utils.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
         kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 
-    elif ":states:" in arn:
+    elif ":states:" in target_arn:
         stepfunctions_client = connect_to_service("stepfunctions", region_name=region)
-        stepfunctions_client.start_execution(stateMachineArn=arn, input=json.dumps(event))
+        stepfunctions_client.start_execution(stateMachineArn=target_arn, input=json.dumps(event))
 
-    elif ":firehose:" in arn:
-        delivery_stream_name = firehose_name(arn)
+    elif ":firehose:" in target_arn:
+        delivery_stream_name = firehose_name(target_arn)
         firehose_client = connect_to_service("firehose", region_name=region)
         firehose_client.put_record(
             DeliveryStreamName=delivery_stream_name,
             Record={"Data": to_bytes(json.dumps(event))},
         )
 
-    elif ":events:" in arn:
+    elif ":events:" in target_arn:
         events_client = connect_to_service("events", region_name=region)
-        arn_suffix_parts = arn.split(":")[-1].split("/")
-        target_name = arn_suffix_parts[-1]
-        if ":destination/" in arn or ":api-destination/" in arn:
-            target_name = arn_suffix_parts[1]  # extract name from ...:api-destination/<name>/<uuid>
-            destination = events_client.describe_api_destination(Name=target_name)
+        if ":api-destination/" in target_arn:
+            # API destination support
+            # see https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html
+            api_destination_name = target_arn.split(":")[-1].split("/")[
+                1
+            ]  # ...:api-destination/{name}/{uuid}
+            destination = events_client.describe_api_destination(Name=api_destination_name)
             method = destination.get("HttpMethod", "GET")
             endpoint = destination.get("InvocationEndpoint")
             state = destination.get("ApiDestinationState") or "ACTIVE"
@@ -710,17 +714,34 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
                 'Calling EventBridge API destination (state "%s"): %s %s'
                 % (state, method, endpoint)
             )
-            result = requests.request(method=method, url=endpoint, data=json.dumps(event or {}))
+            # TODO: support connection/auth (BASIC AUTH, API KEY, OAUTH)
+            # connection_arn = destination.get("ConnectionArn")
+            headers = {
+                # default headers AWS sends with every api destination call
+                "User-Agent": "Amazon/EventBridge/ApiDestinations",
+                "Content-Type": "application/json; charset=utf-8",
+                "Range": "bytes=0-1048575",
+                "Accept-Encoding": "gzip,deflate",
+                "Connection": "close",
+            }
+            # TODO: consider option to disable the actual network call to avoid unintended side effects
+            # TODO: InvocationRateLimitPerSecond (needs some form of thread-safety, scoped to the api destination)
+            result = requests.request(
+                method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
+            )
             if result.status_code >= 400:
                 LOG.debug(
                     "Received code %s forwarding events: %s %s"
                     % (result.status_code, method, endpoint)
                 )
+                if result.status_code == 429 or 500 <= result.status_code <= 600:
+                    pass  # TODO: retry logic (only retry on 429 and 5xx response status)
         else:
+            eventbus_name = target_arn.split(":")[-1].split("/")[-1]
             events_client.put_events(
                 Entries=[
                     {
-                        "EventBusName": target_name,
+                        "EventBusName": eventbus_name,
                         "Source": event.get("source"),
                         "DetailType": event.get("detail-type"),
                         "Detail": event.get("detail"),
@@ -728,14 +749,14 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
                 ]
             )
 
-    elif ":kinesis:" in arn:
+    elif ":kinesis:" in target_arn:
         partition_key_path = dict_utils.get_safe(
             target_attributes,
             "$.KinesisParameters.PartitionKeyPath",
             default_value="$.id",
         )
 
-        stream_name = arn.split("/")[-1]
+        stream_name = target_arn.split("/")[-1]
         partition_key = dict_utils.get_safe(event, partition_key_path, event["id"])
         kinesis_client = connect_to_service("kinesis", region_name=region)
 
@@ -746,7 +767,7 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
         )
 
     else:
-        LOG.warning('Unsupported Events rule target ARN: "%s"' % arn)
+        LOG.warning('Unsupported Events rule target ARN: "%s"' % target_arn)
 
 
 def get_events_target_attributes(target):
