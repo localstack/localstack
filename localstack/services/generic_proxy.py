@@ -54,6 +54,9 @@ CORS_ALLOWED_HEADERS = [
     "x-amz-version-id",
     "x-localstack-target",
     "x-amz-tagging",
+    # For AWS SDK v3
+    "amz-sdk-invocation-id",
+    "amz-sdk-request",
 ]
 if EXTRA_CORS_ALLOWED_HEADERS:
     CORS_ALLOWED_HEADERS += EXTRA_CORS_ALLOWED_HEADERS.split(",")
