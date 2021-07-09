@@ -106,7 +106,7 @@ class CmdDockerClient:
         cmd_result = safe_run(cmd).strip()
         container_list = []
         if cmd_result:
-            container_list = list(map(lambda line: json.loads(line), cmd_result.split("\n")))
+            container_list = [json.loads(line) for line in cmd_result.splitlines()]
         return container_list
 
     def copy_into_container(self, container_name: str, local_path: str, container_path: str):
