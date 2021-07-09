@@ -44,7 +44,7 @@ class CmdDockerClient:
             "--format",
             "{{ .Status }} - {{ .Names }}",
         ]
-        LOG.debug('Getting status for container "%s"' % (container_name))
+        LOG.debug('Getting status for container "%s"' % container_name)
         cmd_result = safe_run(cmd)
 
         # filter empty / invalid lines from docker ps output
