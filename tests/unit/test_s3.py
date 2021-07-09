@@ -344,7 +344,11 @@ class S3UtilsTest(unittest.TestCase):
                 {"host": "bucket-1.s3-website.localhost.localstack.cloud"},
                 "bucket-1",
             ),
-            ("/", {"host": "bucket.localhost.localstack.cloud"}, None),
+            (
+                "/",
+                {"host": "bucket.localhost.localstack.cloud"},
+                "bucket",
+            ),  # internally agreed upon special case
             ("/", {"host": "localhost.localstack.cloud"}, None),
             ("/", {"host": "test.dynamodb.amazonaws.com"}, None),
             ("/", {"host": "dynamodb.amazonaws.com"}, None),
@@ -359,6 +363,8 @@ class S3UtilsTest(unittest.TestCase):
     def test_uses_host_address(self):
         addresses = [
             ({"host": f"https://aws.{LOCALHOST}:4566"}, False),
+            # attention: This is **not** a host style reference according to s3 specs but a special case from our side
+            ({"host": f"https://aws.{LOCALHOST}.localstack.cloud:4566"}, True),
             ({"host": f"https://{LOCALHOST}.aws:4566"}, False),
             ({"host": f"https://{LOCALHOST}.swa:4566"}, False),
             ({"host": f"https://swa.{LOCALHOST}:4566"}, False),
