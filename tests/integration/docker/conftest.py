@@ -1,12 +1,12 @@
 import pytest
 
-from localstack.config import is_env_true
+from localstack.config import is_env_not_false
 from localstack.utils.docker import CmdDockerClient
 
 
 def _check_skip():
-    if not is_env_true('RUN_DOCKER_TESTS'):
-        pytest.skip("RUN_DOCKER_TESTS not set")
+    if not is_env_not_false("SKIP_DOCKER_TESTS"):
+        pytest.skip("SKIP_DOCKER_TESTS is set")
 
     if not CmdDockerClient().has_docker():
         pytest.skip("Docker is not available")

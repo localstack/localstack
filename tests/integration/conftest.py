@@ -12,6 +12,7 @@ import threading
 import pytest
 
 from localstack import config
+from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.services import infra
 from localstack.utils.analytics.profiler import profiled
@@ -95,6 +96,11 @@ def startup_monitor() -> None:
         # this is called if _trigger_stop() is called before any test has requested the localstack_runtime fixture.
         logger.info("ending startup_monitor")
         localstack_stopped.set()
+        return
+
+    if is_env_true("TEST_SKIP_LOCALSTACK_START"):
+        logger.info("TEST_SKIP_LOCALSTACK_START is set, not starting localstack")
+        localstack_started.set()
         return
 
     logger.info("running localstack")
