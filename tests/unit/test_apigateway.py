@@ -1,7 +1,9 @@
 import unittest
 
 from localstack.services.apigateway import apigateway_listener
+from localstack.services.apigateway.helpers import apply_json_patch_safe
 from localstack.utils.aws import templating
+from localstack.utils.common import clone
 
 
 class ApiGatewayPathsTest(unittest.TestCase):
@@ -86,3 +88,28 @@ class TestVelocityUtil(unittest.TestCase):
 
         escaped = util.escapeJavaScript("it's")
         self.assertEqual(r"it\'s", escaped)
+
+
+class TestJSONPatch(unittest.TestCase):
+    def test_apply_json_patch(self):
+        apply = apply_json_patch_safe
+
+        # test replacing array index
+        subject = {"root": [{"arr": ["1", "abc"]}]}
+        result = apply(clone(subject), {"op": "replace", "path": "/root/0/arr/0", "value": 2})
+        self.assertEqual({"arr": [2, "abc"]}, result["root"][0])
+
+        # test replacing endpoint config type
+        operation = {"op": "replace", "path": "/endpointConfiguration/types/0", "value": "EDGE"}
+        subject = {
+            "id": "b5d563g3yx",
+            "endpointConfiguration": {"types": ["REGIONAL"], "vpcEndpointIds": []},
+        }
+        result = apply(clone(subject), operation)
+        self.assertEqual(["EDGE"], result["endpointConfiguration"]["types"])
+
+        # test replacing endpoint config type
+        operation = {"op": "add", "path": "/features/-", "value": "feat2"}
+        subject = {"features": ["feat1"]}
+        result = apply(clone(subject), operation)
+        self.assertEqual(["feat1", "feat2"], result["features"])

@@ -1117,12 +1117,40 @@ def extract_jsonpath(value, path):
     return result
 
 
-def assign_to_path(target, path, value):
-    path = path.split(".")
-    for i in range(len(path) - 1):
-        target_new = target[path[i]] = target.get(path[i], {})
+def assign_to_path(target, path: str, value, delimiter: str = "."):
+    parts = path.strip(delimiter).split(delimiter)
+    path_to_parent = delimiter.join(parts[:-1])
+    parent = extract_from_jsonpointer_path(target, path_to_parent, auto_create=True)
+    if not isinstance(parent, dict):
+        LOG.debug(
+            'Unable to find parent (type %s) for path "%s" in object: %s'
+            % (type(parent), path, target)
+        )
+        return
+    path_end = int(parts[-1]) if is_number(parts[-1]) else parts[-1]
+    parent[path_end] = value
+    return target
+
+
+def extract_from_jsonpointer_path(target, path: str, delimiter: str = "/", auto_create=False):
+    parts = path.strip(delimiter).split(delimiter)
+    for part in parts:
+        path_part = int(part) if is_number(part) else part
+        if isinstance(target, list) and not is_number(path_part):
+            if path_part == "-":
+                # special case where path is like /path/to/list/- where "/-" means "append to list"
+                continue
+            LOG.warning(
+                'Attempting to extract non-int index "%s" from list: %s' % (path_part, target)
+            )
+            return None
+        target_new = target[path_part] if isinstance(target, list) else target.get(path_part)
+        if target_new is None:
+            if not auto_create:
+                return
+            target[path_part] = target_new = {}
         target = target_new
-    target[path[-1]] = value
+    return target
 
 
 def save_file(file, content, append=False):

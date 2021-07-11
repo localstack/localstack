@@ -5,14 +5,15 @@ from urllib.parse import parse_qs, urlparse
 
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.exceptions import NoIntegrationDefined, UsagePlanNotFoundException
-from moto.apigateway.models import Integration, Resource
 from moto.apigateway.responses import APIGatewayResponse
-from moto.apigateway.utils import create_id
 from moto.core.utils import camelcase_to_underscores
 
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
-from localstack.services.apigateway.helpers import apply_json_patch_safe
+from localstack.services.apigateway.helpers import (
+    apply_json_patch_safe,
+    import_api_from_openapi_spec,
+)
 from localstack.services.infra import start_moto_server
 from localstack.utils.common import DelSafeDict, short_uid, str_to_bool, to_str
 
@@ -20,8 +21,8 @@ LOG = logging.getLogger(__name__)
 
 # additional REST API attributes
 REST_API_ATTRIBUTES = [
-    "disableExecuteApiEndpoint",
     "apiKeySource",
+    "disableExecuteApiEndpoint",
     "minimumCompressionSize",
 ]
 
@@ -89,74 +90,7 @@ def apply_patches():
 
     def apigateway_models_backend_put_rest_api(self, function_id, body, query_params):
         rest_api = self.get_rest_api(function_id)
-        # Remove default root, then add paths from API spec
-        rest_api.resources = {}
-
-        def get_or_create_path(path):
-            parts = path.rstrip("/").replace("//", "/").split("/")
-            parent_id = ""
-            if len(parts) > 1:
-                parent_path = "/".join(parts[:-1])
-                parent = get_or_create_path(parent_path)
-                parent_id = parent.id
-            existing = [
-                r
-                for r in rest_api.resources.values()
-                if r.path_part == (parts[-1] or "/") and (r.parent_id or "") == (parent_id or "")
-            ]
-            if existing:
-                return existing[0]
-            return add_path(path, parts, parent_id=parent_id)
-
-        def add_path(path, parts, parent_id=""):
-            child_id = create_id()
-            path = path or "/"
-            child = Resource(
-                id=child_id,
-                region_name=rest_api.region_name,
-                api_id=rest_api.id,
-                path_part=parts[-1] or "/",
-                parent_id=parent_id,
-            )
-            for m, payload in body["paths"].get(path, {}).items():
-                m = m.upper()
-                payload = payload["x-amazon-apigateway-integration"]
-
-                child.add_method(m, None, None)
-                integration = Integration(
-                    http_method=m,
-                    uri=payload.get("uri"),
-                    integration_type=payload["type"],
-                    pass_through_behavior=payload.get("passthroughBehavior"),
-                    request_templates=payload.get("requestTemplates") or {},
-                )
-                integration.create_integration_response(
-                    status_code=payload.get("responses", {})
-                    .get("default", {})
-                    .get("statusCode", 200),
-                    selection_pattern=None,
-                    response_templates=None,
-                    content_handling=None,
-                )
-                child.resource_methods[m]["methodIntegration"] = integration
-
-            rest_api.resources[child_id] = child
-            return child
-
-        basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
-        base_path = (body.get("basePath") or "") if basepath_mode == "prepend" else ""
-        for path in body.get("paths", {}):
-            get_or_create_path(base_path + path)
-
-        policy = body.get("x-amazon-apigateway-policy")
-        if policy:
-            policy = json.dumps(policy) if isinstance(policy, dict) else str(policy)
-            rest_api.policy = policy
-        minimum_compression_size = body.get("x-amazon-apigateway-minimum-compression-size")
-        if minimum_compression_size is not None:
-            rest_api.minimum_compression_size = int(minimum_compression_size)
-
-        return rest_api
+        return import_api_from_openapi_spec(rest_api, function_id, body, query_params)
 
     # import rest_api
 
@@ -184,17 +118,19 @@ def apply_patches():
                 if operation["path"] in not_supported_attributes:
                     msg = "Invalid patch path %s" % (operation["path"])
                     return 400, {}, msg
-                path_stripped = operation["path"].strip("/")
-                path_underscores = camelcase_to_underscores(path_stripped)
-                if path_stripped not in model_attributes and path_underscores in model_attributes:
-                    operation["path"] = operation["path"].replace(path_stripped, path_underscores)
+                path_start = operation["path"].strip("/").split("/")[0]
+                path_start_usc = camelcase_to_underscores(path_start)
+                if path_start not in model_attributes and path_start_usc in model_attributes:
+                    operation["path"] = operation["path"].replace(path_start, path_start_usc)
 
             rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
             apply_json_patch_safe(rest_api.__dict__, patch_operations, in_place=True)
 
             # fix data types after patches have been applied
-            # if rest_api.minimum_compression_size:
             rest_api.minimum_compression_size = int(rest_api.minimum_compression_size or -1)
+            endpoint_configs = rest_api.endpoint_configuration or {}
+            if isinstance(endpoint_configs.get("vpcEndpointIds"), str):
+                endpoint_configs["vpcEndpointIds"] = [endpoint_configs["vpcEndpointIds"]]
 
             return 200, {}, json.dumps(self.backend.get_rest_api(function_id).to_dict())
 

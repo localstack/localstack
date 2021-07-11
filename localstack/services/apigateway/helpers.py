@@ -1,9 +1,12 @@
 import json
 import logging
 import re
+from typing import Dict
 
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
+from moto.apigateway import models as apigateway_models
+from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 
@@ -980,7 +983,12 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
 
 
 def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=False):
+    """Apply JSONPatch operations, using some customizations for compatibility with API GW resources."""
+
     results = []
+    patch_operations = (
+        [patch_operations] if isinstance(patch_operations, dict) else patch_operations
+    )
     for operation in patch_operations:
         try:
             # special case: for "replace" operations, assume "" as the default value
@@ -991,12 +999,19 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                 LOG.info('Missing "value" in JSONPatch operation for %s: %s' % (subject, operation))
                 continue
 
-            # special case: if "path" is an attribute name pointing to an array in "subject", and we're
-            # running an "add" operation, then we should use the standard-compliant notation "/path/-"
-            if operation["op"] == "add" and isinstance(
-                subject.get(operation["path"].strip("/")), list
-            ):
-                operation["path"] = "%s/-" % operation["path"]
+            if operation["op"] == "add":
+                path = operation["path"]
+                target = subject.get(path.strip("/"))
+                target = target or common.extract_from_jsonpointer_path(subject, path)
+                if not isinstance(target, list):
+                    # for "add" operations, we should ensure that the path target is a list instance
+                    value = [] if target is None else [target]
+                    common.assign_to_path(subject, path, value=value, delimiter="/")
+                target = common.extract_from_jsonpointer_path(subject, path)
+                if isinstance(target, list) and not path.endswith("/-"):
+                    # if "path" is an attribute name pointing to an array in "subject", and we're running
+                    # an "add" operation, then we should use the standard-compliant notation "/path/-"
+                    operation["path"] = "%s/-" % path
 
             result = apply_patch(subject, [operation], in_place=in_place)
             if not in_place:
@@ -1020,3 +1035,81 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
     if return_list:
         return results
     return (results or [subject])[-1]
+
+
+def import_api_from_openapi_spec(
+    rest_api: apigateway_models.RestAPI, function_id: str, body: Dict, query_params: Dict
+) -> apigateway_models.RestAPI:
+    """Import an API from an OpenAPI spec document"""
+
+    # Remove default root, then add paths from API spec
+    rest_api.resources = {}
+
+    def get_or_create_path(path):
+        parts = path.rstrip("/").replace("//", "/").split("/")
+        parent_id = ""
+        if len(parts) > 1:
+            parent_path = "/".join(parts[:-1])
+            parent = get_or_create_path(parent_path)
+            parent_id = parent.id
+        existing = [
+            r
+            for r in rest_api.resources.values()
+            if r.path_part == (parts[-1] or "/") and (r.parent_id or "") == (parent_id or "")
+        ]
+        if existing:
+            return existing[0]
+        return add_path(path, parts, parent_id=parent_id)
+
+    def add_path(path, parts, parent_id=""):
+        child_id = create_resource_id()
+        path = path or "/"
+        child = apigateway_models.Resource(
+            id=child_id,
+            region_name=rest_api.region_name,
+            api_id=rest_api.id,
+            path_part=parts[-1] or "/",
+            parent_id=parent_id,
+        )
+        for m, payload in body["paths"].get(path, {}).items():
+            m = m.upper()
+            payload = payload["x-amazon-apigateway-integration"]
+
+            child.add_method(m, None, None)
+            integration = apigateway_models.Integration(
+                http_method=m,
+                uri=payload.get("uri"),
+                integration_type=payload["type"],
+                pass_through_behavior=payload.get("passthroughBehavior"),
+                request_templates=payload.get("requestTemplates") or {},
+            )
+            integration.create_integration_response(
+                status_code=payload.get("responses", {}).get("default", {}).get("statusCode", 200),
+                selection_pattern=None,
+                response_templates=None,
+                content_handling=None,
+            )
+            child.resource_methods[m]["methodIntegration"] = integration
+
+        rest_api.resources[child_id] = child
+        return child
+
+    basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
+    base_path = (body.get("basePath") or "") if basepath_mode == "prepend" else ""
+    for path in body.get("paths", {}):
+        get_or_create_path(base_path + path)
+
+    policy = body.get("x-amazon-apigateway-policy")
+    if policy:
+        policy = json.dumps(policy) if isinstance(policy, dict) else str(policy)
+        rest_api.policy = policy
+    minimum_compression_size = body.get("x-amazon-apigateway-minimum-compression-size")
+    if minimum_compression_size is not None:
+        rest_api.minimum_compression_size = int(minimum_compression_size)
+    endpoint_config = body.get("x-amazon-apigateway-endpoint-configuration")
+    if endpoint_config:
+        if endpoint_config.get("vpcEndpointIds"):
+            endpoint_config.setdefault("types", ["PRIVATE"])
+        rest_api.endpoint_configuration = endpoint_config
+
+    return rest_api
