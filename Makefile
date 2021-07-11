@@ -201,8 +201,14 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 lint:              ## Run code linter to check code style
 	($(VENV_RUN); python -m flake8 --show-source --config .flake8 . )
 
+lint-modified:      ## Run code linter on modified files
+	($(VENV_RUN); python -m flake8 --show-source --config .flake8 `git ls-files -m | grep '\.py$$' | xargs` )
+
 format:
 	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
+
+format-modified:
+	($(VENV_RUN); python -m isort `git ls-files -m | grep '\.py$$' | xargs`; python -m black `git ls-files -m | grep '\.py$$' | xargs` )
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/
@@ -214,4 +220,4 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
-.PHONY: usage compile clean install infra test test-coverage install-venv-docker
+.PHONY: usage compile clean install infra test test-coverage install-venv-docker lint lint-modified format format-modified
