@@ -232,14 +232,13 @@ class CmdDockerClient:
         attach: bool = False,
         flags: Optional[str] = None,
     ):
-        cmd = [self._docker_cmd()]
+        cmd = [self._docker_cmd(), "start"]
         if flags:
             cmd.append(flags)
         if interactive:
             cmd.append("--interactive")
         if attach:
             cmd.append("--attach")
-        cmd.append("start")
         cmd.append(container_name_or_id)
         kwargs = {}
         if asynchronous:
