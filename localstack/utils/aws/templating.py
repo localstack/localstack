@@ -19,6 +19,8 @@ class VelocityInput(object):
         if not self.value:
             return {}
         value = self.value if isinstance(self.value, dict) else json.loads(self.value)
+        if path == '$':
+            path = '$.body'
         return extract_jsonpath(value, path)
 
     def json(self, path):

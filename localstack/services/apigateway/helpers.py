@@ -1083,12 +1083,21 @@ def import_api_from_openapi_spec(
                 pass_through_behavior=payload.get("passthroughBehavior"),
                 request_templates=payload.get("requestTemplates") or {},
             )
-            integration.create_integration_response(
-                status_code=payload.get("responses", {}).get("default", {}).get("statusCode", 200),
-                selection_pattern=None,
-                response_templates=None,
-                content_handling=None,
-            )
+            responses = payload.get("responses", {})
+            try:
+                for code in responses.keys():
+                    response=responses.get(code)
+                    try:
+                        integration.create_integration_response(
+                            status_code=response.get("statusCode", 500),
+                            selection_pattern=None,
+                            response_templates=response.get("responseTemplates",{}),
+                            content_handling=None,
+                        )
+                    except:
+                        LOG.warning("What now?")
+            except:
+                LOG.warning("Somethin went wrong!")
             child.resource_methods[m]["methodIntegration"] = integration
 
         rest_api.resources[child_id] = child

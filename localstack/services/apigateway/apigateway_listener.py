@@ -11,7 +11,7 @@ from moto.apigateway.models import apigateway_backends
 from requests.models import Response
 from six.moves.urllib_parse import urljoin
 
-from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
+from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL, DISABLE_SSL_VERIFICATION_APIGATEWAY
 from localstack.constants import (
     APPLICATION_JSON,
     LOCALHOST_HOSTNAME,
@@ -200,11 +200,32 @@ def apply_request_parameter(integration, path_params):
     return uri
 
 
-def apply_template(integration, req_res_type, data, path_params={}, query_params={}, headers={}):
+def apply_template(integration, req_res_type, original_data, path_params={}, query_params={}, headers={}):
     integration_type = integration.get("type") or integration.get("integrationType")
-    if integration_type in ["HTTP", "AWS"]:
-        # apply custom request template
-        template = integration.get("%sTemplates" % req_res_type, {}).get(APPLICATION_JSON)
+    data = original_data
+    template = None
+    if integration_type.upper() in ["HTTP", "AWS"]:
+        if req_res_type == "response":
+            data = json.loads(original_data.content)
+            try:
+                status = original_data.status_code
+                # apply custom request template
+                responses = integration.get("integrationResponses")
+                for codeRegex in responses.keys():
+                    if re.search(codeRegex, str(status)):
+                        template = responses.get(codeRegex).get("%sTemplates" % req_res_type, {}).get(APPLICATION_JSON)
+                        break
+                template = responses.get('default').get("%sTemplates" % req_res_type, {}).get(APPLICATION_JSON)
+            except:
+                LOG.warning("No response template defined for return code %d" % status)
+        else:
+            LOG.warning("Request template")
+            try:
+                data=json.loads(original_data)
+            except:
+                LOG.warning("Only JSON supported as input for templating")
+            template = integration.get("%sTemplates" % req_res_type, {}).get(APPLICATION_JSON)
+
         if template:
             context = {}
             context["body"] = data
@@ -221,6 +242,10 @@ def apply_template(integration, req_res_type, data, path_params={}, query_params
 
             context["params"] = _params
             data = aws_stack.render_velocity_template(template, context)
+            if req_res_type == "response":
+                original_data._content=data
+                return original_data
+            LOG.warning(data)
     return data
 
 
@@ -636,9 +661,9 @@ def invoke_rest_api_integration_backend(
             data = json.dumps(data)
         uri = apply_request_parameter(integration=integration, path_params=path_params)
         function = getattr(requests, method.lower())
-        result = function(uri, data=data, headers=headers)
+        result = function(uri, data=data, headers=headers, verify=(not DISABLE_SSL_VERIFICATION_APIGATEWAY))
         # apply custom response template
-        data = apply_template(integration, "response", data)
+        data = apply_template(integration, "response", result)
         return result
 
     elif integration_type == "MOCK":
