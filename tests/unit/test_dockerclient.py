@@ -27,9 +27,9 @@ class TestDockerClient(unittest.TestCase):
         run_mock.return_value = json.dumps(test_container)
         docker_client = CmdDockerClient()
         container_list = docker_client.list_containers()
+        call_arguments = run_mock.call_args[0][0]
+        LOG.info("Intercepted call arguments: %s", call_arguments)
         self.assertEqual(test_container, container_list[0])
-        call_arguments = run_mock.mock_calls[0].args[0]
-        LOG.info("Found arguments: %s", call_arguments)
         self.assertTrue(list_in(self._docker_cmd() + ["ps"], call_arguments))
         self.assertIn("-a", call_arguments)
         self.assertIn("--format", call_arguments)
