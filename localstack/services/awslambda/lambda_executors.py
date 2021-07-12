@@ -1016,10 +1016,6 @@ class Util:
             docker_image = "localstack/lambda-js"
         return "%s:%s" % (docker_image, docker_tag)
 
-    @staticmethod
-    def get_docker_remove_flag():
-        return "--rm" if config.LAMBDA_REMOVE_CONTAINERS else ""
-
     @classmethod
     def get_java_classpath(cls, archive):
         """

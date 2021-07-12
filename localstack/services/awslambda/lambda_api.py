@@ -94,7 +94,7 @@ DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%f+00:00"
 app = Flask(APP_NAME)
 
 # mutex for access to CWD and ENV
-EXEC_MUTEX = threading.RLock(1)
+EXEC_MUTEX = threading.RLock()
 
 # whether to use Docker for execution
 DO_USE_DOCKER = None
@@ -303,7 +303,7 @@ def use_docker():
     if DO_USE_DOCKER is None:
         DO_USE_DOCKER = False
         if "docker" in config.LAMBDA_EXECUTOR:
-            return DOCKER_CLIENT.has_docker()
+            DO_USE_DOCKER = DOCKER_CLIENT.has_docker()
     return DO_USE_DOCKER
 
 

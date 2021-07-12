@@ -1117,8 +1117,10 @@ class TestPythonRuntimes(LambdaTestBase):
         # clean up
         testutil.delete_lambda_function(lambda_name)
 
-    @unittest.skipIf(lambda: not use_docker(), "not using docker")
     def test_python_lambda_running_in_docker(self):
+        if not use_docker():
+            pytest.skip("not using docker executor")
+
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON3,
             libs=TEST_LAMBDA_LIBS,
@@ -1941,7 +1943,7 @@ class TestDockerBehaviour(LambdaTestBase):
         if not isinstance(
             lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorReuseContainers
         ):
-            return
+            pytest.skip("not testing docker reuse executor")
 
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_destroy_idle_containers"
