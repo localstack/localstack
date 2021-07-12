@@ -45,9 +45,9 @@ def create_container(docker_client: DockerClient):
     """
     containers = list()
 
-    def _create_container(*args, **kwargs):
+    def _create_container(image_name: str, **kwargs):
         kwargs["name"] = kwargs.get("name", _random_container_name())
-        cid = docker_client.create_container(*args, **kwargs)
+        cid = docker_client.create_container(image_name, **kwargs)
         cid = cid.strip()
         containers.append(cid)
         return ContainerInfo(cid, kwargs["name"])  # FIXME name should come from docker_client

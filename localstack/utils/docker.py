@@ -56,7 +56,7 @@ class CmdDockerClient:
             "--format",
             "{{ .Status }} - {{ .Names }}",
         ]
-        LOG.debug('Getting status for container "%s"' % container_name)
+        LOG.debug('Getting status for container "%s"', container_name)
         cmd_result = safe_run(cmd)
 
         # filter empty / invalid lines from docker ps output
@@ -71,7 +71,7 @@ class CmdDockerClient:
 
     def get_network(self, container_name: str) -> str:
         """Returns the network mode of the container with the given name"""
-        LOG.debug("Getting container network: %s" % container_name)
+        LOG.debug("Getting container network: %s", container_name)
         cmd = [
             self._docker_cmd(),
             "inspect",
@@ -166,7 +166,7 @@ class CmdDockerClient:
 
     def get_container_entrypoint(self, docker_image: str) -> str:
         """Get the entry point for the given image"""
-        LOG.debug("Getting the entrypoint for image: %s" % (docker_image))
+        LOG.debug("Getting the entrypoint for image: %s", docker_image)
         cmd = [
             self._docker_cmd(),
             "image",
@@ -226,7 +226,7 @@ class CmdDockerClient:
                         stderr,
                     )
                 else:
-                    return (stdout, stderr)
+                    return stdout, stderr
         except subprocess.CalledProcessError as e:
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -269,7 +269,7 @@ class CmdDockerClient:
                         stderr,
                     )
                 else:
-                    return (stdout, stderr)
+                    return stdout, stderr
         except subprocess.CalledProcessError as e:
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -313,7 +313,7 @@ class CmdDockerClient:
                         stderr,
                     )
                 else:
-                    return (stdout, stderr)
+                    return stdout, stderr
         except subprocess.CalledProcessError as e:
             if "No such container" in e.stdout.decode("utf-8"):
                 raise NoSuchContainer(
