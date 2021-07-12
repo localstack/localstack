@@ -29,7 +29,7 @@ class TestDockerClient(unittest.TestCase):
         container_list = docker_client.list_containers()
         self.assertEqual(test_container, container_list[0])
         call_arguments = run_mock.mock_calls[0].args[0]
-        LOG.debug("Found arguments: %s", call_arguments)
+        LOG.info("Found arguments: %s", call_arguments)
         self.assertTrue(list_in(self._docker_cmd() + ["ps"], call_arguments))
         self.assertIn("-a", call_arguments)
         self.assertIn("--format", call_arguments)
