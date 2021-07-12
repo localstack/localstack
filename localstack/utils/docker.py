@@ -15,7 +15,7 @@ LOG = logging.getLogger(__name__)
 @unique
 class DockerContainerStatus(Enum):
     DOWN = -1
-    NOT_EXISTANT = 0
+    NOT_EXISTENT = 0
     UP = 1
 
 
@@ -63,7 +63,7 @@ class CmdDockerClient:
         cmd_result = next((line for line in cmd_result.splitlines() if container_name in line), "")
         container_status = cmd_result.strip().lower()
         if len(container_status) == 0:
-            return DockerContainerStatus.NOT_EXISTANT
+            return DockerContainerStatus.NOT_EXISTENT
         elif container_status.startswith("up "):
             return DockerContainerStatus.UP
         else:

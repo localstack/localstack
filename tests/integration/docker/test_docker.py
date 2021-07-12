@@ -81,7 +81,7 @@ class TestDockerClient:
         finally:
             docker_client.remove_container(container_id)
 
-        assert DockerContainerStatus.NOT_EXISTANT == docker_client.get_container_status(
+        assert DockerContainerStatus.NOT_EXISTENT == docker_client.get_container_status(
             container_name
         )
 

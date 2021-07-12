@@ -46,7 +46,7 @@ class TestDockerClient(unittest.TestCase):
         self.assertEqual(DockerContainerStatus.DOWN, status)
         run_mock.return_value = "STATUS    NAME"
         status = docker_client.get_container_status("localstack_main")
-        self.assertEqual(DockerContainerStatus.NOT_EXISTANT, status)
+        self.assertEqual(DockerContainerStatus.NOT_EXISTENT, status)
 
 
 def list_in(a, b):
