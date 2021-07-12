@@ -210,6 +210,9 @@ format:
 format-modified:
 	($(VENV_RUN); python -m isort `git ls-files -m | grep '\.py$$' | xargs`; python -m black `git ls-files -m | grep '\.py$$' | xargs` )
 
+init-precommit:
+	($(VENV_RUN); pre-commit install)
+
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/
 	rm -rf localstack/infra/amazon-kinesis-client
