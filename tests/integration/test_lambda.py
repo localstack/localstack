@@ -8,6 +8,7 @@ import unittest
 from datetime import datetime
 from io import BytesIO
 
+import pytest
 import six
 from botocore.exceptions import ClientError
 
@@ -1116,10 +1117,8 @@ class TestPythonRuntimes(LambdaTestBase):
         # clean up
         testutil.delete_lambda_function(lambda_name)
 
+    @unittest.skipIf(lambda: not use_docker(), "not using docker")
     def test_python_lambda_running_in_docker(self):
-        if not use_docker():
-            return
-
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON3,
             libs=TEST_LAMBDA_LIBS,
@@ -1423,7 +1422,7 @@ class TestNodeJSRuntimes(LambdaTestBase):
 
     def test_nodejs_lambda_running_in_docker(self):
         if not use_docker():
-            return
+            pytest.skip("not using docker executor")
 
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
@@ -1460,9 +1459,6 @@ class TestNodeJSRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
 
     def test_invoke_nodejs_lambda(self):
-        if not use_docker():
-            return
-
         handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_handler.js")
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
@@ -1471,17 +1467,24 @@ class TestNodeJSRuntimes(LambdaTestBase):
             handler="lambda_handler.handler",
         )
 
-        rs = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JS,
-            Payload=json.dumps({"event_type": "test_lambda"}),
-        )
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+        try:
+            rs = self.lambda_client.invoke(
+                FunctionName=TEST_LAMBDA_NAME_JS,
+                Payload=json.dumps({"event_type": "test_lambda"}),
+            )
+            self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
 
-        events = get_lambda_log_events(TEST_LAMBDA_NAME_JS)
-        self.assertGreater(len(events), 0)
+            payload = rs["Payload"].read()
+            response = json.loads(to_str(payload))
+            self.assertIn("response from localstack lambda", response["body"])
 
-        # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
+            if use_docker():
+                # FIXME: this does currently not work with local execution mode
+                events = get_lambda_log_events(TEST_LAMBDA_NAME_JS)
+                self.assertGreater(len(events), 0)
+        finally:
+            # clean up
+            testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
 
 
 class TestCustomRuntimes(LambdaTestBase):
@@ -1491,7 +1494,7 @@ class TestCustomRuntimes(LambdaTestBase):
 
     def test_provided_runtime_running_in_docker(self):
         if not use_docker():
-            return
+            pytest.skip("not using docker executor")
 
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
@@ -1528,7 +1531,7 @@ class TestDotNetCoreRuntimes(LambdaTestBase):
 
     def __run_test(self, func_name, zip_file, handler, runtime, expected_lines):
         if not use_docker():
-            return
+            pytest.skip("not using docker executor")
 
         testutil.create_lambda_function(
             func_name=func_name, zip_file=zip_file, handler=handler, runtime=runtime
@@ -1569,7 +1572,7 @@ class TestRubyRuntimes(LambdaTestBase):
 
     def test_ruby_lambda_running_in_docker(self):
         if not use_docker():
-            return
+            pytest.skip("not using docker executor")
 
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_RUBY,
@@ -1657,7 +1660,20 @@ class TestJavaRuntimes(LambdaTestBase):
 
         self.assertEqual(200, result["StatusCode"])
         # TODO: find out why the assertion below does not work in Travis-CI! (seems to work locally)
-        # self.assertIn('LinkedHashMap', to_str(result_data))
+        self.assertIn("LinkedHashMap", to_str(result_data))
+        self.assertIsNotNone(result_data)
+
+    def test_java_runtime_with_large_payload(self):
+        self.assertIsNotNone(self.test_java_jar)
+
+        payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
+        payload = to_bytes(json.dumps(payload))
+
+        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=payload)
+        result_data = result["Payload"].read()
+
+        self.assertEqual(200, result["StatusCode"])
+        self.assertIn("LinkedHashMap", to_str(result_data))
         self.assertIsNotNone(result_data)
 
     def test_java_runtime_with_lib(self):
