@@ -333,3 +333,50 @@ class TestDockerClient:
     def test_get_container_entrypoint_non_existing_image(self, docker_client: DockerClient):
         with pytest.raises(NoSuchImage):
             docker_client.get_container_entrypoint("thisdoesnotexist")
+
+    def test_create_start_container_with_stdin(self, docker_client: DockerClient):
+        container_name = _random_container_name()
+        message = "test_message_stdin"
+        try:
+            docker_client.create_container(
+                "alpine",
+                name=container_name,
+                interactive=True,
+                command=["cat"],
+            )
+
+            output, _ = docker_client.start_container(
+                container_name, interactive=True, stdin=message.encode(config.DEFAULT_ENCODING)
+            )
+
+            assert message == output.decode(config.DEFAULT_ENCODING).strip()
+        finally:
+            docker_client.remove_container(container_name)
+
+    def test_run_container_with_stdin(self, docker_client: DockerClient):
+        container_name = _random_container_name()
+        message = "test_message_stdin"
+        try:
+            output, _ = docker_client.run_container(
+                "alpine",
+                name=container_name,
+                interactive=True,
+                stdin=message.encode(config.DEFAULT_ENCODING),
+                command=["cat"],
+            )
+
+            assert message == output.decode(config.DEFAULT_ENCODING).strip()
+        finally:
+            docker_client.remove_container(container_name)
+
+    def test_exec_in_container_with_stdin(self, docker_client: DockerClient, dummy_container):
+            docker_client.start_container(dummy_container.container_id)
+            message = "test_message_stdin"
+            output, _ = docker_client.exec_in_container(
+                dummy_container.container_id,
+                interactive=True,
+                stdin=message.encode(config.DEFAULT_ENCODING),
+                command=['cat'],
+            )
+
+            assert message == output.decode(config.DEFAULT_ENCODING).strip()
