@@ -25,12 +25,14 @@ LOGGER = logging.getLogger(__name__)
 REGION_REGEX = r"[a-z]{2}-[a-z]+-[0-9]{1,}"
 PORT_REGEX = r"(:[\d]{0,6})?"
 S3_STATIC_WEBSITE_HOST_REGEX = r"^([^.]+)\.s3-website\.localhost\.localstack\.cloud(:[\d]{0,6})?$"
-S3_VIRTUAL_HOSTNAME_REGEX = (
-    r"^(http(s)?://)?((?!s3\.)[^\./]+)\."
-    r"(((s3(-website)?\.)?localhost\.localstack\.cloud)|({})|"
+S3_VIRTUAL_HOSTNAME_REGEX = (  # path based refs have at least valid bucket expression (separated by .) followed by .s3
+    r"^(http(s)?://)?((?!s3\.)[^\./]+)\."  # the negative lookahead part is for considering buckets
+    r"(((s3(-website)?\.({}\.)?)localhost(\.localstack\.cloud)?)|(localhost\.localstack\.cloud)|"
     r"(s3((-website)|(-external-1))?[\.-](dualstack\.)?"
-    r"({}\.)?amazonaws\.com(.cn)?)){}$"
-).format(config.HOSTNAME_EXTERNAL, REGION_REGEX, PORT_REGEX)
+    r"({}\.)?amazonaws\.com(.cn)?)){}(/[\w\-. ]*)*$"
+).format(
+    REGION_REGEX, REGION_REGEX, PORT_REGEX
+)
 BUCKET_NAME_REGEX = (
     r"(?=^.{3,63}$)(?!^(\d+\.)+\d+$)"
     + r"(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)"
@@ -91,6 +93,8 @@ def uses_host_addressing(headers):
     # we can assume that the host header we are receiving here is actually the header we originally received
     # from the client (because the edge service is forwarding the request in memory)
     match = re.match(S3_VIRTUAL_HOSTNAME_REGEX, headers.get("host", ""))
+
+    # checks whether there is a bucket name. This is sort of hacky
     return True if match and match.group(3) else False
 
 

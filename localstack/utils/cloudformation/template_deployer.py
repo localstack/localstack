@@ -10,7 +10,7 @@ from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.ec2.utils import generate_route_id
 from six import iteritems
 
-from localstack.constants import FALSE_STRINGS, TEST_AWS_ACCOUNT_ID
+from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME, TEST_AWS_ACCOUNT_ID
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
@@ -669,6 +669,9 @@ def extract_resource_attribute(
         if is_ref_attribute:
             return resource_state.get("id")
     elif resource_type == "S3::Bucket":
+        if attribute == "WebsiteURL":
+            bucket_name = resource_props.get("BucketName")
+            return f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}"
         if is_ref_attr_or_arn:
             bucket_name = resource_props.get("BucketName")
             bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)

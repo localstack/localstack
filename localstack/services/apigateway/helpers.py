@@ -1,9 +1,12 @@
 import json
 import logging
 import re
+from typing import Dict
 
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
+from moto.apigateway import models as apigateway_models
+from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 
@@ -25,6 +28,7 @@ PATH_REGEX_SUB = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*"
 PATH_REGEX_AUTHORIZERS = r"^/restapis/([A-Za-z0-9_\-]+)/authorizers/?([^?/]+)?(\?.*)?"
 PATH_REGEX_VALIDATORS = r"^/restapis/([A-Za-z0-9_\-]+)/requestvalidators/?([^?/]+)?(\?.*)?"
 PATH_REGEX_RESPONSES = r"^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?"
+PATH_REGEX_DOC_PARTS = r"^/restapis/([A-Za-z0-9_\-]+)/documentation/parts/?([^?/]+)?(\?.*)?"
 PATH_REGEX_PATH_MAPPINGS = r"/domainnames/([^/]+)/basepathmappings/?(.*)"
 PATH_REGEX_CLIENT_CERTS = r"/clientcertificates/?([^/]+)?$"
 PATH_REGEX_VPC_LINKS = r"/vpclinks/([^/]+)?(.*)"
@@ -43,6 +47,10 @@ class APIGatewayRegion(RegionBackend):
         self.authorizers = {}
         # maps (API id) -> [validators]
         self.validators = {}
+        # maps (API id) -> [documentation_parts]
+        self.documentation_parts = {}
+        # maps (API id) -> [gateway_responses]
+        self.gateway_responses = {}
         # account details
         self.account = {
             "cloudwatchRoleArn": aws_stack.role_arn("api-gw-cw-role"),
@@ -117,10 +125,7 @@ def get_authorizer_id_from_path(path):
 
 
 def _find_authorizer(api_id, authorizer_id):
-    region_details = APIGatewayRegion.get()
-    auth_list = region_details.authorizers.get(api_id) or []
-    authorizer = ([a for a in auth_list if a["id"] == authorizer_id] or [None])[0]
-    return authorizer
+    return find_api_subentity_by_id(api_id, authorizer_id, "authorizers")
 
 
 def normalize_authorizer(data):
@@ -167,9 +172,7 @@ def add_authorizer(path, data):
 
     result["id"] = authorizer_id
     result = normalize_authorizer(result)
-
-    region_details.authorizers[api_id] = region_details.authorizers.get(api_id) or []
-    region_details.authorizers[api_id].append(result)
+    region_details.authorizers.setdefault(api_id, []).append(result)
 
     return make_json_response(to_authorizer_response_json(api_id, result))
 
@@ -222,6 +225,106 @@ def handle_authorizers(method, path, data, headers):
     return make_error_response("Not implemented for API Gateway authorizers: %s" % method, code=404)
 
 
+# -------------------------
+# DOCUMENTATION PARTS APIs
+# -------------------------
+
+
+def get_documentation_part_id_from_path(path):
+    match = re.match(PATH_REGEX_DOC_PARTS, path)
+    return match.group(2) if match else None
+
+
+def _find_documentation_part(api_id, documentation_part_id):
+    return find_api_subentity_by_id(api_id, documentation_part_id, "documentation_parts")
+
+
+def get_documentation_parts(path):
+    region_details = APIGatewayRegion.get()
+
+    # This function returns either a list or a single entity (depending on the path)
+    api_id = get_api_id_from_path(path)
+    entity_id = get_documentation_part_id_from_path(path)
+
+    auth_list = region_details.documentation_parts.get(api_id) or []
+
+    if entity_id:
+        entity = _find_documentation_part(api_id, entity_id)
+        if entity is None:
+            return make_error_response(
+                "Documentation part not found: %s" % entity_id,
+                code=404,
+                error_type="NotFoundException",
+            )
+        return to_documentation_part_response_json(api_id, entity)
+
+    result = [to_documentation_part_response_json(api_id, a) for a in auth_list]
+    result = {"item": result}
+    return result
+
+
+def add_documentation_part(path, data):
+    region_details = APIGatewayRegion.get()
+
+    api_id = get_api_id_from_path(path)
+    entity_id = common.short_uid()[:6]  # length 6 to make TF tests pass
+    result = common.clone(data)
+
+    result["id"] = entity_id
+    region_details.documentation_parts.setdefault(api_id, []).append(result)
+
+    return make_json_response(to_documentation_part_response_json(api_id, result))
+
+
+def update_documentation_part(path, data):
+    region_details = APIGatewayRegion.get()
+
+    api_id = get_api_id_from_path(path)
+    entity_id = get_documentation_part_id_from_path(path)
+
+    entity = _find_documentation_part(api_id, entity_id)
+    if entity is None:
+        return make_error_response("Documentation part not found for API: %s" % api_id, code=404)
+
+    result = apply_json_patch_safe(entity, data["patchOperations"])
+
+    auth_list = region_details.documentation_parts[api_id]
+    for i in range(len(auth_list)):
+        if auth_list[i]["id"] == entity_id:
+            auth_list[i] = result
+
+    return make_json_response(to_documentation_part_response_json(api_id, result))
+
+
+def delete_documentation_part(path):
+    region_details = APIGatewayRegion.get()
+
+    api_id = get_api_id_from_path(path)
+    entity_id = get_documentation_part_id_from_path(path)
+
+    auth_list = region_details.documentation_parts[api_id]
+    for i in range(len(auth_list)):
+        if auth_list[i]["id"] == entity_id:
+            del auth_list[i]
+            break
+
+    return make_accepted_response()
+
+
+def handle_documentation_parts(method, path, data, headers):
+    if method == "GET":
+        return get_documentation_parts(path)
+    if method == "POST":
+        return add_documentation_part(path, data)
+    if method == "PATCH":
+        return update_documentation_part(path, data)
+    if method == "DELETE":
+        return delete_documentation_part(path)
+    return make_error_response(
+        "Not implemented for API Gateway documentation parts: %s" % method, code=404
+    )
+
+
 # -----------------------
 # BASE PATH MAPPING APIs
 # -----------------------
@@ -269,10 +372,7 @@ def add_base_path_mapping(path, data):
     base_path = data["basePath"] = data.get("basePath") or "(none)"
     result = common.clone(data)
 
-    region_details.base_path_mappings[domain_name] = (
-        region_details.base_path_mappings.get(domain_name) or []
-    )
-    region_details.base_path_mappings[domain_name].append(result)
+    region_details.base_path_mappings.setdefault(domain_name, []).append(result)
 
     return make_json_response(to_base_mapping_response_json(domain_name, base_path, result))
 
@@ -515,8 +615,7 @@ def add_validator(path, data):
     result = common.clone(data)
     result["id"] = validator_id
 
-    region_details.validators[api_id] = region_details.validators.get(api_id) or []
-    region_details.validators[api_id].append(result)
+    region_details.validators.setdefault(api_id, []).append(result)
 
     return result
 
@@ -573,6 +672,119 @@ def handle_validators(method, path, data, headers):
     return make_error_response("Not implemented for API Gateway validators: %s" % method, code=404)
 
 
+# -----------------------
+# GATEWAY RESPONSES APIs
+# -----------------------
+
+
+# TODO: merge with to_response_json(..) above
+def gateway_response_to_response_json(item, api_id):
+    base_path = "/restapis/%s/gatewayresponses" % api_id
+    item["_links"] = {
+        "self": {"href": "%s/%s" % (base_path, item["responseType"])},
+        "gatewayresponse:put": {
+            "href": "%s/{response_type}" % base_path,
+            "templated": True,
+        },
+        "gatewayresponse:update": {"href": "%s/%s" % (base_path, item["responseType"])},
+    }
+    item["responseParameters"] = item.get("responseParameters", {})
+    item["responseTemplates"] = item.get("responseTemplates", {})
+    return item
+
+
+def get_gateway_responses(api_id):
+    region_details = APIGatewayRegion.get()
+    result = region_details.gateway_responses.get(api_id, [])
+
+    href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{rel}.html"
+    base_path = "/restapis/%s/gatewayresponses" % api_id
+
+    result = {
+        "_links": {
+            "curies": {"href": href, "name": "gatewayresponse", "templated": True},
+            "self": {"href": base_path},
+            "first": {"href": base_path},
+            "gatewayresponse:by-type": {
+                "href": "%s/{response_type}" % base_path,
+                "templated": True,
+            },
+            "item": [{"href": "%s/%s" % (base_path, r["responseType"])} for r in result],
+        },
+        "_embedded": {"item": [gateway_response_to_response_json(i, api_id) for i in result]},
+        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the docs:
+        # https://docs.aws.amazon.com/apigateway/api-reference/resource/gateway-responses/
+        "item": [gateway_response_to_response_json(i, api_id) for i in result],
+    }
+    return result
+
+
+def get_gateway_response(api_id, response_type):
+    region_details = APIGatewayRegion.get()
+    responses = region_details.gateway_responses.get(api_id, [])
+    result = [r for r in responses if r["responseType"] == response_type]
+    if result:
+        return result[0]
+    return make_error_response(
+        "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
+        code=404,
+    )
+
+
+def put_gateway_response(api_id, response_type, data):
+    region_details = APIGatewayRegion.get()
+    responses = region_details.gateway_responses.setdefault(api_id, [])
+    existing = ([r for r in responses if r["responseType"] == response_type] or [None])[0]
+    if existing:
+        existing.update(data)
+    else:
+        data["responseType"] = response_type
+        responses.append(data)
+    return data
+
+
+def delete_gateway_response(api_id, response_type):
+    region_details = APIGatewayRegion.get()
+    responses = region_details.gateway_responses.get(api_id) or []
+    region_details.gateway_responses[api_id] = [
+        r for r in responses if r["responseType"] != response_type
+    ]
+    return make_accepted_response()
+
+
+def update_gateway_response(api_id, response_type, data):
+    region_details = APIGatewayRegion.get()
+    responses = region_details.gateway_responses.setdefault(api_id, [])
+
+    existing = ([r for r in responses if r["responseType"] == response_type] or [None])[0]
+    if existing is None:
+        return make_error_response(
+            "Gateway response %s for API Gateway %s not found" % (response_type, api_id),
+            code=404,
+        )
+    result = apply_json_patch_safe(existing, data["patchOperations"])
+    return result
+
+
+def handle_gateway_responses(method, path, data, headers):
+    search_match = re.search(PATH_REGEX_RESPONSES, path)
+    api_id = search_match.group(1)
+    response_type = (search_match.group(2) or "").lstrip("/")
+    if method == "GET":
+        if response_type:
+            return get_gateway_response(api_id, response_type)
+        return get_gateway_responses(api_id)
+    if method == "PUT":
+        return put_gateway_response(api_id, response_type, data)
+    if method == "PATCH":
+        return update_gateway_response(api_id, response_type, data)
+    if method == "DELETE":
+        return delete_gateway_response(api_id, response_type)
+    return make_error_response(
+        "Not implemented for API Gateway gateway responses: %s" % method, code=404
+    )
+
+
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
@@ -584,6 +796,10 @@ def to_authorizer_response_json(api_id, data):
 
 def to_validator_response_json(api_id, data):
     return to_response_json("validator", data, api_id=api_id)
+
+
+def to_documentation_part_response_json(api_id, data):
+    return to_response_json("documentationpart", data, api_id=api_id)
 
 
 def to_base_mapping_response_json(domain_name, base_path, data):
@@ -622,6 +838,13 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
     }
     result["_links"]["%s:delete" % model_type] = {"href": self_link}
     return result
+
+
+def find_api_subentity_by_id(api_id, entity_id, map_name):
+    region_details = APIGatewayRegion.get()
+    auth_list = getattr(region_details, map_name).get(api_id) or []
+    entity = ([a for a in auth_list if a["id"] == entity_id] or [None])[0]
+    return entity
 
 
 def gateway_request_url(api_id, stage_name, path):
@@ -760,7 +983,12 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
 
 
 def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=False):
+    """Apply JSONPatch operations, using some customizations for compatibility with API GW resources."""
+
     results = []
+    patch_operations = (
+        [patch_operations] if isinstance(patch_operations, dict) else patch_operations
+    )
     for operation in patch_operations:
         try:
             # special case: for "replace" operations, assume "" as the default value
@@ -771,12 +999,19 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                 LOG.info('Missing "value" in JSONPatch operation for %s: %s' % (subject, operation))
                 continue
 
-            # special case: if "path" is an attribute name pointing to an array in "subject", and we're
-            # running an "add" operation, then we should use the standard-compliant notation "/path/-"
-            if operation["op"] == "add" and isinstance(
-                subject.get(operation["path"].strip("/")), list
-            ):
-                operation["path"] = "%s/-" % operation["path"]
+            if operation["op"] == "add":
+                path = operation["path"]
+                target = subject.get(path.strip("/"))
+                target = target or common.extract_from_jsonpointer_path(subject, path)
+                if not isinstance(target, list):
+                    # for "add" operations, we should ensure that the path target is a list instance
+                    value = [] if target is None else [target]
+                    common.assign_to_path(subject, path, value=value, delimiter="/")
+                target = common.extract_from_jsonpointer_path(subject, path)
+                if isinstance(target, list) and not path.endswith("/-"):
+                    # if "path" is an attribute name pointing to an array in "subject", and we're running
+                    # an "add" operation, then we should use the standard-compliant notation "/path/-"
+                    operation["path"] = "%s/-" % path
 
             result = apply_patch(subject, [operation], in_place=in_place)
             if not in_place:
@@ -789,7 +1024,9 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                 if operation["op"] == "replace":
                     # fall back to an ADD operation if the REPLACE fails
                     operation["op"] = "add"
-                    return apply_patch(subject, [operation], in_place=in_place)
+                    result = apply_patch(subject, [operation], in_place=in_place)
+                    results.append(result)
+                    continue
                 if operation["op"] == "remove" and isinstance(subject, dict):
                     result = subject.pop(operation["path"], None)
                     results.append(result)
@@ -798,3 +1035,81 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
     if return_list:
         return results
     return (results or [subject])[-1]
+
+
+def import_api_from_openapi_spec(
+    rest_api: apigateway_models.RestAPI, function_id: str, body: Dict, query_params: Dict
+) -> apigateway_models.RestAPI:
+    """Import an API from an OpenAPI spec document"""
+
+    # Remove default root, then add paths from API spec
+    rest_api.resources = {}
+
+    def get_or_create_path(path):
+        parts = path.rstrip("/").replace("//", "/").split("/")
+        parent_id = ""
+        if len(parts) > 1:
+            parent_path = "/".join(parts[:-1])
+            parent = get_or_create_path(parent_path)
+            parent_id = parent.id
+        existing = [
+            r
+            for r in rest_api.resources.values()
+            if r.path_part == (parts[-1] or "/") and (r.parent_id or "") == (parent_id or "")
+        ]
+        if existing:
+            return existing[0]
+        return add_path(path, parts, parent_id=parent_id)
+
+    def add_path(path, parts, parent_id=""):
+        child_id = create_resource_id()
+        path = path or "/"
+        child = apigateway_models.Resource(
+            id=child_id,
+            region_name=rest_api.region_name,
+            api_id=rest_api.id,
+            path_part=parts[-1] or "/",
+            parent_id=parent_id,
+        )
+        for m, payload in body["paths"].get(path, {}).items():
+            m = m.upper()
+            payload = payload["x-amazon-apigateway-integration"]
+
+            child.add_method(m, None, None)
+            integration = apigateway_models.Integration(
+                http_method=m,
+                uri=payload.get("uri"),
+                integration_type=payload["type"],
+                pass_through_behavior=payload.get("passthroughBehavior"),
+                request_templates=payload.get("requestTemplates") or {},
+            )
+            integration.create_integration_response(
+                status_code=payload.get("responses", {}).get("default", {}).get("statusCode", 200),
+                selection_pattern=None,
+                response_templates=None,
+                content_handling=None,
+            )
+            child.resource_methods[m]["methodIntegration"] = integration
+
+        rest_api.resources[child_id] = child
+        return child
+
+    basepath_mode = (query_params.get("basepath") or ["prepend"])[0]
+    base_path = (body.get("basePath") or "") if basepath_mode == "prepend" else ""
+    for path in body.get("paths", {}):
+        get_or_create_path(base_path + path)
+
+    policy = body.get("x-amazon-apigateway-policy")
+    if policy:
+        policy = json.dumps(policy) if isinstance(policy, dict) else str(policy)
+        rest_api.policy = policy
+    minimum_compression_size = body.get("x-amazon-apigateway-minimum-compression-size")
+    if minimum_compression_size is not None:
+        rest_api.minimum_compression_size = int(minimum_compression_size)
+    endpoint_config = body.get("x-amazon-apigateway-endpoint-configuration")
+    if endpoint_config:
+        if endpoint_config.get("vpcEndpointIds"):
+            endpoint_config.setdefault("types", ["PRIVATE"])
+        rest_api.endpoint_configuration = endpoint_config
+
+    return rest_api

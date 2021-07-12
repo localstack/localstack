@@ -5,3 +5,11 @@ module.exports.test = function(event) {
 module.exports.processKinesis = function(event) {
   console.log('!!!processKinesis', JSON.stringify(event));
 };
+
+module.exports.createQueue = function(event) {
+  console.log('!!!createQueue', JSON.stringify(event));
+};
+
+module.exports.createHttpRouter = function(event) {
+  console.log('!!!createHttpRouter', JSON.stringify(event));
+};

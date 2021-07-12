@@ -102,7 +102,7 @@ class TestServerless(unittest.TestCase):
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
-        self.assertEqual("src/sqs.create", function["Handler"])
+        self.assertEqual("handler.createQueue", function["Handler"])
 
         resp = lambda_client.list_event_source_mappings(FunctionName=function_name)
         events = resp["EventSourceMappings"]
@@ -134,7 +134,7 @@ class TestServerless(unittest.TestCase):
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
-        self.assertEqual("src/http.router", function["Handler"])
+        self.assertEqual("handler.createHttpRouter", function["Handler"])
 
         apigw_client = aws_stack.connect_to_service("apigateway")
         apis = apigw_client.get_rest_apis()["items"]

@@ -761,7 +761,7 @@ def get_lifecycle(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
     if not exists:
-        return requests_response(body, status_code=code)
+        return xml_response(body, status_code=code)
 
     lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
     status_code = 200
@@ -771,18 +771,19 @@ def get_lifecycle(bucket_name):
             "Error": {
                 "Code": "NoSuchLifecycleConfiguration",
                 "Message": "The lifecycle configuration does not exist",
+                "BucketName": bucket_name,
             }
         }
         status_code = 404
     body = xmltodict.unparse(lifecycle)
-    return requests_response(body, status_code=status_code)
+    return xml_response(body, status_code=status_code)
 
 
 def get_replication(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
     if not exists:
-        return requests_response(body, status_code=code)
+        return xml_response(body, status_code=code)
 
     replication = BUCKET_REPLICATIONS.get(bucket_name)
     status_code = 200
@@ -791,18 +792,19 @@ def get_replication(bucket_name):
             "Error": {
                 "Code": "ReplicationConfigurationNotFoundError",
                 "Message": "The replication configuration was not found",
+                "BucketName": bucket_name,
             }
         }
         status_code = 404
     body = xmltodict.unparse(replication)
-    return requests_response(body, status_code=status_code)
+    return xml_response(body, status_code=status_code)
 
 
 def get_object_lock(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
     if not exists:
-        return requests_response(body, status_code=code)
+        return xml_response(body, status_code=code)
 
     lock_config = OBJECT_LOCK_CONFIGS.get(bucket_name)
     status_code = 200
@@ -811,18 +813,19 @@ def get_object_lock(bucket_name):
             "Error": {
                 "Code": "ObjectLockConfigurationNotFoundError",
                 "Message": "Object Lock configuration does not exist for this bucket",
+                "BucketName": bucket_name,
             }
         }
         status_code = 404
     body = xmltodict.unparse(lock_config)
-    return requests_response(body, status_code=status_code)
+    return xml_response(body, status_code=status_code)
 
 
 def set_lifecycle(bucket_name, lifecycle):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
     if not exists:
-        return requests_response(body, status_code=code)
+        return xml_response(body, status_code=code)
 
     if isinstance(to_str(lifecycle), six.string_types):
         lifecycle = xmltodict.parse(lifecycle)
@@ -834,7 +837,7 @@ def delete_lifecycle(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
     if not exists:
-        return requests_response(body, status_code=code)
+        return xml_response(body, status_code=code)
 
     if BUCKET_LIFECYCLE.get(bucket_name):
         BUCKET_LIFECYCLE.pop(bucket_name)
@@ -844,7 +847,7 @@ def set_replication(bucket_name, replication):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
     if not exists:
-        return requests_response(body, status_code=code)
+        return xml_response(body, status_code=code)
 
     if isinstance(to_str(replication), six.string_types):
         replication = xmltodict.parse(replication)
@@ -856,7 +859,7 @@ def set_object_lock(bucket_name, lock_config):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
     if not exists:
-        return requests_response(body, status_code=code)
+        return xml_response(body, status_code=code)
 
     if isinstance(to_str(lock_config), six.string_types):
         lock_config = xmltodict.parse(lock_config)
@@ -892,7 +895,13 @@ def is_bucket_available(bucket_name):
     body = {"Code": "200"}
     exists, code = bucket_exists(bucket_name)
     if not exists:
-        body = {"Error": {"Code": code, "Message": "The bucket does not exist"}}
+        body = {
+            "Error": {
+                "Code": code,
+                "Message": "The bucket does not exist",
+                "BucketName": bucket_name,
+            }
+        }
         return exists, code, body
 
     return True, 200, body
@@ -938,7 +947,11 @@ def check_content_md5(data, headers):
 def error_response(message, code, status_code=400):
     result = {"Error": {"Code": code, "Message": message}}
     content = xmltodict.unparse(result)
-    headers = {"content-type": "application/xml"}
+    return xml_response(content, status_code=status_code)
+
+
+def xml_response(content, status_code=200):
+    headers = {"Content-Type": "application/xml"}
     return requests_response(content, status_code=status_code, headers=headers)
 
 
@@ -952,8 +965,7 @@ def no_such_key_error(resource, requestId=None, status_code=400):
         }
     }
     content = xmltodict.unparse(result)
-    headers = {"content-type": "application/xml"}
-    return requests_response(content, status_code=status_code, headers=headers)
+    return xml_response(content, status_code=status_code)
 
 
 def no_such_bucket(bucket_name, requestId=None, status_code=404):
@@ -968,8 +980,7 @@ def no_such_bucket(bucket_name, requestId=None, status_code=404):
         }
     }
     content = xmltodict.unparse(result)
-    headers = {"content-type": "application/xml"}
-    return requests_response(content, status_code=status_code, headers=headers)
+    return xml_response(content, status_code=status_code)
 
 
 def token_expired_error(resource, requestId=None, status_code=400):
@@ -982,8 +993,7 @@ def token_expired_error(resource, requestId=None, status_code=400):
         }
     }
     content = xmltodict.unparse(result)
-    headers = {"content-type": "application/xml"}
-    return requests_response(content, status_code=status_code, headers=headers)
+    return xml_response(content, status_code=status_code)
 
 
 def expand_redirect_url(starting_url, key, bucket):

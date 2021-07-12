@@ -179,6 +179,7 @@ class LambdaTestBase(unittest.TestCase):
             "Timeout": 3,
             "VpcConfig": vpc_config,
             "Tags": tags,
+            "Environment": {"Variables": {"foo": "bar"}},
         }
 
         client = aws_stack.connect_to_service("lambda")

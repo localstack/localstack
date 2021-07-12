@@ -2091,7 +2091,7 @@ class TestS3(unittest.TestCase):
         client = boto3.client(
             "s3",
             endpoint_url=virtual_endpoint,
-            config=Config(s3={"addressing_style": "virtual"}),
+            config=Config(signature_version="s3", s3={"addressing_style": "virtual"}),
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
@@ -2512,10 +2512,7 @@ class TestS3(unittest.TestCase):
         temp_folder = new_tmp_dir()
         handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_s3_integration.js")
         shutil.copy(handler_file, temp_folder)
-        run(
-            "cd %s; npm install @aws-sdk/client-s3; npm install @aws-sdk/s3-request-presigner;"
-            % temp_folder
-        )
+        run("cd %s; npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner" % temp_folder)
 
         function_name = "func-integration-%s" % short_uid()
         lambda_client = aws_stack.connect_to_service("lambda")

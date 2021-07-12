@@ -344,7 +344,11 @@ class S3UtilsTest(unittest.TestCase):
                 {"host": "bucket-1.s3-website.localhost.localstack.cloud"},
                 "bucket-1",
             ),
-            ("/", {"host": "bucket.localhost.localstack.cloud"}, "bucket"),
+            (
+                "/",
+                {"host": "bucket.localhost.localstack.cloud"},
+                "bucket",
+            ),  # internally agreed upon special case
             ("/", {"host": "localhost.localstack.cloud"}, None),
             ("/", {"host": "test.dynamodb.amazonaws.com"}, None),
             ("/", {"host": "dynamodb.amazonaws.com"}, None),
@@ -352,6 +356,41 @@ class S3UtilsTest(unittest.TestCase):
 
         for path, headers, expected_result in bucket_names:
             self.assertEqual(expected_result, s3_utils.extract_bucket_name(headers, path), headers)
+
+    # test whether method correctly distinguishes between hosted and path style bucket references
+    # path style format example: https://s3.{region}.localhost.localstack.cloud:4566/{bucket-name}/{key-name}
+    # hosted style format example: http://aws.s3.localhost.localstack.cloud:4566/
+    def test_uses_host_address(self):
+        addresses = [
+            ({"host": f"https://aws.{LOCALHOST}:4566"}, False),
+            # attention: This is **not** a host style reference according to s3 specs but a special case from our side
+            ({"host": f"https://aws.{LOCALHOST}.localstack.cloud:4566"}, True),
+            ({"host": f"https://{LOCALHOST}.aws:4566"}, False),
+            ({"host": f"https://{LOCALHOST}.swa:4566"}, False),
+            ({"host": f"https://swa.{LOCALHOST}:4566"}, False),
+            ({"host": "https://bucket.s3.localhost.localstack.cloud"}, True),
+            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, True),
+            ({"host": "https://s3.eu-west-1.localhost.localstack.cloud/bucket"}, False),
+            ({"host": "https://s3.eu-west-1.localhost.localstack.cloud/bucket/key"}, False),
+            ({"host": "https://s3.localhost.localstack.cloud/bucket"}, False),
+            ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key"}, True),
+            (
+                {
+                    "host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud/key/key/content.png"
+                },
+                True,
+            ),
+            ({"host": "https://s3.localhost.localstack.cloud/bucket/key"}, False),
+            ({"host": "https://bucket.s3.eu-west-1.localhost.localstack.cloud"}, True),
+            ({"host": "https://bucket.s3.localhost.localstack.cloud/key"}, True),
+            ({"host": "bucket.s3.eu-west-1.amazonaws.com"}, True),
+            ({"host": "bucket.s3.amazonaws.com"}, True),
+            ({"host": "notabucket.amazonaws.com"}, False),
+            ({"host": "s3.amazonaws.com"}, False),
+            ({"host": "s3.eu-west-1.amazonaws.com"}, False),
+        ]
+        for headers, expected_result in addresses:
+            self.assertEqual(expected_result, s3_utils.uses_host_addressing(headers))
 
     def test_s3_keyname_name(self):
         # array description : 'path', 'header', 'expected_ouput'

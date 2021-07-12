@@ -184,7 +184,7 @@ functions:
           startingPosition: LATEST
           enabled: true
   queueHandler:
-    handler: src/sqs.create
+    handler: handler.createQueue
     description: "To handle create new login"
     events:
       - sqs:
@@ -193,7 +193,7 @@ functions:
               - CreateQueue
               - Arn
   router:
-    handler: src/http.router
+    handler: handler.createHttpRouter
     description: 'primary REST related handlers for this service'
     events:
     - http:

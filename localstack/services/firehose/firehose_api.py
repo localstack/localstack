@@ -22,7 +22,7 @@ from localstack.utils.aws.aws_stack import (
     extract_region_from_auth_header,
     firehose_stream_arn,
 )
-from localstack.utils.common import short_uid, timestamp, to_str
+from localstack.utils.common import clone, short_uid, timestamp, to_str
 from localstack.utils.kinesis import kinesis_connector
 
 APP_NAME = "firehose_api"
@@ -70,7 +70,7 @@ def put_records(stream_name, records):
     stream = get_stream(stream_name)
     if not stream:
         return error_not_found(stream_name)
-    for dest in stream["Destinations"]:
+    for dest in stream.get("Destinations", []):
         if "ESDestinationDescription" in dest:
             es_dest = dest["ESDestinationDescription"]
             es_index = es_dest["IndexName"]
@@ -168,19 +168,14 @@ def update_destination(
 ):
     dest = get_destination(stream_name, destination_id)
     if elasticsearch_update:
-        if "ESDestinationDescription" not in dest:
-            dest["ESDestinationDescription"] = {}
-        for k, v in iteritems(elasticsearch_update):
-            dest["ESDestinationDescription"][k] = v
+        details = dest.setdefault("ESDestinationDescription", {})
+        dest.update(elasticsearch_update)
     if s3_update:
-        if "S3DestinationDescription" not in dest:
-            dest["S3DestinationDescription"] = {}
-        for k, v in iteritems(s3_update):
-            dest["S3DestinationDescription"][k] = v
+        details = dest.setdefault("S3DestinationDescription", {})
+        details.update(s3_update)
     if http_update:
-        if "HttpEndpointDestinationDescription" not in dest:
-            dest["HttpEndpointDestinationDescription"] = {}
-        dest["HttpEndpointDestinationDescription"].update(http_update)
+        details = dest.setdefault("HttpEndpointDestinationDescription", {})
+        details.update(http_update)
     return dest
 
 
@@ -266,10 +261,21 @@ def delete_stream(stream_name):
     return {}
 
 
-def get_stream(stream_name):
-    if stream_name not in DELIVERY_STREAMS:
-        return None
-    return DELIVERY_STREAMS[stream_name]
+def get_stream(stream_name: str, format_s3_dest: bool = False):
+    result = DELIVERY_STREAMS.get(stream_name)
+    if result and format_s3_dest:
+        extended_attrs = [
+            "ProcessingConfiguration",
+            "S3BackupMode",
+            "S3BackupDescription",
+            "DataFormatConversionConfiguration",
+        ]
+        result = clone(result)
+        for dest in result.get("Destinations", []):
+            s3_dest = dest.get("S3DestinationDescription") or {}
+            if any([s3_dest.get(attr) is not None for attr in extended_attrs]):
+                dest["ExtendedS3DestinationDescription"] = dest.pop("S3DestinationDescription")
+    return result
 
 
 def bucket_name(bucket_arn):
@@ -321,7 +327,7 @@ def post_request():
         response = delete_stream(stream_name)
     elif action == "DescribeDeliveryStream":
         stream_name = data["DeliveryStreamName"]
-        response = get_stream(stream_name)
+        response = get_stream(stream_name, format_s3_dest=True)
         if not response:
             return error_not_found(stream_name)
         response = {"DeliveryStreamDescription": response}
