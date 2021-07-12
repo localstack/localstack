@@ -302,12 +302,15 @@ def apply_patches():
 
     model_classes = [
         apigateway_models.Authorizer,
-        apigateway_models.Stage,
+        apigateway_models.DomainName,
         apigateway_models.Method,
         apigateway_models.MethodResponse,
+        apigateway_models.Stage,
     ]
     for model_class in model_classes:
-        model_class.apply_operations = backend_model_apply_operations
+        model_class.apply_operations = (
+            model_class.apply_patch_operations
+        ) = backend_model_apply_operations
 
     # fix data types for some json-patch operation values
 

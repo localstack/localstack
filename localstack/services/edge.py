@@ -274,14 +274,18 @@ def get_auth_string(method, path, headers, data=None):
 def get_api_from_headers(headers, method=None, path=None, data=None):
     """Determine API and backend port based on Authorization headers."""
 
+    # initialize result
+    result = API_UNKNOWN, 0
+
     target = headers.get("x-amz-target", "")
     host = headers.get("host", "")
     auth_header = headers.get("authorization", "")
+
+    if not auth_header:
+        return result[0], result[1], path, host
+
     ls_target = headers.get(HEADER_LOCALSTACK_TARGET, "")
     path = path or "/"
-
-    # initialize result
-    result = API_UNKNOWN, 0
 
     # https://docs.aws.amazon.com/general/latest/gr/sigv4-signed-request-examples.html
     try:

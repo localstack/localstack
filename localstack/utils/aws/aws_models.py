@@ -202,6 +202,7 @@ class LambdaFunction(Component):
         self.code_signing_config_arn = None
         self.package_type = None
         self.image_config = {}
+        self.tracing_config = {}
 
     def set_dead_letter_config(self, data):
         config = data.get("DeadLetterConfig")
@@ -217,10 +218,10 @@ class LambdaFunction(Component):
     def get_function_event_invoke_config(self):
         response = {}
 
-        if self.max_retry_attempts:
+        if self.max_retry_attempts is not None:
             response.update({"MaximumRetryAttempts": self.max_retry_attempts})
 
-        if self.max_event_age:
+        if self.max_event_age is not None:
             response.update({"MaximumEventAgeInSeconds": self.max_event_age})
 
         if self.on_successful_invocation or self.on_failed_invocation:

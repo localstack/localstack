@@ -232,7 +232,7 @@ def build_mapping_obj(data):
     mapping["FunctionArn"] = func_arn(function_name)
     mapping["LastProcessingResult"] = "OK"
     mapping["StateTransitionReason"] = "User action"
-    mapping["LastModified"] = float(time.mktime(datetime.utcnow().timetuple()))
+    mapping["LastModified"] = format_timestamp()
     mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
     if "SelfManagedEventSource" in data:
         source_arn = data["SourceAccessConfigurations"][0]["URI"]
@@ -246,6 +246,11 @@ def build_mapping_obj(data):
     batch_size = check_batch_size_range(source_arn, batch_size)
     mapping["BatchSize"] = batch_size
     return mapping
+
+
+def format_timestamp(timestamp=None):
+    timestamp = timestamp or datetime.utcnow()
+    return isoformat_milliseconds(timestamp) + "+0000"
 
 
 def add_event_source(data):
@@ -275,7 +280,7 @@ def update_event_source(uuid_value, data):
                     mapping["EventSourceArn"], batch_size or mapping["BatchSize"]
                 )
             mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
-            mapping["LastModified"] = float(time.mktime(datetime.utcnow().timetuple()))
+            mapping["LastModified"] = format_timestamp()
             mapping["BatchSize"] = batch_size
             if "SourceAccessConfigurations" in (mapping and data):
                 mapping["SourceAccessConfigurations"] = data["SourceAccessConfigurations"]
@@ -1083,8 +1088,8 @@ def format_func_details(func_details, version=None, always_add_version=False):
         "Timeout": func_details.timeout,
         "Description": func_details.description,
         "MemorySize": func_details.memory_size,
-        "LastModified": isoformat_milliseconds(func_details.last_modified) + "+0000",
-        "TracingConfig": {"Mode": "PassThrough"},
+        "LastModified": format_timestamp(func_details.last_modified),
+        "TracingConfig": func_details.tracing_config or {"Mode": "PassThrough"},
         "RevisionId": func_version.get("RevisionId"),
         "State": "Active",
         "LastUpdateStatus": "Successful",
@@ -1272,11 +1277,16 @@ def create_function():
         func_details.timeout = data.get("Timeout", LAMBDA_DEFAULT_TIMEOUT)
         func_details.role = data["Role"]
         func_details.kms_key_arn = data.get("KMSKeyArn")
+        # Oddity in Lambda API (discovered when testing against Terraform test suite)
+        # See https://github.com/hashicorp/terraform-provider-aws/issues/6366
+        if not func_details.envvars:
+            func_details.kms_key_arn = None
         func_details.memory_size = data.get("MemorySize")
         func_details.code_signing_config_arn = data.get("CodeSigningConfigArn")
         func_details.code = data["Code"]
         func_details.package_type = data.get("PackageType") or "Zip"
         func_details.image_config = data.get("ImageConfig", {})
+        func_details.tracing_config = data.get("TracingConfig", {})
         func_details.set_dead_letter_config(data)
         result = set_function_code(func_details.code, lambda_name)
         if isinstance(result, Response):
@@ -1378,17 +1388,16 @@ def update_function_code(function):
     region = LambdaRegion.get()
     arn = func_arn(function)
     if arn not in region.lambdas:
-        return error_response(
-            "Function not found: %s" % arn, 400, error_type="ResourceNotFoundException"
-        )
+        return not_found_error("Function not found: %s" % arn)
     data = json.loads(to_str(request.data))
     result = set_function_code(data, function)
+    if isinstance(result, Response):
+        return result
     func_details = region.lambdas.get(arn)
+    func_details.last_modified = datetime.utcnow()
     result.update(format_func_details(func_details))
     if data.get("Publish"):
         result["Version"] = publish_new_function_version(arn)["Version"]
-    if isinstance(result, Response):
-        return result
     return jsonify(result or {})
 
 
@@ -1447,11 +1456,7 @@ def update_function_configuration(function):
 
     lambda_details = region.lambdas.get(arn)
     if not lambda_details:
-        return error_response(
-            'Unable to find Lambda function ARN "%s"' % arn,
-            404,
-            error_type="ResourceNotFoundException",
-        )
+        return not_found_error('Unable to find Lambda function ARN "%s"' % arn)
 
     if data.get("Handler"):
         lambda_details.handler = data["Handler"]
@@ -1473,6 +1478,9 @@ def update_function_configuration(function):
         lambda_details.vpc_config = data["VpcConfig"]
     if data.get("KMSKeyArn"):
         lambda_details.kms_key_arn = data["KMSKeyArn"]
+    if data.get("TracingConfig"):
+        lambda_details.tracing_config = data["TracingConfig"]
+    lambda_details.last_modified = datetime.utcnow()
     result = data
     func_details = region.lambdas.get(arn)
     result.update(format_func_details(func_details))
@@ -1578,11 +1586,7 @@ def remove_permission(function, statement):
     iam_client = aws_stack.connect_to_service("iam")
     policy = get_lambda_policy(function)
     if not policy:
-        return error_response(
-            'Unable to find policy for Lambda function "%s"' % function,
-            404,
-            error_type="ResourceNotFoundException",
-        )
+        return not_found_error('Unable to find policy for Lambda function "%s"' % function)
     iam_client.delete_policy(PolicyArn=policy["PolicyArn"])
     result = {
         "FunctionName": function,
@@ -1597,11 +1601,7 @@ def get_policy(function):
     qualifier = request.args.get("Qualifier")
     policy = get_lambda_policy(function, qualifier)
     if not policy:
-        return error_response(
-            "The resource you requested does not exist.",
-            404,
-            error_type="ResourceNotFoundException",
-        )
+        return not_found_error("The resource you requested does not exist.")
     return jsonify({"Policy": json.dumps(policy), "RevisionId": "test1234"})
 
 
@@ -1896,6 +1896,19 @@ def list_aliases(function):
     )
 
 
+@app.route("%s/functions/<function>/aliases/<name>" % PATH_ROOT, methods=["DELETE"])
+def delete_alias(function, name):
+    region = LambdaRegion.get()
+    arn = func_arn(function)
+    if arn not in region.lambdas:
+        return not_found_error(arn)
+    lambda_details = region.lambdas.get(arn)
+    if name not in lambda_details.aliases:
+        return not_found_error(msg="Alias not found: %s:%s" % (arn, name))
+    lambda_details.aliases.pop(name)
+    return jsonify({})
+
+
 @app.route("/<version>/functions/<function>/concurrency", methods=["GET", "PUT", "DELETE"])
 def function_concurrency(version, function):
     region = LambdaRegion.get()
@@ -1970,7 +1983,9 @@ def put_function_event_invoke_config(function):
     region = LambdaRegion.get()
     data = json.loads(to_str(request.data))
     function_arn = func_arn(function)
-    lambda_obj = region.lambdas[function_arn]
+    lambda_obj = region.lambdas.get(function_arn)
+    if not lambda_obj:
+        return not_found_error("Unable to find Lambda ARN: %s" % function_arn)
 
     if request.method == "PUT":
         response = lambda_obj.clear_function_event_invoke_config()
@@ -2007,13 +2022,13 @@ def get_function_event_invoke_config(function):
     try:
         function_arn = func_arn(function)
         lambda_obj = region.lambdas[function_arn]
-    except Exception as e:
-        return error_response(str(e), 400)
+    except Exception:
+        return not_found_error("Unable to find Lambda function ARN %s" % function_arn)
 
     response = lambda_obj.get_function_event_invoke_config()
     if not response:
         msg = "The function %s doesn't have an EventInvokeConfig" % function_arn
-        return error_response(msg, 404, error_type="ResourceNotFoundException")
+        return not_found_error(msg)
     return jsonify(response)
 
 
@@ -2036,7 +2051,7 @@ def get_function_code_signing_config(function):
     function_arn = func_arn(function)
     if function_arn not in region.lambdas:
         msg = "Function not found: %s" % (function_arn)
-        return error_response(msg, 404, error_type="ResourceNotFoundException")
+        return not_found_error(msg)
     lambda_obj = region.lambdas[function_arn]
 
     if not lambda_obj.code_signing_config_arn:
@@ -2065,7 +2080,7 @@ def put_function_code_signing_config(function):
     function_arn = func_arn(function)
     if function_arn not in region.lambdas:
         msg = "Function not found: %s" % (function_arn)
-        return error_response(msg, 404, error_type="ResourceNotFoundException")
+        return not_found_error(msg)
     lambda_obj = region.lambdas[function_arn]
 
     if data.get("CodeSigningConfigArn"):
@@ -2082,7 +2097,7 @@ def delete_function_code_signing_config(function):
     function_arn = func_arn(function)
     if function_arn not in region.lambdas:
         msg = "Function not found: %s" % (function_arn)
-        return error_response(msg, 404, error_type="ResourceNotFoundException")
+        return not_found_error(msg)
 
     lambda_obj = region.lambdas[function_arn]
 
@@ -2112,7 +2127,7 @@ def create_code_signing_config():
         code_signing_obj.untrusted_artifact_on_deployment = data["CodeSigningPolicies"][
             "UntrustedArtifactOnDeployment"
         ]
-    code_signing_obj.last_modified = isoformat_milliseconds(datetime.utcnow()) + "+0000"
+    code_signing_obj.last_modified = format_timestamp()
 
     result = {
         "CodeSigningConfig": {
@@ -2139,7 +2154,7 @@ def get_code_signing_config(arn):
         code_signing_obj = region.code_signing_configs[arn]
     except KeyError:
         msg = "The Lambda code signing configuration %s can not be found." % arn
-        return error_response(msg, 404, error_type="ResourceNotFoundException")
+        return not_found_error(msg)
 
     result = {
         "CodeSigningConfig": {
@@ -2166,7 +2181,7 @@ def delete_code_signing_config(arn):
         region.code_signing_configs.pop(arn)
     except KeyError:
         msg = "The Lambda code signing configuration %s can not be found." % (arn)
-        return error_response(msg, 404, error_type="ResourceNotFoundException")
+        return not_found_error(msg)
 
     return Response("", status=204)
 
@@ -2178,7 +2193,7 @@ def update_code_signing_config(arn):
         code_signing_obj = region.code_signing_configs[arn]
     except KeyError:
         msg = "The Lambda code signing configuration %s can not be found." % (arn)
-        return error_response(msg, 404, error_type="ResourceNotFoundException")
+        return not_found_error(msg)
 
     data = json.loads(request.data)
     is_updated = False
@@ -2197,7 +2212,7 @@ def update_code_signing_config(arn):
         is_updated = True
 
     if is_updated:
-        code_signing_obj.last_modified = isoformat_milliseconds(datetime.utcnow()) + "+0000"
+        code_signing_obj.last_modified = format_timestamp()
 
     result = {
         "CodeSigningConfig": {
