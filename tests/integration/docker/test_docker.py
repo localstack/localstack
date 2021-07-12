@@ -1,9 +1,9 @@
-from localstack import config
 import logging
 from typing import NamedTuple
 
 import pytest
 
+from localstack import config
 from localstack.utils.bootstrap import PortMappings
 from localstack.utils.common import short_uid
 from localstack.utils.docker import CmdDockerClient as DockerClient

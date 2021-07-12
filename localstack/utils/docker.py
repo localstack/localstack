@@ -84,7 +84,7 @@ class CmdDockerClient:
         try:
             cmd_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if "No such container" in e.stdout.decode("utf-8"):
+            if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
                 raise NoSuchContainer(
                     "Docker container not found", container_name, e.stdout, e.stderr
                 )
@@ -103,7 +103,7 @@ class CmdDockerClient:
         try:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if "No such container" in e.stdout.decode("utf-8"):
+            if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
                 raise NoSuchContainer(
                     "Docker container not found", container_name, e.stdout, e.stderr
                 )
@@ -122,7 +122,7 @@ class CmdDockerClient:
         try:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if "No such container" in e.stdout.decode("utf-8"):
+            if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
                 raise NoSuchContainer(
                     "Docker container not found", container_name, e.stdout, e.stderr
                 )
@@ -180,10 +180,12 @@ class CmdDockerClient:
         try:
             run_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if 'No such image' in e.stdout.decode('utf-8'):
+            if "No such image" in e.stdout.decode(config.DEFAULT_ENCODING):
                 raise NoSuchImage("Image not found", docker_image, e.stdout, e.stderr)
             else:
-                raise ContainerException('Docker process returned with errorcode %s' % e.returncode, e.stdout, e.stderr)
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
 
         entry_point = run_result.strip('"[]\n\r ')
         return entry_point
@@ -197,24 +199,21 @@ class CmdDockerClient:
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:
-        """
-        """
+        """ """
         cmd = self._build_run_create_cmd("create", image_name, **kwargs)
         try:
             container_id = safe_run(cmd)
             return container_id.strip()
         except subprocess.CalledProcessError as e:
-            if 'Unable to find image' in e.stdout.decode('utf-8'):
+            if "Unable to find image" in e.stdout.decode(config.DEFAULT_ENCODING):
                 raise NoSuchImage("Image not found", image_name, e.stdout, e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
 
-    def run_container(
-        self, image_name: str, stdin=None, **kwargs
-    ) -> Union[Tuple[str, str], str]:
+    def run_container(self, image_name: str, stdin=None, **kwargs) -> Union[Tuple[str, str], str]:
         cmd = self._build_run_create_cmd("run", image_name, **kwargs)
-        return self._run_async_cmd(cmd, stdin, kwargs.get('name') or '', image_name)
+        return self._run_async_cmd(cmd, stdin, kwargs.get("name") or "", image_name)
 
     def exec_in_container(
         self,
@@ -250,7 +249,6 @@ class CmdDockerClient:
             cmd.append("--attach")
         cmd.append(container_name_or_id)
         return self._run_async_cmd(cmd, stdin, container_name_or_id)
-        
 
     def _run_async_cmd(self, cmd, stdin, container_name, image_name=None):
         kwargs = {
@@ -260,7 +258,7 @@ class CmdDockerClient:
             "outfile": subprocess.PIPE,
         }
         if stdin:
-            kwargs["stdin"] = True,
+            kwargs["stdin"] = True
         try:
             process = safe_run(cmd, **kwargs)
             stdout, stderr = process.communicate(input=stdin)
@@ -274,9 +272,9 @@ class CmdDockerClient:
             else:
                 return stdout, stderr
         except subprocess.CalledProcessError as e:
-            if 'Unable to find image' in e.stderr.decode('utf-8'):
-                raise NoSuchImage("Image not found", image_name or '', e.stdout, e.stderr)
-            if "No such container" in e.stderr.decode("utf-8"):
+            if "Unable to find image" in e.stderr.decode(config.DEFAULT_ENCODING):
+                raise NoSuchImage("Image not found", image_name or "", e.stdout, e.stderr)
+            if "No such container" in e.stderr.decode(config.DEFAULT_ENCODING):
                 raise NoSuchContainer(
                     "Docker container not found", container_name, e.stdout, e.stderr
                 )
