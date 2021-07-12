@@ -41,14 +41,14 @@ class NoSuchImage(ContainerException):
 class CmdDockerClient:
     """Class for managing docker containers using the command line executable"""
 
-    def _docker_cmd(self) -> str:
+    def _docker_cmd(self) -> List[str]:
         """Return the string to be used for running Docker commands."""
-        return config.DOCKER_CMD
+        return config.DOCKER_CMD.split()
 
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         """Returns the status of the container with the given name"""
-        cmd = [
-            self._docker_cmd(),
+        cmd = self._docker_cmd()
+        cmd += [
             "ps",
             "-a",
             "--filter",
@@ -72,8 +72,8 @@ class CmdDockerClient:
     def get_network(self, container_name: str) -> str:
         """Returns the network mode of the container with the given name"""
         LOG.debug("Getting container network: %s", container_name)
-        cmd = [
-            self._docker_cmd(),
+        cmd = self._docker_cmd()
+        cmd += [
             "inspect",
             container_name,
             "--format",
@@ -98,7 +98,8 @@ class CmdDockerClient:
 
     def stop_container(self, container_name: str) -> None:
         """Stops container with given name"""
-        cmd = [self._docker_cmd(), "stop", "-t0", container_name]
+        cmd = self._docker_cmd()
+        cmd += ["stop", "-t0", container_name]
         LOG.debug("Stopping container with cmd %s", cmd)
         try:
             safe_run(cmd)
@@ -114,7 +115,7 @@ class CmdDockerClient:
 
     def remove_container(self, container_name: str, force=True) -> None:
         """Removes container with given name"""
-        cmd = [self._docker_cmd(), "rm"]
+        cmd = self._docker_cmd() + ["rm"]
         if force:
             cmd.append("-f")
         cmd.append(container_name)
@@ -137,7 +138,8 @@ class CmdDockerClient:
         Returns a list of dicts with keys id, image, name, labels, status
         """
         filter = [filter] if isinstance(filter, str) else filter
-        cmd = [self._docker_cmd(), "ps", "-a"]
+        cmd = self._docker_cmd()
+        cmd += ["ps", "-a"]
         options = []
         if filter:
             options += [y for filter_item in filter for y in ["--filter", filter_item]]
@@ -161,15 +163,16 @@ class CmdDockerClient:
 
     def copy_into_container(self, container_name: str, local_path: str, container_path: str):
         """Copy contents of the given local path into the container"""
-        cmd = [self._docker_cmd(), "cp", local_path, f"{container_name}:{container_path}"]
+        cmd = self._docker_cmd()
+        cmd += ["cp", local_path, f"{container_name}:{container_path}"]
         LOG.debug(cmd)
         safe_run(cmd)
 
     def get_container_entrypoint(self, docker_image: str) -> str:
         """Get the entry point for the given image"""
         LOG.debug("Getting the entrypoint for image: %s", docker_image)
-        cmd = [
-            self._docker_cmd(),
+        cmd = self._docker_cmd()
+        cmd += [
             "image",
             "inspect",
             '--format="{{ .Config.Entrypoint }}"',
@@ -193,7 +196,7 @@ class CmdDockerClient:
     def has_docker(self) -> bool:
         """Check if system has docker available"""
         try:
-            safe_run([self._docker_cmd(), "ps"])
+            safe_run(self._docker_cmd() + ["ps"])
             return True
         except Exception:
             return False
@@ -223,7 +226,8 @@ class CmdDockerClient:
         env_vars: Optional[List[Tuple[str, str]]] = None,
         stdin: Optional[str] = None,
     ) -> Union[Tuple[str, str], str]:
-        cmd = [self._docker_cmd(), "exec"]
+        cmd = self._docker_cmd()
+        cmd.append("exec")
         if interactive:
             cmd.append("--interactive")
         if env_vars:
@@ -240,7 +244,7 @@ class CmdDockerClient:
         attach: bool = False,
         flags: Optional[str] = None,
     ):
-        cmd = [self._docker_cmd(), "start"]
+        cmd = self._docker_cmd() + ["start"]
         if flags:
             cmd.append(flags)
         if interactive:
@@ -301,7 +305,7 @@ class CmdDockerClient:
         additional_flags: Optional[str] = None,
     ) -> List[str]:
 
-        cmd = [self._docker_cmd(), action]
+        cmd = self._docker_cmd() + [action]
         if remove:
             cmd.append("--rm")
         if name:

@@ -1,14 +1,20 @@
 import json
 import logging
 import unittest
+from typing import List
 from unittest.mock import patch
 
+from localstack import config
 from localstack.utils.docker import CmdDockerClient, DockerContainerStatus
 
 LOG = logging.getLogger(__name__)
 
 
 class TestDockerClient(unittest.TestCase):
+    def _docker_cmd(self) -> List[str]:
+        """Return the string to be used for running Docker commands."""
+        return config.DOCKER_CMD.split()
+
     @patch("localstack.utils.docker.safe_run")
     def test_list_containers(self, run_mock):
         test_container = {
@@ -23,7 +29,8 @@ class TestDockerClient(unittest.TestCase):
         container_list = docker_client.list_containers()
         self.assertEqual(test_container, container_list[0])
         call_arguments = run_mock.mock_calls[0].args[0]
-        self.assertTrue(list_in(["docker", "ps"], call_arguments))
+        LOG.debug("Found arguments: %s", call_arguments)
+        self.assertTrue(list_in(self._docker_cmd() + ["ps"], call_arguments))
         self.assertIn("-a", call_arguments)
         self.assertIn("--format", call_arguments)
 
