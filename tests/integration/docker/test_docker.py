@@ -370,13 +370,13 @@ class TestDockerClient:
             docker_client.remove_container(container_name)
 
     def test_exec_in_container_with_stdin(self, docker_client: DockerClient, dummy_container):
-            docker_client.start_container(dummy_container.container_id)
-            message = "test_message_stdin"
-            output, _ = docker_client.exec_in_container(
-                dummy_container.container_id,
-                interactive=True,
-                stdin=message.encode(config.DEFAULT_ENCODING),
-                command=['cat'],
-            )
+        docker_client.start_container(dummy_container.container_id)
+        message = "test_message_stdin"
+        output, _ = docker_client.exec_in_container(
+            dummy_container.container_id,
+            interactive=True,
+            stdin=message.encode(config.DEFAULT_ENCODING),
+            command=["cat"],
+        )
 
-            assert message == output.decode(config.DEFAULT_ENCODING).strip()
+        assert message == output.decode(config.DEFAULT_ENCODING).strip()
