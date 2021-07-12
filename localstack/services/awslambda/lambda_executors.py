@@ -494,7 +494,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             command=command,
             interactive=True,
             env_vars=env_vars,
-            asynchronous=True,
             stdin=stdin,
         )
 
@@ -775,7 +774,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             )
             DOCKER_CLIENT.copy_into_container(container_id, f"{lambda_cwd}/.", DOCKER_TASK_FOLDER)
             return DOCKER_CLIENT.start_container(
-                container_id, interactive=True, attach=True, asynchronous=True, stdin=stdin
+                container_id, interactive=True, attach=True, stdin=stdin
             )
         else:
             mount_volumes = None
@@ -794,7 +793,6 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 additional_flags=additional_flags,
                 command=command,
                 mount_volumes=mount_volumes,
-                asynchronous=True,
                 stdin=stdin,
             )
 

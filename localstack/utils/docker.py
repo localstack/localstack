@@ -160,6 +160,7 @@ class CmdDockerClient:
         return container_list
 
     def copy_into_container(self, container_name: str, local_path: str, container_path: str):
+        """Copy contents of the given local path into the container"""
         cmd = [self._docker_cmd(), "cp", local_path, f"{container_name}:{container_path}"]
         LOG.debug(cmd)
         safe_run(cmd)
@@ -179,7 +180,10 @@ class CmdDockerClient:
         try:
             run_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            raise NoSuchImage("Image not found", docker_image, e.stdout, e.stderr)
+            if 'No such image' in e.stdout.decode('utf-8'):
+                raise NoSuchImage("Image not found", docker_image, e.stdout, e.stderr)
+            else:
+                raise ContainerException('Docker process returned with errorcode %s' % e.returncode, e.stdout, e.stderr)
 
         entry_point = run_result.strip('"[]\n\r ')
         return entry_point
@@ -193,45 +197,24 @@ class CmdDockerClient:
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:
+        """
+        """
         cmd = self._build_run_create_cmd("create", image_name, **kwargs)
         try:
             container_id = safe_run(cmd)
             return container_id.strip()
         except subprocess.CalledProcessError as e:
+            if 'Unable to find image' in e.stdout.decode('utf-8'):
+                raise NoSuchImage("Image not found", image_name, e.stdout, e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
 
     def run_container(
-        self, image_name: str, asynchronous=False, stdin=None, **kwargs
+        self, image_name: str, stdin=None, **kwargs
     ) -> Union[Tuple[str, str], str]:
         cmd = self._build_run_create_cmd("run", image_name, **kwargs)
-        kwargs = {}
-        if asynchronous:
-            kwargs = {
-                "stdin": True,
-                "inherit_env": True,
-                "asynchronous": True,
-                "stderr": subprocess.PIPE,
-                "outfile": subprocess.PIPE,
-            }
-        try:
-            process = safe_run(cmd, **kwargs)
-            if asynchronous:
-                stdout, stderr = process.communicate(input=stdin)
-                if process.returncode != 0:
-                    raise ContainerException(
-                        "Docker process returned with error code %s" % process.returncode,
-                        stdout,
-                        stderr,
-                    )
-                else:
-                    return stdout, stderr
-        except subprocess.CalledProcessError as e:
-            raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-            )
-        return process
+        return self._run_async_cmd(cmd, stdin, kwargs.get('name') or '', image_name)
 
     def exec_in_container(
         self,
@@ -239,7 +222,6 @@ class CmdDockerClient:
         command: Union[List[str], str],
         interactive=False,
         env_vars: Optional[List[Tuple[str, str]]] = None,
-        asynchronous=False,
         stdin: Optional[str] = None,
     ) -> Union[Tuple[str, str], str]:
         cmd = [self._docker_cmd(), "exec"]
@@ -249,37 +231,11 @@ class CmdDockerClient:
             cmd += Util.create_env_vars_file_flag(env_vars)
         cmd.append(container_name_or_id)
         cmd += command if isinstance(command, List) else [command]
-        kwargs = {}
-        if asynchronous:
-            kwargs = {
-                "stdin": True,
-                "inherit_env": True,
-                "asynchronous": True,
-                "stderr": subprocess.PIPE,
-                "outfile": subprocess.PIPE,
-            }
-        try:
-            process = safe_run(cmd, **kwargs)
-            if asynchronous:
-                stdout, stderr = process.communicate(input=stdin)
-                if process.returncode != 0:
-                    raise ContainerException(
-                        "Docker process returned with error code %s" % process.returncode,
-                        stdout,
-                        stderr,
-                    )
-                else:
-                    return stdout, stderr
-        except subprocess.CalledProcessError as e:
-            raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-            )
-        return process
+        return self._run_async_cmd(cmd, stdin, container_name_or_id)
 
     def start_container(
         self,
         container_name_or_id: str,
-        asynchronous=False,
         stdin=None,
         interactive: bool = False,
         attach: bool = False,
@@ -293,37 +249,41 @@ class CmdDockerClient:
         if attach:
             cmd.append("--attach")
         cmd.append(container_name_or_id)
-        kwargs = {}
-        if asynchronous:
-            kwargs = {
-                "stdin": True,
-                "inherit_env": True,
-                "asynchronous": True,
-                "stderr": subprocess.PIPE,
-                "outfile": subprocess.PIPE,
-            }
+        return self._run_async_cmd(cmd, stdin, container_name_or_id)
+        
+
+    def _run_async_cmd(self, cmd, stdin, container_name, image_name=None):
+        kwargs = {
+            "inherit_env": True,
+            "asynchronous": True,
+            "stderr": subprocess.PIPE,
+            "outfile": subprocess.PIPE,
+        }
+        if stdin:
+            kwargs["stdin"] = True,
         try:
             process = safe_run(cmd, **kwargs)
-            if asynchronous:
-                stdout, stderr = process.communicate(input=stdin)
-                if process.returncode != 0:
-                    raise ContainerException(
-                        "Docker process returned with error code %s" % process.returncode,
-                        stdout,
-                        stderr,
-                    )
-                else:
-                    return stdout, stderr
+            stdout, stderr = process.communicate(input=stdin)
+            if process.returncode != 0:
+                raise subprocess.CalledProcessError(
+                    process.returncode,
+                    cmd,
+                    stdout,
+                    stderr,
+                )
+            else:
+                return stdout, stderr
         except subprocess.CalledProcessError as e:
-            if "No such container" in e.stdout.decode("utf-8"):
+            if 'Unable to find image' in e.stderr.decode('utf-8'):
+                raise NoSuchImage("Image not found", image_name or '', e.stdout, e.stderr)
+            if "No such container" in e.stderr.decode("utf-8"):
                 raise NoSuchContainer(
-                    "Docker container not found", container_name_or_id, e.stdout, e.stderr
+                    "Docker container not found", container_name, e.stdout, e.stderr
                 )
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
-        return process
 
     def _build_run_create_cmd(
         self,

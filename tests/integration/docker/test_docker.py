@@ -1,3 +1,4 @@
+from localstack import config
 import logging
 from typing import NamedTuple
 
@@ -93,7 +94,8 @@ class TestDockerClient:
 
         # start the container
         # TODO: how should interactive behave if there is no tty?
-        output = docker_client.start_container(info.container_id, interactive=True)
+        output, _ = docker_client.start_container(info.container_id, interactive=True)
+        output = output.decode(config.DEFAULT_ENCODING)
 
         assert 0 == len(docker_client.list_containers(f"id={info.container_id}"))
 
@@ -101,16 +103,17 @@ class TestDockerClient:
         assert "foobar" in output
 
     def test_create_container_non_existing_image(self, docker_client: DockerClient):
-        with pytest.raises(ContainerException) as ex:
+        with pytest.raises(NoSuchImage) as ex:
             docker_client.create_container("this_image_does_hopefully_not_exist_42069")
         assert ex.match("Unable to find image")
 
     def test_exec_in_container(self, docker_client: DockerClient, dummy_container: ContainerInfo):
         docker_client.start_container(dummy_container.container_id)
 
-        output = docker_client.exec_in_container(
+        output, _ = docker_client.exec_in_container(
             dummy_container.container_id, command=["echo", "foobar"]
         )
+        output = output.decode(config.DEFAULT_ENCODING)
         assert "foobar" == output.strip()
 
     def test_exec_in_container_not_running_raises_exception(
@@ -129,9 +132,10 @@ class TestDockerClient:
 
         env = [("MYVAR", "foo_var")]
 
-        output = docker_client.exec_in_container(
+        output, _ = docker_client.exec_in_container(
             dummy_container.container_id, env_vars=env, command=["env"]
         )
+        output = output.decode(config.DEFAULT_ENCODING)
         assert "MYVAR=foo_var" in output
 
     def test_exec_error_in_container(self, docker_client: DockerClient, dummy_container):
@@ -154,7 +158,8 @@ class TestDockerClient:
         assert len(str(dict(env))) >= Util.MAX_ENV_ARGS_LENGTH
 
         info = create_container("alpine", env_vars=env, command=["env"])
-        output = docker_client.start_container(info.container_id, attach=True)
+        output, _ = docker_client.start_container(info.container_id, attach=True)
+        output = output.decode(config.DEFAULT_ENCODING)
 
         assert "IVAR_00001=VAL_00001" in output
         assert "IVAR_01000=VAL_01000" in output
@@ -163,11 +168,12 @@ class TestDockerClient:
     def test_run_container(self, docker_client: DockerClient):
         container_name = _random_container_name()
         try:
-            output = docker_client.run_container(
+            output, _ = docker_client.run_container(
                 "alpine",
                 name=container_name,
                 command=["echo", "foobared"],
             )
+            output = output.decode(config.DEFAULT_ENCODING)
             assert "foobared" in output
         finally:
             docker_client.remove_container(container_name)
@@ -222,7 +228,7 @@ class TestDockerClient:
         ports = PortMappings()
         ports.add(45122, 22)
         ports.add(45180, 80)
-        create_container("alpine", ports=ports)  # FIXME: throws an exception
+        create_container("alpine", ports=ports)
 
     def test_create_with_volume(self, tmpdir, docker_client: DockerClient, create_container):
         mount_volumes = [(tmpdir.realpath(), "/tmp/mypath")]
@@ -247,7 +253,9 @@ class TestDockerClient:
 
         docker_client.copy_into_container(c.container_name, str(local_path), container_path)
 
-        output = docker_client.start_container(c.container_id, attach=True)
+        output, _ = docker_client.start_container(c.container_id, attach=True)
+        output = output.decode(config.DEFAULT_ENCODING)
+
         assert "foobared" in output
 
     def test_get_network_non_existing_container(self, docker_client: DockerClient):
@@ -323,49 +331,5 @@ class TestDockerClient:
         assert "" == entrypoint
 
     def test_get_container_entrypoint_non_existing_image(self, docker_client: DockerClient):
-        # FIXME define behavior
         with pytest.raises(NoSuchImage):
             docker_client.get_container_entrypoint("thisdoesnotexist")
-
-    def test_start_container_async(self, docker_client: DockerClient):
-        container_name = _random_container_name()
-        try:
-            # FIXME: what does asynchronous really do here?
-            docker_client.create_container(
-                "alpine",
-                name=container_name,
-                command=["sh", "-c", "sleep 1; echo 'foobared'"],
-            )
-
-            output = docker_client.start_container(container_name, asynchronous=True)
-
-            # FIXME how to get 'foobared'?
-            assert container_name == output[0].decode("utf-8").strip()
-        finally:
-            docker_client.remove_container(container_name)
-
-    def test_run_container_async(self, docker_client: DockerClient):
-        container_name = _random_container_name()
-        try:
-            # FIXME: what does asynchronous really do here?
-            output = docker_client.run_container(
-                "alpine",
-                name=container_name,
-                command=["echo", "foobared"],
-                asynchronous=True,
-            )
-            assert b"foobared\n" == output[0]
-        finally:
-            docker_client.remove_container(container_name)
-
-    def test_exec_in_container_async(self, docker_client: DockerClient, dummy_container):
-        docker_client.start_container(dummy_container.container_id)
-
-        output = docker_client.exec_in_container(
-            dummy_container.container_id,
-            command=["sh", "-c", "sleep 1; echo foobar"],
-            # FIXME: what does asynchronous really do here?
-            asynchronous=True,
-        )
-
-        assert b"foobar\n" == output[0]
