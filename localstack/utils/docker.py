@@ -26,6 +26,18 @@ class ContainerException(Exception):
         self.stderr = stderr
 
 
+class NoSuchContainer(ContainerException):
+    def __init__(self, message, container_name_or_id, stdout=None, stderr=None) -> None:
+        super().__init__(message, stdout, stderr)
+        self.container_name_or_id = container_name_or_id
+
+
+class NoSuchImage(ContainerException):
+    def __init__(self, message, image_name, stdout=None, stderr=None) -> None:
+        super().__init__(message, stdout, stderr)
+        self.image_name = image_name
+
+
 class CmdDockerClient:
     """Class for managing docker containers using the command line executable"""
 
@@ -69,7 +81,17 @@ class CmdDockerClient:
         ]
 
         LOG.debug(cmd)
-        cmd_result = safe_run(cmd)
+        try:
+            cmd_result = safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in e.stdout.decode("utf-8"):
+                raise NoSuchContainer(
+                    "Docker container not found", container_name, e.stdout, e.stderr
+                )
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
 
         container_network = cmd_result.strip()
         return container_network
@@ -78,13 +100,36 @@ class CmdDockerClient:
         """Stops container with given name"""
         cmd = [self._docker_cmd(), "stop", "-t0", container_name]
         LOG.debug("Stopping container with cmd %s", cmd)
-        safe_run(cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in e.stdout.decode("utf-8"):
+                raise NoSuchContainer(
+                    "Docker container not found", container_name, e.stdout, e.stderr
+                )
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
 
-    def remove_container(self, container_name: str) -> None:
+    def remove_container(self, container_name: str, force=True) -> None:
         """Removes container with given name"""
-        cmd = [self._docker_cmd(), "rm", "-f", container_name]
+        cmd = [self._docker_cmd(), "rm"]
+        if force:
+            cmd.append("-f")
+        cmd.append(container_name)
         LOG.debug("Removing container with cmd %s", cmd)
-        safe_run(cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in e.stdout.decode("utf-8"):
+                raise NoSuchContainer(
+                    "Docker container not found", container_name, e.stdout, e.stderr
+                )
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
 
     def list_containers(self, filter: Union[List[str], str, None] = None) -> List[dict]:
         """List all containers matching the given filters
@@ -103,7 +148,12 @@ class CmdDockerClient:
             '"labels":"{{ .Labels }}","status":"{{ .State }}"}'
         )
         LOG.debug(cmd)
-        cmd_result = safe_run(cmd).strip()
+        try:
+            cmd_result = safe_run(cmd).strip()
+        except subprocess.CalledProcessError as e:
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            )
         container_list = []
         if cmd_result:
             container_list = [json.loads(line) for line in cmd_result.splitlines()]
@@ -126,7 +176,10 @@ class CmdDockerClient:
         ]
 
         LOG.debug(cmd)
-        run_result = safe_run(cmd)
+        try:
+            run_result = safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            raise NoSuchImage("Image not found", docker_image, e.stdout, e.stderr)
 
         entry_point = run_result.strip('"[]\n\r ')
         return entry_point
@@ -262,9 +315,14 @@ class CmdDockerClient:
                 else:
                     return (stdout, stderr)
         except subprocess.CalledProcessError as e:
-            raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-            )
+            if "No such container" in e.stdout.decode("utf-8"):
+                raise NoSuchContainer(
+                    "Docker container not found", container_name_or_id, e.stdout, e.stderr
+                )
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
         return process
 
     def _build_run_create_cmd(

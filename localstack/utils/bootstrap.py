@@ -567,7 +567,7 @@ class PortMappings(object):
                 return ["-p", f"{bind_address}{k[0]}:{v[0]}"]
             return ["-p", f"{bind_address}{k[0]}-{k[1]}:{v[0]}-{v[1]}"]
 
-        return [item for k, v in self.mappings.items for item in entry(k, v)]
+        return [item for k, v in self.mappings.items() for item in entry(k, v)]
 
     def contains(self, port):
         for from_range, to_range in self.mappings.items():

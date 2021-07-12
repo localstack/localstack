@@ -6,7 +6,13 @@ import pytest
 from localstack.utils.bootstrap import PortMappings
 from localstack.utils.common import short_uid
 from localstack.utils.docker import CmdDockerClient as DockerClient
-from localstack.utils.docker import ContainerException, DockerContainerStatus, Util
+from localstack.utils.docker import (
+    ContainerException,
+    DockerContainerStatus,
+    NoSuchContainer,
+    NoSuchImage,
+    Util,
+)
 
 ContainerInfo = NamedTuple(
     "ContainerInfo",
@@ -95,7 +101,9 @@ class TestDockerClient:
         assert "foobar" in output
 
     def test_create_container_non_existing_image(self, docker_client: DockerClient):
-        docker_client.create_container("this_image_does_hopefully_not_exist_42069")
+        with pytest.raises(ContainerException) as ex:
+            docker_client.create_container("this_image_does_hopefully_not_exist_42069")
+        assert ex.match("Unable to find image")
 
     def test_exec_in_container(self, docker_client: DockerClient, dummy_container: ContainerInfo):
         docker_client.start_container(dummy_container.container_id)
@@ -180,26 +188,26 @@ class TestDockerClient:
     def test_stop_non_existing_container(self, docker_client: DockerClient):
         # TODO: define behavior
 
-        with pytest.raises(ContainerException) as ex:
+        with pytest.raises(NoSuchContainer) as ex:
             docker_client.stop_container("this_container_does_not_exist")
 
-        assert ex.match("no such container")
+        assert ex.match("[Nn]o such container")
 
     def test_remove_non_existing_container(self, docker_client: DockerClient):
         # TODO: define behavior
 
-        with pytest.raises(ContainerException) as ex:
-            docker_client.remove_container("this_container_does_not_exist")
+        with pytest.raises(NoSuchContainer) as ex:
+            docker_client.remove_container("this_container_does_not_exist", force=False)
 
-        assert ex.match("no such container")
+        assert ex.match("[Nn]o such container")
 
     def test_start_non_existing_container(self, docker_client: DockerClient):
         # TODO: define behavior
 
-        with pytest.raises(ContainerException) as ex:
+        with pytest.raises(NoSuchContainer) as ex:
             docker_client.start_container("this_container_does_not_exist")
 
-        assert ex.match("no such container")
+        assert ex.match("[Nn]o such container")
 
     def test_get_network(self, docker_client: DockerClient, dummy_container):
         n = docker_client.get_network(dummy_container.container_name)
@@ -247,7 +255,7 @@ class TestDockerClient:
         with pytest.raises(ContainerException) as ex:
             docker_client.get_network("this_container_does_not_exist")
 
-        assert ex.match("no such container")
+        assert ex.match("[Nn]o such object")
 
     def test_list_containers(self, docker_client: DockerClient, create_container):
         c1 = create_container("alpine", command=["echo", "1"])
@@ -270,7 +278,10 @@ class TestDockerClient:
 
     def test_list_containers_filter_illegal_filter(self, docker_client: DockerClient):
         # FIXME: define behavior
-        docker_client.list_containers(filter="illegalfilter=foobar")
+        with pytest.raises(ContainerException) as ex:
+            docker_client.list_containers(filter="illegalfilter=foobar")
+
+        assert ex.match("Invalid filter")
 
     def test_list_containers_filter(self, docker_client: DockerClient, create_container):
         name_prefix = "filter_tests_"
@@ -313,8 +324,8 @@ class TestDockerClient:
 
     def test_get_container_entrypoint_non_existing_image(self, docker_client: DockerClient):
         # FIXME define behavior
-        entrypoint = docker_client.get_container_entrypoint("thisdoesnotexist")
-        assert "" == entrypoint
+        with pytest.raises(NoSuchImage):
+            docker_client.get_container_entrypoint("thisdoesnotexist")
 
     def test_start_container_async(self, docker_client: DockerClient):
         container_name = _random_container_name()
