@@ -254,7 +254,9 @@ class ContainerInfo:
 class LambdaExecutorContainers(LambdaExecutor):
     """Abstract executor class for executing Lambda functions in Docker containers"""
 
-    def execute_in_container(self, func_details, env_vars, command, stdin=None) -> Tuple[str, str]:
+    def execute_in_container(
+        self, func_details, env_vars, command, stdin=None, background=False
+    ) -> Tuple[bytes, bytes]:
         raise NotImplementedError
 
     def run_lambda_executor(self, event=None, func_details=None, env_vars=None, command=None):
@@ -456,7 +458,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.max_port = LAMBDA_SERVER_UNIQUE_PORTS
         self.port_offset = LAMBDA_SERVER_PORT_OFFSET
 
-    def execute_in_container(self, func_details, env_vars, command, stdin=None):
+    def execute_in_container(
+        self, func_details, env_vars, command, stdin=None, background=False
+    ) -> Tuple[bytes, bytes]:
         func_arn = func_details.arn()
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
@@ -733,7 +737,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         environment["DOCKER_LAMBDA_USE_STDIN"] = "1"
         return event_body.encode()
 
-    def execute_in_container(self, func_details, env_vars, command, stdin=None):
+    def execute_in_container(
+        self, func_details, env_vars, command, stdin=None, background=False
+    ) -> Tuple[bytes, bytes]:
         lambda_cwd = func_details.cwd
         handler = func_details.handler
 
@@ -774,7 +780,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             )
             DOCKER_CLIENT.copy_into_container(container_id, f"{lambda_cwd}/.", DOCKER_TASK_FOLDER)
             return DOCKER_CLIENT.start_container(
-                container_id, interactive=True, attach=True, stdin=stdin
+                container_id, interactive=not background, attach=not background, stdin=stdin
             )
         else:
             mount_volumes = None
@@ -785,6 +791,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             return DOCKER_CLIENT.run_container(
                 image_name=docker_image,
                 interactive=True,
+                detach=background,
                 entrypoint=entrypoint,
                 remove=True,
                 network=network,

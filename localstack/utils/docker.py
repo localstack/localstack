@@ -193,12 +193,14 @@ class CmdDockerClient:
         entry_point = run_result.strip('"[]\n\r ')
         return entry_point
 
-    def get_container_logs(self, container_name_or_id: str) -> str:
+    def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
         cmd = self._docker_cmd()
         cmd += ["logs", container_name_or_id]
         try:
             return safe_run(cmd)
         except subprocess.CalledProcessError as e:
+            if not safe:
+                return ""
             if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
                 raise NoSuchContainer(
                     "Docker container not found", container_name_or_id, e.stdout, e.stderr

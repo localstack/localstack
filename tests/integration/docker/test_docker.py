@@ -397,3 +397,11 @@ class TestDockerClient:
             assert message == logs.strip()
         finally:
             docker_client.remove_container(container_name)
+
+    def test_get_logs_non_existent_container(self, docker_client: DockerClient):
+        with pytest.raises(NoSuchContainer):
+            docker_client.get_container_logs("container_hopefully_does_not_exist", safe=True)
+
+        assert "" == docker_client.get_container_logs(
+            "container_hopefully_does_not_exist", safe=False
+        )
