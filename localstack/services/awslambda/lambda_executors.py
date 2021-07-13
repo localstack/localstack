@@ -1064,7 +1064,7 @@ class LambdaExecutorLocal(LambdaExecutor):
 
     def execute_go_lambda(self, event, context, main_file, func_details=None):
         event_json_string = "%s" % (json.dumps(event) if event else "{}")
-        cmd = "%s" % (GO_LAMBDA_RUNTIME)
+        cmd = GO_LAMBDA_RUNTIME
         LOG.info(cmd)
         env = {"AWS_LAMBDA_FUNCTION_HANDLER": main_file, "AWS_LAMBDA_EVENT_BODY": event_json_string}
         result = self.run_lambda_executor(
