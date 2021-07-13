@@ -6,11 +6,22 @@ repos:
     hooks:
       - id: black
 
+  - repo: https://github.com/pycqa/isort
+    rev: 5.9.1
+    hooks:
+      - id: isort
+        name: isort (python)
+      - id: isort
+        name: isort (cython)
+        types: [cython]
+      - id: isort
+        name: isort (pyi)
+        types: [pyi]
+
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.9.2
     hooks:
       - id: flake8
-        additional_dependencies: [flake8-isort]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
