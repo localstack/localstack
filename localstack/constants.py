@@ -67,6 +67,9 @@ CONFIG_UPDATE_PATH = "/?_config_"
 # environment variable name to tag local test runs
 ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 
+# environment variable that flags whether pro was activated. do not use for security purposes!
+ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
+
 # content types
 APPLICATION_AMZ_JSON_1_0 = "application/x-amz-json-1.0"
 APPLICATION_AMZ_JSON_1_1 = "application/x-amz-json-1.1"

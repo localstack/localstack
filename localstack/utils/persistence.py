@@ -1,15 +1,18 @@
 import base64
+import datetime
 import json
 import logging
 import os
 import re
 import traceback
 from abc import ABCMeta, abstractmethod
+from typing import NamedTuple
 
 import requests
 from six import add_metaclass
 
-from localstack.config import DATA_DIR, is_env_not_false
+from localstack import constants
+from localstack.config import DATA_DIR, is_env_not_false, is_env_true
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
@@ -21,6 +24,8 @@ if USE_SINGLE_DUMP_FILE:
     API_FILE_PATTERN = "{data_dir}/recorded_api_calls.json"
 else:
     API_FILE_PATTERN = "{data_dir}/api_calls_{api}.json"
+
+STARTUP_INFO_FILE = "startup_info.json"
 
 # Stack with flags to indicate whether we are currently re-playing API calls.
 # (We should not be re-playing and recording at the same time)
@@ -194,6 +199,45 @@ def restore_persisted_data(apis):
         for api in apis:
             replay(api)
     API_CALLS_RESTORED = True
+
+
+class StartupInfo(NamedTuple):
+    timestamp: str
+    localstack_version: str
+    localstack_ext_version: str
+    pro_activated: bool
+
+
+def save_startup_info():
+    from localstack_ext.constants import VERSION as LOCALSTACK_EXT_VERSION
+
+    file_path = os.path.join(DATA_DIR, STARTUP_INFO_FILE)
+
+    info = StartupInfo(
+        timestamp=datetime.datetime.now().isoformat(),
+        localstack_version=constants.VERSION,
+        localstack_ext_version=LOCALSTACK_EXT_VERSION,
+        pro_activated=is_env_true(constants.ENV_PRO_ACTIVATED),
+    )
+    LOG.debug("saving startup info %s", info)
+    try:
+        _append_startup_info(file_path, info)
+    except IOError as e:
+        LOG.error("could not save startup info: %s", e)
+
+    return info
+
+
+def _append_startup_info(file_path, startup_info: StartupInfo):
+    if not os.path.exists(file_path):
+        infos = list()
+    else:
+        with open(file_path, "r") as fd:
+            infos = json.load(fd)
+
+    infos.append(startup_info._asdict())
+    with open(file_path, "w") as fd:
+        json.dump(infos, fd)
 
 
 # ---------------

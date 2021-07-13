@@ -571,6 +571,10 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     prepare_installation()
     with BOOTSTRAP_LOCK:
         thread = start_api_services()
+
+        if config.DATA_DIR:
+            persistence.save_startup_info()
+
     print(READY_MARKER_OUTPUT)
     sys.stdout.flush()
 
