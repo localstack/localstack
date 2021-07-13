@@ -193,6 +193,21 @@ class CmdDockerClient:
         entry_point = run_result.strip('"[]\n\r ')
         return entry_point
 
+    def get_container_logs(self, container_name_or_id: str) -> str:
+        cmd = self._docker_cmd()
+        cmd += ["logs", container_name_or_id]
+        try:
+            return safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
+                raise NoSuchContainer(
+                    "Docker container not found", container_name_or_id, e.stdout, e.stderr
+                )
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
     def has_docker(self) -> bool:
         """Check if system has docker available"""
         try:
@@ -342,7 +357,7 @@ class CmdDockerClient:
         return cmd
 
 
-class Util:  # TODO remove duplicated code in lambda_executors
+class Util:
     MAX_ENV_ARGS_LENGTH = 20000
 
     @classmethod

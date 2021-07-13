@@ -380,3 +380,20 @@ class TestDockerClient:
         )
 
         assert message == output.decode(config.DEFAULT_ENCODING).strip()
+
+    def test_run_detached_with_logs(self, docker_client: DockerClient):
+        container_name = _random_container_name()
+        message = "test_message"
+        try:
+            output, _ = docker_client.run_container(
+                "alpine",
+                name=container_name,
+                detach=True,
+                command=["echo", message],
+            )
+            container_id = output.decode(config.DEFAULT_ENCODING).strip()
+            logs = docker_client.get_container_logs(container_id)
+
+            assert message == logs.strip()
+        finally:
+            docker_client.remove_container(container_name)
