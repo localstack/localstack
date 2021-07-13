@@ -38,7 +38,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils import testutil
-from localstack.utils.aws import aws_models, aws_stack
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     cp_r,
     download,
@@ -1897,46 +1897,6 @@ class TestDockerBehaviour(LambdaTestBase):
 
         # clean up
         testutil.delete_lambda_function(func_name)
-
-    # TODO this test is useless now
-    @unittest.skip("test completely invalid now")
-    def test_docker_command_for_separate_container_lambda_executor(self):
-        # run these tests only for the "separate containers" Lambda executor
-        if not isinstance(
-            lambda_api.LAMBDA_EXECUTOR,
-            lambda_executors.LambdaExecutorSeparateContainers,
-        ):
-            return
-
-        executor = lambda_api.LAMBDA_EXECUTOR
-        func_name = "test_docker_command_for_separate_container_lambda_executor"
-        func_arn = lambda_api.func_arn(func_name)
-
-        handler = "handler"
-        lambda_cwd = "/app/lambda"
-        network = "compose_network"
-        dns = "some-ip-address"
-
-        config.LAMBDA_DOCKER_NETWORK = network
-        config.LAMBDA_DOCKER_DNS = dns
-
-        func_details = aws_models.LambdaFunction(func_arn)
-        func_details.runtime = LAMBDA_RUNTIME_NODEJS810
-        func_details.lambda_cwd = lambda_cwd
-        func_details.handler = handler
-
-        try:
-            cmd = executor.execute_in_container(func_details, {}, "")
-            expected = (
-                'docker run -v "%s":/var/task --network="%s" --dns="%s" --rm "lambci/lambda:%s" "%s"'
-                % (lambda_cwd, network, dns, LAMBDA_RUNTIME_NODEJS810, handler)
-            )
-
-            self.assertIn('--network="%s"' % network, cmd, "cmd=%s expected=%s" % (cmd, expected))
-            self.assertIn('--dns="%s"' % dns, cmd, "cmd=%s expected=%s" % (cmd, expected))
-        finally:
-            config.LAMBDA_DOCKER_NETWORK = ""
-            config.LAMBDA_DOCKER_DNS = ""
 
     def test_destroy_idle_containers(self):
         # run these tests only for the "reuse containers" Lambda executor

@@ -223,6 +223,7 @@ class CmdDockerClient:
         container_name_or_id: str,
         command: Union[List[str], str],
         interactive=False,
+        detach=False,
         env_vars: Optional[List[Tuple[str, str]]] = None,
         stdin: Optional[str] = None,
     ) -> Union[Tuple[str, str], str]:
@@ -230,6 +231,8 @@ class CmdDockerClient:
         cmd.append("exec")
         if interactive:
             cmd.append("--interactive")
+        if detach:
+            cmd.append("--detach")
         if env_vars:
             cmd += Util.create_env_vars_file_flag(env_vars)
         cmd.append(container_name_or_id)
@@ -296,6 +299,7 @@ class CmdDockerClient:
         entrypoint: Optional[str] = None,
         remove: bool = False,
         interactive: bool = False,
+        detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[Tuple[str, str]]] = None,
         ports: Optional[PortMappings] = None,
@@ -320,6 +324,8 @@ class CmdDockerClient:
             ]
         if interactive:
             cmd.append("--interactive")
+        if detach:
+            cmd.append("--detach")
         if ports:
             cmd += ports.to_list()
         if env_vars:
