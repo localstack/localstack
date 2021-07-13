@@ -1077,12 +1077,13 @@ def import_api_from_openapi_spec(
 
             child.add_method(m, None, None)
             integration = apigateway_models.Integration(
-                http_method=m,
+                http_method=payload.get("httpMethod") or m,
                 uri=payload.get("uri"),
                 integration_type=payload["type"],
                 pass_through_behavior=payload.get("passthroughBehavior"),
                 request_templates=payload.get("requestTemplates") or {},
             )
+            integration["requestParameters"]=payload.get("requestParameters")
             responses = payload.get("responses", {})
             try:
                 for code in responses.keys():
@@ -1090,7 +1091,7 @@ def import_api_from_openapi_spec(
                     try:
                         integration.create_integration_response(
                             status_code=response.get("statusCode", 500),
-                            selection_pattern=None,
+                            selection_pattern=code,
                             response_templates=response.get("responseTemplates",{}),
                             content_handling=None,
                         )

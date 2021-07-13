@@ -199,6 +199,47 @@ def apply_request_parameter(integration, path_params):
                 uri = uri.replace(f"{{{key}}}", path_params[key])
     return uri
 
+def apply_request_query_string_params(integration, query_string_params):
+    request_parameters = integration.get("requestParameters", None)
+    queries=[]
+    if request_parameters:
+        for key in request_parameters.keys():
+            query_search = re.search('integration.request.querystring.(.*)', key, re.IGNORECASE)
+            if query_search:
+                query = query_search.group(1)
+                value = request_parameters.get(key)
+                if value.startswith('method.request.querystring.'):
+                    query_search = re.search('method.request.querystring.(.*)', value, re.IGNORECASE)
+                    if query_search:
+                        value=query_string_params.get(query_search.group(1)) or None
+                else:
+                    value = value.strip('\"').strip("'")
+                if type(value) == list:
+                    multi=[("%s=%s" % (query, s)) for s in value]
+                    queries.append("&".join(multi))
+                else:
+                    queries.append("%s=%s" % (query, value))
+    if len(queries) > 0:
+        return "?" + "&".join(queries)
+    else:
+        return ""
+
+def apply_request_headers(integration, headers):
+    request_headers = integration.get("requestParameters", None)
+    if request_headers:
+        for key in request_headers.keys():
+            header_search = re.search('integration.request.header.(.*)', key, re.IGNORECASE)
+            if header_search:
+                header = header_search.group(1)
+                content = request_headers.get(key)
+                if content.startswith('method.request.header.'):
+                    header_search = re.search('method.request.header.(.*)', content, re.IGNORECASE)
+                    if header_search:
+                        content=headers.get(header_search.group(1)) or None
+                else:
+                    content = content.strip('\"').strip("'")
+                headers.add(header, content)
+    return headers
 
 def apply_template(integration, req_res_type, original_data, path_params={}, query_params={}, headers={}):
     integration_type = integration.get("type") or integration.get("integrationType")
@@ -206,16 +247,36 @@ def apply_template(integration, req_res_type, original_data, path_params={}, que
     template = None
     if integration_type.upper() in ["HTTP", "AWS"]:
         if req_res_type == "response":
-            data = json.loads(original_data.content)
+            LOG.info("Response template")
+            LOG.info(original_data.content)
+            try:
+                data = json.loads(original_data.content)
+            except:
+                pass
             try:
                 status = original_data.status_code
+                LOG.info("Original Status: %s" % str(status))
                 # apply custom request template
                 responses = integration.get("integrationResponses")
-                for codeRegex in responses.keys():
-                    if re.search(codeRegex, str(status)):
-                        template = responses.get(codeRegex).get("%sTemplates" % req_res_type, {}).get(APPLICATION_JSON)
+                integration_response = None
+                for code in responses.keys():
+                    if re.search(str(responses.get(code).get("selectionPattern")), str(status)):
+                        integration_response=responses.get(code)
                         break
-                template = responses.get('default').get("%sTemplates" % req_res_type, {}).get(APPLICATION_JSON)
+
+                if not integration_response:
+                    integration_response = responses.get('default')
+
+                if integration_response:
+                    try:
+                        template = integration_response.get("%sTemplates" % req_res_type, {}).get(APPLICATION_JSON)
+                    except:
+                        pass
+
+                    try:
+                        templateStatus = integration_response.get('statusCode')
+                    except:
+                        pass
             except:
                 LOG.warning("No response template defined for return code %d" % status)
         else:
@@ -223,10 +284,11 @@ def apply_template(integration, req_res_type, original_data, path_params={}, que
             try:
                 data=json.loads(original_data)
             except:
-                LOG.warning("Only JSON supported as input for templating")
+                data=original_data
             template = integration.get("%sTemplates" % req_res_type, {}).get(APPLICATION_JSON)
 
         if template:
+            LOG.info("Template Found!!!")
             context = {}
             context["body"] = data
 
@@ -241,11 +303,15 @@ def apply_template(integration, req_res_type, original_data, path_params={}, que
                 return combined if not name else combined.get(name)
 
             context["params"] = _params
+            # data = aws_stack.render_velocity_template(re.sub(r'(:\s+?"?)\$([a-zA-Z])',r'\g<1>$!\g<2>' , template), context)
             data = aws_stack.render_velocity_template(template, context)
-            if req_res_type == "response":
+        if req_res_type == "response":
+            if template:
                 original_data._content=data
-                return original_data
-            LOG.warning(data)
+            if templateStatus:
+                original_data.status_code=templateStatus
+            return original_data
+        LOG.info(data)
     return data
 
 
@@ -645,6 +711,7 @@ def invoke_rest_api_integration_backend(
             )
 
     elif integration_type in ["HTTP_PROXY", "HTTP"]:
+        # stage_variables = get_stage_variables(api_id, stage)
 
         if ":servicediscovery:" in uri:
             # check if this is a servicediscovery integration URI
@@ -660,7 +727,9 @@ def invoke_rest_api_integration_backend(
         if isinstance(data, dict):
             data = json.dumps(data)
         uri = apply_request_parameter(integration=integration, path_params=path_params)
-        function = getattr(requests, method.lower())
+        uri += apply_request_query_string_params(integration=integration, query_string_params=query_string_params)
+        headers = apply_request_headers(integration=integration, headers=headers)
+        function = getattr(requests, integration.get("httpMethod").lower())
         result = function(uri, data=data, headers=headers, verify=(not DISABLE_SSL_VERIFICATION_APIGATEWAY))
         # apply custom response template
         data = apply_template(integration, "response", result)
