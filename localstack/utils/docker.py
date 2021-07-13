@@ -15,7 +15,7 @@ LOG = logging.getLogger(__name__)
 @unique
 class DockerContainerStatus(Enum):
     DOWN = -1
-    NOT_EXISTENT = 0
+    NON_EXISTENT = 0
     UP = 1
 
 
@@ -33,7 +33,8 @@ class NoSuchContainer(ContainerException):
 
 
 class NoSuchImage(ContainerException):
-    def __init__(self, message, image_name, stdout=None, stderr=None) -> None:
+    def __init__(self, image_name, message=None, stdout=None, stderr=None) -> None:
+        message = message or f"Docker image {image_name} not found"
         super().__init__(message, stdout, stderr)
         self.image_name = image_name
 
@@ -63,7 +64,7 @@ class CmdDockerClient:
         cmd_result = next((line for line in cmd_result.splitlines() if container_name in line), "")
         container_status = cmd_result.strip().lower()
         if len(container_status) == 0:
-            return DockerContainerStatus.NOT_EXISTENT
+            return DockerContainerStatus.NON_EXISTENT
         elif container_status.startswith("up "):
             return DockerContainerStatus.UP
         else:
@@ -184,7 +185,7 @@ class CmdDockerClient:
             run_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such image" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchImage("Image not found", docker_image, e.stdout, e.stderr)
+                raise NoSuchImage(docker_image, e.stdout, e.stderr)
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -226,7 +227,7 @@ class CmdDockerClient:
             return container_id.strip()
         except subprocess.CalledProcessError as e:
             if "Unable to find image" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchImage("Image not found", image_name, e.stdout, e.stderr)
+                raise NoSuchImage(image_name, e.stdout, e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
@@ -302,10 +303,9 @@ class CmdDockerClient:
                 raise NoSuchContainer(
                     "Docker container not found", container_name, e.stdout, e.stderr
                 )
-            else:
-                raise ContainerException(
-                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            )
 
     def _build_run_create_cmd(
         self,
