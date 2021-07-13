@@ -88,8 +88,8 @@ KINESIS_MOCK_RELEASE_URL = (
 )
 
 # debugpy module
-DEBUGPY_MODULE = 'debugpy'
-DEBUGPY_DEPENDENCIES = ['gcc', 'python3-dev', 'musl-dev']
+DEBUGPY_MODULE = "debugpy"
+DEBUGPY_DEPENDENCIES = ["gcc", "python3-dev", "musl-dev"]
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = "1.8"
@@ -100,11 +100,13 @@ SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 # TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
 OVERWRITE_DDB_FILES_IN_DOCKER = False
 
-#GO Lambda runtime
-GO_RUNTIME_DOWNLOAD_URL = 'https://github.com/localstack/awslamba-go-runtime/releases/download/first/runtime.zip'
-GO_INSTALL_FOLDER = config.TMP_FOLDER + '/runtime'
-GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + '/aws-lambda-mock'
-GO_ZIP_NAME = 'runtime.zip'
+# GO Lambda runtime
+GO_RUNTIME_DOWNLOAD_URL = (
+    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/runtime.zip"
+)
+GO_INSTALL_FOLDER = config.TMP_FOLDER + "/runtime"
+GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + "/aws-lambda-mock"
+GO_ZIP_NAME = "runtime.zip"
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -367,8 +369,8 @@ def install_lambda_java_libs():
 def install_go_lambda_runtime():
     if not os.path.isfile(GO_LAMBDA_RUNTIME):
         log_install_msg("Installing golang runtime")
-        run('curl -L -o %s %s' % (config.TMP_FOLDER+'/'+GO_ZIP_NAME, GO_RUNTIME_DOWNLOAD_URL))
-        run('unzip %s -d %s' % (config.TMP_FOLDER+'/'+GO_ZIP_NAME, config.TMP_FOLDER))
+        run("curl -L -o %s %s" % (config.TMP_FOLDER + "/" + GO_ZIP_NAME, GO_RUNTIME_DOWNLOAD_URL))
+        run("unzip %s -d %s" % (config.TMP_FOLDER + "/" + GO_ZIP_NAME, config.TMP_FOLDER))
 
 
 def install_cloudformation_libs():

@@ -30,6 +30,7 @@ from localstack.services.awslambda.lambda_utils import (
     multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
+from localstack.services.install import install_go_lambda_runtime
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
@@ -60,8 +61,6 @@ from localstack.utils.common import (
     unzip,
 )
 from localstack.utils.http_utils import parse_chunked_data
-from localstack.utils.aws.aws_models import LambdaFunction, CodeSigningConfig
-from localstack.services.install import install_go_lambda_runtime
 
 # logger
 LOG = logging.getLogger(__name__)
@@ -1043,25 +1042,17 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
 
             lambda_handler = execute
 
-        if runtime.startswith('node') and not use_docker():
-            ensure_readable(main_file)
-            zip_file_content = load_file(main_file, mode='rb')
-
-            def execute(event, context):
-                result = lambda_executors.EXECUTOR_LOCAL.execute_javascript_lambda(
-                    event, context, main_file=main_file, func_details=lambda_details)
-                return result
-            lambda_handler = execute
-
-        if runtime.startswith('go1') and not use_docker():
+        if runtime.startswith("go1") and not use_docker():
             install_go_lambda_runtime()
             ensure_readable(main_file)
-            zip_file_content = load_file(main_file, mode='rb')
+            zip_file_content = load_file(main_file, mode="rb")
 
             def execute_go(event, context):
                 result = lambda_executors.EXECUTOR_LOCAL.execute_go_lambda(
-                    event, context, main_file=main_file, func_details=lambda_details)
+                    event, context, main_file=main_file, func_details=lambda_details
+                )
                 return result
+
             lambda_handler = execute_go
 
     return lambda_handler
