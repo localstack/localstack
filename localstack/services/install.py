@@ -8,6 +8,7 @@ import shutil
 import sys
 import tempfile
 import time
+import zipfile
 
 import requests
 
@@ -369,8 +370,17 @@ def install_lambda_java_libs():
 def install_go_lambda_runtime():
     if not os.path.isfile(GO_LAMBDA_RUNTIME):
         log_install_msg("Installing golang runtime")
-        run("curl -L -o %s %s" % (config.TMP_FOLDER + "/" + GO_ZIP_NAME, GO_RUNTIME_DOWNLOAD_URL))
-        run("unzip %s -d %s" % (config.TMP_FOLDER + "/" + GO_ZIP_NAME, config.TMP_FOLDER))
+        response = requests.get(GO_RUNTIME_DOWNLOAD_URL, allow_redirects=True)
+        if not response.ok:
+            raise ValueError("golang runtime zip not downloaded")
+
+        file_location = config.TMP_FOLDER + "/" + GO_ZIP_NAME
+        open(file_location, "wb").write(response.content)
+
+        if not zipfile.is_zipfile(file_location):
+            raise ValueError("Downloaded file is not zip ")
+
+        zipfile.ZipFile(file_location).extractall(config.TMP_FOLDER)
 
 
 def install_cloudformation_libs():
