@@ -45,6 +45,7 @@ localstack-ext[full]>=0.12.9.30
 localstack-ext>=0.12.9.30      #basic-lib
 localstack-client>=1.20        #basic-lib
 moto-ext[all]>=2.0.3.23
+pre-commit==2.13.0             #extended-lib
 psutil>=5.4.8,<6.0.0
 pympler>=0.6
 pyopenssl==17.5.0
