@@ -27,7 +27,8 @@ class ContainerException(Exception):
 
 
 class NoSuchContainer(ContainerException):
-    def __init__(self, message, container_name_or_id, stdout=None, stderr=None) -> None:
+    def __init__(self, container_name_or_id, message=None, stdout=None, stderr=None) -> None:
+        message = message or f"Docker container {container_name_or_id} not found"
         super().__init__(message, stdout, stderr)
         self.container_name_or_id = container_name_or_id
 
@@ -86,9 +87,7 @@ class CmdDockerClient:
             cmd_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchContainer(
-                    "Docker container not found", container_name, e.stdout, e.stderr
-                )
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -106,9 +105,7 @@ class CmdDockerClient:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchContainer(
-                    "Docker container not found", container_name, e.stdout, e.stderr
-                )
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -125,9 +122,7 @@ class CmdDockerClient:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchContainer(
-                    "Docker container not found", container_name, e.stdout, e.stderr
-                )
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -185,7 +180,7 @@ class CmdDockerClient:
             run_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such image" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchImage(docker_image, e.stdout, e.stderr)
+                raise NoSuchImage(docker_image, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -203,9 +198,7 @@ class CmdDockerClient:
             if not safe:
                 return ""
             if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchContainer(
-                    "Docker container not found", container_name_or_id, e.stdout, e.stderr
-                )
+                raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -227,7 +220,7 @@ class CmdDockerClient:
             return container_id.strip()
         except subprocess.CalledProcessError as e:
             if "Unable to find image" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchImage(image_name, e.stdout, e.stderr)
+                raise NoSuchImage(image_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
@@ -297,12 +290,11 @@ class CmdDockerClient:
             else:
                 return stdout, stderr
         except subprocess.CalledProcessError as e:
-            if "Unable to find image" in e.stderr.decode(config.DEFAULT_ENCODING):
-                raise NoSuchImage("Image not found", image_name or "", e.stdout, e.stderr)
-            if "No such container" in e.stderr.decode(config.DEFAULT_ENCODING):
-                raise NoSuchContainer(
-                    "Docker container not found", container_name, e.stdout, e.stderr
-                )
+            stderr_str = e.stderr.decode(config.DEFAULT_ENCODING)
+            if "Unable to find image" in stderr_str:
+                raise NoSuchImage(image_name or "", stdout=e.stdout, stderr=e.stderr)
+            if "No such container" in stderr_str:
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
