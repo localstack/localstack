@@ -1,7 +1,7 @@
-IMAGE_NAME ?= localstack/localstack
-IMAGE_NAME_BASE ?= localstack/java-maven-node-python
-IMAGE_NAME_LIGHT ?= localstack/localstack-light
-IMAGE_NAME_FULL ?= localstack/localstack-full
+IMAGE_NAME ?= jorges119/localstack
+IMAGE_NAME_BASE ?= jorges119/java-maven-node-python
+IMAGE_NAME_LIGHT ?= jorges119/localstack-light
+IMAGE_NAME_FULL ?= jorges119/localstack-full
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 DOCKER_SQUASH ?= --squash
 VENV_DIR ?= .venv
@@ -91,8 +91,8 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
 		echo "Skipping docker push as no credentials are provided.") || \
 	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
-		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
-		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
+		test "$$REMOTE_ORIGIN" != 'https://github.com/jorges119/localstack.git' && \
+		test "$$REMOTE_ORIGIN" != 'git@github.com:jorges119/localstack.git' && \
 		echo "This is a fork and not the main repo.") || \
 	( \
 		which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \

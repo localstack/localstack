@@ -245,6 +245,7 @@ def apply_template(integration, req_res_type, original_data, path_params={}, que
     integration_type = integration.get("type") or integration.get("integrationType")
     data = original_data
     template = None
+    templateStatus = None
     if integration_type.upper() in ["HTTP", "AWS"]:
         if req_res_type == "response":
             LOG.info("Response template")
