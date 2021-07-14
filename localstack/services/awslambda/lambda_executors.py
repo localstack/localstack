@@ -511,13 +511,11 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 DOCKER_TASK_FOLDER,
             )
 
-        cmd = (
-            "%s" " %s exec -i" " %s" " %s"
-        ) % (  # env variables file  # container name
+        cmd = ("%s" " %s exec -i" " %s" " %s") % (  # env variables file  # container name
             copy_command,
             docker_cmd,
             env_vars_flag,
-            container_info.name
+            container_info.name,
         )
         LOG.debug("Command for docker-reuse Lambda executor: %s" % cmd)
 
@@ -548,7 +546,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             invocation_result = self.invoke_lambda(func_arn, lambda_docker_hostname, event)
 
             log_formatted = invocation_result.log_output.strip()
-            LOG.debug('Lambda %s result / log output:\n%s\n> %s' % (func_arn, invocation_result.result.strip(), log_formatted))
+            LOG.debug(
+                "Lambda %s result / log output:\n%s\n> %s"
+                % (func_arn, invocation_result.result.strip(), log_formatted)
+            )
 
             # store log output
             _store_logs(func_details, log_formatted)
@@ -559,21 +560,19 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         full_url = f"http://{lambda_docker_hostname}:9001"
 
         client = boto3.client(
-            service_name='lambda',
-            region_name=config.DEFAULT_REGION,
-            endpoint_url=full_url
+            service_name="lambda", region_name=config.DEFAULT_REGION, endpoint_url=full_url
         )
 
         jsonBody = json.dumps(json_safe(event_body))
         response = client.invoke(
             FunctionName=function_name,
-            InvocationType='RequestResponse',
+            InvocationType="RequestResponse",
             Payload=jsonBody,
-            LogType='Tail'
+            LogType="Tail",
         )
 
-        logs = base64.b64decode(response["LogResult"]).decode('utf-8')
-        responseBody = response["Payload"].read().decode('utf-8')
+        logs = base64.b64decode(response["LogResult"]).decode("utf-8")
+        responseBody = response["Payload"].read().decode("utf-8")
 
         return InvocationResult(responseBody, logs)
 
@@ -657,12 +656,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             main_endpoint = get_main_endpoint_from_container()
             env_vars["LOCALSTACK_HOSTNAME"] = main_endpoint
 
-        env_vars['EDGE_PORT'] = str(config.EDGE_PORT)
-        env_vars['_HANDLER'] = func_details.handler
-        if os.environ.get('HTTP_PROXY'):
-            env_vars['HTTP_PROXY'] = os.environ['HTTP_PROXY']
+        env_vars["EDGE_PORT"] = str(config.EDGE_PORT)
+        env_vars["_HANDLER"] = func_details.handler
+        if os.environ.get("HTTP_PROXY"):
+            env_vars["HTTP_PROXY"] = os.environ["HTTP_PROXY"]
         if func_details.timeout:
-            env_vars['AWS_LAMBDA_FUNCTION_TIMEOUT'] = str(func_details.timeout)
+            env_vars["AWS_LAMBDA_FUNCTION_TIMEOUT"] = str(func_details.timeout)
 
         # make sure AWS_LAMBDA_EVENT_BODY is not set (otherwise causes issues with "docker exec ..." above)
         env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
@@ -696,8 +695,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             ' -e HOSTNAME="$HOSTNAME"'
             ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
             ' -e EDGE_PORT="$EDGE_PORT"'
-            ' -e DOCKER_LAMBDA_STAY_OPEN=1'
-            ' --expose 9001'
+            " -e DOCKER_LAMBDA_STAY_OPEN=1"
+            " --expose 9001"
             " %s"  # env_vars
             " %s"  # network
             " %s"  # dns
@@ -925,21 +924,23 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             status = self.get_docker_container_status(func_arn)
             # container does not exist
             if status == 0:
-                return ''
+                return ""
 
             # Get the container name.
             container_name = self.get_container_name(func_arn)
             docker_cmd = self._docker_cmd()
 
             # Get the container network
-            LOG.debug('Getting container hostname: %s' % container_name)
-            cmd = (
-                '%s inspect %s'
-                ' --format "{{ .Config.Hostname }}"'
-            ) % (docker_cmd, container_name)
+            LOG.debug("Getting container hostname: %s" % container_name)
+            cmd = ("%s inspect %s" ' --format "{{ .Config.Hostname }}"') % (
+                docker_cmd,
+                container_name,
+            )
 
             LOG.debug(cmd)
-            cmd_result = run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+            cmd_result = run(
+                cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE
+            )
 
             container_hostname = cmd_result.strip()
 
