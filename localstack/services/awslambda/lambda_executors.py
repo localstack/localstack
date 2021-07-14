@@ -1,5 +1,4 @@
 import base64
-import boto3
 import glob
 import json
 import logging
@@ -12,6 +11,7 @@ import time
 import traceback
 from multiprocessing import Process, Queue
 
+import boto3
 import six
 
 try:
@@ -479,7 +479,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         func_arn = func_details.arn()
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
-        handler = func_details.handler
 
         # check whether the Lambda has been invoked before
         has_been_invoked_before = func_arn in self.function_invoke_times
@@ -529,9 +528,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             concurrency_lock = threading.RLock()
             LAMBDA_CONCURRENCY_LOCK[func_arn] = concurrency_lock
         with LAMBDA_CONCURRENCY_LOCK[func_arn]:
-            lambda_cwd = func_details.cwd
-            runtime = func_details.runtime
-            handler = func_details.handler
             environment = self._prepare_environment(func_details)
 
             # prepare event body
@@ -576,8 +572,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LogType='Tail'
         )
 
-        logs=base64.b64decode(response["LogResult"]).decode('utf-8')
-        responseBody=response["Payload"].read().decode('utf-8')
+        logs = base64.b64decode(response["LogResult"]).decode('utf-8')
+        responseBody = response["Payload"].read().decode('utf-8')
 
         return InvocationResult(responseBody, logs)
 
@@ -948,6 +944,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             container_hostname = cmd_result.strip()
 
             return container_hostname
+
 
 class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
     def __init__(self):
