@@ -78,6 +78,7 @@ jobs:
       - run:
           name: Test docker-reuse lambda executor
           environment:
+            LAMBDA_DOCKER_NETWORK: bridge
             LAMBDA_EXECUTOR: "docker-reuse"
             TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
