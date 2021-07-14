@@ -3,11 +3,11 @@ FROM localstack/java-maven-node-python
 MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="LocalStack Contributors"
 
-ARG LOCALSTACK_BUILD_DATE
-ARG LOCALSTACK_BUILD_GIT_HASH
-
-ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
-ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
+######### ARG LOCALSTACK_BUILD_DATE
+######### ARG LOCALSTACK_BUILD_GIT_HASH
+########
+######### ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
+######### ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 
 # set library path and default LocalStack hostname
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
@@ -91,19 +91,19 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     adduser -D localstack && \
     chown -R localstack:localstack . /tmp/localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
-
-# run tests (to verify the build before pushing the image)
-ADD tests/ tests/
-# add configuration files
-ADD .coveragerc ./
-# fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
-RUN pip uninstall -y argparse
-RUN LAMBDA_EXECUTOR=local \
-    PYTEST_LOGLEVEL=info \
-    PYTEST_ARGS='--junitxml=target/test-report.xml' \
-    make test-coverage
-
-# clean up temporary files created during test execution
-RUN apk del --purge git cmake gcc musl-dev libc-dev; \
-    rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform /root/.serverless; \
-    mkdir /root/.serverless; chmod -R 777 /root/.serverless
+######
+###### # run tests (to verify the build before pushing the image)
+###### ADD tests/ tests/
+###### # add configuration files
+###### ADD .coveragerc ./
+###### # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
+###### RUN pip uninstall -y argparse
+###### RUN LAMBDA_EXECUTOR=local \
+######     PYTEST_LOGLEVEL=info \
+######     PYTEST_ARGS='--junitxml=target/test-report.xml' \
+######     make test-coverage
+######
+###### # clean up temporary files created during test execution
+###### RUN apk del --purge git cmake gcc musl-dev libc-dev; \
+######     rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform /root/.serverless; \
+######     mkdir /root/.serverless; chmod -R 777 /root/.serverless
