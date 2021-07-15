@@ -8,6 +8,7 @@ import unittest
 from datetime import datetime
 from io import BytesIO
 
+import requests
 import six
 from botocore.exceptions import ClientError
 
@@ -113,6 +114,8 @@ TEST_SNS_TOPIC_NAME = "sns-topic-1"
 TEST_STAGE_NAME = "testing"
 
 MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
+
+TEST_GOLANG_LAMBDA_URL= "https://github.com/localstack/awslamba-go-runtime/releases/download/first/example.zip"
 
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
@@ -1599,6 +1602,13 @@ class TestGolangRuntimes(LambdaTestBase):
         if use_docker():
             return
 
+        
+        response = requests.get(TEST_GOLANG_LAMBDA_URL, allow_redirects=True)
+        if not response.ok:
+            raise ValueError("golang runtime zip not downloaded")
+
+        open(TEST_LAMBDA_GOLANG, "wb").write(response.content)
+
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_GOLANG,
             zip_file=load_file(TEST_LAMBDA_GOLANG, mode="rb"),
@@ -1606,13 +1616,12 @@ class TestGolangRuntimes(LambdaTestBase):
             runtime=LAMBDA_RUNTIME_GOLANG,
         )
         result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=b'{"name":"test"}'
+            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=json.dumps({"name":"Test"})
         )
         result_data = result["Payload"].read()
 
         self.assertEqual(200, result["StatusCode"])
-        print(to_str(result_data))
-        # self.assertEqual("{}", to_str(result_data).strip())
+        self.assertEqual("\"Hello Test!\"", to_str(result_data).strip())
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_GOLANG)
