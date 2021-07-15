@@ -1606,7 +1606,6 @@ class TestGolangRuntimes(LambdaTestBase):
         if use_docker():
             return
 
-        
         response = requests.get(TEST_GOLANG_LAMBDA_URL, allow_redirects=True)
         if not response.ok:
             raise ValueError("golang runtime zip not downloaded")
