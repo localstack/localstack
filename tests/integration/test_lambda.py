@@ -24,6 +24,7 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_DOTNETCORE31,
+    LAMBDA_RUNTIME_GOLANG,
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_NODEJS14X,
@@ -69,6 +70,7 @@ TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.py
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "lambdas", "lambda_python3.py")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.js")
+TEST_LAMBDA_GOLANG = os.path.join(THIS_FOLDER, "lambdas", "golang", "handler.zip")
 TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.rb")
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore2", "dotnetcore2.zip")
 TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore31", "dotnetcore31.zip")
@@ -91,6 +93,7 @@ TEST_LAMBDA_NAME_PY = "test_lambda_py"
 TEST_LAMBDA_NAME_PY3 = "test_lambda_py3"
 TEST_LAMBDA_NAME_JS = "test_lambda_js"
 TEST_LAMBDA_NAME_RUBY = "test_lambda_ruby"
+TEST_LAMBDA_NAME_GOLANG = "test_lambda_GOLANG"
 TEST_LAMBDA_NAME_DOTNETCORE2 = "test_lambda_dotnetcore2"
 TEST_LAMBDA_NAME_DOTNETCORE31 = "test_lambda_dotnetcore31"
 TEST_LAMBDA_NAME_CUSTOM_RUNTIME = "test_lambda_custom_runtime"
@@ -1585,6 +1588,34 @@ class TestRubyRuntimes(LambdaTestBase):
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_RUBY)
+
+
+class TestGolangRuntimes(LambdaTestBase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service("lambda")
+
+    def test_golang_lambda_running_locally(self):
+        if use_docker():
+            return
+
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_GOLANG,
+            zip_file=load_file(TEST_LAMBDA_GOLANG, mode="rb"),
+            handler="handler",
+            runtime=LAMBDA_RUNTIME_GOLANG,
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=b'{"name":"test"}'
+        )
+        result_data = result["Payload"].read()
+
+        self.assertEqual(200, result["StatusCode"])
+        print(to_str(result_data))
+        # self.assertEqual("{}", to_str(result_data).strip())
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_GOLANG)
 
 
 class TestJavaRuntimes(LambdaTestBase):
