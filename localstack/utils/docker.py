@@ -313,6 +313,8 @@ class CmdDockerClient:
         mount_volumes: Optional[List[Tuple[str, str]]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
+        user: Optional[str] = None,
+        cap_add: Optional[str] = None,
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
@@ -339,6 +341,10 @@ class CmdDockerClient:
             cmd += ports.to_list()
         if env_vars:
             cmd += Util.create_env_vars_file_flag(env_vars)
+        if user:
+            cmd += ["--user", user]
+        if cap_add:
+            cmd += ["--cap-add", cap_add]
         if network:
             cmd += ["--network", network]
         if dns:
