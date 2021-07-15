@@ -156,6 +156,7 @@ def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_reque
 
 
 class LambdaTestBase(unittest.TestCase):
+    # TODO: the test below is being executed for all subclasses - should be refactored!
     def test_create_lambda_function(self):
         func_name = "lambda_func-{}".format(short_uid())
         kms_key_arn = "arn:aws:kms:us-east-1:000000000000:key11"

@@ -700,7 +700,7 @@ def send_event_to_target(target_arn, event, target_attributes=None, asynchronous
 
     elif ":events:" in target_arn:
         events_client = connect_to_service("events", region_name=region)
-        if ":api-destination/" in target_arn:
+        if ":api-destination/" in target_arn or ":destination/" in target_arn:
             # API destination support
             # see https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html
             api_destination_name = target_arn.split(":")[-1].split("/")[
