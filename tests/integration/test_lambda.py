@@ -8,6 +8,7 @@ import unittest
 from datetime import datetime
 from io import BytesIO
 
+import pytest
 import six
 from botocore.exceptions import ClientError
 
@@ -37,7 +38,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils import testutil
-from localstack.utils.aws import aws_models, aws_stack
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     cp_r,
     download,
@@ -1119,7 +1120,7 @@ class TestPythonRuntimes(LambdaTestBase):
 
     def test_python_lambda_running_in_docker(self):
         if not use_docker():
-            return
+            pytest.skip("not using docker executor")
 
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON3,
@@ -1424,7 +1425,7 @@ class TestNodeJSRuntimes(LambdaTestBase):
 
     def test_nodejs_lambda_running_in_docker(self):
         if not use_docker():
-            return
+            pytest.skip("not using docker executor")
 
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
@@ -1461,9 +1462,6 @@ class TestNodeJSRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
 
     def test_invoke_nodejs_lambda(self):
-        if not use_docker():
-            return
-
         handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_handler.js")
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
@@ -1472,17 +1470,24 @@ class TestNodeJSRuntimes(LambdaTestBase):
             handler="lambda_handler.handler",
         )
 
-        rs = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JS,
-            Payload=json.dumps({"event_type": "test_lambda"}),
-        )
-        self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+        try:
+            rs = self.lambda_client.invoke(
+                FunctionName=TEST_LAMBDA_NAME_JS,
+                Payload=json.dumps({"event_type": "test_lambda"}),
+            )
+            self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
 
-        events = get_lambda_log_events(TEST_LAMBDA_NAME_JS)
-        self.assertGreater(len(events), 0)
+            payload = rs["Payload"].read()
+            response = json.loads(to_str(payload))
+            self.assertIn("response from localstack lambda", response["body"])
 
-        # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
+            if use_docker():
+                # FIXME: this does currently not work with local execution mode
+                events = get_lambda_log_events(TEST_LAMBDA_NAME_JS)
+                self.assertGreater(len(events), 0)
+        finally:
+            # clean up
+            testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
 
 
 class TestCustomRuntimes(LambdaTestBase):
@@ -1492,7 +1497,7 @@ class TestCustomRuntimes(LambdaTestBase):
 
     def test_provided_runtime_running_in_docker(self):
         if not use_docker():
-            return
+            pytest.skip("not using docker executor")
 
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
@@ -1529,7 +1534,7 @@ class TestDotNetCoreRuntimes(LambdaTestBase):
 
     def __run_test(self, func_name, zip_file, handler, runtime, expected_lines):
         if not use_docker():
-            return
+            pytest.skip("not using docker executor")
 
         testutil.create_lambda_function(
             func_name=func_name, zip_file=zip_file, handler=handler, runtime=runtime
@@ -1570,7 +1575,7 @@ class TestRubyRuntimes(LambdaTestBase):
 
     def test_ruby_lambda_running_in_docker(self):
         if not use_docker():
-            return
+            pytest.skip("not using docker executor")
 
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_RUBY,
@@ -1658,7 +1663,20 @@ class TestJavaRuntimes(LambdaTestBase):
 
         self.assertEqual(200, result["StatusCode"])
         # TODO: find out why the assertion below does not work in Travis-CI! (seems to work locally)
-        # self.assertIn('LinkedHashMap', to_str(result_data))
+        self.assertIn("LinkedHashMap", to_str(result_data))
+        self.assertIsNotNone(result_data)
+
+    def test_java_runtime_with_large_payload(self):
+        self.assertIsNotNone(self.test_java_jar)
+
+        payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
+        payload = to_bytes(json.dumps(payload))
+
+        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=payload)
+        result_data = result["Payload"].read()
+
+        self.assertEqual(200, result["StatusCode"])
+        self.assertIn("LinkedHashMap", to_str(result_data))
         self.assertIsNotNone(result_data)
 
     def test_java_runtime_with_lib(self):
@@ -1881,50 +1899,12 @@ class TestDockerBehaviour(LambdaTestBase):
         # clean up
         testutil.delete_lambda_function(func_name)
 
-    def test_docker_command_for_separate_container_lambda_executor(self):
-        # run these tests only for the "separate containers" Lambda executor
-        if not isinstance(
-            lambda_api.LAMBDA_EXECUTOR,
-            lambda_executors.LambdaExecutorSeparateContainers,
-        ):
-            return
-
-        executor = lambda_api.LAMBDA_EXECUTOR
-        func_name = "test_docker_command_for_separate_container_lambda_executor"
-        func_arn = lambda_api.func_arn(func_name)
-
-        handler = "handler"
-        lambda_cwd = "/app/lambda"
-        network = "compose_network"
-        dns = "some-ip-address"
-
-        config.LAMBDA_DOCKER_NETWORK = network
-        config.LAMBDA_DOCKER_DNS = dns
-
-        func_details = aws_models.LambdaFunction(func_arn)
-        func_details.runtime = LAMBDA_RUNTIME_NODEJS810
-        func_details.lambda_cwd = lambda_cwd
-        func_details.handler = handler
-
-        try:
-            cmd = executor.prepare_execution(func_details, {}, "")
-            expected = (
-                'docker run -v "%s":/var/task --network="%s" --dns="%s" --rm "lambci/lambda:%s" "%s"'
-                % (lambda_cwd, network, dns, LAMBDA_RUNTIME_NODEJS810, handler)
-            )
-
-            self.assertIn('--network="%s"' % network, cmd, "cmd=%s expected=%s" % (cmd, expected))
-            self.assertIn('--dns="%s"' % dns, cmd, "cmd=%s expected=%s" % (cmd, expected))
-        finally:
-            config.LAMBDA_DOCKER_NETWORK = ""
-            config.LAMBDA_DOCKER_DNS = ""
-
     def test_destroy_idle_containers(self):
         # run these tests only for the "reuse containers" Lambda executor
         if not isinstance(
             lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorReuseContainers
         ):
-            return
+            pytest.skip("not testing docker reuse executor")
 
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_destroy_idle_containers"

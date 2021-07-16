@@ -25,6 +25,7 @@ from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
 from queue import Queue
+from typing import Callable, List, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
@@ -1581,12 +1582,9 @@ def run_for_max_seconds(max_secs, _function, *args, **kwargs):
         time.sleep(0.5)
 
 
-def run(cmd, cache_duration_secs=0, **kwargs):
-    def do_run(cmd):
-        return bootstrap.run(cmd, **kwargs)
-
+def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
     if cache_duration_secs <= 0:
-        return do_run(cmd)
+        return run_cmd()
 
     hashcode = md5(cmd)
     cache_file = CACHE_FILE_PATTERN.replace("*", hashcode)
@@ -1598,11 +1596,25 @@ def run(cmd, cache_duration_secs=0, **kwargs):
         if mod_time > (time_now - cache_duration_secs):
             with open(cache_file) as fd:
                 return fd.read()
-    result = do_run(cmd)
+    result = run_cmd()
     with open(cache_file, "w+") as fd:
         fd.write(result)
     clean_cache()
     return result
+
+
+def run(cmd, cache_duration_secs=0, **kwargs):
+    def run_cmd():
+        return bootstrap.run(cmd, **kwargs)
+
+    return do_run(cmd, run_cmd, cache_duration_secs)
+
+
+def safe_run(cmd: List[str], cache_duration_secs=0, **kwargs) -> Union[str, subprocess.Popen]:
+    def run_cmd():
+        return bootstrap.run(cmd, shell=False, **kwargs)
+
+    return do_run(" ".join(cmd), run_cmd, cache_duration_secs)
 
 
 def clone(item):

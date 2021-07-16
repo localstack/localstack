@@ -14,6 +14,7 @@ import traceback
 import warnings
 from concurrent.futures._base import Future
 from datetime import datetime
+from typing import List, Union
 
 import pip as pip_mod
 import six
@@ -548,7 +549,7 @@ class PortMappings(object):
             return
         self.mappings[self.HashableList([port, port])] = [mapped, mapped]
 
-    def to_str(self):
+    def to_str(self) -> str:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
 
         def entry(k, v):
@@ -557,6 +558,16 @@ class PortMappings(object):
             return "-p %s%s-%s:%s-%s" % (bind_address, k[0], k[1], v[0], v[1])
 
         return " ".join([entry(k, v) for k, v in self.mappings.items()])
+
+    def to_list(self) -> List[str]:  # TODO test
+        bind_address = f"{self.bind_host}:" if self.bind_host else ""
+
+        def entry(k, v):
+            if k[0] == k[1] and v[0] == v[1]:
+                return ["-p", f"{bind_address}{k[0]}:{v[0]}"]
+            return ["-p", f"{bind_address}{k[0]}-{k[1]}:{v[0]}-{v[1]}"]
+
+        return [item for k, v in self.mappings.items() for item in entry(k, v)]
 
     def contains(self, port):
         for from_range, to_range in self.mappings.items():
@@ -798,7 +809,7 @@ class FuncThread(threading.Thread):
 
 
 def run(
-    cmd,
+    cmd: Union[str, List[str]],
     print_error=True,
     asynchronous=False,
     stdin=False,
@@ -808,7 +819,9 @@ def run(
     inherit_cwd=False,
     inherit_env=True,
     tty=False,
+    shell=True,
 ):
+    LOG.debug("Executing command: %s", cmd)
     env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)
@@ -823,14 +836,9 @@ def run(
         if not asynchronous:
             if stdin:
                 return subprocess.check_output(
-                    cmd,
-                    shell=True,
-                    stderr=stderr,
-                    env=env_dict,
-                    stdin=subprocess.PIPE,
-                    cwd=cwd,
+                    cmd, shell=shell, stderr=stderr, env=env_dict, stdin=subprocess.PIPE, cwd=cwd
                 )
-            output = subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict, cwd=cwd)
+            output = subprocess.check_output(cmd, shell=shell, stderr=stderr, env=env_dict, cwd=cwd)
             return output.decode(config.DEFAULT_ENCODING)
 
         stdin_arg = subprocess.PIPE if stdin else None
@@ -847,10 +855,10 @@ def run(
         # start the actual sub process
         kwargs = {}
         if is_linux() or is_mac_os():
-            kwargs["preexec_fn"] = os.setsid
+            kwargs["start_new_session"] = True
         process = subprocess.Popen(
             cmd,
-            shell=True,
+            shell=shell,
             stdin=stdin_arg,
             bufsize=-1,
             stderr=stderr_arg,
