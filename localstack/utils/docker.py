@@ -249,6 +249,8 @@ class CmdDockerClient:
         LOG.debug("Create container with cmd: %s", cmd)
         try:
             container_id = safe_run(cmd)
+            # Note: strip off Docker warning messages like "DNS setting (--dns=127.0.0.1) may fail in containers"
+            container_id = container_id.strip().split("\n")[-1]
             return container_id.strip()
         except subprocess.CalledProcessError as e:
             if "Unable to find image" in e.stdout.decode(config.DEFAULT_ENCODING):

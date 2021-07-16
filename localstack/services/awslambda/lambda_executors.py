@@ -602,7 +602,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             env_vars["HOSTNAME"] = os.environ.get("HOSTNAME")
         env_vars["EDGE_PORT"] = config.EDGE_PORT
 
-        DOCKER_CLIENT.create_container(
+        return DOCKER_CLIENT.create_container(
             image_name=docker_image,
             remove=True,
             interactive=True,
