@@ -118,7 +118,9 @@ TEST_STAGE_NAME = "testing"
 
 MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
 
-TEST_GOLANG_LAMBDA_URL= "https://github.com/localstack/awslamba-go-runtime/releases/download/first/example.zip"
+TEST_GOLANG_LAMBDA_URL = (
+    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/example.zip"
+)
 
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
@@ -1619,12 +1621,12 @@ class TestGolangRuntimes(LambdaTestBase):
             runtime=LAMBDA_RUNTIME_GOLANG,
         )
         result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=json.dumps({"name":"Test"})
+            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=json.dumps({"name": "Test"})
         )
         result_data = result["Payload"].read()
 
         self.assertEqual(200, result["StatusCode"])
-        self.assertEqual("\"Hello Test!\"", to_str(result_data).strip())
+        self.assertEqual('"Hello Test!"', to_str(result_data).strip())
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_GOLANG)
