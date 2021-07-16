@@ -314,12 +314,20 @@ class TestDockerClient:
         assert c1.container_name == container_list[0]["name"]
 
     def test_get_container_entrypoint(self, docker_client: DockerClient):
-        entrypoint = docker_client.get_container_entrypoint("alpine")
+        entrypoint = docker_client.get_image_entrypoint("alpine")
         assert "" == entrypoint
 
     def test_get_container_entrypoint_non_existing_image(self, docker_client: DockerClient):
         with pytest.raises(NoSuchImage):
-            docker_client.get_container_entrypoint("thisdoesnotexist")
+            docker_client.get_image_entrypoint("thisdoesnotexist")
+
+    def test_get_container_command(self, docker_client: DockerClient):
+        command = docker_client.get_image_cmd("alpine")
+        assert "/bin/sh" == command
+
+    def test_get_container_command_non_existing_image(self, docker_client: DockerClient):
+        with pytest.raises(NoSuchImage):
+            docker_client.get_image_cmd("thisdoesnotexist")
 
     def test_create_start_container_with_stdin(self, docker_client: DockerClient):
         container_name = _random_container_name()

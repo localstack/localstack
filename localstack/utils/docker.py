@@ -27,14 +27,14 @@ class ContainerException(Exception):
 
 
 class NoSuchContainer(ContainerException):
-    def __init__(self, container_name_or_id, message=None, stdout=None, stderr=None) -> None:
+    def __init__(self, container_name_or_id: str, message=None, stdout=None, stderr=None) -> None:
         message = message or f"Docker container {container_name_or_id} not found"
         super().__init__(message, stdout, stderr)
         self.container_name_or_id = container_name_or_id
 
 
 class NoSuchImage(ContainerException):
-    def __init__(self, image_name, message=None, stdout=None, stderr=None) -> None:
+    def __init__(self, image_name: str, message=None, stdout=None, stderr=None) -> None:
         message = message or f"Docker image {image_name} not found"
         super().__init__(message, stdout, stderr)
         self.image_name = image_name
@@ -58,7 +58,6 @@ class CmdDockerClient:
             "--format",
             "{{ .Status }} - {{ .Names }}",
         ]
-        LOG.debug('Getting status for container "%s"', container_name)
         cmd_result = safe_run(cmd)
 
         # filter empty / invalid lines from docker ps output
@@ -82,7 +81,6 @@ class CmdDockerClient:
             "{{ .HostConfig.NetworkMode }}",
         ]
 
-        LOG.debug(cmd)
         try:
             cmd_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
@@ -145,7 +143,6 @@ class CmdDockerClient:
             '{"id":"{{ .ID }}","image":"{{ .Image }}","name":"{{ .Names }}",'
             '"labels":"{{ .Labels }}","status":"{{ .State }}"}'
         )
-        LOG.debug(cmd)
         try:
             cmd_result = safe_run(cmd).strip()
         except subprocess.CalledProcessError as e:
@@ -157,14 +154,16 @@ class CmdDockerClient:
             container_list = [json.loads(line) for line in cmd_result.splitlines()]
         return container_list
 
-    def copy_into_container(self, container_name: str, local_path: str, container_path: str):
+    def copy_into_container(
+        self, container_name: str, local_path: str, container_path: str
+    ) -> None:
         """Copy contents of the given local path into the container"""
         cmd = self._docker_cmd()
         cmd += ["cp", local_path, f"{container_name}:{container_path}"]
-        LOG.debug(cmd)
+        LOG.debug("Copying into container with cmd: %s", cmd)
         safe_run(cmd)
 
-    def get_container_entrypoint(self, docker_image: str) -> str:
+    def get_image_entrypoint(self, docker_image: str) -> str:
         """Get the entry point for the given image"""
         LOG.debug("Getting the entrypoint for image: %s", docker_image)
         cmd = self._docker_cmd()
@@ -175,7 +174,6 @@ class CmdDockerClient:
             docker_image,
         ]
 
-        LOG.debug(cmd)
         try:
             run_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
@@ -188,6 +186,40 @@ class CmdDockerClient:
 
         entry_point = run_result.strip('"[]\n\r ')
         return entry_point
+
+    def get_image_cmd(self, docker_image: str) -> str:
+        """Get the command for the given image"""
+        cmd = self._docker_cmd()
+        cmd += [
+            "image",
+            "inspect",
+            '--format="{{ .Config.Cmd }}"',
+            docker_image,
+        ]
+
+        try:
+            run_result = safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such image" in e.stdout.decode(config.DEFAULT_ENCODING):
+                raise NoSuchImage(docker_image, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
+        entry_point = run_result.strip('"[]\n\r ')
+        return entry_point
+
+    def pull_image(self, docker_image: str) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["pull", docker_image]
+        LOG.debug("Pulling image with cmd: %s", cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            )
 
     def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
         cmd = self._docker_cmd()
@@ -213,8 +245,8 @@ class CmdDockerClient:
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:
-        """ """
         cmd = self._build_run_create_cmd("create", image_name, **kwargs)
+        LOG.debug("Create container with cmd: %s", cmd)
         try:
             container_id = safe_run(cmd)
             return container_id.strip()
@@ -225,8 +257,9 @@ class CmdDockerClient:
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
 
-    def run_container(self, image_name: str, stdin=None, **kwargs) -> Union[Tuple[str, str], str]:
+    def run_container(self, image_name: str, stdin=None, **kwargs) -> Tuple[str, str]:
         cmd = self._build_run_create_cmd("run", image_name, **kwargs)
+        LOG.debug("Run container with cmd: %s", cmd)
         return self._run_async_cmd(cmd, stdin, kwargs.get("name") or "", image_name)
 
     def exec_in_container(
@@ -237,7 +270,7 @@ class CmdDockerClient:
         detach=False,
         env_vars: Optional[List[Tuple[str, str]]] = None,
         stdin: Optional[str] = None,
-    ) -> Union[Tuple[str, str], str]:
+    ) -> Tuple[bytes, bytes]:
         cmd = self._docker_cmd()
         cmd.append("exec")
         if interactive:
@@ -248,6 +281,7 @@ class CmdDockerClient:
             cmd += Util.create_env_vars_file_flag(env_vars)
         cmd.append(container_name_or_id)
         cmd += command if isinstance(command, List) else [command]
+        LOG.debug("Execute in container cmd: %s", cmd)
         return self._run_async_cmd(cmd, stdin, container_name_or_id)
 
     def start_container(
@@ -257,7 +291,7 @@ class CmdDockerClient:
         interactive: bool = False,
         attach: bool = False,
         flags: Optional[str] = None,
-    ):
+    ) -> Tuple[bytes, bytes]:
         cmd = self._docker_cmd() + ["start"]
         if flags:
             cmd.append(flags)
@@ -266,9 +300,12 @@ class CmdDockerClient:
         if attach:
             cmd.append("--attach")
         cmd.append(container_name_or_id)
+        LOG.debug("Start container with cmd: %s", cmd)
         return self._run_async_cmd(cmd, stdin, container_name_or_id)
 
-    def _run_async_cmd(self, cmd, stdin, container_name, image_name=None):
+    def _run_async_cmd(
+        self, cmd: List[str], stdin: bytes, container_name: str, image_name=None
+    ) -> Tuple[bytes, bytes]:
         kwargs = {
             "inherit_env": True,
             "asynchronous": True,

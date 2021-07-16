@@ -411,14 +411,19 @@ class LambdaExecutorContainers(LambdaExecutor):
             save_file(events_file_path, event_body)
             # construct Java command
             classpath = Util.get_java_classpath(target_file)
-            command = 'bash -c \'cd %s; java %s -cp "%s" "%s" "%s" "%s"\'' % (
-                DOCKER_TASK_FOLDER,
-                java_opts,
-                classpath,
-                LAMBDA_EXECUTOR_CLASS,
-                handler,
-                events_file,
-            )
+            command = [
+                "bash",
+                "-c",
+                'cd %s; java %s -cp "%s" "%s" "%s" "%s"'
+                % (
+                    DOCKER_TASK_FOLDER,
+                    java_opts,
+                    classpath,
+                    LAMBDA_EXECUTOR_CLASS,
+                    handler,
+                    events_file,
+                ),
+            ]
 
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):
@@ -524,8 +529,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     def prime_docker_container(self, func_details, env_vars, lambda_cwd):
         """
         Prepares a persistent docker container for a specific function.
-        :param runtime: Lamda runtime environment. python2.7, nodejs6.10, etc.
-        :param func_arn: The ARN of the lambda function.
+        :param func_details: The Details of the lambda function.
         :param env_vars: The environment variables for the lambda.
         :param lambda_cwd: The local directory containing the code for the lambda function.
         :return: ContainerInfo class containing the container name and default entry point.
@@ -563,7 +567,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 time.sleep(1)
 
             container_network = self.get_docker_container_network(func_arn)
-            entry_point = DOCKER_CLIENT.get_container_entrypoint(docker_image)
+            entry_point = DOCKER_CLIENT.get_image_entrypoint(docker_image)
 
             LOG.debug(
                 'Using entrypoint "%s" for container "%s" on network "%s".'
