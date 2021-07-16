@@ -71,6 +71,12 @@ class TestIAMIntegrations(unittest.TestCase):
         self.iam_client.delete_policy(PolicyArn=test_policy_arn)
         self.iam_client.delete_user(UserName=test_user_name)
 
+    def test_delete_non_existent_policy_returns_no_such_entity(self):
+        non_existent_policy_arn = "arn:aws:iam::000000000000:policy/non-existent-policy"
+        with self.assertRaises(ClientError) as ctx:
+            self.iam_client.delete_policy(PolicyArn=non_existent_policy_arn)
+        self.assertEqual("NoSuchEntity", ctx.exception.response["Error"]["Code"])
+
     def test_recreate_iam_role(self):
         role_name = "role-{}".format(short_uid())
 

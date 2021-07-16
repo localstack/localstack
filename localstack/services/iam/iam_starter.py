@@ -152,12 +152,14 @@ def apply_patches():
 
     def iam_response_delete_policy(self):
         policy_arn = self._get_param("PolicyArn")
-        moto_iam_backend.managed_policies.pop(policy_arn, None)
-        template = self.response_template(GENERIC_EMPTY_TEMPLATE)
-        return template.render(name="DeletePolicyResponse")
+        if moto_iam_backend.managed_policies.get(policy_arn):
+            moto_iam_backend.managed_policies.pop(policy_arn, None)
+            template = self.response_template(GENERIC_EMPTY_TEMPLATE)
+            return template.render(name="DeletePolicy")
+        else:
+            raise IAMNotFoundException("Policy {0} was not found.".format(policy_arn))
 
-    if not hasattr(IamResponse, "delete_policy"):
-        IamResponse.delete_policy = iam_response_delete_policy
+    IamResponse.delete_policy = iam_response_delete_policy
 
     def iam_backend_detach_role_policy(policy_arn, role_name):
         try:
