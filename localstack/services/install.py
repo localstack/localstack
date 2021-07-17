@@ -413,6 +413,8 @@ def install_go_lambda_runtime():
         zipfile.ZipFile(file_location).extractall(config.TMP_FOLDER)
         st = os.stat(GO_LAMBDA_RUNTIME)
         os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+        st = os.stat(GO_LAMBDA_MOCKSERVER)
         os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
