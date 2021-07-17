@@ -897,7 +897,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
         result = s3_client.get_bucket_acl(Bucket=bucket)
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
 
         with self.assertRaises(ClientError) as ctx:
             self.s3_client.get_bucket_acl(Bucket="bucket-not-exists")
