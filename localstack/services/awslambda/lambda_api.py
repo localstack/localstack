@@ -251,7 +251,7 @@ def build_mapping_obj(data):
 
 def format_timestamp(timestamp=None):
     timestamp = timestamp or datetime.utcnow()
-    return isoformat_milliseconds(timestamp) + "Z"
+    return isoformat_milliseconds(timestamp) + "+00:00"
 
 
 def add_event_source(data):
