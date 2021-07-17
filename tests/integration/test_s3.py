@@ -12,13 +12,13 @@ from io import BytesIO
 from urllib.parse import parse_qs, quote
 
 import boto3
+import requests
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from pytz import timezone
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.request import Request, urlopen
 
-import requests
 from localstack import config, constants
 from localstack.constants import (
     S3_VIRTUAL_HOSTNAME,
