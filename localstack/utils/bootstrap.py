@@ -529,7 +529,7 @@ class PortMappings(object):
         self.bind_host = bind_host if bind_host else ""
         self.mappings = {}
 
-    def add(self, port, mapped=None):
+    def add(self, port, mapped=None, protocol="tcp"):
         mapped = mapped or port
         if isinstance(port, list):
             for i in range(port[1] - port[0] + 1):
@@ -547,15 +547,17 @@ class PortMappings(object):
             self.expand_range(port, from_range)
             self.expand_range(mapped, to_range)
             return
-        self.mappings[self.HashableList([port, port])] = [mapped, mapped]
+        protocol = str(protocol or "tcp").lower()
+        self.mappings[self.HashableList([port, port, protocol])] = [mapped, mapped]
 
-    def to_str(self) -> str:
+    def to_str(self) -> str:  # TODO test (and/or remove?)
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
 
         def entry(k, v):
+            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
             if k[0] == k[1] and v[0] == v[1]:
-                return "-p %s%s:%s" % (bind_address, k[0], v[0])
-            return "-p %s%s-%s:%s-%s" % (bind_address, k[0], k[1], v[0], v[1])
+                return "-p %s%s:%s%s" % (bind_address, k[0], v[0], protocol)
+            return "-p %s%s-%s:%s-%s%s" % (bind_address, k[0], k[1], v[0], v[1], protocol)
 
         return " ".join([entry(k, v) for k, v in self.mappings.items()])
 
@@ -563,9 +565,10 @@ class PortMappings(object):
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
 
         def entry(k, v):
+            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
             if k[0] == k[1] and v[0] == v[1]:
-                return ["-p", f"{bind_address}{k[0]}:{v[0]}"]
-            return ["-p", f"{bind_address}{k[0]}-{k[1]}:{v[0]}-{v[1]}"]
+                return ["-p", f"{bind_address}{k[0]}:{v[0]}{protocol}"]
+            return ["-p", f"{bind_address}{k[0]}-{k[1]}:{v[0]}-{v[1]}{protocol}"]
 
         return [item for k, v in self.mappings.items() for item in entry(k, v)]
 

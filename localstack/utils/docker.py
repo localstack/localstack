@@ -427,7 +427,10 @@ class Util:
     def rm_env_vars_file(env_vars_file_flag):
         if not env_vars_file_flag or "--env-file" not in env_vars_file_flag:
             return
-        env_vars_file = env_vars_file_flag.replace("--env-file", "").strip()
+        if isinstance(env_vars_file_flag, list):
+            env_vars_file = env_vars_file_flag[env_vars_file_flag.index("--env-file") + 1]
+        else:
+            env_vars_file = env_vars_file_flag.replace("--env-file", "").strip()
         return rm_rf(env_vars_file)
 
     @staticmethod
