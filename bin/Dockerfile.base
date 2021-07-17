@@ -85,7 +85,7 @@ RUN cd localstack && npm install
 RUN apk del python2
 
 # set python3 as default python version; install supervisor
-RUN ln -s /usr/bin/python3 /usr/bin/python; ln -s /usr/bin/pip3 /usr/bin/pip
+RUN ln -s /usr/bin/python3 /usr/bin/python || true; ln -s /usr/bin/pip3 /usr/bin/pip || true
 RUN pip install supervisor
 
 # init environment and cache some dependencies

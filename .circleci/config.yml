@@ -225,6 +225,15 @@ jobs:
           name: Push docker image
           command: make docker-push-master
 
+  build-base-image:
+    machine:
+      image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
+    steps:
+      - checkout
+      - run:
+          command: make docker-build-base-ci
+          name: Build and push base image
 
 workflows:
   main:
@@ -233,20 +242,35 @@ workflows:
       - preflight:
           requires:
             - install
+          filters:
+            branches:
+              ignore: build-base-img
       - itest-lambda-docker:
           requires:
             - preflight
+          filters:
+            branches:
+              ignore: build-base-img
       - itest-elasticmq:
           requires:
             - preflight
+          filters:
+            branches:
+              ignore: build-base-img
       - docker-build:
           requires:
             - preflight
+          filters:
+            branches:
+              ignore: build-base-img
       - report:
           requires:
             - itest-lambda-docker
             - itest-elasticmq
             - docker-build
+          filters:
+            branches:
+              ignore: build-base-img
       - docker-push:
           filters:
             branches:
@@ -255,3 +279,9 @@ workflows:
             - itest-lambda-docker
             - itest-elasticmq
             - docker-build
+      - build-base-image:
+          requires:
+            - install
+          filters:
+            branches:
+              only: build-base-img
