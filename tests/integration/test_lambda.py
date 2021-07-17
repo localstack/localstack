@@ -1624,7 +1624,7 @@ class TestGolangRuntimes(LambdaTestBase):
             FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=json.dumps({"name": "Test"})
         )
         result_data = result["Payload"].read()
-
+        self.maxDiff = None
         self.assertEqual(200, result["StatusCode"])
         self.assertEqual('"Hello Test!"', to_str(result_data).strip())
 
