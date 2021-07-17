@@ -896,6 +896,17 @@ class TestS3(unittest.TestCase):
         response = s3_client.get_bucket_cors(Bucket=bucket)
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
+        result = s3_client.get_bucket_acl(Bucket=bucket)
+        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+
+        with self.assertRaises(ClientError) as ctx:
+            self.s3_client.get_bucket_acl(Bucket="bucket-not-exists")
+            self.assertEqual("NoSuchBucket", ctx.exception.response["Error"]["Code"])
+            self.assertEqual(
+                "The specified bucket does not exist",
+                ctx.exception.response["Error"]["Message"],
+            )
+
         # Cleanup
         s3_client.delete_bucket(Bucket=bucket)
 
