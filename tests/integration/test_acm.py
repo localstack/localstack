@@ -6,7 +6,6 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 
-
 DIGICERT_ROOT_CERT = """
 -----BEGIN CERTIFICATE-----
 MIICRjCCAc2gAwIBAgIQC6Fa+h3foLVJRK/NJKBs7DAKBggqhkjOPQQDAzBlMQsw
