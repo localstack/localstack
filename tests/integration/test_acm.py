@@ -38,6 +38,10 @@ class TestACM(unittest.TestCase):
         result = acm.import_certificate(Certificate=DIGICERT_ROOT_CERT, PrivateKey=private_key)
         self.assertIn("CertificateArn", result)
 
+        current_region = aws_stack.get_region()
+        acm_cert_region = result['CertificateArn'].split(':')[3]
+        self.assertEqual(current_region, acm_cert_region)
+
         certs_after = acm.list_certificates().get("CertificateSummaryList", [])
         self.assertEqual(len(certs_before) + 1, len(certs_after))
 
