@@ -40,7 +40,8 @@ class TestACM(unittest.TestCase):
         self.assertIn("CertificateArn", result)
 
         expected_arn = "arn:aws:acm:{0}:{1}:certificate".format(
-          aws_stack.get_region(), TEST_AWS_ACCOUNT_ID)
+            aws_stack.get_region(), TEST_AWS_ACCOUNT_ID
+        )
         acm_cert_arn = result["CertificateArn"].split("/")[0]
         self.assertEqual(expected_arn, acm_cert_arn)
 
