@@ -4,6 +4,8 @@ from moto.ec2 import utils as ec2_utils
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
+from localstack.constants import TEST_AWS_ACCOUNT_ID
+
 
 DIGICERT_ROOT_CERT = """
 -----BEGIN CERTIFICATE-----
@@ -38,9 +40,9 @@ class TestACM(unittest.TestCase):
         result = acm.import_certificate(Certificate=DIGICERT_ROOT_CERT, PrivateKey=private_key)
         self.assertIn("CertificateArn", result)
 
-        current_region = aws_stack.get_region()
-        acm_cert_region = result['CertificateArn'].split(':')[3]
-        self.assertEqual(current_region, acm_cert_region)
+        expected_arn = 'arn:aws:acm:{0}:{1}:certificate'.format(str(aws_stack.get_region()), TEST_AWS_ACCOUNT_ID)
+        acm_cert_arn = result['CertificateArn'].split('/')[0]
+        self.assertEqual(expected_arn, acm_cert_arn)
 
         certs_after = acm.list_certificates().get("CertificateSummaryList", [])
         self.assertEqual(len(certs_before) + 1, len(certs_after))
