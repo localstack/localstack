@@ -39,8 +39,8 @@ class TestACM(unittest.TestCase):
         result = acm.import_certificate(Certificate=DIGICERT_ROOT_CERT, PrivateKey=private_key)
         self.assertIn("CertificateArn", result)
 
-        expected_arn = 'arn:aws:acm:{0}:{1}:certificate'.format(str(aws_stack.get_region()), TEST_AWS_ACCOUNT_ID)
-        acm_cert_arn = result['CertificateArn'].split('/')[0]
+        expected_arn = "arn:aws:acm:{0}:{1}:certificate".format(str(aws_stack.get_region()), TEST_AWS_ACCOUNT_ID)
+        acm_cert_arn = result["CertificateArn"].split("/")[0]
         self.assertEqual(expected_arn, acm_cert_arn)
 
         certs_after = acm.list_certificates().get("CertificateSummaryList", [])
