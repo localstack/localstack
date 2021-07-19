@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from moto.s3 import models as s3_models
 from moto.s3 import responses as s3_responses
-from moto.s3.exceptions import S3ClientError
+from moto.s3.exceptions import MissingBucket, S3ClientError
 from moto.s3.responses import (
     S3_ALL_MULTIPARTS,
     MalformedXML,
@@ -133,6 +133,34 @@ def apply_patches():
 
     get_bucket_orig = s3_models.s3_backend.get_bucket
     s3_models.s3_backend.get_bucket = types.MethodType(get_bucket, s3_models.s3_backend)
+
+    def _bucket_response_head(self, bucket_name):
+        try:
+            bucket = s3_models.s3_backend.get_bucket(bucket_name)
+        except MissingBucket:
+            # Unless we do this, boto3 does not raise ClientError on
+            # HEAD (which the real API responds with), and instead
+            # raises NoSuchBucket, leading to inconsistency in
+            # error response between real and mocked responses.
+            return 404, {}, ""
+        return 200, {"x-amz-bucket-region": bucket.region_name}, ""
+
+    s3_responses.ResponseObject._bucket_response_head = types.MethodType(
+        _bucket_response_head, s3_responses.ResponseObject
+    )
+
+    def _bucket_response_get(self, bucket_name, querystring, *args, **kwargs):
+        result = _bucket_response_get_orig(self, bucket_name, querystring, *args, **kwargs)
+        # for some reason in the "get-bucket-location" call, moto doesn't return a code, headers, body triple as a result
+        if isinstance(result, tuple) and len(result) == 3:
+            code, headers, body = result
+            bucket = s3_models.s3_backend.get_bucket(bucket_name)
+            headers["x-amz-bucket-region"] = bucket.region_name
+        return result
+
+    _bucket_response_get_orig = s3_responses.ResponseObject._bucket_response_get
+    # method type is only required when the method is part of an object instance (make a method out of a function)
+    s3_responses.ResponseObject._bucket_response_get = _bucket_response_get
 
     # patch S3Bucket.get_bucket(..)
     def delete_bucket(self, bucket_name, *args, **kwargs):
