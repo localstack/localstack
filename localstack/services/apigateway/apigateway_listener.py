@@ -259,7 +259,7 @@ def get_api_id_stage_invocation_path(path, headers):
     return api_id, stage, relative_path_w_query_params
 
 
-def invoke_rest_api_from_request(method, path, data, headers, context={}):
+def invoke_rest_api_from_request(method, path, data, headers, context={}, auth_info={}, **kwargs):
     api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
     try:
         return invoke_rest_api(
@@ -271,12 +271,13 @@ def invoke_rest_api_from_request(method, path, data, headers, context={}):
             headers,
             path=path,
             context=context,
+            auth_info=auth_info,
         )
     except AuthorizationError as e:
         return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
 
 
-def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None, context={}):
+def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None, context={}, auth_info={}):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
 
@@ -321,6 +322,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         context=context,
         resource_id=resource.get("id"),
         response_templates=response_templates,
+        auth_info=auth_info
     )
 
 
@@ -337,8 +339,8 @@ def invoke_rest_api_integration(
     context={},
     resource_id=None,
     response_templates={},
+    auth_info={},
 ):
-    response = None
     try:
         response = invoke_rest_api_integration_backend(
             api_id,
@@ -353,6 +355,7 @@ def invoke_rest_api_integration(
             context=context,
             resource_id=resource_id,
             response_templates=response_templates,
+            auth_info=auth_info,
         )
         response = apply_response_parameters(response, integration, api_id=api_id)
         return response
@@ -374,6 +377,7 @@ def invoke_rest_api_integration_backend(
     context={},
     resource_id=None,
     response_templates={},
+    auth_info={}
 ):
 
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
@@ -424,6 +428,7 @@ def invoke_rest_api_integration_backend(
                 integration_uri=uri,
                 resource_id=resource_id,
                 resource_path=resource_path,
+                auth_info=auth_info,
             )
             stage_variables = get_stage_variables(api_id, stage)
 
@@ -670,6 +675,7 @@ def get_lambda_event_request_context(
     integration_uri=None,
     resource_id=None,
     resource_path=None,
+    auth_info={},
 ):
     api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
     relative_path, query_string_params = extract_query_string_params(
@@ -700,6 +706,8 @@ def get_lambda_event_request_context(
         "requestTime": datetime.datetime.utcnow(),
         "requestTimeEpoch": int(time.time() * 1000),
     }
+    if isinstance(auth_info, dict) and auth_info.get("context"):
+        request_context["authorizer"] = auth_info["context"]
     return request_context
 
 
