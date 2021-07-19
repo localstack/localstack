@@ -420,12 +420,11 @@ def validate_localstack_config(name):
     warns = []
 
     # validating docker-compose file
-    cmd = "docker-compose -f '%s' config" % (compose_file_name)
+    cmd = ["docker-compose", "-f", compose_file_name, "config"]
     try:
-        run(cmd)
+        run(cmd, shell=False)
     except Exception as e:
         LOG.warning("Looks like the docker-compose file is not valid: %s" % e)
-        return False
 
     # validating docker-compose variable
     import yaml  # keep import here to avoid issues in test Lambdas
@@ -455,7 +454,7 @@ def validate_localstack_config(name):
     network_mode = ls_service_details.get("network_mode")
     image_name = ls_service_details.get("image")
     container_name = ls_service_details.get("container_name") or ""
-    docker_ports = (port.split(":")[0] for port in ls_service_details.get("ports", []))
+    docker_ports = (port.split(":")[-2] for port in ls_service_details.get("ports", []))
     docker_env = dict(
         (env.split("=")[0], env.split("=")[1]) for env in ls_service_details.get("environment", {})
     )
