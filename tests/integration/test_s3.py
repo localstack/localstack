@@ -12,6 +12,7 @@ from io import BytesIO
 from urllib.parse import parse_qs, quote
 
 import boto3
+import pytest
 import requests
 from botocore.client import Config
 from botocore.exceptions import ClientError
@@ -54,6 +55,8 @@ TEST_BUCKET_WITH_VERSIONING = "test-bucket-versioning-1"
 TEST_BUCKET_NAME_2 = "test-bucket-2"
 TEST_KEY_2 = "test-key-2"
 TEST_GET_OBJECT_RANGE = 17
+
+TEST_REGION_1 = "eu-west-1"
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_triggered_by_s3.py")
@@ -2727,3 +2730,24 @@ class TestS3(unittest.TestCase):
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
         )
+
+
+@pytest.fixture
+def s3_client():
+    client = aws_stack.connect_to_service("s3")
+    yield client
+
+
+class TestS3New:
+    def test_region_header_exists(self, s3_client):
+        bucket_name = "test-bucket-%s" % short_uid()
+        s3_client.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={"LocationConstraint": TEST_REGION_1},
+        )
+        bucket_head = s3_client.head_bucket(Bucket=bucket_name)
+        buckets = s3_client.list_objects_v2(Bucket=bucket_name)
+        assert (
+            bucket_head["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == TEST_REGION_1
+        )
+        assert buckets["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == TEST_REGION_1
