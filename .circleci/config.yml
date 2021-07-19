@@ -158,7 +158,7 @@ jobs:
             [[ "$cid" != "" ]] || { echo "could not create build container"; exit 1; }
 
             docker cp ${cid}:/opt/code/localstack/target/test-report.xml target/reports || true
-            docker cp ${cid}:/opt/code/localstack/.coverage ./target/report/.coverage.docker || true
+            docker cp ${cid}:/opt/code/localstack/.coverage ./target/coverage/.coverage.docker_build || true
           when: always
       - run:
           name: Save docker image
