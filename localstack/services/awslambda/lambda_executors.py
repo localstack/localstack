@@ -31,7 +31,6 @@ from localstack.utils.common import (
     TMP_FILES,
     CaptureOutput,
     FuncThread,
-    cp_r,
     get_docker_container_names,
     get_free_tcp_port,
     in_docker,
@@ -39,7 +38,6 @@ from localstack.utils.common import (
     last_index_of,
     long_uid,
     now,
-    rm_rf,
     run,
     save_file,
     short_uid,
@@ -358,7 +356,6 @@ class LambdaExecutorContainers(LambdaExecutor):
         return event_body.encode()
 
     def _execute(self, func_arn, func_details, event, context=None, version=None):
-        lambda_cwd = func_details.cwd
         runtime = func_details.runtime
         handler = func_details.handler
         environment = self._prepare_environment(func_details)
@@ -393,56 +390,28 @@ class LambdaExecutorContainers(LambdaExecutor):
                     to_str(base64.b64decode(to_bytes(context.client_context)))
                 )
 
-        # custom command to execute in the container
-        command = ""
-        events_file_path = ""
-
+        # pass JVM options to the Lambda environment, if configured
         if config.LAMBDA_JAVA_OPTS and is_java_lambda(runtime):
-            # if running a Java Lambda with our custom executor, set up classpath arguments
-            java_opts = Util.get_java_opts()
-            stdin = None
-            # copy executor jar into temp directory
-            target_file = os.path.join(lambda_cwd, os.path.basename(LAMBDA_EXECUTOR_JAR))
-            if not os.path.exists(target_file):
-                cp_r(LAMBDA_EXECUTOR_JAR, target_file)
-            # TODO cleanup once we have custom Java Docker image
-            events_file = "_lambda.events.%s.json" % short_uid()
-            events_file_path = os.path.join(lambda_cwd, events_file)
-            save_file(events_file_path, event_body)
-            # construct Java command
-            classpath = Util.get_java_classpath(target_file)
-            command = [
-                "bash",
-                "-c",
-                'cd %s; java %s -cp "%s" "%s" "%s" "%s"'
-                % (
-                    DOCKER_TASK_FOLDER,
-                    java_opts,
-                    classpath,
-                    LAMBDA_EXECUTOR_CLASS,
-                    handler,
-                    events_file,
-                ),
-            ]
+            if environment.get("JAVA_TOOL_OPTIONS"):
+                LOG.info(
+                    "Skip setting LAMBDA_JAVA_OPTS as JAVA_TOOL_OPTIONS already defined in Lambda env vars"
+                )
+            else:
+                LOG.debug(
+                    "Passing JVM options to container environment: JAVA_TOOL_OPTIONS=%s"
+                    % config.LAMBDA_JAVA_OPTS
+                )
+                environment["JAVA_TOOL_OPTIONS"] = config.LAMBDA_JAVA_OPTS
 
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):
             environment["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
 
-        # copy events file into container, if necessary
-        if events_file_path:
-            container_name = self.get_container_name(func_details.arn())
-            self.copy_into_container(events_file_path, container_name, DOCKER_TASK_FOLDER)
-
         # run Lambda executor and fetch invocation result
         LOG.info("Running lambda: %s" % func_details.arn())
         result = self.run_lambda_executor(
-            event=stdin, env_vars=environment, func_details=func_details, command=command
+            event=stdin, env_vars=environment, func_details=func_details
         )
-
-        # clean up events file
-        events_file_path and os.path.exists(events_file_path) and rm_rf(events_file_path)
-        # TODO: delete events file from container!
 
         return result
 
