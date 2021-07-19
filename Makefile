@@ -164,20 +164,6 @@ test-docker-mount-code:
 
 # Note: the ci-* targets below should only be used in CI builds!
 
-ci-build-prepare:
-	sudo useradd localstack -s /bin/bash
-	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
-	make init
-	docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null
-	docker pull lambci/lambda:20191117-ruby2.5 > /dev/null
-	docker pull lambci/lambda:20210129-ruby2.7 > /dev/null
-	docker pull lambci/lambda:20191117-python3.6 > /dev/null
-	docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null
-	docker pull lambci/lambda:dotnetcore3.1 > /dev/null
-	docker pull lambci/lambda:20191117-provided > /dev/null
-	docker pull lambci/lambda:java8 > /dev/null
-	docker pull lambci/lambda:python3.8 > /dev/null
-
 ci-pro-smoke-tests:
 	which awslocal || pip3 install awscli-local
 	which localstack || pip3 install localstack

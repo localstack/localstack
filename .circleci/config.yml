@@ -63,8 +63,18 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          command: make ci-build-prepare
-          name: Preparing CI tests
+          name: Pull lambda runtimes
+          command: |
+            sudo useradd localstack -s /bin/bash
+            docker pull -q lambci/lambda:20191117-nodejs8.10
+            docker pull -q lambci/lambda:20191117-ruby2.5
+            docker pull -q lambci/lambda:20210129-ruby2.7
+            docker pull -q lambci/lambda:20191117-python3.6
+            docker pull -q lambci/lambda:20191117-dotnetcore2.0
+            docker pull -q lambci/lambda:dotnetcore3.1
+            docker pull -q lambci/lambda:20191117-provided
+            docker pull -q lambci/lambda:java8
+            docker pull -q lambci/lambda:python3.8
       - run:
           name: Test docker lambda executor
           environment:
