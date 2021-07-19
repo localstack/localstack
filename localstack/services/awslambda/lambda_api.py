@@ -39,7 +39,6 @@ from localstack.utils.common import (
     ensure_readable,
     first_char_to_lower,
     is_zip_file,
-    isoformat_milliseconds,
     json_safe,
     load_file,
     long_uid,

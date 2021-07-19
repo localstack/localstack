@@ -10,7 +10,7 @@ import mock
 from localstack.constants import LAMBDA_TEST_ROLE
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file
+from localstack.utils.common import mkdir, new_tmp_dir, save_file
 
 TEST_EVENT_SOURCE_ARN = "arn:aws:sqs:eu-west-1:000000000000:testq"
 TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN = (
