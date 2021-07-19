@@ -4,6 +4,7 @@
 *.log
 *.iml
 .coverage.*
+htmlcov
 
 /infra/
 localstack/infra/
