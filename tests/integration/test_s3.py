@@ -2740,12 +2740,13 @@ def s3_client():
 
 class TestS3New:
     def test_region_header_exists(self, s3_client):
+        bucket_name = "test-bucket-%s" % short_uid()
         s3_client.create_bucket(
-            Bucket=TEST_BUCKET_NAME_2,
+            Bucket=bucket_name,
             CreateBucketConfiguration={"LocationConstraint": TEST_REGION_1},
         )
-        bucket_head = s3_client.head_bucket(Bucket=TEST_BUCKET_NAME_2)
-        buckets = s3_client.list_objects_v2(Bucket=TEST_BUCKET_NAME_2)
+        bucket_head = s3_client.head_bucket(Bucket=bucket_name)
+        buckets = s3_client.list_objects_v2(Bucket=bucket_name)
         assert (
             bucket_head["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == TEST_REGION_1
         )
