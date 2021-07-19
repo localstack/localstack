@@ -1,7 +1,7 @@
 version: 2.1
 
-orbs:
-  slack: circleci/slack@4.4.2
+#orbs:
+#  slack: circleci/slack@4.4.2
 
 jobs:
   install:
@@ -198,9 +198,9 @@ jobs:
             coverage report || true
             coverage html || true
             coveralls || true
-      - slack/notify:
-          event: pass
-          template: basic_success_1
+#      - slack/notify:
+#          event: pass
+#          template: basic_success_1
       - store_artifacts:
           path: htmlcov/
 
