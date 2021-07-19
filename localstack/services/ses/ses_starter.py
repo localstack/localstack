@@ -22,7 +22,7 @@ DELETE_IDENTITY_RESPONSE = """<DeleteTemplateResponse xmlns="http://ses.amazonaw
     </ResponseMetadata>
 </DeleteTemplateResponse>"""
 
-GET_IDENTITY_VERIFICATION_ATTRIBUTES_RESPONSE = """<GetIdentityVerificationAttributesResponse xmlns="http://ses.amazon aws.com/doc/2010-12-01/">
+GET_IDENTITY_VERIFICATION_ATTRIBUTES_RESPONSE = """<GetIdentityVerificationAttributesResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
     <GetIdentityVerificationAttributesResult>
     <VerificationAttributes>
     {% for resource in resources %}
@@ -144,7 +144,7 @@ def apply_patches():
         ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, "ses")
         mkdir(ses_dir)
 
-        with (open(os.path.join(ses_dir, message.id + ".json"), "w")) as f:
+        with open(os.path.join(ses_dir, message.id + ".json"), "w") as f:
             f.write(
                 json.dumps(
                     {
