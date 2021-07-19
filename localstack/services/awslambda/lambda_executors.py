@@ -927,7 +927,7 @@ class LambdaExecutorLocal(LambdaExecutor):
     def execute_javascript_lambda(self, event, context, main_file, func_details=None):
         handler = func_details.handler
         function = handler.split(".")[-1]
-        event_json_string = "%s" % (json.dumps(event) if event else "{}")
+        event_json_string = "%s" % (json.dumps(json_safe(event)) if event else "{}")
         context_json_string = "%s" % (json.dumps(context.__dict__) if context else "{}")
         cmd = (
             "node -e 'require(\"%s\").%s(%s,%s).then(r => process.stdout.write(JSON.stringify(r)))'"
