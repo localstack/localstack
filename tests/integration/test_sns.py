@@ -5,6 +5,7 @@ import os
 import time
 import unittest
 
+import pytest
 import requests
 from botocore.exceptions import ClientError
 
@@ -937,7 +938,7 @@ class SNSTest(unittest.TestCase):
 
     def test_publish_sqs_from_sns_with_xray_propagation(self):
         if SQS_BACKEND_IMPL != "elasticmq":
-            return
+            pytest.skip("not using elasticmq as SQS backend")
 
         self.sns_client.meta.events.register("before-send.sns.Publish", self.add_xray_header)
 

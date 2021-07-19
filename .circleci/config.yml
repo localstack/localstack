@@ -10,11 +10,12 @@ jobs:
       - restore_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
+          name: Install prerequisites
           command: |
             sudo apt-get update
             sudo apt-get install -y libsasl2-dev python3.8-venv python3.8-dev
-          name: Install prerequisites
       - run:
+          name: Setup environment
           command: |
             /usr/bin/python3.8 -m venv .venv
             source .venv/bin/activate
@@ -26,7 +27,7 @@ jobs:
             python -m localstack.services.install libs
             python -m localstack.services.install testlibs
             mkdir -p target/reports
-          name: Setup environment
+            mkdir -p target/coverage
       - save_cache:
           key: python-requirements-{{ checksum "requirements.txt" }}
           paths:
@@ -45,13 +46,13 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
+          name: Linting
           command: make lint
-          name: Run linter
       - run:
+          name: Unit tests
           command: |
             source .venv/bin/activate
             pytest tests/unit --junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests
-          name: Unit tests
       - store_test_results:
           path: target/reports/
 
@@ -84,14 +85,24 @@ jobs:
             TEST_ERROR_INJECTION: 1
             TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
-          command: make test
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
       - run:
           name: Test docker-reuse lambda executor
           environment:
             LAMBDA_EXECUTOR: "docker-reuse"
             TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
-          command: make test
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage
       - store_test_results:
           path: target/reports/
 
@@ -109,7 +120,16 @@ jobs:
             SQS_PROVIDER: "elasticmq"
             TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
             PYTEST_ARGS: "--junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
-          command: make test
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage
       - store_test_results:
           path: target/reports/
 
@@ -121,11 +141,11 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
+          name: Initialize build environment
           command: make init
-          name: Initializing build environment
       - run:
-          command: make docker-build
           name: Build localstack docker image
+          command: make docker-build
       - run:
           name: Extract build reports
           command: |
@@ -138,20 +158,13 @@ jobs:
             [[ "$cid" != "" ]] || { echo "could not create build container"; exit 1; }
 
             docker cp ${cid}:/opt/code/localstack/target/test-report.xml target/reports || true
-            docker cp ${cid}:/opt/code/localstack/.coverage ./ || true
+            docker cp ${cid}:/opt/code/localstack/.coverage ./target/coverage/.coverage.docker_build || true
           when: always
       - run:
-          name: Report coverage statistics
-          command: |
-            source .venv/bin/activate
-            coverage report || true
-            coveralls || true
-          when: always
-      - run:
+          name: Save docker image
           command: |
             test "$CIRCLE_BRANCH" = "master" \
               && docker save localstack/localstack:latest -o target/localstack-docker-image.tar || true
-          name: Saving docker image
       - persist_to_workspace:
           root:
             /tmp/workspace
@@ -159,6 +172,31 @@ jobs:
             - repo
       - store_test_results:
           path: target/reports/
+
+  report:
+    docker:
+      - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Collect coverage
+          command: |
+            source .venv/bin/activate
+            cd target/coverage
+            ls -la
+            coverage combine
+            mv .coverage ../../
+      - run:
+          name: Report coverage statistics
+          command: |
+            source .venv/bin/activate
+            coverage report || true
+            coverage html || true
+            coveralls || true
+      - store_artifacts:
+          path: htmlcov/
 
   docker-push:
     machine:
@@ -168,7 +206,7 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Loading docker image
+          name: Load docker image
           command: docker load -i target/localstack-docker-image.tar
       - run:
           name: Run pre-release smoke tests
@@ -194,6 +232,11 @@ workflows:
       - docker-build:
           requires:
             - preflight
+      - report:
+          requires:
+            - itest-lambda-docker
+            - itest-elasticmq
+            - docker-build
       - docker-push:
           filters:
             branches:

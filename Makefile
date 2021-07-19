@@ -147,10 +147,10 @@ test:
 	($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
 test-coverage:
-	($(VENV_RUN); coverage --version; \
+	($(VENV_RUN); python -m coverage --version; \
 		DEBUG=$(DEBUG) \
-		coverage run --source=localstack/ --omit=localstack/infra/,localstack/node_modules/ \
-		-m pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
+		python -m coverage run $(COVERAGE_ARGS) -m \
+		pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
 test-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
