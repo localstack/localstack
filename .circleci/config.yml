@@ -46,13 +46,13 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
+          name: Linting
           command: make lint
-          name: Run linter
       - run:
+          name: Unit tests
           command: |
             source .venv/bin/activate
             pytest tests/unit --junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests
-          name: Unit tests
       - store_test_results:
           path: target/reports/
 
@@ -181,21 +181,16 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
-          name: Debug
-          command: |
-            ls -la target/
-            ls -la target/coverage
-      - run:
           name: Collect coverage
           command: |
             source .venv/bin/activate
             cd target/coverage
+            ls -la
             coverage combine
             mv .coverage ../../
       - run:
           name: Report coverage statistics
           command: |
-            ls -la | grep cov
             source .venv/bin/activate
             coverage report || true
             coverage html || true
