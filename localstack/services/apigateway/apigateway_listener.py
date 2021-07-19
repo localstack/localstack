@@ -277,7 +277,9 @@ def invoke_rest_api_from_request(method, path, data, headers, context={}, auth_i
         return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
 
 
-def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None, context={}, auth_info={}):
+def invoke_rest_api(
+    api_id, stage, method, invocation_path, data, headers, path=None, context={}, auth_info={}
+):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
 
@@ -322,7 +324,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         context=context,
         resource_id=resource.get("id"),
         response_templates=response_templates,
-        auth_info=auth_info
+        auth_info=auth_info,
     )
 
 
@@ -377,7 +379,7 @@ def invoke_rest_api_integration_backend(
     context={},
     resource_id=None,
     response_templates={},
-    auth_info={}
+    auth_info={},
 ):
 
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
@@ -684,6 +686,7 @@ def get_lambda_event_request_context(
     source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
+    account_id = account_id or TEST_AWS_ACCOUNT_ID
     domain_name = f"{api_id}.execute-api.{LOCALHOST_HOSTNAME}"
     request_context = {
         # adding stage to the request context path.
