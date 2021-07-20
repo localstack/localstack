@@ -1,3 +1,6 @@
+import itertools
+import socket
+import threading
 import time
 import unittest
 from datetime import date, datetime
@@ -100,6 +103,19 @@ class TestCommon(unittest.TestCase):
         result = common.extract_jsonpath(obj, "$.a.b[1]")
         self.assertEqual("foo", result)
 
+    def test_str_to_bool(self):
+        self.assertEqual(True, common.str_to_bool("true"))
+        self.assertEqual(True, common.str_to_bool("True"))
+
+        self.assertEqual(False, common.str_to_bool("1"))
+        self.assertEqual(False, common.str_to_bool("0"))
+        self.assertEqual(False, common.str_to_bool("TRUE"))
+        self.assertEqual(False, common.str_to_bool("false"))
+        self.assertEqual(False, common.str_to_bool("False"))
+
+        self.assertEqual(0, common.str_to_bool(0))
+        self.assertEqual(0, common.str_to_bool(0))
+
     def test_parse_yaml_nodes(self):
         obj = {"test": yaml.ScalarNode("tag:yaml.org,2002:int", "123")}
         result = common.clone_safe(obj)
@@ -114,6 +130,31 @@ class TestCommon(unittest.TestCase):
         }
         result = common.clone_safe(obj)
         self.assertEqual({"foo": ["value", 123, 1.23, True]}, result)
+
+    def test_free_tcp_port_blacklist_raises_exception(self):
+        blacklist = range(0, 70000)  # blacklist all existing ports
+        with self.assertRaises(Exception) as ctx:
+            common.get_free_tcp_port(blacklist)
+
+        self.assertIn("Unable to determine free TCP", str(ctx.exception))
+
+    def test_port_can_be_bound(self):
+        port = common.get_free_tcp_port()
+        self.assertTrue(common.port_can_be_bound(port))
+
+    def test_port_can_be_bound_illegal_port(self):
+        self.assertFalse(common.port_can_be_bound(9999999999))
+
+    def test_port_can_be_bound_already_bound(self):
+        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            tcp.bind(("", 0))
+            addr, port = tcp.getsockname()
+            self.assertFalse(common.port_can_be_bound(port))
+        finally:
+            tcp.close()
+
+        self.assertTrue(common.port_can_be_bound(port))
 
     def test_to_unique_item_list(self):
         self.assertListEqual([1, 2, 3], common.to_unique_items_list([1, 1, 2, 2, 3]))
@@ -135,6 +176,41 @@ class TestCommon(unittest.TestCase):
         self.assertListEqual(
             ["1", "2"], common.to_unique_items_list(["1", "2", "1", "2"], comparator_str_int)
         )
+
+    def test_retry(self):
+        exceptions = list()
+        count = itertools.count()
+
+        def fn():
+            i = next(count)
+            e = RuntimeError("exception %d" % i)
+            exceptions.append(e)
+
+            if i == 2:
+                return "two"
+
+            raise e
+
+        ret = common.retry(fn, retries=3, sleep=0.001)
+        self.assertEqual("two", ret)
+        self.assertEqual(3, len(exceptions))
+
+    def test_retry_raises_last_exception(self):
+        exceptions = list()
+        count = itertools.count()
+
+        def fn():
+            i = next(count)
+            e = RuntimeError("exception %d" % i)
+            exceptions.append(e)
+
+            raise e
+
+        with self.assertRaises(RuntimeError) as ctx:
+            common.retry(fn, retries=3, sleep=0.001)
+
+        self.assertIs(exceptions[-1], ctx.exception, "did not throw last exception")
+        self.assertEqual(4, len(exceptions))
 
     def test_run(self):
         cmd = "echo 'foobar'"
@@ -160,6 +236,111 @@ class TestCommon(unittest.TestCase):
 
         self.assertEqual(d1, d2)
         self.assertNotEqual(d2, d3)
+
+    def test_is_command_available(self):
+        self.assertTrue(common.is_command_available("python3"))
+        self.assertFalse(common.is_command_available("hopefullydoesntexist"))
+
+    def test_camel_to_snake_case(self):
+        fn = common.camel_to_snake_case
+
+        self.assertEqual("foo", fn("Foo"))
+        self.assertEqual("foobar_ed", fn("FoobarEd"))
+        self.assertEqual("foo_bar_ed", fn("FooBarEd"))
+        self.assertEqual("foo_bar", fn("Foo_Bar"))
+        self.assertEqual("foo__bar", fn("Foo__Bar"))
+        self.assertEqual("foo_b_a_r", fn("FooBAR"))
+
+    def test_snake_to_camel_case(self):
+        fn = common.snake_to_camel_case
+
+        self.assertEqual("Foo", fn("foo"))
+        self.assertEqual("FoobarEd", fn("foobar_ed"))
+        self.assertEqual("FooBarEd", fn("foo_bar_ed"))
+        self.assertEqual("FooBar", fn("foo_bar"))
+        self.assertEqual("FooBar", fn("foo__bar"))
+        self.assertEqual("FooBAR", fn("foo_b_a_r"))
+
+    def test_obj_to_xml(self):
+        fn = common.obj_to_xml
+        # primitive
+        self.assertEqual("42", fn(42))
+        self.assertEqual("False", fn(False))
+        self.assertEqual("a", fn("a"))
+        # dict only
+        self.assertEqual("<foo>bar</foo>", fn({"foo": "bar"}))
+        self.assertEqual("<a>42</a>", fn({"a": 42}))
+        self.assertEqual("<a>42</a><foo>bar</foo>", fn({"a": 42, "foo": "bar"}))
+        # list of dicts
+        self.assertEqual("<a>42</a><a>43</a>", fn([{"a": 42}, {"a": 43}]))
+        # dict with lists
+        self.assertEqual("<f><a>42</a><a>43</a></f>", fn({"f": [{"a": 42}, {"a": 43}]}))
+        # empty types
+        self.assertEqual("None", fn(None))
+        self.assertEqual("", fn(""))
+
+    def test_parse_json_or_yaml_with_json(self):
+        markup = """{"foo": "bar", "why": 42, "mylist": [1,2,3]}"""
+
+        doc = common.parse_json_or_yaml(markup)
+        self.assertDictEqual({"foo": "bar", "why": 42, "mylist": [1, 2, 3]}, doc)
+
+    def test_parse_json_or_yaml_with_yaml(self):
+        markup = """
+        foo: bar
+        why: 42
+        mylist:
+            - 1
+            - 2
+            - 3
+        """
+        doc = common.parse_json_or_yaml(markup)
+        self.assertDictEqual({"foo": "bar", "why": 42, "mylist": [1, 2, 3]}, doc)
+
+    def test_parse_json_or_yaml_with_invalid_syntax_returns_content(self):
+        markup = "<a href='foobar'>baz</a>"
+        doc = common.parse_json_or_yaml(markup)
+        self.assertEqual(markup, doc)  # FIXME: not sure if this is good behavior
+
+    def test_parse_json_or_yaml_with_empty_string_returns_none(self):
+        doc = common.parse_json_or_yaml("")
+        self.assertIsNone(doc)
+
+    def test_format_bytes(self):
+        fn = common.format_bytes
+
+        self.assertEqual("1B", fn(1))
+        self.assertEqual("100B", fn(100))
+        self.assertEqual("999B", fn(999))
+        self.assertEqual("1KB", fn(1e3))
+        self.assertEqual("1MB", fn(1e6))
+        self.assertEqual("10MB", fn(1e7))
+        self.assertEqual("100MB", fn(1e8))
+        self.assertEqual("1GB", fn(1e9))
+        self.assertEqual("1TB", fn(1e12))
+
+        # comma values
+        self.assertEqual("1.1TB", fn(1e12 + 1e11))
+        # last unit
+        self.assertEqual("1e+03TB", fn(1e15))
+
+    def test_cleanup_threads_and_processes_calls_shutdown_hooks(self):
+        # TODO: move all run/concurrency related tests into separate class
+
+        started = threading.Event()
+        done = threading.Event()
+
+        def run_method(*args, **kwargs):
+            started.set()
+            func_thread = kwargs["_thread"]
+            # thread waits until it is stopped
+            func_thread._stop_event.wait()
+            done.set()
+
+        common.start_thread(run_method)
+        self.assertTrue(started.wait(timeout=2))
+        common.cleanup_threads_and_processes()
+        self.assertTrue(done.wait(timeout=2))
 
 
 class TestCommandLine(unittest.TestCase):

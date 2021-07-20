@@ -1560,7 +1560,12 @@ class ProxyListenerS3(PersistingProxyListener):
                 add_response_metadata_headers(response)
                 if is_object_expired(path):
                     return no_such_key_error(path, headers.get("x-amz-request-id"), 400)
-
+                # AWS C# SDK uses get bucket acl to check the existence of the bucket
+                # If not exists, raises a NoSuchBucket Error
+                if bucket_name and "/?acl" in path:
+                    exists, code, body = is_bucket_available(bucket_name)
+                    if not exists:
+                        return no_such_bucket(bucket_name, headers.get("x-amz-request-id"), 404)
                 query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
                 for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
                     if param_name in query_map:

@@ -921,8 +921,10 @@ def format_bytes(count, default="n/a"):
     if not is_number(count) or count < 0:
         return default
     cnt = float(count)
-    for unit in ("B", "KB", "MB", "GB", "TB"):
-        if cnt < 1000:
+    units = ("B", "KB", "MB", "GB", "TB")
+    for unit in units:
+        if cnt < 1000 or unit == units[-1]:
+            # FIXME: will return '1e+03TB' for 1000TB
             return "%s%s" % (format_number(cnt, decimals=3), unit)
         cnt = cnt / 1000.0
     return count

@@ -39,7 +39,6 @@ from localstack.utils.common import (
     chmod_r,
     download,
     get_arch,
-    in_docker,
     is_alpine,
     load_file,
     mkdir,
@@ -82,7 +81,7 @@ SFN_PATCH_CLASS_URL = "%s/raw/master/stepfunctions-local-patch/%s" % (
 )
 
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.1.3"
+KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.1.4"
 KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
@@ -95,9 +94,6 @@ JAVAC_TARGET_VERSION = "1.8"
 
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
-
-# TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
-OVERWRITE_DDB_FILES_IN_DOCKER = False
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -300,8 +296,6 @@ def install_stepfunctions_local():
 
 
 def install_dynamodb_local():
-    if OVERWRITE_DDB_FILES_IN_DOCKER and in_docker():
-        rm_rf(INSTALL_DIR_DDB)
     is_in_alpine = is_alpine()
     if not os.path.exists(INSTALL_PATH_DDB_JAR):
         log_install_msg("DynamoDB")

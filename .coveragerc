@@ -1,2 +1,7 @@
 [run]
 relative_files = True
+source =
+    localstack/
+omit =
+    localstack/infra/
+    localstack/node_modules

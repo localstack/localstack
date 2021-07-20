@@ -134,6 +134,28 @@ def apply_patches():
     get_bucket_orig = s3_models.s3_backend.get_bucket
     s3_models.s3_backend.get_bucket = types.MethodType(get_bucket, s3_models.s3_backend)
 
+    def _bucket_response_head(self, bucket_name, *args, **kwargs):
+        code, headers, body = _bucket_response_head_orig(self, bucket_name, *args, **kwargs)
+        bucket = s3_models.s3_backend.get_bucket(bucket_name)
+        headers["x-amz-bucket-region"] = bucket.region_name
+        return code, headers, body
+
+    _bucket_response_head_orig = s3_responses.ResponseObject._bucket_response_head
+    s3_responses.ResponseObject._bucket_response_head = _bucket_response_head
+
+    def _bucket_response_get(self, bucket_name, querystring, *args, **kwargs):
+        result = _bucket_response_get_orig(self, bucket_name, querystring, *args, **kwargs)
+        # for some reason in the "get-bucket-location" call, moto doesn't return a code, headers, body triple as a result
+        if isinstance(result, tuple) and len(result) == 3:
+            code, headers, body = result
+            bucket = s3_models.s3_backend.get_bucket(bucket_name)
+            headers["x-amz-bucket-region"] = bucket.region_name
+        return result
+
+    _bucket_response_get_orig = s3_responses.ResponseObject._bucket_response_get
+    # note: method type is only required when the method is part of an object instance (make a method out of a function)
+    s3_responses.ResponseObject._bucket_response_get = _bucket_response_get
+
     # patch S3Bucket.get_bucket(..)
     def delete_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
