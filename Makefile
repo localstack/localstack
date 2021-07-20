@@ -145,6 +145,9 @@ docker-cp-coverage:
 ## Run automated tests
 test:
 	($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
+	($(VENV_RUN); \
+	DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) 'tests/integration/test_lambda.py::TestLambdaBaseFeatures::test_success_destination'; \
+	DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) 'tests/integration/test_lambda.py::TestLambdaBaseFeatures::test_failure_destination')
 
 test-coverage:
 	($(VENV_RUN); python -m coverage --version; \
