@@ -3,6 +3,7 @@ import logging
 import pytest
 
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.common import short_uid
 
 try:
@@ -18,6 +19,11 @@ def _client(service):
 
 
 @pytest.fixture(scope="class")
+def dynamodb_client() -> "botostubs.DynamoDB":
+    return _client("dynamodb")
+
+
+@pytest.fixture(scope="class")
 def s3_client() -> "botostubs.S3":
     return _client("s3")
 
@@ -30,6 +36,33 @@ def sqs_client() -> "botostubs.SQS":
 @pytest.fixture(scope="class")
 def sns_client() -> "botostubs.SNS":
     return _client("sns")
+
+
+@pytest.fixture
+def dynamodb_create_table(dynamodb_client):
+    tables = list()
+
+    def factory(**kwargs) -> "botostubs.DynamoDB.CreateTableOutput":
+        kwargs["client"] = dynamodb_client
+        if "table_name" not in kwargs:
+            kwargs["table_name"] = "test-table-%s" % short_uid()
+        if "partition_key" not in kwargs:
+            kwargs["partition_key"] = "id"
+
+        kwargs["sleep_after"] = 0
+
+        tables.append(kwargs["table_name"])
+
+        return create_dynamodb_table(**kwargs)
+
+    yield factory
+
+    # cleanup
+    for table in tables:
+        try:
+            dynamodb_client.delete_table(TableName=table)
+        except Exception as e:
+            LOG.debug("error cleaning up table %s: %s", table, e)
 
 
 @pytest.fixture

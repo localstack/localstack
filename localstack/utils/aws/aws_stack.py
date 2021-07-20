@@ -872,6 +872,7 @@ def create_dynamodb_table(
     stream_view_type=None,
     region_name=None,
     client=None,
+    sleep_after=2,
 ):
     """Utility method to create a DynamoDB table"""
 
@@ -900,7 +901,11 @@ def create_dynamodb_table(
             )
         if "AccessDeniedException" in str(e):
             raise
-    time.sleep(2)
+
+    if sleep_after:
+        # TODO: do we need this?
+        time.sleep(sleep_after)
+
     return table
 
 

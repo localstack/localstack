@@ -76,3 +76,19 @@ class TestResourceGraph:
         expected_arns.sort()
 
         assert target_arns == expected_arns
+
+    def test_dynamodb_nodes(self, dynamodb_create_table):
+        table_1 = dynamodb_create_table()
+        table_2 = dynamodb_create_table()
+
+        table_1_arn = table_1["TableDescription"]["TableArn"]
+        table_2_arn = table_2["TableDescription"]["TableArn"]
+
+        graph = serve_resource_graph(self.request_data)
+
+        node_arns = [node["arn"] for node in graph["nodes"]]
+
+        assert table_1_arn in node_arns
+        assert table_2_arn in node_arns
+
+    # TODO: more tests
