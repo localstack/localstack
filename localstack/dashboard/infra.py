@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import tempfile
+from typing import Dict, List
 
 from six import iteritems
 
@@ -17,6 +18,7 @@ from localstack.utils.aws.aws_models import (
     LambdaFunction,
     S3Bucket,
     S3Notification,
+    SnsTopic,
     SqsQueue,
 )
 from localstack.utils.common import (
@@ -96,6 +98,27 @@ def get_sqs_queues(filter=".*", pool={}, env=None, region=None):
             if re.match(filter, name):
                 queue = SqsQueue(arn)
                 result.append(queue)
+    except Exception:
+        pass
+    return result
+
+
+def get_sns_topics(filter=".*", pool=None, env=None, region=None):
+    result = []
+    try:
+        sns_client = _connect("sns", env=env, region=region)
+        out = sns_client.list_topics()
+
+        topics = out["Topics"]
+        for t in topics:
+            arn = t["TopicArn"]
+            name = arn.split(":")[-1]
+            if re.match(filter, name):
+                obj = SnsTopic(arn)
+                result.append(obj)
+
+                if pool is not None:
+                    pool[obj.id] = obj
     except Exception:
         pass
     return result
@@ -245,6 +268,34 @@ def get_dynamo_dbs(filter=".*", pool={}, env=None, region=None):
     return result
 
 
+def parse_notification_configuration(notification_config: Dict, pool=None) -> List[S3Notification]:
+    # notification_config returned by:
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.get_bucket_notification_configuration
+    notifications = list()
+
+    arn_selectors = {
+        "QueueConfigurations": "QueueArn",
+        "TopicConfigurations": "TopicArn",
+        "LambdaFunctionConfigurations": "LambdaFunctionArn",
+    }
+
+    for config_type, configs in notification_config.items():
+        if config_type not in arn_selectors:
+            continue
+
+        for config in configs:
+            try:
+                arn = config[arn_selectors[config_type]]
+                target = EventSource.get(arn, pool=pool)
+                notification = S3Notification(target.id)
+                notification.target = target
+                notifications.append(notification)
+            except Exception as e:
+                LOG.warning("error parsing s3 notification: %s", e)
+
+    return notifications
+
+
 def get_s3_buckets(filter=".*", pool={}, details=False, env=None, region=None):
     result = []
     s3_client = _connect("s3", env=env, region=region)
@@ -258,19 +309,17 @@ def get_s3_buckets(filter=".*", pool={}, details=False, env=None, region=None):
             pool[arn] = bucket
             if details:
                 try:
-                    out = s3_client.get_bucket_notification(Bucket=bucket_name)
-                    if out:
-                        if "CloudFunctionConfiguration" in out:
-                            func = out["CloudFunctionConfiguration"]["CloudFunction"]
-                            func = EventSource.get(func, pool=pool)
-                            n = S3Notification(func.id)
-                            n.target = func
-                            bucket.notifications.append(n)
+                    response = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+                    if response:
+                        notifications = parse_notification_configuration(response)
+                        bucket.notifications.extend(notifications)
+
                 except Exception as e:
-                    print("WARNING: Unable to get details for bucket: %s" % e)
+                    LOG.warning("Unable to get details for bucket: %s", e)
 
     try:
         out = s3_client.list_buckets()
+        # TODO: `handle` is not process safe, and threading may actually make the code slower
         parallelize(handle, out["Buckets"])
     except Exception:
         pass
@@ -319,6 +368,21 @@ def get_kinesis_events(stream_name, shard_id, max_results=10, env=None):
     return result
 
 
+def find_node_by_attribute(graph, key, value):
+    for node in graph["nodes"]:
+        if node[key] == value:
+            return node
+    return None
+
+
+def find_node_by_id(graph, node_id):
+    return find_node_by_attribute(graph, "id", node_id)
+
+
+def find_edges_for_source(graph, node_id):
+    return [edge for edge in graph["edges"] if edge["source"] == node_id]
+
+
 def get_graph(name_filter=".*", env=None, **kwargs):
     result = {"nodes": [], "edges": []}
 
@@ -335,6 +399,7 @@ def get_graph(name_filter=".*", env=None, **kwargs):
     firehoses = get_firehose_streams(name_filter, pool=pool, env=env, region=region)
     lambdas = get_lambda_functions(name_filter, details=True, pool=pool, env=env, region=region)
     queues = get_sqs_queues(name_filter, pool=pool, env=env, region=region)
+    topics = get_sns_topics(name_filter, pool=pool, env=env, region=region)
 
     for es in domains:
         uid = short_uid()
@@ -375,6 +440,10 @@ def get_graph(name_filter=".*", env=None, **kwargs):
         uid = short_uid()
         node_ids[q.id] = uid
         result["nodes"].append({"id": uid, "arn": q.id, "name": q.name(), "type": "sqs"})
+    for t in topics:
+        uid = short_uid()
+        node_ids[t.id] = uid
+        result["nodes"].append({"id": uid, "arn": t.id, "name": t.name(), "type": "sns"})
     for lda in lambdas:
         uid = short_uid()
         node_ids[lda.id] = uid

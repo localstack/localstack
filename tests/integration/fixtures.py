@@ -5,6 +5,11 @@ import pytest
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
+try:
+    import botostubs
+except ImportError:
+    pass
+
 LOG = logging.getLogger(__name__)
 
 
@@ -13,17 +18,17 @@ def _client(service):
 
 
 @pytest.fixture(scope="class")
-def s3_client():
+def s3_client() -> "botostubs.S3":
     return _client("s3")
 
 
 @pytest.fixture(scope="class")
-def sqs_client():
+def sqs_client() -> "botostubs.SQS":
     return _client("sqs")
 
 
 @pytest.fixture(scope="class")
-def sns_client():
+def sns_client() -> "botostubs.SNS":
     return _client("sns")
 
 
@@ -31,7 +36,7 @@ def sns_client():
 def s3_create_bucket(s3_client):
     buckets = list()
 
-    def factory(**kwargs):
+    def factory(**kwargs) -> str:
         if "Bucket" not in kwargs:
             kwargs["Bucket"] = "test-bucket-%s" % short_uid()
 
@@ -50,21 +55,42 @@ def s3_create_bucket(s3_client):
 
 
 @pytest.fixture
-def s3_bucket(s3_create_bucket):
+def s3_bucket(s3_create_bucket) -> str:
     return s3_create_bucket()
 
 
 @pytest.fixture
-def sqs_queue(sqs_client):
-    queue_name = "test-queue-%s" % short_uid()
-    response = sqs_client.create_queue(QueueName=queue_name)
-    queue_url = response["QueueUrl"]
-    yield sqs_client.get_queue_attributes(QueueUrl=queue_url)
-    sqs_client.delete_queue(QueueUrl=queue_url)
+def sqs_create_queue(sqs_client):
+    queue_urls = list()
+
+    def factory(**kwargs) -> "botostubs.SQS.QueueAttributeMap":
+        if "QueueName" not in kwargs:
+            kwargs["QueueName"] = "test-queue-%s" % short_uid()
+
+        response = sqs_client.create_queue(QueueName=kwargs["QueueName"])
+        url = response["QueueUrl"]
+        queue_urls.append(url)
+
+        return sqs_client.get_queue_attributes(QueueUrl=url)
+
+    yield factory
+
+    # cleanup
+    for queue_url in queue_urls:
+        try:
+            sqs_client.delete_queue(QueueUrl=queue_url)
+        except Exception as e:
+            LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+
+
+@pytest.fixture
+def sqs_queue(sqs_create_queue):
+    return sqs_create_queue()
 
 
 @pytest.fixture
 def sns_topic(sns_client):
+    # TODO: add fixture factories
     topic_name = "test-topic-%s" % short_uid()
     response = sns_client.create_topic(Name=topic_name)
     topic_arn = response["TopicArn"]

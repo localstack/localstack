@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from datetime import datetime
 
@@ -8,6 +9,8 @@ from localstack.utils.common import timestamp_millis
 
 if six.PY3:
     long = int
+
+LOG = logging.getLogger(__name__)
 
 
 class Component(object):
@@ -383,6 +386,14 @@ class SqsQueue(Component):
         return self.id.split(":")[-1]
 
 
+class SnsTopic(Component):
+    def __init__(self, id):
+        super(SnsTopic, self).__init__(id)
+
+    def name(self):
+        return self.id.split(":")[-1]
+
+
 class S3Bucket(Component):
     def __init__(self, id):
         super(S3Bucket, self).__init__(id)
@@ -427,6 +438,8 @@ class EventSource(Component):
                 inst = DynamoDB(obj)
         elif obj.startswith("arn:aws:sqs:"):
             inst = SqsQueue(obj)
+        elif obj.startswith("arn:aws:sns:"):
+            inst = SnsTopic(obj)
         elif type:
             for o in EventSource.filter_type(pool, type):
                 if o.name() == obj:
