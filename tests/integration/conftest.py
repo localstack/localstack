@@ -20,6 +20,10 @@ from localstack.utils.common import safe_requests
 from tests.integration.test_elasticsearch import ElasticsearchTest
 from tests.integration.test_terraform import TestTerraform
 
+pytest_plugins = [
+    "tests.integration.fixtures",
+]
+
 logger = logging.getLogger(__name__)
 
 localstack_started = mp.Event()  # event indicating whether localstack has been started
