@@ -12,7 +12,6 @@ from io import BytesIO
 from urllib.parse import parse_qs, quote
 
 import boto3
-import pytest
 import requests
 from botocore.client import Config
 from botocore.exceptions import ClientError
@@ -2732,17 +2731,9 @@ class TestS3(unittest.TestCase):
         )
 
 
-@pytest.fixture
-def s3_client():
-    client = aws_stack.connect_to_service("s3")
-    yield client
-
-
 class TestS3New:
-    def test_region_header_exists(self, s3_client):
-        bucket_name = "test-bucket-%s" % short_uid()
-        s3_client.create_bucket(
-            Bucket=bucket_name,
+    def test_region_header_exists(self, s3_client, s3_create_bucket):
+        bucket_name = s3_create_bucket(
             CreateBucketConfiguration={"LocationConstraint": TEST_REGION_1},
         )
         bucket_head = s3_client.head_bucket(Bucket=bucket_name)
