@@ -117,6 +117,18 @@ GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + "/aws-lambda-mock"
 GO_LAMBDA_MOCKSERVER = GO_INSTALL_FOLDER + "/mockserver"
 GO_ZIP_NAME = "runtime.zip"
 
+
+GLIBC_KEY_URL = "https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub"
+GLIBC_KEY = "/etc/apk/keys/sgerrand.rsa.pub"
+GLIBC_VERSION = "2.32-r0"
+GLIBC_FILE = "glibc-%s.apk" % GLIBC_VERSION
+GLIBC_URL = "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/%s/%s" % (
+    GLIBC_VERSION,
+    GLIBC_FILE,
+)
+GLIBC_PATH = config.TMP_FOLDER + "/" + GLIBC_FILE
+CA_CERTIFICATES = "ca-certificates"
+
 # set up logger
 LOG = logging.getLogger(__name__)
 
@@ -397,6 +409,7 @@ def install_lambda_java_libs():
 
 
 def install_go_lambda_runtime():
+    install_glibc_for_alpine()
 
     if not os.path.isfile(GO_LAMBDA_RUNTIME):
         log_install_msg("Installing golang runtime")
@@ -416,6 +429,36 @@ def install_go_lambda_runtime():
 
         st = os.stat(GO_LAMBDA_MOCKSERVER)
         os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def install_glibc_for_alpine():
+    try:
+        run("apk info glibc")
+        return
+    except Exception:
+        pass
+
+    log_install_msg("Installing glibc")
+    try:
+        try:
+            run("apk add %s" % CA_CERTIFICATES)
+        except Exception:
+            raise Exception("ca-certificates not installed")
+
+        response = requests.get(GLIBC_KEY_URL, allow_redirects=True)
+        if not response.ok:
+            raise Exception("glibc key not downloaded")
+        open(GLIBC_KEY, "wb").write(response.content)
+
+        response = requests.get(GLIBC_URL, allow_redirects=True)
+        if not response.ok:
+            raise Exception("glibc key not downloaded")
+        open(GLIBC_PATH, "wb").write(response.content)
+
+        run("apk add %s" % GLIBC_PATH)
+
+    except Exception as e:
+        log_install_msg("glibc installation failed: " + str(e))
 
 
 def install_cloudformation_libs():
