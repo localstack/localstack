@@ -10,7 +10,7 @@ import mock
 from localstack.constants import LAMBDA_TEST_ROLE
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.common import mkdir, new_tmp_dir, save_file
+from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file
 
 TEST_EVENT_SOURCE_ARN = "arn:aws:sqs:eu-west-1:000000000000:testq"
 TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN = (
@@ -384,7 +384,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result["Role"] = self.ROLE
             expected_result["KMSKeyArn"] = None
             expected_result["VpcConfig"] = None
-            expected_result["LastModified"] = self.LAST_MODIFIED.timestamp()
+            expected_result["LastModified"] = isoformat_milliseconds(self.LAST_MODIFIED) + "+0000"
             expected_result["TracingConfig"] = self.TRACING_CONFIG
             expected_result["Version"] = "1"
             expected_result["State"] = "Active"
@@ -417,7 +417,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result["Role"] = self.ROLE
             expected_result["KMSKeyArn"] = None
             expected_result["VpcConfig"] = None
-            expected_result["LastModified"] = self.LAST_MODIFIED.timestamp()
+            expected_result["LastModified"] = isoformat_milliseconds(self.LAST_MODIFIED) + "+0000"
             expected_result["TracingConfig"] = self.TRACING_CONFIG
             expected_result["Version"] = "2"
             expected_result["State"] = "Active"
@@ -461,7 +461,7 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version["Role"] = self.ROLE
             latest_version["KMSKeyArn"] = None
             latest_version["VpcConfig"] = None
-            latest_version["LastModified"] = self.LAST_MODIFIED.timestamp()
+            latest_version["LastModified"] = isoformat_milliseconds(self.LAST_MODIFIED) + "+0000"
             latest_version["TracingConfig"] = self.TRACING_CONFIG
             latest_version["Version"] = "$LATEST"
             latest_version["State"] = "Active"
