@@ -30,7 +30,6 @@ from localstack.constants import (
     STS_JAR_URL,
 )
 from localstack.utils import bootstrap
-from localstack.utils.common import is_windows
 
 if __name__ == "__main__":
     bootstrap.bootstrap_installation()
@@ -40,16 +39,21 @@ from localstack.utils.common import (
     download,
     get_arch,
     is_alpine,
+    is_windows,
     load_file,
     mkdir,
     new_tmp_file,
     parallelize,
+    retry,
     rm_rf,
     run,
+    safe_run,
     save_file,
     untar,
     unzip,
 )
+
+LOG = logging.getLogger(__name__)
 
 INSTALL_DIR_NPM = "%s/node_modules" % MODULE_MAIN_PATH
 INSTALL_DIR_DDB = "%s/dynamodb" % INSTALL_DIR_INFRA
@@ -94,9 +98,6 @@ JAVAC_TARGET_VERSION = "1.8"
 
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
-
-# set up logger
-LOG = logging.getLogger(__name__)
 
 
 def get_elasticsearch_install_version(version=None):
@@ -148,7 +149,21 @@ def install_elasticsearch(version=None):
             plugin_dir = os.path.join(install_dir, "plugins", plugin)
             if not os.path.exists(plugin_dir):
                 LOG.info("Installing Elasticsearch plugin %s" % (plugin))
-                run("%s install -b %s" % (plugin_binary, plugin))
+
+                def try_install():
+                    safe_run([plugin_binary, "install", "-b", plugin])
+
+                # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
+                download_attempts = 3
+                try:
+                    retry(try_install, retries=download_attempts - 1, sleep=2)
+                except Exception:
+                    LOG.warning(
+                        "Unable to download Elasticsearch plugin '%s' after %s attempts"
+                        % (plugin, download_attempts)
+                    )
+                    if not os.environ.get("IGNORE_ES_DOWNLOAD_ERRORS"):
+                        raise
 
     # delete some plugins to free up space
     for plugin in ELASTICSEARCH_DELETE_MODULES:
