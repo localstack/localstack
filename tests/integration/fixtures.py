@@ -21,22 +21,22 @@ def _client(service):
 
 
 @pytest.fixture(scope="class")
-def dynamodb_client() -> DynamoDBClient:
+def dynamodb_client() -> "DynamoDBClient":
     return _client("dynamodb")
 
 
 @pytest.fixture(scope="class")
-def s3_client() -> S3Client:
+def s3_client() -> "S3Client":
     return _client("s3")
 
 
 @pytest.fixture(scope="class")
-def sqs_client() -> SQSClient:
+def sqs_client() -> "SQSClient":
     return _client("sqs")
 
 
 @pytest.fixture(scope="class")
-def sns_client() -> SNSClient:
+def sns_client() -> "SNSClient":
     return _client("sns")
 
 
