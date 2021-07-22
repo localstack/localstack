@@ -122,10 +122,8 @@ class TestTerraform(unittest.TestCase):
 
     def test_event_source_mapping(self):
         lambda_client = aws_stack.connect_to_service("lambda")
-        all_mappings = lambda_client.list_event_source_mappings(
-            EventSourceArn=QUEUE_ARN,
-            FunctionName=LAMBDA_NAME
-        )
+        all_mappings = lambda_client.list_event_source_mappings(EventSourceArn=QUEUE_ARN,
+                                                                FunctionName=LAMBDA_NAME)
         function_mapping = all_mappings.get("EventSourceMappings")[0]
         assert function_mapping["FunctionArn"] == LAMBDA_ARN
         assert function_mapping["EventSourceArn"] == QUEUE_ARN
