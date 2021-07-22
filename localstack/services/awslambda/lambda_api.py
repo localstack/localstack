@@ -233,7 +233,8 @@ def build_mapping_obj(data):
     mapping["FunctionArn"] = func_arn(function_name)
     mapping["LastProcessingResult"] = "OK"
     mapping["StateTransitionReason"] = "User action"
-    mapping["LastModified"] = format_timestamp()
+    mapping["LastModified"] = datetime.utcnow().timestamp()
+    # mapping["LastModified"] = format_timestamp()
     mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
     if "SelfManagedEventSource" in data:
         source_arn = data["SourceAccessConfigurations"][0]["URI"]
@@ -281,7 +282,8 @@ def update_event_source(uuid_value, data):
                     mapping["EventSourceArn"], batch_size or mapping["BatchSize"]
                 )
             mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
-            mapping["LastModified"] = format_timestamp()
+            mapping["LastModified"] = datetime.utcnow().timestamp()
+            # mapping["LastModified"] = format_timestamp()
             mapping["BatchSize"] = batch_size
             if "SourceAccessConfigurations" in (mapping and data):
                 mapping["SourceAccessConfigurations"] = data["SourceAccessConfigurations"]
