@@ -233,8 +233,7 @@ def build_mapping_obj(data):
     mapping["FunctionArn"] = func_arn(function_name)
     mapping["LastProcessingResult"] = "OK"
     mapping["StateTransitionReason"] = "User action"
-    mapping["LastModified"] = datetime.utcnow().timestamp()
-    # mapping["LastModified"] = format_timestamp()
+    mapping["LastModified"] = format_timestamp_for_event_source_mapping()
     mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
     if "SelfManagedEventSource" in data:
         source_arn = data["SourceAccessConfigurations"][0]["URI"]
@@ -255,6 +254,11 @@ def format_timestamp(timestamp=None):
     return isoformat_milliseconds(timestamp) + "+0000"
 
 
+def format_timestamp_for_event_source_mapping():
+    # event source mappings seem to use a different time format (required for Terraform compat.)
+    return datetime.utcnow().timestamp()
+
+
 def add_event_source(data):
     region = LambdaRegion.get()
     mapping = build_mapping_obj(data)
@@ -265,7 +269,6 @@ def add_event_source(data):
 def update_event_source(uuid_value, data):
     region = LambdaRegion.get()
     function_name = data.get("FunctionName") or ""
-    batch_size = None
     enabled = data.get("Enabled", True)
     for mapping in region.event_source_mappings:
         if uuid_value == mapping["UUID"]:
@@ -282,8 +285,7 @@ def update_event_source(uuid_value, data):
                     mapping["EventSourceArn"], batch_size or mapping["BatchSize"]
                 )
             mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
-            mapping["LastModified"] = datetime.utcnow().timestamp()
-            # mapping["LastModified"] = format_timestamp()
+            mapping["LastModified"] = format_timestamp_for_event_source_mapping()
             mapping["BatchSize"] = batch_size
             if "SourceAccessConfigurations" in (mapping and data):
                 mapping["SourceAccessConfigurations"] = data["SourceAccessConfigurations"]
