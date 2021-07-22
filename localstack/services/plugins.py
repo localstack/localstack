@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-import traceback
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
@@ -110,10 +109,7 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
             additional(expect_shutdown=expect_shutdown)
     except Exception as e:
         if retries <= 0:
-            LOG.error(
-                "Error checking state of local environment (after some retries): %s"
-                % traceback.format_exc()
-            )
+            LOG.exception("Error checking state of local environment (after some retries)")
             raise e
         time.sleep(3)
         check_infra(
