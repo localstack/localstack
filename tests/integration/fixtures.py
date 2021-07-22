@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -6,10 +7,11 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.common import short_uid
 
-try:
-    import botostubs
-except ImportError:
-    pass
+if TYPE_CHECKING:
+    from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_s3 import S3Client
+    from mypy_boto3_sns import SNSClient
+    from mypy_boto3_sqs import SQSClient
 
 LOG = logging.getLogger(__name__)
 
@@ -19,22 +21,22 @@ def _client(service):
 
 
 @pytest.fixture(scope="class")
-def dynamodb_client() -> "botostubs.DynamoDB":
+def dynamodb_client() -> "DynamoDBClient":
     return _client("dynamodb")
 
 
 @pytest.fixture(scope="class")
-def s3_client() -> "botostubs.S3":
+def s3_client() -> "S3Client":
     return _client("s3")
 
 
 @pytest.fixture(scope="class")
-def sqs_client() -> "botostubs.SQS":
+def sqs_client() -> "SQSClient":
     return _client("sqs")
 
 
 @pytest.fixture(scope="class")
-def sns_client() -> "botostubs.SNS":
+def sns_client() -> "SNSClient":
     return _client("sns")
 
 
@@ -42,7 +44,7 @@ def sns_client() -> "botostubs.SNS":
 def dynamodb_create_table(dynamodb_client):
     tables = list()
 
-    def factory(**kwargs) -> "botostubs.DynamoDB.CreateTableOutput":
+    def factory(**kwargs):
         kwargs["client"] = dynamodb_client
         if "table_name" not in kwargs:
             kwargs["table_name"] = "test-table-%s" % short_uid()
@@ -96,7 +98,7 @@ def s3_bucket(s3_create_bucket) -> str:
 def sqs_create_queue(sqs_client):
     queue_urls = list()
 
-    def factory(**kwargs) -> "botostubs.SQS.QueueAttributeMap":
+    def factory(**kwargs):
         if "QueueName" not in kwargs:
             kwargs["QueueName"] = "test-queue-%s" % short_uid()
 
