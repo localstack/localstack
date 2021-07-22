@@ -1201,17 +1201,6 @@ class LambdaExecutorLocal(LambdaExecutor):
         result = self._execute_in_custom_runtime(cmd, func_details=func_details)
         return result
 
-    def execute_go_lambda(self, event, context, main_file, func_details=None):
-        event_json_string = "%s" % (json.dumps(event) if event else "{}")
-        cmd = "AWS_LAMBDA_FUNCTION_HANDLER=%s AWS_LAMBDA_EVENT_BODY='%s' %s" % (
-            main_file,
-            event_json_string,
-            GO_LAMBDA_RUNTIME,
-        )
-        LOG.info(cmd)
-        result = self._execute_in_custom_runtime(cmd, func_details=func_details)
-        return result
-
 
 class Util:
     debug_java_port = False
