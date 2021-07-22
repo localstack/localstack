@@ -12,7 +12,7 @@ import time
 import requests
 
 from localstack import config
-from localstack.config import KINESIS_PROVIDER
+from localstack.config import KINESIS_PROVIDER, is_env_true
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
@@ -224,7 +224,11 @@ def install_kinesis_mock():
     is_probably_m1 = system == "darwin" and ("arm64" in version or "arm32" in version)
 
     LOG.debug("getting kinesis-mock for %s %s", system, machine)
-    if (machine == "x86_64" or machine == "amd64") and not is_probably_m1:
+
+    if is_env_true("KINESIS_MOCK_FORCE_JAVA"):
+        # sometimes the static binaries may have problems, and we want to fal back to Java
+        bin_file = "kinesis-mock.jar"
+    elif (machine == "x86_64" or machine == "amd64") and not is_probably_m1:
         if system == "windows":
             bin_file = "kinesis-mock-mostly-static.exe"
         elif system == "linux":

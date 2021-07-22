@@ -142,7 +142,7 @@ class ShellCommandThread(FuncThread):
                 or not self.process
                 or self.process.returncode == 0
             ):
-                return
+                return self.process.returncode if self.process else None
             LOG.info(
                 "Restarting process (received exit code %s): %s"
                 % (self.process.returncode, self.cmd)
@@ -199,6 +199,7 @@ class ShellCommandThread(FuncThread):
             else:
                 self.process.communicate()
         except Exception as e:
+            self.result_future.set_exception(e)
             if self.process and not self.quiet:
                 LOG.warning('Shell command error "%s": %s' % (e, self.cmd))
         if self.process and not self.quiet and self.process.returncode != 0:
