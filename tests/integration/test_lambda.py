@@ -1608,7 +1608,6 @@ class TestGolangRuntimes(LambdaTestBase):
         if use_docker():
             return
 
-<<<<<<< HEAD
         response = requests.get(TEST_GOLANG_LAMBDA_URL, allow_redirects=True)
         if not response.ok:
             raise ValueError("golang runtime zip not downloaded")
@@ -1618,16 +1617,10 @@ class TestGolangRuntimes(LambdaTestBase):
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_GOLANG,
             zip_file=load_file(TEST_LAMBDA_GOLANG_ZIP, mode="rb"),
-=======
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_GOLANG,
-            zip_file=load_file(TEST_LAMBDA_GOLANG, mode="rb"),
->>>>>>> 32720d50 (local golang lambda execution test)
             handler="handler",
             runtime=LAMBDA_RUNTIME_GOLANG,
         )
         result = self.lambda_client.invoke(
-<<<<<<< HEAD
             FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=json.dumps({"name": "Test"})
         )
         result_data = result["Payload"].read()
@@ -1638,18 +1631,6 @@ class TestGolangRuntimes(LambdaTestBase):
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_GOLANG)
         os.remove(TEST_LAMBDA_GOLANG_ZIP)
-=======
-            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=b'{"name":"test"}'
-        )
-        result_data = result["Payload"].read()
-
-        self.assertEqual(200, result["StatusCode"])
-        print(to_str(result_data))
-        # self.assertEqual("{}", to_str(result_data).strip())
-
-        # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_GOLANG)
->>>>>>> 32720d50 (local golang lambda execution test)
 
 
 class TestJavaRuntimes(LambdaTestBase):
