@@ -150,7 +150,7 @@ class Stack(object):
         result["Outputs"] = self.outputs
         result["Parameters"] = self.stack_parameters()
         for attr in ["Capabilities", "Tags", "Outputs", "Parameters"]:
-            result[attr] = {"member": result.get(attr, [])}
+            result[attr] = result.get(attr, [])
         return result
 
     def set_stack_status(self, status):
@@ -568,7 +568,7 @@ def describe_stacks(req_params):
             code=400,
             code_string="ValidationError",
         )
-    result = {"Stacks": {"member": stacks}}
+    result = {"Stacks": stacks}
     return result
 
 
@@ -597,7 +597,7 @@ def list_stacks(req_params):
         "DriftInformation",
     ]
     stacks = [select_attributes(stack, attrs) for stack in stacks]
-    result = {"StackSummaries": {"member": stacks}}
+    result = {"StackSummaries": stacks}
     return result
 
 
@@ -627,7 +627,7 @@ def describe_stack_resources(req_params):
         for res_id, _ in stack.resource_states.items()
         if resource_id in [res_id, None]
     ]
-    return {"StackResources": {"member": statuses}}
+    return {"StackResources": statuses}
 
 
 def list_stack_resources(req_params):
@@ -646,7 +646,7 @@ def list_stack_instances(req_params):
         return not_found_error('Stack set named "%s" does not exist' % set_name)
     stack_set = stack_set[0]
     result = [inst.metadata for inst in stack_set.stack_instances]
-    result = {"Summaries": {"member": result}}
+    result = {"Summaries": result}
     return result
 
 
@@ -705,14 +705,14 @@ def list_change_sets(req_params):
     if not stack:
         return not_found_error('Unable to find stack "%s"' % stack_name)
     result = [cs.metadata for cs in stack.change_sets]
-    result = {"Summaries": {"member": result}}
+    result = {"Summaries": result}
     return result
 
 
 def list_stack_sets(req_params):
     state = CloudFormationRegion.get()
     result = [sset.metadata for sset in state.stack_sets.values()]
-    result = {"Summaries": {"member": result}}
+    result = {"Summaries": result}
     return result
 
 
@@ -762,7 +762,7 @@ def describe_stack_set_operation(req_params):
 
 def list_exports(req_params):
     state = CloudFormationRegion.get()
-    result = {"Exports": {"member": state.exports}}
+    result = {"Exports": state.exports}
     return result
 
 
@@ -773,7 +773,7 @@ def list_imports(req_params):
     for stack in state.stacks.values():
         if export_name in stack.imports:
             importing_stack_names.append(stack.stack_name)
-    result = {"Imports": {"member": importing_stack_names}}
+    result = {"Imports": importing_stack_names}
     return result
 
 
@@ -794,7 +794,7 @@ def describe_stack_events(req_params):
     for stack_id, stack in state.stacks.items():
         if stack_name in [None, stack.stack_name, stack.stack_id]:
             events.extend(stack.events)
-    return {"StackEvents": {"member": events}}
+    return {"StackEvents": events}
 
 
 def delete_change_set(req_params):
@@ -843,8 +843,7 @@ def get_template_summary(req_params):
         id_summaries[res_type].append(resource_id)
     result["ResourceTypes"] = list(id_summaries.keys())
     result["ResourceIdentifierSummaries"] = [
-        {"ResourceType": key, "LogicalResourceIds": {"member": values}}
-        for key, values in id_summaries.items()
+        {"ResourceType": key, "LogicalResourceIds": values} for key, values in id_summaries.items()
     ]
     return result
 

@@ -942,13 +942,14 @@ def resolve_refs_recursively(stack_name, value, resources):
 def resolve_placeholders_in_string(result, stack_name=None, resources=None):
     def _replace(match):
         parts = match.group(1).split(".")
-        if len(parts) == 2:
+        if len(parts) >= 2:
+            resource_name, _, attr_name = match.group(1).partition(".")
             resolved = resolve_ref(
-                stack_name, parts[0].strip(), resources, attribute=parts[1].strip()
+                stack_name, resource_name.strip(), resources, attribute=attr_name.strip()
             )
             if resolved is None:
                 raise DependencyNotYetSatisfied(
-                    resource_ids=parts[0],
+                    resource_ids=resource_name,
                     message="Unable to resolve attribute ref %s" % match.group(1),
                 )
             return resolved

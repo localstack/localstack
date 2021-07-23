@@ -789,6 +789,7 @@ class FuncThread(threading.Thread):
                 kwargs["_thread"] = self
             result = self.func(self.params, **kwargs)
         except Exception as e:
+            self.result_future.set_exception(e)
             result = e
             if not self.quiet:
                 LOG.info(

@@ -11,9 +11,11 @@ from localstack.utils.common import is_command_available, rm_rf, run, start_work
 
 BUCKET_NAME = "tf-bucket"
 QUEUE_NAME = "tf-queue"
+QUEUE_ARN = "arn:aws:sqs:us-east-1:000000000000:tf-queue"
 
 # lambda Testing Variables
 LAMBDA_NAME = "tf-lambda"
+LAMBDA_ARN = f"arn:aws:lambda:us-east-1:000000000000:function:{LAMBDA_NAME}"
 LAMBDA_HANDLER = "DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler"
 LAMBDA_RUNTIME = "dotnetcore2.0"
 LAMBDA_ROLE = "arn:aws:iam::000000000000:role/iam_for_lambda"
@@ -117,6 +119,15 @@ class TestTerraform(unittest.TestCase):
         self.assertEqual(LAMBDA_HANDLER, response["Configuration"]["Handler"])
         self.assertEqual(LAMBDA_RUNTIME, response["Configuration"]["Runtime"])
         self.assertEqual(LAMBDA_ROLE, response["Configuration"]["Role"])
+
+    def test_event_source_mapping(self):
+        lambda_client = aws_stack.connect_to_service("lambda")
+        all_mappings = lambda_client.list_event_source_mappings(
+            EventSourceArn=QUEUE_ARN, FunctionName=LAMBDA_NAME
+        )
+        function_mapping = all_mappings.get("EventSourceMappings")[0]
+        assert function_mapping["FunctionArn"] == LAMBDA_ARN
+        assert function_mapping["EventSourceArn"] == QUEUE_ARN
 
     def test_apigateway(self):
         apigateway_client = aws_stack.connect_to_service("apigateway")
