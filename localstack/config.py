@@ -59,8 +59,6 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 # Kinesis provider - either "kinesis-mock" or "kinesalite"
 KINESIS_PROVIDER = os.environ.get("KINESIS_PROVIDER") or "kinesis-mock"
 
-LOG = logging.getLogger(__name__)
-
 # default AWS region
 if "DEFAULT_REGION" not in os.environ:
     os.environ["DEFAULT_REGION"] = os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
