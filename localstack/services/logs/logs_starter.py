@@ -15,7 +15,7 @@ from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
 
 
-def patch_lambda():
+def patch_logs():
     def patch_get_function(backend):
         get_function_orig = backend.get_function
 
@@ -197,7 +197,7 @@ def patch_lambda():
 
 def start_cloudwatch_logs(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_LOGS
-    patch_lambda()
+    patch_logs()
     return start_moto_server(
         "logs",
         port,

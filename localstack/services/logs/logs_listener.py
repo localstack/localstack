@@ -19,6 +19,7 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
 
         if action == "PutLogEvents":
             publish_log_metrics_for_events(data)
+
         if method == "POST" and path == "/":
             if "nextToken" in to_str(data or ""):
                 data = self._fix_next_token_request(data)
@@ -27,6 +28,7 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response):
+
         # Fix Incorrect response content-type header from cloudwatch logs #1343
         response.headers["content-type"] = APPLICATION_AMZ_JSON_1_1
         str_content = re.sub(
