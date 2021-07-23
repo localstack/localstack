@@ -268,7 +268,7 @@ Please be aware that the following configurations may have severe security impli
 
 * `DISABLE_CORS_CHECKS`: Whether to disable all CSRF mitigations (default: 0).
 * `DISABLE_CUSTOM_CORS_S3`: Whether to disable CORS override by S3 (default: 0).
-* `DISABLE_CUSTOM_CORS_APIGATEWAY`: Whteher to disable CORS override by apigateway (default: 0).
+* `DISABLE_CUSTOM_CORS_APIGATEWAY`: Whether to disable CORS override by apigateway (default: 0).
 * `EXTRA_CORS_ALLOWED_ORIGINS`: Comma-separated list of origins that are allowed to communicate with localstack.
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
@@ -277,11 +277,12 @@ Please be aware that the following configurations may have severe security impli
 
 * `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
 * `IGNORE_ES_DOWNLOAD_ERRORS`: Whether to ignore errors (e.g., network/SSL) when downloading Elasticsearch plugins.
+* `OVERRIDE_IN_DOCKER`: Overrides the check whether LocalStack is executed within a docker container. If set to true, LocalStack assumes it runs in a docker container. Should not be set unless necessary.
 
 ### Debugging Configurations
 
 The following environment configurations can be useful for debugging:
-* `DEVELOP`: Starts a debugpy server before starting Localstack services
+* `DEVELOP`: Starts a debugpy server before starting LocalStack services
 * `DEVELOP_PORT`:  Port number for debugpy server
 * `WAIT_FOR_DEBUGGER`:  Forces LocalStack to wait for a debugger to start the services
 
