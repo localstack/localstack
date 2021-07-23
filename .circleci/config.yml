@@ -80,6 +80,15 @@ jobs:
             docker pull -q lambci/lambda:java8
             docker pull -q lambci/lambda:python3.8
       - run:
+          name: Test docker client
+          environment:
+            DEUBG: 1
+            TEST_PATH: "tests/integration/docker"
+            TEST_SKIP_LOCALSTACK_START: 1
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/docker-client.xml -o junit_suite_name='docker-client'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
           name: Test docker lambda executor
           environment:
             DEUBG: 1
