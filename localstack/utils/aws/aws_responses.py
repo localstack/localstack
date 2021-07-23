@@ -2,6 +2,7 @@ import binascii
 import datetime
 import json
 import re
+import xml.etree.ElementTree as ET
 from binascii import crc32
 from struct import pack
 
@@ -59,13 +60,42 @@ def requests_error_response_xml(
     return response
 
 
+def to_xml(data: dict, memberize: bool = True) -> ET.Element:
+    """Generate XML element hierarchy out of dict. Wraps list items in <member> tags by default"""
+    if not isinstance(data, dict) or len(data.keys()) != 1:
+        raise Exception("Expected data to be a dict with a single root element")
+
+    def _to_xml(parent_el: ET.Element, data_rest) -> None:
+        if isinstance(data_rest, list):
+            for i in data_rest:
+                member_el = ET.SubElement(parent_el, "member") if memberize else parent_el
+                _to_xml(member_el, i)
+        elif isinstance(data_rest, dict):
+            for key in data_rest:
+                value = data_rest[key]
+                curr_el = ET.SubElement(parent_el, key)
+                _to_xml(curr_el, value)
+        elif isinstance(data_rest, str):
+            parent_el.text = data_rest
+        elif any(
+            [isinstance(data_rest, i) for i in [bool, str, int, float]]
+        ):  # limit types for text serialization
+            parent_el.text = str(data_rest)
+        else:
+            if data_rest is not None:  # None is just ignored and omitted
+                raise Exception(f"Unexpected type for value encountered: {type(data_rest)}")
+
+    root_key = list(data.keys())[0]
+    root = ET.Element(root_key)
+    _to_xml(root, data[root_key])
+    return root
+
+
 def requests_response_xml(action, response, xmlns=None, service=None):
     xmlns = xmlns or "http://%s.amazonaws.com/doc/2010-03-31/" % service
     response = json_safe(response)
     response = {"{action}Result".format(action=action): response}
-    response = xmltodict.unparse(response)
-    if response.startswith("<?xml"):
-        response = re.sub(r"<\?xml [^\?]+\?>", "", response)
+    response = ET.tostring(to_xml(response), short_empty_elements=True)
     result = (
         """
         <{action}Response xmlns="{xmlns}">
@@ -105,7 +135,6 @@ def requests_error_response_xml_signature_calculation(
     response.status_code = code
 
     if signature and string_to_sign or code_string == "SignatureDoesNotMatch":
-
         bytes_signature = binascii.hexlify(bytes(signature, encoding="utf-8"))
         parsed_response["Error"]["Code"] = code_string
         parsed_response["Error"]["AWSAccessKeyId"] = aws_access_token
@@ -115,7 +144,6 @@ def requests_error_response_xml_signature_calculation(
         set_response_content(response, xmltodict.unparse(parsed_response))
 
     if expires and code_string == "AccessDenied":
-
         server_time = datetime.datetime.utcnow().isoformat()[:-4]
         expires_isoformat = datetime.datetime.fromtimestamp(int(expires)).isoformat()[:-4]
         parsed_response["Error"]["Code"] = code_string
@@ -124,7 +152,6 @@ def requests_error_response_xml_signature_calculation(
         set_response_content(response, xmltodict.unparse(parsed_response))
 
     if not signature and not expires and code_string == "AccessDenied":
-
         set_response_content(response, xmltodict.unparse(parsed_response))
 
     if response._content:
@@ -215,7 +242,6 @@ def make_error(*args, **kwargs):
 
 
 def create_sqs_system_attributes(headers):
-
     system_attributes = {}
     if "X-Amzn-Trace-Id" in headers:
         system_attributes["AWSTraceHeader"] = {
