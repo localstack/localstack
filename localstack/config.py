@@ -59,6 +59,8 @@ KINESIS_LATENCY = os.environ.get("KINESIS_LATENCY", "").strip() or "500"
 # Kinesis provider - either "kinesis-mock" or "kinesalite"
 KINESIS_PROVIDER = os.environ.get("KINESIS_PROVIDER") or "kinesis-mock"
 
+LOG = logging.getLogger(__name__)
+
 # default AWS region
 if "DEFAULT_REGION" not in os.environ:
     os.environ["DEFAULT_REGION"] = os.environ.get("AWS_DEFAULT_REGION") or AWS_REGION_US_EAST_1
@@ -241,6 +243,9 @@ S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
 # whether to skip waiting for the infrastructure to shut down, or exit immediately
 FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 
+# whether the in_docker check should always return true
+OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
+
 
 def has_docker():
     try:
@@ -356,6 +361,10 @@ def in_docker():
     Returns True if running in a docker container, else False
     Ref. https://docs.docker.com/config/containers/runmetrics/#control-groups
     """
+    if OVERRIDE_IN_DOCKER:
+        return True
+    if os.path.exists("/.dockerenv"):
+        return True
     if not os.path.exists("/proc/1/cgroup"):
         return False
     try:
