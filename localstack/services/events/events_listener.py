@@ -143,17 +143,6 @@ class ProxyListenerEvents(ProxyListener):
             elif action == "AWSEvents.DeleteRule":
                 handle_delete_rule(rule_name=parsed_data.get("Name", None))
 
-            elif action == "AWSEvents.ListTagsForResource":
-                return self.svc.list_tags_for_resource(parsed_data["ResourceARN"]) or {}
-
-            elif action == "AWSEvents.TagResource":
-                self.svc.tag_resource(parsed_data["ResourceARN"], parsed_data["Tags"])
-                return {}
-
-            elif action == "AWSEvents.UntagResource":
-                self.svc.untag_resource(parsed_data["ResourceARN"], parsed_data["TagKeys"])
-                return {}
-
             elif action == "AWSEvents.DisableRule":
                 handle_disable_rule(rule_name=parsed_data.get("Name", None))
 
