@@ -144,6 +144,10 @@ def _create_main_handler() -> EventHandler:
     return recorder
 
 
+def _should_not_track():
+    return config.DISABLE_EVENTS or config.is_env_true(constants.ENV_INTERNAL_TEST_RUN)
+
+
 _handler: EventHandler
 _startup_mutex = threading.Lock()
 
@@ -154,7 +158,7 @@ def publish(event: Event):
     """
     global _handler
 
-    if config.DISABLE_EVENTS:
+    if _should_not_track():
         if config.DEBUG_ANALYTICS:
             LOG.debug("skipping event %s", event)
         return
