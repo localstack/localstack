@@ -1,3 +1,7 @@
+import multiprocessing
+import threading
+from queue import Queue
+
 from localstack.utils.analytics.metadata import get_client_metadata, get_session_id
 
 
@@ -10,8 +14,31 @@ def test_get_client_metadata_cache():
     assert c1 is c2
 
 
-def test_get_session_id_cache():
-    metadata = get_client_metadata()
-    session_id = get_session_id()
+def test_get_session_id_cache_not_thread_local():
+    calls = Queue()
 
-    assert metadata.session_id == session_id
+    def _do_get_session_id():
+        calls.put(get_session_id())
+
+    threading.Thread(target=_do_get_session_id).start()
+    threading.Thread(target=_do_get_session_id).start()
+
+    sid1 = calls.get(timeout=2)
+    sid2 = calls.get(timeout=2)
+
+    assert sid1 == sid2
+
+
+def test_get_session_id_cache_not_process_local():
+    calls = multiprocessing.Queue()
+
+    def _do_get_session_id():
+        calls.put(get_session_id())
+
+    multiprocessing.Process(target=_do_get_session_id).start()
+    multiprocessing.Process(target=_do_get_session_id).start()
+
+    sid1 = calls.get(timeout=2)
+    sid2 = calls.get(timeout=2)
+
+    assert sid1 == sid2

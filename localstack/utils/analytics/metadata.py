@@ -22,34 +22,27 @@ class ClientMetadata:
     is_docker: bool
 
 
-def _generate_session_id() -> str:
-    return common.long_uid()
+@functools.lru_cache()
+def get_session_id() -> str:
+    return _generate_session_id()
 
 
-def _get_config_file(path):
-    common.get_or_create_file(path)
-    return path
+@functools.lru_cache()
+def get_client_metadata() -> ClientMetadata:
+    metadata = ClientMetadata(
+        session_id=get_session_id(),
+        machine_id=get_machine_id(),
+        api_key=read_api_key_safe(),
+        system=get_system(),
+        version=constants.VERSION,
+        is_ci=os.getenv("CI") is not None,
+        is_docker=config.is_in_docker,
+    )
 
+    if config.DEBUG_ANALYTICS:
+        LOG.info("resolved client metadata: %s", metadata)
 
-def get_config_file_homedir():
-    return _get_config_file(config.CONFIG_FILE_PATH)
-
-
-def get_config_file_tempdir():
-    return _get_config_file(os.path.join(config.TMP_FOLDER, ".localstack"))
-
-
-def read_api_key_safe():
-    try:
-        from localstack_ext.bootstrap.licensing import read_api_key
-
-        return read_api_key(raise_if_missing=False)
-    except Exception:
-        return None
-
-
-def get_system() -> str:
-    return platform.system()
+    return metadata
 
 
 @functools.lru_cache()
@@ -85,24 +78,31 @@ def get_machine_id() -> str:
     return machine_id
 
 
-@functools.lru_cache()
-def get_session_id() -> str:
-    return _generate_session_id()
+def _generate_session_id() -> str:
+    return common.long_uid()
 
 
-@functools.lru_cache()
-def get_client_metadata() -> ClientMetadata:
-    metadata = ClientMetadata(
-        session_id=get_session_id(),
-        machine_id=get_machine_id(),
-        api_key=read_api_key_safe(),
-        system=get_system(),
-        version=constants.VERSION,
-        is_ci=os.getenv("CI") is not None,
-        is_docker=config.is_in_docker,
-    )
+def _get_config_file(path):
+    common.get_or_create_file(path)
+    return path
 
-    if config.DEBUG_ANALYTICS:
-        LOG.info("resolved client metadata: %s", metadata)
 
-    return metadata
+def get_config_file_homedir():
+    return _get_config_file(config.CONFIG_FILE_PATH)
+
+
+def get_config_file_tempdir():
+    return _get_config_file(os.path.join(config.TMP_FOLDER, ".localstack"))
+
+
+def read_api_key_safe():
+    try:
+        from localstack_ext.bootstrap.licensing import read_api_key
+
+        return read_api_key(raise_if_missing=False)
+    except Exception:
+        return None
+
+
+def get_system() -> str:
+    return platform.system()

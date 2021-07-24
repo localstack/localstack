@@ -1,24 +1,27 @@
-import json
+import abc
 import logging
 import threading
 from queue import Queue
 from typing import List
 
-from localstack import config
+import requests
+
+from localstack import config, constants
 from localstack.constants import API_ENDPOINT
 
 from .events import Event, EventHandler
+from .metadata import get_session_id
 
 LOG = logging.getLogger(__name__)
 
 
-class Publisher:
+class Publisher(abc.ABC):
     """
     A publisher takes a batch of events and publishes them to a destination.
     """
 
     def publish(self, events: List[Event]):
-        ...
+        raise NotImplementedError
 
 
 class JsonHttpPublisher(Publisher):
@@ -30,6 +33,9 @@ class JsonHttpPublisher(Publisher):
 
     def __init__(self, endpoint=None):
         self.endpoint = endpoint or self.default_endpoint
+        # TODO: add compression to JsonHttpPublisher
+        #  it would maybe be useful to compress analytics data, but it's unclear how that will
+        #  affect performance and what the benefit is. need to measure first.
 
     def publish(self, events: List[Event]):
         if not events:
@@ -43,11 +49,25 @@ class JsonHttpPublisher(Publisher):
                 if config.DEBUG_ANALYTICS:
                     LOG.exception("error while recording event %s", event)
 
-                pass  # simply ignore events that aren't configured properly
+        # FIXME: fault tolerance/timeouts
+        headers = self._create_headers()
+        requests.post(self.endpoint, json={"events": docs}, headers=headers)
 
-        doc = json.dumps({"events": docs})
-        # requests.post(self.endpoint, json=doc)
-        print(f"requests.post({self.endpoint}, json={doc})")
+    def _create_headers(self):
+        return {
+            "User-Agent": "localstack/" + constants.VERSION,
+            "Localstack-Session-ID": get_session_id(),
+        }
+
+
+class Printer(Publisher):
+    """
+    Publisher that prints serialized events to stdout.
+    """
+
+    def publish(self, events: List[Event]):
+        for event in events:
+            print(event.asdict())
 
 
 class PublisherBuffer(EventHandler):
@@ -114,8 +134,11 @@ class PublisherBuffer(EventHandler):
 def _create_main_handler() -> EventHandler:
     from localstack.utils.common import start_thread
 
-    # TODO: use config
-    recorder = PublisherBuffer(JsonHttpPublisher())
+    # TODO: use config to create publisher
+    # publisher = JsonHttpPublisher()
+    publisher = Printer()
+
+    recorder = PublisherBuffer(publisher)
     start_thread(recorder.run)
 
     return recorder
@@ -134,6 +157,7 @@ def publish(event: Event):
     if config.DISABLE_EVENTS:
         if config.DEBUG_ANALYTICS:
             LOG.debug("skipping event %s", event)
+        return
 
     if not _handler:
         with _startup_mutex:

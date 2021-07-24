@@ -4,6 +4,18 @@ from .events import Event, EventHandler, EventMetadata, EventPayload
 from .metadata import get_client_metadata, get_session_id
 
 
+def get_hash(value) -> str:
+    # FIXME: seems a bit hacky
+
+    if value is None:
+        return "0"
+
+    max_hash = 10000000000
+    hashed = hash(str(value)) % max_hash
+    hashed = hex(hashed).replace("0x", "")
+    return hashed
+
+
 class EventLogger:
     """
     High-level interface over analytics event abstraction. Expose specific event types as
@@ -14,7 +26,17 @@ class EventLogger:
         self.handler = handler
         self.session_id = session_id or get_session_id()
 
-    def event(self, event: str, payload: EventPayload = None):
+    @staticmethod
+    def hash(value):
+        return get_hash(value)
+
+    def event(self, event: str, payload: EventPayload = None, **kwargs):
+        if kwargs:
+            if payload is None:
+                payload = kwargs
+            else:
+                raise ValueError("either use payload or set kwargs, not both")
+
         self._log(event, payload=payload)
 
     def infra_start(self):
