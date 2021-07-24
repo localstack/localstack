@@ -16,6 +16,7 @@ from flask_cors.core import (
     ACL_ORIGIN,
     ACL_REQUEST_HEADERS,
 )
+from requests.adapters import HTTPAdapter
 from requests.models import Request, Response
 from six.moves.urllib.parse import urlparse
 from werkzeug.exceptions import HTTPException
@@ -25,6 +26,7 @@ from localstack.config import (
     EXTRA_CORS_ALLOWED_HEADERS,
     EXTRA_CORS_ALLOWED_ORIGINS,
     EXTRA_CORS_EXPOSE_HEADERS,
+    PROXY_MAX_RETRIES,
 )
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.utils.aws import aws_stack
@@ -354,9 +356,13 @@ def modify_and_forward(
 
         # make sure we drop "chunked" transfer encoding from the headers to be forwarded
         headers.pop("Transfer-Encoding", None)
-        response = requests.request(
-            method, request_url, data=data_to_send, headers=headers, stream=True, verify=False
-        )
+        with requests.Session() as s:
+            if PROXY_MAX_RETRIES:
+                s.mount("http://", HTTPAdapter(max_retries=PROXY_MAX_RETRIES))
+                s.mount("https://", HTTPAdapter(max_retries=PROXY_MAX_RETRIES))
+            response = s.request(
+                method, request_url, data=data_to_send, headers=headers, stream=True, verify=False
+            )
 
     # prevent requests from processing response body (e.g., to pass-through gzip encoded content unmodified)
     pass_raw = (

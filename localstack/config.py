@@ -244,6 +244,10 @@ FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 # whether the in_docker check should always return true
 OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
 
+# number of times proxy will retry the request to the backend service. Set to 0 to disable retries (especially useful for debugging)
+_proxy_retries = os.environ.get("PROXY_MAX_RETRIES")
+PROXY_MAX_RETRIES = None if _proxy_retries is None else int(_proxy_retries)
+
 
 def has_docker():
     try:
@@ -332,6 +336,7 @@ CONFIG_ENV_VARS = [
     "KINESIS_INITIALIZE_STREAMS",
     "TF_COMPAT_MODE",
     "LAMBDA_DOCKER_FLAGS",
+    "PROXY_MAX_RETRIES",
 ]
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
