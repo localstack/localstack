@@ -98,7 +98,7 @@ def startup_monitor() -> None:
         localstack_stopped.set()
         return
 
-    if is_env_true("TEST_SKIP_LOCALSTACK_START"):
+    if is_env_true("TEST_SKIP_LOCALSTACK_START") or os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         logger.info("TEST_SKIP_LOCALSTACK_START is set, not starting localstack")
         localstack_started.set()
         return

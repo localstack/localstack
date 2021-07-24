@@ -1,6 +1,8 @@
 import logging
+import os
 from typing import TYPE_CHECKING
 
+import boto3
 import pytest
 
 from localstack.utils.aws import aws_stack
@@ -17,6 +19,8 @@ LOG = logging.getLogger(__name__)
 
 
 def _client(service):
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client(service)
     return aws_stack.connect_to_service(service)
 
 
