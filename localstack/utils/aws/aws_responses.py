@@ -91,17 +91,18 @@ def to_xml(data: dict, memberize: bool = True) -> ET.Element:
     return root
 
 
-def requests_response_xml(action, response, xmlns=None, service=None):
+def requests_response_xml(action, response, xmlns=None, service=None, memberize=True):
     xmlns = xmlns or "http://%s.amazonaws.com/doc/2010-03-31/" % service
     response = json_safe(response)
     response = {"{action}Result".format(action=action): response}
-    response = ET.tostring(to_xml(response), short_empty_elements=True)
+    response = ET.tostring(to_xml(response, memberize=memberize), short_empty_elements=True)
+    response = to_str(response)
     result = (
         """
         <{action}Response xmlns="{xmlns}">
             {response}
         </{action}Response>
-    """
+        """
     ).strip()
     result = result.format(action=action, xmlns=xmlns, response=response)
     result = requests_response(result)

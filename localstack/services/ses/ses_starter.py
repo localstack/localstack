@@ -161,9 +161,13 @@ def apply_patches():
     SESBackend.send_email = send_email_save_contents
 
     backend_send_templated_email_template_orig = SESBackend.send_templated_email
-    
-    def send_templated_email_save_contents(self, source, template, template_data, destinations, region):
-        message = backend_send_templated_email_template_orig(self, source, template, template_data, destinations, region)
+
+    def send_templated_email_save_contents(
+        self, source, template, template_data, destinations, region
+    ):
+        message = backend_send_templated_email_template_orig(
+            self, source, template, template_data, destinations, region
+        )
 
         ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, "ses")
         mkdir(ses_dir)
