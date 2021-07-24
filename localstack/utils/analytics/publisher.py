@@ -1,6 +1,7 @@
 import abc
 import logging
 import threading
+import time
 from queue import Queue
 from typing import List
 
@@ -8,6 +9,7 @@ import requests
 
 from localstack import config, constants
 from localstack.constants import API_ENDPOINT
+from localstack.utils.common import start_thread
 
 from .events import Event, EventHandler
 from .metadata import get_session_id
@@ -79,10 +81,14 @@ class PublisherBuffer(EventHandler):
     single thread.
     """
 
+    flush_size: int
+    flush_interval: float
+
     _cmd_flush = object()
     _cmd_stop = object()
 
-    def __init__(self, publisher: Publisher, flush_size=100, flush_interval=10):
+    # FIXME: figure out good default values
+    def __init__(self, publisher: Publisher, flush_size: int = 50, flush_interval: float = 10):
         self._publisher = publisher
         self._queue = Queue()
         self._command_queue = Queue()
@@ -90,37 +96,65 @@ class PublisherBuffer(EventHandler):
         self.flush_size = flush_size
         self.flush_interval = flush_interval
 
+        self._last_flush = time.time()
+        self._stopped = threading.Event()
+
     def handle(self, event: Event):
         self._queue.put_nowait(event)
+        self.checked_flush()
 
-        if self._queue.qsize() >= self.flush_size:
-            self.flush()
+    def cancel(self):
+        if self._stopped.is_set():
+            return
+
+        self._stopped.set()
+        self._command_queue.put(self._cmd_stop)
 
     def flush(self):
         self._command_queue.put(self._cmd_flush)
+        self._last_flush = time.time()
 
-    def cancel(self):
-        self._command_queue.put(self._cmd_stop)
+    def checked_flush(self):
+        """
+        Runs flush only if a flush condition is met.
+        """
+        if self._queue.qsize() >= self.flush_size:
+            self.flush()
+            return
+        if time.time() - self._last_flush >= self.flush_interval:
+            self.flush()
+            return
+
+    def _run_flush_schedule(self, *_):
+        while True:
+            if self._stopped.wait(self.flush_interval):
+                return
+            self.checked_flush()
 
     def run(self, *_):
-        while True:
-            command = self._command_queue.get()
+        flush_scheduler = start_thread(self._run_flush_schedule)
 
-            if command is self._cmd_flush or command is self._cmd_stop:
-                try:
-                    self._do_flush()
-                except Exception:
-                    if config.DEBUG_ANALYTICS:
-                        LOG.exception("error while flushing events")
+        try:
+            while True:
+                command = self._command_queue.get()
 
-            if command is self._cmd_stop:
-                return
+                if command is self._cmd_flush or command is self._cmd_stop:
+                    try:
+                        self._do_flush()
+                    except Exception:
+                        if config.DEBUG_ANALYTICS:
+                            LOG.exception("error while flushing events")
+
+                if command is self._cmd_stop:
+                    return
+        finally:
+            flush_scheduler.stop()
 
     def _do_flush(self):
         queue = self._queue
         events = list()
 
-        for _ in range(min(self.flush_size, queue.qsize())):
+        for _ in range(queue.qsize()):
             event = queue.get_nowait()
             events.append(event)
 
@@ -132,8 +166,6 @@ class PublisherBuffer(EventHandler):
 
 
 def _create_main_handler() -> EventHandler:
-    from localstack.utils.common import start_thread
-
     # TODO: use config to create publisher
     # publisher = JsonHttpPublisher()
     publisher = Printer()
