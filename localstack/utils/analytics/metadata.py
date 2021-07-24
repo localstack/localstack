@@ -20,6 +20,7 @@ class ClientMetadata:
     version: str
     is_ci: bool
     is_docker: bool
+    is_testing: bool
 
 
 @functools.lru_cache()
@@ -37,6 +38,7 @@ def get_client_metadata() -> ClientMetadata:
         version=constants.VERSION,
         is_ci=os.getenv("CI") is not None,
         is_docker=config.is_in_docker,
+        is_testing=config.is_env_true(constants.ENV_INTERNAL_TEST_RUN),
     )
 
     if config.DEBUG_ANALYTICS:
