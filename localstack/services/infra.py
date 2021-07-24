@@ -32,8 +32,13 @@ from localstack.services.plugins import (
 )
 from localstack.utils import common, config_listener, persistence
 from localstack.utils.analytics import event_publisher
-from localstack.utils.analytics.profiler import log_duration
-from localstack.utils.bootstrap import canonicalize_api_names, in_ci, load_plugins, setup_logging
+from localstack.utils.bootstrap import (
+    canonicalize_api_names,
+    in_ci,
+    load_plugins,
+    log_duration,
+    setup_logging,
+)
 from localstack.utils.cli import print_version
 from localstack.utils.common import (
     TMP_THREADS,

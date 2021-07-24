@@ -544,9 +544,6 @@ if DEBUG:
 # whether to bundle multiple APIs into a single process, where possible
 BUNDLE_API_PROCESSES = True
 
-# whether to use a CPU/memory profiler when running the integration tests
-USE_PROFILER = is_env_true("USE_PROFILER")
-
 
 def load_config_file(config_file=None):
     from localstack.utils.common import get_or_create_file, to_str
