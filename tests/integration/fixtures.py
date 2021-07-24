@@ -1,6 +1,9 @@
 import logging
+import os
 from typing import TYPE_CHECKING
 
+import boto3
+import botocore.config
 import pytest
 
 from localstack.utils.aws import aws_stack
@@ -8,16 +11,25 @@ from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.common import short_uid
 
 if TYPE_CHECKING:
+    from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_dynamodb import DynamoDBClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
+    from mypy_boto3_ssm import SSMClient
 
 LOG = logging.getLogger(__name__)
 
 
 def _client(service):
-    return aws_stack.connect_to_service(service)
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        return boto3.client(service)
+    config = (
+        botocore.config.Config(connect_timeout=0, read_timeout=0, retries={"total_max_attempts": 1})
+        if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
+        else None
+    )
+    return aws_stack.connect_to_service(service, config=config)
 
 
 @pytest.fixture(scope="class")
@@ -38,6 +50,16 @@ def sqs_client() -> "SQSClient":
 @pytest.fixture(scope="class")
 def sns_client() -> "SNSClient":
     return _client("sns")
+
+
+@pytest.fixture(scope="class")
+def cfn_client() -> "CloudFormationClient":
+    return _client("cloudformation")
+
+
+@pytest.fixture(scope="class")
+def ssm_client() -> "SSMClient":
+    return _client("ssm")
 
 
 @pytest.fixture
