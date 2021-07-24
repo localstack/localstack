@@ -26,6 +26,8 @@ crontab>=0.22.6
 # pin version to avoid Rust build issues: https://github.com/pyca/cryptography/issues/5771
 cryptography<3.4
 Cython                         #extended-lib
+# dataclasses needed for python3.6 compat
+dataclasses                    #basic-lib
 dnspython==1.16.0              #basic-lib
 docopt>=0.6.2                  #basic-lib
 elasticsearch>=7.0.0,<8.0.0
