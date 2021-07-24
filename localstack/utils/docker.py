@@ -245,7 +245,7 @@ class CmdDockerClient:
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:
-        cmd = self._build_run_create_cmd("create", image_name, **kwargs)
+        cmd, env_file = self._build_run_create_cmd("create", image_name, **kwargs)
         LOG.debug("Create container with cmd: %s", cmd)
         try:
             container_id = safe_run(cmd)
@@ -258,11 +258,15 @@ class CmdDockerClient:
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
+        finally:
+            Util.rm_env_vars_file(env_file)
 
     def run_container(self, image_name: str, stdin=None, **kwargs) -> Tuple[str, str]:
-        cmd = self._build_run_create_cmd("run", image_name, **kwargs)
+        cmd, env_file = self._build_run_create_cmd("run", image_name, **kwargs)
         LOG.debug("Run container with cmd: %s", cmd)
-        return self._run_async_cmd(cmd, stdin, kwargs.get("name") or "", image_name)
+        result = self._run_async_cmd(cmd, stdin, kwargs.get("name") or "", image_name)
+        Util.rm_env_vars_file(env_file)
+        return result
 
     def exec_in_container(
         self,
@@ -273,6 +277,7 @@ class CmdDockerClient:
         env_vars: Optional[List[Tuple[str, str]]] = None,
         stdin: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
+        env_file = None
         cmd = self._docker_cmd()
         cmd.append("exec")
         if interactive:
@@ -280,11 +285,14 @@ class CmdDockerClient:
         if detach:
             cmd.append("--detach")
         if env_vars:
-            cmd += Util.create_env_vars_file_flag(env_vars)
+            env_flag, env_file = Util.create_env_vars_file_flag(env_vars)
+            cmd += env_flag
         cmd.append(container_name_or_id)
         cmd += command if isinstance(command, List) else [command]
         LOG.debug("Execute in container cmd: %s", cmd)
-        return self._run_async_cmd(cmd, stdin, container_name_or_id)
+        result = self._run_async_cmd(cmd, stdin, container_name_or_id)
+        Util.rm_env_vars_file(env_file)
+        return result
 
     def start_container(
         self,
@@ -357,8 +365,8 @@ class CmdDockerClient:
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
-    ) -> List[str]:
-
+    ) -> Tuple[List[str], str]:
+        env_file = None
         cmd = self._docker_cmd() + [action]
         if remove:
             cmd.append("--rm")
@@ -379,7 +387,8 @@ class CmdDockerClient:
         if ports:
             cmd += ports.to_list()
         if env_vars:
-            cmd += Util.create_env_vars_file_flag(env_vars)
+            env_flags, env_file = Util.create_env_vars_file_flag(env_vars)
+            cmd += env_flags
         if user:
             cmd += ["--user", user]
         if cap_add:
@@ -393,18 +402,19 @@ class CmdDockerClient:
         cmd.append(image_name)
         if command:
             cmd += command if isinstance(command, List) else [command]
-        return cmd
+        return cmd, env_file
 
 
 class Util:
     MAX_ENV_ARGS_LENGTH = 20000
 
     @classmethod
-    def create_env_vars_file_flag(cls, env_vars):
+    def create_env_vars_file_flag(cls, env_vars: Dict) -> Tuple[List[str], str]:
         if not env_vars:
             return []
         result = []
         env_vars = dict(env_vars)
+        env_file = None
         if len(str(env_vars)) > cls.MAX_ENV_ARGS_LENGTH:
             # default ARG_MAX=131072 in Docker - let's create an env var file if the string becomes too long...
             env_file = cls.mountable_tmp_file()
@@ -421,17 +431,12 @@ class Util:
 
         env_vars_res = [item for k, v in env_vars.items() for item in ["-e", "{}={}".format(k, v)]]
         result += env_vars_res
-        return result
+        return result, env_file
 
     @staticmethod
-    def rm_env_vars_file(env_vars_file_flag):
-        if not env_vars_file_flag or "--env-file" not in env_vars_file_flag:
-            return
-        if isinstance(env_vars_file_flag, list):
-            env_vars_file = env_vars_file_flag[env_vars_file_flag.index("--env-file") + 1]
-        else:
-            env_vars_file = env_vars_file_flag.replace("--env-file", "").strip()
-        return rm_rf(env_vars_file)
+    def rm_env_vars_file(env_vars_file) -> None:
+        if env_vars_file:
+            return rm_rf(env_vars_file)
 
     @staticmethod
     def mountable_tmp_file():

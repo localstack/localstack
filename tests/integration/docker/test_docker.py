@@ -5,7 +5,7 @@ import pytest
 
 from localstack import config
 from localstack.utils.bootstrap import PortMappings
-from localstack.utils.common import short_uid
+from localstack.utils.common import safe_run, short_uid
 from localstack.utils.docker import CmdDockerClient as DockerClient
 from localstack.utils.docker import (
     ContainerException,
@@ -400,3 +400,14 @@ class TestDockerClient:
         assert "" == docker_client.get_container_logs(
             "container_hopefully_does_not_exist", safe=False
         )
+
+    def test_pull_docker_image(self, docker_client: DockerClient):
+        try:
+            docker_client.get_image_cmd("alpine")
+            safe_run([config.DOCKER_CMD, "rmi", "alpine"])
+        except ContainerException:
+            pass
+        with pytest.raises(NoSuchImage):
+            docker_client.get_image_cmd("alpine")
+        docker_client.pull_image("alpine")
+        assert "/bin/sh" == docker_client.get_image_cmd("alpine").strip()
