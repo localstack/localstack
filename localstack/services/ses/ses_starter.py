@@ -160,6 +160,30 @@ def apply_patches():
 
     SESBackend.send_email = send_email_save_contents
 
+    backend_send_templated_email_template_orig = SESBackend.send_templated_email
+    
+    def send_templated_email_save_contents(self, source, template, template_data, destinations, region):
+        message = backend_send_templated_email_template_orig(self, source, template, template_data, destinations, region)
+
+        ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, "ses")
+        mkdir(ses_dir)
+
+        with open(os.path.join(ses_dir, message.id + ".json"), "w") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "Source": source,
+                        "Template": template,
+                        "TemplateData": template_data,
+                        "Destinations": destinations,
+                        "Region": region,
+                    }
+                )
+            )
+        return message
+
+    SESBackend.send_templated_email = send_templated_email_save_contents
+
 
 def start_ses(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_SES
