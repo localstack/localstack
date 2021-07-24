@@ -57,8 +57,11 @@ class TestTerraform(unittest.TestCase):
 
     @classmethod
     def init_async(cls):
-        available, _ = check_terraform_version()
+        available, ver_string = check_terraform_version()
         if not available:
+            print(
+                "Skipping Terraform test init as version check failed (version: '%s')" % ver_string
+            )
             return
 
         def _run(*args):
