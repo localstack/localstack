@@ -80,7 +80,35 @@ class SESTest(unittest.TestCase):
             message = f.read()
 
         contents = json.loads(message)
+
         self.assertEqual(email, contents["Source"])
         self.assertEqual("A_SUBJECT", contents["Subject"])
         self.assertEqual("A_MESSAGE", contents["Body"])
+        self.assertEqual(["success@example.com"], contents["Destinations"]["ToAddresses"])
+
+    def test_send_templated_email_save(self):
+        client = aws_stack.connect_to_service("ses")
+        data_dir = config.DATA_DIR or config.TMP_FOLDER
+        email = "user@example.com"
+        client.verify_email_address(EmailAddress=email)
+        client.delete_template(TemplateName=TEST_TEMPLATE_ATTRIBUTES["TemplateName"])
+        client.create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
+
+        message = client.send_templated_email(
+            Source=email,
+            Template=TEST_TEMPLATE_ATTRIBUTES["TemplateName"],
+            TemplateData='{"A key": "A value"}',
+            Destination={
+                "ToAddresses": ["success@example.com"],
+            },
+        )
+
+        with open(os.path.join(data_dir, "ses", message["MessageId"] + ".json"), "r") as f:
+            message = f.read()
+
+        contents = json.loads(message)
+
+        self.assertEqual(email, contents["Source"])
+        self.assertEqual([TEST_TEMPLATE_ATTRIBUTES["TemplateName"]], contents["Template"])
+        self.assertEqual(['{"A key": "A value"}'], contents["TemplateData"])
         self.assertEqual(["success@example.com"], contents["Destinations"]["ToAddresses"])
