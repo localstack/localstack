@@ -31,10 +31,8 @@ class JsonHttpPublisher(Publisher):
     Publisher that serializes event batches as JSON and POSTs them to an HTTP endpoint.
     """
 
-    default_endpoint: str = API_ENDPOINT.rstrip("/") + "/analytics"
-
-    def __init__(self, endpoint=None):
-        self.endpoint = endpoint or self.default_endpoint
+    def __init__(self, endpoint):
+        self.endpoint = endpoint
         # TODO: add compression to JsonHttpPublisher
         #  it would maybe be useful to compress analytics data, but it's unclear how that will
         #  affect performance and what the benefit is. need to measure first.
@@ -167,8 +165,9 @@ class PublisherBuffer(EventHandler):
 
 def _create_main_handler() -> EventHandler:
     # TODO: use config to create publisher
-    # publisher = JsonHttpPublisher()
-    publisher = Printer()
+    endpoint = API_ENDPOINT.rstrip("/") + "/analytics"
+    publisher = JsonHttpPublisher(endpoint)
+    # publisher = Printer()
 
     recorder = PublisherBuffer(publisher)
     start_thread(recorder.run)
@@ -180,7 +179,7 @@ def _should_not_track():
     return config.DISABLE_EVENTS or config.is_env_true(constants.ENV_INTERNAL_TEST_RUN)
 
 
-_handler: EventHandler
+_handler: EventHandler = None
 _startup_mutex = threading.Lock()
 
 
