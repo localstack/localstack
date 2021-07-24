@@ -11,7 +11,7 @@ def load_template(tmpl_path: str) -> str:
     return template_to_json(template)
 
 
-def test_create_change_set_without_parameters(cfn_client):
+def test_create_change_set_without_parameters(cfn_client, sns_client):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
     response = cfn_client.create_change_set(
@@ -26,6 +26,11 @@ def test_create_change_set_without_parameters(cfn_client):
         assert change_set_id
         assert stack_id
 
+        # make sure the change set wasn't executed (which would create a topic)
+        list_topics_response = sns_client.list_topics()
+        assert len(list_topics_response["Topics"]) == 0
+
+        # stack is initially in REVIEW_IN_PROGRESS state. only after executing the change_set will it change its status
         stack_response = cfn_client.describe_stacks(StackName=stack_id)
         assert stack_response["Stacks"][0]["StackStatus"] == "REVIEW_IN_PROGRESS"
 

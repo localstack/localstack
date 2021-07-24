@@ -665,7 +665,7 @@ def create_change_set(req_params):
         req_params_copy = clone_stack_params(req_params)
         stack = Stack(req_params_copy, empty_stack_template)
         state.stacks[stack.stack_id] = stack
-        stack.set_stack_status("CREATE_COMPLETE")
+        stack.set_stack_status("REVIEW_IN_PROGRESS")
     change_set = StackChangeSet(req_params, template)
     deployer = template_deployer.TemplateDeployer(stack)
     deployer.construct_changes(
