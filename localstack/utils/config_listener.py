@@ -48,6 +48,17 @@ class ConfigUpdateProxyListener(ProxyListener):
         return response
 
 
+CONFIG_UPDATE_LISTENER = ConfigUpdateProxyListener()
+
+
 def start_listener():
     if config.ENABLE_CONFIG_UPDATES:
-        ProxyListener.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
+        ProxyListener.DEFAULT_LISTENERS.append(CONFIG_UPDATE_LISTENER)
+
+
+def remove_listener():
+    if not config.ENABLE_CONFIG_UPDATES:
+        try:
+            ProxyListener.DEFAULT_LISTENERS.remove(CONFIG_UPDATE_LISTENER)
+        except ValueError:
+            pass
