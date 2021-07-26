@@ -2240,3 +2240,29 @@ def serve(port):
     LAMBDA_EXECUTOR.startup()
 
     generic_proxy.serve_flask_app(app=app, port=port)
+
+
+# Config listener
+def on_config_change(config_key: str, config_newvalue: str) -> None:
+    global LAMBDA_EXECUTOR
+    if config_key != "LAMBDA_EXECUTOR":
+        return
+    LOG.debug(
+        "Recieved config event for lambda executor! Key: {} Value: {}".format(
+            config_key, config_newvalue
+        )
+    )
+    LAMBDA_EXECUTOR.cleanup()
+    LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(
+        config_newvalue, lambda_executors.DEFAULT_EXECUTOR
+    )
+    LAMBDA_EXECUTOR.startup()
+
+
+def register_config_listener():
+    from localstack.utils import config_listener
+
+    config_listener.CONFIG_LISTENERS.append(on_config_change)
+
+
+register_config_listener()

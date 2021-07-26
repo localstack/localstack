@@ -10,7 +10,7 @@ from requests.models import Response
 from localstack import config
 from localstack.services import infra
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
-from localstack.utils import async_utils
+from localstack.utils import async_utils, config_listener
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import PortMappings
 from localstack.utils.common import TMP_FILES, download, json_safe, load_file, now_utc, parallelize
@@ -79,7 +79,7 @@ class TestMisc(unittest.TestCase):
         self.assertGreater(len(env), 0)
 
     def test_update_config_variable(self):
-        infra.update_config_variable("foo", "bar")
+        config_listener.update_config_variable("foo", "bar")
         self.assertEqual("bar", config.foo)
 
     def test_async_parallelization(self):
