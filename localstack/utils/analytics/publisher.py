@@ -1,14 +1,15 @@
 import abc
+import atexit
 import logging
 import threading
 import time
 from queue import Queue
-from typing import List
+from typing import List, Optional
 
 import requests
 
 from localstack import config, constants
-from localstack.constants import API_ENDPOINT
+from localstack.constants import ANALYTICS_API
 from localstack.utils.common import start_thread
 
 from .events import Event, EventHandler
@@ -51,7 +52,15 @@ class JsonHttpPublisher(Publisher):
 
         # FIXME: fault tolerance/timeouts
         headers = self._create_headers()
-        requests.post(self.endpoint, json={"events": docs}, headers=headers)
+        if config.DEBUG_ANALYTICS:
+            LOG.debug("posting to %s events %s", self.endpoint, docs)
+
+        response = requests.post(self.endpoint, json={"events": docs}, headers=headers)
+
+        if config.DEBUG_ANALYTICS:
+            LOG.debug(
+                "response from %s was: %s %s", self.endpoint, response.status_code, response.text
+            )
 
     def _create_headers(self):
         return {
@@ -75,7 +84,7 @@ class PublisherBuffer(EventHandler):
     A PublisherBuffer is an EventHandler that collects events into a buffer until a flush condition is
     met, and then flushes the buffer to a Publisher. The condition is either a given buffer size or
     a time interval, whatever occurs first. The buffer is also flushed when the recorder is stopped
-    via `cancel()`. Internally it uses a simple event-loop mechanism to multiplex commands on a
+    via `close()`. Internally it uses a simple event-loop mechanism to multiplex commands on a
     single thread.
     """
 
@@ -86,7 +95,7 @@ class PublisherBuffer(EventHandler):
     _cmd_stop = object()
 
     # FIXME: figure out good default values
-    def __init__(self, publisher: Publisher, flush_size: int = 50, flush_interval: float = 10):
+    def __init__(self, publisher: Publisher, flush_size: int = 20, flush_interval: float = 10):
         self._publisher = publisher
         self._queue = Queue()
         self._command_queue = Queue()
@@ -95,18 +104,23 @@ class PublisherBuffer(EventHandler):
         self.flush_interval = flush_interval
 
         self._last_flush = time.time()
+        self._stopping = threading.Event()
         self._stopped = threading.Event()
 
     def handle(self, event: Event):
         self._queue.put_nowait(event)
         self.checked_flush()
 
-    def cancel(self):
-        if self._stopped.is_set():
+    def close(self):
+        if self._stopping.is_set():
             return
 
-        self._stopped.set()
+        self._stopping.set()
         self._command_queue.put(self._cmd_stop)
+
+    def close_sync(self, timeout: Optional[float] = None):
+        self.close()
+        return self._stopped.wait(timeout)
 
     def flush(self):
         self._command_queue.put(self._cmd_flush)
@@ -125,7 +139,7 @@ class PublisherBuffer(EventHandler):
 
     def _run_flush_schedule(self, *_):
         while True:
-            if self._stopped.wait(self.flush_interval):
+            if self._stopping.wait(self.flush_interval):
                 return
             self.checked_flush()
 
@@ -146,6 +160,7 @@ class PublisherBuffer(EventHandler):
                 if command is self._cmd_stop:
                     return
         finally:
+            self._stopped.set()
             flush_scheduler.stop()
 
     def _do_flush(self):
@@ -159,18 +174,21 @@ class PublisherBuffer(EventHandler):
         if config.DEBUG_ANALYTICS:
             LOG.debug("collected %d events to publish", len(events))
 
-        if events:
-            self._publisher.publish(events)
+        self._publisher.publish(events)
 
 
 def _create_main_handler() -> EventHandler:
-    # TODO: use config to create publisher
-    endpoint = API_ENDPOINT.rstrip("/") + "/analytics"
+    endpoint = ANALYTICS_API.rstrip("/") + "/analytics"
+
     publisher = JsonHttpPublisher(endpoint)
-    # publisher = Printer()
 
     recorder = PublisherBuffer(publisher)
     start_thread(recorder.run)
+
+    def closer():
+        recorder.close_sync(timeout=2)
+
+    atexit.register(closer)
 
     return recorder
 

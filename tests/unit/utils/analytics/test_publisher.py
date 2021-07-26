@@ -41,9 +41,9 @@ def test_publisher_buffer():
         c1 = calls.get(timeout=2)
         assert len(c1) == 2
 
-        buffer.handle(e3)  # should flush after cancel despite flush_size = 2
+        buffer.handle(e3)  # should flush after close despite flush_size = 2
     finally:
-        buffer.cancel()
+        buffer.close()
 
     c2 = calls.get(timeout=2)
     assert len(c2) == 1
@@ -81,7 +81,7 @@ def test_publisher_buffer_interval():
         buffer.handle(e4)
         c2 = calls.get(timeout=2)
     finally:
-        buffer.cancel()
+        buffer.close()
 
     assert len(c1) == 2
     assert len(c2) == 2
