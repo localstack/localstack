@@ -301,18 +301,17 @@ class ProxyListenerSQS(PersistingProxyListener):
                         )
 
             elif action == "CreateQueue":
-                if SQS_BACKEND_IMPL == "elasticmq":
-                    keys_matched = []
-                    for k, v in req_data.items():
-                        match = re.match(r"^Tag\.(\d+)\.Key", k)
-                        if match:
-                            index = match.group(1)
-                            tag_val = "Tag.{}.Value".format(index)
-                            if tag_val not in req_data.keys():
-                                keys_matched.append(tag_val)
-                    if keys_matched:
-                        for tag_val in keys_matched:
-                            req_data[tag_val] = ""
+                keys_matched = []
+                for k, v in req_data.items():
+                    match = re.match(r"^Tag\.(\d+)\.Key", k)
+                    if match:
+                        index = match.group(1)
+                        tag_val = "Tag.{}.Value".format(index)
+                        if tag_val not in req_data.keys():
+                            keys_matched.append(tag_val)
+                if keys_matched:
+                    for tag_val in keys_matched:
+                        req_data[tag_val] = ""
                 changed_attrs = _fix_dlq_arn_in_attributes(req_data)
                 if changed_attrs:
                     return _get_attributes_forward_request(
