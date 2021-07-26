@@ -891,7 +891,7 @@ class SQSTest(unittest.TestCase):
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
 
         response = self.client.tag_queue(
-            QueueUrl=queue_url, Tags={"tag1": "value1", "tag2": "value2"}
+            QueueUrl=queue_url, Tags={"tag1": "value1", "tag2": "value2", "tag3": ""}
         )
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
@@ -899,6 +899,7 @@ class SQSTest(unittest.TestCase):
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
         self.assertIn("tag1", response["Tags"])
         self.assertIn("tag2", response["Tags"])
+        self.assertIn("tag3", response["Tags"])
 
         response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=["tag2"])
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
@@ -906,10 +907,11 @@ class SQSTest(unittest.TestCase):
         response = self.client.list_queue_tags(QueueUrl=queue_url)
         self.assertIn("tag1", response["Tags"])
         self.assertNotIn("tag2", response["Tags"])
+        self.assertIn("tag3", response["Tags"])
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
         # clean up
-        self.client.untag_queue(QueueUrl=queue_url, TagKeys=["tag1"])
+        self.client.untag_queue(QueueUrl=queue_url, TagKeys=["tag1", "tag3"])
         self.client.delete_queue(QueueUrl=queue_url)
 
     def test_posting_to_queue_with_trailing_slash(self):
