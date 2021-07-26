@@ -288,8 +288,6 @@ The following environment configurations can be useful for debugging:
 
 The following environment configurations are *deprecated*:
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.
-* `START_WEB`: Flag to control whether the Web UI should be started in Docker (default: `false`; deprecated).
-* `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`). Note that the Web UI is now deprecated (needs to be activated with `START_WEB=1`), and requires to use the `localstack/localstack-full` Docker image.
 
 Additionally, the following *read-only* environment variables are available:
 
@@ -649,19 +647,6 @@ coverage report
 # To check the coverage as html (output will be redirected to the html folder)
 coverage html
 ```
-
-## Web Dashboard (deprecated)
-
-The projects also comes with a simple Web dashboard that allows to view the deployed AWS
-components and the relationship between them.
-
-```
-localstack web
-```
-
-Please note that the Web UI requires using the extended version of the Docker image (`localstack/localstack-full`).
-
-**Note:** The Web dashboard is not actively maintained anymore and may get removed in an upcoming release.
 
 ## Other UI Clients
 
