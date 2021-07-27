@@ -13,7 +13,8 @@ from localstack.utils.analytics.publisher import JsonHttpPublisher, Publisher, P
 
 def new_event(payload=None) -> Event:
     return Event(
-        EventMetadata(get_session_id(), str(datetime.datetime.now()), "test"),
+        "test",
+        EventMetadata(get_session_id(), str(datetime.datetime.now())),
         payload=payload,
     )
 
@@ -128,13 +129,13 @@ def test_json_http_publisher():
     e2 = doc1["events"][1]
     e3 = doc2["events"][0]
 
+    assert e1["name"] == "test"
+    assert e2["name"] == "test"
+    assert e3["name"] == "test"
+
     assert e1["metadata"]["session_id"] == get_session_id()
     assert e2["metadata"]["session_id"] == get_session_id()
     assert e3["metadata"]["session_id"] == get_session_id()
-
-    assert e1["metadata"]["event"] == "test"
-    assert e2["metadata"]["event"] == "test"
-    assert e3["metadata"]["event"] == "test"
 
     assert e1["payload"]["val"] == 1
     assert e2["payload"]["val"] == 2

@@ -23,14 +23,8 @@ class ClientMetadata:
     is_testing: bool
 
 
-@functools.lru_cache()
-def get_session_id() -> str:
-    return _generate_session_id()
-
-
-@functools.lru_cache()
-def get_client_metadata() -> ClientMetadata:
-    metadata = ClientMetadata(
+def read_client_metadata() -> ClientMetadata:
+    return ClientMetadata(
         session_id=get_session_id(),
         machine_id=get_machine_id(),
         api_key=read_api_key_safe(),
@@ -40,6 +34,16 @@ def get_client_metadata() -> ClientMetadata:
         is_docker=config.is_in_docker,
         is_testing=config.is_env_true(constants.ENV_INTERNAL_TEST_RUN),
     )
+
+
+@functools.lru_cache()
+def get_session_id() -> str:
+    return _generate_session_id()
+
+
+@functools.lru_cache()
+def get_client_metadata() -> ClientMetadata:
+    metadata = read_client_metadata()
 
     if config.DEBUG_ANALYTICS:
         LOG.info("resolved client metadata: %s", metadata)

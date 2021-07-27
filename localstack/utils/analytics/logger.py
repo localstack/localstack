@@ -46,11 +46,10 @@ class EventLogger:
         self._log("infra_stop", payload=get_client_metadata())
 
     def _log(self, event: str, payload: EventPayload = None):
-        self.handler.handle(Event(metadata=self._metadata(event), payload=payload))
+        self.handler.handle(Event(name=event, metadata=self._metadata(), payload=payload))
 
-    def _metadata(self, event: str) -> EventMetadata:
+    def _metadata(self) -> EventMetadata:
         return EventMetadata(
             session_id=self.session_id,
             client_time=str(datetime.datetime.now()),
-            event=event,
         )

@@ -62,8 +62,8 @@ def test_event_with_payload(collector):
     e1 = collector.next()
     e2 = collector.next()
 
-    assert e1.metadata.event == "foo"
-    assert e2.metadata.event == "bar"
+    assert e1.name == "foo"
+    assert e2.name == "bar"
 
     assert e1.payload == {"bar": "ed", "ans": 42}
     assert e2.payload == {"foo": "zed", "ans": 420}
@@ -78,8 +78,8 @@ def test_event_with_kwargs_produces_dict_payload(collector):
     e1 = collector.next()
     e2 = collector.next()
 
-    assert e1.metadata.event == "foo"
-    assert e2.metadata.event == "bar"
+    assert e1.name == "foo"
+    assert e2.name == "bar"
 
     assert e1.payload == {"bar": "ed", "ans": 42}
     assert e2.payload == {"foo": "zed", "ans": 420}
