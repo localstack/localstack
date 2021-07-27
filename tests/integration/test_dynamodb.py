@@ -458,6 +458,11 @@ class TestDynamoDB(unittest.TestCase):
         # assert records in stream
         self.assertEqual(1, len(rec))
 
+        # check tableName exists in the stream record
+        record_data = json.loads(rec[0]["Data"])
+        self.assertEqual(record_data["tableName"], table_name)
+        # check eventSourceARN not exists in the stream record
+        self.assertNotIn("eventSourceARN", record_data)
         # describe kinesis streaming destination of the table
         describe = dynamodb.describe_kinesis_streaming_destination(TableName=table_name)[
             "KinesisDataStreamDestinations"

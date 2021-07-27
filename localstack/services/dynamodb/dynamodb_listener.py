@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import random
@@ -558,7 +559,8 @@ class ProxyListenerDynamoDB(ProxyListener):
             if "TableName" in data:
                 records[0]["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
             # forward to kinesis stream
-            forward_to_kinesis_stream(records)
+            records_to_kinesis = copy.deepcopy(records)
+            forward_to_kinesis_stream(records_to_kinesis)
             # forward to lambda and ddb_streams
             forward_to_lambda(records)
             records = self.prepare_records_to_forward_to_ddb_stream(records)
@@ -988,6 +990,9 @@ def forward_to_kinesis_stream(records):
                 stream_name = table_def["KinesisDataStreamDestinations"][-1]["StreamArn"].split(
                     "/", 1
                 )[-1]
+                record["tableName"] = table_name
+                record.pop("eventSourceARN", None)
+                record["dynamodb"].pop("StreamViewType", None)
                 partition_key = list(
                     filter(lambda key: key["KeyType"] == "HASH", table_def["KeySchema"])
                 )[0]["AttributeName"]
