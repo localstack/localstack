@@ -7,7 +7,6 @@ import time
 
 import boto3
 import botocore
-import six
 
 from localstack import config
 from localstack.constants import (
@@ -976,25 +975,26 @@ def create_api_gateway(
     env=None,
     usage_plan_name=None,
     region_name=None,
+    auth_creator_func=None,  # function that receives an api_id and returns an authorizer_id
 ):
     client = connect_to_service("apigateway", env=env, region_name=region_name)
-    if not resources:
-        resources = []
-    if not stage_name:
-        stage_name = "testing"
-    if not usage_plan_name:
-        usage_plan_name = "Basic Usage"
-    if not description:
-        description = 'Test description for API "%s"' % name
+    resources = resources or []
+    stage_name = stage_name or "testing"
+    usage_plan_name = usage_plan_name or "Basic Usage"
+    description = description or 'Test description for API "%s"' % name
 
     LOG.info('Creating API resources under API Gateway "%s".' % name)
     api = client.create_rest_api(name=name, description=description)
-    # list resources
     api_id = api["id"]
+
+    auth_id = None
+    if auth_creator_func:
+        auth_id = auth_creator_func(api_id)
+
     resources_list = client.get_resources(restApiId=api_id)
     root_res_id = resources_list["items"][0]["id"]
     # add API resources and methods
-    for path, methods in six.iteritems(resources):
+    for path, methods in resources.items():
         # create resources recursively
         parent_id = root_res_id
         for path_part in path.split("/"):
@@ -1004,6 +1004,7 @@ def create_api_gateway(
             parent_id = api_resource["id"]
         # add methods to the API resource
         for method in methods:
+            kwargs = {"authorizerId": auth_id} if auth_id else {}
             client.put_method(
                 restApiId=api_id,
                 resourceId=api_resource["id"],
@@ -1011,6 +1012,7 @@ def create_api_gateway(
                 authorizationType=method.get("authorizationType") or "NONE",
                 apiKeyRequired=method.get("apiKeyRequired") or False,
                 requestParameters=method.get("requestParameters") or {},
+                **kwargs,
             )
             # create integrations for this API resource/method
             integrations = method["integrations"]

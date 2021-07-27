@@ -236,6 +236,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(
     methods=[],
     path=None,
     auth_type=None,
+    auth_creator_func=None,
     http_method=None,
 ):
     if not methods:
@@ -246,17 +247,22 @@ def connect_api_gateway_to_http_with_lambda_proxy(
     resources = {}
     resource_path = path.lstrip("/")
     resources[resource_path] = []
+
     for method in methods:
         int_meth = http_method or method
         resources[resource_path].append(
             {
                 "httpMethod": method,
                 "authorizationType": auth_type,
+                "authorizerId": None,
                 "integrations": [{"type": "AWS_PROXY", "uri": target_uri, "httpMethod": int_meth}],
             }
         )
     return aws_stack.create_api_gateway(
-        name=gateway_name, resources=resources, stage_name=stage_name
+        name=gateway_name,
+        resources=resources,
+        stage_name=stage_name,
+        auth_creator_func=auth_creator_func,
     )
 
 
@@ -269,8 +275,8 @@ def create_lambda_api_gateway_integration(
     runtime=None,
     stage_name=None,
     auth_type=None,
+    auth_creator_func=None,
 ):
-    methods = methods or ["GET", "POST"]
     path = path or "/test"
     auth_type = auth_type or "REQUEST"
     stage_name = stage_name or "test"
@@ -283,7 +289,13 @@ def create_lambda_api_gateway_integration(
 
     # connect API GW to Lambda
     result = connect_api_gateway_to_http_with_lambda_proxy(
-        gateway_name, target_arn, stage_name=stage_name, path=path, auth_type=auth_type
+        gateway_name,
+        target_arn,
+        stage_name=stage_name,
+        path=path,
+        methods=methods,
+        auth_type=auth_type,
+        auth_creator_func=auth_creator_func,
     )
     return result
 
