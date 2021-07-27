@@ -1,14 +1,12 @@
-from .events import Event, EventHandler
 from .logger import EventLogger
 from .metadata import get_session_id
-from .publisher import publish
+from .publisher import GlobalAnalyticsBus
 
 name = "analytics"
 
 
-class _EventPublisher(EventHandler):
-    def handle(self, event: Event):
-        publish(event)
+def _create_global_analytics_bus():
+    return GlobalAnalyticsBus()
 
 
-log = EventLogger(handler=_EventPublisher(), session_id=get_session_id())
+log = EventLogger(handler=_create_global_analytics_bus(), session_id=get_session_id())

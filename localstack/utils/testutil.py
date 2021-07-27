@@ -7,6 +7,7 @@ import tempfile
 import time
 import zipfile
 from contextlib import contextmanager
+from typing import Dict
 
 import requests
 from six import iteritems
@@ -566,4 +567,12 @@ def http_server(handler, host="127.0.0.1", port=None) -> str:
     ), f"server on port {port} did not start"
     yield url
     thread.stop()
-    thread.join(2)
+
+
+def json_response(data, code=200, headers: Dict = None) -> requests.Response:
+    r = requests.Response()
+    r._content = json.dumps(data)
+    r.status_code = code
+    if headers:
+        r.headers.update(headers)
+    return r

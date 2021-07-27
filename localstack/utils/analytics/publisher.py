@@ -6,14 +6,12 @@ import time
 from queue import Queue
 from typing import List, Optional
 
-import requests
-
 from localstack import config, constants
-from localstack.constants import ANALYTICS_API
 from localstack.utils.common import start_thread
 
+from .client import AnalyticsClient
 from .events import Event, EventHandler
-from .metadata import get_session_id
+from .metadata import get_client_metadata
 
 LOG = logging.getLogger(__name__)
 
@@ -27,46 +25,15 @@ class Publisher(abc.ABC):
         raise NotImplementedError
 
 
-class JsonHttpPublisher(Publisher):
-    """
-    Publisher that serializes event batches as JSON and POSTs them to an HTTP endpoint.
-    """
+class AnalyticsClientPublisher(Publisher):
+    client: AnalyticsClient
 
-    def __init__(self, endpoint):
-        self.endpoint = endpoint
-        # TODO: add compression to JsonHttpPublisher
-        #  it would maybe be useful to compress analytics data, but it's unclear how that will
-        #  affect performance and what the benefit is. need to measure first.
+    def __init__(self, client: AnalyticsClient = None) -> None:
+        super().__init__()
+        self.client = client or AnalyticsClient()
 
     def publish(self, events: List[Event]):
-        if not events:
-            return
-
-        docs = list()
-        for event in events:
-            try:
-                docs.append(event.asdict())
-            except Exception:
-                if config.DEBUG_ANALYTICS:
-                    LOG.exception("error while recording event %s", event)
-
-        # FIXME: fault tolerance/timeouts
-        headers = self._create_headers()
-        if config.DEBUG_ANALYTICS:
-            LOG.debug("posting to %s events %s", self.endpoint, docs)
-
-        response = requests.post(self.endpoint, json={"events": docs}, headers=headers)
-
-        if config.DEBUG_ANALYTICS:
-            LOG.debug(
-                "response from %s was: %s %s", self.endpoint, response.status_code, response.text
-            )
-
-    def _create_headers(self):
-        return {
-            "User-Agent": "localstack/" + constants.VERSION,
-            "Localstack-Session-ID": get_session_id(),
-        }
+        self.client.append_events(events)
 
 
 class Printer(Publisher):
@@ -177,51 +144,70 @@ class PublisherBuffer(EventHandler):
         self._publisher.publish(events)
 
 
-def _create_main_handler() -> EventHandler:
-    endpoint = ANALYTICS_API.rstrip("/") + "/analytics"
+class GlobalAnalyticsBus(PublisherBuffer):
+    def __init__(self, client: AnalyticsClient = None, flush_size=20, flush_interval=10) -> None:
+        self._client = client or AnalyticsClient()
+        self._publisher = AnalyticsClientPublisher(self._client)
 
-    publisher = JsonHttpPublisher(endpoint)
+        super().__init__(self._publisher, flush_size, flush_interval)
 
-    recorder = PublisherBuffer(publisher)
-    start_thread(recorder.run)
+        self._started = False
+        self._startup_mutex = threading.Lock()
+        self._buffer_thread = None
 
-    def closer():
-        recorder.close_sync(timeout=2)
+        self.force_tracking = False  # allow class to ignore all other tracking config
+        self.tracking_disabled = False  # disables tracking if global config would otherwise track
 
-    atexit.register(closer)
+    @property
+    def is_tracking_disabled(self):
+        if self.force_tracking:
+            return False
 
-    return recorder
+        # don't track if event tracking is disabled globally
+        if config.DISABLE_EVENTS:
+            return True
+        # don't track for internal test runs (like integration tests)
+        if config.is_env_true(constants.ENV_INTERNAL_TEST_RUN):
+            return True
+        if self.tracking_disabled:
+            return True
 
+        return False
 
-def _should_not_track():
-    return config.DISABLE_EVENTS or config.is_env_true(constants.ENV_INTERNAL_TEST_RUN)
+    def handle(self, event: Event):
+        """
+        Publish an event to the global analytics event publisher.
+        """
+        if self.is_tracking_disabled:
+            if config.DEBUG_ANALYTICS:
+                LOG.debug("skipping event %s", event)
+            return
 
+        if not self._started:
+            self._start()
 
-_handler: EventHandler = None
-_startup_mutex = threading.Lock()
+        super().handle(event)
 
+    def _start(self):
+        with self._startup_mutex:
+            if self._started:
+                return
+            self._started = True
 
-def publish(event: Event):
-    """
-    Publish an event to the global analytics event publisher.
-    """
-    global _handler
-
-    if _should_not_track():
-        if config.DEBUG_ANALYTICS:
-            LOG.debug("skipping event %s", event)
-        return
-
-    if not _handler:
-        with _startup_mutex:
-            if not _handler:
-                _handler = _create_main_handler()
-
+            # TODO should do async retry here and queue events until decision has been made,
+            #  otherwise first call to handle() may block
+            try:
+                response = self._client.start_session(get_client_metadata())
+                LOG.info("session endpoint returned: %s", response)
+            except Exception:
                 if config.DEBUG_ANALYTICS:
-                    LOG.debug("skipping event %s", event)
+                    LOG.exception("error while registering session")
+                self.tracking_disabled = True
+                return
 
-    try:
-        _handler.handle(event)
-    except Exception:
-        if config.DEBUG_ANALYTICS:
-            LOG.exception("error while recording event %s", event)
+            start_thread(self.run)
+
+            def closer():
+                self.close_sync(timeout=2)
+
+            atexit.register(closer)

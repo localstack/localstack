@@ -2,7 +2,9 @@ from queue import Queue
 
 import pytest
 
-from localstack.utils.analytics import Event, EventHandler, EventLogger, get_session_id
+from localstack.utils.analytics.events import Event, EventHandler
+from localstack.utils.analytics.logger import EventLogger
+from localstack.utils.analytics.metadata import get_session_id
 
 
 class EventCollector(EventHandler):
