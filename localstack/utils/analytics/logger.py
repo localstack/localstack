@@ -1,7 +1,7 @@
 import datetime
 
 from .events import Event, EventHandler, EventMetadata, EventPayload
-from .metadata import get_client_metadata, get_session_id
+from .metadata import get_session_id
 
 
 def get_hash(value) -> str:
@@ -38,12 +38,6 @@ class EventLogger:
                 raise ValueError("either use payload or set kwargs, not both")
 
         self._log(event, payload=payload)
-
-    def infra_start(self):
-        self._log("infra_start", payload=get_client_metadata())
-
-    def infra_stop(self):
-        self._log("infra_stop", payload=get_client_metadata())
 
     def _log(self, event: str, payload: EventPayload = None):
         self.handler.handle(Event(name=event, metadata=self._metadata(), payload=payload))
