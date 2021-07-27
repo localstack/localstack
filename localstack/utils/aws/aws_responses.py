@@ -5,6 +5,7 @@ import re
 import xml.etree.ElementTree as ET
 from binascii import crc32
 from struct import pack
+from typing import Optional
 
 import xmltodict
 from flask import Response as FlaskResponse
@@ -33,7 +34,9 @@ class ErrorResponse(Exception):
         self.response = response
 
 
-def flask_error_response_json(msg, code=500, error_type="InternalFailure"):
+def flask_error_response_json(
+    msg: str, code: Optional[int] = 500, error_type: Optional[str] = "InternalFailure"
+):
     result = {
         "Type": "User" if code < 500 else "Server",
         "message": msg,
@@ -51,7 +54,11 @@ def requests_error_response_json(message, code=500, error_type="InternalFailure"
 
 
 def requests_error_response_xml(
-    message, code=400, code_string="InvalidParameter", service=None, xmlns=None
+    message: str,
+    code: Optional[int] = 400,
+    code_string: Optional[str] = "InvalidParameter",
+    service: Optional[str] = None,
+    xmlns: Optional[str] = None,
 ):
     response = RequestsResponse()
     xmlns = xmlns or "http://%s.amazonaws.com/doc/2010-03-31/" % service
@@ -167,7 +174,11 @@ def requests_error_response_xml_signature_calculation(
 
 
 def flask_error_response_xml(
-    message, code=500, code_string="InternalFailure", service=None, xmlns=None
+    message: str,
+    code: Optional[int] = 500,
+    code_string: Optional[str] = "InternalFailure",
+    service: Optional[str] = None,
+    xmlns: Optional[str] = None,
 ):
     response = requests_error_response_xml(
         message, code=code, code_string=code_string, service=service, xmlns=xmlns

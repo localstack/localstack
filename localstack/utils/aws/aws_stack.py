@@ -276,7 +276,7 @@ def connect_to_service(
     env=None,
     region_name=None,
     endpoint_url=None,
-    config=None,
+    config: botocore.config.Config = None,
     verify=False,
     cache=True,
     *args,
@@ -302,20 +302,20 @@ def connect_to_service(
             backend_url = os.environ.get(backend_env_name, "").strip()
             if backend_url:
                 endpoint_url = backend_url
-        config = config or botocore.client.Config()
+        boto_config = config or botocore.client.Config()
         # configure S3 path/host style addressing
         if service_name == "s3":
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", "://%s" % get_s3_hostname())
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
-        config.max_pool_connections = MAX_POOL_CONNECTIONS
+        boto_config.max_pool_connections = MAX_POOL_CONNECTIONS
         result = method(
             service_name,
             region_name=region,
             endpoint_url=endpoint_url,
             verify=verify,
-            config=config,
+            config=boto_config,
             **kwargs,
         )
         if not cache:

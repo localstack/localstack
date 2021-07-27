@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+from typing import Optional
 
 import boto3
 import moto.cloudformation.utils
@@ -25,7 +26,8 @@ NoDatesSafeLoader.yaml_implicit_resolvers = {
 }
 
 
-def transform_template(req_data):
+def transform_template(req_data) -> Optional[str]:
+    """only returns string when parsing SAM template, otherwise None"""
     template_body = get_template_body(req_data)
     parsed = parse_template(template_body)
 
@@ -39,7 +41,9 @@ def transform_template(req_data):
         def load(self):
             return policy_map
 
-    if parsed.get("Transform") == "AWS::Serverless-2016-10-31":
+    if (
+        parsed.get("Transform") == "AWS::Serverless-2016-10-31"
+    ):  # TODO: couldn't this be at the start of the function?
         # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
         region_before = os.environ.get("AWS_DEFAULT_REGION")
         if boto3.session.Session().region_name is None:
@@ -53,7 +57,7 @@ def transform_template(req_data):
                 os.environ["AWS_DEFAULT_REGION"] = region_before
 
 
-def prepare_template_body(req_data):
+def prepare_template_body(req_data) -> Optional[str]:  # TODO: mutating and returning
     template_url = req_data.get("TemplateURL")
     if template_url:
         req_data["TemplateURL"] = convert_s3_to_local_url(template_url)
@@ -141,7 +145,7 @@ def parse_template(template):
     except Exception:
         yaml.add_multi_constructor(
             "", moto.cloudformation.utils.yaml_tag_constructor, Loader=NoDatesSafeLoader
-        )
+        )  # TODO: remove moto dependency here
         try:
             return clone_safe(yaml.safe_load(template))
         except Exception:
