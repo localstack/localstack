@@ -10,7 +10,7 @@ import threading
 import time
 import traceback
 from multiprocessing import Process, Queue
-from typing import Tuple
+from typing import Dict, Tuple, Union
 
 from localstack import config
 from localstack.constants import THUNDRA_APIKEY, THUNDRA_APIKEY_ENV_VAR_NAME
@@ -154,6 +154,26 @@ def rm_docker_container(container_name_or_id, check_existence=False, safe=False)
             raise
 
 
+class LambdaAsyncLocks:
+    locks: Dict[str, Union[threading.Semaphore, threading.Lock]]
+    creation_lock: threading.Lock
+
+    def __init__(self):
+        self.locks = {}
+        self.creation_lock = threading.Lock()
+
+    def assure_lock_present(
+        self, key: str, lock: Union[threading.Semaphore, threading.Lock]
+    ) -> Union[threading.Semaphore, threading.Lock]:
+        with self.creation_lock:
+            if key not in self.locks:
+                self.locks[key] = lock
+            return self.locks[key]
+
+
+LAMBDA_ASYNC_LOCKS = LambdaAsyncLocks()
+
+
 class InvocationResult(object):
     def __init__(self, result, log_output=""):
         if isinstance(result, InvocationResult):
@@ -199,10 +219,15 @@ class LambdaExecutor(object):
         version=None,
         asynchronous=False,
         callback=None,
+        lock_discriminator: str = None,
     ):
         def do_execute(*args):
             @cloudwatched("lambda")
             def _run(func_arn=None):
+                lock = None
+                if lock_discriminator:
+                    lock = LAMBDA_ASYNC_LOCKS.locks[lock_discriminator]
+                    lock.acquire()
                 # set the invocation time in milliseconds
                 invocation_time = int(time.time() * 1000)
                 # start the execution
@@ -231,6 +256,8 @@ class LambdaExecutor(object):
                     lambda_result_to_destination(
                         func_details, event, result, asynchronous, raised_error
                     )
+                    if lock:
+                        lock.release()
 
                 # return final result
                 return result
