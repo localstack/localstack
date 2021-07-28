@@ -1,6 +1,5 @@
 import base64
 import json
-import logging
 import os
 import re
 import shutil
@@ -130,8 +129,6 @@ TEST_LAMBDA_LIBS = [
     "pip",
     "dns",
 ]
-
-LOG = logging.getLogger(__name__)
 
 
 def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_requests=3):
@@ -1990,7 +1987,6 @@ def test_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     )
     for _ in range(1, 10):
         events = get_lambda_log_events(function_name)
-        LOG.warning("Got events %s", events)
         if len(events) == 2:
             break
 
