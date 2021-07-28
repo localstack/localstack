@@ -13,12 +13,16 @@ from multiprocessing import Process, Queue
 from typing import Tuple
 
 from localstack import config
+from localstack.constants import THUNDRA_APIKEY, THUNDRA_APIKEY_ENV_VAR_NAME
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_PROVIDED,
 )
-from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.services.install import (
+    INSTALL_PATH_LOCALSTACK_FAT_JAR,
+    INSTALL_PATH_THUNDRA_JAVA_AGENT_JAR,
+)
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.dead_letter_queue import (
@@ -49,6 +53,9 @@ from localstack.utils.docker import DOCKER_CLIENT, ContainerException
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
 LAMBDA_EXECUTOR_CLASS = "cloud.localstack.LambdaExecutor"
+LAMBDA_HANDLER_ENV_VAR_NAME = "_HANDLER"
+THUNDRA_JAVA_AGENT_JAR = INSTALL_PATH_THUNDRA_JAVA_AGENT_JAR
+THUNDRA_JAVA_AGENT_CONTAINER_PATH = "/tmp/thundra-agent.jar"
 EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.TMP_FOLDER
 
 LAMBDA_SERVER_UNIQUE_PORTS = 500
@@ -173,6 +180,16 @@ class LambdaExecutor(object):
 
         return result
 
+    def _get_thundra_apikey(self, env_vars):
+        thundra_apikey = env_vars.get(THUNDRA_APIKEY_ENV_VAR_NAME)
+
+        # If Thundra API key is specified for the function through env vars, use it
+        if not thundra_apikey:
+            # Otherwise, try to get it from Localstack env vars
+            thundra_apikey = THUNDRA_APIKEY
+
+        return thundra_apikey
+
     def execute(
         self,
         func_arn,
@@ -253,11 +270,13 @@ class LambdaExecutorContainers(LambdaExecutor):
     """Abstract executor class for executing Lambda functions in Docker containers"""
 
     def execute_in_container(
-        self, func_details, env_vars, command, stdin=None, background=False
+        self, func_details, env_vars, command, docker_flags=None, stdin=None, background=False
     ) -> Tuple[bytes, bytes]:
         raise NotImplementedError
 
-    def run_lambda_executor(self, event=None, func_details=None, env_vars=None, command=None):
+    def run_lambda_executor(
+        self, event=None, func_details=None, env_vars=None, command=None, docker_flags=None
+    ):
         env_vars = dict(env_vars or {})
         runtime = func_details.runtime or ""
 
@@ -305,7 +324,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         error = None
         try:
             result, log_output = self.execute_in_container(
-                func_details, env_vars, command, event_stdin_bytes
+                func_details, env_vars, command, docker_flags, event_stdin_bytes
             )
         except ContainerException as e:
             result = e.stdout or ""
@@ -355,10 +374,36 @@ class LambdaExecutorContainers(LambdaExecutor):
         environment["AWS_LAMBDA_EVENT_BODY"] = event_body
         return event_body.encode()
 
+    def inject_thundra_java_agent(self, environment):
+        if not THUNDRA_JAVA_AGENT_JAR:
+            return
+
+        thundra_apikey = super(LambdaExecutorContainers, self)._get_thundra_apikey(environment)
+        if not thundra_apikey:
+            return
+
+        if config.LAMBDA_REMOTE_DOCKER:
+            LOG.info(
+                "Not enabling Thundra agent, as Docker file mounting is disabled due to LAMBDA_REMOTE_DOCKER=1"
+            )
+            return
+
+        environment[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
+
+        # Inject Thundra agent path into "JAVA_TOOL_OPTIONS" env var,
+        # so it will be automatically loaded on JVM startup
+        java_tool_opts = environment.get("JAVA_TOOL_OPTIONS", "")
+        java_tool_opts += " -javaagent:" + THUNDRA_JAVA_AGENT_CONTAINER_PATH
+        environment["JAVA_TOOL_OPTIONS"] = java_tool_opts.strip()
+
+        # Mount Thundra agent jar into container file system
+        return "-v %s:%s" % (THUNDRA_JAVA_AGENT_JAR, THUNDRA_JAVA_AGENT_CONTAINER_PATH)
+
     def _execute(self, func_arn, func_details, event, context=None, version=None):
         runtime = func_details.runtime
         handler = func_details.handler
         environment = self._prepare_environment(func_details)
+        given_docker_flags = config.LAMBDA_DOCKER_FLAGS
 
         # configure USE_SSL in environment
         if config.USE_SSL:
@@ -375,7 +420,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         environment["LOCALSTACK_HOSTNAME"] = main_endpoint
         environment["EDGE_PORT"] = str(config.EDGE_PORT)
-        environment["_HANDLER"] = handler
+        environment[LAMBDA_HANDLER_ENV_VAR_NAME] = handler
         if os.environ.get("HTTP_PROXY"):
             environment["HTTP_PROXY"] = os.environ["HTTP_PROXY"]
         if func_details.timeout:
@@ -403,6 +448,12 @@ class LambdaExecutorContainers(LambdaExecutor):
                 )
                 environment["JAVA_TOOL_OPTIONS"] = config.LAMBDA_JAVA_OPTS
 
+        docker_flags = given_docker_flags or ""
+        if is_java_lambda(runtime):
+            # If runtime is Java, inject Thundra agent if it is configured
+            extra_docker_flags = self.inject_thundra_java_agent(environment)
+            docker_flags += " %s" % extra_docker_flags if extra_docker_flags else ""
+
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):
             environment["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
@@ -410,7 +461,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         # run Lambda executor and fetch invocation result
         LOG.info("Running lambda: %s" % func_details.arn())
         result = self.run_lambda_executor(
-            event=stdin, env_vars=environment, func_details=func_details
+            event=stdin, env_vars=environment, func_details=func_details, docker_flags=docker_flags
         )
 
         return result
@@ -433,7 +484,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.port_offset = LAMBDA_SERVER_PORT_OFFSET
 
     def execute_in_container(
-        self, func_details, env_vars, command, stdin=None, background=False
+        self, func_details, env_vars, command, docker_flags=None, stdin=None, background=False
     ) -> Tuple[bytes, bytes]:
         func_arn = func_details.arn()
         lambda_cwd = func_details.cwd
@@ -454,7 +505,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             runtime,
             func_arn,
         )
-        container_info = self.prime_docker_container(func_details, dict(env_vars), lambda_cwd)
+        container_info = self.prime_docker_container(
+            func_details, dict(env_vars), lambda_cwd, docker_flags
+        )
 
         if not command and handler:
             command = container_info.entry_point.split()
@@ -495,7 +548,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.function_invoke_times = {}
         return self.destroy_existing_docker_containers()
 
-    def prime_docker_container(self, func_details, env_vars, lambda_cwd):
+    def prime_docker_container(self, func_details, env_vars, lambda_cwd, docker_flags=None):
         """
         Prepares a persistent docker container for a specific function.
         :param func_details: The Details of the lambda function.
@@ -520,7 +573,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
                 # get container startup command and run it
                 LOG.debug("Creating container: %s" % container_name)
-                self.create_container(func_details, env_vars, lambda_cwd)
+                self.create_container(func_details, env_vars, lambda_cwd, docker_flags)
 
                 if config.LAMBDA_REMOTE_DOCKER:
                     LOG.debug(
@@ -545,7 +598,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
             return ContainerInfo(container_name, entry_point)
 
-    def create_container(self, func_details, env_vars, lambda_cwd):
+    def create_container(self, func_details, env_vars, lambda_cwd, docker_flags=None):
         docker_image = Util.docker_image_for_lambda(func_details)
         container_name = self.get_container_name(func_details.arn())
 
@@ -558,7 +611,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
 
         network = config.LAMBDA_DOCKER_NETWORK
-        additional_flags = config.LAMBDA_DOCKER_FLAGS
+        additional_flags = docker_flags
         dns = config.LAMBDA_DOCKER_DNS
 
         mount_volumes = not config.LAMBDA_REMOTE_DOCKER
@@ -711,7 +764,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         return event_body.encode()
 
     def execute_in_container(
-        self, func_details, env_vars, command, stdin=None, background=False
+        self, func_details, env_vars, command, docker_flags=None, stdin=None, background=False
     ) -> Tuple[bytes, bytes]:
         lambda_cwd = func_details.cwd
         handler = func_details.handler
@@ -731,7 +784,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             env_vars["DOCKER_LAMBDA_API_PORT"] = port
             env_vars["DOCKER_LAMBDA_RUNTIME_PORT"] = port
 
-        additional_flags = config.LAMBDA_DOCKER_FLAGS or ""
+        additional_flags = docker_flags or ""
         dns = config.LAMBDA_DOCKER_DNS
         docker_java_ports = bootstrap.PortMappings()
         if Util.debug_java_port:
@@ -787,7 +840,9 @@ class LambdaExecutorLocal(LambdaExecutor):
         :return: the InvocationResult
         """
 
-        kwargs = {"stdin": True, "inherit_env": True, "asynchronous": True}
+        env_vars = func_details and func_details.envvars
+        kwargs = {"stdin": True, "inherit_env": True, "asynchronous": True, "env_vars": env_vars}
+
         process = run(cmd, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs)
         result, log_output = process.communicate()
         try:
@@ -901,28 +956,50 @@ class LambdaExecutorLocal(LambdaExecutor):
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
 
+    def inject_thundra_java_agent(self, func_details, given_opts):
+        if not THUNDRA_JAVA_AGENT_JAR:
+            return
+
+        thundra_apikey = super(LambdaExecutorLocal, self)._get_thundra_apikey(func_details.envvars)
+        if not thundra_apikey:
+            return
+
+        func_details.envvars[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
+
+        return "-javaagent:" + THUNDRA_JAVA_AGENT_JAR
+
     def execute_java_lambda(self, event, context, main_file, func_details=None):
+        func_details.envvars = func_details.envvars or {}
+        given_opts = config.LAMBDA_JAVA_OPTS or ""
+
+        extra_opts = self.inject_thundra_java_agent(func_details, given_opts)
+
+        opts = given_opts
+        if extra_opts:
+            opts += " " + extra_opts
+
         handler = func_details.handler
-        opts = config.LAMBDA_JAVA_OPTS if config.LAMBDA_JAVA_OPTS else ""
+        func_details.envvars[LAMBDA_HANDLER_ENV_VAR_NAME] = handler
+
         event_file = EVENT_FILE_PATTERN.replace("*", short_uid())
         save_file(event_file, json.dumps(json_safe(event)))
         TMP_FILES.append(event_file)
-        class_name = handler.split("::")[0]
+
         classpath = "%s:%s:%s" % (
             main_file,
             Util.get_java_classpath(main_file),
             LAMBDA_EXECUTOR_JAR,
         )
-        cmd = "java %s -cp %s %s %s %s" % (
+        cmd = "java %s -cp %s %s %s" % (
             opts,
             classpath,
             LAMBDA_EXECUTOR_CLASS,
-            class_name,
             event_file,
         )
+
         LOG.info(cmd)
-        result = self._execute_in_custom_runtime(cmd, func_details=func_details)
-        return result
+
+        return self._execute_in_custom_runtime(cmd, func_details=func_details)
 
     def execute_javascript_lambda(self, event, context, main_file, func_details=None):
         handler = func_details.handler

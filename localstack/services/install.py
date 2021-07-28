@@ -28,6 +28,8 @@ from localstack.constants import (
     LOCALSTACK_MAVEN_VERSION,
     MODULE_MAIN_PATH,
     STS_JAR_URL,
+    THUNDRA_APIKEY,
+    THUNDRA_JAVA_AGENT_VERSION,
 )
 from localstack.utils import bootstrap
 
@@ -62,6 +64,7 @@ INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % INSTALL_DIR_INFRA
 INSTALL_DIR_KMS = "%s/kms" % INSTALL_DIR_INFRA
 INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % INSTALL_DIR_INFRA
 INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % INSTALL_DIR_INFRA
+INSTALL_PATH_THUNDRA_JAVA_AGENT_JAR = "%s/thundra-agent.jar" % INSTALL_DIR_INFRA
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
 INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
@@ -73,6 +76,10 @@ URL_LOCALSTACK_FAT_JAR = (
     "https://repo1.maven.org/maven2/"
     + "cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
 ).format(v=LOCALSTACK_MAVEN_VERSION)
+THUNDRA_JAVA_AGENT_JAR = (
+    "https://repo.thundra.io/service/local/artifact/maven/redirect?"
+    + "r=thundra-releases&g=io.thundra.agent&a=thundra-agent-lambda-bootstrap&v={v}"
+).format(v=THUNDRA_JAVA_AGENT_VERSION)
 MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % INSTALL_DIR_INFRA
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
@@ -370,6 +377,13 @@ def install_lambda_java_libs():
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
 
 
+def install_thundra_java_agent():
+    # install Thundra Java agent JAR file
+    if not os.path.exists(INSTALL_PATH_THUNDRA_JAVA_AGENT_JAR):
+        log_install_msg("Thundra Java agent", verbatim=True)
+        download(THUNDRA_JAVA_AGENT_JAR, INSTALL_PATH_THUNDRA_JAVA_AGENT_JAR)
+
+
 def install_cloudformation_libs():
     from localstack.services.cloudformation import deployment_utils
 
@@ -394,6 +408,11 @@ def install_component(name):
 def install_components(names):
     parallelize(install_component, names)
     install_lambda_java_libs()
+    # If Thundra API key is specified,
+    # this means that Thundra integration will be used.
+    # So, install Thundra agent.
+    if THUNDRA_APIKEY:
+        install_thundra_java_agent()
 
 
 def install_all_components():
