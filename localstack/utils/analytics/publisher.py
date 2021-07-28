@@ -3,11 +3,11 @@ import atexit
 import logging
 import threading
 import time
-from queue import Queue
+from queue import Full, Queue
 from typing import List, Optional
 
 from localstack import config, constants
-from localstack.utils.common import start_thread
+from localstack.utils.common import start_thread, start_worker_thread
 
 from .client import AnalyticsClient
 from .events import Event, EventHandler
@@ -62,9 +62,11 @@ class PublisherBuffer(EventHandler):
     _cmd_stop = object()
 
     # FIXME: figure out good default values
-    def __init__(self, publisher: Publisher, flush_size: int = 20, flush_interval: float = 10):
+    def __init__(
+        self, publisher: Publisher, flush_size: int = 20, flush_interval: float = 10, maxsize=0
+    ):
         self._publisher = publisher
-        self._queue = Queue()
+        self._queue = Queue(maxsize=maxsize)
         self._command_queue = Queue()
 
         self.flush_size = flush_size
@@ -97,6 +99,14 @@ class PublisherBuffer(EventHandler):
         """
         Runs flush only if a flush condition is met.
         """
+        if config.DEBUG_ANALYTICS:
+            LOG.debug(
+                "analytics queue size: %d, command queue size: %d, time since last flush: %.1fs",
+                self._queue.qsize(),
+                self._command_queue.qsize(),
+                time.time() - self._last_flush,
+            )
+
         if self._queue.qsize() >= self.flush_size:
             self.flush()
             return
@@ -145,13 +155,21 @@ class PublisherBuffer(EventHandler):
 
 
 class GlobalAnalyticsBus(PublisherBuffer):
-    def __init__(self, client: AnalyticsClient = None, flush_size=20, flush_interval=10) -> None:
+    def __init__(
+        self, client: AnalyticsClient = None, flush_size=20, flush_interval=10, max_buffer_size=1000
+    ) -> None:
         self._client = client or AnalyticsClient()
         self._publisher = AnalyticsClientPublisher(self._client)
 
-        super().__init__(self._publisher, flush_size, flush_interval)
+        super().__init__(
+            self._publisher,
+            flush_size=flush_size,
+            flush_interval=flush_interval,
+            maxsize=max_buffer_size,
+        )
 
         self._started = False
+        self._startup_complete = False
         self._startup_mutex = threading.Lock()
         self._buffer_thread = None
 
@@ -174,6 +192,27 @@ class GlobalAnalyticsBus(PublisherBuffer):
 
         return False
 
+    def _do_flush(self):
+        if self.tracking_disabled:
+            # flushing although tracking has been disabled most likely means that _do_start_retry
+            # has failed, tracking is now disabled, and the system tries to flush the queued
+            # events. we use this opportunity to shut down the tracker and clear the queue, since
+            # no tracking should happen from this point on.
+            if config.DEBUG_ANALYTICS:
+                LOG.debug("attempting to flush while tracking is disabled, shutting down tracker")
+            self.close_sync(timeout=10)
+            self._queue.queue.clear()
+            return
+
+        super()._do_flush()
+
+    def flush(self):
+        if not self._startup_complete:
+            # don't flush until _do_start_retry has completed (command queue would fill up)
+            return
+
+        super().flush()
+
     def handle(self, event: Event):
         """
         Publish an event to the global analytics event publisher.
@@ -186,7 +225,11 @@ class GlobalAnalyticsBus(PublisherBuffer):
         if not self._started:
             self._start()
 
-        super().handle(event)
+        try:
+            super().handle(event)
+        except Full:
+            if config.DEBUG_ANALYTICS:
+                LOG.warning("event queue is full, dropping event %s", event)
 
     def _start(self):
         with self._startup_mutex:
@@ -194,20 +237,28 @@ class GlobalAnalyticsBus(PublisherBuffer):
                 return
             self._started = True
 
-            # TODO should do async retry here and queue events until decision has been made,
-            #  otherwise first call to handle() may block
-            try:
-                response = self._client.start_session(get_client_metadata())
-                LOG.info("session endpoint returned: %s", response)
-            except Exception:
-                if config.DEBUG_ANALYTICS:
-                    LOG.exception("error while registering session")
-                self.tracking_disabled = True
-                return
+            # startup has to run async, otherwise first call to handle() could block a long time.
+            start_worker_thread(self._do_start_retry)
 
-            start_thread(self.run)
+    def _do_start_retry(self, *_):
+        # TODO: actually retry
+        try:
+            if config.DEBUG_ANALYTICS:
+                LOG.debug("trying to register session with analytics backend")
+            response = self._client.start_session(get_client_metadata())
+            if config.DEBUG_ANALYTICS:
+                LOG.debug("session endpoint returned: %s", response)
+        except Exception:
+            self.tracking_disabled = True
+            if config.DEBUG_ANALYTICS:
+                LOG.exception("error while registering session. disabling tracking")
+            return
+        finally:
+            self._startup_complete = True
 
-            def closer():
-                self.close_sync(timeout=2)
+        start_thread(self.run)
 
-            atexit.register(closer)
+        def _do_close():
+            self.close_sync(timeout=2)
+
+        atexit.register(_do_close)
