@@ -458,7 +458,9 @@ The URL pattern for API Gateway executions is `http://localhost:4566/restapis/<a
 $ curl http://localhost:4566/restapis/nmafetnwf6/prod/_user_request_/my/path
 ```
 
-## Integration with pytest
+## Integrations
+
+### pytest
 
 If you want to use LocalStack in your integration tests (e.g., pytest), simply fire up the
 infrastructure in your test setup method and then clean up everything in your teardown method:
@@ -478,13 +480,33 @@ def my_app_test():
 
 See the example test file `tests/integration/test_integration.py` for more details.
 
-## Integration with Serverless
+### Serverless Framework
 
 You can use the [`serverless-localstack`](https://www.npmjs.com/package/serverless-localstack) plugin to easily run [Serverless](https://serverless.com/framework/) applications on LocalStack.
 For more information, please check out the plugin repository here:
 https://github.com/localstack/serverless-localstack
 
-## Integration with Terraform
+### Thundra
+
+You can monitor and debug your AWS Lambda functions with [Thundra](https://thundra.io).
+
+**Note:** Even though Thundra supports all the major runtimes (Java, Node.js, Python, .NET, Go), 
+Localstack integration here only supports Java runtime for now. 
+Supporting other runtimes (Node.js, Python, ...) is on the roadmap.
+
+For the Localstack-Thundra integration please follow these instructions: 
+- Create a Thundra account [here](https://start.thundra.io) and 
+then navigate to [Thundra APM](https://console.thundra.io) product.
+- Get your Thundra API key [here](https://console.thundra.io/onboarding/serverless)
+- Start your Localstack with Thundra API key by setting the API key through `THUNDRA_APIKEY` environment variable.
+```
+THUNDRA_APIKEY=<YOUR-THUNDRA-API-KEY> localstack start
+```
+- Invoke your AWS Lambda function and see your invocations/traces at [Thundra Console](https://console.thundra.io)
+
+For more information, please check out the Thundra docs [here](https://apm.docs.thundra.io)
+
+### Terraform
 
 You can use [Terraform](https://www.terraform.io) to provision your resources locally. Please refer to the Terraform AWS Provider docs [here](https://www.terraform.io/docs/providers/aws/guides/custom-service-endpoints.html#localstack) on how to configure the API endpoints on `localhost`.
 
