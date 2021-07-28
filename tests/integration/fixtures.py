@@ -13,6 +13,8 @@ from localstack.utils.common import short_uid
 if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_kinesis import KinesisClient
+    from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
@@ -60,6 +62,16 @@ def cfn_client() -> "CloudFormationClient":
 @pytest.fixture(scope="class")
 def ssm_client() -> "SSMClient":
     return _client("ssm")
+
+
+@pytest.fixture(scope="class")
+def lambda_client() -> "LambdaClient":
+    return _client("lambda")
+
+
+@pytest.fixture(scope="class")
+def kinesis_client() -> "KinesisClient":
+    return _client("kinesis")
 
 
 @pytest.fixture

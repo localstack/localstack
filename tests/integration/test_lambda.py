@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import os
 import re
 import shutil
@@ -102,6 +103,7 @@ TEST_LAMBDA_NAME_JAVA_KINESIS = "test_lambda_java_kinesis"
 TEST_LAMBDA_NAME_ENV = "test_lambda_env"
 
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
+TEST_LAMBDA_PARALLEL_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_parallel.py")
 TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_send_message.py")
 TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_put_item.py")
 TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_start_execution.py")
@@ -128,6 +130,8 @@ TEST_LAMBDA_LIBS = [
     "pip",
     "dns",
 ]
+
+LOG = logging.getLogger(__name__)
 
 
 def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_requests=3):
@@ -1935,6 +1939,88 @@ class TestDockerBehaviour(LambdaTestBase):
 
         # clean up
         testutil.delete_lambda_function(func_name)
+
+
+def test_kinesis_lambda_parallelism(lambda_client, kinesis_client):
+    old_config = config.SYNCHRONOUS_KINESIS_EVENTS
+    config.SYNCHRONOUS_KINESIS_EVENTS = False
+    function_name = "lambda_func-{}".format(short_uid())
+    stream_name = "test-foobar-{}".format(short_uid())
+
+    testutil.create_lambda_function(
+        handler_file=TEST_LAMBDA_PARALLEL_FILE,
+        func_name=function_name,
+        runtime=LAMBDA_RUNTIME_PYTHON36,
+    )
+
+    arn = aws_stack.kinesis_stream_arn(stream_name, account_id="000000000000")
+
+    lambda_client.create_event_source_mapping(EventSourceArn=arn, FunctionName=function_name)
+
+    def process_records(record):
+        print("Processing {}".format(record))
+
+    aws_stack.create_kinesis_stream(stream_name, delete=True)
+    kinesis_connector.listen_to_kinesis(
+        stream_name=stream_name,
+        listener_func=process_records,
+        wait_until_started=True,
+    )
+
+    kinesis = aws_stack.connect_to_service("kinesis")
+    stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
+    assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
+    num_events_kinesis = 10
+    # assure async call
+    start = time.perf_counter()
+    kinesis.put_records(
+        Records=[
+            {"Data": '{"batch": 0}', "PartitionKey": "test_%s" % i}
+            for i in range(0, num_events_kinesis)
+        ],
+        StreamName=stream_name,
+    )
+    assert (time.perf_counter() - start) < 1  # this should not take more than a second
+    kinesis.put_records(
+        Records=[
+            {"Data": '{"batch": 1}', "PartitionKey": "test_%s" % i}
+            for i in range(0, num_events_kinesis)
+        ],
+        StreamName=stream_name,
+    )
+    for _ in range(1, 10):
+        events = get_lambda_log_events(function_name)
+        LOG.warning("Got events %s", events)
+        if len(events) == 2:
+            break
+
+    def assertEvent(event, batch_no):
+        assert 10 == len(event["event"]["Records"])
+
+        assert "eventID" in event["event"]["Records"][0]
+        assert "eventSourceARN" in event["event"]["Records"][0]
+        assert "eventSource" in event["event"]["Records"][0]
+        assert "eventVersion" in event["event"]["Records"][0]
+        assert "eventName" in event["event"]["Records"][0]
+        assert "invokeIdentityArn" in event["event"]["Records"][0]
+        assert "awsRegion" in event["event"]["Records"][0]
+        assert "kinesis" in event["event"]["Records"][0]
+
+        assert {"batch": batch_no} == json.loads(
+            base64.b64decode(event["event"]["Records"][0]["kinesis"]["data"]).decode(
+                config.DEFAULT_ENCODING
+            )
+        )
+
+    assertEvent(events[0], 0)
+    assertEvent(events[1], 1)
+
+    assert (events[1]["executionStart"] - events[0]["executionStart"]) > 5
+
+    # cleanup
+    config.SYNCHRONOUS_KINESIS_EVENTS = old_config
+    lambda_client.delete_function(FunctionName=function_name)
+    kinesis_client.delete_stream(StreamName=stream_name)
 
 
 class Util(object):
