@@ -13,10 +13,10 @@ class TestEc2Integrations(unittest.TestCase):
         subnet = ec2.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
 
         route_table = ec2.create_route_table(VpcId=vpc["Vpc"]["VpcId"])
-        ec2.associate_route_table(
+        association_id = ec2.associate_route_table(
             RouteTableId=route_table["RouteTable"]["RouteTableId"],
             SubnetId=subnet["Subnet"]["SubnetId"],
-        )
+        )['AssociationId']
 
         for route_tables in ec2.describe_route_tables()["RouteTables"]:
             for association in route_tables["Associations"]:
@@ -24,6 +24,10 @@ class TestEc2Integrations(unittest.TestCase):
                     self.assertEqual(association["VpcId"], vpc["Vpc"]["VpcId"])
                     self.assertEqual(association["SubnetId"], subnet["Subnet"]["SubnetId"])
                     self.assertEqual(association["AssociationState"]["State"], "associated")
+
+        ec2.disassociate_route_table(AssociationId=association_id)
+        for route_tables in ec2.describe_route_tables()["RouteTables"]:
+            self.assertEqual(route_tables['Associations'], [])
 
     def test_create_vpc_end_point(self):
         ec2 = self.ec2_client
