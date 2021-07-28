@@ -180,6 +180,16 @@ class LambdaExecutor(object):
 
         return result
 
+    def _get_thundra_apikey(self, env_vars):
+        thundra_apikey = env_vars.get(THUNDRA_APIKEY_ENV_VAR_NAME)
+
+        # If Thundra API key is specified for the function through env vars, use it
+        if not thundra_apikey:
+            # Otherwise, try to get it from Localstack env vars
+            thundra_apikey = THUNDRA_APIKEY
+
+        return thundra_apikey
+
     def execute(
         self,
         func_arn,
@@ -368,13 +378,14 @@ class LambdaExecutorContainers(LambdaExecutor):
         if not THUNDRA_JAVA_AGENT_JAR:
             return
 
-        thundra_apikey = environment.get(THUNDRA_APIKEY_ENV_VAR_NAME)
-        # If Thundra API key is specified for the function through env vars, use it
+        thundra_apikey = super(LambdaExecutorContainers, self)._get_thundra_apikey(environment)
         if not thundra_apikey:
-            # Otherwise, try to get it from Localstack env vars
-            thundra_apikey = THUNDRA_APIKEY
+            return
 
-        if not thundra_apikey:
+        if config.LAMBDA_REMOTE_DOCKER:
+            LOG.info(
+                "Not enabling Thundra agent, as Docker file mounting is disabled due to LAMBDA_REMOTE_DOCKER=1"
+            )
             return
 
         environment[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
@@ -437,18 +448,15 @@ class LambdaExecutorContainers(LambdaExecutor):
                 )
                 environment["JAVA_TOOL_OPTIONS"] = config.LAMBDA_JAVA_OPTS
 
-        extra_docker_flags = None
+        docker_flags = given_docker_flags or ""
         if is_java_lambda(runtime):
             # If runtime is Java, inject Thundra agent if it is configured
             extra_docker_flags = self.inject_thundra_java_agent(environment)
+            docker_flags += " %s" % extra_docker_flags if extra_docker_flags else ""
 
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):
             environment["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
-
-        docker_flags = given_docker_flags
-        if extra_docker_flags:
-            docker_flags += " " + extra_docker_flags
 
         # run Lambda executor and fetch invocation result
         LOG.info("Running lambda: %s" % func_details.arn())
@@ -952,13 +960,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         if not THUNDRA_JAVA_AGENT_JAR:
             return
 
-        thundra_apikey = func_details.envvars.get(THUNDRA_APIKEY_ENV_VAR_NAME)
-
-        # If Thundra API key is specified for the function through env vars, use it
-        if not thundra_apikey:
-            # Otherwise, try to get it from Localstack env vars
-            thundra_apikey = THUNDRA_APIKEY
-
+        thundra_apikey = super(LambdaExecutorLocal, self)._get_thundra_apikey(func_details.envvars)
         if not thundra_apikey:
             return
 
@@ -967,9 +969,8 @@ class LambdaExecutorLocal(LambdaExecutor):
         return "-javaagent:" + THUNDRA_JAVA_AGENT_JAR
 
     def execute_java_lambda(self, event, context, main_file, func_details=None):
-        if not func_details.envvars:
-            func_details.envvars = {}
-        given_opts = config.LAMBDA_JAVA_OPTS if config.LAMBDA_JAVA_OPTS else ""
+        func_details.envvars = func_details.envvars or {}
+        given_opts = config.LAMBDA_JAVA_OPTS or ""
 
         extra_opts = self.inject_thundra_java_agent(func_details, given_opts)
 
