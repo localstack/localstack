@@ -21,6 +21,8 @@ class TestEc2Integrations(unittest.TestCase):
         for route_tables in ec2.describe_route_tables()["RouteTables"]:
             for association in route_tables["Associations"]:
                 if association["RouteTableId"] == route_table["RouteTable"]["RouteTableId"]:
+                    self.assertEqual(association["VpcId"], vpc["Vpc"]["VpcId"])
+                    self.assertEqual(association["SubnetId"], subnet["Subnet"]["SubnetId"])
                     self.assertEqual(association["AssociationState"]["State"], "associated")
 
     def test_create_vpc_end_point(self):
