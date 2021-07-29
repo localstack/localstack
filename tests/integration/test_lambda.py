@@ -1941,6 +1941,13 @@ class TestDockerBehaviour(LambdaTestBase):
 def test_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     old_config = config.SYNCHRONOUS_KINESIS_EVENTS
     config.SYNCHRONOUS_KINESIS_EVENTS = False
+    try:
+        _run_kinesis_lambda_parallelism(lambda_client, kinesis_client)
+    finally:
+        config.SYNCHRONOUS_KINESIS_EVENTS = old_config
+
+
+def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     function_name = "lambda_func-{}".format(short_uid())
     stream_name = "test-foobar-{}".format(short_uid())
 
@@ -1985,10 +1992,14 @@ def test_kinesis_lambda_parallelism(lambda_client, kinesis_client):
         ],
         StreamName=stream_name,
     )
-    for _ in range(1, 10):
+
+    def get_events():
         events = get_lambda_log_events(function_name)
-        if len(events) == 2:
-            break
+        if len(events) != 2:
+            raise Exception("Lambda events are not available yet")
+        return events
+
+    events = retry(get_events, retries=5)
 
     def assertEvent(event, batch_no):
         assert 10 == len(event["event"]["Records"])
@@ -2014,7 +2025,6 @@ def test_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     assert (events[1]["executionStart"] - events[0]["executionStart"]) > 5
 
     # cleanup
-    config.SYNCHRONOUS_KINESIS_EVENTS = old_config
     lambda_client.delete_function(FunctionName=function_name)
     kinesis_client.delete_stream(StreamName=stream_name)
 
