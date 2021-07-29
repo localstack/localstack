@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from mypy_boto3_dynamodb import DynamoDBClient
     from mypy_boto3_kinesis import KinesisClient
     from mypy_boto3_lambda import LambdaClient
+    from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
@@ -26,8 +27,11 @@ LOG = logging.getLogger(__name__)
 def _client(service):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client(service)
+    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
     config = (
-        botocore.config.Config(connect_timeout=0, read_timeout=0, retries={"total_max_attempts": 1})
+        botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+        )
         if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
         else None
     )
@@ -72,6 +76,11 @@ def lambda_client() -> "LambdaClient":
 @pytest.fixture(scope="class")
 def kinesis_client() -> "KinesisClient":
     return _client("kinesis")
+
+
+@pytest.fixture(scope="class")
+def logs_client() -> "CloudWatchLogsClient":
+    return _client("logs")
 
 
 @pytest.fixture
