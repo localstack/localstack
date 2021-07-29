@@ -1,5 +1,7 @@
 import time
-from typing import Callable, Literal
+from typing import Callable
+
+from typing_extensions import Literal
 
 
 def wait_until(

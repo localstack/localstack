@@ -1,11 +1,12 @@
 import json
 import logging
 import traceback
-from typing import Any, Dict, List, Literal, Optional, overload
+from typing import Any, Dict, List, Optional, overload
 
 import xmltodict
 from flask import Flask, request
 from requests.models import Response
+from typing_extensions import Literal
 
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws import aws_responses, aws_stack
