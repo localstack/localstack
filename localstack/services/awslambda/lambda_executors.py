@@ -349,7 +349,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         error = None
         try:
             result, log_output = self.execute_in_container(
-                func_details, env_vars, command, docker_flags, event_stdin_bytes
+                func_details, env_vars, command, docker_flags=docker_flags, stdin=event_stdin_bytes
             )
         except ContainerException as e:
             result = e.stdout or ""

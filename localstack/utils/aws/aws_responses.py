@@ -7,14 +7,21 @@ from binascii import crc32
 from struct import pack
 
 import xmltodict
-from flask import Response
+from flask import Response as FlaskResponse
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import json_safe, replace_response_content, short_uid, to_bytes, to_str
+from localstack.utils.common import (
+    json_safe,
+    replace_response_content,
+    short_uid,
+    to_bytes,
+    to_str,
+    truncate,
+)
 
 REGEX_FLAGS = re.MULTILINE | re.DOTALL
 
@@ -35,7 +42,7 @@ def flask_error_response_json(msg, code=500, error_type="InternalFailure"):
     headers = {"x-amzn-errortype": error_type}
     # Note: don't use flask's make_response(..) or jsonify(..) here as they
     # can lead to "RuntimeError: working outside of application context".
-    return Response(json.dumps(result), status=code, headers=headers)
+    return FlaskResponse(json.dumps(result), status=code, headers=headers)
 
 
 def requests_error_response_json(message, code=500, error_type="InternalFailure"):
@@ -186,6 +193,23 @@ def requests_error_response(
     )
 
 
+def raise_exception_if_error_response(response):
+    if not is_response_obj(response):
+        return
+    if response.status_code < 400:
+        return
+    content = "..."
+    try:
+        content = truncate(to_str(response.content or ""))
+    except Exception:
+        pass  # ignore if content has non-printable bytes
+    raise Exception("Received error response (code %s): %s" % (response.status_code, content))
+
+
+def is_response_obj(result):
+    return isinstance(result, (RequestsResponse, RequestsResponse))
+
+
 def requests_response(content, status_code=200, headers={}):
     resp = RequestsResponse()
     content = json.dumps(content) if isinstance(content, dict) else content
@@ -210,7 +234,7 @@ def flask_to_requests_response(r):
 
 
 def requests_to_flask_response(r):
-    return Response(r.content, status=r.status_code, headers=dict(r.headers))
+    return FlaskResponse(r.content, status=r.status_code, headers=dict(r.headers))
 
 
 def flask_not_found_error(msg=None):
@@ -253,8 +277,6 @@ def create_sqs_system_attributes(headers):
 
 
 def extract_tags(req_data):
-    keys = []
-    values = []
     for param_name in ["Tag", "member"]:
         keys = extract_url_encoded_param_list(req_data, "Tags.{}.%s.Key".format(param_name))
         values = extract_url_encoded_param_list(req_data, "Tags.{}.%s.Value".format(param_name))
