@@ -13,6 +13,7 @@ import traceback
 import uuid
 from datetime import datetime
 from io import BytesIO
+from threading import BoundedSemaphore
 
 from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
@@ -235,6 +236,7 @@ def build_mapping_obj(data):
     mapping["StateTransitionReason"] = "User action"
     mapping["LastModified"] = format_timestamp_for_event_source_mapping()
     mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
+    mapping["ParallelizationFactor"] = data.get("ParallelizationFactor") or 1
     if "SelfManagedEventSource" in data:
         source_arn = data["SourceAccessConfigurations"][0]["URI"]
         mapping["SelfManagedEventSource"] = data["SelfManagedEventSource"]
@@ -449,10 +451,11 @@ def process_kinesis_records(records, stream_name):
         for source in sources:
             arn = source["FunctionArn"]
             for chunk in chunks(records, source["BatchSize"]):
+                shard_id = "shardId-000000000000"
                 event = {
                     "Records": [
                         {
-                            "eventID": "shardId-000000000000:{0}".format(rec["sequenceNumber"]),
+                            "eventID": "{0}:{1}".format(shard_id, rec["sequenceNumber"]),
                             "eventSourceARN": stream_arn,
                             "eventSource": "aws:kinesis",
                             "eventVersion": "1.0",
@@ -466,11 +469,18 @@ def process_kinesis_records(records, stream_name):
                         for rec in chunk
                     ]
                 }
+                lock_discriminator = None
+                if not config.SYNCHRONOUS_KINESIS_EVENTS:
+                    lock_discriminator = f"{stream_arn}/{shard_id}"
+                    lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
+                        lock_discriminator, BoundedSemaphore(source["ParallelizationFactor"])
+                    )
                 run_lambda(
                     func_arn=arn,
                     event=event,
                     context={},
                     asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS,
+                    lock_discriminator=lock_discriminator,
                 )
     except Exception as e:
         LOG.warning(
@@ -706,6 +716,7 @@ def run_lambda(
     suppress_output=False,
     asynchronous=False,
     callback=None,
+    lock_discriminator: str = None,
 ):
     region_name = func_arn.split(":")[3]
     region = LambdaRegion.get(region_name)
@@ -738,6 +749,7 @@ def run_lambda(
             version=version,
             asynchronous=asynchronous,
             callback=callback,
+            lock_discriminator=lock_discriminator,
         )
 
     except Exception as e:

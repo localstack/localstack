@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import glob
 import json
 import logging
@@ -10,7 +11,7 @@ import threading
 import time
 import traceback
 from multiprocessing import Process, Queue
-from typing import Tuple
+from typing import Dict, Tuple, Union
 
 from localstack import config
 from localstack.constants import THUNDRA_APIKEY, THUNDRA_APIKEY_ENV_VAR_NAME
@@ -154,6 +155,24 @@ def rm_docker_container(container_name_or_id, check_existence=False, safe=False)
             raise
 
 
+class LambdaAsyncLocks:
+    locks: Dict[str, Union[threading.Semaphore, threading.Lock]]
+    creation_lock: threading.Lock
+
+    def __init__(self):
+        self.locks = {}
+        self.creation_lock = threading.Lock()
+
+    def assure_lock_present(
+        self, key: str, lock: Union[threading.Semaphore, threading.Lock]
+    ) -> Union[threading.Semaphore, threading.Lock]:
+        with self.creation_lock:
+            return self.locks.setdefault(key, lock)
+
+
+LAMBDA_ASYNC_LOCKS = LambdaAsyncLocks()
+
+
 class InvocationResult(object):
     def __init__(self, result, log_output=""):
         if isinstance(result, InvocationResult):
@@ -199,41 +218,47 @@ class LambdaExecutor(object):
         version=None,
         asynchronous=False,
         callback=None,
+        lock_discriminator: str = None,
     ):
         def do_execute(*args):
             @cloudwatched("lambda")
             def _run(func_arn=None):
-                # set the invocation time in milliseconds
-                invocation_time = int(time.time() * 1000)
-                # start the execution
-                raised_error = None
-                result = None
-                dlq_sent = None
-                try:
-                    result = self._execute(func_arn, func_details, event, context, version)
-                except Exception as e:
-                    raised_error = e
-                    if asynchronous:
-                        if get_from_event(event, "eventSource") == EVENT_SOURCE_SQS:
-                            sqs_queue_arn = get_from_event(event, "eventSourceARN")
-                            if sqs_queue_arn:
-                                # event source is SQS, send event back to dead letter queue
-                                dlq_sent = sqs_error_to_dead_letter_queue(sqs_queue_arn, event, e)
-                        else:
-                            # event source is not SQS, send back to lambda dead letter queue
-                            lambda_error_to_dead_letter_queue(func_details, event, e)
-                    raise e
-                finally:
-                    self.function_invoke_times[func_arn] = invocation_time
-                    callback and callback(
-                        result, func_arn, event, error=raised_error, dlq_sent=dlq_sent
-                    )
-                    lambda_result_to_destination(
-                        func_details, event, result, asynchronous, raised_error
-                    )
+                with contextlib.ExitStack() as stack:
+                    if lock_discriminator:
+                        stack.enter_context(LAMBDA_ASYNC_LOCKS.locks[lock_discriminator])
+                    # set the invocation time in milliseconds
+                    invocation_time = int(time.time() * 1000)
+                    # start the execution
+                    raised_error = None
+                    result = None
+                    dlq_sent = None
+                    try:
+                        result = self._execute(func_arn, func_details, event, context, version)
+                    except Exception as e:
+                        raised_error = e
+                        if asynchronous:
+                            if get_from_event(event, "eventSource") == EVENT_SOURCE_SQS:
+                                sqs_queue_arn = get_from_event(event, "eventSourceARN")
+                                if sqs_queue_arn:
+                                    # event source is SQS, send event back to dead letter queue
+                                    dlq_sent = sqs_error_to_dead_letter_queue(
+                                        sqs_queue_arn, event, e
+                                    )
+                            else:
+                                # event source is not SQS, send back to lambda dead letter queue
+                                lambda_error_to_dead_letter_queue(func_details, event, e)
+                        raise e
+                    finally:
+                        self.function_invoke_times[func_arn] = invocation_time
+                        callback and callback(
+                            result, func_arn, event, error=raised_error, dlq_sent=dlq_sent
+                        )
+                        lambda_result_to_destination(
+                            func_details, event, result, asynchronous, raised_error
+                        )
 
-                # return final result
-                return result
+                    # return final result
+                    return result
 
             return _run(func_arn=func_arn)
 
