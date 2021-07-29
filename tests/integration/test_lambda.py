@@ -1995,8 +1995,7 @@ def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
 
     def get_events():
         events = get_lambda_log_events(function_name)
-        if len(events) != 2:
-            raise Exception("Lambda events are not available yet")
+        assert len(events) == 2
         return events
 
     events = retry(get_events, retries=5)
