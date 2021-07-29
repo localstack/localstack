@@ -3,7 +3,6 @@ import os
 import time
 import unittest
 
-import pytest
 from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
@@ -1141,7 +1140,7 @@ class CloudFormationTest(unittest.TestCase):
         # clean up
         self.cleanup(stack_name)
 
-    @pytest.mark.xfail
+    # @pytest.mark.xfail
     def test_cfn_handle_log_group_resource(self):
         stack_name = "stack-%s" % short_uid()
         log_group_prefix = "/aws/lambda/AWS_DUB_LAM_10000000"
