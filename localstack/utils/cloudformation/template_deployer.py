@@ -2027,16 +2027,15 @@ class TemplateDeployer(object):
 
         for logical_id, value in new_stack.template["Parameters"].items():
             default = value.get("Default")
-            param_type = value.get("Type")
             provided_param_value = parameters.get(logical_id)
-            resolved_value = self.resolve_param(logical_id, param_type, default)
-            parameter_value = provided_param_value if default is None else default
             param = {
                 "ParameterKey": logical_id,
-                "ParameterValue": parameter_value,
+                "ParameterValue": provided_param_value if default is None else default,
             }
-            if resolved_value is not None:
-                param["ResolvedValue"] = resolved_value
+            if default is None:
+                resolved_value = self.resolve_param(logical_id, value.get("Type"), default)
+                if resolved_value is not None:
+                    param["ResolvedValue"] = resolved_value
 
             parameters[logical_id] = param
 

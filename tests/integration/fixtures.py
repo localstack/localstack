@@ -225,7 +225,7 @@ def is_stack_created(cfn_client):
         def _inner():
             resp = cfn_client.describe_stacks(StackName=stack_id)
             s = resp["Stacks"][0]  # since the lookup  uses the id we can only get a single response
-            return s.get("StackStatus", "") == "CREATE_COMPLETE"
+            return s.get("StackStatus") == "CREATE_COMPLETE"
 
         return _inner
 
@@ -237,7 +237,7 @@ def is_change_set_finished(cfn_client):
     def _is_change_set_finished(change_set_id: str):
         def _inner():
             check_set = cfn_client.describe_change_set(ChangeSetName=change_set_id)
-            return check_set["ExecutionStatus"] == "EXECUTE_COMPLETE"
+            return check_set.get("ExecutionStatus") == "EXECUTE_COMPLETE"
 
         return _inner
 

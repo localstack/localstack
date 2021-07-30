@@ -30,20 +30,17 @@ def transform_template(req_data) -> Optional[str]:
     """only returns string when parsing SAM template, otherwise None"""
     template_body = get_template_body(req_data)
     parsed = parse_template(template_body)
+    if parsed.get("Transform") == "AWS::Serverless-2016-10-31":
+        policy_map = {
+            # SAM Transformer expects this map to be non-empty, but apparently the content doesn't matter (?)
+            "dummy": "entry"
+            # 'AWSLambdaBasicExecutionRole': 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+        }
 
-    policy_map = {
-        # SAM Transformer expects this map to be non-empty, but apparently the content doesn't matter (?)
-        "dummy": "entry"
-        # 'AWSLambdaBasicExecutionRole': 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
-    }
+        class MockPolicyLoader(object):
+            def load(self):
+                return policy_map
 
-    class MockPolicyLoader(object):
-        def load(self):
-            return policy_map
-
-    if (
-        parsed.get("Transform") == "AWS::Serverless-2016-10-31"
-    ):  # TODO: couldn't this be at the start of the function?
         # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
         region_before = os.environ.get("AWS_DEFAULT_REGION")
         if boto3.session.Session().region_name is None:

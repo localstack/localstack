@@ -316,12 +316,21 @@ class Stack(object):
                 }
                 # TODO: extract dynamic parameter resolving
                 # TODO: support different types and refactor logic to use metadata (here not yet populated properly)
-                if value.get("Type", "") == "AWS::SSM::Parameter::Value<String>":
-                    ssm_client = aws_stack.connect_to_service("ssm")
-                    resolved_value = ssm_client.get_parameter(Name=param_value)["Parameter"][
-                        "Value"
-                    ]
-                    result[key]["ResolvedValue"] = resolved_value
+                param_type = value.get("Type", "")
+                if not is_none_or_empty(param_type):
+                    if param_type == "AWS::SSM::Parameter::Value<String>":
+                        ssm_client = aws_stack.connect_to_service("ssm")
+                        resolved_value = ssm_client.get_parameter(Name=param_value)["Parameter"][
+                            "Value"
+                        ]
+                        result[key]["ResolvedValue"] = resolved_value
+                    elif param_type.startswith("AWS::"):
+                        LOG.info(
+                            f"Parameter Type '{param_type}' is currently not supported. Coming soon, stay tuned!"
+                        )
+                    else:
+                        # lets assume we support the normal CFn parameters
+                        pass
 
         # add stack parameters
         result.update({p["ParameterKey"]: p for p in self.metadata["Parameters"]})

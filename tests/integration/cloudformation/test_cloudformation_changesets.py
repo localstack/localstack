@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 
 from localstack.utils.common import load_file, short_uid
 from localstack.utils.generic.wait_utils import wait_until
+from tests.integration.util import is_aws_cloud
 
 
 def load_template_raw(tmpl_path: str) -> str:
@@ -13,6 +14,9 @@ def load_template_raw(tmpl_path: str) -> str:
         os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "templates", tmpl_path)
     )
     return template
+
+
+# TODO: create util function for asserting some common stack/change set verification patterns here
 
 
 def test_create_change_set_without_parameters(
@@ -62,10 +66,6 @@ def test_create_change_set_without_parameters(
     finally:
         cleanup_stacks([stack_id])
         cleanup_changesets([change_set_id])
-
-
-def is_aws_cloud() -> bool:
-    return os.environ.get("TEST_TARGET", "") == "AWS_CLOUD"
 
 
 # TODO: implement
