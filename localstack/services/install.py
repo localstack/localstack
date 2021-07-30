@@ -29,6 +29,7 @@ from localstack.constants import (
     MODULE_MAIN_PATH,
     STS_JAR_URL,
     THUNDRA_APIKEY,
+    THUNDRA_JAVA_AGENT_JAR_NAME,
     THUNDRA_JAVA_AGENT_VERSION,
 )
 from localstack.utils import bootstrap
@@ -64,7 +65,7 @@ INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % INSTALL_DIR_INFRA
 INSTALL_DIR_KMS = "%s/kms" % INSTALL_DIR_INFRA
 INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % INSTALL_DIR_INFRA
 INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % INSTALL_DIR_INFRA
-INSTALL_PATH_THUNDRA_JAVA_AGENT_JAR = "%s/thundra-agent.jar" % INSTALL_DIR_INFRA
+INSTALL_PATH_THUNDRA_JAVA_AGENT_JAR = "%s/%s" % (config.TMP_FOLDER, THUNDRA_JAVA_AGENT_JAR_NAME)
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
 INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")

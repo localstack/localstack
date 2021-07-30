@@ -14,16 +14,17 @@ from multiprocessing import Process, Queue
 from typing import Dict, Tuple, Union
 
 from localstack import config
-from localstack.constants import THUNDRA_APIKEY, THUNDRA_APIKEY_ENV_VAR_NAME
+from localstack.constants import (
+    THUNDRA_APIKEY,
+    THUNDRA_APIKEY_ENV_VAR_NAME,
+    THUNDRA_JAVA_AGENT_JAR_NAME,
+)
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_PROVIDED,
 )
-from localstack.services.install import (
-    INSTALL_PATH_LOCALSTACK_FAT_JAR,
-    INSTALL_PATH_THUNDRA_JAVA_AGENT_JAR,
-)
+from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.dead_letter_queue import (
@@ -55,7 +56,7 @@ from localstack.utils.docker import DOCKER_CLIENT, ContainerException
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
 LAMBDA_EXECUTOR_CLASS = "cloud.localstack.LambdaExecutor"
 LAMBDA_HANDLER_ENV_VAR_NAME = "_HANDLER"
-THUNDRA_JAVA_AGENT_JAR = INSTALL_PATH_THUNDRA_JAVA_AGENT_JAR
+THUNDRA_JAVA_AGENT_JAR = "%s/%s" % (config.HOST_TMP_FOLDER, THUNDRA_JAVA_AGENT_JAR_NAME)
 THUNDRA_JAVA_AGENT_CONTAINER_PATH = "/tmp/thundra-agent.jar"
 EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.TMP_FOLDER
 
