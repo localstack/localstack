@@ -292,6 +292,7 @@ def install_local_kms():
 def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
         # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
+        # TODO: works only when running on the host, outside of Docker -> add a fallback if running in Docker?
         log_install_msg("Step Functions")
         mkdir(INSTALL_DIR_STEPFUNCTIONS)
         run("{dc} pull {img}".format(dc=config.DOCKER_CMD, img=IMAGE_NAME_SFN_LOCAL))
@@ -322,10 +323,10 @@ def install_stepfunctions_local():
 
 
 def install_dynamodb_local():
-    is_in_alpine = is_alpine()
     if not os.path.exists(INSTALL_PATH_DDB_JAR):
         log_install_msg("DynamoDB")
         # download and extract archive
+        is_in_alpine = is_alpine()
         tmp_archive = os.path.join(tempfile.gettempdir(), "localstack.ddb.zip")
         dynamodb_url = DYNAMODB_JAR_URL_ALPINE if is_in_alpine else DYNAMODB_JAR_URL
         download_and_extract_with_retry(dynamodb_url, tmp_archive, INSTALL_DIR_DDB)

@@ -599,6 +599,15 @@ To develop new features, or to start the stack locally (outside of Docker), the 
 * `pytest` (for unit testing)
 * `pytest-cov` (to check the unit-testing coverage)
 
+### Building the Docker image
+
+Please note that there are a few commands we need to run on the host to prepare the local environment for the Docker build - specifically, downloading some dependencies like the StepFunctions local binary. Therefore, simply running `docker build .` in a fresh clone of the repo may not work.
+
+We generally recommend using this command to build the Docker image locally (works on Linux/MacOS):
+```
+make docker-build
+```
+
 ### Development Environment
 
 If you pull the repo in order to extend/modify LocalStack, run this command to install
