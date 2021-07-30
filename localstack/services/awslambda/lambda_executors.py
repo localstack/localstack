@@ -108,6 +108,11 @@ def is_java_lambda(lambda_details):
     return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11]
 
 
+def is_java8_lambda(lambda_details):
+    runtime = getattr(lambda_details, "runtime", lambda_details)
+    return runtime == LAMBDA_RUNTIME_JAVA8
+
+
 def is_nodejs_runtime(lambda_details):
     runtime = getattr(lambda_details, "runtime", lambda_details) or ""
     return runtime.startswith("nodejs")
@@ -400,7 +405,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         environment["AWS_LAMBDA_EVENT_BODY"] = event_body
         return event_body.encode()
 
-    def inject_thundra_java_agent(self, environment):
+    def inject_thundra_java_agent(self, environment, runtime):
         if not THUNDRA_JAVA_AGENT_JAR:
             return
 
@@ -421,6 +426,18 @@ class LambdaExecutorContainers(LambdaExecutor):
         java_tool_opts = environment.get("JAVA_TOOL_OPTIONS", "")
         java_tool_opts += " -javaagent:" + THUNDRA_JAVA_AGENT_CONTAINER_PATH
         environment["JAVA_TOOL_OPTIONS"] = java_tool_opts.strip()
+
+        # Disable CDS (Class Data Sharing),
+        # because "-javaagent" cannot be enabled when CDS is enabled on JDK 8.
+        # CDS can only be disabled by "_JAVA_OPTIONS" env var,
+        # because by default it is enabled ("-Xshare:on")
+        # on Lambci by command line parameters and
+        # "_JAVA_OPTIONS" has precedence over command line parameters
+        # but "JAVA_TOOL_OPTIONS" is not.
+        if is_java8_lambda(runtime):
+            java_opts = environment.get("_JAVA_OPTIONS", "")
+            java_opts += " -Xshare:off"
+            environment["_JAVA_OPTIONS"] = java_opts.strip()
 
         # Mount Thundra agent jar into container file system
         return "-v %s:%s" % (THUNDRA_JAVA_AGENT_JAR, THUNDRA_JAVA_AGENT_CONTAINER_PATH)
@@ -477,7 +494,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         docker_flags = given_docker_flags or ""
         if is_java_lambda(runtime):
             # If runtime is Java, inject Thundra agent if it is configured
-            extra_docker_flags = self.inject_thundra_java_agent(environment)
+            extra_docker_flags = self.inject_thundra_java_agent(environment, runtime)
             docker_flags += " %s" % extra_docker_flags if extra_docker_flags else ""
 
         # accept any self-signed certificates for outgoing calls from the Lambda
