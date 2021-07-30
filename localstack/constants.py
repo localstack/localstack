@@ -121,9 +121,7 @@ STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctio
 KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/localstack/v3/local-kms.<arch>.bin"
 
 # TODO: Temporarily using a fixed version of DDB in Alpine, as we're hitting a SIGSEGV JVM crash with latest
-DYNAMODB_JAR_URL_ALPINE = (
-    "https://github.com/whummer/dynamodb-local/raw/master/etc/DynamoDBLocal.zip"
-)
+DYNAMODB_JAR_URL_ALPINE = "https://github.com/localstack/localstack-artifacts/raw/master/dynamodb-local-patch/etc/DynamoDBLocal.zip"
 DYNAMODB_JAR_URL = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip"
 
 # API endpoint for analytics events
