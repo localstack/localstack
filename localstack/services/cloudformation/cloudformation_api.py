@@ -21,6 +21,7 @@ from localstack.utils.cloudformation.template_preparer import prepare_template_b
 from localstack.utils.common import (
     clone,
     clone_safe,
+    is_none_or_empty,
     long_uid,
     parse_request_data,
     recurse_object,
@@ -689,12 +690,12 @@ def create_change_set(req_params: Dict[str, Any]):
     template_body: Optional[str] = req_params.get("TemplateBody")
     template_url: Optional[str] = req_params.get("TemplateUrl")  # s3 or secretsmanager url
 
-    if change_set_name is None or change_set_name.strip() == "":
+    if is_none_or_empty(change_set_name):
         return error_response(
             "ChangeSetName required", 400, "ValidationError"
         )  # TODO: check proper message
 
-    if stack_name is None or stack_name.strip() == "":
+    if is_none_or_empty(stack_name):
         return error_response(
             "StackName required", 400, "ValidationError"
         )  # TODO: check proper message
@@ -726,7 +727,6 @@ def create_change_set(req_params: Dict[str, Any]):
             return error_response(
                 f"Stack '{stack_name}' does not exist.", 400, "ValidationError"
             )  # stack should exist already
-        pass
     elif change_set_type == "CREATE":
         # create new (empty) stack
         if stack is not None:

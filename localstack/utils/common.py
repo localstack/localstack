@@ -25,7 +25,7 @@ from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Callable, List, Union
+from typing import Callable, List, Optional, Sized, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
@@ -1727,6 +1727,14 @@ def isoformat_milliseconds(t):
 def replace_response_content(response, pattern, replacement):
     content = to_str(response.content or "")
     response._content = re.sub(pattern, replacement, content)
+
+
+def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
+    return (
+        obj is None
+        or (isinstance(obj, str) and obj.strip() == "")
+        or (isinstance(obj, Sized) and len(obj) == 0)
+    )
 
 
 # Code that requires util functions from above
