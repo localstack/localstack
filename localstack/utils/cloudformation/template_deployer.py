@@ -2032,7 +2032,7 @@ class TemplateDeployer(object):
                 "ParameterKey": logical_id,
                 "ParameterValue": provided_param_value if default is None else default,
             }
-            if default is None:
+            if default is not None:
                 resolved_value = self.resolve_param(logical_id, value.get("Type"), default)
                 if resolved_value is not None:
                     param["ResolvedValue"] = resolved_value
