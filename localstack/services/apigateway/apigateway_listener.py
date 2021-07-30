@@ -58,7 +58,7 @@ from localstack.utils.common import to_bytes, to_str
 LOG = logging.getLogger(__name__)
 
 # regex path patterns
-HOST_REGEX_EXECUTE_API = r"(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*"
+HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\..*"
 TARGET_REGEX_S3_URI = (
     r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
 )
