@@ -2,7 +2,7 @@ import jinja2
 
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.test_cloudformation_changesets import load_template
+from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
 
 
 def test_create_stack_with_ssm_parameters(
@@ -14,7 +14,7 @@ def test_create_stack_with_ssm_parameters(
     parameter_logical_id = "parameter123"
     try:
         ssm_client.put_parameter(Name=parameter_name, Value=parameter_value, Type="String")
-        template = load_template("dynamicparameter_ssm_string.yaml")
+        template = load_template_raw("dynamicparameter_ssm_string.yaml")
         template_rendered = jinja2.Template(template).render(parameter_name=parameter_name)
         response = cfn_client.create_stack(
             StackName=stack_name,
