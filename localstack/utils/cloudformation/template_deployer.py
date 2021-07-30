@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import traceback
+from typing import Optional
 from urllib.parse import urlparse
 
 from moto.cloudformation import parsing
@@ -1515,6 +1516,7 @@ def is_none_or_empty_value(value):
     return not value or value == PLACEHOLDER_AWS_NO_VALUE
 
 
+# TODO: this shouldn't be called for stack parameters
 def determine_resource_physical_id(
     resource_id, resources=None, stack=None, attribute=None, stack_name=None
 ):
@@ -2008,25 +2010,44 @@ class TemplateDeployer(object):
             "Resources"
         ][resource_id]
 
-    def apply_parameter_changes(self, old_stack, new_stack):
+    def resolve_param(
+        self, logical_id: str, param_type: str, default_value: Optional[str] = None
+    ) -> Optional[str]:
+        if param_type == "AWS::SSM::Parameter::Value<String>":
+            ssm_client = aws_stack.connect_to_service("ssm")
+            param = ssm_client.get_parameter(Name=default_value)
+            return param["Parameter"]["Value"]
+        return None
+
+    def apply_parameter_changes(self, old_stack, new_stack) -> None:
         parameters = {
-            p["ParameterKey"]: p["ParameterValue"] for p in old_stack.metadata["Parameters"]
+            p["ParameterKey"]: p
+            for p in old_stack.metadata["Parameters"]  # go through current parameter values
         }
 
-        for key, value in new_stack.template["Parameters"].items():
-            parameters[key] = value.get("Default", parameters.get(key))
+        for logical_id, value in new_stack.template["Parameters"].items():
+            default = value.get("Default")
+            provided_param_value = parameters.get(logical_id)
+            param = {
+                "ParameterKey": logical_id,
+                "ParameterValue": provided_param_value if default is None else default,
+            }
+            if default is not None:
+                resolved_value = self.resolve_param(logical_id, value.get("Type"), default)
+                if resolved_value is not None:
+                    param["ResolvedValue"] = resolved_value
 
-        parameters.update(
-            {p["ParameterKey"]: p["ParameterValue"] for p in new_stack.metadata["Parameters"]}
-        )
+            parameters[logical_id] = param
+
+        parameters.update({p["ParameterKey"]: p for p in new_stack.metadata["Parameters"]})
 
         for change_set in new_stack.change_sets:
             parameters.update({p["ParameterKey"]: p for p in change_set.metadata["Parameters"]})
 
-        old_stack.metadata["Parameters"] = [
-            {"ParameterKey": k, "ParameterValue": v} for k, v in parameters.items() if v
-        ]
+        # TODO: unclear/undocumented behavior in implicitly updating old_stack parameter here
+        old_stack.metadata["Parameters"] = [v for v in parameters.values() if v]
 
+    # TODO: fix circular import with cloudformation_api.py when importing Stack here
     def construct_changes(
         self,
         existing_stack,

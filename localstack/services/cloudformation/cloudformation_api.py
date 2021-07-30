@@ -1,10 +1,12 @@
 import json
 import logging
 import traceback
+from typing import Any, Dict, List, Optional, overload
 
 import xmltodict
 from flask import Flask, request
 from requests.models import Response
+from typing_extensions import Literal
 
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws import aws_responses, aws_stack
@@ -15,9 +17,11 @@ from localstack.utils.aws.aws_responses import (
     requests_to_flask_response,
 )
 from localstack.utils.cloudformation import template_deployer, template_preparer
+from localstack.utils.cloudformation.template_preparer import prepare_template_body
 from localstack.utils.common import (
     clone,
     clone_safe,
+    is_none_or_empty,
     long_uid,
     parse_request_data,
     recurse_object,
@@ -91,7 +95,9 @@ class StackInstance(object):
 
 
 class Stack(object):
-    def __init__(self, metadata=None, template={}):
+    def __init__(self, metadata=None, template=None):
+        if template is None:
+            template = {}
         self.metadata = metadata or {}
         self.template = template or {}
         self._template_raw = clone_safe(self.template)
@@ -203,24 +209,31 @@ class Stack(object):
     def stack_id(self):
         return self.metadata["StackId"]
 
+    # TODO: potential performance issues due to many stack_parameters calls (cache or limit actual invocations)
     @property
-    def resources(self):
+    def resources(self):  # TODO: not actually resources, split apart
         """Return dict of resources, parameters, conditions, and other stack metadata."""
+        result = dict(self.template_resources)
 
         def add_params(defaults=True):
             for param in self.stack_parameters(defaults=defaults):
                 if param["ParameterKey"] not in result:
-                    props = {"Value": param["ParameterValue"]}
+                    resolved_value = param.get("ResolvedValue")
                     result[param["ParameterKey"]] = {
                         "Type": "Parameter",
                         "LogicalResourceId": param["ParameterKey"],
-                        "Properties": props,
+                        "Properties": {
+                            "Value": (
+                                resolved_value
+                                if resolved_value is not None
+                                else param["ParameterValue"]
+                            )
+                        },
                     }
-
-        result = dict(self.template_resources)
 
         add_params(defaults=False)
 
+        # TODO: conditions and mappings don't really belong here and should be handled separately
         for name, value in self.conditions.items():
             if name not in result:
                 result[name] = {
@@ -290,15 +303,35 @@ class Stack(object):
             result.append(entry)
         return result
 
-    def stack_parameters(self, defaults=True):
+    # TODO: check if metadata already populated/resolved and use it if possible (avoid unnecessary re-resolving)
+    def stack_parameters(self, defaults=True) -> List[Dict[str, Any]]:
         result = {}
         # add default template parameter values
         if defaults:
             for key, value in self.template_parameters.items():
+                param_value = value.get("Default")
                 result[key] = {
                     "ParameterKey": key,
-                    "ParameterValue": value.get("Default"),
+                    "ParameterValue": param_value,
                 }
+                # TODO: extract dynamic parameter resolving
+                # TODO: support different types and refactor logic to use metadata (here not yet populated properly)
+                param_type = value.get("Type", "")
+                if not is_none_or_empty(param_type):
+                    if param_type == "AWS::SSM::Parameter::Value<String>":
+                        ssm_client = aws_stack.connect_to_service("ssm")
+                        resolved_value = ssm_client.get_parameter(Name=param_value)["Parameter"][
+                            "Value"
+                        ]
+                        result[key]["ResolvedValue"] = resolved_value
+                    elif param_type.startswith("AWS::"):
+                        LOG.info(
+                            f"Parameter Type '{param_type}' is currently not supported. Coming soon, stay tuned!"
+                        )
+                    else:
+                        # lets assume we support the normal CFn parameters
+                        pass
+
         # add stack parameters
         result.update({p["ParameterKey"]: p for p in self.metadata["Parameters"]})
         # add parameters of change sets
@@ -361,8 +394,13 @@ class Stack(object):
 
 
 class StackChangeSet(Stack):
-    def __init__(self, params={}, template={}):
+    def __init__(self, params=None, template=None):
+        if template is None:
+            template = {}
+        if params is None:
+            params = {}
         super(StackChangeSet, self).__init__(params, template)
+
         name = self.metadata["ChangeSetName"]
         if not self.metadata.get("ChangeSetId"):
             self.metadata["ChangeSetId"] = aws_stack.cf_change_set_arn(
@@ -400,7 +438,7 @@ class StackChangeSet(Stack):
 
 def create_stack(req_params):
     state = CloudFormationRegion.get()
-    template_deployer.prepare_template_body(req_params)
+    template_deployer.prepare_template_body(req_params)  # TODO: avoid mutating req_params directly
     template = template_preparer.parse_template(req_params["TemplateBody"])
     stack_name = template["StackName"] = req_params.get("StackName")
     stack = Stack(req_params, template)
@@ -423,6 +461,7 @@ def create_stack(req_params):
     )
     deployer = template_deployer.TemplateDeployer(stack)
     try:
+        # TODO: create separate step to first resolve parameters
         deployer.deploy_stack()
     except Exception as e:
         stack.set_stack_status("CREATE_FAILED")
@@ -650,34 +689,89 @@ def list_stack_instances(req_params):
     return result
 
 
-def create_change_set(req_params):
-    stack_name = req_params.get("StackName")
-    template_deployer.prepare_template_body(req_params)
-    template = template_preparer.parse_template(req_params.pop("TemplateBody"))
+ChangeSetTypes = Literal["CREATE", "UPDATE", "IMPORT"]
+
+
+def create_change_set(req_params: Dict[str, Any]):
+    change_set_type: ChangeSetTypes = req_params.get("ChangeSetType", "UPDATE")
+    stack_name: Optional[str] = req_params.get("StackName")
+    change_set_name: Optional[str] = req_params.get("ChangeSetName")
+    template_body: Optional[str] = req_params.get("TemplateBody")
+    template_url: Optional[str] = req_params.get("TemplateUrl")  # s3 or secretsmanager url
+
+    if is_none_or_empty(change_set_name):
+        return error_response(
+            "ChangeSetName required", 400, "ValidationError"
+        )  # TODO: check proper message
+
+    if is_none_or_empty(stack_name):
+        return error_response(
+            "StackName required", 400, "ValidationError"
+        )  # TODO: check proper message
+
+    stack: Optional[Stack] = find_stack(stack_name)
+
+    # validate and resolve template
+    if template_body and template_url:
+        return error_response(
+            "Specify exactly one of 'TemplateBody' or 'TemplateUrl'", 400, "ValidationError"
+        )  # TODO: check proper message
+
+    if not template_body and not template_url:
+        return error_response(
+            "Specify exactly one of 'TemplateBody' or 'TemplateUrl'", 400, "ValidationError"
+        )  # TODO: check proper message
+
+    prepare_template_body(req_params)  # TODO: function has too many unclear responsibilities
+    template = template_preparer.parse_template(req_params["TemplateBody"])
+    del req_params["TemplateBody"]  # TODO: stop mutating req_params
     template["StackName"] = stack_name
-    template["ChangeSetName"] = req_params.get("ChangeSetName")
-    stack = existing = find_stack(stack_name)
-    if not existing:
-        # automatically create (empty) stack if none exists yet
+    template[
+        "ChangeSetName"
+    ] = change_set_name  # TODO: validate with AWS what this is actually doing?
+
+    if change_set_type == "UPDATE":
+        # add changeset to existing stack
+        if stack is None:
+            return error_response(
+                f"Stack '{stack_name}' does not exist.", 400, "ValidationError"
+            )  # stack should exist already
+    elif change_set_type == "CREATE":
+        # create new (empty) stack
+        if stack is not None:
+            return error_response(
+                f"Stack {stack_name} already exists", 400, "ValidationError"
+            )  # stack should not exist yet (TODO: check proper message)
         state = CloudFormationRegion.get()
         empty_stack_template = dict(template)
         empty_stack_template["Resources"] = {}
         req_params_copy = clone_stack_params(req_params)
         stack = Stack(req_params_copy, empty_stack_template)
         state.stacks[stack.stack_id] = stack
-        stack.set_stack_status("CREATE_COMPLETE")
+        stack.set_stack_status("REVIEW_IN_PROGRESS")
+    elif change_set_type == "IMPORT":
+        raise NotImplementedError()  # TODO: implement importing resources
+    else:
+        msg = f"1 validation error detected: Value '{change_set_type}' at 'changeSetType' failed to satisfy constraint: Member must satisfy enum value set: [IMPORT, UPDATE, CREATE]"
+        return error_response(msg, code=400, code_string="ValidationError")
+
     change_set = StackChangeSet(req_params, template)
-    deployer = template_deployer.TemplateDeployer(stack)
+    # TODO: refactor the flow here
+    deployer = template_deployer.TemplateDeployer(change_set)
     deployer.construct_changes(
         stack,
         change_set,
         change_set_id=change_set.change_set_id,
         append_to_changeset=True,
-    )
+    )  # TODO: ignores return value (?)
+    deployer.apply_parameter_changes(change_set, change_set)  # TODO: bandaid to populate metadata
     stack.change_sets.append(change_set)
-    change_set.metadata["Status"] = "CREATE_COMPLETE"
-    change_set.metadata["ExecutionStatus"] = "AVAILABLE"
-    change_set.metadata["StatusReason"] = "Changeset created"
+    change_set.metadata[
+        "Status"
+    ] = "CREATE_COMPLETE"  # technically for some time this should first be CREATE_PENDING
+    change_set.metadata[
+        "ExecutionStatus"
+    ] = "AVAILABLE"  # technically for some time this should first be UNAVAILABLE
     return {"StackId": change_set.stack_id, "Id": change_set.change_set_id}
 
 
@@ -719,7 +813,7 @@ def list_stack_sets(req_params):
 def describe_change_set(req_params):
     stack_name = req_params.get("StackName")
     cs_name = req_params.get("ChangeSetName")
-    change_set = find_change_set(cs_name, stack_name=stack_name)
+    change_set: Optional[StackChangeSet] = find_change_set(cs_name, stack_name=stack_name)
     if not change_set:
         return not_found_error(
             'Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name)
@@ -853,6 +947,12 @@ def get_template_summary(req_params):
 # -----------------
 
 
+def serve(port: int, quiet: bool = True):
+    from localstack.services import generic_proxy  # moved here to fix circular import errors
+
+    return generic_proxy.serve_flask_app(app=app, port=port)
+
+
 @app.route("/", methods=["POST"])
 def handle_request():
     data = request.get_data()
@@ -904,16 +1004,21 @@ ENDPOINTS = {
 # ---------------
 
 
+@overload
+def error_response(msg: str, code: int, code_string: str, xmlns: str = XMLNS_CF):
+    ...
+
+
 def error_response(*args, **kwargs):
     kwargs["xmlns"] = kwargs.get("xmlns") or XMLNS_CF
     return flask_error_response_xml(*args, **kwargs)
 
 
-def not_found_error(message):
+def not_found_error(message: str):
     return error_response(message, code=404, code_string="ResourceNotFoundException")
 
 
-def stack_not_found_error(stack_name):
+def stack_not_found_error(stack_name: str):
     return not_found_error('Unable to find stack named "%s"' % stack_name)
 
 
@@ -925,14 +1030,14 @@ def clone_stack_params(stack_params):
         return stack_params
 
 
-def find_stack(stack_name):
+def find_stack(stack_name: str) -> Optional[str]:
     state = CloudFormationRegion.get()
     return (
         [s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None]
     )[0]
 
 
-def find_change_set(cs_name, stack_name=None):
+def find_change_set(cs_name: str, stack_name: Optional[str] = None) -> Optional[StackChangeSet]:
     state = CloudFormationRegion.get()
     stack = find_stack(stack_name)
     stacks = [stack] if stack else state.stacks.values()
@@ -951,12 +1056,6 @@ def _response(action, result):
     if isinstance(result, Response):
         result = requests_to_flask_response(result)
     return result
-
-
-def serve(port, quiet=True):
-    from localstack.services import generic_proxy  # moved here to fix circular import errors
-
-    return generic_proxy.serve_flask_app(app=app, port=port)
 
 
 def _get_status_filter_members(req_params):

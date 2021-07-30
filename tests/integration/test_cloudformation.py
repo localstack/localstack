@@ -73,10 +73,6 @@ TEST_TEMPLATE_8 = {
 TEST_TEMPLATE_9 = (
     """
 Parameters:
-  FeatureBranch:
-    Type: String
-    Default: false
-    AllowedValues: ["true", "false"]
   gitBranch:
     Type: String
     Default: dev
@@ -888,6 +884,7 @@ class CloudFormationTest(unittest.TestCase):
             TemplateBody=TEST_CHANGE_SET_BODY % bucket_name,
             Parameters=[{"ParameterKey": "EnvironmentType", "ParameterValue": "stage"}],
             Capabilities=["CAPABILITY_IAM"],
+            ChangeSetType="CREATE",
         )
 
         self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
@@ -935,6 +932,7 @@ class CloudFormationTest(unittest.TestCase):
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=load_file(TEST_DEPLOY_BODY_1) % role_name,
+            ChangeSetType="CREATE",
         )
 
         self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
@@ -981,6 +979,7 @@ class CloudFormationTest(unittest.TestCase):
                 {"ParameterKey": "CompanyName", "ParameterValue": "MyCompany"},
                 {"ParameterKey": "MyEmail1", "ParameterValue": "my@email.com"},
             ],
+            ChangeSetType="CREATE",
         )
         self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
 
@@ -1031,6 +1030,7 @@ class CloudFormationTest(unittest.TestCase):
                 {"ParameterKey": "tableName", "ParameterValue": ddb_table_name_prefix},
                 {"ParameterKey": "env", "ParameterValue": env},
             ],
+            ChangeSetType="CREATE",
         )
         self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
         change_set_id = rs["Id"]
@@ -1077,6 +1077,7 @@ class CloudFormationTest(unittest.TestCase):
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=load_file(TEST_DEPLOY_BODY_4),
+            ChangeSetType="CREATE",
         )
 
         self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
