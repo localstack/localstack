@@ -34,9 +34,9 @@ def test_create_change_set_without_parameters(
 
     try:
         # make sure the change set wasn't executed (which would create a topic)
-        list_topics_response = sns_client.list_topics()
-        assert len(list_topics_response["Topics"]) == 0
-
+        topics = sns_client.list_topics()
+        topic_arns = [t for t in map(lambda x: x["TopicArn"], topics["Topics"])]
+        assert not any(["sns-topic-simple" in arn for arn in topic_arns])
         # stack is initially in REVIEW_IN_PROGRESS state. only after executing the change_set will it change its status
         stack_response = cfn_client.describe_stacks(StackName=stack_id)
         assert stack_response["Stacks"][0]["StackStatus"] == "REVIEW_IN_PROGRESS"
