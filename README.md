@@ -489,22 +489,14 @@ https://github.com/localstack/serverless-localstack
 ### Thundra
 
 You can monitor and debug your AWS Lambda functions with [Thundra](https://thundra.io).
+Currently only Java Lambdas are supported in this integration - support for other runtimes (Node.js, Python, .NET, Go) is coming soon.
 
-**Note:** Even though Thundra supports all the major runtimes (Java, Node.js, Python, .NET, Go), 
-Localstack integration here only supports Java runtime for now. 
-Supporting other runtimes (Node.js, Python, ...) is on the roadmap.
-
-For the Localstack-Thundra integration please follow these instructions: 
-- Create a Thundra account [here](https://start.thundra.io) and 
-then navigate to [Thundra APM](https://console.thundra.io) product.
-- Get your Thundra API key [here](https://console.thundra.io/onboarding/serverless)
-- Start your Localstack with Thundra API key by setting the API key through `THUNDRA_APIKEY` environment variable.
+Simply obtain a Thundra API key [here](https://console.thundra.io/onboarding/serverless) and configure the `THUNDRA_APIKEY` config variable:
 ```
 THUNDRA_APIKEY=<YOUR-THUNDRA-API-KEY> localstack start
 ```
-- Invoke your AWS Lambda function and see your invocations/traces at [Thundra Console](https://console.thundra.io)
 
-For more information, please check out the Thundra docs [here](https://apm.docs.thundra.io)
+After invoking your AWS Lambda function you can inspect the invocations/traces in the [Thundra Console](https://console.thundra.io) (more details in the Thundra docs [here](https://apm.docs.thundra.io)).
 
 ### Terraform
 
@@ -739,7 +731,7 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 
 ## License
 
-Copyright (c) 2017-2020 LocalStack maintainers and contributors.
+Copyright (c) 2017-2021 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
