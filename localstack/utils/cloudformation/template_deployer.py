@@ -252,10 +252,6 @@ RESOURCE_TO_FUNCTION = {
             "parameters": {"TableName": "TableName"},
         },
     },
-    "Events::EventBus": {
-        "create": {"function": "create_event_bus", "parameters": {"Name": "Name"}},
-        "delete": {"function": "delete_event_bus", "parameters": {"Name": "Name"}},
-    },
     "IAM::Role": {
         "create": {
             "function": "create_role",
@@ -1607,6 +1603,10 @@ def update_resource_details(stack, resource_id, details, action=None):
     if not resource or not details:
         return
 
+    # TODO: we need to rethink this method - this should be encapsulated in the resource model classes.
+    #   Also, instead of actively updating the PhysicalResourceId attributes below, they should be
+    #   determined and returned by the resource model classes upon request.
+
     resource_type = resource.get("Type") or ""
     resource_type = re.sub("^AWS::", "", resource_type)
     resource_props = resource.get("Properties", {})
@@ -1626,9 +1626,6 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == "IAM::InstanceProfile":
         resource["PhysicalResourceId"] = details["InstanceProfile"]["InstanceProfileName"]
-
-    if resource_type == "Events::EventBus":
-        resource["PhysicalResourceId"] = details["EventBusArn"]
 
     if resource_type == "StepFunctions::Activity":
         resource["PhysicalResourceId"] = details["activityArn"]

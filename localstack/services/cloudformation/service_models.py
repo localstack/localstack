@@ -294,11 +294,24 @@ class EventBus(GenericBaseModel):
         return "AWS::Events::EventBus"
 
     def fetch_state(self, stack_name, resources):
-        event_bus_arn = self.physical_resource_id
-        if not event_bus_arn:
-            return None
+        event_bus_name = self.props.get("Name")
         client = aws_stack.connect_to_service("events")
-        return client.describe_event_bus(Name=event_bus_arn.split("/")[1])
+        return client.describe_event_bus(Name=event_bus_name)
+
+    def get_cfn_attribute(self, attribute_name):
+        props = self.props
+        if attribute_name in REF_ATTRS + ["Name"]:
+            return props.get("Name")
+        if attribute_name == "Arn":
+            return props.get("Arn")
+        return super(EventBus, self).get_cfn_attribute(attribute_name)
+
+    @classmethod
+    def get_deploy_templates(cls):
+        return {
+            "create": {"function": "create_event_bus", "parameters": {"Name": "Name"}},
+            "delete": {"function": "delete_event_bus", "parameters": {"Name": "Name"}},
+        }
 
 
 class LogsLogGroup(GenericBaseModel):
