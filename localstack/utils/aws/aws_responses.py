@@ -218,7 +218,22 @@ def raise_exception_if_error_response(response):
 
 
 def is_response_obj(result):
-    return isinstance(result, (RequestsResponse, RequestsResponse))
+    return isinstance(result, (RequestsResponse, FlaskResponse))
+
+
+def get_response_payload(response, as_json=False):
+    result = (
+        response.content
+        if isinstance(response, RequestsResponse)
+        else response.data
+        if isinstance(response, FlaskResponse)
+        else None
+    )
+    result = "" if result is None else result
+    if as_json:
+        result = result or "{}"
+        result = json.loads(to_str(result))
+    return result
 
 
 def requests_response(content, status_code=200, headers={}):
