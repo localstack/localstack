@@ -964,6 +964,8 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
     is_local_mount = code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
     zip_file_content = None
 
+    LAMBDA_EXECUTOR.cleanup(arn)
+
     if code_passed:
         lambda_cwd = lambda_cwd or set_archive_code(code_passed, lambda_name)
         if not is_local_mount:
