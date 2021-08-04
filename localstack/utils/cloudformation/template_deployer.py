@@ -1042,6 +1042,8 @@ def convert_data_types(func_details, params):
         if _type == bool:
             return _obj in ["True", "true", True]
         if _type == str:
+            if isinstance(_obj, bool):
+                return str(_obj).lower()
             return str(_obj)
         if _type == int:
             return int(_obj)

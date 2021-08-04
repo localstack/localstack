@@ -1832,6 +1832,7 @@ class SSMParameter(GenericBaseModel):
                         "Tier",
                     ),
                 ),
+                "types": {"Value": str},
             }
         }
 

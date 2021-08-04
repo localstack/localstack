@@ -697,7 +697,8 @@ def create_change_set(req_params: Dict[str, Any]):
     stack_name: Optional[str] = req_params.get("StackName")
     change_set_name: Optional[str] = req_params.get("ChangeSetName")
     template_body: Optional[str] = req_params.get("TemplateBody")
-    template_url: Optional[str] = req_params.get("TemplateUrl")  # s3 or secretsmanager url
+    # s3 or secretsmanager url
+    template_url: Optional[str] = req_params.get("TemplateUrl") or req_params.get("TemplateURL")
 
     if is_none_or_empty(change_set_name):
         return error_response(
@@ -1014,12 +1015,14 @@ def error_response(*args, **kwargs):
     return flask_error_response_xml(*args, **kwargs)
 
 
-def not_found_error(message: str):
-    return error_response(message, code=404, code_string="ResourceNotFoundException")
+def not_found_error(message: str, error_type: str = None):
+    error_type = error_type or "ResourceNotFoundException"
+    return error_response(message, code=404, code_string=error_type)
 
 
-def stack_not_found_error(stack_name: str):
-    return not_found_error('Unable to find stack named "%s"' % stack_name)
+def stack_not_found_error(stack_name: str, error_type: str = None):
+    error_type = error_type or "ValidationError"
+    return not_found_error("Stack with id %s does not exist" % stack_name, error_type=error_type)
 
 
 def clone_stack_params(stack_params):
