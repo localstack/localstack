@@ -1,28 +1,25 @@
-import inspect
 import json
 import logging
 import os
 import pkgutil
 import re
-import select
 import shutil
-import subprocess
 import sys
 import threading
 import time
-import traceback
 import warnings
-from concurrent.futures._base import Future
 from datetime import datetime
-from typing import List, Union
 
 import pip as pip_mod
 import six
 
 from localstack import config, constants
 from localstack.utils.analytics.profiler import log_duration
+from localstack.utils.docker import DOCKER_CLIENT, PortMappings
 
 # set up logger
+from localstack.utils.run import run, to_str
+
 LOG = logging.getLogger(os.path.basename(__file__))
 
 # maps plugin scope ("services", "commands") to flags which indicate whether plugins have been loaded
@@ -212,11 +209,6 @@ def load_plugins(scope=None):
     return result
 
 
-def docker_container_running(container_name):
-    container_names = get_docker_container_names()
-    return container_name in container_names
-
-
 def get_docker_image_details(image_name=None):
     image_name = image_name or get_docker_image_to_start()
     try:
@@ -234,17 +226,6 @@ def get_docker_image_details(image_name=None):
         "created": result["Created"].split(".")[0],
     }
     return result
-
-
-def get_docker_container_names():
-    cmd = "%s ps --format '{{.Names}}'" % config.DOCKER_CMD
-    try:
-        output = to_str(run(cmd))
-        container_names = re.split(r"\s+", output.strip().replace("\n", " "))
-        return container_names
-    except Exception as e:
-        LOG.info('Unable to list Docker containers via "%s": %s' % (cmd, e))
-        return []
 
 
 def get_main_container_ip():
@@ -514,85 +495,6 @@ def validate_localstack_config(name):
     return False
 
 
-class PortMappings(object):
-    """Maps source to target port ranges for Docker port mappings."""
-
-    class HashableList(list):
-        def __hash__(self):
-            result = 0
-            for i in self:
-                result += hash(i)
-            return result
-
-    def __init__(self, bind_host=None):
-        self.bind_host = bind_host if bind_host else ""
-        self.mappings = {}
-
-    def add(self, port, mapped=None, protocol="tcp"):
-        mapped = mapped or port
-        if isinstance(port, list):
-            for i in range(port[1] - port[0] + 1):
-                self.add(port[0] + i, mapped[0] + i)
-            return
-        if port is None or int(port) <= 0:
-            raise Exception("Unable to add mapping for invalid port: %s" % port)
-        if self.contains(port):
-            return
-        for from_range, to_range in self.mappings.items():
-            if not self.in_expanded_range(port, from_range):
-                continue
-            if not self.in_expanded_range(mapped, to_range):
-                continue
-            self.expand_range(port, from_range)
-            self.expand_range(mapped, to_range)
-            return
-        protocol = str(protocol or "tcp").lower()
-        self.mappings[self.HashableList([port, port, protocol])] = [mapped, mapped]
-
-    def to_str(self) -> str:  # TODO test (and/or remove?)
-        bind_address = f"{self.bind_host}:" if self.bind_host else ""
-
-        def entry(k, v):
-            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
-            if k[0] == k[1] and v[0] == v[1]:
-                return "-p %s%s:%s%s" % (bind_address, k[0], v[0], protocol)
-            return "-p %s%s-%s:%s-%s%s" % (bind_address, k[0], k[1], v[0], v[1], protocol)
-
-        return " ".join([entry(k, v) for k, v in self.mappings.items()])
-
-    def to_list(self) -> List[str]:  # TODO test
-        bind_address = f"{self.bind_host}:" if self.bind_host else ""
-
-        def entry(k, v):
-            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
-            if k[0] == k[1] and v[0] == v[1]:
-                return ["-p", f"{bind_address}{k[0]}:{v[0]}{protocol}"]
-            return ["-p", f"{bind_address}{k[0]}-{k[1]}:{v[0]}-{v[1]}{protocol}"]
-
-        return [item for k, v in self.mappings.items() for item in entry(k, v)]
-
-    def contains(self, port):
-        for from_range, to_range in self.mappings.items():
-            if self.in_range(port, from_range):
-                return True
-
-    def in_range(self, port, range):
-        return port >= range[0] and port <= range[1]
-
-    def in_expanded_range(self, port, range):
-        return port >= range[0] - 1 and port <= range[1] + 1
-
-    def expand_range(self, port, range):
-        if self.in_range(port, range):
-            return
-        if port == range[0] - 1:
-            range[0] = port
-        elif port == range[1] + 1:
-            range[1] = port
-        else:
-            raise Exception("Unable to add port %s to existing range %s" % (port, range))
-
-
 def get_docker_image_to_start():
     image_name = os.environ.get("IMAGE_NAME")
     if not image_name:
@@ -621,7 +523,7 @@ def start_infra_in_docker():
 
     container_name = config.MAIN_CONTAINER_NAME
 
-    if docker_container_running(container_name):
+    if DOCKER_CLIENT.is_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
 
     os.environ[ENV_SCRIPT_STARTING_DOCKER] = "1"
@@ -734,7 +636,7 @@ def start_infra_in_docker():
     if DO_CHMOD_DOCKER_SOCK:
         # fix permissions on /var/run/docker.sock
         for i in range(0, 100):
-            if docker_container_running(container_name):
+            if DOCKER_CLIENT.is_container_running(container_name):
                 break
             time.sleep(2)
         run(
@@ -756,157 +658,12 @@ def now_utc():
     return (datetime.utcnow() - epoch).total_seconds()
 
 
-def to_str(obj, errors="strict"):
-    return obj.decode("utf-8", errors) if isinstance(obj, six.binary_type) else obj
-
-
 def in_ci():
     """Whether or not we are running in a CI environment"""
     for key in ("CI", "TRAVIS"):
         if os.environ.get(key, "") not in [False, "", "0", "false"]:
             return True
     return False
-
-
-class FuncThread(threading.Thread):
-    """Helper class to run a Python function in a background thread."""
-
-    def __init__(self, func, params=None, quiet=False):
-        threading.Thread.__init__(self)
-        self.daemon = True
-        self.params = params
-        self.func = func
-        self.quiet = quiet
-        self.result_future = Future()
-        self._stop_event = threading.Event()
-
-    def run(self):
-        result = None
-        try:
-            kwargs = {}
-            argspec = inspect.getfullargspec(self.func)
-            if argspec.varkw or "_thread" in (argspec.args or []) + (argspec.kwonlyargs or []):
-                kwargs["_thread"] = self
-            result = self.func(self.params, **kwargs)
-        except Exception as e:
-            self.result_future.set_exception(e)
-            result = e
-            if not self.quiet:
-                LOG.info(
-                    "Thread run method %s(%s) failed: %s %s"
-                    % (self.func, self.params, e, traceback.format_exc())
-                )
-        finally:
-            try:
-                self.result_future.set_result(result)
-            except Exception:
-                # this can happen as InvalidStateError on shutdown, if the task is already canceled
-                pass
-
-    @property
-    def running(self):
-        return not self._stop_event.is_set()
-
-    def stop(self, quiet=False):
-        self._stop_event.set()
-
-
-def run(
-    cmd: Union[str, List[str]],
-    print_error=True,
-    asynchronous=False,
-    stdin=False,
-    stderr=subprocess.STDOUT,
-    outfile=None,
-    env_vars=None,
-    inherit_cwd=False,
-    inherit_env=True,
-    tty=False,
-    shell=True,
-):
-    LOG.debug("Executing command: %s", cmd)
-    env_dict = os.environ.copy() if inherit_env else {}
-    if env_vars:
-        env_dict.update(env_vars)
-    env_dict = dict([(k, to_str(str(v))) for k, v in env_dict.items()])
-
-    if tty:
-        asynchronous = True
-        stdin = True
-
-    try:
-        cwd = os.getcwd() if inherit_cwd else None
-        if not asynchronous:
-            if stdin:
-                return subprocess.check_output(
-                    cmd, shell=shell, stderr=stderr, env=env_dict, stdin=subprocess.PIPE, cwd=cwd
-                )
-            output = subprocess.check_output(cmd, shell=shell, stderr=stderr, env=env_dict, cwd=cwd)
-            return output.decode(config.DEFAULT_ENCODING)
-
-        stdin_arg = subprocess.PIPE if stdin else None
-        stdout_arg = open(outfile, "ab") if isinstance(outfile, six.string_types) else outfile
-        stderr_arg = stderr
-        if tty:
-            # Note: leave the "pty" import here (not supported in Windows)
-            import pty
-
-            master_fd, slave_fd = pty.openpty()
-            stdin_arg = slave_fd
-            stdout_arg = stderr_arg = None
-
-        # start the actual sub process
-        kwargs = {}
-        if is_linux() or is_mac_os():
-            kwargs["start_new_session"] = True
-        process = subprocess.Popen(
-            cmd,
-            shell=shell,
-            stdin=stdin_arg,
-            bufsize=-1,
-            stderr=stderr_arg,
-            stdout=stdout_arg,
-            env=env_dict,
-            cwd=cwd,
-            **kwargs,
-        )
-
-        if tty:
-            # based on: https://stackoverflow.com/questions/41542960
-            def pipe_streams(*args):
-                while process.poll() is None:
-                    r, w, e = select.select([sys.stdin, master_fd], [], [])
-                    if sys.stdin in r:
-                        d = os.read(sys.stdin.fileno(), 10240)
-                        os.write(master_fd, d)
-                    elif master_fd in r:
-                        o = os.read(master_fd, 10240)
-                        if o:
-                            os.write(sys.stdout.fileno(), o)
-
-            FuncThread(pipe_streams).start()
-
-        return process
-    except subprocess.CalledProcessError as e:
-        if print_error:
-            print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))
-            sys.stdout.flush()
-        raise e
-
-
-def is_mac_os():
-    return "Darwin" in get_uname()
-
-
-def is_linux():
-    return "Linux" in get_uname()
-
-
-def get_uname():
-    try:
-        return to_str(subprocess.check_output("uname -a", shell=True))
-    except Exception:
-        return ""
 
 
 def mkdir(folder):

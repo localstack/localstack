@@ -1,10 +1,10 @@
 import logging
+from subprocess import CalledProcessError
 from typing import NamedTuple
 
 import pytest
 
 from localstack import config
-from localstack.utils.bootstrap import PortMappings
 from localstack.utils.common import safe_run, short_uid
 from localstack.utils.docker import CmdDockerClient as DockerClient
 from localstack.utils.docker import (
@@ -12,6 +12,7 @@ from localstack.utils.docker import (
     DockerContainerStatus,
     NoSuchContainer,
     NoSuchImage,
+    PortMappings,
     Util,
 )
 
@@ -411,3 +412,29 @@ class TestDockerClient:
             docker_client.get_image_cmd("alpine")
         docker_client.pull_image("alpine")
         assert "/bin/sh" == docker_client.get_image_cmd("alpine").strip()
+
+    def test_running_container_names(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        name = dummy_container.container_name
+        assert name in docker_client.get_running_container_names()
+        docker_client.stop_container(name)
+        assert name not in docker_client.get_running_container_names()
+
+    def test_is_container_running(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        name = dummy_container.container_name
+        assert docker_client.is_container_running(name)
+        docker_client.stop_container(name)
+        assert not docker_client.is_container_running(name)
+
+    def test_docker_image_names(self, docker_client: DockerClient):
+        try:
+            safe_run([config.DOCKER_CMD, "rmi", "alpine"])
+        except CalledProcessError:
+            pass
+        assert "alpine:latest" not in docker_client.get_docker_image_names()
+        assert "alpine" not in docker_client.get_docker_image_names()
+        docker_client.pull_image("alpine")
+        assert "alpine:latest" in docker_client.get_docker_image_names()
+        assert "alpine" in docker_client.get_docker_image_names()
+        assert "alpine" not in docker_client.get_docker_image_names(strip_latest=False)

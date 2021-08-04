@@ -5,7 +5,8 @@ import time
 from contextvars import copy_context
 
 from localstack.utils import common
-from localstack.utils.common import TMP_THREADS, FuncThread, start_worker_thread
+from localstack.utils.common import TMP_THREADS, start_worker_thread
+from localstack.utils.run import FuncThread
 
 # reference to named event loop instances
 EVENT_LOOPS = {}

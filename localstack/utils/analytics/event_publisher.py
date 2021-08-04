@@ -6,9 +6,10 @@ from six.moves import queue
 
 from localstack import config
 from localstack.constants import API_ENDPOINT
-from localstack.utils.common import FuncThread, JsonObject, get_or_create_file
+from localstack.utils.common import JsonObject, get_or_create_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import save_file, short_uid, timestamp
+from localstack.utils.run import FuncThread
 
 PROCESS_ID = short_uid()
 MACHINE_ID = None

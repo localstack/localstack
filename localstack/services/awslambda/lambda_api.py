@@ -36,7 +36,6 @@ from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.common import (
     TMP_FILES,
-    FuncThread,
     ensure_readable,
     first_char_to_lower,
     is_zip_file,
@@ -62,6 +61,7 @@ from localstack.utils.common import (
 )
 from localstack.utils.docker import DOCKER_CLIENT
 from localstack.utils.http_utils import parse_chunked_data
+from localstack.utils.run import FuncThread
 
 # logger
 LOG = logging.getLogger(__name__)

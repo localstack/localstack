@@ -9,7 +9,8 @@ import pytz
 import yaml
 
 from localstack.utils import common
-from localstack.utils.bootstrap import PortMappings, extract_port_flags
+from localstack.utils.bootstrap import extract_port_flags
+from localstack.utils.docker import PortMappings
 
 
 class TestCommon(unittest.TestCase):
