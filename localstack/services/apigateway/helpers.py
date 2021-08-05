@@ -38,8 +38,8 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
     "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 )
 
-# special tag name to allow specifying a static ID for new REST APIs
-TAG_KEY_STATIC_ID = "_static_id_"
+# special tag name to allow specifying a custom ID for new REST APIs
+TAG_KEY_CUSTOM_ID = "_custom_id_"
 
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 

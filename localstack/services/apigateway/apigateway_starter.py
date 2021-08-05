@@ -11,7 +11,7 @@ from moto.core.utils import camelcase_to_underscores
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import (
-    TAG_KEY_STATIC_ID,
+    TAG_KEY_CUSTOM_ID,
     apply_json_patch_safe,
     import_api_from_openapi_spec,
 )
@@ -477,11 +477,11 @@ def apply_patches():
     def create_rest_api(self, *args, tags={}, **kwargs):
         result = create_rest_api_orig(self, *args, tags=tags, **kwargs)
         tags = tags or {}
-        static_id = tags.get(TAG_KEY_STATIC_ID)
-        if static_id:
+        custom_id = tags.get(TAG_KEY_CUSTOM_ID)
+        if custom_id:
             self.apis.pop(result.id)
-            result.id = static_id
-            self.apis[static_id] = result
+            result.id = custom_id
+            self.apis[custom_id] = result
         return result
 
     create_rest_api_orig = apigateway_models.APIGatewayBackend.create_rest_api

@@ -397,7 +397,7 @@ awslocal kinesis list-streams
 **UPDATE**: Use the environment variable `$LOCALSTACK_HOSTNAME` to determine the target host
 inside your Lambda function. See [Configurations](#Configurations) section for more details.
 
-## Using the official AWS CLI version 2 Docker image with Localstack Docker container
+### Using the official AWS CLI version 2 Docker image with Localstack Docker container
 
 By default the container running [amazon/aws-cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-docker.html) is isolated from `0.0.0.0:4566` on the host machine, that means that aws-cli cannot reach localstack through your shell.
 
@@ -457,6 +457,12 @@ The URL pattern for API Gateway executions is `http://localhost:4566/restapis/<a
 ```
 $ curl http://localhost:4566/restapis/nmafetnwf6/prod/_user_request_/my/path
 ```
+
+## Testing Backdoors and Special Features
+
+LocalStack provides a number of small backdoors and utility features that are designed to make local testing even easier and more efficient.
+
+* **Providing custom IDs for API Gateway REST APIs**: You can specify `tags={"_custom_id_":"myid123"}` on creation of an API Gateway REST API, to assign it the custom ID `"myid123"` (can be useful to have a static API GW endpoint URL for testing).
 
 ## Integrations
 
