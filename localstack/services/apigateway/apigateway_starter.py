@@ -11,6 +11,7 @@ from moto.core.utils import camelcase_to_underscores
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import (
+    TAG_KEY_CUSTOM_ID,
     apply_json_patch_safe,
     import_api_from_openapi_spec,
 )
@@ -471,6 +472,20 @@ def apply_patches():
             return 200, {}, json.dumps(deployment)
         return result
 
+    # patch create_rest_api to allow using static API IDs defined via tags
+
+    def create_rest_api(self, *args, tags={}, **kwargs):
+        result = create_rest_api_orig(self, *args, tags=tags, **kwargs)
+        tags = tags or {}
+        custom_id = tags.get(TAG_KEY_CUSTOM_ID)
+        if custom_id:
+            self.apis.pop(result.id)
+            result.id = custom_id
+            self.apis[custom_id] = result
+        return result
+
+    create_rest_api_orig = apigateway_models.APIGatewayBackend.create_rest_api
+    apigateway_models.APIGatewayBackend.create_rest_api = create_rest_api
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
     apigateway_response_resource_methods_orig = APIGatewayResponse.resource_methods
