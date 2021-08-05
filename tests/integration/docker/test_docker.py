@@ -438,3 +438,36 @@ class TestDockerClient:
         assert "alpine:latest" in docker_client.get_docker_image_names()
         assert "alpine" in docker_client.get_docker_image_names()
         assert "alpine" not in docker_client.get_docker_image_names(strip_latest=False)
+
+    def test_get_container_name(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        assert dummy_container.container_name == docker_client.get_container_name(
+            dummy_container.container_id
+        )
+
+    def test_get_container_name_not_existing(self, docker_client: DockerClient):
+        not_existent_container = "not_existing_container"
+        with pytest.raises(NoSuchContainer):
+            docker_client.get_container_name(not_existent_container)
+
+    def test_get_container_id(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        assert dummy_container.container_id == docker_client.get_container_id(
+            dummy_container.container_name
+        )
+
+    def test_get_container_id_not_existing(self, docker_client: DockerClient):
+        not_existent_container = "not_existing_container"
+        with pytest.raises(NoSuchContainer):
+            docker_client.get_container_id(not_existent_container)
+
+    def test_inspect_object(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        for identifier in [dummy_container.container_id, dummy_container.container_name]:
+            assert dummy_container.container_id == docker_client.inspect_object(identifier)["Id"]
+            assert (
+                f"/{dummy_container.container_name}"
+                == docker_client.inspect_object(identifier)["Name"]
+            )
+        docker_client.pull_image("alpine")
+        assert "alpine:latest" == docker_client.inspect_object("alpine")["RepoTags"][0]

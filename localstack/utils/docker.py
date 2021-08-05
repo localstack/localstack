@@ -25,6 +25,13 @@ class ContainerException(Exception):
         self.stderr = stderr
 
 
+class NoSuchObject(ContainerException):
+    def __init__(self, object_id: str, message=None, stdout=None, stderr=None) -> None:
+        message = message or f"Docker object {object_id} not found"
+        super().__init__(message, stdout, stderr)
+        self.object_id = object_id
+
+
 class NoSuchContainer(ContainerException):
     def __init__(self, container_name_or_id: str, message=None, stdout=None, stderr=None) -> None:
         message = message or f"Docker container {container_name_or_id} not found"
@@ -255,53 +262,6 @@ class CmdDockerClient:
         LOG.debug("Copying into container with cmd: %s", cmd)
         safe_run(cmd)
 
-    def get_image_entrypoint(self, docker_image: str) -> str:
-        """Get the entry point for the given image"""
-        LOG.debug("Getting the entrypoint for image: %s", docker_image)
-        cmd = self._docker_cmd()
-        cmd += [
-            "image",
-            "inspect",
-            '--format="{{ .Config.Entrypoint }}"',
-            docker_image,
-        ]
-
-        try:
-            run_result = safe_run(cmd)
-        except subprocess.CalledProcessError as e:
-            if "No such image" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchImage(docker_image, stdout=e.stdout, stderr=e.stderr)
-            else:
-                raise ContainerException(
-                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
-
-        entry_point = run_result.strip('"[]\n\r ')
-        return entry_point
-
-    def get_image_cmd(self, docker_image: str) -> str:
-        """Get the command for the given image"""
-        cmd = self._docker_cmd()
-        cmd += [
-            "image",
-            "inspect",
-            '--format="{{ .Config.Cmd }}"',
-            docker_image,
-        ]
-
-        try:
-            run_result = safe_run(cmd)
-        except subprocess.CalledProcessError as e:
-            if "No such image" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchImage(docker_image, stdout=e.stdout, stderr=e.stderr)
-            else:
-                raise ContainerException(
-                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
-
-        entry_point = run_result.strip('"[]\n\r ')
-        return entry_point
-
     def pull_image(self, docker_image: str) -> None:
         """Pulls a image with a given name from a docker registry"""
         cmd = self._docker_cmd()
@@ -347,12 +307,77 @@ class CmdDockerClient:
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
 
+    def inspect_object(self, object_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+        cmd = self._docker_cmd()
+        cmd += ["inspect", "--format", "{{json .}}", object_name_or_id]
+        try:
+            cmd_result = safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such object" in e.stdout.decode(config.DEFAULT_ENCODING):
+                raise NoSuchObject(object_name_or_id, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+        image_data = json.loads(cmd_result.strip())
+        return image_data
+
+    def get_container_name(self, container_id: str) -> str:
+        """Get the name of a container by a given identifier"""
+        try:
+            return self.inspect_object(container_id)["Name"].lstrip("/")
+        except NoSuchObject as e:
+            raise NoSuchContainer(e.object_id, stdout=e.stdout, stderr=e.stderr)
+
+    def get_container_id(self, container_name: str) -> str:
+        """Get the id of a container by a given name"""
+        try:
+            return self.inspect_object(container_name)["Id"]
+        except NoSuchObject as e:
+            raise NoSuchContainer(e.object_id, stdout=e.stdout, stderr=e.stderr)
+
+    def get_container_ip(self, container_name_or_id: str) -> str:
+        """Get the IP address of a given container"""
+        cmd = self._docker_cmd()
+        cmd += [
+            "inspect",
+            "--format",
+            "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+            container_name_or_id,
+        ]
+        try:
+            return safe_run(cmd).strip()
+        except subprocess.CalledProcessError as e:
+            if "No such object" in e.stdout.decode(config.DEFAULT_ENCODING):
+                raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
+    def get_image_cmd(self, docker_image: str) -> str:
+        """Get the command for the given image"""
+        try:
+            cmd_list = self.inspect_object(docker_image)["Config"]["Cmd"] or []
+            return " ".join(cmd_list)
+        except NoSuchObject as e:
+            raise NoSuchImage(e.object_id, stdout=e.stdout, stderr=e.stderr)
+
+    def get_image_entrypoint(self, docker_image: str) -> str:
+        """Get the entry point for the given image"""
+        LOG.debug("Getting the entrypoint for image: %s", docker_image)
+        try:
+            entrypoint_list = self.inspect_object(docker_image)["Config"]["Entrypoint"] or []
+            return " ".join(entrypoint_list)
+        except NoSuchObject as e:
+            raise NoSuchImage(e.object_id, stdout=e.stdout, stderr=e.stderr)
+
     def has_docker(self) -> bool:
         """Check if system has docker available"""
         try:
             safe_run(self._docker_cmd() + ["ps"])
             return True
-        except Exception:
+        except subprocess.CalledProcessError:
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:
@@ -387,6 +412,7 @@ class CmdDockerClient:
         detach=False,
         env_vars: Optional[Dict[str, str]] = None,
         stdin: Optional[bytes] = None,
+        user: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
         env_file = None
         cmd = self._docker_cmd()
@@ -395,6 +421,8 @@ class CmdDockerClient:
             cmd.append("--interactive")
         if detach:
             cmd.append("--detach")
+        if user:
+            cmd += ["--user", user]
         if env_vars:
             env_flag, env_file = Util.create_env_vars_file_flag(env_vars)
             cmd += env_flag
@@ -483,7 +511,7 @@ class CmdDockerClient:
             cmd.append("--rm")
         if name:
             cmd += ["--name", name]
-        if entrypoint:
+        if entrypoint is not None:  # empty string entrypoint can be intentional
             cmd += ["--entrypoint", entrypoint]
         if mount_volumes:
             cmd += [

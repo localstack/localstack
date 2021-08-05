@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import pkgutil
@@ -15,10 +14,10 @@ import six
 
 from localstack import config, constants
 from localstack.utils.analytics.profiler import log_duration
-from localstack.utils.docker import DOCKER_CLIENT, PortMappings
+from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
 
 # set up logger
-from localstack.utils.run import run, to_str
+from localstack.utils.run import run
 
 LOG = logging.getLogger(os.path.basename(__file__))
 
@@ -212,14 +211,9 @@ def load_plugins(scope=None):
 def get_docker_image_details(image_name=None):
     image_name = image_name or get_docker_image_to_start()
     try:
-        result = run("%s inspect %s" % (config.DOCKER_CMD, image_name), print_error=False)
-        result = json.loads(to_str(result))
-        assert len(result)
-    except Exception:
+        result = DOCKER_CLIENT.inspect_object(image_name)
+    except ContainerException:
         return {}
-    if len(result) > 1:
-        LOG.warning('Found multiple images (%s) named "%s"' % (len(result), image_name))
-    result = result[0]
     result = {
         "id": result["Id"].replace("sha256:", "")[:12],
         "tag": (result.get("RepoTags") or ["latest"])[0].split(":")[-1],
@@ -230,19 +224,14 @@ def get_docker_image_details(image_name=None):
 
 def get_main_container_ip():
     container_name = get_main_container_name()
-    cmd = "%s inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % (
-        config.DOCKER_CMD,
-        container_name,
-    )
-    return run(cmd, print_error=False).strip()
+    return DOCKER_CLIENT.get_container_ip(container_name)
 
 
 def get_main_container_id():
     container_name = get_main_container_name()
     try:
-        cmd = "%s inspect -f '{{ .Id }}' %s" % (config.DOCKER_CMD, container_name)
-        return run(cmd, print_error=False).strip()
-    except Exception:
+        return DOCKER_CLIENT.get_container_id(container_name)
+    except ContainerException:
         return None
 
 
@@ -250,35 +239,39 @@ def get_main_container_name():
     global MAIN_CONTAINER_NAME_CACHED
     if MAIN_CONTAINER_NAME_CACHED is None:
         hostname = os.environ.get("HOSTNAME")
-        cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, hostname)
-        try:
-            MAIN_CONTAINER_NAME_CACHED = run(cmd, print_error=False).strip().lstrip("/")
-        except Exception:
+        if hostname:
+            try:
+                MAIN_CONTAINER_NAME_CACHED = DOCKER_CLIENT.get_container_name(hostname)
+            except ContainerException:
+                MAIN_CONTAINER_NAME_CACHED = config.MAIN_CONTAINER_NAME
+        else:
             MAIN_CONTAINER_NAME_CACHED = config.MAIN_CONTAINER_NAME
     return MAIN_CONTAINER_NAME_CACHED
 
 
 def get_server_version():
-    docker_cmd = config.DOCKER_CMD
     try:
         # try to extract from existing running container
         container_name = get_main_container_name()
-        version = run(
-            "%s exec -it %s bin/localstack --version" % (docker_cmd, container_name),
-            print_error=False,
+        version, _ = DOCKER_CLIENT.exec_in_container(
+            container_name, interactive=True, command=["bin/localstack", "--version"]
         )
-        version = version.strip().split("\n")[-1]
+        version = version.decode(config.DEFAULT_ENCODING).strip().splitlines()[-1]
         return version
-    except Exception:
+    except ContainerException:
         try:
             # try to extract by starting a new container
             img_name = get_docker_image_to_start()
-            version = run(
-                "%s run --entrypoint= -it %s bin/localstack --version" % (docker_cmd, img_name)
+            version, _ = DOCKER_CLIENT.run_container(
+                img_name,
+                remove=True,
+                interactive=True,
+                entrypoint="",
+                command=["bin/localstack", "--version"],
             )
-            version = version.strip().split("\n")[-1]
+            version = version.decode(config.DEFAULT_ENCODING).strip().splitlines()[-1]
             return version
-        except Exception:
+        except ContainerException:
             # fall back to default constant
             return constants.VERSION
 
@@ -614,7 +607,7 @@ def start_infra_in_docker():
 
     mkdir(config.TMP_FOLDER)
     try:
-        run('chmod -R 777 "%s"' % config.TMP_FOLDER, print_error=False)
+        run(["chmod", "-R", "777", config.TMP_FOLDER], print_error=False, shell=False)
     except Exception:
         pass
 
@@ -639,9 +632,8 @@ def start_infra_in_docker():
             if DOCKER_CLIENT.is_container_running(container_name):
                 break
             time.sleep(2)
-        run(
-            '%s exec -u root "%s" chmod 777 /var/run/docker.sock'
-            % (config.DOCKER_CMD, container_name)
+        DOCKER_CLIENT.exec_in_container(
+            container_name, command=["chmod", "777", "/var/run/docker.sock"], user="root"
         )
 
     t.process.wait()
