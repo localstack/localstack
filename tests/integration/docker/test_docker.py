@@ -471,3 +471,14 @@ class TestDockerClient:
             )
         docker_client.pull_image("alpine")
         assert "alpine:latest" == docker_client.inspect_object("alpine")["RepoTags"][0]
+
+    def test_copy_from_container(self, tmpdir, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        docker_client.exec_in_container(
+            dummy_container.container_id, command=["sh", "-c", "echo TEST_CONTENT > test_file"]
+        )
+        local_path = tmpdir.join("test_file")
+        docker_client.copy_from_container(
+            dummy_container.container_id, local_path=str(local_path), container_path="test_file"
+        )
+        assert "TEST_CONTENT" == local_path.read().strip()

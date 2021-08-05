@@ -262,6 +262,14 @@ class CmdDockerClient:
         LOG.debug("Copying into container with cmd: %s", cmd)
         safe_run(cmd)
 
+    def copy_from_container(
+        self, container_name: str, local_path: str, container_path: str
+    ) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["cp", f"{container_name}:{container_path}", local_path]
+        LOG.debug("Copying from container with cmd: %s", cmd)
+        safe_run(cmd)
+
     def pull_image(self, docker_image: str) -> None:
         """Pulls a image with a given name from a docker registry"""
         cmd = self._docker_cmd()
@@ -494,6 +502,7 @@ class CmdDockerClient:
         entrypoint: Optional[str] = None,
         remove: bool = False,
         interactive: bool = False,
+        tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[Tuple[str, str]]] = None,
@@ -521,6 +530,8 @@ class CmdDockerClient:
             ]
         if interactive:
             cmd.append("--interactive")
+        if tty:
+            cmd.append("--tty")
         if detach:
             cmd.append("--detach")
         if ports:
