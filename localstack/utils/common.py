@@ -1287,7 +1287,7 @@ def cleanup_tmp_files():
     del TMP_FILES[:]
 
 
-def new_tmp_file():
+def new_tmp_file() -> str:
     """Return a path to a new temporary file."""
     tmp_file, tmp_path = tempfile.mkstemp()
     os.close(tmp_file)

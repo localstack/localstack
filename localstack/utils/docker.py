@@ -282,9 +282,10 @@ class CmdDockerClient:
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
 
-    def get_docker_image_names(self, strip_latest=True):
+    def get_docker_image_names(self, strip_latest=True, include_tags=True):
+        format_string = "{{.Repository}}:{{.Tag}}" if include_tags else "{{.Repository}}"
         cmd = self._docker_cmd()
-        cmd += ["images", "--format", "{{.Repository}}:{{.Tag}}"]
+        cmd += ["images", "--format", format_string]
         try:
             output = safe_run(cmd)
 

@@ -436,6 +436,8 @@ class TestDockerClient:
         assert "alpine" not in docker_client.get_docker_image_names()
         docker_client.pull_image("alpine")
         assert "alpine:latest" in docker_client.get_docker_image_names()
+        assert "alpine:latest" not in docker_client.get_docker_image_names(include_tags=False)
+        assert "alpine" in docker_client.get_docker_image_names(include_tags=False)
         assert "alpine" in docker_client.get_docker_image_names()
         assert "alpine" not in docker_client.get_docker_image_names(strip_latest=False)
 
