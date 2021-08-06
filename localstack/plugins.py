@@ -47,7 +47,7 @@ def do_register_localstack_plugins():
             start_sts,
         )
         from localstack.services.kinesis import kinesis_listener, kinesis_starter
-        from localstack.services.kms import kms_starter
+        from localstack.services.kms import kms_listener, kms_starter
         from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.plugins import Plugin, register_plugin
         from localstack.services.redshift import redshift_starter
@@ -126,7 +126,7 @@ def do_register_localstack_plugins():
             )
         )
 
-        register_plugin(Plugin("kms", start=kms_starter.start_kms, priority=10))
+        register_plugin(Plugin("kms", start=kms_starter.start_kms, listener=kms_listener))
 
         register_plugin(Plugin("lambda", start=start_lambda))
 

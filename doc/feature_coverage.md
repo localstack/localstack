@@ -1,16 +1,16 @@
 # LocalStack Feature Coverage
 
-This page summarizes the implemented APIs and features provided by LocalStack, as well as their level of parity with the real cloud (e.g., AWS).
+This page summarizes the implemented APIs and features provided by LocalStack, as well as their level of parity with the real cloud (e.g., AWS) or managed service provider.
 
 ## Support Tiers
 
 LocalStack provides a variety of different features and cloud APIs (e.g., AWS), but the level of support and parity with the real system differs for the different services:
 
-* Tier 1 (⭐⭐⭐⭐): Feature fully supported by LocalStack maintainers; feature is guaranteed to pass all or the majority of tests
-* Tier 2 (⭐⭐⭐): Feature supports the majority of use cases (e.g., CRUD operations), but some advanced usages may not be fully supported
-* Tier 3 (⭐⭐): Feature may be lightly tested (or not), and so it should be considered unstable
-* Tier 4 (⭐): Feature is experimental, only partially supported or implemented
-* Tier 5 (-): Feature is not currently implemented, but on our roadmap
+* **Tier 1 (⭐⭐⭐⭐)**: Feature fully supported by LocalStack maintainers; feature is guaranteed to pass all or the majority of tests
+* **Tier 2 (⭐⭐⭐)**: Feature supports the majority of use cases (e.g., CRUD operations), but some advanced usages may not be fully supported
+* **Tier 3 (⭐⭐)**: Feature may be lightly tested (or not), and so it should be considered unstable
+* **Tier 4 (⭐)**: Feature is experimental, only partially supported or implemented
+* **Tier 5 (-)**: Feature is not currently implemented, but on our roadmap
 
 In the coverage tables below, the features are marked with their respective availability across different LocalStack versions:
 
