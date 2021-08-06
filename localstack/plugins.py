@@ -126,7 +126,9 @@ def do_register_localstack_plugins():
             )
         )
 
-        register_plugin(Plugin("kms", start=kms_starter.start_kms, listener=kms_listener))
+        register_plugin(
+            Plugin("kms", start=kms_starter.start_kms, listener=kms_listener.UPDATE_KMS)
+        )
 
         register_plugin(Plugin("lambda", start=start_lambda))
 
