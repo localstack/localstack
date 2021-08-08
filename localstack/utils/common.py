@@ -722,18 +722,18 @@ def poll_condition(condition, timeout: float = None, interval: float = 0.5) -> b
     return True
 
 
-def merge_recursive(source, destination, none_values=[None]):
+def merge_recursive(source, destination, none_values=[None], overwrite=False):
     for key, value in source.items():
         if isinstance(value, dict):
             # get node or create one
             node = destination.setdefault(key, {})
-            merge_recursive(value, node)
+            merge_recursive(value, node, none_values=none_values, overwrite=overwrite)
         else:
             if not isinstance(destination, dict):
                 LOG.warning(
                     "Destination for merging %s=%s is not dict: %s", key, value, destination
                 )
-            if destination.get(key) in none_values:
+            if overwrite or destination.get(key) in none_values:
                 destination[key] = value
     return destination
 

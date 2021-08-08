@@ -26,7 +26,7 @@ In the coverage tables below, the features are marked with their respective avai
   <tr><td>Certificates</td><td>...</td><td></td><td></td></tr>
   <tr><td>Tags</td><td>...</td><td></td><td></td></tr>
   <tr><td>Account Configuration</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>Amplify</b> (Pro)</td></tr>
   <tr><td>Apps</td><td>...</td><td></td><td></td></tr>
   <tr><td>Backend Environments</td><td>...</td><td></td><td></td></tr>
@@ -84,7 +84,7 @@ In the coverage tables below, the features are marked with their respective avai
   <tr><td>Resolvers</td><td>...</td><td></td><td></td></tr>
   <tr><td>Tags</td><td>...</td><td></td><td></td></tr>
   <tr><td>Types</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>Athena</b> (Pro)</td></tr>
   <tr><td>Data Catalogs</td><td>...</td><td></td><td></td></tr>
   <tr><td>Databases</td><td>...</td><td></td><td></td></tr>
@@ -141,133 +141,183 @@ In the coverage tables below, the features are marked with their respective avai
   <tr><td>Realtime Log Configs</td><td>...</td><td></td><td></td></tr>
   <tr><td>Streaming Distributions</td><td>...</td><td></td><td></td></tr>
   <tr><td>Tags</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>CloudTrail</b> (Pro)</td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+  <tr><td>Event Selectors</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Insight Selectors</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Trails</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Start/Stop Logging</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+
   <tr><td colspan=4><b>CloudWatch</b></td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+  <tr><td>Alarms</td><td>⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Alarm Histories</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Anomaly Detectors</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Dashboards</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Insight Rules</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Metric Data</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Metric Statistics</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Metric Streams</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+
   <tr><td colspan=4><b>CloudWatch Logs</b></td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+  <tr><td>Destinations</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Export Tasks</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Log Events</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Log Groups</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Log Streams</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Metric Filters</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Queries</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Query Definitions</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Resource Policies</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Retention Policies</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Subscription Filters</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>...</td><td></td><td></td></tr>
+
   <tr><td colspan=4><b>CodeCommit</b> (Pro)</td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+  <tr><td>Approval Rules</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Blobs / Files / Folders</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Branches</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Comments</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Commits</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Merge Commits / Conflicts</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Pull Requests</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Repositories</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>...</td><td></td><td></td></tr>
+
   <tr><td colspan=4><b>Cognito Identity</b> (Pro)</td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+  <tr><td>Developer Identities</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Identities</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Identity Pool Roles</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Identity Pools</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>OpenID Tokens</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>-</td><td></td><td></td></tr>
+
   <tr><td colspan=4><b>Cognito Identity Provider (IdP)</b> (Pro)</td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+  <tr><td>Admin APIs</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Devices</td><td>⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Auth Flows</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Groups</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Lambda Triggers</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>MFA Configs</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Resource Servers</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Risk Configurations</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Identity Providers</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>User Import Jobs</td><td>-</td><td></td><td></td></tr>
+  <tr><td>User Pool Clients</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>User Pool Domains</td><td>⭐⭐</td><td></td><td></td></tr>
+  <tr><td>User Pools</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Users</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+
   <tr><td colspan=4><b>DynamoDB</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>DynamoDB Streams</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>EC2</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>ECR</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>ECS</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>EKS</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>ElastiCache</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>Elasticsearch Service</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>EMR</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>EventBridge (CloudWatch Events)</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>Firehose</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>Glue</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>IAM</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>IoT (IoT Analytics, IoT Data)</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>Kinesis</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>KMS</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>Lambda</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>Managed Streaming for Kafka (MSK)</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>MediaStore</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>Neptune DB</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>QLDB</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>RDS / Aurora Serverless</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>Redshift</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-      
+
   <tr><td colspan=4><b>Route53</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-     
+   
   <tr><td colspan=4><b>S3</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-     
+   
   <tr><td colspan=4><b>SageMaker</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>SecretsManager</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-     
+   
   <tr><td colspan=4><b>SES</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-     
+   
   <tr><td colspan=4><b>SNS</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-     
+   
   <tr><td colspan=4><b>SQS</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-     
+   
   <tr><td colspan=4><b>SSM</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-     
+   
   <tr><td colspan=4><b>StepFunctions</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-     
+   
   <tr><td colspan=4><b>STS</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-     
+   
   <tr><td colspan=4><b>Timestream</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>Transfer</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
   <tr><td colspan=4><b>XRay</b> (Pro)</td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
-  
+
 </table>
 
 ## API Persistence Coverage
