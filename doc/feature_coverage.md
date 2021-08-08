@@ -211,25 +211,97 @@ In the coverage tables below, the features are marked with their respective avai
   <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
 
   <tr><td colspan=4><b>DynamoDB</b></td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Backups (Pro)</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Batch Operations</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Global Tables</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Items</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Kinesis Streaming Destinations</td><td>-</td><td></td><td></td></tr>
+  <tr><td>PartiQL Queries</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Query / Scan Operations</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Tables</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Table Replica Autoscaling</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
 
   <tr><td colspan=4><b>DynamoDB Streams</b></td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Records</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Shard Iterators</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Streams</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
 
   <tr><td colspan=4><b>EC2</b></td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Classic Links</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Customer Gateways</td><td>...</td><td></td><td></td></tr>
+  <tr><td>DHCP Options</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Allocate/Deallocate Elastic IPs</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Fleets</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Flow Logs</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Images</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Internet Gateways</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Local Gateway Routes</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Key Pairs</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Launch Templates</td><td>...</td><td></td><td></td></tr>
+  <tr><td>NAT Gateways</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Network ACLs</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Network Interfaces</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Reserved Instances</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Route Tables / Routes</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Scheduled Instances</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Security Groups / Egress / Ingress</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Snapshots</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Spot Instances</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Start Instances as VMs (Pro)</td><td>⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Subnets</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Traffic Mirrors</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Transit Gateways</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Volumes</td><td>...</td><td></td><td></td></tr>
+  <tr><td>VPC Endpoint Connections</td><td>...</td><td></td><td></td></tr>
+  <tr><td>VPC Peering Connections</td><td>...</td><td></td><td></td></tr>
+  <tr><td>VPCs</td><td>...</td><td></td><td></td></tr>
+  <tr><td>VPN Gateways / Connections</td><td>...</td><td></td><td></td></tr>
 
   <tr><td colspan=4><b>ECR</b> (Pro)</td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Images</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Image Scans</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Lifecycle Policies</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Registries</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Registry Policies</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Replication Configurations</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Repositories</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Repository Policies</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
 
   <tr><td colspan=4><b>ECS</b> (Pro)</td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Account Settings</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Attributes</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Capacity Providers</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Clusters</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Container Instances</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Services</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Task Definitions</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Task Sets</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Tasks</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
 
   <tr><td colspan=4><b>EKS</b> (Pro)</td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
+  <tr><td>AddOns</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Clusters</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Fargate Profiles</td><td>⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Identity Provider Configs</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Node Groups</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Updates</td><td>-</td><td></td><td></td></tr>
 
   <tr><td colspan=4><b>ElastiCache</b> (Pro)</td></tr>
-  <tr><td>...</td><td>...</td><td></td><td></td></tr>
+  <tr><td>Cache Clusters (Redis)</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Cache Clusters (Memcached)</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Cache Parameter Groups</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Cache Security Groups</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Cache Subnet Groups</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Global Replication Groups</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Replication Groups</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Snapshots</td><td>-</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Users / User Groups</td><td>-</td><td></td><td></td></tr>
 
   <tr><td colspan=4><b>Elasticsearch Service</b></td></tr>
   <tr><td>...</td><td>...</td><td></td><td></td></tr>
