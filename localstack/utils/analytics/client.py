@@ -30,11 +30,11 @@ class AnalyticsClient:
     api: str
 
     def __init__(self, api=None):
-        self.api = api or constants.ANALYTICS_API
+        self.api = (api or constants.ANALYTICS_API).lstrip("/")
         self.debug = config.DEBUG_ANALYTICS
 
-        self.endpoint_session = self.api.strip("/") + "/session"
-        self.endpoint_events = self.api.strip("/") + "/events"
+        self.endpoint_session = self.api + "/session"
+        self.endpoint_events = self.api + "/events"
 
         self.localstack_session_id = get_session_id()
 

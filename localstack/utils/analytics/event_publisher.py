@@ -171,6 +171,7 @@ def fire_event(event_type, payload=None):
     if not api_key:
         # only store events if API key has been specified
         return
+    from localstack.utils.analytics import log
     from localstack.utils.testutil import (  # leave here to avoid circular dependency
         is_local_test_mode,
     )
@@ -185,3 +186,4 @@ def fire_event(event_type, payload=None):
 
     event = AnalyticsEvent(event_type=event_type, payload=payload, api_key=api_key)
     EVENT_QUEUE.put_nowait(event)
+    log.event("legacy", {"event": event_type, "payload": payload})
