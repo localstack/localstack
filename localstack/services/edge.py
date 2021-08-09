@@ -13,7 +13,6 @@ from localstack import config
 from localstack.constants import (
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
-    HEADER_LOCALSTACK_TARGET,
     LOCALHOST,
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
@@ -284,7 +283,6 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
     if not auth_header and "." not in host:
         return result[0], result[1], path, host
 
-    ls_target = headers.get(HEADER_LOCALSTACK_TARGET, "")
     path = path or "/"
 
     # https://docs.aws.amazon.com/general/latest/gr/sigv4-signed-request-examples.html
@@ -324,8 +322,6 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
     elif target.startswith("DynamoDBStreams") or host.startswith("streams.dynamodb."):
         # Note: DDB streams requests use ../dynamodb/.. auth header, hence we also need to update result_before
         result = result_before = "dynamodbstreams", config.PORT_DYNAMODBSTREAMS
-    elif ls_target == "web":
-        result = "web", config.PORT_WEB_UI
     elif result[0] == "EventBridge" or target.startswith("AWSEvents"):
         result = "events", config.PORT_EVENTS
     elif target.startswith("ResourceGroupsTaggingAPI_"):

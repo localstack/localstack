@@ -19,7 +19,6 @@ HEADER_AMZN_ERROR_TYPE = "X-Amzn-Errortype"
 
 # backend service ports, for services that are behind a proxy (counting down from 4566)
 DEFAULT_PORT_EDGE = 4566
-DEFAULT_PORT_WEB_UI = 8080
 
 # host name for localhost
 LOCALHOST = "localhost"
