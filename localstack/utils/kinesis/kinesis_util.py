@@ -4,7 +4,8 @@ import logging
 import socket
 import traceback
 
-from localstack.utils.common import FuncThread, truncate
+from localstack.utils.common import truncate
+from localstack.utils.run import FuncThread
 
 # set up local logger
 LOGGER = logging.getLogger(__name__)

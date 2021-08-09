@@ -36,8 +36,6 @@ from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched, store_clou
 from localstack.utils.common import (
     TMP_FILES,
     CaptureOutput,
-    FuncThread,
-    get_docker_container_names,
     get_free_tcp_port,
     in_docker,
     json_safe,
@@ -50,7 +48,8 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
-from localstack.utils.docker import DOCKER_CLIENT, ContainerException
+from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
+from localstack.utils.run import FuncThread
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -151,7 +150,7 @@ def rm_docker_container(container_name_or_id, check_existence=False, safe=False)
     # TODO: remove method / move to docker module
     if not container_name_or_id:
         return
-    if check_existence and container_name_or_id not in get_docker_container_names():
+    if check_existence and container_name_or_id not in DOCKER_CLIENT.get_running_container_names():
         # TODO: check names as well as container IDs!
         return
     try:
@@ -829,7 +828,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
         additional_flags = docker_flags or ""
         dns = config.LAMBDA_DOCKER_DNS
-        docker_java_ports = bootstrap.PortMappings()
+        docker_java_ports = PortMappings()
         if Util.debug_java_port:
             docker_java_ports.add(Util.debug_java_port)
         docker_image = Util.docker_image_for_lambda(func_details)

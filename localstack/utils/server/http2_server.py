@@ -17,8 +17,9 @@ from quart.app import _cancel_all_tasks
 
 from localstack import config
 from localstack.utils.async_utils import ensure_event_loop, run_coroutine, run_sync
-from localstack.utils.common import TMP_THREADS, FuncThread, load_file, retry
+from localstack.utils.common import TMP_THREADS, load_file, retry
 from localstack.utils.http_utils import uses_chunked_encoding
+from localstack.utils.run import FuncThread
 
 LOG = logging.getLogger(__name__)
 

@@ -32,11 +32,11 @@ import dns.resolver
 import requests
 import six
 
+import localstack.utils.run
 from localstack import config
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
-from localstack.utils import bootstrap
-from localstack.utils.bootstrap import FuncThread
+from localstack.utils.run import FuncThread
 
 # arrays for temporary files and resources
 TMP_FILES = []
@@ -501,47 +501,6 @@ def is_list_or_tuple(obj):
 
 def in_docker():
     return config.in_docker()
-
-
-def has_docker():
-    try:
-        run("docker ps")
-        return True
-    except Exception:
-        return False
-
-
-def get_docker_container_names():
-    return bootstrap.get_docker_container_names()
-
-
-def get_docker_image_names(strip_latest=True):
-    cmd = "%s images --format '{{.Repository}}:{{.Tag}}'" % config.DOCKER_CMD
-    try:
-        output = to_str(run(cmd))
-        image_names = re.split(r"\s+", output.strip().replace("\n", " "))
-        if strip_latest:
-            suffix = ":latest"
-            for image in list(image_names):
-                if image.endswith(suffix):
-                    image_names.append(image[: -len(suffix)])
-        return image_names
-    except Exception as e:
-        LOG.info('Unable to list Docker images via "%s": %s' % (cmd, e))
-        return []
-
-
-def rm_docker_container(container_name_or_id, check_existence=False, safe=False):
-    if not container_name_or_id:
-        return
-    if check_existence and container_name_or_id not in get_docker_container_names():
-        # TODO: check names as well as container IDs!
-        return
-    try:
-        run("%s rm -f %s" % (config.DOCKER_CMD, container_name_or_id), print_error=False)
-    except Exception:
-        if not safe:
-            raise
 
 
 def path_from_url(url):
@@ -1017,11 +976,11 @@ def is_number(s):
 
 
 def is_mac_os():
-    return bootstrap.is_mac_os()
+    return localstack.utils.run.is_mac_os()
 
 
 def is_linux():
-    return bootstrap.is_linux()
+    return localstack.utils.run.is_linux()
 
 
 def is_windows():
@@ -1328,7 +1287,7 @@ def cleanup_tmp_files():
     del TMP_FILES[:]
 
 
-def new_tmp_file():
+def new_tmp_file() -> str:
     """Return a path to a new temporary file."""
     tmp_file, tmp_path = tempfile.mkstemp()
     os.close(tmp_file)
@@ -1608,14 +1567,14 @@ def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
 
 def run(cmd, cache_duration_secs=0, **kwargs):
     def run_cmd():
-        return bootstrap.run(cmd, **kwargs)
+        return localstack.utils.run.run(cmd, **kwargs)
 
     return do_run(cmd, run_cmd, cache_duration_secs)
 
 
 def safe_run(cmd: List[str], cache_duration_secs=0, **kwargs) -> Union[str, subprocess.Popen]:
     def run_cmd():
-        return bootstrap.run(cmd, shell=False, **kwargs)
+        return localstack.utils.run.run(cmd, shell=False, **kwargs)
 
     return do_run(" ".join(cmd), run_cmd, cache_duration_secs)
 

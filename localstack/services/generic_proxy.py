@@ -79,10 +79,6 @@ ALLOWED_CORS_RESPONSE_HEADERS = [
 ALLOWED_CORS_ORIGINS = [
     "https://app.localstack.cloud",
     "http://app.localstack.cloud",
-    f"http://localhost:{config.PORT_WEB_UI}",
-    f"https://localhost:{config.PORT_WEB_UI_SSL}",
-    f"http://127.0.0.1:{config.PORT_WEB_UI}",
-    f"https://127.0.0.1:{config.PORT_WEB_UI_SSL}",
     f"https://localhost:{config.EDGE_PORT}",
     f"http://localhost:{config.EDGE_PORT}",
     f"https://localhost.localstack.cloud:{config.EDGE_PORT}",

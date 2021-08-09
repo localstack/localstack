@@ -8,6 +8,7 @@ import shutil
 import sys
 import tempfile
 import time
+from pathlib import Path
 
 import requests
 
@@ -33,6 +34,7 @@ from localstack.constants import (
     THUNDRA_JAVA_AGENT_VERSION,
 )
 from localstack.utils import bootstrap
+from localstack.utils.docker import DOCKER_CLIENT
 
 if __name__ == "__main__":
     bootstrap.bootstrap_installation()
@@ -296,20 +298,24 @@ def install_stepfunctions_local():
         # TODO: works only when running on the host, outside of Docker -> add a fallback if running in Docker?
         log_install_msg("Step Functions")
         mkdir(INSTALL_DIR_STEPFUNCTIONS)
-        run("{dc} pull {img}".format(dc=config.DOCKER_CMD, img=IMAGE_NAME_SFN_LOCAL))
+        DOCKER_CLIENT.pull_image(IMAGE_NAME_SFN_LOCAL)
         docker_name = "tmp-ls-sfn"
-        run(
-            ("{dc} run --name={dn} --entrypoint= -d --rm {img} sleep 15").format(
-                dc=config.DOCKER_CMD, dn=docker_name, img=IMAGE_NAME_SFN_LOCAL
-            )
+        DOCKER_CLIENT.run_container(
+            IMAGE_NAME_SFN_LOCAL,
+            remove=True,
+            entrypoint="",
+            name=docker_name,
+            detach=True,
+            command=["sleep", "15"],
         )
         time.sleep(5)
-        run(
-            "{dc} cp {dn}:/home/stepfunctionslocal/ {tgt}".format(
-                dc=config.DOCKER_CMD, dn=docker_name, tgt=INSTALL_DIR_INFRA
-            )
+        DOCKER_CLIENT.copy_from_container(
+            docker_name, local_path=INSTALL_DIR_INFRA, container_path="/home/stepfunctionslocal/"
         )
-        run("mv %s/stepfunctionslocal/*.jar %s" % (INSTALL_DIR_INFRA, INSTALL_DIR_STEPFUNCTIONS))
+
+        path = Path(f"{INSTALL_DIR_INFRA}/stepfunctionslocal/")
+        for file in path.glob("*.jar"):
+            file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
         rm_rf("%s/stepfunctionslocal" % INSTALL_DIR_INFRA)
     # apply patches
     patch_class_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, SFN_PATCH_CLASS)

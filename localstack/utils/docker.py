@@ -1,12 +1,12 @@
 import json
 import logging
 import os
+import shlex
 import subprocess
 from enum import Enum, unique
 from typing import Dict, List, Optional, Tuple, Union
 
 from localstack import config
-from localstack.utils.bootstrap import PortMappings
 from localstack.utils.common import TMP_FILES, rm_rf, safe_run, save_file, short_uid
 
 LOG = logging.getLogger(__name__)
@@ -26,6 +26,13 @@ class ContainerException(Exception):
         self.stderr = stderr
 
 
+class NoSuchObject(ContainerException):
+    def __init__(self, object_id: str, message=None, stdout=None, stderr=None) -> None:
+        message = message or f"Docker object {object_id} not found"
+        super().__init__(message, stdout, stderr)
+        self.object_id = object_id
+
+
 class NoSuchContainer(ContainerException):
     def __init__(self, container_name_or_id: str, message=None, stdout=None, stderr=None) -> None:
         message = message or f"Docker container {container_name_or_id} not found"
@@ -38,6 +45,85 @@ class NoSuchImage(ContainerException):
         message = message or f"Docker image {image_name} not found"
         super().__init__(message, stdout, stderr)
         self.image_name = image_name
+
+
+class PortMappings(object):
+    """Maps source to target port ranges for Docker port mappings."""
+
+    class HashableList(list):
+        def __hash__(self):
+            result = 0
+            for i in self:
+                result += hash(i)
+            return result
+
+    def __init__(self, bind_host=None):
+        self.bind_host = bind_host if bind_host else ""
+        self.mappings = {}
+
+    def add(self, port, mapped=None, protocol="tcp"):
+        mapped = mapped or port
+        if isinstance(port, list):
+            for i in range(port[1] - port[0] + 1):
+                self.add(port[0] + i, mapped[0] + i)
+            return
+        if port is None or int(port) <= 0:
+            raise Exception("Unable to add mapping for invalid port: %s" % port)
+        if self.contains(port):
+            return
+        for from_range, to_range in self.mappings.items():
+            if not self.in_expanded_range(port, from_range):
+                continue
+            if not self.in_expanded_range(mapped, to_range):
+                continue
+            self.expand_range(port, from_range)
+            self.expand_range(mapped, to_range)
+            return
+        protocol = str(protocol or "tcp").lower()
+        self.mappings[self.HashableList([port, port, protocol])] = [mapped, mapped]
+
+    def to_str(self) -> str:  # TODO test (and/or remove?)
+        bind_address = f"{self.bind_host}:" if self.bind_host else ""
+
+        def entry(k, v):
+            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
+            if k[0] == k[1] and v[0] == v[1]:
+                return "-p %s%s:%s%s" % (bind_address, k[0], v[0], protocol)
+            return "-p %s%s-%s:%s-%s%s" % (bind_address, k[0], k[1], v[0], v[1], protocol)
+
+        return " ".join([entry(k, v) for k, v in self.mappings.items()])
+
+    def to_list(self) -> List[str]:  # TODO test
+        bind_address = f"{self.bind_host}:" if self.bind_host else ""
+
+        def entry(k, v):
+            protocol = "/%s" % k[2] if k[2] != "tcp" else ""
+            if k[0] == k[1] and v[0] == v[1]:
+                return ["-p", f"{bind_address}{k[0]}:{v[0]}{protocol}"]
+            return ["-p", f"{bind_address}{k[0]}-{k[1]}:{v[0]}-{v[1]}{protocol}"]
+
+        return [item for k, v in self.mappings.items() for item in entry(k, v)]
+
+    def contains(self, port):
+        for from_range, to_range in self.mappings.items():
+            if self.in_range(port, from_range):
+                return True
+
+    def in_range(self, port, range):
+        return port >= range[0] and port <= range[1]
+
+    def in_expanded_range(self, port, range):
+        return port >= range[0] - 1 and port <= range[1] + 1
+
+    def expand_range(self, port, range):
+        if self.in_range(port, range):
+            return
+        if port == range[0] - 1:
+            range[0] = port
+        elif port == range[1] + 1:
+            range[1] = port
+        else:
+            raise Exception("Unable to add port %s to existing range %s" % (port, range))
 
 
 class CmdDockerClient:
@@ -109,8 +195,10 @@ class CmdDockerClient:
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
 
-    def remove_container(self, container_name: str, force=True) -> None:
+    def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         """Removes container with given name"""
+        if check_existence and container_name not in self.get_running_container_names():
+            return
         cmd = self._docker_cmd() + ["rm"]
         if force:
             cmd.append("-f")
@@ -126,14 +214,16 @@ class CmdDockerClient:
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
 
-    def list_containers(self, filter: Union[List[str], str, None] = None) -> List[dict]:
+    def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
         """List all containers matching the given filters
 
         Returns a list of dicts with keys id, image, name, labels, status
         """
         filter = [filter] if isinstance(filter, str) else filter
         cmd = self._docker_cmd()
-        cmd += ["ps", "-a"]
+        cmd.append("ps")
+        if all:
+            cmd.append("-a")
         options = []
         if filter:
             options += [y for filter_item in filter for y in ["--filter", filter_item]]
@@ -154,6 +244,16 @@ class CmdDockerClient:
             container_list = [json.loads(line) for line in cmd_result.splitlines()]
         return container_list
 
+    def get_running_container_names(self):
+        """Returns a list of the names of all running containers"""
+        result = self.list_containers(all=False)
+        result = list(map(lambda container: container["name"], result))
+        return result
+
+    def is_container_running(self, container_name: str):
+        """Checks whether a container with a given name is currently running"""
+        return container_name in self.get_running_container_names()
+
     def copy_into_container(
         self, container_name: str, local_path: str, container_path: str
     ) -> None:
@@ -163,54 +263,16 @@ class CmdDockerClient:
         LOG.debug("Copying into container with cmd: %s", cmd)
         safe_run(cmd)
 
-    def get_image_entrypoint(self, docker_image: str) -> str:
-        """Get the entry point for the given image"""
-        LOG.debug("Getting the entrypoint for image: %s", docker_image)
+    def copy_from_container(
+        self, container_name: str, local_path: str, container_path: str
+    ) -> None:
         cmd = self._docker_cmd()
-        cmd += [
-            "image",
-            "inspect",
-            '--format="{{ .Config.Entrypoint }}"',
-            docker_image,
-        ]
-
-        try:
-            run_result = safe_run(cmd)
-        except subprocess.CalledProcessError as e:
-            if "No such image" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchImage(docker_image, stdout=e.stdout, stderr=e.stderr)
-            else:
-                raise ContainerException(
-                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
-
-        entry_point = run_result.strip('"[]\n\r ')
-        return entry_point
-
-    def get_image_cmd(self, docker_image: str) -> str:
-        """Get the command for the given image"""
-        cmd = self._docker_cmd()
-        cmd += [
-            "image",
-            "inspect",
-            '--format="{{ .Config.Cmd }}"',
-            docker_image,
-        ]
-
-        try:
-            run_result = safe_run(cmd)
-        except subprocess.CalledProcessError as e:
-            if "No such image" in e.stdout.decode(config.DEFAULT_ENCODING):
-                raise NoSuchImage(docker_image, stdout=e.stdout, stderr=e.stderr)
-            else:
-                raise ContainerException(
-                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
-
-        entry_point = run_result.strip('"[]\n\r ')
-        return entry_point
+        cmd += ["cp", f"{container_name}:{container_path}", local_path]
+        LOG.debug("Copying from container with cmd: %s", cmd)
+        safe_run(cmd)
 
     def pull_image(self, docker_image: str) -> None:
+        """Pulls a image with a given name from a docker registry"""
         cmd = self._docker_cmd()
         cmd += ["pull", docker_image]
         LOG.debug("Pulling image with cmd: %s", cmd)
@@ -221,13 +283,32 @@ class CmdDockerClient:
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
 
+    def get_docker_image_names(self, strip_latest=True, include_tags=True):
+        format_string = "{{.Repository}}:{{.Tag}}" if include_tags else "{{.Repository}}"
+        cmd = self._docker_cmd()
+        cmd += ["images", "--format", format_string]
+        try:
+            output = safe_run(cmd)
+
+            image_names = output.splitlines()
+            if strip_latest:
+                suffix = ":latest"
+                for image in list(image_names):
+                    if image.endswith(suffix):
+                        image_names.append(image[: -len(suffix)])
+            return image_names
+        except Exception as e:
+            LOG.info('Unable to list Docker images via "%s": %s' % (cmd, e))
+            return []
+
     def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
+        """Get all logs of a given container"""
         cmd = self._docker_cmd()
         cmd += ["logs", container_name_or_id]
         try:
             return safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if not safe:
+            if safe:
                 return ""
             if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
                 raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
@@ -236,12 +317,77 @@ class CmdDockerClient:
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
 
+    def inspect_object(self, object_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+        cmd = self._docker_cmd()
+        cmd += ["inspect", "--format", "{{json .}}", object_name_or_id]
+        try:
+            cmd_result = safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such object" in e.stdout.decode(config.DEFAULT_ENCODING):
+                raise NoSuchObject(object_name_or_id, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+        image_data = json.loads(cmd_result.strip())
+        return image_data
+
+    def get_container_name(self, container_id: str) -> str:
+        """Get the name of a container by a given identifier"""
+        try:
+            return self.inspect_object(container_id)["Name"].lstrip("/")
+        except NoSuchObject as e:
+            raise NoSuchContainer(e.object_id, stdout=e.stdout, stderr=e.stderr)
+
+    def get_container_id(self, container_name: str) -> str:
+        """Get the id of a container by a given name"""
+        try:
+            return self.inspect_object(container_name)["Id"]
+        except NoSuchObject as e:
+            raise NoSuchContainer(e.object_id, stdout=e.stdout, stderr=e.stderr)
+
+    def get_container_ip(self, container_name_or_id: str) -> str:
+        """Get the IP address of a given container"""
+        cmd = self._docker_cmd()
+        cmd += [
+            "inspect",
+            "--format",
+            "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+            container_name_or_id,
+        ]
+        try:
+            return safe_run(cmd).strip()
+        except subprocess.CalledProcessError as e:
+            if "No such object" in e.stdout.decode(config.DEFAULT_ENCODING):
+                raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
+    def get_image_cmd(self, docker_image: str) -> str:
+        """Get the command for the given image"""
+        try:
+            cmd_list = self.inspect_object(docker_image)["Config"]["Cmd"] or []
+            return " ".join(cmd_list)
+        except NoSuchObject as e:
+            raise NoSuchImage(e.object_id, stdout=e.stdout, stderr=e.stderr)
+
+    def get_image_entrypoint(self, docker_image: str) -> str:
+        """Get the entry point for the given image"""
+        LOG.debug("Getting the entrypoint for image: %s", docker_image)
+        try:
+            entrypoint_list = self.inspect_object(docker_image)["Config"]["Entrypoint"] or []
+            return " ".join(entrypoint_list)
+        except NoSuchObject as e:
+            raise NoSuchImage(e.object_id, stdout=e.stdout, stderr=e.stderr)
+
     def has_docker(self) -> bool:
         """Check if system has docker available"""
         try:
             safe_run(self._docker_cmd() + ["ps"])
             return True
-        except Exception:
+        except subprocess.CalledProcessError:
             return False
 
     def create_container(self, image_name: str, **kwargs) -> str:
@@ -261,7 +407,7 @@ class CmdDockerClient:
         finally:
             Util.rm_env_vars_file(env_file)
 
-    def run_container(self, image_name: str, stdin=None, **kwargs) -> Tuple[str, str]:
+    def run_container(self, image_name: str, stdin=None, **kwargs) -> Tuple[bytes, bytes]:
         cmd, env_file = self._build_run_create_cmd("run", image_name, **kwargs)
         LOG.debug("Run container with cmd: %s", cmd)
         result = self._run_async_cmd(cmd, stdin, kwargs.get("name") or "", image_name)
@@ -274,8 +420,9 @@ class CmdDockerClient:
         command: Union[List[str], str],
         interactive=False,
         detach=False,
-        env_vars: Optional[List[Tuple[str, str]]] = None,
-        stdin: Optional[str] = None,
+        env_vars: Optional[Dict[str, str]] = None,
+        stdin: Optional[bytes] = None,
+        user: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
         env_file = None
         cmd = self._docker_cmd()
@@ -284,6 +431,8 @@ class CmdDockerClient:
             cmd.append("--interactive")
         if detach:
             cmd.append("--detach")
+        if user:
+            cmd += ["--user", user]
         if env_vars:
             env_flag, env_file = Util.create_env_vars_file_flag(env_vars)
             cmd += env_flag
@@ -355,6 +504,7 @@ class CmdDockerClient:
         entrypoint: Optional[str] = None,
         remove: bool = False,
         interactive: bool = False,
+        tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
         mount_volumes: Optional[List[Tuple[str, str]]] = None,
@@ -372,7 +522,7 @@ class CmdDockerClient:
             cmd.append("--rm")
         if name:
             cmd += ["--name", name]
-        if entrypoint:
+        if entrypoint is not None:  # empty string entrypoint can be intentional
             cmd += ["--entrypoint", entrypoint]
         if mount_volumes:
             cmd += [
@@ -382,6 +532,8 @@ class CmdDockerClient:
             ]
         if interactive:
             cmd.append("--interactive")
+        if tty:
+            cmd.append("--tty")
         if detach:
             cmd.append("--detach")
         if ports:
@@ -398,7 +550,7 @@ class CmdDockerClient:
         if dns:
             cmd += ["--dns", dns]
         if additional_flags:
-            cmd += additional_flags.split()
+            cmd += shlex.split(additional_flags)
         cmd.append(image_name)
         if command:
             cmd += command if isinstance(command, List) else [command]
@@ -409,9 +561,9 @@ class Util:
     MAX_ENV_ARGS_LENGTH = 20000
 
     @classmethod
-    def create_env_vars_file_flag(cls, env_vars: Dict) -> Tuple[List[str], str]:
+    def create_env_vars_file_flag(cls, env_vars: Dict) -> Tuple[List[str], Optional[str]]:
         if not env_vars:
-            return []
+            return [], None
         result = []
         env_vars = dict(env_vars)
         env_file = None

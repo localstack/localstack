@@ -18,7 +18,6 @@ from localstack.constants import (
     DEFAULT_DEVELOP_PORT,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
     DEFAULT_PORT_EDGE,
-    DEFAULT_PORT_WEB_UI,
     DEFAULT_SERVICE_PORTS,
     FALSE_STRINGS,
     LOCALHOST,
@@ -181,9 +180,6 @@ DOCKER_FLAGS = os.environ.get("DOCKER_FLAGS", "").strip()
 # command used to run Docker containers (e.g., set to "sudo docker" to run as sudo)
 DOCKER_CMD = os.environ.get("DOCKER_CMD", "").strip() or "docker"
 
-# whether to start the web API
-START_WEB = os.environ.get("START_WEB", "").strip() in TRUE_STRINGS
-
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
@@ -193,10 +189,6 @@ EDGE_BIND_HOST = os.environ.get("EDGE_BIND_HOST", "").strip() or "127.0.0.1"
 EDGE_PORT = int(os.environ.get("EDGE_PORT") or 0) or DEFAULT_PORT_EDGE
 # fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
 EDGE_PORT_HTTP = int(os.environ.get("EDGE_PORT_HTTP") or 0)
-
-# port of Web UI
-PORT_WEB_UI = int(os.environ.get("PORT_WEB_UI", "").strip() or DEFAULT_PORT_WEB_UI)
-PORT_WEB_UI_SSL = PORT_WEB_UI + 1
 
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
@@ -296,10 +288,8 @@ CONFIG_ENV_VARS = [
     "DEBUG",
     "KINESIS_ERROR_PROBABILITY",
     "DYNAMODB_ERROR_PROBABILITY",
-    "PORT_WEB_UI",
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
-    "START_WEB",
     "DOCKER_BRIDGE_IP",
     "DEFAULT_REGION",
     "LAMBDA_JAVA_OPTS",

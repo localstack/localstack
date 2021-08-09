@@ -14,7 +14,6 @@ from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.common import (
     TMP_THREADS,
-    FuncThread,
     ShellCommandThread,
     get_free_tcp_port,
     is_port_open,
@@ -22,6 +21,7 @@ from localstack.utils.common import (
     to_str,
     wait_for_port_open,
 )
+from localstack.utils.run import FuncThread
 
 LOG = logging.getLogger("localstack.multiserver")
 
