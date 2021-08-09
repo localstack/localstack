@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import shlex
 import subprocess
 from enum import Enum, unique
 from typing import Dict, List, Optional, Tuple, Union
@@ -549,7 +550,7 @@ class CmdDockerClient:
         if dns:
             cmd += ["--dns", dns]
         if additional_flags:
-            cmd += additional_flags.split()
+            cmd += shlex.split(additional_flags)
         cmd.append(image_name)
         if command:
             cmd += command if isinstance(command, List) else [command]
