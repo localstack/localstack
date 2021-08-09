@@ -2,6 +2,7 @@ import logging
 import os
 import pkgutil
 import re
+import shlex
 import shutil
 import sys
 import threading
@@ -552,58 +553,47 @@ def start_infra_in_docker():
     for port in service_ports.values():
         port_mappings.add(port)
 
-    env_str = ""
+    env_vars = {}
     for env_var in config.CONFIG_ENV_VARS:
         value = os.environ.get(env_var, None)
         if value is not None:
-            env_str += '-e %s="%s" ' % (env_var, value)
+            env_vars[env_var] = value
 
-    data_dir_mount = ""
+    bind_mounts = []
     data_dir = os.environ.get("DATA_DIR", None)
     if data_dir is not None:
         container_data_dir = "/tmp/localstack_data"
-        data_dir_mount = '-v "%s:%s"' % (data_dir, container_data_dir)
-        env_str += '-e DATA_DIR="%s" ' % container_data_dir
-
-    interactive = "" if force_noninteractive or in_ci() else "-it "
-
-    # append space if parameter is set
-    user_flags = "%s " % user_flags if user_flags else user_flags
-    entrypoint = "%s " % entrypoint if entrypoint else entrypoint
-    plugin_run_params = "%s " % plugin_run_params if plugin_run_params else plugin_run_params
-    if config.START_WEB:
-        for port in [config.PORT_WEB_UI, config.PORT_WEB_UI_SSL]:
-            port_mappings.add(port)
+        bind_mounts.append((data_dir, container_data_dir))
+        env_vars["DATA_DIR"] = container_data_dir
+    bind_mounts.append((config.TMP_FOLDER, "/tmp/localstack"))
+    bind_mounts.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
+    env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
+    env_vars["HOST_TMP_FOLDER"] = config.HOST_TMP_FOLDER
 
     if config.DEVELOP:
         port_mappings.add(config.DEVELOP_PORT)
 
-    docker_cmd = (
-        "%s run %s%s%s%s%s"
-        + "--rm --privileged "
-        + "--name %s "
-        + "%s %s "
-        + '-v "%s:/tmp/localstack" -v "%s:%s" '
-        + '-e DOCKER_HOST="unix://%s" '
-        + '-e HOST_TMP_FOLDER="%s" "%s" %s'
-    ) % (
-        config.DOCKER_CMD,
-        interactive,
-        entrypoint,
-        env_str,
-        user_flags,
-        plugin_run_params,
-        container_name,
-        port_mappings.to_str(),
-        data_dir_mount,
-        config.TMP_FOLDER,
-        config.DOCKER_SOCK,
-        config.DOCKER_SOCK,
-        config.DOCKER_SOCK,
-        config.HOST_TMP_FOLDER,
-        image_name,
-        cmd,
-    )
+    docker_cmd = [config.DOCKER_CMD, "run"]
+    if not force_noninteractive and not in_ci():
+        docker_cmd.append("-it")
+    if entrypoint:
+        docker_cmd += shlex.split(entrypoint)
+    if env_vars:
+        docker_cmd += [item for k, v in env_vars.items() for item in ["-e", "{}={}".format(k, v)]]
+    if user_flags:
+        docker_cmd += shlex.split(user_flags)
+    if plugin_run_params:
+        docker_cmd += shlex.split(plugin_run_params)
+    docker_cmd += ["--rm", "--privileged"]
+    docker_cmd += ["--name", container_name]
+    docker_cmd += port_mappings.to_list()
+    docker_cmd += [
+        volume
+        for host_path, docker_path in bind_mounts
+        for volume in ["-v", f"{host_path}:{docker_path}"]
+    ]
+    docker_cmd.append(image_name)
+    docker_cmd += shlex.split(cmd)
 
     mkdir(config.TMP_FOLDER)
     try:
@@ -618,7 +608,7 @@ def start_infra_in_docker():
             self.cmd = cmd
 
         def run(self):
-            self.process = run(self.cmd, asynchronous=True)
+            self.process = run(self.cmd, asynchronous=True, shell=False)
 
     # keep this print output here for debugging purposes
     print(docker_cmd)
