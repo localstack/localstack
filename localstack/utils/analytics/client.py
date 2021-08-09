@@ -23,7 +23,7 @@ class SessionResponse:
         self.response = response
 
     def track_events(self) -> bool:
-        return self.response["track_events"]
+        return self.response.get("track_events")
 
 
 class AnalyticsClient:

@@ -22,6 +22,17 @@ class ClientMetadata:
     is_docker: bool
     is_testing: bool
 
+    def __repr__(self):
+        d = dataclasses.asdict(self)
+
+        # anonymize api_key
+        k = d.get("api_key")
+        if k:
+            k = "*" * len(k)
+        d["api_key"] = k
+
+        return "ClientMetadata(%s)" % d
+
 
 def read_client_metadata() -> ClientMetadata:
     return ClientMetadata(

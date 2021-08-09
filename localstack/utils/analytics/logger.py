@@ -1,19 +1,17 @@
 import datetime
+import hashlib
 
+from ..common import to_bytes
 from .events import Event, EventHandler, EventMetadata, EventPayload
 from .metadata import get_session_id
 
 
 def get_hash(value) -> str:
-    # FIXME: seems a bit hacky
-
-    if value is None:
-        return "0"
-
-    max_hash = 10000000000
-    hashed = hash(str(value)) % max_hash
-    hashed = hex(hashed).replace("0x", "")
-    return hashed
+    max_length = 10
+    digest = hashlib.sha1()
+    digest.update(to_bytes(str(value)))
+    result = digest.hexdigest()
+    return result[:max_length]
 
 
 class EventLogger:
