@@ -58,8 +58,8 @@ class PublisherBuffer(EventHandler):
     flush_size: int
     flush_interval: float
 
-    _cmd_flush = object()
-    _cmd_stop = object()
+    _cmd_flush = "__FLUSH__"
+    _cmd_stop = "__STOP__"
 
     # FIXME: figure out good default values
     def __init__(

@@ -98,11 +98,12 @@ class TestGlobalAnalyticsBus:
 
         def handler(_request, _data):
             http_requests.put((_request.__dict__, _data))
-            if _request.path == "/session":
+
+            if _request.path == "/v0/session":
                 return testutil.json_response({"track_events": True})
 
         with testutil.http_server(handler) as url:
-            client = AnalyticsClient(url)
+            client = AnalyticsClient(url.lstrip("/") + "/v0")
             bus = GlobalAnalyticsBus(client=client, flush_size=2)
             bus.force_tracking = True
 
@@ -112,11 +113,11 @@ class TestGlobalAnalyticsBus:
 
             # first event should trigger registration
             request, data = http_requests.get(timeout=5)
-            assert request["path"] == "/session"
+            assert request["path"] == "/v0/session"
 
-            bus.handle(new_event())
+            bus.handle(new_event())  # should flush here because of flush_size 2
 
-            request, data = http_requests.get(timeout=2)
-            assert request["path"] == "/events"
+            request, data = http_requests.get()
+            assert request["path"] == "/v0/events"
             json_data = json.loads(data)
             assert len(json_data["events"]) == 2
