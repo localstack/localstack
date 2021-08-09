@@ -18,7 +18,7 @@ from localstack.utils.analytics.profiler import log_duration
 from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
 
 # set up logger
-from localstack.utils.run import run
+from localstack.utils.run import run, to_str
 
 LOG = logging.getLogger(os.path.basename(__file__))
 
@@ -257,7 +257,7 @@ def get_server_version():
         version, _ = DOCKER_CLIENT.exec_in_container(
             container_name, interactive=True, command=["bin/localstack", "--version"]
         )
-        version = version.decode(config.DEFAULT_ENCODING).strip().splitlines()[-1]
+        version = to_str(version).strip().splitlines()[-1]
         return version
     except ContainerException:
         try:
@@ -270,7 +270,7 @@ def get_server_version():
                 entrypoint="",
                 command=["bin/localstack", "--version"],
             )
-            version = version.decode(config.DEFAULT_ENCODING).strip().splitlines()[-1]
+            version = to_str(version).strip().splitlines()[-1]
             return version
         except ContainerException:
             # fall back to default constant

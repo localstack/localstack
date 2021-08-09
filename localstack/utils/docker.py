@@ -308,7 +308,7 @@ class CmdDockerClient:
         try:
             return safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if not safe:
+            if safe:
                 return ""
             if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
                 raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)

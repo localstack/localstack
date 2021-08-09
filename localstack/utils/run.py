@@ -113,7 +113,7 @@ def get_uname():
 
 
 def to_str(obj, errors="strict"):
-    return obj.decode("utf-8", errors) if isinstance(obj, bytes) else obj
+    return obj.decode(config.DEFAULT_ENCODING, errors) if isinstance(obj, bytes) else obj
 
 
 class FuncThread(threading.Thread):

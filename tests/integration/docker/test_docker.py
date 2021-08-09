@@ -232,11 +232,56 @@ class TestDockerClient:
 
     def test_copy_into_container(self, tmpdir, docker_client: DockerClient, create_container):
         local_path = tmpdir.join("myfile.txt")
-        container_path = "/tmp/myfile.txt"
+        container_path = "/tmp/myfile_differentpath.txt"
 
-        c = create_container("alpine", command=["cat", container_path])
+        self._test_copy_into_container(
+            docker_client,
+            create_container,
+            ["cat", container_path],
+            local_path,
+            local_path,
+            container_path,
+        )
 
-        with local_path.open(mode="w") as fd:
+    def test_copy_into_container_without_target_filename(
+        self, tmpdir, docker_client: DockerClient, create_container
+    ):
+        local_path = tmpdir.join("myfile.txt")
+        container_path = "/tmp/"
+
+        self._test_copy_into_container(
+            docker_client,
+            create_container,
+            ["cat", "/tmp/myfile.txt"],
+            local_path,
+            local_path,
+            container_path,
+        )
+
+    def test_copy_directory_into_container(
+        self, tmpdir, docker_client: DockerClient, create_container
+    ):
+        local_path = tmpdir.join("fancy_folder")
+        local_path.mkdir()
+
+        file_path = local_path.join("myfile.txt")
+        container_path = "/tmp/fancy_other_folder"
+
+        self._test_copy_into_container(
+            docker_client,
+            create_container,
+            ["cat", "/tmp/fancy_other_folder/myfile.txt"],
+            file_path,
+            local_path,
+            container_path,
+        )
+
+    def _test_copy_into_container(
+        self, docker_client, create_container, command, file_path, local_path, container_path
+    ):
+        c = create_container("alpine", command=command)
+
+        with file_path.open(mode="w") as fd:
             fd.write("foobared\n")
 
         docker_client.copy_into_container(c.container_name, str(local_path), container_path)
@@ -247,11 +292,8 @@ class TestDockerClient:
         assert "foobared" in output
 
     def test_get_network_non_existing_container(self, docker_client: DockerClient):
-        # TODO: define behavior
-        with pytest.raises(ContainerException) as ex:
+        with pytest.raises(ContainerException):
             docker_client.get_network("this_container_does_not_exist")
-
-        assert ex.match("[Nn]o such object")
 
     def test_list_containers(self, docker_client: DockerClient, create_container):
         c1 = create_container("alpine", command=["echo", "1"])
@@ -273,11 +315,8 @@ class TestDockerClient:
         assert 0 == len(container_list)
 
     def test_list_containers_filter_illegal_filter(self, docker_client: DockerClient):
-        # FIXME: define behavior
-        with pytest.raises(ContainerException) as ex:
+        with pytest.raises(ContainerException):
             docker_client.list_containers(filter="illegalfilter=foobar")
-
-        assert ex.match("Invalid filter")
 
     def test_list_containers_filter(self, docker_client: DockerClient, create_container):
         name_prefix = "filter_tests_"
@@ -396,10 +435,10 @@ class TestDockerClient:
 
     def test_get_logs_non_existent_container(self, docker_client: DockerClient):
         with pytest.raises(NoSuchContainer):
-            docker_client.get_container_logs("container_hopefully_does_not_exist", safe=True)
+            docker_client.get_container_logs("container_hopefully_does_not_exist", safe=False)
 
         assert "" == docker_client.get_container_logs(
-            "container_hopefully_does_not_exist", safe=False
+            "container_hopefully_does_not_exist", safe=True
         )
 
     def test_pull_docker_image(self, docker_client: DockerClient):

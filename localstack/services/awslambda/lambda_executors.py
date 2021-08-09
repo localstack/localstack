@@ -13,7 +13,6 @@ import traceback
 from multiprocessing import Process, Queue
 from typing import Dict, Tuple, Union
 
-import localstack.utils.docker
 from localstack import config
 from localstack.constants import (
     THUNDRA_APIKEY,
@@ -49,7 +48,7 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
-from localstack.utils.docker import DOCKER_CLIENT, ContainerException
+from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
 from localstack.utils.run import FuncThread
 
 # constants
@@ -829,7 +828,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
         additional_flags = docker_flags or ""
         dns = config.LAMBDA_DOCKER_DNS
-        docker_java_ports = localstack.utils.docker.PortMappings()
+        docker_java_ports = PortMappings()
         if Util.debug_java_port:
             docker_java_ports.add(Util.debug_java_port)
         docker_image = Util.docker_image_for_lambda(func_details)

@@ -315,7 +315,7 @@ def install_stepfunctions_local():
 
         path = Path(f"{INSTALL_DIR_INFRA}/stepfunctionslocal/")
         for file in path.glob("*.jar"):
-            file.rename(f"{INSTALL_DIR_STEPFUNCTIONS}/{file.name}")
+            file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
         rm_rf("%s/stepfunctionslocal" % INSTALL_DIR_INFRA)
     # apply patches
     patch_class_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, SFN_PATCH_CLASS)
