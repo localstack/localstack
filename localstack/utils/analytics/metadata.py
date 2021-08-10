@@ -34,13 +34,21 @@ class ClientMetadata:
         return "ClientMetadata(%s)" % d
 
 
+def get_version_string() -> str:
+    gh = config.LOCALSTACK_BUILD_GIT_HASH
+    if gh:
+        return f"{constants.VERSION}:{gh}"
+    else:
+        return constants.VERSION
+
+
 def read_client_metadata() -> ClientMetadata:
     return ClientMetadata(
         session_id=get_session_id(),
         machine_id=get_machine_id(),
         api_key=read_api_key_safe(),
         system=get_system(),
-        version=constants.VERSION,
+        version=get_version_string(),
         is_ci=os.getenv("CI") is not None,
         is_docker=config.is_in_docker,
         is_testing=config.is_env_true(constants.ENV_INTERNAL_TEST_RUN),
