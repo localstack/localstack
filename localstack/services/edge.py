@@ -25,7 +25,7 @@ from localstack.services.generic_proxy import ProxyListener, modify_and_forward,
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
-from localstack.utils import analytics, persistence
+from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (
     Environment,
@@ -153,7 +153,6 @@ class ProxyListenerEdge(ProxyListener):
             lock_ctx = empty_context_manager()
 
         with lock_ctx:
-            analytics.log.event("api_call", api=api, method=method, path=path)
             return do_forward_request(api, method, path, data, headers, port=port)
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
