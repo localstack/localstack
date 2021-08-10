@@ -15,7 +15,6 @@ from localstack import config
 from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.services import infra
-from localstack.utils.analytics.profiler import profiled
 from localstack.utils.common import safe_requests
 from tests.integration.test_elasticsearch import ElasticsearchTest
 from tests.integration.test_terraform import TestTerraform
@@ -123,26 +122,11 @@ def run_localstack():
         logger.info("stopping infra")
         infra.stop_infra()
 
-    def start_profiling(*args):
-        if not config.USE_PROFILER:
-            return
-
-        @profiled()
-        def profile_func():
-            # keep profiler active until tests have finished
-            localstack_stopped.wait()
-
-        print("Start profiling...")
-        profile_func()
-        print("Done profiling...")
-
     monitor = threading.Thread(target=watchdog)
     monitor.start()
 
     logger.info("starting localstack infrastructure")
     infra.start_infra(asynchronous=True)
-
-    threading.Thread(target=start_profiling).start()
 
     for fn in test_init_functions:
         try:

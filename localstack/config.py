@@ -206,6 +206,7 @@ EXTRA_CORS_ALLOWED_ORIGINS = os.environ.get("EXTRA_CORS_ALLOWED_ORIGINS", "").st
 
 # whether to disable publishing events to the API
 DISABLE_EVENTS = is_env_true("DISABLE_EVENTS")
+DEBUG_ANALYTICS = is_env_true("DEBUG_ANALYTICS")
 
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
@@ -542,9 +543,6 @@ if DEBUG:
 
 # whether to bundle multiple APIs into a single process, where possible
 BUNDLE_API_PROCESSES = True
-
-# whether to use a CPU/memory profiler when running the integration tests
-USE_PROFILER = is_env_true("USE_PROFILER")
 
 
 def load_config_file(config_file=None):

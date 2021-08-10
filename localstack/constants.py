@@ -126,6 +126,8 @@ DYNAMODB_JAR_URL = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_l
 
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
+# new analytics API endpoint
+ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack.cloud/v0"
 
 # environment variable to indicates that this process is running the Web UI
 LOCALSTACK_WEB_PROCESS = "LOCALSTACK_WEB_PROCESS"

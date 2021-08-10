@@ -6,6 +6,8 @@ import shutil
 import tempfile
 import time
 import zipfile
+from contextlib import contextmanager
+from typing import Dict
 
 import requests
 from six import iteritems
@@ -30,8 +32,10 @@ from localstack.utils.common import (
     chmod_r,
     get_free_tcp_port,
     is_alpine,
+    is_port_open,
     load_file,
     mkdir,
+    poll_condition,
     run,
     save_file,
     to_str,
@@ -536,3 +540,39 @@ def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY
             rs.append(raw_message)
 
     return rs
+
+
+@contextmanager
+def http_server(handler, host="127.0.0.1", port=None) -> str:
+    """
+    Create a temporary http server on a random port (or the specified port) with the given handler
+    for the duration of the context manager.
+
+    Example usage:
+
+        def handler(request, data):
+            print(request.method, request.path, data)
+
+        with testutil.http_server(handler) as url:
+            requests.post(url, json={"message": "hello"})
+    """
+    from localstack.utils.server.http2_server import run_server
+
+    host = host
+    port = port or get_free_tcp_port()
+    thread = run_server(port, host, handler=handler, asynchronous=True)
+    url = f"http://{host}:{port}"
+    assert poll_condition(
+        lambda: is_port_open(port), timeout=5
+    ), f"server on port {port} did not start"
+    yield url
+    thread.stop()
+
+
+def json_response(data, code=200, headers: Dict = None) -> requests.Response:
+    r = requests.Response()
+    r._content = json.dumps(data)
+    r.status_code = code
+    if headers:
+        r.headers.update(headers)
+    return r
