@@ -1174,6 +1174,33 @@ class GatewayResource(GenericBaseModel):
         result = list(filter(lambda res: res["path"] == path, api_resources))
         return result[0] if result else None
 
+    @staticmethod
+    def get_deploy_templates():
+        def get_apigw_resource_params(params, **kwargs):
+            result = {
+                "restApiId": params.get("RestApiId"),
+                "pathPart": params.get("PathPart"),
+                "parentId": params.get("ParentId"),
+            }
+            if not result.get("parentId"):
+                # get root resource id
+                apigw = aws_stack.connect_to_service("apigateway")
+                resources = apigw.get_resources(restApiId=result["restApiId"])["items"]
+                root_resource = ([r for r in resources if r["path"] == "/"] or [None])[0]
+                if not root_resource:
+                    raise Exception(
+                        "Unable to find root resource for REST API %s" % result["restApiId"]
+                    )
+                result["parentId"] = root_resource["id"]
+            return result
+
+        return {
+            "create": {
+                "function": "create_resource",
+                "parameters": get_apigw_resource_params,
+            }
+        }
+
 
 class GatewayMethod(GenericBaseModel):
     @staticmethod

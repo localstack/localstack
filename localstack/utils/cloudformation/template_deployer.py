@@ -1,4 +1,5 @@
 import base64
+import copy
 import json
 import logging
 import re
@@ -6,6 +7,7 @@ import traceback
 from typing import Optional
 from urllib.parse import urlparse
 
+import botocore
 from moto.cloudformation import parsing
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.ec2.utils import generate_route_id
@@ -127,23 +129,6 @@ def get_ddb_kinesis_stream_specification(params, **kwargs):
     if args:
         args["TableName"] = params["TableName"]
     return args
-
-
-def get_apigw_resource_params(params, **kwargs):
-    result = {
-        "restApiId": params.get("RestApiId"),
-        "pathPart": params.get("PathPart"),
-        "parentId": params.get("ParentId"),
-    }
-    if not result.get("parentId"):
-        # get root resource id
-        apigw = aws_stack.connect_to_service("apigateway")
-        resources = apigw.get_resources(restApiId=result["restApiId"])["items"]
-        root_resource = ([r for r in resources if r["path"] == "/"] or [None])[0]
-        if not root_resource:
-            raise Exception("Unable to find root resource for REST API %s" % result["restApiId"])
-        result["parentId"] = root_resource["id"]
-    return result
 
 
 # maps resource types to functions and parameters for creation
@@ -272,12 +257,6 @@ RESOURCE_TO_FUNCTION = {
             ),
         },
         "delete": {"function": "delete_role", "parameters": {"RoleName": "RoleName"}},
-    },
-    "ApiGateway::Resource": {
-        "create": {
-            "function": "create_resource",
-            "parameters": get_apigw_resource_params,
-        }
     },
     "ApiGateway::Method": {
         "create": {
@@ -1296,15 +1275,12 @@ def configure_resource_via_sdk(
     if params is None:
         return
 
-    # convert refs and boolean strings
+    # convert refs
     for param_key, param_value in dict(params).items():
         if param_value is not None:
             param_value = params[param_key] = resolve_refs_recursively(
                 stack_name, param_value, resources
             )
-        # Convert to boolean (TODO: do this recursively?)
-        if str(param_value).lower() in ["true", "false"]:
-            params[param_key] = str(param_value).lower() == "true"
 
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
     params = fix_account_id_in_arns(params)
@@ -1316,13 +1292,26 @@ def configure_resource_via_sdk(
     # run pre-actions
     run_pre_create_actions(action_name, resource_id, resources, resource_type, stack_name, params)
 
+    # convert boolean strings
+    #  (TODO: we should find a more reliable mechanism than this opportunistic/probabilistic approach!)
+    params_before_conversion = copy.deepcopy(params)
+    for param_key, param_value in dict(params).items():
+        # Convert to boolean (TODO: do this recursively?)
+        if str(param_value).lower() in ["true", "false"]:
+            params[param_key] = str(param_value).lower() == "true"
+
     # invoke function
     try:
         LOG.debug(
             'Request for resource type "%s" in region %s: %s %s'
             % (resource_type, aws_stack.get_region(), func_details["function"], params)
         )
-        result = function(**params)
+        try:
+            result = function(**params)
+        except botocore.exceptions.ParamValidationError as e:
+            if "type: <class 'bool'>" not in str(e):
+                raise
+            result = function(**params_before_conversion)
     except Exception as e:
         if action_name == "delete" and check_not_found_exception(e, resource_type, resource):
             return
