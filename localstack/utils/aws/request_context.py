@@ -23,10 +23,10 @@ def get_proxy_request_for_thread():
 
 
 def get_flask_request_for_thread():
-    # importing here to avoid import errors from test Lambdas
-    from flask import request
-
     try:
+        # importing here to avoid import errors from test Lambdas
+        from flask import request
+
         return Request(
             url=request.path,
             data=request.data,
@@ -123,7 +123,3 @@ def patch_request_handling():
     FuncThread.run = thread_run
     thread_init_orig = FuncThread.__init__
     FuncThread.__init__ = thread_init
-
-
-# apply patches
-patch_request_handling()

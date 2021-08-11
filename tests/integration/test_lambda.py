@@ -39,6 +39,7 @@ from localstack.services.infra import start_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import lambda_function_arn
 from localstack.utils.common import (
     cp_r,
     download,
@@ -203,7 +204,7 @@ class LambdaTestBase(unittest.TestCase):
     # TODO: the test below is being executed for all subclasses - should be refactored!
     def test_create_lambda_function(self):
         func_name = "lambda_func-{}".format(short_uid())
-        kms_key_arn = "arn:aws:kms:us-east-1:000000000000:key11"
+        kms_key_arn = "arn:aws:kms:%s:000000000000:key11" % aws_stack.get_region()
         vpc_config = {
             "SubnetIds": ["subnet-123456789"],
             "SecurityGroupIds": ["sg-123456789"],
@@ -230,7 +231,7 @@ class LambdaTestBase(unittest.TestCase):
         client = aws_stack.connect_to_service("lambda")
         client.create_function(**kwargs)
 
-        function_arn = "arn:aws:lambda:us-east-1:000000000000:function:" + func_name
+        function_arn = lambda_function_arn(func_name)
         partial_function_arn = ":".join(function_arn.split(":")[3:])
 
         # Get function by Name, ARN and partial ARN
@@ -856,7 +857,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             Description="Testing CodeSigning Config",
             AllowedPublishers={
                 "SigningProfileVersionArns": [
-                    "arn:aws:signer:us-east-1:000000000000:/signing-profiles/test",
+                    "arn:aws:signer:%s:000000000000:/signing-profiles/test"
+                    % aws_stack.get_region(),
                 ]
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
