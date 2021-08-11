@@ -30,8 +30,8 @@ from localstack.constants import (
     MODULE_MAIN_PATH,
     STS_JAR_URL,
     THUNDRA_APIKEY,
+    THUNDRA_JAVA_AGENT_JAR,
     THUNDRA_JAVA_AGENT_JAR_NAME,
-    THUNDRA_JAVA_AGENT_VERSION,
 )
 from localstack.utils import bootstrap
 from localstack.utils.docker import DOCKER_CLIENT
@@ -79,10 +79,7 @@ URL_LOCALSTACK_FAT_JAR = (
     "https://repo1.maven.org/maven2/"
     + "cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
 ).format(v=LOCALSTACK_MAVEN_VERSION)
-THUNDRA_JAVA_AGENT_JAR = (
-    "https://repo.thundra.io/service/local/artifact/maven/redirect?"
-    + "r=thundra-releases&g=io.thundra.agent&a=thundra-agent-lambda-bootstrap&v={v}"
-).format(v=THUNDRA_JAVA_AGENT_VERSION)
+
 MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % INSTALL_DIR_INFRA
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"

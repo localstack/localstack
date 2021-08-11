@@ -28,11 +28,6 @@ LOCALHOST_HOSTNAME = "localhost.localstack.cloud"
 # version of the Maven dependency with Java utility code
 LOCALSTACK_MAVEN_VERSION = "0.2.14"
 
-THUNDRA_APIKEY_ENV_VAR_NAME = "THUNDRA_APIKEY"
-THUNDRA_APIKEY = os.getenv(THUNDRA_APIKEY_ENV_VAR_NAME)
-THUNDRA_JAVA_AGENT_JAR_NAME = "thundra-agent.jar"
-THUNDRA_JAVA_AGENT_VERSION = os.getenv("THUNDRA_AGENT_JAVA_VERSION", "LATEST")
-
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 
@@ -184,3 +179,43 @@ DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
 
 # user that starts the elasticsearch process if the current user is root
 OS_USER_ELASTICSEARCH = "localstack"
+
+# Thundra related constants
+########################################################################################################################
+
+
+def get_latest_version(metadata_url):
+    try:
+        import xml.etree.ElementTree as et
+
+        import requests
+
+        response = requests.get(metadata_url)
+        xml = et.fromstring(response.content)
+        latest_version = xml.find("./versioning/latest").text
+
+        return latest_version
+    except Exception as e:
+        print("Unable to get latest version of Thundra Java agent: %s" % e)
+        return "LATEST"
+
+
+THUNDRA_APIKEY_ENV_VAR_NAME = "THUNDRA_APIKEY"
+THUNDRA_APIKEY = os.getenv(THUNDRA_APIKEY_ENV_VAR_NAME)
+
+THUNDRA_JAVA_AGENT_METADATA_URL = (
+    "https://repo.thundra.io/service/local/repositories/thundra-releases/content/"
+    + "io/thundra/agent/thundra-agent-lambda-bootstrap/maven-metadata.xml"
+)
+THUNDRA_JAVA_AGENT_LATEST_VERSION = get_latest_version(THUNDRA_JAVA_AGENT_METADATA_URL)
+THUNDRA_JAVA_AGENT_VERSION = os.getenv(
+    "THUNDRA_AGENT_JAVA_VERSION", THUNDRA_JAVA_AGENT_LATEST_VERSION
+)
+
+THUNDRA_JAVA_AGENT_JAR = (
+    "https://repo.thundra.io/service/local/artifact/maven/redirect?"
+    + "r=thundra-releases&g=io.thundra.agent&a=thundra-agent-lambda-bootstrap&v={v}"
+).format(v=THUNDRA_JAVA_AGENT_VERSION)
+THUNDRA_JAVA_AGENT_JAR_NAME = "thundra-agent-%s.jar" % THUNDRA_JAVA_AGENT_VERSION
+
+########################################################################################################################
