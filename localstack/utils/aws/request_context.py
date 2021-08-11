@@ -5,7 +5,6 @@ import threading
 from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
-from localstack.services import generic_proxy
 from localstack.utils.common import empty_context_manager
 from localstack.utils.run import FuncThread
 
@@ -88,6 +87,8 @@ def get_region_from_request_context():
 
 
 def patch_request_handling():
+    # importing here to avoid import errors from test Lambdas
+    from localstack.services import generic_proxy
 
     # TODO: move into generic_proxy.py, instead of patching here
 
