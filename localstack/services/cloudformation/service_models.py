@@ -1714,8 +1714,7 @@ class SNSTopic(GenericBaseModel):
             display_name = params.get("DisplayName")
             fifo_topic = params.get("FifoTopic")
             kms_master_key = params.get("KmsMasterKeyId")
-            # todo subscription
-            tags = params.get("Tags") or {}
+            tags = params.get("Tags") or []
             topic_name = params.get("TopicName")
             if dedup is not None:
                 attributes["ContentBasedDeduplication"] = dedup
@@ -1733,6 +1732,7 @@ class SNSTopic(GenericBaseModel):
             return resource.physical_resource_id or resource.get_physical_resource_id()
 
         return {
+            # TODO: add second creation function to add topic subscriptions
             "create": {
                 "function": "create_topic",
                 "parameters": _create_params,
