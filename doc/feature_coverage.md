@@ -648,4 +648,15 @@ In the coverage tables below, the features are marked with their respective avai
 
 ## API Persistence Coverage
 
-Details following soon.
+Details following soon. For now, only listing those that are at least (superficially) tested
+
+- Kinesis
+- DynamoDB
+- Athena
+- Secrets Manager
+- SNS
+- S3
+- SQS
+- QLDB
+- Backup
+- Elastic File System
