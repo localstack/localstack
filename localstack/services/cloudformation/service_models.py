@@ -1725,11 +1725,7 @@ class SNSTopic(GenericBaseModel):
                 attributes["FifoTopic"] = fifo_topic
             if kms_master_key:
                 attributes["KmsMasterKeyId"] = kms_master_key
-            result = {
-                "Name": topic_name,
-                "Attributes": attributes,
-                "Tags": tags
-            }
+            result = {"Name": topic_name, "Attributes": attributes, "Tags": tags}
             return result
 
         def _topic_arn(params, resources, resource_id, **kwargs):
