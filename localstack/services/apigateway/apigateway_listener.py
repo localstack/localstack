@@ -20,6 +20,7 @@ from localstack.constants import (
 )
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.helpers import (
+    API_REGIONS,
     PATH_REGEX_AUTHORIZERS,
     PATH_REGEX_CLIENT_CERTS,
     PATH_REGEX_DOC_PARTS,
@@ -52,6 +53,7 @@ from localstack.utils.aws.aws_responses import (
     request_response_stream,
     requests_response,
 )
+from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.common import to_bytes, to_str
 
 # set up logger
@@ -116,6 +118,13 @@ class ProxyListenerApiGateway(ProxyListener):
             if result is not None:
                 response.status_code = 200
                 aws_responses.set_response_content(response, result, getattr(result, "headers", {}))
+
+        # keep track of API regions for faster lookup later on
+        if method == "POST" and path == "/restapis":
+            content = json.loads(to_str(response.content))
+            api_id = content["id"]
+            region = aws_stack.extract_region_from_auth_header(headers)
+            API_REGIONS[api_id] = region
 
         # publish event
         if method == "POST" and path == "/restapis":
@@ -256,6 +265,12 @@ def get_api_id_stage_invocation_path(path, headers):
         api_id = host_match.group(1)
         stage = path.strip("/").split("/")[0]
         relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
+    if api_id:
+        # set current region in request thread local, to ensure aws_stack.get_region() works properly
+        if getattr(THREAD_LOCAL, "request_context", None) is not None:
+            THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = API_REGIONS.get(
+                api_id, ""
+            )
     return api_id, stage, relative_path_w_query_params
 
 

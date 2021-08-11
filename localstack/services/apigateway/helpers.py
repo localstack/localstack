@@ -41,6 +41,9 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
 # special tag name to allow specifying a custom ID for new REST APIs
 TAG_KEY_CUSTOM_ID = "_custom_id_"
 
+# map API IDs to region names
+API_REGIONS = {}
+
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 

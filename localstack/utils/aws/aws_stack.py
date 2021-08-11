@@ -26,6 +26,7 @@ from localstack.constants import (
 )
 from localstack.utils.aws import templating
 from localstack.utils.aws.aws_models import KinesisStream
+from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.common import (
     get_service_protocol,
     is_port_open,
@@ -189,7 +190,10 @@ def get_boto3_session(cache=True):
 
 
 def get_region():
-    # TODO look up region from context
+    region = get_region_from_request_context()
+    if region:
+        return region
+    # fall back to returning static pre-defined region
     return get_local_region()
 
 
@@ -377,16 +381,8 @@ def check_valid_region(headers):
 
 
 def set_default_region_in_headers(headers, service=None, region=None):
-    auth_header = headers.get("Authorization")
-    region = region or get_region()
-    if not auth_header:
-        if service:
-            headers["Authorization"] = mock_aws_request_headers(service, region_name=region)[
-                "Authorization"
-            ]
-        return
-    replaced = re.sub(r"(.*Credential=[^/]+/[^/]+/)([^/])+/", r"\1%s/" % region, auth_header)
-    headers["Authorization"] = replaced
+    # TODO: remove - this should now be a no-op, as we support arbitrary regions and don't use a "default" region
+    pass
 
 
 def fix_account_id_in_arns(response, colon_delimiter=":", existing=None, replace=None):
