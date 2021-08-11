@@ -25,18 +25,18 @@ from docopt import docopt
 from localstack import config, constants
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import (
-    docker_container_running,
     get_docker_image_details,
     get_main_container_id,
     get_main_container_ip,
     get_main_container_name,
     get_server_version,
-    run,
     setup_logging,
     start_infra_in_docker,
     start_infra_locally,
     validate_localstack_config,
 )
+from localstack.utils.docker import DOCKER_CLIENT
+from localstack.utils.run import run
 
 # Note: make sure we don't have other imports at the root level here
 
@@ -103,7 +103,7 @@ def cmd_ssh(argv, args):
     Options:
     """
     args.update(docopt(cmd_ssh.__doc__.strip(), argv=argv))
-    if not docker_container_running(config.MAIN_CONTAINER_NAME):
+    if not DOCKER_CLIENT.is_container_running(config.MAIN_CONTAINER_NAME):
         raise Exception(
             'Expected 1 running "%s" container, but found none' % config.MAIN_CONTAINER_NAME
         )
@@ -128,7 +128,7 @@ def print_status():
     img = get_docker_image_details()
     print("Docker image:\t\tTag %s, ID %s, Created %s" % (img["tag"], img["id"], img["created"]))
     cont_name = config.MAIN_CONTAINER_NAME
-    running = docker_container_running(cont_name)
+    running = DOCKER_CLIENT.is_container_running(cont_name)
     cont_status = "stopped"
     if running:
         cont_status = 'running (name: "%s", IP: %s)' % (

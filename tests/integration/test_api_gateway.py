@@ -16,6 +16,7 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.constants import HEADER_LOCALSTACK_REQUEST_URL, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import (
+    TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
     gateway_request_url,
     get_resource_for_path,
@@ -110,6 +111,17 @@ class TestAPIGateway(unittest.TestCase):
         "authorizerResultTtlInSeconds": 300,
     }
     TEST_API_GATEWAY_AUTHORIZER_OPS = [{"op": "replace", "path": "/name", "value": "test1"}]
+
+    def test_create_rest_api_with_custom_id(self):
+        client = aws_stack.connect_to_service("apigateway")
+        apigw_name = "gw-%s" % short_uid()
+        test_id = "testId123"
+        result = client.create_rest_api(name=apigw_name, tags={TAG_KEY_CUSTOM_ID: test_id})
+        self.assertEqual(test_id, result["id"])
+        self.assertEqual(apigw_name, result["name"])
+        result = client.get_rest_api(restApiId=test_id)
+        self.assertEqual(test_id, result["id"])
+        self.assertEqual(apigw_name, result["name"])
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream

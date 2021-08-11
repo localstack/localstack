@@ -33,7 +33,7 @@ RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
 ADD localstack/constants.py localstack/config.py localstack/
 ADD localstack/services/install.py localstack/services/
 ADD localstack/services/cloudformation/deployment_utils.py localstack/services/cloudformation/deployment_utils.py
-ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/
+ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/docker.py localstack/utils/run.py localstack/utils/
 ADD localstack/utils/aws/ localstack/utils/aws/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
 ADD localstack/utils/analytics/ localstack/utils/analytics/
@@ -98,6 +98,7 @@ ADD tests/ tests/
 ADD .coveragerc ./
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
 RUN pip uninstall -y argparse
+RUN pip uninstall -y dataclasses
 RUN LAMBDA_EXECUTOR=local \
     PYTEST_LOGLEVEL=info \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \

@@ -1,10 +1,10 @@
 import logging
+from subprocess import CalledProcessError
 from typing import NamedTuple
 
 import pytest
 
 from localstack import config
-from localstack.utils.bootstrap import PortMappings
 from localstack.utils.common import safe_run, short_uid
 from localstack.utils.docker import CmdDockerClient as DockerClient
 from localstack.utils.docker import (
@@ -12,6 +12,7 @@ from localstack.utils.docker import (
     DockerContainerStatus,
     NoSuchContainer,
     NoSuchImage,
+    PortMappings,
     Util,
 )
 
@@ -231,11 +232,56 @@ class TestDockerClient:
 
     def test_copy_into_container(self, tmpdir, docker_client: DockerClient, create_container):
         local_path = tmpdir.join("myfile.txt")
-        container_path = "/tmp/myfile.txt"
+        container_path = "/tmp/myfile_differentpath.txt"
 
-        c = create_container("alpine", command=["cat", container_path])
+        self._test_copy_into_container(
+            docker_client,
+            create_container,
+            ["cat", container_path],
+            local_path,
+            local_path,
+            container_path,
+        )
 
-        with local_path.open(mode="w") as fd:
+    def test_copy_into_container_without_target_filename(
+        self, tmpdir, docker_client: DockerClient, create_container
+    ):
+        local_path = tmpdir.join("myfile.txt")
+        container_path = "/tmp/"
+
+        self._test_copy_into_container(
+            docker_client,
+            create_container,
+            ["cat", "/tmp/myfile.txt"],
+            local_path,
+            local_path,
+            container_path,
+        )
+
+    def test_copy_directory_into_container(
+        self, tmpdir, docker_client: DockerClient, create_container
+    ):
+        local_path = tmpdir.join("fancy_folder")
+        local_path.mkdir()
+
+        file_path = local_path.join("myfile.txt")
+        container_path = "/tmp/fancy_other_folder"
+
+        self._test_copy_into_container(
+            docker_client,
+            create_container,
+            ["cat", "/tmp/fancy_other_folder/myfile.txt"],
+            file_path,
+            local_path,
+            container_path,
+        )
+
+    def _test_copy_into_container(
+        self, docker_client, create_container, command, file_path, local_path, container_path
+    ):
+        c = create_container("alpine", command=command)
+
+        with file_path.open(mode="w") as fd:
             fd.write("foobared\n")
 
         docker_client.copy_into_container(c.container_name, str(local_path), container_path)
@@ -246,11 +292,8 @@ class TestDockerClient:
         assert "foobared" in output
 
     def test_get_network_non_existing_container(self, docker_client: DockerClient):
-        # TODO: define behavior
-        with pytest.raises(ContainerException) as ex:
+        with pytest.raises(ContainerException):
             docker_client.get_network("this_container_does_not_exist")
-
-        assert ex.match("[Nn]o such object")
 
     def test_list_containers(self, docker_client: DockerClient, create_container):
         c1 = create_container("alpine", command=["echo", "1"])
@@ -272,11 +315,8 @@ class TestDockerClient:
         assert 0 == len(container_list)
 
     def test_list_containers_filter_illegal_filter(self, docker_client: DockerClient):
-        # FIXME: define behavior
-        with pytest.raises(ContainerException) as ex:
+        with pytest.raises(ContainerException):
             docker_client.list_containers(filter="illegalfilter=foobar")
-
-        assert ex.match("Invalid filter")
 
     def test_list_containers_filter(self, docker_client: DockerClient, create_container):
         name_prefix = "filter_tests_"
@@ -395,10 +435,10 @@ class TestDockerClient:
 
     def test_get_logs_non_existent_container(self, docker_client: DockerClient):
         with pytest.raises(NoSuchContainer):
-            docker_client.get_container_logs("container_hopefully_does_not_exist", safe=True)
+            docker_client.get_container_logs("container_hopefully_does_not_exist", safe=False)
 
         assert "" == docker_client.get_container_logs(
-            "container_hopefully_does_not_exist", safe=False
+            "container_hopefully_does_not_exist", safe=True
         )
 
     def test_pull_docker_image(self, docker_client: DockerClient):
@@ -411,3 +451,75 @@ class TestDockerClient:
             docker_client.get_image_cmd("alpine")
         docker_client.pull_image("alpine")
         assert "/bin/sh" == docker_client.get_image_cmd("alpine").strip()
+
+    def test_running_container_names(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        name = dummy_container.container_name
+        assert name in docker_client.get_running_container_names()
+        docker_client.stop_container(name)
+        assert name not in docker_client.get_running_container_names()
+
+    def test_is_container_running(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        name = dummy_container.container_name
+        assert docker_client.is_container_running(name)
+        docker_client.stop_container(name)
+        assert not docker_client.is_container_running(name)
+
+    def test_docker_image_names(self, docker_client: DockerClient):
+        try:
+            safe_run([config.DOCKER_CMD, "rmi", "alpine"])
+        except CalledProcessError:
+            pass
+        assert "alpine:latest" not in docker_client.get_docker_image_names()
+        assert "alpine" not in docker_client.get_docker_image_names()
+        docker_client.pull_image("alpine")
+        assert "alpine:latest" in docker_client.get_docker_image_names()
+        assert "alpine:latest" not in docker_client.get_docker_image_names(include_tags=False)
+        assert "alpine" in docker_client.get_docker_image_names(include_tags=False)
+        assert "alpine" in docker_client.get_docker_image_names()
+        assert "alpine" not in docker_client.get_docker_image_names(strip_latest=False)
+
+    def test_get_container_name(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        assert dummy_container.container_name == docker_client.get_container_name(
+            dummy_container.container_id
+        )
+
+    def test_get_container_name_not_existing(self, docker_client: DockerClient):
+        not_existent_container = "not_existing_container"
+        with pytest.raises(NoSuchContainer):
+            docker_client.get_container_name(not_existent_container)
+
+    def test_get_container_id(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        assert dummy_container.container_id == docker_client.get_container_id(
+            dummy_container.container_name
+        )
+
+    def test_get_container_id_not_existing(self, docker_client: DockerClient):
+        not_existent_container = "not_existing_container"
+        with pytest.raises(NoSuchContainer):
+            docker_client.get_container_id(not_existent_container)
+
+    def test_inspect_object(self, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        for identifier in [dummy_container.container_id, dummy_container.container_name]:
+            assert dummy_container.container_id == docker_client.inspect_object(identifier)["Id"]
+            assert (
+                f"/{dummy_container.container_name}"
+                == docker_client.inspect_object(identifier)["Name"]
+            )
+        docker_client.pull_image("alpine")
+        assert "alpine:latest" == docker_client.inspect_object("alpine")["RepoTags"][0]
+
+    def test_copy_from_container(self, tmpdir, docker_client: DockerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        docker_client.exec_in_container(
+            dummy_container.container_id, command=["sh", "-c", "echo TEST_CONTENT > test_file"]
+        )
+        local_path = tmpdir.join("test_file")
+        docker_client.copy_from_container(
+            dummy_container.container_id, local_path=str(local_path), container_path="test_file"
+        )
+        assert "TEST_CONTENT" == local_path.read().strip()

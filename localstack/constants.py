@@ -19,7 +19,6 @@ HEADER_AMZN_ERROR_TYPE = "X-Amzn-Errortype"
 
 # backend service ports, for services that are behind a proxy (counting down from 4566)
 DEFAULT_PORT_EDGE = 4566
-DEFAULT_PORT_WEB_UI = 8080
 
 # host name for localhost
 LOCALHOST = "localhost"
@@ -32,7 +31,7 @@ LOCALSTACK_MAVEN_VERSION = "0.2.14"
 THUNDRA_APIKEY_ENV_VAR_NAME = "THUNDRA_APIKEY"
 THUNDRA_APIKEY = os.getenv(THUNDRA_APIKEY_ENV_VAR_NAME)
 THUNDRA_JAVA_AGENT_JAR_NAME = "thundra-agent.jar"
-THUNDRA_JAVA_AGENT_VERSION = os.getenv("THUNDRA_AGENT_VERSION", "LATEST")
+THUNDRA_JAVA_AGENT_VERSION = os.getenv("THUNDRA_AGENT_JAVA_VERSION", "LATEST")
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
@@ -127,6 +126,8 @@ DYNAMODB_JAR_URL = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_l
 
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
+# new analytics API endpoint
+ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack.cloud/v0"
 
 # environment variable to indicates that this process is running the Web UI
 LOCALSTACK_WEB_PROCESS = "LOCALSTACK_WEB_PROCESS"

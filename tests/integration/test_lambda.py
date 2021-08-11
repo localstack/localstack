@@ -1900,7 +1900,7 @@ class TestDockerBehaviour(LambdaTestBase):
         if not isinstance(
             lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorReuseContainers
         ):
-            pytest.skip("not testing docker reuse executor")
+            pytest.skip("only testing docker reuse executor")
 
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_destroy_idle_containers"

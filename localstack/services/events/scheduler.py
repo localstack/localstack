@@ -3,7 +3,8 @@ import time
 
 from crontab import CronTab
 
-from localstack.utils.common import FuncThread, short_uid
+from localstack.utils.common import short_uid
+from localstack.utils.run import FuncThread
 
 LOG = logging.getLogger(__name__)
 

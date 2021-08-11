@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Dict
+from typing import Any, Dict, List
 
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
@@ -38,32 +38,36 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
     "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 )
 
+# special tag name to allow specifying a custom ID for new REST APIs
+TAG_KEY_CUSTOM_ID = "_custom_id_"
+
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 
 class APIGatewayRegion(RegionBackend):
     def __init__(self):
+        # TODO: introduce a RestAPI class to encapsulate the variables below
         # maps (API id) -> [authorizers]
-        self.authorizers = {}
+        self.authorizers: Dict[str, List[Dict]] = {}
         # maps (API id) -> [validators]
-        self.validators = {}
+        self.validators: Dict[str, List[Dict]] = {}
         # maps (API id) -> [documentation_parts]
-        self.documentation_parts = {}
+        self.documentation_parts: Dict[str, List[Dict]] = {}
         # maps (API id) -> [gateway_responses]
-        self.gateway_responses = {}
+        self.gateway_responses: Dict[str, List[Dict]] = {}
         # account details
-        self.account = {
+        self.account: Dict[str, Any] = {
             "cloudwatchRoleArn": aws_stack.role_arn("api-gw-cw-role"),
             "throttleSettings": {"burstLimit": 1000, "rateLimit": 500},
             "features": ["UsagePlans"],
             "apiKeyVersion": "1",
         }
         # maps (domain_name) -> [path_mappings]
-        self.base_path_mappings = {}
+        self.base_path_mappings: Dict[str, List[Dict]] = {}
         # maps ID to VPC link details
-        self.vpc_links = {}
+        self.vpc_links: Dict[str, Dict] = {}
         # maps cert ID to client certificate details
-        self.client_certificates = {}
+        self.client_certificates: Dict[str, Dict] = {}
 
 
 def make_json_response(message):
