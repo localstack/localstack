@@ -119,18 +119,16 @@ class TestDockerClient:
     def test_exec_in_container_not_running_raises_exception(
         self, docker_client: DockerClient, dummy_container
     ):
-        with pytest.raises(ContainerException) as ex:
+        with pytest.raises(ContainerException):
             # can't exec into a non-running container
             docker_client.exec_in_container(
                 dummy_container.container_id, command=["echo", "foobar"]
             )
 
-        assert ex.match("not running")
-
     def test_exec_in_container_with_env(self, docker_client: DockerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
 
-        env = [("MYVAR", "foo_var")]
+        env = {"MYVAR": "foo_var"}
 
         output, _ = docker_client.exec_in_container(
             dummy_container.container_id, env_vars=env, command=["env"]
@@ -181,13 +179,12 @@ class TestDockerClient:
     def test_run_container_error(self, docker_client: DockerClient):
         container_name = _random_container_name()
         try:
-            with pytest.raises(ContainerException) as ex:
+            with pytest.raises(ContainerException):
                 docker_client.run_container(
                     "alpine",
                     name=container_name,
                     command=["./doesnotexist"],
                 )
-            assert ex.match("doesnotexist: no such file or directory")
         finally:
             docker_client.remove_container(container_name)
 
@@ -369,7 +366,7 @@ class TestDockerClient:
         with pytest.raises(NoSuchImage):
             docker_client.get_image_cmd("thisdoesnotexist")
 
-    def test_create_start_container_with_stdin(self, docker_client: DockerClient):
+    def test_create_start_container_with_stdin_to_stdout(self, docker_client: DockerClient):
         container_name = _random_container_name()
         message = "test_message_stdin"
         try:
@@ -387,7 +384,30 @@ class TestDockerClient:
             assert message == output.decode(config.DEFAULT_ENCODING).strip()
         finally:
             docker_client.remove_container(container_name)
+            pass
 
+    def test_create_start_container_with_stdin_to_file(self, tmpdir, docker_client: DockerClient):
+        container_name = _random_container_name()
+        message = "test_message_stdin"
+        try:
+            docker_client.create_container(
+                "alpine",
+                name=container_name,
+                interactive=True,
+                command=["sh", "-c", "cat > test_file"],
+            )
+
+            output, _ = docker_client.start_container(
+                container_name, interactive=True, stdin=message.encode(config.DEFAULT_ENCODING)
+            )
+            target_path = tmpdir.join("test_file")
+            docker_client.copy_from_container(container_name, str(target_path), "test_file")
+
+            assert message == target_path.read().strip()
+        finally:
+            docker_client.remove_container(container_name)
+
+    @pytest.mark.timeout(10)
     def test_run_container_with_stdin(self, docker_client: DockerClient):
         container_name = _random_container_name()
         message = "test_message_stdin"
@@ -502,24 +522,51 @@ class TestDockerClient:
         with pytest.raises(NoSuchContainer):
             docker_client.get_container_id(not_existent_container)
 
-    def test_inspect_object(self, docker_client: DockerClient, dummy_container):
+    def test_inspect_container(self, docker_client: DockerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         for identifier in [dummy_container.container_id, dummy_container.container_name]:
-            assert dummy_container.container_id == docker_client.inspect_object(identifier)["Id"]
+            assert dummy_container.container_id == docker_client.inspect_container(identifier)["Id"]
             assert (
                 f"/{dummy_container.container_name}"
-                == docker_client.inspect_object(identifier)["Name"]
+                == docker_client.inspect_container(identifier)["Name"]
             )
+
+    def test_inspect_image(self, docker_client: DockerClient):
         docker_client.pull_image("alpine")
-        assert "alpine:latest" == docker_client.inspect_object("alpine")["RepoTags"][0]
+        assert "alpine:latest" == docker_client.inspect_image("alpine")["RepoTags"][0]
 
     def test_copy_from_container(self, tmpdir, docker_client: DockerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
-        docker_client.exec_in_container(
-            dummy_container.container_id, command=["sh", "-c", "echo TEST_CONTENT > test_file"]
-        )
         local_path = tmpdir.join("test_file")
-        docker_client.copy_from_container(
-            dummy_container.container_id, local_path=str(local_path), container_path="test_file"
+        self._test_copy_from_container(
+            local_path, local_path, "test_file", docker_client, dummy_container
         )
-        assert "TEST_CONTENT" == local_path.read().strip()
+
+    def test_copy_from_container_into_directory(
+        self, tmpdir, docker_client: DockerClient, dummy_container
+    ):
+        docker_client.start_container(dummy_container.container_id)
+        local_path = tmpdir.mkdir("test_dir")
+        file_path = local_path.join("test_file")
+        self._test_copy_from_container(
+            local_path, file_path, "test_file", docker_client, dummy_container
+        )
+
+    def _test_copy_from_container(
+        self,
+        local_path,
+        file_path,
+        container_file_name,
+        docker_client: DockerClient,
+        dummy_container,
+    ):
+        docker_client.exec_in_container(
+            dummy_container.container_id,
+            command=["sh", "-c", f"echo TEST_CONTENT > {container_file_name}"],
+        )
+        docker_client.copy_from_container(
+            dummy_container.container_id,
+            local_path=str(local_path),
+            container_path=container_file_name,
+        )
+        assert "TEST_CONTENT" == file_path.read().strip()

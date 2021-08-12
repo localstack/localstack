@@ -2,12 +2,24 @@ import json
 import logging
 import os
 import shlex
+import socket
+import stat
 import subprocess
+import tarfile
+import tempfile
 from enum import Enum, unique
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
+import docker
+from docker import DockerClient
+from docker.errors import APIError, ContainerError, ImageNotFound, NotFound
+from docker.models.containers import Container
+from docker.utils.socket import STDERR, STDOUT, frames_iter
+
 from localstack import config
-from localstack.utils.common import TMP_FILES, rm_rf, safe_run, save_file, short_uid
+from localstack.utils.common import TMP_FILES, rm_rf, safe_run, save_file, short_uid, to_bytes
+from localstack.utils.run import to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -20,8 +32,8 @@ class DockerContainerStatus(Enum):
 
 
 class ContainerException(Exception):
-    def __init__(self, message, stdout, stderr) -> None:
-        self.message = message
+    def __init__(self, message=None, stdout=None, stderr=None) -> None:
+        self.message = message or "Error during the communication with the docker daemon"
         self.stdout = stdout
         self.stderr = stderr
 
@@ -104,6 +116,22 @@ class PortMappings(object):
 
         return [item for k, v in self.mappings.items() for item in entry(k, v)]
 
+    def to_dict(self) -> Dict[str, Union[Tuple[str, int], int]]:
+        bind_address = self.bind_host or ""
+
+        def entry(k, v):
+            protocol = "/%s" % k[2]
+            return [
+                (
+                    f"{container_port}{protocol}",
+                    (bind_address, host_port) if bind_address else host_port,
+                )
+                for container_port, host_port in zip(range(v[0], v[1] + 1), range(k[0], k[1] + 1))
+            ]
+
+        items = [item for k, v in self.mappings.items() for item in entry(k, v)]
+        return dict(items)
+
     def contains(self, port):
         for from_range, to_range in self.mappings.items():
             if self.in_range(port, from_range):
@@ -170,7 +198,7 @@ class CmdDockerClient:
         try:
             cmd_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
+            if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
@@ -188,7 +216,7 @@ class CmdDockerClient:
         try:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
+            if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
@@ -207,7 +235,7 @@ class CmdDockerClient:
         try:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
+            if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
@@ -292,10 +320,7 @@ class CmdDockerClient:
 
             image_names = output.splitlines()
             if strip_latest:
-                suffix = ":latest"
-                for image in list(image_names):
-                    if image.endswith(suffix):
-                        image_names.append(image[: -len(suffix)])
+                Util.append_without_latest(image_names)
             return image_names
         except Exception as e:
             LOG.info('Unable to list Docker images via "%s": %s' % (cmd, e))
@@ -310,20 +335,20 @@ class CmdDockerClient:
         except subprocess.CalledProcessError as e:
             if safe:
                 return ""
-            if "No such container" in e.stdout.decode(config.DEFAULT_ENCODING):
+            if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
 
-    def inspect_object(self, object_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+    def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[Dict, str]]:
         cmd = self._docker_cmd()
         cmd += ["inspect", "--format", "{{json .}}", object_name_or_id]
         try:
             cmd_result = safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            if "No such object" in e.stdout.decode(config.DEFAULT_ENCODING):
+            if "No such object" in to_str(e.stdout):
                 raise NoSuchObject(object_name_or_id, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
@@ -332,19 +357,25 @@ class CmdDockerClient:
         image_data = json.loads(cmd_result.strip())
         return image_data
 
+    def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+        try:
+            return self._inspect_object(container_name_or_id)
+        except NoSuchObject as e:
+            raise NoSuchContainer(container_name_or_id=e.object_id)
+
+    def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+        try:
+            return self._inspect_object(image_name)
+        except NoSuchObject as e:
+            raise NoSuchImage(image_name=e.object_id)
+
     def get_container_name(self, container_id: str) -> str:
         """Get the name of a container by a given identifier"""
-        try:
-            return self.inspect_object(container_id)["Name"].lstrip("/")
-        except NoSuchObject as e:
-            raise NoSuchContainer(e.object_id, stdout=e.stdout, stderr=e.stderr)
+        return self.inspect_container(container_id)["Name"].lstrip("/")
 
     def get_container_id(self, container_name: str) -> str:
         """Get the id of a container by a given name"""
-        try:
-            return self.inspect_object(container_name)["Id"]
-        except NoSuchObject as e:
-            raise NoSuchContainer(e.object_id, stdout=e.stdout, stderr=e.stderr)
+        return self.inspect_container(container_name)["Id"]
 
     def get_container_ip(self, container_name_or_id: str) -> str:
         """Get the IP address of a given container"""
@@ -358,7 +389,7 @@ class CmdDockerClient:
         try:
             return safe_run(cmd).strip()
         except subprocess.CalledProcessError as e:
-            if "No such object" in e.stdout.decode(config.DEFAULT_ENCODING):
+            if "No such object" in to_str(e.stdout):
                 raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
@@ -367,20 +398,14 @@ class CmdDockerClient:
 
     def get_image_cmd(self, docker_image: str) -> str:
         """Get the command for the given image"""
-        try:
-            cmd_list = self.inspect_object(docker_image)["Config"]["Cmd"] or []
-            return " ".join(cmd_list)
-        except NoSuchObject as e:
-            raise NoSuchImage(e.object_id, stdout=e.stdout, stderr=e.stderr)
+        cmd_list = self.inspect_image(docker_image)["Config"]["Cmd"] or []
+        return " ".join(cmd_list)
 
     def get_image_entrypoint(self, docker_image: str) -> str:
         """Get the entry point for the given image"""
         LOG.debug("Getting the entrypoint for image: %s", docker_image)
-        try:
-            entrypoint_list = self.inspect_object(docker_image)["Config"]["Entrypoint"] or []
-            return " ".join(entrypoint_list)
-        except NoSuchObject as e:
-            raise NoSuchImage(e.object_id, stdout=e.stdout, stderr=e.stderr)
+        entrypoint_list = self.inspect_image(docker_image)["Config"]["Entrypoint"] or []
+        return " ".join(entrypoint_list)
 
     def has_docker(self) -> bool:
         """Check if system has docker available"""
@@ -399,7 +424,7 @@ class CmdDockerClient:
             container_id = container_id.strip().split("\n")[-1]
             return container_id.strip()
         except subprocess.CalledProcessError as e:
-            if "Unable to find image" in e.stdout.decode(config.DEFAULT_ENCODING):
+            if "Unable to find image" in to_str(e.stdout):
                 raise NoSuchImage(image_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -486,7 +511,7 @@ class CmdDockerClient:
             else:
                 return stdout, stderr
         except subprocess.CalledProcessError as e:
-            stderr_str = e.stderr.decode(config.DEFAULT_ENCODING)
+            stderr_str = to_str(e.stderr)
             if "Unable to find image" in stderr_str:
                 raise NoSuchImage(image_name or "", stdout=e.stdout, stderr=e.stderr)
             if "No such container" in stderr_str:
@@ -596,5 +621,446 @@ class Util:
         TMP_FILES.append(f)
         return f
 
+    @staticmethod
+    def append_without_latest(image_names):
+        suffix = ":latest"
+        for image in list(image_names):
+            if image.endswith(suffix):
+                image_names.append(image[: -len(suffix)])
 
-DOCKER_CLIENT = CmdDockerClient()
+    @staticmethod
+    def tar_path(path, target_path):
+        f = tempfile.NamedTemporaryFile()
+        with tarfile.open(mode="w", fileobj=f) as t:
+            abs_path = os.path.abspath(path)
+            t.add(abs_path, arcname=os.path.basename(target_path) or os.path.basename(path))
+
+        f.seek(0)
+        return f
+
+    @staticmethod
+    def untar_to_path(tardata, target_path):
+        target_path = Path(target_path)
+        with tempfile.NamedTemporaryFile() as dest:
+            for d in tardata:
+                dest.write(d)
+            dest.seek(0)
+            with tarfile.open(mode="r", fileobj=dest) as t:
+                if target_path.is_dir():
+                    t.extractall(path=target_path)
+                else:
+                    member = t.next()
+                    if member:
+                        member.name = target_path.name
+                        t.extract(member, target_path.parent)
+                    else:
+                        LOG.debug("File to copy empty, ignoring...")
+
+
+class SdkDockerClient(CmdDockerClient):
+    client: DockerClient
+
+    def __init__(self):
+        self.client = docker.from_env()
+
+    def get_container_status(self, container_name: str) -> DockerContainerStatus:
+        LOG.debug("Getting container status for container: %s", container_name)
+        try:
+            container = self.client.containers.get(container_name)
+            if container.status == "running":
+                return DockerContainerStatus.UP
+            else:
+                return DockerContainerStatus.DOWN
+        except NotFound:
+            return DockerContainerStatus.NON_EXISTENT
+        except APIError:
+            raise ContainerException()
+
+    def get_network(self, container_name: str) -> str:
+        LOG.debug("Getting network type for container: %s", container_name)
+        try:
+            container = self.client.containers.get(container_name)
+            return container.attrs["HostConfig"]["NetworkMode"]
+        except NotFound:
+            raise NoSuchContainer(container_name)
+        except APIError:
+            raise ContainerException()
+
+    def stop_container(self, container_name: str) -> None:
+        LOG.debug("Stopping container: %s", container_name)
+        try:
+            container = self.client.containers.get(container_name)
+            container.stop(timeout=0)
+        except NotFound:
+            raise NoSuchContainer(container_name)
+        except APIError:
+            raise ContainerException()
+
+    def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
+        """Removes container with given name"""
+        LOG.debug("Removing container: %s", container_name)
+        if check_existence and container_name not in self.get_running_container_names():
+            LOG.debug("Aborting removing due to check_existence check")
+            return
+        try:
+            container = self.client.containers.get(container_name)
+            container.remove(force=force)
+        except NotFound:
+            raise NoSuchContainer(container_name)
+        except APIError:
+            raise ContainerException()
+
+    def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
+        """List all containers matching the given filters
+
+        Returns a list of dicts with keys id, image, name, labels, status
+        """
+        if filter:
+            filter = [filter] if isinstance(filter, str) else filter
+            filter = dict([f.split("=") for f in filter])
+        LOG.debug("Listing containers with filters: %s", filter)
+        try:
+            container_list = self.client.containers.list(filters=filter, all=all)
+            return list(
+                map(
+                    lambda container: {
+                        "id": container.id,
+                        "image": container.image,
+                        "name": container.name,
+                        "status": container.status,
+                        "labels": container.labels,
+                    },
+                    container_list,
+                )
+            )
+        except APIError:
+            raise ContainerException()
+
+    def copy_into_container(
+        self, container_name: str, local_path: str, container_path: str
+    ) -> None:  # TODO behave like https://docs.docker.com/engine/reference/commandline/cp/
+        """Copy contents of the given local path into the container
+
+        If you copy into a container directory, you must specify a trailing slash for the container directory.
+        """
+        try:
+            container = self.client.containers.get(container_name)
+            try:
+                _, stats = container.get_archive(container_path)
+                target_exists = True
+            except APIError:
+                target_exists = False
+            target_is_dir = target_exists and stat.S_ISDIR(stats["mode"])
+            LOG.debug("Target exists: %s, is dir: %s", target_exists, target_is_dir)
+            with Util.tar_path(local_path, container_path) as tar:
+                container.put_archive(os.path.dirname(container_path), tar)
+        except NotFound:
+            raise NoSuchContainer(container_name)
+        except APIError:
+            raise ContainerException()
+
+    def copy_from_container(
+        self,
+        container_name: str,
+        local_path: str,
+        container_path: str,  # TODO behave like https://docs.docker.com/engine/reference/commandline/cp/
+    ) -> None:
+        """Copy contents of the container into the local file system"""
+        try:
+            container = self.client.containers.get(container_name)
+            bits, _ = container.get_archive(container_path)
+            Util.untar_to_path(bits, local_path)
+        except NotFound:
+            raise NoSuchContainer(container_name)
+        except APIError:
+            raise ContainerException()
+
+    def pull_image(self, docker_image: str) -> None:
+        """Pulls a image with a given name from a docker registry"""
+        image_split = docker_image.partition(":")
+        try:
+            self.client.images.pull(image_split[0], image_split[2])
+        except APIError:
+            raise ContainerException()
+
+    def get_docker_image_names(self, strip_latest=True, include_tags=True):
+        try:
+            images = self.client.images.list()
+            image_names = [image.tags[0] for image in images if image.tags]
+            if not include_tags:
+                image_names = list(map(lambda image_name: image_name.split(":")[0], image_names))
+            if strip_latest:
+                Util.append_without_latest(image_names)
+            return image_names
+        except APIError:
+            raise ContainerException()
+
+    def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
+        """Get all logs of a given container"""
+        try:
+            container = self.client.containers.get(container_name_or_id)
+            return to_str(container.logs())
+        except NotFound:
+            if safe:
+                return ""
+            raise NoSuchContainer(container_name_or_id)
+        except APIError:
+            if safe:
+                return ""
+            raise ContainerException()
+
+    def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+        try:
+            return self.client.containers.get(container_name_or_id).attrs
+        except NotFound:
+            raise NoSuchContainer(container_name_or_id)
+        except APIError:
+            raise ContainerException()
+
+    def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+        try:
+            return self.client.images.get(image_name).attrs
+        except NotFound:
+            raise NoSuchImage(image_name)
+        except APIError:
+            raise ContainerException()
+
+    def get_container_ip(self, container_name_or_id: str) -> str:
+        """Get the IP address of a given container"""
+        return self.inspect_container(container_name_or_id)["NetworkSettings"]["IPAddress"]
+
+    def has_docker(self) -> bool:
+        """Check if system has docker available"""
+        try:
+            self.client.ping()
+            return True
+        except APIError:
+            return False
+
+    def start_container(
+        self,
+        container_name_or_id: str,
+        stdin=None,
+        interactive: bool = False,
+        attach: bool = False,
+        flags: Optional[str] = None,
+    ) -> Tuple[bytes, bytes]:
+        LOG.debug("Starting container %s", container_name_or_id)
+        try:
+            container = self.client.containers.get(container_name_or_id)
+            container.start()
+            stdout = to_bytes(container_name_or_id)
+            stderr = b""
+            if stdin:
+                sock_in = container.attach_socket(params={"stdin": 1, "stream": 1})
+                sock_in._sock.sendall(to_bytes(stdin))
+                sock_in.close()
+
+            if attach or interactive:
+                LOG.debug("test")
+                stdout, stderr = container.attach(stdout=True, stderr=True, demux=True, logs=True)
+                stdout = stdout or b""
+                stderr = stderr or b""
+            return stdout, stderr
+        except NotFound:
+            raise NoSuchContainer(container_name_or_id)
+        except APIError:
+            raise ContainerException()
+
+    def create_container(
+        self,
+        image_name: str,
+        *,
+        name: Optional[str] = None,
+        entrypoint: Optional[str] = None,
+        remove: bool = False,
+        interactive: bool = False,
+        tty: bool = False,
+        detach: bool = False,
+        command: Optional[Union[List[str], str]] = None,
+        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        ports: Optional[PortMappings] = None,
+        env_vars: Optional[Dict[str, str]] = None,
+        user: Optional[str] = None,
+        cap_add: Optional[str] = None,
+        network: Optional[str] = None,
+        dns: Optional[str] = None,
+        additional_flags: Optional[str] = None,
+    ) -> str:
+        if additional_flags:
+            raise NotImplementedError("Additional flags not supported when using docker sdk")
+        try:
+            kwargs = {}
+            if cap_add:
+                kwargs["cap_add"] = [cap_add]
+            if dns:
+                kwargs["dns"] = [dns]
+            if ports:
+                kwargs["ports"] = ports.to_dict()
+            mounts = None
+            if mount_volumes:
+                mounts = dict(
+                    map(
+                        lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
+                        mount_volumes,
+                    )
+                )
+
+            container = self.client.containers.create(
+                image=image_name,
+                command=command,
+                auto_remove=remove,
+                name=name,
+                stdin_open=interactive,
+                tty=tty,
+                entrypoint=entrypoint,
+                environment=env_vars,
+                detach=detach,
+                user=user,
+                network=network,
+                volumes=mounts,
+                **kwargs,
+            )
+            return container.id
+        except ImageNotFound:
+            raise NoSuchImage(image_name)
+        except APIError:
+            raise ContainerException()
+
+    def run_container(
+        self,
+        image_name: str,
+        stdin=None,
+        *,
+        name: Optional[str] = None,
+        entrypoint: Optional[str] = None,
+        remove: bool = False,
+        interactive: bool = False,
+        tty: bool = False,
+        detach: bool = False,
+        command: Optional[Union[List[str], str]] = None,
+        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        ports: Optional[PortMappings] = None,
+        env_vars: Optional[Dict[str, str]] = None,
+        user: Optional[str] = None,
+        cap_add: Optional[str] = None,
+        network: Optional[str] = None,
+        dns: Optional[str] = None,
+        additional_flags: Optional[str] = None,
+    ) -> Tuple[bytes, bytes]:
+        if additional_flags:
+            raise NotImplementedError()
+        try:
+            kwargs = {}
+            if cap_add:
+                kwargs["cap_add"] = [cap_add]
+            if dns:
+                kwargs["dns"] = [dns]
+            if ports:
+                kwargs["ports"] = ports.to_dict()
+            mounts = None
+            if mount_volumes:
+                mounts = dict(
+                    map(
+                        lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
+                        mount_volumes,
+                    )
+                )
+            result = self.client.containers.run(
+                image=image_name,
+                name=name,
+                entrypoint=entrypoint,
+                remove=remove,
+                stdin_open=interactive,
+                tty=tty,
+                detach=detach,
+                command=command,
+                volumes=mounts,
+                environment=env_vars,
+                user=user,
+                network=network,
+                stdout=True,
+                stderr=True,
+                **kwargs,
+            )
+            if stdin:
+                LOG.debug(result)
+            if detach:
+                return to_bytes(result.id), b""
+            if isinstance(result, bytes):
+                return result, b""
+            stdout = result[0] or b""
+            stderr = result[1] or b""
+            return stdout, stderr
+        except ImageNotFound:
+            raise NoSuchImage(image_name)
+        except ContainerError as e:
+            raise ContainerException(
+                "Error while running container %s" % e.container.id, stderr=e.stderr
+            )
+        except APIError:
+            raise ContainerException()
+
+    def exec_in_container(
+        self,
+        container_name_or_id: str,
+        command: Union[List[str], str],
+        interactive=False,
+        detach=False,
+        env_vars: Optional[Dict[str, str]] = None,
+        stdin: Optional[bytes] = None,
+        user: Optional[str] = None,
+    ) -> Tuple[bytes, bytes]:
+        try:
+            container: Container = self.client.containers.get(container_name_or_id)
+            result = container.exec_run(
+                cmd=command,
+                environment=env_vars,
+                user=user,
+                detach=detach,
+                stdin=interactive,
+                socket=interactive,
+                stdout=True,
+                stderr=True,
+                demux=True,
+            )
+            tty = False
+            if interactive:  # result is a socket
+                sock = result[1]
+                sock = sock._sock if hasattr(sock, "_sock") else sock
+                stdout = b""
+                stderr = b""
+                try:
+                    sock.sendall(stdin)
+                    sock.shutdown(socket.SHUT_WR)
+                    for frame_type, frame_data in frames_iter(sock, tty):
+                        if frame_type == STDOUT:
+                            stdout += frame_data
+                        elif frame_type == STDERR:
+                            stderr += frame_data
+                        else:
+                            raise ContainerException("Invalid frame type when reading from socket")
+                except socket.timeout:
+                    pass
+                finally:
+                    sock.close()
+                return stdout, stderr
+            else:
+                return_code = result[0]
+                if isinstance(result[1], bytes):
+                    stdout = result[1]
+                    stderr = b""
+                else:
+                    stdout, stderr = result[1]
+                if return_code != 0:
+                    raise ContainerException(
+                        "Exec command returned with exit code %s" % return_code, stdout, stderr
+                    )
+                return stdout, stderr
+        except ContainerError:
+            raise NoSuchContainer(container_name_or_id)
+        except APIError:
+            raise ContainerException()
+
+
+DOCKER_CLIENT = SdkDockerClient()

@@ -379,3 +379,16 @@ class TestCommandLine(unittest.TestCase):
         port_mappings.add(5003)
         result = port_mappings.to_str()
         self.assertEqual("-p 0.0.0.0:5000-5001:5000-5001 -p 0.0.0.0:5003:5003", result)
+
+    def test_port_ranges_with_bind_host_to_dict(self):
+        port_mappings = PortMappings(bind_host="0.0.0.0")
+        port_mappings.add(5000, 6000)
+        port_mappings.add(5001, 7000)
+        port_mappings.add(5003, 8000)
+        result = port_mappings.to_dict()
+        expected_result = {
+            "6000/tcp": ("0.0.0.0", 5000),
+            "7000/tcp": ("0.0.0.0", 5001),
+            "8000/tcp": ("0.0.0.0", 5003),
+        }
+        self.assertEqual(expected_result, result)

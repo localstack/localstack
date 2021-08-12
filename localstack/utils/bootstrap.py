@@ -235,7 +235,7 @@ def load_plugins(scope=None):
 def get_docker_image_details(image_name=None):
     image_name = image_name or get_docker_image_to_start()
     try:
-        result = DOCKER_CLIENT.inspect_object(image_name)
+        result = DOCKER_CLIENT.inspect_image(image_name)
     except ContainerException:
         return {}
     result = {
