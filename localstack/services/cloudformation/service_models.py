@@ -1034,6 +1034,44 @@ class IAMManagedPolicy(GenericBaseModel):
         return {"create": {"function": _create}}
 
 
+class IAMUser(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::IAM::User"
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("UserName")
+
+    def get_resource_name(self):
+        return self.props.get("UserName")
+
+    def fetch_state(self, stack_name, resources):
+        user_name = self.resolve_refs_recursively(stack_name, self.props.get("UserName"), resources)
+        return aws_stack.connect_to_service("iam").get_user(UserName=user_name)["User"]
+
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource["Properties"]
+        client = aws_stack.connect_to_service("iam")
+        return client.update_user(
+            UserName=props.get("UserName"),
+            NewPath=props.get("NewPath") or "",
+            NewUserName=props.get("NewUserName") or "",
+        )
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_user",
+                "parameters": ["Path", "UserName", "PermissionsBoundary", "Tags"],
+            },
+            "delete": {
+                "function": "delete_user",
+                "parameters": ["UserName"],
+            },
+        }
+
+
 class GatewayResponse(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
