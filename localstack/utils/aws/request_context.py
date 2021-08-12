@@ -2,6 +2,7 @@ import logging
 import re
 import threading
 
+from flask import request
 from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
@@ -24,9 +25,6 @@ def get_proxy_request_for_thread():
 
 def get_flask_request_for_thread():
     try:
-        # importing here to avoid import errors from test Lambdas
-        from flask import request
-
         return Request(
             url=request.path,
             data=request.data,
