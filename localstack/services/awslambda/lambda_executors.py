@@ -14,11 +14,7 @@ from multiprocessing import Process, Queue
 from typing import Dict, Tuple, Union
 
 from localstack import config
-from localstack.constants import (
-    THUNDRA_APIKEY,
-    THUNDRA_APIKEY_ENV_VAR_NAME,
-    THUNDRA_JAVA_AGENT_JAR_NAME,
-)
+from localstack.plugin import thundra
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_JAVA11,
@@ -55,8 +51,6 @@ from localstack.utils.run import FuncThread
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
 LAMBDA_EXECUTOR_CLASS = "cloud.localstack.LambdaExecutor"
 LAMBDA_HANDLER_ENV_VAR_NAME = "_HANDLER"
-THUNDRA_JAVA_AGENT_JAR = "%s/%s" % (config.HOST_TMP_FOLDER, THUNDRA_JAVA_AGENT_JAR_NAME)
-THUNDRA_JAVA_AGENT_CONTAINER_PATH = "/tmp/thundra-agent.jar"
 EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.TMP_FOLDER
 
 LAMBDA_SERVER_UNIQUE_PORTS = 500
@@ -105,11 +99,6 @@ def get_from_event(event, key):
 def is_java_lambda(lambda_details):
     runtime = getattr(lambda_details, "runtime", lambda_details)
     return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11]
-
-
-def is_java8_lambda(lambda_details):
-    runtime = getattr(lambda_details, "runtime", lambda_details)
-    return runtime == LAMBDA_RUNTIME_JAVA8
 
 
 def is_nodejs_runtime(lambda_details):
@@ -203,16 +192,6 @@ class LambdaExecutor(object):
         aws_stack.inject_region_into_env(result, func_details.region())
 
         return result
-
-    def _get_thundra_apikey(self, env_vars):
-        thundra_apikey = env_vars.get(THUNDRA_APIKEY_ENV_VAR_NAME)
-
-        # If Thundra API key is specified for the function through env vars, use it
-        if not thundra_apikey:
-            # Otherwise, try to get it from Localstack env vars
-            thundra_apikey = THUNDRA_APIKEY
-
-        return thundra_apikey
 
     def execute(
         self,
@@ -404,43 +383,6 @@ class LambdaExecutorContainers(LambdaExecutor):
         environment["AWS_LAMBDA_EVENT_BODY"] = event_body
         return event_body.encode()
 
-    def inject_thundra_java_agent(self, environment, runtime):
-        if not THUNDRA_JAVA_AGENT_JAR:
-            return
-
-        thundra_apikey = super(LambdaExecutorContainers, self)._get_thundra_apikey(environment)
-        if not thundra_apikey:
-            return
-
-        if config.LAMBDA_REMOTE_DOCKER:
-            LOG.info(
-                "Not enabling Thundra agent, as Docker file mounting is disabled due to LAMBDA_REMOTE_DOCKER=1"
-            )
-            return
-
-        environment[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
-
-        # Inject Thundra agent path into "JAVA_TOOL_OPTIONS" env var,
-        # so it will be automatically loaded on JVM startup
-        java_tool_opts = environment.get("JAVA_TOOL_OPTIONS", "")
-        java_tool_opts += " -javaagent:" + THUNDRA_JAVA_AGENT_CONTAINER_PATH
-        environment["JAVA_TOOL_OPTIONS"] = java_tool_opts.strip()
-
-        # Disable CDS (Class Data Sharing),
-        # because "-javaagent" cannot be enabled when CDS is enabled on JDK 8.
-        # CDS can only be disabled by "_JAVA_OPTIONS" env var,
-        # because by default it is enabled ("-Xshare:on")
-        # on Lambci by command line parameters and
-        # "_JAVA_OPTIONS" has precedence over command line parameters
-        # but "JAVA_TOOL_OPTIONS" is not.
-        if is_java8_lambda(runtime):
-            java_opts = environment.get("_JAVA_OPTIONS", "")
-            java_opts += " -Xshare:off"
-            environment["_JAVA_OPTIONS"] = java_opts.strip()
-
-        # Mount Thundra agent jar into container file system
-        return "-v %s:%s" % (THUNDRA_JAVA_AGENT_JAR, THUNDRA_JAVA_AGENT_CONTAINER_PATH)
-
     def _execute(self, func_arn, func_details, event, context=None, version=None):
         runtime = func_details.runtime
         handler = func_details.handler
@@ -493,7 +435,9 @@ class LambdaExecutorContainers(LambdaExecutor):
         docker_flags = given_docker_flags or ""
         if is_java_lambda(runtime):
             # If runtime is Java, inject Thundra agent if it is configured
-            extra_docker_flags = self.inject_thundra_java_agent(environment, runtime)
+            extra_docker_flags = thundra.inject_java_agent_for_container(
+                func_details, environment, docker_flags
+            )
             docker_flags += " %s" % extra_docker_flags if extra_docker_flags else ""
 
         # accept any self-signed certificates for outgoing calls from the Lambda
@@ -1001,23 +945,12 @@ class LambdaExecutorLocal(LambdaExecutor):
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
 
-    def inject_thundra_java_agent(self, func_details, given_opts):
-        if not THUNDRA_JAVA_AGENT_JAR:
-            return
-
-        thundra_apikey = super(LambdaExecutorLocal, self)._get_thundra_apikey(func_details.envvars)
-        if not thundra_apikey:
-            return
-
-        func_details.envvars[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
-
-        return "-javaagent:" + THUNDRA_JAVA_AGENT_JAR
-
     def execute_java_lambda(self, event, context, main_file, func_details=None):
         func_details.envvars = func_details.envvars or {}
         given_opts = config.LAMBDA_JAVA_OPTS or ""
 
-        extra_opts = self.inject_thundra_java_agent(func_details, given_opts)
+        # If runtime is Java, inject Thundra agent if it is configured
+        extra_opts = thundra.inject_java_agent_for_local(func_details, given_opts)
 
         opts = given_opts
         if extra_opts:
