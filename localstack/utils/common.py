@@ -195,7 +195,8 @@ class ShellCommandThread(FuncThread):
                             if self.outfile not in [None, os.devnull]:
                                 outstream.write(line)
                                 outstream.flush()
-                self.process.wait()
+                if self.process:
+                    self.process.wait()
             else:
                 self.process.communicate()
         except Exception as e:

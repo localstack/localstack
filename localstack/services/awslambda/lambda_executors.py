@@ -948,6 +948,9 @@ class LambdaExecutorLocal(LambdaExecutor):
                     sys.path.insert(0, "")
                 if environment:
                     os.environ.update(environment)
+                # set default env variables required for most Lambda handlers
+                self.set_default_env_variables()
+                # run the actual handler function
                 result = lambda_function(event, context)
             except Exception as e:
                 result = str(e)
@@ -1060,6 +1063,22 @@ class LambdaExecutorLocal(LambdaExecutor):
         LOG.info(cmd)
         result = self._execute_in_custom_runtime(cmd, func_details=func_details)
         return result
+
+    @staticmethod
+    def set_default_env_variables():
+        # set default env variables required for most Lambda handlers
+        default_env_vars = {"AWS_DEFAULT_REGION": aws_stack.get_region()}
+        env_vars_before = {var: os.environ.get(var) for var in default_env_vars}
+        os.environ.update({k: v for k, v in default_env_vars.items() if not env_vars_before.get(k)})
+        return env_vars_before
+
+    @staticmethod
+    def reset_default_env_variables(env_vars_before):
+        for env_name, env_value in env_vars_before.items():
+            env_value_before = env_vars_before.get(env_name)
+            os.environ[env_name] = env_value_before or ""
+            if env_value_before is None:
+                os.environ.pop(env_name, None)
 
 
 class Util:

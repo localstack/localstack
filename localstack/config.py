@@ -162,7 +162,11 @@ DEVELOP_PORT = int(os.environ.get("DEVELOP_PORT", "").strip() or DEFAULT_DEVELOP
 WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 
 # whether to use SSL encryption for the services
+# TODO: this is deprecated and should be removed (edge port supports HTTP/HTTPS multiplexing)
 USE_SSL = is_env_true("USE_SSL")
+
+# whether to use the legacy single-region mode, defined via DEFAULT_REGION
+USE_SINGLE_REGION = is_env_true("USE_SINGLE_REGION")
 
 # whether to run in TF compatibility mode for TF integration tests
 # (e.g., returning verbatim ports for ELB resources, rather than edge port 4566, etc.)
@@ -286,6 +290,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_DOCKER_NETWORK",
     "LAMBDA_REMOVE_CONTAINERS",
     "USE_SSL",
+    "USE_SINGLE_REGION",
     "DEBUG",
     "KINESIS_ERROR_PROBABILITY",
     "DYNAMODB_ERROR_PROBABILITY",

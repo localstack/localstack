@@ -26,6 +26,7 @@ from localstack.constants import (
 )
 from localstack.utils.aws import templating
 from localstack.utils.aws.aws_models import KinesisStream
+from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.common import (
     get_service_protocol,
     is_port_open,
@@ -189,7 +190,10 @@ def get_boto3_session(cache=True):
 
 
 def get_region():
-    # TODO look up region from context
+    region = get_region_from_request_context()
+    if region:
+        return region
+    # fall back to returning static pre-defined region
     return get_local_region()
 
 
@@ -377,6 +381,11 @@ def check_valid_region(headers):
 
 
 def set_default_region_in_headers(headers, service=None, region=None):
+    # this should now be a no-op, as we support arbitrary regions and don't use a "default" region
+    # TODO: remove this function once the legacy USE_SINGLE_REGION config is removed
+    if not config.USE_SINGLE_REGION:
+        return
+
     auth_header = headers.get("Authorization")
     region = region or get_region()
     if not auth_header:

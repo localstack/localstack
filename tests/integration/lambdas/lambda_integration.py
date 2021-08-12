@@ -6,7 +6,6 @@ from io import BytesIO
 
 import boto3.dynamodb.types
 
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_bytes, to_str
 
 TEST_BUCKET_NAME = "test-bucket"
@@ -21,6 +20,11 @@ LOGGER.setLevel(logging.INFO)
 # TODO: should be injected by Lambda executor! (Doesn't seem to be the case for default python executor?)
 os.environ["AWS_ACCESS_KEY_ID"] = os.environ.get("AWS_ACCESS_KEY_ID") or "test"
 os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ.get("AWS_SECRET_ACCESS_KEY") or "test"
+
+ENDPOINT_URL = "http://%s:%s" % (
+    os.environ["LOCALSTACK_HOSTNAME"],
+    os.environ.get("EDGE_PORT", 4566),
+)
 
 
 # Subclass of boto's TypeDeserializer for DynamoDB
@@ -113,7 +117,7 @@ def handler(event, context):
                 kinesis_record["Data"] = json.dumps(ddb_new_image["data"])
                 forward_event_to_target_stream(kinesis_record, target_name)
             elif forwarding_target.startswith("s3:"):
-                s3_client = aws_stack.connect_to_service("s3")
+                s3_client = connect_to_service("s3")
                 test_data = to_bytes(json.dumps({"test_data": ddb_new_image["data"]["test_data"]}))
                 s3_client.upload_fileobj(BytesIO(test_data), TEST_BUCKET_NAME, target_name)
         else:
@@ -156,12 +160,16 @@ def deserialize_event(event):
 def forward_events(records):
     if not records:
         return
-    kinesis = aws_stack.connect_to_service("kinesis")
+    kinesis = connect_to_service("kinesis")
     kinesis.put_records(StreamName=KINESIS_STREAM_NAME, Records=records)
 
 
 def forward_event_to_target_stream(record, stream_name):
-    kinesis = aws_stack.connect_to_service("kinesis")
+    kinesis = connect_to_service("kinesis")
     kinesis.put_record(
         StreamName=stream_name, Data=record["Data"], PartitionKey=record["PartitionKey"]
     )
+
+
+def connect_to_service(service):
+    return boto3.client(service, endpoint_url=ENDPOINT_URL)

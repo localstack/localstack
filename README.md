@@ -183,7 +183,6 @@ You can pass the following environment variables to LocalStack.
   Example value: `kinesis,lambda,sqs` to start Kinesis, Lambda, and SQS.
   In addition, the following shorthand values can be specified to run a predefined ensemble of services:
   - `serverless`: run services often used for Serverless apps (`iam`, `lambda`, `dynamodb`, `apigateway`, `s3`, `sns`)
-* `DEFAULT_REGION`: AWS region to use when talking to the API (default: `us-east-1`).
 * `EDGE_BIND_HOST`: Address the edge service binds to. (default: `127.0.0.1`, in docker containers `0.0.0.0`)
 * `EDGE_PORT`: Port number for the edge service, the main entry point for all API invocations (default: `4566`).
 * `HOSTNAME`: Name of the host to expose the services internally (default: `localhost`).
@@ -283,11 +282,13 @@ Please be aware that the following configurations may have severe security impli
 
 The following environment configurations can be useful for debugging:
 * `DEVELOP`: Starts a debugpy server before starting LocalStack services
-* `DEVELOP_PORT`:  Port number for debugpy server
-* `WAIT_FOR_DEBUGGER`:  Forces LocalStack to wait for a debugger to start the services
+* `DEVELOP_PORT`: Port number for debugpy server
+* `WAIT_FOR_DEBUGGER`: Forces LocalStack to wait for a debugger to start the services
 
 The following environment configurations are *deprecated*:
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.
+* `DEFAULT_REGION`: AWS region to use when talking to the API (needs to be activated via `USE_SINGLE_REGION=1`). Deprecated and inactive as of version 0.12.17 - LocalStack now has full multi-region support.
+* `USE_SINGLE_REGION`: Whether to use the legacy single-region mode, defined via `DEFAULT_REGION`.
 
 Additionally, the following *read-only* environment variables are available:
 
