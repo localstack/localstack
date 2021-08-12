@@ -145,6 +145,8 @@ You can also use docker directly and use the following command to get started wi
 docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack
 ```
 
+Note that this will pull the current nighty build from the master branch and **not** the latest supported version. 
+
 to run a throw-away container without any external volumes. To start a subset of services use `-e "SERVICES=dynamodb,s3"`.
 
 ### Using `docker-compose`
