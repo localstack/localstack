@@ -6,6 +6,9 @@ from flask import request
 from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
+from localstack import config
+from localstack.services import generic_proxy
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import empty_context_manager
 from localstack.utils.run import FuncThread
 
@@ -39,8 +42,6 @@ def get_flask_request_for_thread():
 
 
 def extract_region_from_auth_header(headers):
-    from localstack.utils.aws import aws_stack
-
     # TODO: use method from aws_stack, which currently causes stack overflow due to call to get_region()!
     auth = headers.get("Authorization") or ""
     region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
@@ -72,6 +73,10 @@ class RequestContextManager(object):
 
 def get_region_from_request_context():
     """look up region from request context"""
+
+    if config.USE_SINGLE_REGION:
+        return
+
     request_context = get_request_context()
     if not request_context:
         return
@@ -85,8 +90,9 @@ def get_region_from_request_context():
 
 
 def patch_request_handling():
-    # importing here to avoid import errors from test Lambdas
-    from localstack.services import generic_proxy
+
+    if config.USE_SINGLE_REGION:
+        return
 
     # TODO: move into generic_proxy.py, instead of patching here
 
