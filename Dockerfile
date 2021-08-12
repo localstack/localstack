@@ -31,6 +31,8 @@ RUN make install-venv-docker
 RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
   touch localstack/__init__.py localstack/utils/__init__.py localstack/services/__init__.py localstack/utils/kinesis/__init__.py
 ADD localstack/constants.py localstack/config.py localstack/
+ADD localstack/services/awslambda localstack/services/awslambda
+ADD localstack/plugin/ localstack/plugin/
 ADD localstack/services/install.py localstack/services/generic_proxy.py localstack/services/__init__.py localstack/services/
 ADD localstack/services/cloudformation/deployment_utils.py localstack/services/cloudformation/deployment_utils.py
 ADD localstack/utils/ localstack/utils/
