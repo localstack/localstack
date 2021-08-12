@@ -116,13 +116,13 @@ def inject_java_agent_for_local(func_details, java_opts):
     :return: the additional options to be passed as VM arguments to the local JVM process
     """
 
+    thundra_apikey = _get_apikey(func_details.envvars)
+    if not thundra_apikey:
+        return None
+
     _ensure_java_agent_initialized()
 
     if not THUNDRA_JAVA_AGENT_LOCAL_PATH:
-        return None
-
-    thundra_apikey = _get_apikey(func_details.envvars)
-    if not thundra_apikey:
         return None
 
     func_details.envvars[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
@@ -140,13 +140,13 @@ def inject_java_agent_for_container(func_details, environment, docker_flags):
     :return: the additional Docker flags to be passed to "docker run" command
     """
 
+    thundra_apikey = _get_apikey(environment)
+    if not thundra_apikey:
+        return None
+
     _ensure_java_agent_initialized()
 
     if not THUNDRA_JAVA_AGENT_CONTAINER_SOURCE_PATH:
-        return None
-
-    thundra_apikey = _get_apikey(environment)
-    if not thundra_apikey:
         return None
 
     if config.LAMBDA_REMOTE_DOCKER:
