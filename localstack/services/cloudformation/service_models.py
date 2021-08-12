@@ -1058,6 +1058,19 @@ class IAMUser(GenericBaseModel):
             NewUserName=props.get("NewUserName") or "",
         )
 
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_user",
+                "parameters": ["Path", "UserName", "PermissionsBoundary", "Tags"],
+            },
+            "delete": {
+                "function": "delete_user",
+                "parameters": ["UserName"],
+            },
+        }
+
 
 class GatewayResponse(GenericBaseModel):
     @staticmethod
