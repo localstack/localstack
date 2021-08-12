@@ -1708,14 +1708,34 @@ class SNSTopic(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _create_params(params, *args, **kwargs):
+            attributes = {}
+            dedup = params.get("ContentBasedDeduplication")
+            display_name = params.get("DisplayName")
+            fifo_topic = params.get("FifoTopic")
+            kms_master_key = params.get("KmsMasterKeyId")
+            tags = params.get("Tags") or []
+            topic_name = params.get("TopicName")
+            if dedup is not None:
+                attributes["ContentBasedDeduplication"] = dedup
+            if display_name:
+                attributes["DisplayName"] = display_name
+            if fifo_topic is not None:
+                attributes["FifoTopic"] = fifo_topic
+            if kms_master_key:
+                attributes["KmsMasterKeyId"] = kms_master_key
+            result = {"Name": topic_name, "Attributes": attributes, "Tags": tags}
+            return result
+
         def _topic_arn(params, resources, resource_id, **kwargs):
             resource = SNSTopic(resources[resource_id])
             return resource.physical_resource_id or resource.get_physical_resource_id()
 
         return {
+            # TODO: add second creation function to add topic subscriptions
             "create": {
                 "function": "create_topic",
-                "parameters": {"Name": "TopicName", "Tags": "Tags"},
+                "parameters": _create_params,
             },
             "delete": {
                 "function": "delete_topic",
