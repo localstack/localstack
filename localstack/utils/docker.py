@@ -1121,7 +1121,8 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
-        if interactive and stdin:
+        container = None
+        try:
             container = self.create_container(
                 image_name,
                 name=name,
@@ -1140,60 +1141,15 @@ class SdkDockerClient(ContainerClient):
                 additional_flags=additional_flags,
             )
             result = self.start_container(
-                container_name_or_id=container, stdin=stdin, interactive=interactive
+                container_name_or_id=container,
+                stdin=stdin,
+                interactive=interactive,
+                attach=not detach,
             )
-            if remove:
+        finally:
+            if remove and container:
                 self.remove_container(container)
-            return result
-        else:
-            try:
-                kwargs = {}
-                if cap_add:
-                    kwargs["cap_add"] = [cap_add]
-                if dns:
-                    kwargs["dns"] = [dns]
-                if ports:
-                    kwargs["ports"] = ports.to_dict()
-                mounts = None
-                if mount_volumes:
-                    mounts = dict(
-                        map(
-                            lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
-                            mount_volumes,
-                        )
-                    )
-                result = self.client.containers.run(
-                    image=image_name,
-                    name=name,
-                    entrypoint=entrypoint,
-                    remove=remove,
-                    stdin_open=interactive,
-                    tty=tty,
-                    detach=detach or interactive,
-                    command=command,
-                    volumes=mounts,
-                    environment=env_vars,
-                    user=user,
-                    network=network,
-                    stdout=True,
-                    stderr=True,
-                    **kwargs,
-                )
-                if detach:
-                    return to_bytes(result.id), b""
-                if isinstance(result, bytes):
-                    return result, b""
-                stdout = result[0] or b""
-                stderr = result[1] or b""
-                return stdout, stderr
-            except ImageNotFound:
-                raise NoSuchImage(image_name)
-            except ContainerError as e:
-                raise ContainerException(
-                    "Error while running container %s" % e.container.id, stderr=e.stderr
-                )
-            except APIError:
-                raise ContainerException()
+        return result
 
     def exec_in_container(
         self,
@@ -1249,4 +1205,4 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
 
-DOCKER_CLIENT: ContainerClient = CmdDockerClient()
+DOCKER_CLIENT: ContainerClient = SdkDockerClient()
