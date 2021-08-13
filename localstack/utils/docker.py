@@ -942,6 +942,8 @@ class SdkDockerClient(ContainerClient):
         image_split = docker_image.partition(":")
         try:
             self.client.images.pull(image_split[0], image_split[2])
+        except ImageNotFound:
+            raise NoSuchImage(docker_image)
         except APIError:
             raise ContainerException()
 
@@ -1089,21 +1091,39 @@ class SdkDockerClient(ContainerClient):
                     )
                 )
 
-            container = self.client.containers.create(
-                image=image_name,
-                command=command,
-                auto_remove=remove,
-                name=name,
-                stdin_open=interactive,
-                tty=tty,
-                entrypoint=entrypoint,
-                environment=env_vars,
-                detach=detach,
-                user=user,
-                network=network,
-                volumes=mounts,
-                **kwargs,
-            )
+            try:
+                container = self.client.containers.create(
+                    image=image_name,
+                    command=command,
+                    auto_remove=remove,
+                    name=name,
+                    stdin_open=interactive,
+                    tty=tty,
+                    entrypoint=entrypoint,
+                    environment=env_vars,
+                    detach=detach,
+                    user=user,
+                    network=network,
+                    volumes=mounts,
+                    **kwargs,
+                )
+            except ImageNotFound:
+                self.pull_image(image_name)
+                container = self.client.containers.create(
+                    image=image_name,
+                    command=command,
+                    auto_remove=remove,
+                    name=name,
+                    stdin_open=interactive,
+                    tty=tty,
+                    entrypoint=entrypoint,
+                    environment=env_vars,
+                    detach=detach,
+                    user=user,
+                    network=network,
+                    volumes=mounts,
+                    **kwargs,
+                )
             return container.id
         except ImageNotFound:
             raise NoSuchImage(image_name)

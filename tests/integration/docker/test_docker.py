@@ -486,6 +486,29 @@ class TestDockerClient:
         docker_client.pull_image("alpine")
         assert "/bin/sh" == docker_client.get_image_cmd("alpine").strip()
 
+    def test_pull_non_existent_docker_image(self, docker_client: DockerClient):
+        with pytest.raises(NoSuchImage):
+            docker_client.pull_image("localstack_non_existing_image_for_tests")
+
+    def test_run_container_automatic_pull(self, docker_client: DockerClient):
+        try:
+            safe_run([config.DOCKER_CMD, "rmi", "alpine"])
+        except CalledProcessError:
+            pass
+        message = "test message"
+        stdout, _ = docker_client.run_container("alpine", command=["echo", message], remove=True)
+        assert message == stdout.decode(config.DEFAULT_ENCODING).strip()
+
+    def test_run_container_non_existent_image(self, docker_client: DockerClient):
+        try:
+            safe_run([config.DOCKER_CMD, "rmi", "alpine"])
+        except CalledProcessError:
+            pass
+        with pytest.raises(NoSuchImage):
+            stdout, _ = docker_client.run_container(
+                "localstack_non_existing_image_for_tests", command=["echo", "test"], remove=True
+            )
+
     def test_running_container_names(self, docker_client: DockerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         name = dummy_container.container_name
