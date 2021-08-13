@@ -257,5 +257,4 @@ def get_file_path(api, create=True):
                 os.utime(file_path, None)
         if os.path.exists(file_path):
             API_FILE_PATHS[api] = file_path
-        chmod_r(file_path, 0o777)
     return API_FILE_PATHS.get(api)

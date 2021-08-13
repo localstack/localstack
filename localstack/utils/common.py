@@ -872,8 +872,8 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
         def _copystat(*args, **kwargs):
             try:
                 return copystat_orig(*args, **kwargs)
-            except Exception as e:
-                print("ERROR (ignored): %s" % e)
+            except Exception:
+                pass
 
         shutil.copystat = _copystat
     try:
