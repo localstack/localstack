@@ -7,6 +7,7 @@ import stat
 import subprocess
 import tarfile
 import tempfile
+from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -154,7 +155,182 @@ class PortMappings(object):
             raise Exception("Unable to add port %s to existing range %s" % (port, range))
 
 
-class CmdDockerClient:
+class ContainerClient(metaclass=ABCMeta):
+    @abstractmethod
+    def get_container_status(self, container_name: str) -> DockerContainerStatus:
+        """Returns the status of the container with the given name"""
+        pass
+
+    @abstractmethod
+    def get_network(self, container_name: str) -> str:
+        """Returns the network mode of the container with the given name"""
+        pass
+
+    @abstractmethod
+    def stop_container(self, container_name: str):
+        """Stops container with given name"""
+        pass
+
+    @abstractmethod
+    def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
+        """Removes container with given name"""
+        pass
+
+    @abstractmethod
+    def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
+        """List all containers matching the given filters
+
+        Returns a list of dicts with keys id, image, name, labels, status
+        """
+        pass
+
+    def get_running_container_names(self) -> List[str]:
+        """Returns a list of the names of all running containers"""
+        result = self.list_containers(all=False)
+        result = list(map(lambda container: container["name"], result))
+        return result
+
+    def is_container_running(self, container_name: str) -> bool:
+        """Checks whether a container with a given name is currently running"""
+        return container_name in self.get_running_container_names()
+
+    @abstractmethod
+    def copy_into_container(
+        self, container_name: str, local_path: str, container_path: str
+    ) -> None:
+        """Copy contents of the given local path into the container"""
+        pass
+
+    @abstractmethod
+    def copy_from_container(
+        self, container_name: str, local_path: str, container_path: str
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def pull_image(self, docker_image: str) -> None:
+        """Pulls a image with a given name from a docker registry"""
+        pass
+
+    @abstractmethod
+    def get_docker_image_names(self, strip_latest=True, include_tags=True) -> List[str]:
+        pass
+
+    @abstractmethod
+    def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
+        """Get all logs of a given container"""
+        pass
+
+    @abstractmethod
+    def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+        pass
+
+    @abstractmethod
+    def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+        pass
+
+    def get_container_name(self, container_id: str) -> str:
+        """Get the name of a container by a given identifier"""
+        return self.inspect_container(container_id)["Name"].lstrip("/")
+
+    def get_container_id(self, container_name: str) -> str:
+        """Get the id of a container by a given name"""
+        return self.inspect_container(container_name)["Id"]
+
+    @abstractmethod
+    def get_container_ip(self, container_name_or_id: str) -> str:
+        """Get the IP address of a given container"""
+        pass
+
+    def get_image_cmd(self, docker_image: str) -> str:
+        """Get the command for the given image"""
+        cmd_list = self.inspect_image(docker_image)["Config"]["Cmd"] or []
+        return " ".join(cmd_list)
+
+    def get_image_entrypoint(self, docker_image: str) -> str:
+        """Get the entry point for the given image"""
+        LOG.debug("Getting the entrypoint for image: %s", docker_image)
+        entrypoint_list = self.inspect_image(docker_image)["Config"]["Entrypoint"] or []
+        return " ".join(entrypoint_list)
+
+    @abstractmethod
+    def has_docker(self) -> bool:
+        """Check if system has docker available"""
+        pass
+
+    @abstractmethod
+    def create_container(
+        self,
+        image_name: str,
+        *,
+        name: Optional[str] = None,
+        entrypoint: Optional[str] = None,
+        remove: bool = False,
+        interactive: bool = False,
+        tty: bool = False,
+        detach: bool = False,
+        command: Optional[Union[List[str], str]] = None,
+        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        ports: Optional[PortMappings] = None,
+        env_vars: Optional[Dict[str, str]] = None,
+        user: Optional[str] = None,
+        cap_add: Optional[str] = None,
+        network: Optional[str] = None,
+        dns: Optional[str] = None,
+        additional_flags: Optional[str] = None,
+    ) -> str:
+        pass
+
+    @abstractmethod
+    def run_container(
+        self,
+        image_name: str,
+        stdin: bytes = None,
+        *,
+        name: Optional[str] = None,
+        entrypoint: Optional[str] = None,
+        remove: bool = False,
+        interactive: bool = False,
+        tty: bool = False,
+        detach: bool = False,
+        command: Optional[Union[List[str], str]] = None,
+        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        ports: Optional[PortMappings] = None,
+        env_vars: Optional[Dict[str, str]] = None,
+        user: Optional[str] = None,
+        cap_add: Optional[str] = None,
+        network: Optional[str] = None,
+        dns: Optional[str] = None,
+        additional_flags: Optional[str] = None,
+    ) -> Tuple[bytes, bytes]:
+        pass
+
+    @abstractmethod
+    def exec_in_container(
+        self,
+        container_name_or_id: str,
+        command: Union[List[str], str],
+        interactive=False,
+        detach=False,
+        env_vars: Optional[Dict[str, str]] = None,
+        stdin: Optional[bytes] = None,
+        user: Optional[str] = None,
+    ) -> Tuple[bytes, bytes]:
+        pass
+
+    @abstractmethod
+    def start_container(
+        self,
+        container_name_or_id: str,
+        stdin=None,
+        interactive: bool = False,
+        attach: bool = False,
+        flags: Optional[str] = None,
+    ) -> Tuple[bytes, bytes]:
+        pass
+
+
+class CmdDockerClient(ContainerClient):
     """Class for managing docker containers using the command line executable"""
 
     def _docker_cmd(self) -> List[str]:
@@ -272,16 +448,6 @@ class CmdDockerClient:
             container_list = [json.loads(line) for line in cmd_result.splitlines()]
         return container_list
 
-    def get_running_container_names(self):
-        """Returns a list of the names of all running containers"""
-        result = self.list_containers(all=False)
-        result = list(map(lambda container: container["name"], result))
-        return result
-
-    def is_container_running(self, container_name: str):
-        """Checks whether a container with a given name is currently running"""
-        return container_name in self.get_running_container_names()
-
     def copy_into_container(
         self, container_name: str, local_path: str, container_path: str
     ) -> None:
@@ -369,14 +535,6 @@ class CmdDockerClient:
         except NoSuchObject as e:
             raise NoSuchImage(image_name=e.object_id)
 
-    def get_container_name(self, container_id: str) -> str:
-        """Get the name of a container by a given identifier"""
-        return self.inspect_container(container_id)["Name"].lstrip("/")
-
-    def get_container_id(self, container_name: str) -> str:
-        """Get the id of a container by a given name"""
-        return self.inspect_container(container_name)["Id"]
-
     def get_container_ip(self, container_name_or_id: str) -> str:
         """Get the IP address of a given container"""
         cmd = self._docker_cmd()
@@ -395,17 +553,6 @@ class CmdDockerClient:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
-
-    def get_image_cmd(self, docker_image: str) -> str:
-        """Get the command for the given image"""
-        cmd_list = self.inspect_image(docker_image)["Config"]["Cmd"] or []
-        return " ".join(cmd_list)
-
-    def get_image_entrypoint(self, docker_image: str) -> str:
-        """Get the entry point for the given image"""
-        LOG.debug("Getting the entrypoint for image: %s", docker_image)
-        entrypoint_list = self.inspect_image(docker_image)["Config"]["Entrypoint"] or []
-        return " ".join(entrypoint_list)
 
     def has_docker(self) -> bool:
         """Check if system has docker available"""
@@ -657,11 +804,25 @@ class Util:
                         LOG.debug("File to copy empty, ignoring...")
 
 
-class SdkDockerClient(CmdDockerClient):
+class SdkDockerClient(ContainerClient):
     client: DockerClient
 
     def __init__(self):
         self.client = docker.from_env()
+
+    def _read_from_sock(self, sock: socket, tty: bool):
+        stdout = b""
+        stderr = b""
+        for frame_type, frame_data in frames_iter(sock, tty):
+            if frame_type == STDOUT:
+                LOG.debug("Adding stdout %s", frame_data)
+                stdout += frame_data
+            elif frame_type == STDERR:
+                LOG.debug("Adding stderr %s", frame_data)
+                stderr += frame_data
+            else:
+                raise ContainerException("Invalid frame type when reading from socket")
+        return stdout, stderr
 
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         LOG.debug("Getting container status for container: %s", container_name)
@@ -848,19 +1009,31 @@ class SdkDockerClient(CmdDockerClient):
         LOG.debug("Starting container %s", container_name_or_id)
         try:
             container = self.client.containers.get(container_name_or_id)
-            container.start()
             stdout = to_bytes(container_name_or_id)
             stderr = b""
-            if stdin:
-                sock_in = container.attach_socket(params={"stdin": 1, "stream": 1})
-                sock_in._sock.sendall(to_bytes(stdin))
-                sock_in.close()
-
-            if attach or interactive:
-                LOG.debug("test")
-                stdout, stderr = container.attach(stdout=True, stderr=True, demux=True, logs=True)
-                stdout = stdout or b""
-                stderr = stderr or b""
+            if interactive or attach:
+                params = {"stdout": 1, "stderr": 1, "stream": 1}
+                if interactive:
+                    params["stdin"] = 1
+                sock = container.attach_socket(params=params)
+                sock = sock._sock if hasattr(sock, "_sock") else sock
+                container.start()
+                try:
+                    if stdin:
+                        sock.sendall(to_bytes(stdin))
+                        sock.shutdown(socket.SHUT_WR)
+                    stdout, stderr = self._read_from_sock(sock, False)
+                except socket.timeout:
+                    LOG.debug("timeout")
+                    pass
+                finally:
+                    sock.close()
+                try:
+                    container.wait()
+                except APIError:
+                    pass
+            else:
+                container.start()
             return stdout, stderr
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
@@ -948,58 +1121,79 @@ class SdkDockerClient(CmdDockerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
-        if additional_flags:
-            raise NotImplementedError()
-        try:
-            kwargs = {}
-            if cap_add:
-                kwargs["cap_add"] = [cap_add]
-            if dns:
-                kwargs["dns"] = [dns]
-            if ports:
-                kwargs["ports"] = ports.to_dict()
-            mounts = None
-            if mount_volumes:
-                mounts = dict(
-                    map(
-                        lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
-                        mount_volumes,
-                    )
-                )
-            result = self.client.containers.run(
-                image=image_name,
+        if interactive and stdin:
+            container = self.create_container(
+                image_name,
                 name=name,
                 entrypoint=entrypoint,
-                remove=remove,
-                stdin_open=interactive,
+                interactive=interactive,
                 tty=tty,
                 detach=detach,
                 command=command,
-                volumes=mounts,
-                environment=env_vars,
+                mount_volumes=mount_volumes,
+                ports=ports,
+                env_vars=env_vars,
                 user=user,
+                cap_add=cap_add,
                 network=network,
-                stdout=True,
-                stderr=True,
-                **kwargs,
+                dns=dns,
+                additional_flags=additional_flags,
             )
-            if stdin:
-                LOG.debug(result)
-            if detach:
-                return to_bytes(result.id), b""
-            if isinstance(result, bytes):
-                return result, b""
-            stdout = result[0] or b""
-            stderr = result[1] or b""
-            return stdout, stderr
-        except ImageNotFound:
-            raise NoSuchImage(image_name)
-        except ContainerError as e:
-            raise ContainerException(
-                "Error while running container %s" % e.container.id, stderr=e.stderr
+            result = self.start_container(
+                container_name_or_id=container, stdin=stdin, interactive=interactive
             )
-        except APIError:
-            raise ContainerException()
+            if remove:
+                self.remove_container(container)
+            return result
+        else:
+            try:
+                kwargs = {}
+                if cap_add:
+                    kwargs["cap_add"] = [cap_add]
+                if dns:
+                    kwargs["dns"] = [dns]
+                if ports:
+                    kwargs["ports"] = ports.to_dict()
+                mounts = None
+                if mount_volumes:
+                    mounts = dict(
+                        map(
+                            lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
+                            mount_volumes,
+                        )
+                    )
+                result = self.client.containers.run(
+                    image=image_name,
+                    name=name,
+                    entrypoint=entrypoint,
+                    remove=remove,
+                    stdin_open=interactive,
+                    tty=tty,
+                    detach=detach or interactive,
+                    command=command,
+                    volumes=mounts,
+                    environment=env_vars,
+                    user=user,
+                    network=network,
+                    stdout=True,
+                    stderr=True,
+                    **kwargs,
+                )
+                if detach:
+                    return to_bytes(result.id), b""
+                if isinstance(result, bytes):
+                    return result, b""
+                stdout = result[0] or b""
+                stderr = result[1] or b""
+                return stdout, stderr
+            except ImageNotFound:
+                raise NoSuchImage(image_name)
+            except ContainerError as e:
+                raise ContainerException(
+                    "Error while running container %s" % e.container.id, stderr=e.stderr
+                )
+            except APIError:
+                raise ContainerException()
 
     def exec_in_container(
         self,
@@ -1028,23 +1222,15 @@ class SdkDockerClient(CmdDockerClient):
             if interactive:  # result is a socket
                 sock = result[1]
                 sock = sock._sock if hasattr(sock, "_sock") else sock
-                stdout = b""
-                stderr = b""
                 try:
                     sock.sendall(stdin)
                     sock.shutdown(socket.SHUT_WR)
-                    for frame_type, frame_data in frames_iter(sock, tty):
-                        if frame_type == STDOUT:
-                            stdout += frame_data
-                        elif frame_type == STDERR:
-                            stderr += frame_data
-                        else:
-                            raise ContainerException("Invalid frame type when reading from socket")
+                    stdout, stderr = self._read_from_sock(sock, tty)
+                    return stdout, stderr
                 except socket.timeout:
                     pass
                 finally:
                     sock.close()
-                return stdout, stderr
             else:
                 return_code = result[0]
                 if isinstance(result[1], bytes):
@@ -1063,4 +1249,4 @@ class SdkDockerClient(CmdDockerClient):
             raise ContainerException()
 
 
-DOCKER_CLIENT = SdkDockerClient()
+DOCKER_CLIENT: ContainerClient = CmdDockerClient()

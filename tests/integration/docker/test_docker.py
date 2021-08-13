@@ -94,8 +94,7 @@ class TestDockerClient:
         assert 1 == len(docker_client.list_containers(f"id={info.container_id}"))
 
         # start the container
-        # TODO: how should interactive behave if there is no tty?
-        output, _ = docker_client.start_container(info.container_id, interactive=True)
+        output, _ = docker_client.start_container(info.container_id, attach=True)
         output = output.decode(config.DEFAULT_ENCODING)
 
         assert 0 == len(docker_client.list_containers(f"id={info.container_id}"))
@@ -435,6 +434,21 @@ class TestDockerClient:
         )
 
         assert message == output.decode(config.DEFAULT_ENCODING).strip()
+
+    def test_exec_in_container_with_stdin_stdout_stderr(
+        self, docker_client: DockerClient, dummy_container
+    ):
+        docker_client.start_container(dummy_container.container_id)
+        message = "test_message_stdin"
+        output, stderr = docker_client.exec_in_container(
+            dummy_container.container_id,
+            interactive=True,
+            stdin=message.encode(config.DEFAULT_ENCODING),
+            command=["sh", "-c", "cat; >&2 echo stderrtest"],
+        )
+
+        assert message == output.decode(config.DEFAULT_ENCODING).strip()
+        assert "stderrtest" == stderr.decode(config.DEFAULT_ENCODING).strip()
 
     def test_run_detached_with_logs(self, docker_client: DockerClient):
         container_name = _random_container_name()
