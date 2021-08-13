@@ -7,8 +7,6 @@ from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
-from localstack.services import generic_proxy
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import empty_context_manager
 from localstack.utils.run import FuncThread
 
@@ -42,7 +40,9 @@ def get_flask_request_for_thread():
 
 
 def extract_region_from_auth_header(headers):
-    # TODO: use method from aws_stack, which currently causes stack overflow due to call to get_region()!
+    # TODO: use method from aws_stack directly (leaving import here for now, to avoid circular dependency)
+    from localstack.utils.aws import aws_stack
+
     auth = headers.get("Authorization") or ""
     region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
     if region == auth:
@@ -94,7 +94,8 @@ def patch_request_handling():
     if config.USE_SINGLE_REGION:
         return
 
-    # TODO: move into generic_proxy.py, instead of patching here
+    # TODO: move into generic_proxy.py, instead of patching here (leaving import here for now, to avoid circular dependency)
+    from localstack.services import generic_proxy
 
     def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, *args, **kwargs):
         """Patch proxy forward method and store request in thread local."""

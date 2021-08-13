@@ -492,8 +492,17 @@ def md5(string):
 
 
 def select_attributes(obj, attributes):
+    """Select a subset of attributes from the given dict (returns a copy)"""
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     return dict([(k, v) for k, v in obj.items() if k in attributes])
+
+
+def remove_attributes(obj, attributes):
+    """Remove a set of attributes from the given dict (in-place)"""
+    attributes = attributes if is_list_or_tuple(attributes) else [attributes]
+    for attr in attributes:
+        obj.pop(attr, None)
+    return obj
 
 
 def is_list_or_tuple(obj):

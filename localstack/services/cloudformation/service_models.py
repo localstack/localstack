@@ -10,7 +10,7 @@ from moto.iam.models import Role as MotoRole
 from moto.s3.models import FakeBucket
 from moto.sqs.models import Queue as MotoQueue
 
-from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
+from localstack.constants import AWS_REGION_US_EAST_1, S3_VIRTUAL_HOSTNAME
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_POLICY_NAME_PATTERN,
     get_handler_file_from_name,
@@ -1564,7 +1564,7 @@ class S3Bucket(GenericBaseModel, FakeBucket):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        bucket_name = props.get("BucketName") or self.resource_id
+        bucket_name = self._get_bucket_name()
         bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
         bucket_name = self.normalize_bucket_name(bucket_name)
         s3_client = aws_stack.connect_to_service("s3")
@@ -1584,8 +1584,12 @@ class S3Bucket(GenericBaseModel, FakeBucket):
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name in ["DomainName", "RegionalDomainName"]:
-            return LOCALHOST
+            bucket_name = self._get_bucket_name()
+            return "%s.%s" % (bucket_name, S3_VIRTUAL_HOSTNAME)
         return super(S3Bucket, self).get_cfn_attribute(attribute_name)
+
+    def _get_bucket_name(self):
+        return self.props.get("BucketName") or self.resource_id
 
 
 class S3BucketPolicy(GenericBaseModel):
