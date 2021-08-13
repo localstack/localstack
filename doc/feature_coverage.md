@@ -660,3 +660,7 @@ Details following soon. For now, only listing those that are at least (superfici
 - QLDB
 - Backup
 - Elastic File System
+- EC2
+- Cognito Identity
+- Cognito Identity Provider
+- Amplify
