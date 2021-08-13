@@ -878,6 +878,8 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
         shutil.copystat = _copystat
     try:
         if os.path.isfile(src):
+            if os.path.isdir(dst):
+                dst = os.path.join(dst, os.path.basename(src))
             return shutil.copyfile(src, dst)
         if "dirs_exist_ok" in inspect.getfullargspec(shutil.copytree).args:
             kwargs["dirs_exist_ok"] = True
@@ -888,6 +890,24 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
                 rm_rf(dst)
                 return shutil.copytree(src, dst, **kwargs)
             raise
+    except Exception as e:
+
+        def _info(_path):
+            return "%s (file=%s, symlink=%s)" % (
+                _path,
+                os.path.isfile(_path),
+                os.path.islink(_path),
+            )
+
+        LOG.debug(
+            "Error copying files from %s to %s: %s"
+            % (
+                _info(src),
+                _info(dst),
+                e,
+            )
+        )
+        raise
     finally:
         shutil.copystat = copystat_orig
 
