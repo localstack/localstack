@@ -179,7 +179,6 @@ class ProxyListenerEdge(ProxyListener):
             response.headers["Content-Encoding"] = "gzip"
 
 
-
 def do_forward_request(api, method, path, data, headers, port=None):
     if config.FORWARD_EDGE_INMEM:
         result = do_forward_request_inmem(api, method, path, data, headers, port=port)

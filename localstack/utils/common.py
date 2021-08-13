@@ -868,11 +868,13 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
     # attention: this patch is not threadsafe
     copystat_orig = shutil.copystat
     if ignore_copystat_errors:
+
         def _copystat(*args, **kwargs):
             try:
                 return copystat_orig(*args, **kwargs)
             except Exception as e:
-                print('ERROR (ignored): %s' % e)
+                print("ERROR (ignored): %s" % e)
+
         shutil.copystat = _copystat
     try:
         if os.path.isfile(src):
