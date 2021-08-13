@@ -9,7 +9,6 @@ import tarfile
 import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
-from http.client import HTTPConnection
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -805,9 +804,6 @@ class Util:
                         LOG.debug("File to copy empty, ignoring...")
 
 
-HTTPConnection.debuglevel = 1
-
-
 class SdkDockerClient(ContainerClient):
     client: DockerClient
 
@@ -1068,6 +1064,7 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
     ) -> str:
+        LOG.debug("Creating container with image %s", image_name)
         if additional_flags:
             raise NotImplementedError("Additional flags not supported when using docker sdk")
         try:
@@ -1129,6 +1126,7 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
+        LOG.debug("Running container with image %s", image_name)
         container = None
         try:
             container = self.create_container(
@@ -1138,6 +1136,7 @@ class SdkDockerClient(ContainerClient):
                 interactive=interactive,
                 tty=tty,
                 detach=detach,
+                remove=remove and detach,
                 command=command,
                 mount_volumes=mount_volumes,
                 ports=ports,
@@ -1155,7 +1154,7 @@ class SdkDockerClient(ContainerClient):
                 attach=not detach,
             )
         finally:
-            if remove and container:
+            if remove and container and not detach:
                 self.remove_container(container)
         return result
 
