@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import docker
 from docker import DockerClient
-from docker.errors import APIError, ContainerError, ImageNotFound, NotFound
+from docker.errors import APIError, ContainerError, DockerException, ImageNotFound, NotFound
 from docker.models.containers import Container
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
@@ -808,7 +808,10 @@ class SdkDockerClient(ContainerClient):
     client: DockerClient
 
     def __init__(self):
-        self.client = docker.from_env()
+        try:
+            self.client = docker.from_env()
+        except DockerException:
+            self.client = None
 
     def _read_from_sock(self, sock: socket, tty: bool):
         stdout = b""
@@ -991,6 +994,8 @@ class SdkDockerClient(ContainerClient):
     def has_docker(self) -> bool:
         """Check if system has docker available"""
         try:
+            if not self.client:
+                return False
             self.client.ping()
             return True
         except APIError:
