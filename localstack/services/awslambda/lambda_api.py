@@ -36,6 +36,7 @@ from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.common import (
     TMP_FILES,
+    empty_context_manager,
     ensure_readable,
     first_char_to_lower,
     is_zip_file,
@@ -778,48 +779,57 @@ def load_source(name, file):
 
 
 def exec_lambda_code(script, handler_function="handler", lambda_cwd=None, lambda_env=None):
-    if lambda_cwd or lambda_env:
-        EXEC_MUTEX.acquire()
-        if lambda_cwd:
-            previous_cwd = os.getcwd()
-            os.chdir(lambda_cwd)
-            sys.path = [lambda_cwd] + sys.path
-        if lambda_env:
-            previous_env = dict(os.environ)
-            os.environ.update(lambda_env)
-    # generate lambda file name
-    lambda_id = "l_%s" % short_uid()
-    lambda_file = LAMBDA_SCRIPT_PATTERN.replace("*", lambda_id)
-    save_file(lambda_file, script)
-    # delete temporary .py and .pyc files on exit
-    TMP_FILES.append(lambda_file)
-    TMP_FILES.append("%sc" % lambda_file)
-    try:
-        pre_sys_modules_keys = set(sys.modules.keys())
-        try:
-            handler_module = load_source(lambda_id, lambda_file)
-            module_vars = handler_module.__dict__
-        finally:
-            # the above import can bring files for the function
-            # (eg settings.py) into the global namespace. subsequent
-            # calls can pick up file from another function, causing
-            # general issues.
-            post_sys_modules_keys = set(sys.modules.keys())
-            for key in post_sys_modules_keys:
-                if key not in pre_sys_modules_keys:
-                    sys.modules.pop(key)
-    except Exception as e:
-        LOG.error("Unable to exec: %s %s" % (script, traceback.format_exc()))
-        raise e
-    finally:
+    # TODO: The code in this function is generally not thread-safe and potentially insecure
+    #  (e.g., mutating environment variables, and globally loaded modules). Should be redesigned.
+
+    def _do_exec_lambda_code():
         if lambda_cwd or lambda_env:
             if lambda_cwd:
-                os.chdir(previous_cwd)
-                sys.path.pop(0)
+                previous_cwd = os.getcwd()
+                os.chdir(lambda_cwd)
+                sys.path = [lambda_cwd] + sys.path
             if lambda_env:
-                os.environ = previous_env
-            EXEC_MUTEX.release()
-    return module_vars[handler_function]
+                previous_env = dict(os.environ)
+                os.environ.update(lambda_env)
+        # generate lambda file name
+        lambda_id = "l_%s" % short_uid()
+        lambda_file = LAMBDA_SCRIPT_PATTERN.replace("*", lambda_id)
+        save_file(lambda_file, script)
+        # delete temporary .py and .pyc files on exit
+        TMP_FILES.append(lambda_file)
+        TMP_FILES.append("%sc" % lambda_file)
+        try:
+            pre_sys_modules_keys = set(sys.modules.keys())
+            # set default env variables required for most Lambda handlers
+            env_vars_before = lambda_executors.LambdaExecutorLocal.set_default_env_variables()
+            try:
+                handler_module = load_source(lambda_id, lambda_file)
+                module_vars = handler_module.__dict__
+            finally:
+                lambda_executors.LambdaExecutorLocal.reset_default_env_variables(env_vars_before)
+                # the above import can bring files for the function
+                # (eg settings.py) into the global namespace. subsequent
+                # calls can pick up file from another function, causing
+                # general issues.
+                post_sys_modules_keys = set(sys.modules.keys())
+                for key in post_sys_modules_keys:
+                    if key not in pre_sys_modules_keys:
+                        sys.modules.pop(key)
+        except Exception as e:
+            LOG.error("Unable to exec: %s %s" % (script, traceback.format_exc()))
+            raise e
+        finally:
+            if lambda_cwd or lambda_env:
+                if lambda_cwd:
+                    os.chdir(previous_cwd)
+                    sys.path.pop(0)
+                if lambda_env:
+                    os.environ = previous_env
+        return module_vars[handler_function]
+
+    lock = EXEC_MUTEX if lambda_cwd or lambda_env else empty_context_manager()
+    with lock:
+        return _do_exec_lambda_code()
 
 
 def get_handler_function_from_name(handler_name, runtime=None):
@@ -1005,7 +1015,6 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
-        handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
         main_file = "%s/%s" % (lambda_cwd, handler_file)
 
@@ -1036,6 +1045,7 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
                 ensure_readable(main_file)
                 zip_file_content = load_file(main_file, mode="rb")
                 # extract handler
+                handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
                 lambda_handler = exec_lambda_code(
                     zip_file_content,
                     handler_function=handler_function,

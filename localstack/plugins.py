@@ -3,6 +3,7 @@ import sys
 
 from localstack import config
 from localstack.constants import TRUE_STRINGS
+from localstack.utils.aws.request_context import patch_request_handling
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
 
 # Note: make sure not to add any additional imports at the global scope here!
@@ -229,6 +230,9 @@ def do_register_localstack_plugins():
         )
 
         register_plugin(Plugin("support", start=support_starter.start_support))
+
+        # apply patches
+        patch_request_handling()
 
     except Exception as e:
         if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):

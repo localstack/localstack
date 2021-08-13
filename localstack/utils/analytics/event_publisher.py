@@ -184,6 +184,6 @@ def fire_event(event_type, payload=None):
         if is_local_test_mode():
             payload["int"] = True
 
-    event = AnalyticsEvent(event_type=event_type, payload=payload, api_key=api_key)
-    EVENT_QUEUE.put_nowait(event)
+    # event = AnalyticsEvent(event_type=event_type, payload=payload, api_key=api_key)
+    # EVENT_QUEUE.put_nowait(event) FIXME: remove old logging code entirely before next release
     log.event("legacy", {"event": event_type, "payload": payload})
