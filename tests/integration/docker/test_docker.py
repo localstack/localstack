@@ -149,7 +149,7 @@ class TestDockerClient:
         self, docker_client: DockerClient, create_container
     ):
         # default ARG_MAX=131072 in Docker
-        env = [(f"IVAR_{i:05d}", f"VAL_{i:05d}") for i in range(2000)]
+        env = dict([(f"IVAR_{i:05d}", f"VAL_{i:05d}") for i in range(2000)])
 
         # make sure we're really triggering the relevant code
         assert len(str(dict(env))) >= Util.MAX_ENV_ARGS_LENGTH

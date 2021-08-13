@@ -9,6 +9,7 @@ import tarfile
 import tempfile
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
+from http.client import HTTPConnection
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -804,6 +805,9 @@ class Util:
                         LOG.debug("File to copy empty, ignoring...")
 
 
+HTTPConnection.debuglevel = 1
+
+
 class SdkDockerClient(ContainerClient):
     client: DockerClient
 
@@ -815,10 +819,8 @@ class SdkDockerClient(ContainerClient):
         stderr = b""
         for frame_type, frame_data in frames_iter(sock, tty):
             if frame_type == STDOUT:
-                LOG.debug("Adding stdout %s", frame_data)
                 stdout += frame_data
             elif frame_type == STDERR:
-                LOG.debug("Adding stderr %s", frame_data)
                 stderr += frame_data
             else:
                 raise ContainerException("Invalid frame type when reading from socket")
@@ -1029,7 +1031,13 @@ class SdkDockerClient(ContainerClient):
                 finally:
                     sock.close()
                 try:
-                    container.wait()
+                    exit_code = container.wait()["StatusCode"]
+                    if exit_code:
+                        raise ContainerException(
+                            "Docker container returned with exit code %s" % exit_code,
+                            stdout=stdout,
+                            stderr=stderr,
+                        )
                 except APIError:
                     pass
             else:
