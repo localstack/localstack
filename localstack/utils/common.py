@@ -851,7 +851,10 @@ def rm_rf(path):
         except Exception:
             pass
     # Make sure all files are writeable and dirs executable to remove
-    chmod_r(path, 0o777)
+    try:
+        chmod_r(path, 0o777)
+    except PermissionError:
+        pass  # todo log
     # check if the file is either a normal file, or, e.g., a fifo
     exists_but_non_dir = os.path.exists(path) and not os.path.isdir(path)
     if os.path.isfile(path) or exists_but_non_dir:
@@ -860,20 +863,33 @@ def rm_rf(path):
         shutil.rmtree(path)
 
 
-def cp_r(src, dst, rm_dest_on_conflict=False):
+def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kwargs):
     """Recursively copies file/directory"""
-    if os.path.isfile(src):
-        return shutil.copy(src, dst)
-    kwargs = {}
-    if "dirs_exist_ok" in inspect.getfullargspec(shutil.copytree).args:
-        kwargs["dirs_exist_ok"] = True
+    # attention: this patch is not threadsafe
+    copystat_orig = shutil.copystat
+    if ignore_copystat_errors:
+
+        def _copystat(*args, **kwargs):
+            try:
+                return copystat_orig(*args, **kwargs)
+            except Exception:
+                pass
+
+        shutil.copystat = _copystat
     try:
-        return shutil.copytree(src, dst, **kwargs)
-    except FileExistsError:
-        if rm_dest_on_conflict:
-            rm_rf(dst)
+        if os.path.isfile(src):
+            return shutil.copyfile(src, dst)
+        if "dirs_exist_ok" in inspect.getfullargspec(shutil.copytree).args:
+            kwargs["dirs_exist_ok"] = True
+        try:
             return shutil.copytree(src, dst, **kwargs)
-        raise
+        except FileExistsError:
+            if rm_dest_on_conflict:
+                rm_rf(dst)
+                return shutil.copytree(src, dst, **kwargs)
+            raise
+    finally:
+        shutil.copystat = copystat_orig
 
 
 def disk_usage(path):

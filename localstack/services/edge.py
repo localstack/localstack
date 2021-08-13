@@ -500,6 +500,9 @@ def get_service_port_for_account(service, headers):
     return config.service_port(service)
 
 
+PROXY_LISTENER_EDGE = ProxyListenerEdge()
+
+
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
     try:
         # start local DNS server, if present
@@ -516,7 +519,7 @@ def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
         port,
         bind_address=bind_address,
         use_ssl=True,
-        update_listener=ProxyListenerEdge(),
+        update_listener=PROXY_LISTENER_EDGE,
     )
     if not asynchronous:
         proxy.join()
