@@ -279,6 +279,7 @@ Please be aware that the following configurations may have severe security impli
 * `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
 * `IGNORE_ES_DOWNLOAD_ERRORS`: Whether to ignore errors (e.g., network/SSL) when downloading Elasticsearch plugins.
 * `OVERRIDE_IN_DOCKER`: Overrides the check whether LocalStack is executed within a docker container. If set to true, LocalStack assumes it runs in a docker container. Should not be set unless necessary.
+* `EDGE_FORWARD_URL`: Optional target URL to forward all edge requests to (e.g., for distributed deployments).
 
 ### Debugging Configurations
 

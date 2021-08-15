@@ -193,6 +193,8 @@ EDGE_BIND_HOST = os.environ.get("EDGE_BIND_HOST", "").strip() or "127.0.0.1"
 EDGE_PORT = int(os.environ.get("EDGE_PORT") or 0) or DEFAULT_PORT_EDGE
 # fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
 EDGE_PORT_HTTP = int(os.environ.get("EDGE_PORT_HTTP") or 0)
+# optional target URL to forward all edge requests to
+EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
 
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
@@ -306,6 +308,7 @@ CONFIG_ENV_VARS = [
     "EDGE_PORT",
     "LS_LOG",
     "EDGE_PORT_HTTP",
+    "EDGE_FORWARD_URL",
     "SKIP_INFRA_DOWNLOADS",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "WINDOWS_DOCKER_MOUNT_PREFIX",

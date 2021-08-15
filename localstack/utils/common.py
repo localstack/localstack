@@ -70,6 +70,9 @@ CACHE = {}
 # lock for creating certificate files
 SSL_CERT_LOCK = threading.RLock()
 
+# user of the currently running process
+CACHED_USER = None
+
 
 class Mock(object):
     """Dummy class that can be used for mocking custom attributes."""
@@ -1408,8 +1411,16 @@ def untar(path, target_dir):
 
 
 def is_root():
-    out = run("whoami").strip()
-    return out == "root"
+    return get_os_user() == "root"
+
+
+def get_os_user():
+    global CACHED_USER
+    if not CACHED_USER:
+        import getpass
+
+        CACHED_USER = getpass.getuser()
+    return CACHED_USER
 
 
 def cleanup_resources():

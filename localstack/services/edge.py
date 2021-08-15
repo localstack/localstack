@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import signal
+import subprocess
 import sys
 import threading
 
@@ -42,7 +43,7 @@ from localstack.utils.common import (
     run,
 )
 from localstack.utils.common import safe_requests as requests
-from localstack.utils.common import to_bytes, to_str, truncate
+from localstack.utils.common import sleep_forever, start_thread, to_bytes, to_str, truncate
 from localstack.utils.server.http2_server import HTTPErrorResponse
 
 LOG = logging.getLogger(__name__)
@@ -65,6 +66,11 @@ API_UNKNOWN = "_unknown_"
 
 class ProxyListenerEdge(ProxyListener):
     def forward_request(self, method, path, data, headers):
+
+        if config.EDGE_FORWARD_URL:
+            return do_forward_request_network(
+                0, method, path, data, headers, target_url=config.EDGE_FORWARD_URL
+            )
 
         if path.split("?")[0] == "/health":
             return serve_health_endpoint(method, path, data)
@@ -218,12 +224,11 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
     return response
 
 
-def do_forward_request_network(port, method, path, data, headers):
+def do_forward_request_network(port, method, path, data, headers, target_url=None):
     # TODO: enable per-service endpoints, to allow deploying in distributed settings
-    connect_host = "%s:%s" % (LOCALHOST, port)
-    url = "%s://%s%s" % (get_service_protocol(), connect_host, path)
-    function = getattr(requests, method.lower())
-    response = function(url, data=data, headers=headers, verify=False, stream=True)
+    target_url = target_url or "%s://%s:%s" % (get_service_protocol(), LOCALHOST, port)
+    url = "%s%s" % (target_url, path)
+    response = requests.request(method, url, data=data, headers=headers, verify=False, stream=True)
     return response
 
 
@@ -504,13 +509,7 @@ PROXY_LISTENER_EDGE = ProxyListenerEdge()
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
-    try:
-        # start local DNS server, if present
-        from localstack_ext.services import dns_server
-
-        dns_server.start_servers()
-    except Exception:
-        pass
+    start_dns_server(asynchronous=True)
 
     # get port and start Edge
     print("Starting edge router (http%s port %s)..." % ("s" if use_ssl else "", port))
@@ -542,7 +541,32 @@ def ensure_can_use_sudo():
         run("sudo -v", stdin=True)
 
 
+def start_component(component: str, port=None, use_ssl=True, asynchronous=False):
+    if component == "edge":
+        return start_edge(port=port, use_ssl=use_ssl, asynchronous=asynchronous)
+    if component == "dns":
+        return start_dns_server(asynchronous=asynchronous)
+    raise Exception("Unexpected component name '%s' received during start up" % component)
+
+
+def start_dns_server(asynchronous=False):
+    try:
+        # start local DNS server, if present
+        from localstack_ext.services import dns_server
+
+        if is_root():
+            result = dns_server.start_servers()
+            if not asynchronous:
+                sleep_forever()
+            return result
+        # note: running in a separate process breaks integration with Route53 (to be fixed for local dev mode!)
+        return run_process_as_sudo("dns", 53, asynchronous=asynchronous)
+    except Exception:
+        pass
+
+
 def start_edge(port=None, use_ssl=True, asynchronous=False):
+
     if not port:
         port = config.EDGE_PORT
     if config.EDGE_PORT_HTTP:
@@ -555,7 +579,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
     if port > 1024 or is_root():
         return do_start_edge(config.EDGE_BIND_HOST, port, use_ssl, asynchronous=asynchronous)
 
-    # process requires priviledged port but we're not root -> try running as sudo
+    # process requires privileged port but we're not root -> try running as sudo
 
     class Terminator(object):
         def stop(self, quiet=True):
@@ -566,30 +590,41 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
             except Exception:
                 pass
 
+    # register a signal handler to terminate the sudo process later on
+    TMP_THREADS.append(Terminator())
+
+    return run_process_as_sudo("edge", port, asynchronous=asynchronous)
+
+
+def run_process_as_sudo(component, port, asynchronous=False):
     # make sure we can run sudo commands
     try:
         ensure_can_use_sudo()
     except Exception as e:
-        LOG.error("cannot start edge proxy on privileged port %s: %s", port, str(e))
+        LOG.error("cannot start service on privileged port %s: %s", port, str(e))
         return
 
-    # register a signal handler to terminate the sudo process later on
-    TMP_THREADS.append(Terminator())
-
     # start the process as sudo
-    sudo_cmd = "sudo "
+    sudo_cmd = "sudo -n "
     python_cmd = sys.executable
-    cmd = "%sPYTHONPATH=.:%s %s %s %s" % (
+    edge_url = config.get_edge_url()
+    cmd = "%sPYTHONPATH=.:%s EDGE_FORWARD_URL=%s %s %s %s %s" % (
         sudo_cmd,
         LOCALSTACK_ROOT_FOLDER,
+        edge_url,
         python_cmd,
         __file__,
+        component,
         port,
     )
-    process = run(cmd, asynchronous=asynchronous)
-    return process
+
+    def run_command(*_):
+        run(cmd, outfile=subprocess.PIPE, print_error=False)
+
+    result = start_thread(run_command, quiet=True) if asynchronous else run_command()
+    return result
 
 
 if __name__ == "__main__":
     logging.basicConfig()
-    start_edge(int(sys.argv[1]))
+    start_component(sys.argv[1], int(sys.argv[2]))
