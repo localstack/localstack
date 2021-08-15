@@ -1002,7 +1002,7 @@ class SdkDockerClient(ContainerClient):
     def has_docker(self) -> bool:
         """Check if system has docker available"""
         try:
-            if not self.client():
+            if not self.docker_client:
                 return False
             self.client().ping()
             return True
