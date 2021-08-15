@@ -805,13 +805,19 @@ class Util:
 
 
 class SdkDockerClient(ContainerClient):
-    client: DockerClient
+    docker_client: Optional[DockerClient]
 
     def __init__(self):
         try:
-            self.client = docker.from_env()
+            self.docker_client = docker.from_env()
         except DockerException:
-            self.client = None
+            self.docker_client = None
+
+    def client(self):
+        if self.docker_client:
+            return self.docker_client
+        else:
+            raise ContainerException("Docker not available")
 
     def _read_from_sock(self, sock: socket, tty: bool):
         stdout = b""
@@ -828,7 +834,7 @@ class SdkDockerClient(ContainerClient):
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         LOG.debug("Getting container status for container: %s", container_name)
         try:
-            container = self.client.containers.get(container_name)
+            container = self.client().containers.get(container_name)
             if container.status == "running":
                 return DockerContainerStatus.UP
             else:
@@ -841,7 +847,7 @@ class SdkDockerClient(ContainerClient):
     def get_network(self, container_name: str) -> str:
         LOG.debug("Getting network type for container: %s", container_name)
         try:
-            container = self.client.containers.get(container_name)
+            container = self.client().containers.get(container_name)
             return container.attrs["HostConfig"]["NetworkMode"]
         except NotFound:
             raise NoSuchContainer(container_name)
@@ -851,7 +857,7 @@ class SdkDockerClient(ContainerClient):
     def stop_container(self, container_name: str) -> None:
         LOG.debug("Stopping container: %s", container_name)
         try:
-            container = self.client.containers.get(container_name)
+            container = self.client().containers.get(container_name)
             container.stop(timeout=0)
         except NotFound:
             raise NoSuchContainer(container_name)
@@ -865,7 +871,7 @@ class SdkDockerClient(ContainerClient):
             LOG.debug("Aborting removing due to check_existence check")
             return
         try:
-            container = self.client.containers.get(container_name)
+            container = self.client().containers.get(container_name)
             container.remove(force=force)
         except NotFound:
             raise NoSuchContainer(container_name)
@@ -882,7 +888,7 @@ class SdkDockerClient(ContainerClient):
             filter = dict([f.split("=") for f in filter])
         LOG.debug("Listing containers with filters: %s", filter)
         try:
-            container_list = self.client.containers.list(filters=filter, all=all)
+            container_list = self.client().containers.list(filters=filter, all=all)
             return list(
                 map(
                     lambda container: {
@@ -906,7 +912,7 @@ class SdkDockerClient(ContainerClient):
         If you copy into a container directory, you must specify a trailing slash for the container directory.
         """
         try:
-            container = self.client.containers.get(container_name)
+            container = self.client().containers.get(container_name)
             try:
                 _, stats = container.get_archive(container_path)
                 target_exists = True
@@ -929,7 +935,7 @@ class SdkDockerClient(ContainerClient):
     ) -> None:
         """Copy contents of the container into the local file system"""
         try:
-            container = self.client.containers.get(container_name)
+            container = self.client().containers.get(container_name)
             bits, _ = container.get_archive(container_path)
             Util.untar_to_path(bits, local_path)
         except NotFound:
@@ -941,7 +947,7 @@ class SdkDockerClient(ContainerClient):
         """Pulls a image with a given name from a docker registry"""
         image_split = docker_image.partition(":")
         try:
-            self.client.images.pull(image_split[0], image_split[2])
+            self.client().images.pull(image_split[0], image_split[2])
         except ImageNotFound:
             raise NoSuchImage(docker_image)
         except APIError:
@@ -949,7 +955,7 @@ class SdkDockerClient(ContainerClient):
 
     def get_docker_image_names(self, strip_latest=True, include_tags=True):
         try:
-            images = self.client.images.list()
+            images = self.client().images.list()
             image_names = [image.tags[0] for image in images if image.tags]
             if not include_tags:
                 image_names = list(map(lambda image_name: image_name.split(":")[0], image_names))
@@ -962,7 +968,7 @@ class SdkDockerClient(ContainerClient):
     def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
         """Get all logs of a given container"""
         try:
-            container = self.client.containers.get(container_name_or_id)
+            container = self.client().containers.get(container_name_or_id)
             return to_str(container.logs())
         except NotFound:
             if safe:
@@ -975,7 +981,7 @@ class SdkDockerClient(ContainerClient):
 
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
         try:
-            return self.client.containers.get(container_name_or_id).attrs
+            return self.client().containers.get(container_name_or_id).attrs
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
         except APIError:
@@ -983,7 +989,7 @@ class SdkDockerClient(ContainerClient):
 
     def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
         try:
-            return self.client.images.get(image_name).attrs
+            return self.client().images.get(image_name).attrs
         except NotFound:
             raise NoSuchImage(image_name)
         except APIError:
@@ -996,9 +1002,9 @@ class SdkDockerClient(ContainerClient):
     def has_docker(self) -> bool:
         """Check if system has docker available"""
         try:
-            if not self.client:
+            if not self.client():
                 return False
-            self.client.ping()
+            self.client().ping()
             return True
         except APIError:
             return False
@@ -1013,7 +1019,7 @@ class SdkDockerClient(ContainerClient):
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Starting container %s", container_name_or_id)
         try:
-            container = self.client.containers.get(container_name_or_id)
+            container = self.client().containers.get(container_name_or_id)
             stdout = to_bytes(container_name_or_id)
             stderr = b""
             if interactive or attach:
@@ -1092,7 +1098,7 @@ class SdkDockerClient(ContainerClient):
                 )
 
             try:
-                container = self.client.containers.create(
+                container = self.client().containers.create(
                     image=image_name,
                     command=command,
                     auto_remove=remove,
@@ -1109,7 +1115,7 @@ class SdkDockerClient(ContainerClient):
                 )
             except ImageNotFound:
                 self.pull_image(image_name)
-                container = self.client.containers.create(
+                container = self.client().containers.create(
                     image=image_name,
                     command=command,
                     auto_remove=remove,
@@ -1193,21 +1199,22 @@ class SdkDockerClient(ContainerClient):
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
+        LOG.debug("Executing in container: %s", container_name_or_id)
         try:
-            container: Container = self.client.containers.get(container_name_or_id)
+            container: Container = self.client().containers.get(container_name_or_id)
             result = container.exec_run(
                 cmd=command,
                 environment=env_vars,
                 user=user,
                 detach=detach,
-                stdin=interactive,
-                socket=interactive,
+                stdin=interactive and bool(stdin),
+                socket=interactive and bool(stdin),
                 stdout=True,
                 stderr=True,
                 demux=True,
             )
             tty = False
-            if interactive:  # result is a socket
+            if interactive and stdin:  # result is a socket
                 sock = result[1]
                 sock = sock._sock if hasattr(sock, "_sock") else sock
                 try:
