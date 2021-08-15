@@ -1417,9 +1417,10 @@ def is_root():
 def get_os_user():
     global CACHED_USER
     if not CACHED_USER:
-        import getpass
-
-        CACHED_USER = getpass.getuser()
+        # TODO: using getpass.getuser() seems to be reporting a different/invalid user in Docker/MacOS
+        # import getpass
+        # CACHED_USER = getpass.getuser()
+        CACHED_USER = run("whoami").strip()
     return CACHED_USER
 
 
