@@ -473,6 +473,8 @@ class CmdDockerClient(ContainerClient):
         try:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:
+            if "pull access denied" in to_str(e.stdout):
+                raise NoSuchImage(docker_image)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )

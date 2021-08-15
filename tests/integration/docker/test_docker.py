@@ -406,7 +406,6 @@ class TestDockerClient:
         finally:
             docker_client.remove_container(container_name)
 
-    @pytest.mark.timeout(10)
     def test_run_container_with_stdin(self, docker_client: DockerClient):
         container_name = _random_container_name()
         message = "test_message_stdin"

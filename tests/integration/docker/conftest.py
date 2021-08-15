@@ -1,7 +1,7 @@
 import pytest
 
 from localstack.config import is_env_not_false
-from localstack.utils.docker import DOCKER_CLIENT
+from localstack.utils.docker import DOCKER_CLIENT, CmdDockerClient, SdkDockerClient
 
 
 def _check_skip():
@@ -12,8 +12,7 @@ def _check_skip():
         pytest.skip("Docker is not available")
 
 
-@pytest.fixture
-def docker_client():
+@pytest.fixture(params=[CmdDockerClient(), SdkDockerClient()])
+def docker_client(request):
     _check_skip()  # this is a hack to get a global skip for all tests that require the docker client
-    client = DOCKER_CLIENT
-    yield client
+    yield request.param
