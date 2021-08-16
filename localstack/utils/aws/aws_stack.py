@@ -26,7 +26,6 @@ from localstack.constants import (
 )
 from localstack.utils.aws import templating
 from localstack.utils.aws.aws_models import KinesisStream
-from localstack.utils.aws.request_context import get_region_from_request_context
 from localstack.utils.common import (
     get_service_protocol,
     is_port_open,
@@ -190,6 +189,9 @@ def get_boto3_session(cache=True):
 
 
 def get_region():
+    # Note: leave import here to avoid import errors (e.g., "flask") for CLI commands
+    from localstack.utils.aws.request_context import get_region_from_request_context
+
     region = get_region_from_request_context()
     if region:
         return region

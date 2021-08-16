@@ -25,7 +25,6 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
-from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     TMP_FILES,
@@ -361,6 +360,8 @@ def find_recursive(key, value, obj):
 
 
 def start_http_server(test_port=None, invocations=None):
+    # Note: leave imports here to avoid import errors (e.g., "flask") for CLI commands
+    from localstack.services.generic_proxy import ProxyListener
     from localstack.services.infra import start_proxy
 
     class TestListener(ProxyListener):
