@@ -1031,16 +1031,15 @@ class SdkDockerClient(ContainerClient):
                 sock = container.attach_socket(params=params)
                 sock = sock._sock if hasattr(sock, "_sock") else sock
                 container.start()
-                try:
-                    if stdin:
-                        sock.sendall(to_bytes(stdin))
-                        sock.shutdown(socket.SHUT_WR)
-                    stdout, stderr = self._read_from_sock(sock, False)
-                except socket.timeout:
-                    LOG.debug("timeout")
-                    pass
-                finally:
-                    sock.close()
+                with sock:
+                    try:
+                        if stdin:
+                            sock.sendall(to_bytes(stdin))
+                            sock.shutdown(socket.SHUT_WR)
+                        stdout, stderr = self._read_from_sock(sock, False)
+                    except socket.timeout:
+                        LOG.debug("timeout")
+                        pass
                 try:
                     exit_code = container.wait()["StatusCode"]
                     if exit_code:
@@ -1219,15 +1218,14 @@ class SdkDockerClient(ContainerClient):
             if interactive and stdin:  # result is a socket
                 sock = result[1]
                 sock = sock._sock if hasattr(sock, "_sock") else sock
-                try:
-                    sock.sendall(stdin)
-                    sock.shutdown(socket.SHUT_WR)
-                    stdout, stderr = self._read_from_sock(sock, tty)
-                    return stdout, stderr
-                except socket.timeout:
-                    pass
-                finally:
-                    sock.close()
+                with sock:
+                    try:
+                        sock.sendall(stdin)
+                        sock.shutdown(socket.SHUT_WR)
+                        stdout, stderr = self._read_from_sock(sock, tty)
+                        return stdout, stderr
+                    except socket.timeout:
+                        pass
             else:
                 return_code = result[0]
                 if isinstance(result[1], bytes):

@@ -1,4 +1,5 @@
 import logging
+import time
 from subprocess import CalledProcessError
 from typing import NamedTuple
 
@@ -96,6 +97,7 @@ class TestDockerClient:
         # start the container
         output, _ = docker_client.start_container(info.container_id, attach=True)
         output = output.decode(config.DEFAULT_ENCODING)
+        time.sleep(1)  # give the docker daemon some time to remove the container after execution
 
         assert 0 == len(docker_client.list_containers(f"id={info.container_id}"))
 
