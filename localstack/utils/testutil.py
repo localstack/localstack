@@ -149,7 +149,6 @@ def create_zip_file(file_path, zip_file=None, get_content=False):
     if not get_content:
         TMP_FILES.append(tmp_dir)
         return full_zip_file
-    zip_file_content = None
     with open(full_zip_file, "rb") as file_obj:
         zip_file_content = file_obj.read()
     rm_dir(tmp_dir)

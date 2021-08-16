@@ -76,6 +76,7 @@ APPLICATION_AMZ_CBOR_1_1 = "application/x-amz-cbor-1.1"
 APPLICATION_CBOR = "application/cbor"
 APPLICATION_JSON = "application/json"
 APPLICATION_XML = "application/xml"
+APPLICATION_OCTET_STREAM = "application/octet-stream"
 APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded"
 
 # strings to indicate truthy/falsy values
