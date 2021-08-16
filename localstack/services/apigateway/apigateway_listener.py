@@ -54,7 +54,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.common import to_bytes, to_str
+from localstack.utils.common import camel_to_snake_case, to_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -528,28 +528,23 @@ def invoke_rest_api_integration_backend(
             return result
 
         elif "states:action/" in uri:
-            if uri.endswith("states:action/StartExecution"):
-                action = "StartExecution"
-            decoded_data = data.decode()
+            action = uri.split("/")[-1]
             payload = {}
-            if "stateMachineArn" in decoded_data and "input" in decoded_data:
-                payload = json.loads(decoded_data)
-            elif APPLICATION_JSON in integration.get("requestTemplates", {}):
+
+            if APPLICATION_JSON in integration.get("requestTemplates", {}):
                 template = integration["requestTemplates"][APPLICATION_JSON]
                 payload = aws_stack.render_velocity_template(template, data, as_json=True)
+            else:
+                payload = json.loads(data.decode("utf-8"))
             client = aws_stack.connect_to_service("stepfunctions")
 
-            kwargs = {"name": payload["name"]} if "name" in payload else {}
-            result = client.start_execution(
-                stateMachineArn=payload["stateMachineArn"],
-                input=payload["input"],
-                **kwargs,
+            method_name = camel_to_snake_case(action)
+            method = getattr(client, method_name)
+            result = method(
+                **payload,
             )
             response = requests_response(
-                content={
-                    "executionArn": result["executionArn"],
-                    "startDate": str(result["startDate"]),
-                },
+                content=result,
                 headers=aws_stack.mock_aws_request_headers(),
             )
             response.headers["content-type"] = APPLICATION_JSON
