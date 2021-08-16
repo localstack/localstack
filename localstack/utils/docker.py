@@ -855,7 +855,7 @@ class SdkDockerClient(ContainerClient):
                     )
             else:
                 if cur_state == "volume":
-                    mounts = mounts or []
+                    mounts = mounts if mounts is not None else []
                     mounts.append(tuple(flag.split(":")))
                 elif cur_state == "port":
                     port_split = flag.split(":")
@@ -871,11 +871,11 @@ class SdkDockerClient(ContainerClient):
                         raise ValueError("Invalid port string provided: %s", flag)
                     if "/" in container_port:
                         container_port, protocol = container_port.split("/")
-                    ports = ports or PortMappings()
+                    ports = ports if ports is not None else PortMappings()
                     ports.add(int(host_port), int(container_port), protocol)
                 elif cur_state == "env":
                     env_split = flag.split("=")
-                    env_vars = env_vars or {}
+                    env_vars = env_vars if env_vars is not None else {}
                     env_vars[env_split[0]] = env_split[1]
                 cur_state = None
         return env_vars, ports, mounts
