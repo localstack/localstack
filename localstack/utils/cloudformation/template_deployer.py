@@ -1493,6 +1493,25 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
                 InstanceProfileName=resource_props["InstanceProfileName"],
                 RoleName=resource_props["Roles"][0],
             )
+    elif resource_type == "IAM::User":
+        iam = aws_stack.connect_to_service("iam")
+        username = resource_props.get("UserName")
+        for group in resource_props.get("Groups", []):
+            iam.add_user_to_group(UserName=username, GroupName=group)
+        for managed_policy in resource_props.get("ManagedPolicyArns", []):
+            iam.attach_user_policy(UserName=username, PolicyArn=managed_policy)
+        for policy in resource_props.get("Policies", []):
+            policy_doc = json.dumps(policy.get("PolicyDocument"))
+            iam.put_user_policy(
+                UserName=username, PolicyName=policy.get("PolicyName"), PolicyDocument=policy_doc
+            )
+        login_profile = resource_props.get("LoginProfile")
+        if login_profile:
+            iam.create_login_profile(
+                UserName=username,
+                Password=login_profile.get("Password"),
+                PasswordResetRequired=login_profile.get("PasswordResetRequired"),
+            )
 
 
 def get_action_name_for_resource_change(res_change):

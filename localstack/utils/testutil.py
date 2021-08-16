@@ -25,7 +25,6 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
-from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     TMP_FILES,
@@ -150,7 +149,6 @@ def create_zip_file(file_path, zip_file=None, get_content=False):
     if not get_content:
         TMP_FILES.append(tmp_dir)
         return full_zip_file
-    zip_file_content = None
     with open(full_zip_file, "rb") as file_obj:
         zip_file_content = file_obj.read()
     rm_dir(tmp_dir)
@@ -361,6 +359,8 @@ def find_recursive(key, value, obj):
 
 
 def start_http_server(test_port=None, invocations=None):
+    # Note: leave imports here to avoid import errors (e.g., "flask") for CLI commands
+    from localstack.services.generic_proxy import ProxyListener
     from localstack.services.infra import start_proxy
 
     class TestListener(ProxyListener):

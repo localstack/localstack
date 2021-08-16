@@ -1006,7 +1006,7 @@ class IAMManagedPolicy(GenericBaseModel):
         return "AWS::IAM::ManagedPolicy"
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.role_arn(self.props["ManagedPolicyName"])
+        return aws_stack.policy_arn(self.props["ManagedPolicyName"])
 
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
