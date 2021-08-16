@@ -455,7 +455,14 @@ class CmdDockerClient(ContainerClient):
         cmd = self._docker_cmd()
         cmd += ["cp", local_path, f"{container_name}:{container_path}"]
         LOG.debug("Copying into container with cmd: %s", cmd)
-        safe_run(cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in to_str(e.stdout):
+                raise NoSuchContainer(container_name)
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            )
 
     def copy_from_container(
         self, container_name: str, local_path: str, container_path: str
@@ -463,7 +470,14 @@ class CmdDockerClient(ContainerClient):
         cmd = self._docker_cmd()
         cmd += ["cp", f"{container_name}:{container_path}", local_path]
         LOG.debug("Copying from container with cmd: %s", cmd)
-        safe_run(cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in to_str(e.stdout):
+                raise NoSuchContainer(container_name)
+            raise ContainerException(
+                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+            )
 
     def pull_image(self, docker_image: str) -> None:
         """Pulls a image with a given name from a docker registry"""
