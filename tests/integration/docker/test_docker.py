@@ -608,3 +608,20 @@ class TestDockerClient:
             container_path=container_file_name,
         )
         assert "TEST_CONTENT" == file_path.read().strip()
+
+    def test_run_with_additional_arguments(self, docker_client: DockerClient):
+        env_variable = "TEST_FLAG=test_str"
+        stdout, _ = docker_client.run_container(
+            "alpine", remove=True, command=["env"], additional_flags=f"-e {env_variable}"
+        )
+        assert env_variable in stdout.decode(config.DEFAULT_ENCODING)
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            remove=True,
+            command=["env"],
+            additional_flags=f"-e {env_variable}",
+            env_vars={"EXISTING_VAR": "test_var"},
+        )
+        stdout = stdout.decode(config.DEFAULT_ENCODING)
+        assert env_variable in stdout
+        assert "EXISTING_VAR=test_var" in stdout

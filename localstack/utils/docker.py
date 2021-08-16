@@ -833,6 +833,53 @@ class SdkDockerClient(ContainerClient):
                 raise ContainerException("Invalid frame type when reading from socket")
         return stdout, stderr
 
+    def _parse_additional_flags(
+        self,
+        additional_flags: str,
+        env_vars: Dict[str, str],
+        ports: PortMappings,
+        mounts: List[Tuple[str, str]],
+    ) -> Tuple[Dict[str, str], PortMappings, List[Tuple[str, str]]]:
+        cur_state = None
+        for flag in shlex.split(additional_flags):
+            if not cur_state:
+                if flag in ["-v", "--volume"]:
+                    cur_state = "volume"
+                elif flag in ["-p", "--publish"]:
+                    cur_state = "port"
+                elif flag in ["-e", "--env"]:
+                    cur_state = "env"
+                else:
+                    raise NotImplementedError(
+                        "Flag %s is currently not supported by this docker client."
+                    )
+            else:
+                if cur_state == "volume":
+                    mounts = mounts or []
+                    mounts.append(tuple(flag.split(":")))
+                elif cur_state == "port":
+                    port_split = flag.split(":")
+                    protocol = "tcp"
+                    if len(port_split) == 2:
+                        host_port, container_port = port_split
+                    elif len(port_split) == 3:
+                        LOG.warning(
+                            "Host part of port mappings are ignored currently in additional flags"
+                        )
+                        _, host_port, container_port = port_split
+                    else:
+                        raise ValueError("Invalid port string provided: %s", flag)
+                    if "/" in container_port:
+                        container_port, protocol = container_port.split("/")
+                    ports = ports or PortMappings()
+                    ports.add(int(host_port), int(container_port), protocol)
+                elif cur_state == "env":
+                    env_split = flag.split("=")
+                    env_vars = env_vars or {}
+                    env_vars[env_split[0]] = env_split[1]
+                cur_state = None
+        return env_vars, ports, mounts
+
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         LOG.debug("Getting container status for container: %s", container_name)
         try:
@@ -1080,7 +1127,9 @@ class SdkDockerClient(ContainerClient):
     ) -> str:
         LOG.debug("Creating container with image %s", image_name)
         if additional_flags:
-            raise NotImplementedError("Additional flags not supported when using docker sdk")
+            env_vars, ports, mount_volumes = self._parse_additional_flags(
+                additional_flags, env_vars, ports, mount_volumes
+            )
         try:
             kwargs = {}
             if cap_add:
