@@ -826,6 +826,7 @@ class SdkDockerClient(ContainerClient):
     def __init__(self):
         try:
             self.docker_client = docker.from_env()
+            logging.getLogger("urllib3").setLevel(logging.INFO)
         except DockerException:
             self.docker_client = None
 
@@ -1008,9 +1009,15 @@ class SdkDockerClient(ContainerClient):
 
     def pull_image(self, docker_image: str) -> None:
         """Pulls a image with a given name from a docker registry"""
-        image_split = docker_image.partition(":")
+        LOG.debug("Pulling image: %s", docker_image)
+        # some path in the docker image string indicates a custom repository
+        path_split = docker_image.rpartition("/")
+        image_split = path_split[2].partition(":")
+        repository = f"{path_split[0]}{path_split[1]}{image_split[0]}"
+        tag = image_split[2]
         try:
-            self.client().images.pull(image_split[0], image_split[2])
+            LOG.debug("Repository: %s Tag: %s", repository, tag)
+            self.client().images.pull(repository, tag)
         except ImageNotFound:
             raise NoSuchImage(docker_image)
         except APIError:
@@ -1019,7 +1026,7 @@ class SdkDockerClient(ContainerClient):
     def get_docker_image_names(self, strip_latest=True, include_tags=True):
         try:
             images = self.client().images.list()
-            image_names = [image.tags[0] for image in images if image.tags]
+            image_names = [tag for image in images for tag in image.tags if image.tags]
             if not include_tags:
                 image_names = list(map(lambda image_name: image_name.split(":")[0], image_names))
             if strip_latest:
