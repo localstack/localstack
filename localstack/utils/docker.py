@@ -23,6 +23,8 @@ from localstack.utils.run import to_str
 
 LOG = logging.getLogger(__name__)
 
+SDK_ISDIR = 1 << 31
+
 
 @unique
 class DockerContainerStatus(Enum):
@@ -939,18 +941,17 @@ class SdkDockerClient(ContainerClient):
         :param container_path: Path in container
         :return: Tuple (path_exists, path_is_directory)
         """
-        # Temporary workaround until we find out why stat.S_ISDIR returns on the mode returned by the docker daemon
-        # Works seemingly with this go code in docker cli client
+        # Docker CLI copy uses go FileMode to determine if target is a dict or not
         # https://github.com/docker/cli/blob/e3dfc2426e51776a3263cab67fbba753dd3adaa9/cli/command/container/cp.go#L260
-        # Docker Daemon returns, when called on a dict, a mode of the form 0o20000000755, while stat expects 0o40755
-        ISDIR_CONSTANT = 1 << 31
+        # The isDir Bit is the most significant bit in the 32bit struct:
+        # https://golang.org/src/os/types.go?s=2650:2683
+        stats = {}
         try:
             _, stats = container.get_archive(container_path)
             target_exists = True
         except APIError:
             target_exists = False
-        target_is_dir = target_exists and bool(stats["mode"] & ISDIR_CONSTANT)
-        LOG.debug("Target exists: %s, is dir: %s", target_exists, target_is_dir)
+        target_is_dir = target_exists and bool(stats["mode"] & SDK_ISDIR)
         return target_exists, target_is_dir
 
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
