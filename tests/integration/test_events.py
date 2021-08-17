@@ -328,6 +328,7 @@ class EventsTest(unittest.TestCase):
         self.events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name_1,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
         self.events_client.put_targets(
@@ -704,6 +705,7 @@ class EventsTest(unittest.TestCase):
         self.events_client.put_rule(
             Name=rule_name,
             EventBusName=bus_name,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN),
         )
 
         self.events_client.put_targets(

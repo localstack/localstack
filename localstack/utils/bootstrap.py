@@ -372,6 +372,9 @@ def canonicalize_api_names(apis=None):
             if a == api:
                 return True
 
+    # TODO: enable recursive lookup - e.g., having service "amplify" depend (via API_DEPENDENCIES)
+    #  on composite "serverless", which should add services "s3", "apigateway", etc...
+
     # resolve composites
     for comp, deps in API_COMPOSITES.items():
         if contains(apis, comp):
