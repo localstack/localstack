@@ -1,9 +1,13 @@
+import abc
 import json
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Collection, Dict, Optional
 
 import requests
+from readerwriterlock import rwlock
+from requests.models import Request
 
 from localstack import config
 from localstack.utils.bootstrap import canonicalize_api_names
@@ -12,11 +16,94 @@ from localstack.utils.common import clone
 # set up logger
 LOG = logging.getLogger(__name__)
 
-# map of service plugins, mapping from service name to plugin details
-SERVICE_PLUGINS = {}
+# TODO: Define interfaces for ServiceLifecycle, SchemaValidation, SecurityEnforcement, etc.
+#       to achieve composable ServicePlugins.
+#  Ultimately, the plugin metamodel will allow to easily add new ServicePlugins that consist of:
+#     - optional initializer (e.g., download dependencies, apply patches)
+#     - service lifecycle (start, stop, pause)
+#     - health check
+#     - state manager for persistent state (potentially composite)
+#     - request/schema validator (future work)
+#     - security interceptor (future work)
+#     ...
 
 # maps service names to health status
-STATUSES = {}
+STATUSES: Dict[str, Dict] = {}
+
+
+# ---------------------------
+# STATE SERIALIZER INTERFACE
+# ---------------------------
+
+
+class PersistenceContext:
+    state_dir: str
+    lock: rwlock.RWLockable
+
+    def __init__(self, state_dir: str = None, lock: rwlock.RWLockable = None):
+        # state dir (within DATA_DIR) of currently processed API in local file system
+        self.state_dir = state_dir
+        # read-write lock for concurrency control of incoming requests
+        self.lock = lock
+
+
+class StateSerializer(abc.ABC):
+    """A state serializer encapsulates the logic of persisting and loading service state to/from disk."""
+
+    @abc.abstractmethod
+    def restore_state(self, context: PersistenceContext):
+        """Restore state from the underlying persistence file"""
+        pass
+
+    @abc.abstractmethod
+    def update_state(self, context: PersistenceContext, request: Request):
+        """Update persistence state based on the incoming request"""
+        pass
+
+    @abc.abstractmethod
+    def is_write_request(self, request: Request) -> bool:
+        """Returns whether the given request is a write request that should trigger serialization"""
+        return False
+
+    def get_lock_for_request(self, request: Request) -> Optional[rwlock.Lockable]:
+        """Returns a lock (or None) that should be used to guard the given request, for concurrency control"""
+        return None
+
+    def get_context(self) -> PersistenceContext:
+        """Returns the current persistence context"""
+        return None
+
+
+class StateSerializerComposite(StateSerializer):
+    """Composite state serializer that delegates the requests to a collection of underlying concrete serializers"""
+
+    def __init__(self, serializers: Collection[StateSerializer] = None):
+        self.serializers: Collection[StateSerializer] = serializers or []
+
+    def restore_state(self, context: PersistenceContext):
+        for serializer in self.serializers:
+            serializer.restore_state(context)
+
+    def update_state(self, context: PersistenceContext, request: Request):
+        for serializer in self.serializers:
+            serializer.update_state(context, request)
+
+    def is_write_request(self, request: Request) -> bool:
+        return any(ser.is_write_request(request) for ser in self.serializers)
+
+    def get_lock_for_request(self, request: Request) -> Optional[rwlock.Lockable]:
+        if self.serializers:
+            return self.serializers[0].get_lock_for_request(
+                request
+            )  # return lock from first serializer
+
+    def get_context(self) -> PersistenceContext:
+        if self.serializers:
+            return self.serializers[0].get_context()  # return context from first serializer
+
+
+# maps service names to serializers (TODO: to be encapsulated in ServicePlugin instances)
+SERIALIZERS: Dict[str, StateSerializer] = {}
 
 
 # -----------------
@@ -61,6 +148,10 @@ def register_plugin(plugin):
         if existing.priority > plugin.priority:
             return
     SERVICE_PLUGINS[plugin.name()] = plugin
+
+
+# map of service plugins, mapping from service name to plugin details
+SERVICE_PLUGINS: Dict[str, Plugin] = {}
 
 
 # -------------------------
