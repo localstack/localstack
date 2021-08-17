@@ -258,7 +258,7 @@ class TestDockerClient:
         self, tmpdir, docker_client: ContainerClient, create_container
     ):
         local_path = tmpdir.join("myfile.txt")
-        container_path = "/tmp/"
+        container_path = "/tmp"
 
         self._test_copy_into_container(
             docker_client,
@@ -301,6 +301,71 @@ class TestDockerClient:
         output = output.decode(config.DEFAULT_ENCODING)
 
         assert "foobared" in output
+
+    def test_copy_into_container_with_existing_target(
+        self, tmpdir, docker_client: ContainerClient, dummy_container
+    ):
+        local_path = tmpdir.join("myfile.txt")
+        container_path = "/tmp/myfile.txt"
+
+        with local_path.open(mode="w") as fd:
+            fd.write("foo\n")
+
+        docker_client.start_container(dummy_container.container_id)
+        docker_client.exec_in_container(
+            dummy_container.container_id, command=["sh", "-c", f"echo bar > {container_path}"]
+        )
+
+        out, _ = docker_client.exec_in_container(
+            dummy_container.container_id,
+            command=[
+                "cat",
+                "/tmp/myfile.txt",
+            ],
+        )
+        assert "bar" in out.decode(config.DEFAULT_ENCODING)
+        docker_client.copy_into_container(
+            dummy_container.container_id, str(local_path), container_path
+        )
+        out, _ = docker_client.exec_in_container(
+            dummy_container.container_id,
+            command=[
+                "cat",
+                "/tmp/myfile.txt",
+            ],
+        )
+        assert "foo" in out.decode(config.DEFAULT_ENCODING)
+
+    def test_copy_directory_content_into_container(
+        self, tmpdir, docker_client: ContainerClient, dummy_container
+    ):
+        local_path = tmpdir.join("fancy_folder")
+        local_path.mkdir()
+
+        file_path = local_path.join("myfile.txt")
+        with file_path.open(mode="w") as fd:
+            fd.write("foo\n")
+        file_path = local_path.join("myfile2.txt")
+        with file_path.open(mode="w") as fd:
+            fd.write("bar\n")
+        container_path = "/tmp/fancy_other_folder"
+        docker_client.start_container(dummy_container.container_id)
+        docker_client.exec_in_container(
+            dummy_container.container_id, command=["mkdir", "-p", container_path]
+        )
+        docker_client.copy_into_container(
+            dummy_container.container_id, f"{str(local_path)}/.", container_path
+        )
+        out, _ = docker_client.exec_in_container(
+            dummy_container.container_id,
+            command=[
+                "cat",
+                "/tmp/fancy_other_folder/myfile.txt",
+                "/tmp/fancy_other_folder/myfile2.txt",
+            ],
+        )
+        assert "foo" in out.decode(config.DEFAULT_ENCODING)
+        assert "bar" in out.decode(config.DEFAULT_ENCODING)
 
     def test_get_network_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(ContainerException):
@@ -591,6 +656,15 @@ class TestDockerClient:
     def test_copy_from_container(self, tmpdir, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         local_path = tmpdir.join("test_file")
+        self._test_copy_from_container(
+            local_path, local_path, "test_file", docker_client, dummy_container
+        )
+
+    def test_copy_from_container_to_different_file(
+        self, tmpdir, docker_client: ContainerClient, dummy_container
+    ):
+        docker_client.start_container(dummy_container.container_id)
+        local_path = tmpdir.join("test_file_2")
         self._test_copy_from_container(
             local_path, local_path, "test_file", docker_client, dummy_container
         )

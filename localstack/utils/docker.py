@@ -3,7 +3,6 @@ import logging
 import os
 import shlex
 import socket
-import stat
 import subprocess
 import tarfile
 import tempfile
@@ -95,7 +94,7 @@ class PortMappings(object):
         protocol = str(protocol or "tcp").lower()
         self.mappings[self.HashableList([port, port, protocol])] = [mapped, mapped]
 
-    def to_str(self) -> str:  # TODO test (and/or remove?)
+    def to_str(self) -> str:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
 
         def entry(k, v):
@@ -180,7 +179,7 @@ class ContainerClient(metaclass=ABCMeta):
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
         """List all containers matching the given filters
 
-        Returns a list of dicts with keys id, image, name, labels, status
+        :return: A list of dicts with keys id, image, name, labels, status
         """
         pass
 
@@ -205,6 +204,7 @@ class ContainerClient(metaclass=ABCMeta):
     def copy_from_container(
         self, container_name: str, local_path: str, container_path: str
     ) -> None:
+        """Copy contents of the given container to the host"""
         pass
 
     @abstractmethod
@@ -214,6 +214,12 @@ class ContainerClient(metaclass=ABCMeta):
 
     @abstractmethod
     def get_docker_image_names(self, strip_latest=True, include_tags=True) -> List[str]:
+        """
+        Get all names of docker images available to the container engine
+        :param strip_latest: return images both with and without :latest tag
+        :param include_tags: Include tags of the images in the names
+        :return: List of image names
+        """
         pass
 
     @abstractmethod
@@ -223,10 +229,18 @@ class ContainerClient(metaclass=ABCMeta):
 
     @abstractmethod
     def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+        """Get detailed attributes of an container.
+
+        :return: Dict containing docker attributes as returned by the daemon
+        """
         pass
 
     @abstractmethod
     def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+        """Get detailed attributes of an image.
+
+        :return: Dict containing docker attributes as returned by the daemon
+        """
         pass
 
     def get_container_name(self, container_id: str) -> str:
@@ -279,6 +293,10 @@ class ContainerClient(metaclass=ABCMeta):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
     ) -> str:
+        """Creates a container with the given image
+
+        :return: Container ID
+        """
         pass
 
     @abstractmethod
@@ -303,6 +321,10 @@ class ContainerClient(metaclass=ABCMeta):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
+        """Creates and runs a given docker container
+
+        :return: A tuple (stdout, stderr)
+        """
         pass
 
     @abstractmethod
@@ -310,23 +332,31 @@ class ContainerClient(metaclass=ABCMeta):
         self,
         container_name_or_id: str,
         command: Union[List[str], str],
-        interactive=False,
-        detach=False,
+        interactive: bool = False,
+        detach: bool = False,
         env_vars: Optional[Dict[str, str]] = None,
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
+        """Execute a given command in a container
+
+        :return: A tuple (stdout, stderr)
+        """
         pass
 
     @abstractmethod
     def start_container(
         self,
         container_name_or_id: str,
-        stdin=None,
+        stdin: bytes = None,
         interactive: bool = False,
         attach: bool = False,
         flags: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
+        """Start a given, already created container
+
+        :return: A tuple (stdout, stderr) if attach or interactive is set, otherwise a tuple (b"container_name_or_id", b"")
+        """
         pass
 
 
@@ -338,7 +368,6 @@ class CmdDockerClient(ContainerClient):
         return config.DOCKER_CMD.split()
 
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
-        """Returns the status of the container with the given name"""
         cmd = self._docker_cmd()
         cmd += [
             "ps",
@@ -361,7 +390,6 @@ class CmdDockerClient(ContainerClient):
             return DockerContainerStatus.DOWN
 
     def get_network(self, container_name: str) -> str:
-        """Returns the network mode of the container with the given name"""
         LOG.debug("Getting container network: %s", container_name)
         cmd = self._docker_cmd()
         cmd += [
@@ -385,7 +413,6 @@ class CmdDockerClient(ContainerClient):
         return container_network
 
     def stop_container(self, container_name: str) -> None:
-        """Stops container with given name"""
         cmd = self._docker_cmd()
         cmd += ["stop", "-t0", container_name]
         LOG.debug("Stopping container with cmd %s", cmd)
@@ -400,7 +427,6 @@ class CmdDockerClient(ContainerClient):
                 )
 
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
-        """Removes container with given name"""
         if check_existence and container_name not in self.get_running_container_names():
             return
         cmd = self._docker_cmd() + ["rm"]
@@ -419,10 +445,6 @@ class CmdDockerClient(ContainerClient):
                 )
 
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
-        """List all containers matching the given filters
-
-        Returns a list of dicts with keys id, image, name, labels, status
-        """
         filter = [filter] if isinstance(filter, str) else filter
         cmd = self._docker_cmd()
         cmd.append("ps")
@@ -451,7 +473,6 @@ class CmdDockerClient(ContainerClient):
     def copy_into_container(
         self, container_name: str, local_path: str, container_path: str
     ) -> None:
-        """Copy contents of the given local path into the container"""
         cmd = self._docker_cmd()
         cmd += ["cp", local_path, f"{container_name}:{container_path}"]
         LOG.debug("Copying into container with cmd: %s", cmd)
@@ -480,7 +501,6 @@ class CmdDockerClient(ContainerClient):
             )
 
     def pull_image(self, docker_image: str) -> None:
-        """Pulls a image with a given name from a docker registry"""
         cmd = self._docker_cmd()
         cmd += ["pull", docker_image]
         LOG.debug("Pulling image with cmd: %s", cmd)
@@ -509,7 +529,6 @@ class CmdDockerClient(ContainerClient):
             return []
 
     def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
-        """Get all logs of a given container"""
         cmd = self._docker_cmd()
         cmd += ["logs", container_name_or_id]
         try:
@@ -552,7 +571,6 @@ class CmdDockerClient(ContainerClient):
             raise NoSuchImage(image_name=e.object_id)
 
     def get_container_ip(self, container_name_or_id: str) -> str:
-        """Get the IP address of a given container"""
         cmd = self._docker_cmd()
         cmd += [
             "inspect",
@@ -571,7 +589,6 @@ class CmdDockerClient(ContainerClient):
                 )
 
     def has_docker(self) -> bool:
-        """Check if system has docker available"""
         try:
             safe_run(self._docker_cmd() + ["ps"])
             return True
@@ -792,11 +809,16 @@ class Util:
                 image_names.append(image[: -len(suffix)])
 
     @staticmethod
-    def tar_path(path, target_path):
+    def tar_path(path, target_path, is_dir: bool):
         f = tempfile.NamedTemporaryFile()
         with tarfile.open(mode="w", fileobj=f) as t:
             abs_path = os.path.abspath(path)
-            t.add(abs_path, arcname=os.path.basename(target_path) or os.path.basename(path))
+            arcname = (
+                os.path.basename(path)
+                if is_dir
+                else (os.path.basename(target_path) or os.path.basename(path))
+            )
+            t.add(abs_path, arcname=arcname)
 
         f.seek(0)
         return f
@@ -821,6 +843,8 @@ class Util:
 
 
 class SdkDockerClient(ContainerClient):
+    """Class for managing docker using the python docker sdk"""
+
     docker_client: Optional[DockerClient]
 
     def __init__(self):
@@ -837,6 +861,10 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException("Docker not available")
 
     def _read_from_sock(self, sock: socket, tty: bool):
+        """Reads multiplexed messages from a socket returned by attach_socket.
+
+        Uses the protocol specified here: https://docs.docker.com/engine/api/v1.41/#operation/ContainerAttach
+        """
         stdout = b""
         stderr = b""
         for frame_type, frame_data in frames_iter(sock, tty):
@@ -855,6 +883,15 @@ class SdkDockerClient(ContainerClient):
         ports: PortMappings,
         mounts: List[Tuple[str, str]],
     ) -> Tuple[Dict[str, str], PortMappings, List[Tuple[str, str]]]:
+        """Parses environment, volume and port flags passed as string
+        :param additional_flags: String which contains the flag definitions
+        :param env_vars: Dict with env vars. Will be modified in place.
+        :param ports: PortMapping object. Will be modified in place.
+        :param mounts: List of mount tuples. Will be modified in place.
+        :return: A tuple containing the env_vars, ports and mount objects. Will return new objects if respective
+                parameters were None and additional flags contained a flag for that object, the same which are passed
+                otherwise.
+        """
         cur_state = None
         for flag in shlex.split(additional_flags):
             if not cur_state:
@@ -895,8 +932,29 @@ class SdkDockerClient(ContainerClient):
                 cur_state = None
         return env_vars, ports, mounts
 
+    def _container_path_info(self, container: Container, container_path: str):
+        """
+        Get information about a path in the given container
+        :param container: Container to be inspected
+        :param container_path: Path in container
+        :return: Tuple (path_exists, path_is_directory)
+        """
+        # Temporary workaround until we find out why stat.S_ISDIR returns on the mode returned by the docker daemon
+        # Works seemingly with this go code in docker cli client
+        # https://github.com/docker/cli/blob/e3dfc2426e51776a3263cab67fbba753dd3adaa9/cli/command/container/cp.go#L260
+        # Docker Daemon returns, when called on a dict, a mode of the form 0o20000000755, while stat expects 0o40755
+        ISDIR_CONSTANT = 1 << 31
+        try:
+            _, stats = container.get_archive(container_path)
+            target_exists = True
+        except APIError:
+            target_exists = False
+        target_is_dir = target_exists and bool(stats["mode"] & ISDIR_CONSTANT)
+        LOG.debug("Target exists: %s, is dir: %s", target_exists, target_is_dir)
+        return target_exists, target_is_dir
+
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
-        LOG.debug("Getting container status for container: %s", container_name)
+        # LOG.debug("Getting container status for container: %s", container_name) #  too verbose
         try:
             container = self.client().containers.get(container_name)
             if container.status == "running":
@@ -929,7 +987,6 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
-        """Removes container with given name"""
         LOG.debug("Removing container: %s", container_name)
         if check_existence and container_name not in self.get_running_container_names():
             LOG.debug("Aborting removing due to check_existence check")
@@ -943,10 +1000,6 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
-        """List all containers matching the given filters
-
-        Returns a list of dicts with keys id, image, name, labels, status
-        """
         if filter:
             filter = [filter] if isinstance(filter, str) else filter
             filter = dict([f.split("=") for f in filter])
@@ -971,21 +1024,13 @@ class SdkDockerClient(ContainerClient):
     def copy_into_container(
         self, container_name: str, local_path: str, container_path: str
     ) -> None:  # TODO behave like https://docs.docker.com/engine/reference/commandline/cp/
-        """Copy contents of the given local path into the container
-
-        If you copy into a container directory, you must specify a trailing slash for the container directory.
-        """
+        LOG.debug("Copying file %s into %s:%s", local_path, container_name, container_path)
         try:
             container = self.client().containers.get(container_name)
-            try:
-                _, stats = container.get_archive(container_path)
-                target_exists = True
-            except APIError:
-                target_exists = False
-            target_is_dir = target_exists and stat.S_ISDIR(stats["mode"])
-            LOG.debug("Target exists: %s, is dir: %s", target_exists, target_is_dir)
-            with Util.tar_path(local_path, container_path) as tar:
-                container.put_archive(os.path.dirname(container_path), tar)
+            target_exists, target_isdir = self._container_path_info(container, container_path)
+            target_path = container_path if target_isdir else os.path.dirname(container_path)
+            with Util.tar_path(local_path, container_path, is_dir=target_isdir) as tar:
+                container.put_archive(target_path, tar)
         except NotFound:
             raise NoSuchContainer(container_name)
         except APIError:
@@ -995,9 +1040,9 @@ class SdkDockerClient(ContainerClient):
         self,
         container_name: str,
         local_path: str,
-        container_path: str,  # TODO behave like https://docs.docker.com/engine/reference/commandline/cp/
+        container_path: str,
     ) -> None:
-        """Copy contents of the container into the local file system"""
+        LOG.debug("Copying file from %s:%s to %s", container_name, container_path, local_path)
         try:
             container = self.client().containers.get(container_name)
             bits, _ = container.get_archive(container_path)
@@ -1008,7 +1053,6 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
     def pull_image(self, docker_image: str) -> None:
-        """Pulls a image with a given name from a docker registry"""
         LOG.debug("Pulling image: %s", docker_image)
         # some path in the docker image string indicates a custom repository
         path_split = docker_image.rpartition("/")
@@ -1036,7 +1080,6 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
     def get_container_logs(self, container_name_or_id: str, safe=False) -> str:
-        """Get all logs of a given container"""
         try:
             container = self.client().containers.get(container_name_or_id)
             return to_str(container.logs())
@@ -1066,11 +1109,9 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
     def get_container_ip(self, container_name_or_id: str) -> str:
-        """Get the IP address of a given container"""
         return self.inspect_container(container_name_or_id)["NetworkSettings"]["IPAddress"]
 
     def has_docker(self) -> bool:
-        """Check if system has docker available"""
         try:
             if not self.docker_client:
                 return False
@@ -1146,7 +1187,7 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
     ) -> str:
-        LOG.debug("Creating container with image %s", image_name)
+        LOG.debug("Creating container with image: %s", image_name)
         if additional_flags:
             env_vars, ports, mount_volumes = self._parse_additional_flags(
                 additional_flags, env_vars, ports, mount_volumes
@@ -1228,7 +1269,7 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
-        LOG.debug("Running container with image %s", image_name)
+        LOG.debug("Running container with image: %s", image_name)
         container = None
         try:
             container = self.create_container(
