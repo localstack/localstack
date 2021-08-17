@@ -6,8 +6,8 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Collection, Dict, Optional
 
 import requests
-from flask import Request
 from readerwriterlock import rwlock
+from requests.models import Request
 
 from localstack import config
 from localstack.utils.bootstrap import canonicalize_api_names
@@ -37,11 +37,14 @@ STATUSES: Dict[str, Dict] = {}
 
 
 class PersistenceContext:
+    state_dir: str
+    lock: rwlock.RWLockable
+
     def __init__(self, state_dir: str = None, lock: rwlock.RWLockable = None):
         # state dir (within DATA_DIR) of currently processed API in local file system
-        self.state_dir: str = state_dir
+        self.state_dir = state_dir
         # read-write lock for concurrency control of incoming requests
-        self.lock: rwlock.RWLockable = lock
+        self.lock = lock
 
 
 class StateSerializer(abc.ABC):
