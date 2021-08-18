@@ -4,8 +4,15 @@ import unittest
 from typing import List
 from unittest.mock import patch
 
+import pytest
+
 from localstack import config
-from localstack.utils.docker import CmdDockerClient, DockerContainerStatus
+from localstack.utils.docker import (
+    CmdDockerClient,
+    DockerContainerStatus,
+    PortMappings,
+    SdkDockerClient,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -47,6 +54,30 @@ class TestDockerClient(unittest.TestCase):
         run_mock.return_value = "STATUS    NAME"
         status = docker_client.get_container_status("localstack_main")
         self.assertEqual(DockerContainerStatus.NON_EXISTENT, status)
+
+
+def test_argument_parsing():
+    test_port_string = "-p 80:8080/udp"
+    test_port_string_with_host = "-p 127.0.0.1:6000:7000/tcp"
+    test_env_string = "-e TEST_ENV_VAR=test_string"
+    test_mount_string = "-v /var/test:/opt/test"
+    argument_string = (
+        f"{test_port_string} {test_env_string} {test_mount_string} {test_port_string_with_host}"
+    )
+    env_vars = {}
+    ports = PortMappings()
+    mounts = []
+    docker_client = SdkDockerClient()
+    docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
+    assert env_vars == {"TEST_ENV_VAR": "test_string"}
+    assert ports.to_str() == "-p 80:8080/udp -p 6000:7000"
+    assert mounts == [("/var/test", "/opt/test")]
+    with pytest.raises(NotImplementedError):
+        argument_string = "--somerandomargument"
+        docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
+    with pytest.raises(ValueError):
+        argument_string = "--publish 80:80:80:80"
+        docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
 
 
 def list_in(a, b):

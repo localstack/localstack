@@ -242,7 +242,7 @@ SERVICES=kinesis,lambda,sqs,dynamodb DEBUG=1 localstack start
 * `BUCKET_MARKER_LOCAL`: Optional bucket name for running lambdas locally.
 * `LAMBDA_DOCKER_NETWORK`: Optional Docker network for the container running your lambda function.
 * `LAMBDA_DOCKER_DNS`: Optional DNS server for the container running your lambda function.
-* `LAMBDA_DOCKER_FLAGS`: Additional flags passed to Lambda Docker `run`/`create` commands (e.g., useful for specifying custom volume mounts)
+* `LAMBDA_DOCKER_FLAGS`: Additional flags passed to Lambda Docker `run`/`create` commands (e.g., useful for specifying custom volume mounts). Does only support environment, volume and port flags (with `-e KEY=VALUE`, `-v host:container`, `-p host:container` respectively)
 * `LAMBDA_CONTAINER_REGISTRY` Use an alternative docker registry to pull lambda execution containers (default: `lambci/lambda`).
 * `LAMBDA_REMOVE_CONTAINERS`: Whether to remove containers after Lambdas finished executing (default: `true`).
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).

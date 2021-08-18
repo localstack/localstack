@@ -184,6 +184,9 @@ DOCKER_FLAGS = os.environ.get("DOCKER_FLAGS", "").strip()
 # command used to run Docker containers (e.g., set to "sudo docker" to run as sudo)
 DOCKER_CMD = os.environ.get("DOCKER_CMD", "").strip() or "docker"
 
+# use the command line docker client instead of the new sdk version, might get removed in the future
+LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
+
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True

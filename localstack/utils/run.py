@@ -7,7 +7,7 @@ import sys
 import threading
 import traceback
 from concurrent.futures import Future
-from typing import List, Union
+from typing import AnyStr, Dict, List, Optional, Union
 
 from localstack import config
 
@@ -21,7 +21,7 @@ def run(
     stdin=False,
     stderr=subprocess.STDOUT,
     outfile=None,
-    env_vars=None,
+    env_vars: Optional[Dict[AnyStr, AnyStr]] = None,
     inherit_cwd=False,
     inherit_env=True,
     tty=False,
