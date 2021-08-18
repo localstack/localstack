@@ -28,12 +28,20 @@ def test_sns_topic_fifo_with_deduplication(
     )
     change_set_id = response["Id"]
     stack_id = response["StackId"]
-    wait_until(is_change_set_created_and_available(change_set_id))
-    cfn_client.execute_change_set(ChangeSetName=change_set_id)
-    wait_until(is_stack_created(stack_id))
 
-    topics = sns_client.list_topics()["Topics"]
-    assert len([topic_name in t for t in topics]) == 1
+    try:
+        wait_until(is_change_set_created_and_available(change_set_id))
+        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        wait_until(is_stack_created(stack_id))
+
+        topics = sns_client.list_topics()["Topics"]
+        topic_arns = [t["TopicArn"] for t in topics]
+
+        assert len([t for t in topic_arns if topic_name in t]) == 1
+
+    finally:
+        cleanup_changesets([change_set_id])
+        cleanup_stacks([stack_id])
 
 
 def test_sns_topic_fifo_without_suffix_fails(
@@ -60,9 +68,13 @@ def test_sns_topic_fifo_without_suffix_fails(
     )
     change_set_id = response["Id"]
     stack_id = response["StackId"]
-    wait_until(is_change_set_created_and_available(change_set_id))
-    cfn_client.execute_change_set(ChangeSetName=change_set_id)
-    wait_until(is_stack_created(stack_id))
+    try:
+        wait_until(is_change_set_created_and_available(change_set_id))
+        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        wait_until(is_stack_created(stack_id))
 
-    stack = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
-    assert stack.get("StackStatus") == "CREATE_FAILED"  # TODO: might be different on AWS, check
+        stack = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]
+        assert stack.get("StackStatus") == "CREATE_FAILED"  # TODO: might be different on AWS, check
+    finally:
+        cleanup_changesets([change_set_id])
+        cleanup_stacks([stack_id])
