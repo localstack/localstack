@@ -993,7 +993,8 @@ class SdkDockerClient(ContainerClient):
             container = self.client().containers.get(container_name)
             container.remove(force=force)
         except NotFound:
-            raise NoSuchContainer(container_name)
+            if not force:
+                raise NoSuchContainer(container_name)
         except APIError:
             raise ContainerException()
 
