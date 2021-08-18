@@ -1754,5 +1754,9 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
     )
 
 
+def canonicalize_bool_to_str(val: bool) -> str:
+    return "true" if str(val).lower() == "true" else "false"
+
+
 # Code that requires util functions from above
 CACHE_FILE_PATTERN = CACHE_FILE_PATTERN.replace("_random_dir_", short_uid())

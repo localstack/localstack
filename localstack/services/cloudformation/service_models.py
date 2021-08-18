@@ -32,6 +32,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     camel_to_snake_case,
     canonical_json,
+    canonicalize_bool_to_str,
     cp_r,
     is_base64,
     keys_to_lower,
@@ -1759,11 +1760,11 @@ class SNSTopic(GenericBaseModel):
             tags = params.get("Tags") or []
             topic_name = params.get("TopicName")
             if dedup is not None:
-                attributes["ContentBasedDeduplication"] = dedup
+                attributes["ContentBasedDeduplication"] = canonicalize_bool_to_str(dedup)
             if display_name:
                 attributes["DisplayName"] = display_name
             if fifo_topic is not None:
-                attributes["FifoTopic"] = fifo_topic
+                attributes["FifoTopic"] = canonicalize_bool_to_str(fifo_topic)
             if kms_master_key:
                 attributes["KmsMasterKeyId"] = kms_master_key
             result = {"Name": topic_name, "Attributes": attributes, "Tags": tags}
