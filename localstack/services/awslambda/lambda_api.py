@@ -61,7 +61,7 @@ from localstack.utils.common import (
     unzip,
 )
 from localstack.utils.docker import DOCKER_CLIENT
-from localstack.utils.http_utils import parse_chunked_data
+from localstack.utils.http_utils import canonicalize_headers, parse_chunked_data
 from localstack.utils.run import FuncThread
 
 # logger
@@ -383,6 +383,8 @@ def construct_invocation_event(
     method, path, headers, data, query_string_params={}, is_base64_encoded=False
 ):
     query_string_params = query_string_params or parse_request_data(method, path, "")
+    # AWS canonicalizes header names, converting them to lower-case
+    headers = canonicalize_headers(headers)
     event = {
         "path": path,
         "headers": dict(headers),

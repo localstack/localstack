@@ -427,6 +427,13 @@ class TestAPIGateway(unittest.TestCase):
         self.assertIn("requestTimeEpoch", request_context)
         self.assertIn("requestTime", request_context)
 
+        # assert that header keys are lowercase (as in AWS)
+        headers = parsed_body.get("headers") or {}
+        header_names = list(headers.keys())
+        self.assertIn("host", header_names)
+        self.assertIn("content-length", header_names)
+        self.assertIn("user-agent", header_names)
+
         result = requests.delete(url, data=json.dumps(data))
         self.assertEqual(204, result.status_code)
 
