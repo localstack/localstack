@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -828,20 +829,16 @@ class Util:
     @staticmethod
     def untar_to_path(tardata, target_path):
         target_path = Path(target_path)
-        with tempfile.NamedTemporaryFile() as dest:
-            for d in tardata:
-                dest.write(d)
-            dest.seek(0)
-            with tarfile.open(mode="r", fileobj=dest) as t:
-                if target_path.is_dir():
-                    t.extractall(path=target_path)
+        with tarfile.open(mode="r", fileobj=io.BytesIO(b"".join(b for b in tardata))) as t:
+            if target_path.is_dir():
+                t.extractall(path=target_path)
+            else:
+                member = t.next()
+                if member:
+                    member.name = target_path.name
+                    t.extract(member, target_path.parent)
                 else:
-                    member = t.next()
-                    if member:
-                        member.name = target_path.name
-                        t.extract(member, target_path.parent)
-                    else:
-                        LOG.debug("File to copy empty, ignoring...")
+                    LOG.debug("File to copy empty, ignoring...")
 
 
 class SdkDockerClient(ContainerClient):
@@ -1003,7 +1000,7 @@ class SdkDockerClient(ContainerClient):
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
         if filter:
             filter = [filter] if isinstance(filter, str) else filter
-            filter = dict([f.split("=") for f in filter])
+            filter = dict([f.split("=", 1) for f in filter])
         LOG.debug("Listing containers with filters: %s", filter)
         try:
             container_list = self.client().containers.list(filters=filter, all=all)
@@ -1148,8 +1145,9 @@ class SdkDockerClient(ContainerClient):
                             sock.shutdown(socket.SHUT_WR)
                         stdout, stderr = self._read_from_sock(sock, False)
                     except socket.timeout:
-                        LOG.debug("timeout")
-                        pass
+                        LOG.debug(
+                            f"Socket timeout when talking to the I/O streams of Docker container '{container_name_or_id}'"
+                        )
                 try:
                     exit_code = container.wait()["StatusCode"]
                     if exit_code:
@@ -1210,8 +1208,8 @@ class SdkDockerClient(ContainerClient):
                     )
                 )
 
-            try:
-                container = self.client().containers.create(
+            def create_container():
+                return self.client().containers.create(
                     image=image_name,
                     command=command,
                     auto_remove=remove,
@@ -1226,23 +1224,12 @@ class SdkDockerClient(ContainerClient):
                     volumes=mounts,
                     **kwargs,
                 )
+
+            try:
+                container = create_container()
             except ImageNotFound:
                 self.pull_image(image_name)
-                container = self.client().containers.create(
-                    image=image_name,
-                    command=command,
-                    auto_remove=remove,
-                    name=name,
-                    stdin_open=interactive,
-                    tty=tty,
-                    entrypoint=entrypoint,
-                    environment=env_vars,
-                    detach=detach,
-                    user=user,
-                    network=network,
-                    volumes=mounts,
-                    **kwargs,
-                )
+                container = create_container()
             return container.id
         except ImageNotFound:
             raise NoSuchImage(image_name)
