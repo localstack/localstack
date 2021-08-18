@@ -1356,4 +1356,6 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
 
-DOCKER_CLIENT: ContainerClient = SdkDockerClient()
+DOCKER_CLIENT: ContainerClient = (
+    CmdDockerClient() if config.LEGACY_DOCKER_CLIENT else SdkDockerClient()
+)
