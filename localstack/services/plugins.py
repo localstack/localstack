@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Collection, Dict, Optional
+from typing import Dict, List, Optional
 
 import requests
 from readerwriterlock import rwlock
@@ -75,10 +75,10 @@ class StateSerializer(abc.ABC):
 
 
 class StateSerializerComposite(StateSerializer):
-    """Composite state serializer that delegates the requests to a collection of underlying concrete serializers"""
+    """Composite state serializer that delegates the requests to a list of underlying concrete serializers"""
 
-    def __init__(self, serializers: Collection[StateSerializer] = None):
-        self.serializers: Collection[StateSerializer] = serializers or []
+    def __init__(self, serializers: List[StateSerializer] = None):
+        self.serializers: List[StateSerializer] = serializers or []
 
     def restore_state(self, context: PersistenceContext):
         for serializer in self.serializers:
