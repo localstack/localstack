@@ -1759,11 +1759,13 @@ class SNSTopic(GenericBaseModel):
             tags = params.get("Tags") or []
             topic_name = params.get("TopicName")
             if dedup is not None:
-                attributes["ContentBasedDeduplication"] = dedup
+                attributes["ContentBasedDeduplication"] = (
+                    "true" if str(dedup).lower() == "true" else "false"
+                )
             if display_name:
                 attributes["DisplayName"] = display_name
             if fifo_topic is not None:
-                attributes["FifoTopic"] = fifo_topic
+                attributes["FifoTopic"] = "true" if str(fifo_topic).lower() == "true" else "false"
             if kms_master_key:
                 attributes["KmsMasterKeyId"] = kms_master_key
             result = {"Name": topic_name, "Attributes": attributes, "Tags": tags}

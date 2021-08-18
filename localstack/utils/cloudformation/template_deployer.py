@@ -1309,6 +1309,7 @@ def configure_resource_via_sdk(
         try:
             result = function(**params)
         except botocore.exceptions.ParamValidationError as e:
+            LOG.debug(f"Trying original parameters: {params_before_conversion}")
             if "type: <class 'bool'>" not in str(e):
                 raise
             result = function(**params_before_conversion)
