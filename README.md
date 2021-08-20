@@ -27,6 +27,7 @@
   <br>–<br>
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
   <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
+  <a href="https://github.com/localstack/localstack/blob/master/doc/feature_coverage.md" target="_blank">☑️ Feature coverage</a> •
   <a href="#announcements">📢 Announcements</a>
 </p>
 
@@ -68,6 +69,7 @@ accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/pricing) supports additional APIs and advanced features, including:
 * **Amplify**
 * **API Gateway V2 (WebSockets support)**
+* **AppConfig**
 * **Application AutoScaling**
 * **AppSync**
 * **Athena**
@@ -75,15 +77,17 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Batch**
 * **CloudFront**
 * **CloudTrail**
+* **CodeCommit**
 * **Cognito**
 * **CostExplorer**
 * **DocumentDB**
-* **ECS/ECR/EKS**
+* **ECR/ECS/EKS**
 * **ElastiCache**
 * **ElasticBeanstalk**
 * **ELB/ELBv2**
 * **EMR**
 * **Glacier** / **S3 Select**
+* **Glue**
 * **IAM Security Policy Enforcement**
 * **IoT**
 * **Kinesis Data Analytics**
@@ -93,10 +97,12 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Neptune Graph DB**
 * **QLDB**
 * **RDS / Aurora Serverless**
+* **Route53 DNS integration**
+* **SageMaker**
 * **Timestream**
 * **Transfer**
 * **XRay**
-* **Advanced persistence support for most services**
+* **Advanced persistence support, Local Cloud Pods**
 * **Interactive UIs to manage resources**
 * **Test report dashboards**
 * ...and much, much more to come! (Check out our **feature roadmap** here: https://roadmap.localstack.cloud)
