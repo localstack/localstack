@@ -1291,12 +1291,12 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98
-        # TODO we should evaluate whether to replace moto s3 with scality/S3:
-        # https://github.com/scality/S3/issues/237
+        # TODO: can potentially be removed after this fix in moto: https://github.com/spulec/moto/pull/4201
         is_streaming_payload = headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD
         if is_streaming_payload:
             modified_data = strip_chunk_signatures(not_none_or(modified_data, data))
             headers["Content-Length"] = headers.get("x-amz-decoded-content-length")
+            headers.pop(CONTENT_SHA256_HEADER)
 
         # POST requests to S3 may include a "${filename}" placeholder in the
         # key, which should be replaced with an actual file name before storing.
