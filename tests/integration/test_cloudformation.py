@@ -2047,22 +2047,25 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(queue_url, output)
 
     def test_cfn_event_bus_resource(self):
+        event_client = aws_stack.connect_to_service("events")
+
+        def _assert(expected_len):
+            rs = event_client.list_event_buses()
+            event_buses = [eb for eb in rs["EventBuses"] if eb["Name"] == "my-test-bus"]
+            self.assertEqual(expected_len, len(event_buses))
+            rs = event_client.list_connections()
+            connections = [con for con in rs["Connections"] if con["Name"] == "my-test-conn"]
+            self.assertEqual(expected_len, len(connections))
+
+        # deploy stack
         stack_name = "stack-%s" % short_uid()
         template = load_file(os.path.join(THIS_FOLDER, "templates", "template31.yaml"))
         deploy_cf_stack(stack_name=stack_name, template_body=template)
-
-        event_client = aws_stack.connect_to_service("events")
-
-        rs = event_client.list_event_buses()
-        event_buses = [eb for eb in rs["EventBuses"] if eb["Name"] == "my-testing"]
-        self.assertEqual(1, len(event_buses))
+        _assert(1)
 
         # clean up
         self.cleanup(stack_name)
-
-        rs = event_client.list_event_buses()
-        event_buses = [eb for eb in rs["EventBuses"] if eb["Name"] == "my-testing"]
-        self.assertEqual(0, len(event_buses))
+        _assert(0)
 
     def test_cfn_statemachine_with_dependencies(self):
         stack_name = "stack-%s" % short_uid()

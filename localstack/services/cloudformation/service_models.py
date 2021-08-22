@@ -295,7 +295,9 @@ class EventBus(GenericBaseModel):
         return "AWS::Events::EventBus"
 
     def fetch_state(self, stack_name, resources):
-        event_bus_name = self.props.get("Name")
+        event_bus_name = self.resolve_refs_recursively(
+            stack_name, self.props.get("Name"), resources
+        )
         client = aws_stack.connect_to_service("events")
         return client.describe_event_bus(Name=event_bus_name)
 
@@ -312,6 +314,33 @@ class EventBus(GenericBaseModel):
         return {
             "create": {"function": "create_event_bus", "parameters": {"Name": "Name"}},
             "delete": {"function": "delete_event_bus", "parameters": {"Name": "Name"}},
+        }
+
+
+class EventConnection(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::Events::Connection"
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service("events")
+        conn_name = self.resolve_refs_recursively(stack_name, self.props.get("Name"), resources)
+        return client.describe_connection(Name=conn_name)
+
+    def get_cfn_attribute(self, attribute_name):
+        props = self.props
+        if attribute_name in REF_ID_ATTRS:
+            return props.get("Name")
+        if attribute_name == "Arn":
+            return props.get("ConnectionArn")
+        # TODO: handle "SecretArn" attribute
+        return super(EventConnection, self).get_cfn_attribute(attribute_name)
+
+    @classmethod
+    def get_deploy_templates(cls):
+        return {
+            "create": {"function": "create_connection"},
+            "delete": {"function": "delete_connection", "parameters": {"Name": "Name"}},
         }
 
 
