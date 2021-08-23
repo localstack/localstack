@@ -92,7 +92,7 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 # add configuration files
-ADD .coveragerc ./
+ADD pyproject.toml ./
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
 RUN pip uninstall -y argparse
 RUN pip uninstall -y dataclasses

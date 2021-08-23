@@ -20,7 +20,7 @@ black==21.6b0                  #extended-lib
 cachetools>=3.1.1,<4.0.0
 cbor2>=5.2.0
 # coverage version should be synced with bin/Dockerfile.base
-coverage>=5.5
+coverage[toml]>=5.5
 coveralls==3.1.0
 crontab>=0.22.6
 # pin version to avoid Rust build issues: https://github.com/pyca/cryptography/issues/5771
@@ -35,6 +35,8 @@ flake8>=3.6.0                  #extended-lib
 flake8-black>=0.2.1            #extended-lib
 flake8-isort>=4.0.0            #extended-lib
 flake8-quotes>=0.11.0          #extended-lib
+# enables flake8 configuration through pyproject.toml
+pyproject-flake8               #extended-lib
 flask>=1.0.2
 flask-cors>=3.0.3,<3.1.0
 flask_swagger==0.2.12

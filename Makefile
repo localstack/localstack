@@ -148,6 +148,7 @@ test:
 
 test-coverage:
 	($(VENV_RUN); python -m coverage --version; \
+		pip install "coverage[toml]>=5.5"; \
 		DEBUG=$(DEBUG) \
 		python -m coverage run $(COVERAGE_ARGS) -m \
 		pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
@@ -185,10 +186,10 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); python -m flake8 --show-source --config .flake8 . )
+	($(VENV_RUN); python -m pflake8 --show-source)
 
 lint-modified:      ## Run code linter on modified files
-	($(VENV_RUN); python -m flake8 --show-source --config .flake8 `git ls-files -m | grep '\.py$$' | xargs` )
+	($(VENV_RUN); python -m pflake8 --show-source `git ls-files -m | grep '\.py$$' | xargs` )
 
 format:
 	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
