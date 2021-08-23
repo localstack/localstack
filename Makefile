@@ -185,10 +185,10 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); python -m flake8 --show-source --config .flake8 . )
+	($(VENV_RUN); python -m pflake8 --show-source)
 
 lint-modified:      ## Run code linter on modified files
-	($(VENV_RUN); python -m flake8 --show-source --config .flake8 `git ls-files -m | grep '\.py$$' | xargs` )
+	($(VENV_RUN); python -m pflake8 --show-source `git ls-files -m | grep '\.py$$' | xargs` )
 
 format:
 	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
