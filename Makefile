@@ -148,6 +148,7 @@ test:
 
 test-coverage:
 	($(VENV_RUN); python -m coverage --version; \
+		pip install "coverage[toml]>=5.5"; \
 		DEBUG=$(DEBUG) \
 		python -m coverage run $(COVERAGE_ARGS) -m \
 		pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))

@@ -16,3 +16,13 @@ max-line-length = 110
 ignore = 'E203,E266,E501,W503,F403'
 select = 'B,C,E,F,I,W,T4,B9'
 exclude = 'node_modules,.venv*,dist,fixes,localstack/infra,localstack/node_modules, venv'
+
+[tool.coverage.run]
+relative_files = true
+source = [
+    "localstack/"
+]
+omit = [
+    "localstack/infra/",
+    "localstack/node_modules"
+]
