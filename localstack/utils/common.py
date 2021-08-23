@@ -1013,7 +1013,7 @@ def first_char_to_upper(s):
 
 
 def format_number(number, decimals=2):
-    return ("{0:.%sg}" % decimals).format(number)
+    return f"{number:.{decimals}f}"
 
 
 def is_number(s):

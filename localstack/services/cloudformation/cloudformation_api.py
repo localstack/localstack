@@ -255,7 +255,7 @@ class Stack(object):
 
     @property
     def template_resources(self):
-        return self.template["Resources"]
+        return self.template.setdefault("Resources", {})
 
     @property
     def tags(self):
