@@ -322,8 +322,19 @@ class TestCommon(unittest.TestCase):
 
         # comma values
         self.assertEqual("1.1TB", fn(1e12 + 1e11))
-        # last unit
-        self.assertEqual("1e+03TB", fn(1e15))
+        self.assertEqual("1000TB", fn(1e15))
+
+    def test_format_number(self):
+        fn = common.format_number
+        self.assertEqual("12", fn(12, decimals=0))
+        self.assertEqual("12", fn(12, decimals=1))
+        self.assertEqual("12", fn(12.421, decimals=0))
+        self.assertEqual("13", fn(12.521, decimals=0))
+        self.assertEqual("12.52", fn(12.521, decimals=2))
+        self.assertEqual("12.521", fn(12.521, decimals=3))
+        self.assertEqual("12.521", fn(12.521, decimals=4))
+        self.assertEqual("-12.521", fn(-12.521, decimals=4))
+        self.assertEqual("-1223.4354", fn(-1.2234354123e3, decimals=4))
 
     def test_cleanup_threads_and_processes_calls_shutdown_hooks(self):
         # TODO: move all run/concurrency related tests into separate class

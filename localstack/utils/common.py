@@ -1013,7 +1013,12 @@ def first_char_to_upper(s):
 
 
 def format_number(number, decimals=2):
-    return f"{number:.{decimals}f}"
+    # Note: interestingly, f"{number:.3g}" seems to yield incorrect results in some cases.
+    # The logic below seems to be the most stable/reliable.
+    result = f"{number:.{decimals}f}"
+    if "." in result:
+        result = result.rstrip("0").rstrip(".")
+    return result
 
 
 def is_number(s):
