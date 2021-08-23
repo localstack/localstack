@@ -38,6 +38,7 @@ from localstack.utils.common import (
     empty_context_manager,
     get_service_protocol,
     in_docker,
+    is_port_open,
     is_root,
     parse_request_data,
     run,
@@ -57,6 +58,8 @@ HEADER_TARGET_API = "x-localstack-tgt-api"
 
 # lock obtained during boostrapping (persistence restoration) to avoid concurrency issues
 BOOTSTRAP_LOCK = threading.RLock()
+
+PORT_DNS = 53
 
 GZIP_ENCODING = "GZIP"
 IDENTITY_ENCODING = "IDENTITY"
@@ -554,13 +557,16 @@ def start_dns_server(asynchronous=False):
         # start local DNS server, if present
         from localstack_ext.services import dns_server
 
+        if is_port_open(PORT_DNS):
+            return
+
         if is_root():
             result = dns_server.start_servers()
             if not asynchronous:
                 sleep_forever()
             return result
         # note: running in a separate process breaks integration with Route53 (to be fixed for local dev mode!)
-        return run_process_as_sudo("dns", 53, asynchronous=asynchronous)
+        return run_process_as_sudo("dns", PORT_DNS, asynchronous=asynchronous)
     except Exception:
         pass
 

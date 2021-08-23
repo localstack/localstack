@@ -52,6 +52,7 @@ MUTEX_CLEAN = threading.Lock()
 
 # misc. constants
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
+TIMESTAMP_FORMAT_TZ = "%Y-%m-%dT%H:%M:%SZ"
 TIMESTAMP_FORMAT_MICROS = "%Y-%m-%dT%H:%M:%S.%fZ"
 CODEC_HANDLER_UNDERSCORE = "underscore"
 
@@ -656,6 +657,15 @@ def timestamp_millis(time=None):
 
 def epoch_timestamp():
     return time.time()
+
+
+def parse_timestamp(ts_str: str) -> datetime:
+    for ts_format in [TIMESTAMP_FORMAT, TIMESTAMP_FORMAT_TZ, TIMESTAMP_FORMAT_MICROS]:
+        try:
+            return datetime.strptime(ts_str, ts_format)
+        except ValueError:
+            pass
+    raise Exception("Unable to parse timestamp string with any known formats: %s" % ts_str)
 
 
 def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
