@@ -27,6 +27,7 @@ LOG = logging.getLogger(__name__)
 
 # Global constants
 THUNDRA_APIKEY_ENV_VAR_NAME = "THUNDRA_APIKEY"
+THUNDRA_AGENT_LOG_DISABLE_VAR_NAME = "THUNDRA_AGENT_LOG_DISABLE"
 THUNDRA_APIKEY = os.getenv(THUNDRA_APIKEY_ENV_VAR_NAME)
 
 # Java related constants
@@ -107,6 +108,13 @@ def _is_java8_lambda(func_details):
     return runtime == LAMBDA_RUNTIME_JAVA8
 
 
+def _do_inject_java_agent(func_details):
+    log_disabled = func_details.envvars.get(THUNDRA_AGENT_LOG_DISABLE_VAR_NAME)
+    # If log disable is not configured explicitly, set it to false to enable log capturing by default
+    if not log_disabled:
+        func_details.envvars[THUNDRA_AGENT_LOG_DISABLE_VAR_NAME] = "false"
+
+
 def inject_java_agent_for_local(func_details, java_opts):
     """
     Injects Thundra Java agent if it is available and configured when Lambda is executed on Local
@@ -126,6 +134,8 @@ def inject_java_agent_for_local(func_details, java_opts):
         return None
 
     func_details.envvars[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
+
+    _do_inject_java_agent(func_details)
 
     return "-javaagent:" + THUNDRA_JAVA_AGENT_LOCAL_PATH
 
@@ -156,6 +166,8 @@ def inject_java_agent_for_container(func_details, environment, docker_flags):
         return None
 
     environment[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
+
+    _do_inject_java_agent(func_details)
 
     # Inject Thundra agent path into "JAVA_TOOL_OPTIONS" env var,
     # so it will be automatically loaded on JVM startup
