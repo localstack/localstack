@@ -3,6 +3,7 @@ import os
 import traceback
 
 from localstack import config
+from localstack.services.dynamodb import dynamodb_listener
 from localstack.constants import MODULE_MAIN_PATH
 from localstack.services import install
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
@@ -14,6 +15,8 @@ LOGGER = logging.getLogger(__name__)
 # backend service port (updated on startup)
 PORT_DYNAMODB_BACKEND = None
 
+# todo: will be replaced with plugism mechanism
+PROCESS_THREAD = None
 
 def check_dynamodb(expect_shutdown=False, print_error=False):
     out = None
@@ -60,4 +63,12 @@ def start_dynamodb(port=None, asynchronous=False, update_listener=None):
         backend_port=PORT_DYNAMODB_BACKEND,
         update_listener=update_listener,
     )
-    return do_run(cmd, asynchronous, auto_restart=True)
+    # todo: extract reference from do_run (should return pid)
+    global PROCESS_THREAD
+    PROCESS_THREAD = do_run(cmd, asynchronous, auto_restart=True)
+    return PROCESS_THREAD
+
+
+def restart_dynamodb():
+    PROCESS_THREAD.stop()
+    start_dynamodb(asynchronous=True, update_listener=dynamodb_listener.UPDATE_DYNAMODB)
