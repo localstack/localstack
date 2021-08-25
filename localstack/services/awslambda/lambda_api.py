@@ -310,7 +310,17 @@ def use_docker():
     if DO_USE_DOCKER is None:
         DO_USE_DOCKER = False
         if "docker" in config.LAMBDA_EXECUTOR:
-            DO_USE_DOCKER = DOCKER_CLIENT.has_docker()
+            has_docker = DOCKER_CLIENT.has_docker()
+            if not has_docker:
+                LOG.warning(
+                    (
+                        "Lambda executor configured as LAMBDA_EXECUTOR=%s but Docker "
+                        "is not accessible. Please make sure to mount the Docker socket "
+                        "/var/run/docker.sock into the container."
+                    )
+                    % config.LAMBDA_EXECUTOR
+                )
+            DO_USE_DOCKER = has_docker
     return DO_USE_DOCKER
 
 
