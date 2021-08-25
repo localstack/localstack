@@ -3,9 +3,9 @@ import os
 import traceback
 
 from localstack import config
-from localstack.services.dynamodb import dynamodb_listener
 from localstack.constants import MODULE_MAIN_PATH
 from localstack.services import install
+from localstack.services.dynamodb import dynamodb_listener
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_free_tcp_port, mkdir, wait_for_port_open
@@ -17,6 +17,7 @@ PORT_DYNAMODB_BACKEND = None
 
 # todo: will be replaced with plugism mechanism
 PROCESS_THREAD = None
+
 
 def check_dynamodb(expect_shutdown=False, print_error=False):
     out = None
