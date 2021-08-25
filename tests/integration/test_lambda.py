@@ -1143,12 +1143,12 @@ class TestPythonRuntimes(LambdaTestBase):
             get_content=True,
             libs=TEST_LAMBDA_LIBS,
             runtime=LAMBDA_RUNTIME_PYTHON36,
-            file_name="abc/def/main.py",
+            file_name="localstack_package/def/main.py",
         )
         testutil.create_lambda_function(
             func_name=func_name,
             zip_file=zip_file,
-            handler="abc.def.main.handler",
+            handler="localstack_package.def.main.handler",
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
