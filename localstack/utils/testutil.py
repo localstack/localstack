@@ -3,12 +3,13 @@ import importlib
 import io
 import json
 import os
+import re
 import shutil
 import tempfile
 import time
 import zipfile
 from contextlib import contextmanager
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 
 import requests
 from six import iteritems
@@ -522,19 +523,29 @@ def get_lambda_log_group_name(function_name):
     return "/aws/lambda/{}".format(function_name)
 
 
-def check_expected_lambda_log_events_length(expected_length, function_name):
-    events = get_lambda_log_events(function_name)
+def check_expected_lambda_log_events_length(expected_length, function_name, regex_filter=None):
+    events = get_lambda_log_events(function_name, regex_filter=regex_filter)
     events = [line for line in events if line not in ["\x1b[0m", "\\x1b[0m"]]
     if len(events) != expected_length:
         print(
             "Invalid # of Lambda %s log events: %s / %s: %s"
-            % (function_name, len(events), expected_length, events)
+            % (
+                function_name,
+                len(events),
+                expected_length,
+                [
+                    event if len(event) < 1000 else f"{event[:1000]}... (truncated)"
+                    for event in events
+                ],
+            )
         )
     assert len(events) == expected_length
     return events
 
 
-def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY):
+def get_lambda_log_events(
+    function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY, regex_filter: Optional[str] = None
+):
     def get_log_events(function_name, delay_time):
         time.sleep(delay_time)
 
@@ -559,6 +570,8 @@ def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY
             or "START" in raw_message
             or "END" in raw_message
             or "REPORT" in raw_message
+            or regex_filter
+            and not re.search(regex_filter, raw_message)
         ):
             continue
         if raw_message in ["\x1b[0m", "\\x1b[0m"]:
