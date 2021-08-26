@@ -108,7 +108,7 @@ class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
         # plugin currently only applied for Java Lambdas, if LAMBDA_REMOTE_DOCKER=0, and if API key is configured
         if not is_java_lambda(context.lambda_details.runtime):
             return False
-        if config.LAMBDA_REMOTE_DOCKER:
+        if "docker" in config.LAMBDA_EXECUTOR and config.LAMBDA_REMOTE_DOCKER:
             return False
         thundra_apikey = _get_apikey(context.environment)
         if not thundra_apikey:
@@ -128,7 +128,8 @@ class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
         # Inject Thundra agent path into "JAVA_TOOL_OPTIONS" env var,
         # so it will be automatically loaded on JVM startup
         java_tool_opts = environment.get("JAVA_TOOL_OPTIONS", "")
-        java_tool_opts += f" {agent_flag}"
+        if agent_flag not in java_tool_opts:
+            java_tool_opts += f" {agent_flag}"
         result.env_updates["JAVA_TOOL_OPTIONS"] = java_tool_opts.strip()
 
         # Disable CDS (Class Data Sharing),
@@ -151,11 +152,12 @@ class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
         # make sure API key is contained in environment
         result.env_updates[THUNDRA_APIKEY_ENV_VAR_NAME] = _get_apikey(environment)
 
-        # construct Lambda command and agent file path mapping
-        if context.lambda_command:
-            result.updated_command = context.lambda_command.replace(
-                "java ", f"java {agent_flag} ", 1
-            )
+        # Note: The code below doesn't seem to be required, as LAMBDA_EXECUTOR=local also picks up $JAVA_TOOL_OPTIONS
+        # if context.lambda_command:
+        #     result.updated_command = context.lambda_command.replace(
+        #         "java ", f"java {agent_flag} ", 1
+        #     )
+        # construct agent file path mapping
         result.files_to_add["agent_path"] = THUNDRA_JAVA_AGENT_LOCAL_PATH
 
         return result

@@ -347,9 +347,9 @@ class LambdaExecutor(object):
         """Called once during startup - can be used, e.g., to clean up left-over Docker containers"""
         pass
 
-    def copy_into_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
+    def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
         """Make the given file available to the Lambda process (e.g., by copying into the container) for the
-        given invocation context; Returns the path to the file inside the Lambda handler."""
+        given invocation context; Returns the path to the file that will be available to the Lambda handler."""
         raise NotImplementedError
 
     def apply_plugin_patches(self, inv_context: InvocationContext):
@@ -371,7 +371,7 @@ class LambdaExecutor(object):
                 # copy files
                 file_keys_map = {}
                 for key, file_path in inv_options.files_to_add.items():
-                    file_in_container = self.copy_into_lambda(file_path, inv_context)
+                    file_in_container = self.provide_file_to_lambda(file_path, inv_context)
                     file_keys_map[key] = file_in_container
 
                 # replace placeholders like "{<fileKey>}" with corresponding file path
@@ -384,6 +384,7 @@ class LambdaExecutor(object):
                         inv_options.updated_command = inv_options.updated_command.replace(
                             "{%s}" % key, file_path
                         )
+                        inv_context.lambda_command = inv_options.updated_command
 
                 # update environment
                 inv_context.environment.update(inv_options.env_updates)
@@ -573,7 +574,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         return result
 
-    def copy_into_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
+    def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
         if config.LAMBDA_REMOTE_DOCKER:
             LOG.info("TODO: copy file into container for LAMBDA_REMOTE_DOCKER=1 - %s" % local_file)
             return local_file
@@ -1079,20 +1080,13 @@ class LambdaExecutorLocal(LambdaExecutor):
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
 
-    def copy_into_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
+    def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
         # This is a no-op for local executors - simply return the given local file path
         return local_file
 
     def execute_java_lambda(self, event, context, main_file, func_details=None):
         func_details.envvars = func_details.envvars or {}
         java_opts = config.LAMBDA_JAVA_OPTS or ""
-
-        # # If runtime is Java, inject Thundra agent if it is configured
-        # extra_opts = thundra.inject_java_agent_for_local(func_details, given_opts)
-        #
-        # opts = given_opts
-        # if extra_opts:
-        #     opts += " " + extra_opts
 
         handler = func_details.handler
         func_details.envvars[LAMBDA_HANDLER_ENV_VAR_NAME] = handler
