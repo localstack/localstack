@@ -109,7 +109,7 @@ class AdditionalInvocationOptions:
         self.updated_command = updated_command
 
 
-class InvocationResult(object):
+class InvocationResult:
     def __init__(self, result, log_output=""):
         if isinstance(result, InvocationResult):
             raise Exception("Unexpected invocation result type: %s" % result)
@@ -1129,7 +1129,12 @@ class LambdaExecutorLocal(LambdaExecutor):
         cmd = inv_context.lambda_command
         LOG.info(cmd)
 
-        return self._execute_in_custom_runtime(cmd, func_details=func_details)
+        # execute Lambda and get invocation result
+        invocation_result = self._execute_in_custom_runtime(cmd, func_details=func_details)
+        # run plugins post-processing logic
+        invocation_result = self.process_result_via_plugins(inv_context, invocation_result)
+
+        return invocation_result
 
     def execute_javascript_lambda(self, event, context, main_file, func_details=None):
         handler = func_details.handler
