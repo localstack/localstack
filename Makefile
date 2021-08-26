@@ -2,7 +2,7 @@ IMAGE_NAME ?= localstack/localstack
 IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_NAME_FULL ?= localstack/localstack-full
-IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
+IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
 DOCKER_SQUASH ?= --squash
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
@@ -100,7 +100,7 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		IMAGE_TAG=latest make docker-squash && make docker-build-light && \
 			docker tag $(IMAGE_NAME):latest $(IMAGE_NAME_FULL):latest && \
 			docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME):latest && \
-		((! (git diff HEAD~1 localstack/constants.py | grep '^+VERSION =') && \
+		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG) && \
 				docker tag $(IMAGE_NAME_FULL):latest $(IMAGE_NAME_FULL):$(IMAGE_TAG) && \
@@ -207,6 +207,9 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf localstack/infra/elasticmq
 	rm -rf localstack/infra/dynamodb
 	rm -rf localstack/node_modules/
+	rm -rf build/
+	rm -rf dist/
+	rm -rf *.egg-info
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
