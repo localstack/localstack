@@ -2280,6 +2280,9 @@ def serve(port):
     # initialize the Lambda executor
     LAMBDA_EXECUTOR.startup()
 
+    # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
+    import localstack.plugin.thundra  # noqa
+
     generic_proxy.serve_flask_app(app=app, port=port)
 
 
@@ -2289,7 +2292,7 @@ def on_config_change(config_key: str, config_newvalue: str) -> None:
     if config_key != "LAMBDA_EXECUTOR":
         return
     LOG.debug(
-        "Recieved config event for lambda executor! Key: {} Value: {}".format(
+        "Received config event for lambda executor - Key: '{}', Value: {}".format(
             config_key, config_newvalue
         )
     )
