@@ -81,6 +81,7 @@ def cmd_status_services():
         console.print(f"{err}: could not connect to LocalStack health endpoint at {url}")
         if config.DEBUG:
             console.print_exception()
+        sys.exit(1)
 
 
 @localstack.command(name="start", help="Start LocalStack")

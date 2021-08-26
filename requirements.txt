@@ -56,6 +56,7 @@ psutil>=5.4.8,<6.0.0
 pympler>=0.6
 pyopenssl==17.5.0
 pytest==6.2.4
+pytest-httpserver>=1.0.1
 pytest-rerunfailures==10.0
 pyyaml>=5.1                    #basic-lib
 Quart>=0.6.15
