@@ -355,39 +355,50 @@ class LambdaExecutor(object):
     def apply_plugin_patches(self, inv_context: InvocationContext):
         """Loop through the list of plugins, and apply their patches to the invocation context (if applicable)"""
         for plugin in LambdaExecutorPlugin.get_plugins():
-            if plugin.should_apply(inv_context):
+            if not plugin.should_apply(inv_context):
+                continue
 
-                # initialize, if not done yet
-                if not hasattr(plugin, "_initialized"):
-                    LOG.debug("Initializing Lambda executor plugin %s" % plugin.__class__)
-                    plugin.initialize()
-                    plugin._initialized = True
+            # initialize, if not done yet
+            if not hasattr(plugin, "_initialized"):
+                LOG.debug("Initializing Lambda executor plugin %s" % plugin.__class__)
+                plugin.initialize()
+                plugin._initialized = True
 
-                # invoke plugin to prepare invocation
-                inv_options = plugin.prepare_invocation(inv_context)
-                if not inv_options:
-                    continue
+            # invoke plugin to prepare invocation
+            inv_options = plugin.prepare_invocation(inv_context)
+            if not inv_options:
+                continue
 
-                # copy files
-                file_keys_map = {}
-                for key, file_path in inv_options.files_to_add.items():
-                    file_in_container = self.provide_file_to_lambda(file_path, inv_context)
-                    file_keys_map[key] = file_in_container
+            # copy files
+            file_keys_map = {}
+            for key, file_path in inv_options.files_to_add.items():
+                file_in_container = self.provide_file_to_lambda(file_path, inv_context)
+                file_keys_map[key] = file_in_container
 
-                # replace placeholders like "{<fileKey>}" with corresponding file path
-                for key, file_path in file_keys_map.items():
-                    for env_key, env_value in inv_options.env_updates.items():
-                        inv_options.env_updates[env_key] = str(env_value).replace(
-                            "{%s}" % key, file_path
-                        )
-                    if inv_options.updated_command:
-                        inv_options.updated_command = inv_options.updated_command.replace(
-                            "{%s}" % key, file_path
-                        )
-                        inv_context.lambda_command = inv_options.updated_command
+            # replace placeholders like "{<fileKey>}" with corresponding file path
+            for key, file_path in file_keys_map.items():
+                for env_key, env_value in inv_options.env_updates.items():
+                    inv_options.env_updates[env_key] = str(env_value).replace(
+                        "{%s}" % key, file_path
+                    )
+                if inv_options.updated_command:
+                    inv_options.updated_command = inv_options.updated_command.replace(
+                        "{%s}" % key, file_path
+                    )
+                    inv_context.lambda_command = inv_options.updated_command
 
-                # update environment
-                inv_context.environment.update(inv_options.env_updates)
+            # update environment
+            inv_context.environment.update(inv_options.env_updates)
+
+    def process_result_via_plugins(
+        self, inv_context: InvocationContext, invocation_result: InvocationResult
+    ) -> InvocationResult:
+        """Loop through the list of plugins, and apply their post-processing logic to the Lambda invocation result."""
+        for plugin in LambdaExecutorPlugin.get_plugins():
+            if not plugin.should_apply(inv_context):
+                continue
+            invocation_result = plugin.process_result(inv_context, invocation_result)
+        return invocation_result
 
 
 class ContainerInfo:
@@ -503,7 +514,11 @@ class LambdaExecutorContainers(LambdaExecutor):
                 result,
             ) from error
 
+        # create result
         invocation_result = InvocationResult(result, log_output=log_output)
+        # run plugins post-processing logic
+        invocation_result = self.process_result_via_plugins(inv_context, invocation_result)
+
         return invocation_result
 
     def prepare_event(self, environment, event_body):
