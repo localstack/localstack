@@ -1628,7 +1628,11 @@ def add_default_resource_props(
         props["LogGroupName"] = resource_name
 
     elif res_type == "AWS::Lambda::Function" and not props.get("FunctionName"):
-        props["FunctionName"] = "{}-lambda-{}".format(stack_name[:45], short_uid())
+        # FunctionName is up to 64 characters long
+        random_id_part = short_uid()
+        resource_id_part = resource_id[:24]
+        stack_name_part = stack_name[: 63 - 2 - (len(random_id_part) + len(resource_id_part))]
+        props["FunctionName"] = f"{stack_name_part}-{resource_id_part}-{random_id_part}"
 
     elif res_type == "AWS::SNS::Topic" and not props.get("TopicName"):
         props["TopicName"] = "topic-%s" % short_uid()
