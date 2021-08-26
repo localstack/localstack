@@ -1147,6 +1147,12 @@ class TestS3(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key="test/index.html", Body="index")
         self.s3_client.put_object(Bucket=bucket_name, Key="test/error.html", Body="error")
         self.s3_client.put_object(Bucket=bucket_name, Key="actual/key.html", Body="key")
+        self.s3_client.put_object(
+            Bucket=bucket_name,
+            Key="with-content-type/key.js",
+            Body="some js",
+            ContentType="application/javascript; charset=utf-8",
+        )
         self.s3_client.put_bucket_website(
             Bucket=bucket_name,
             WebsiteConfiguration={
@@ -1165,6 +1171,16 @@ class TestS3(unittest.TestCase):
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(200, response.status_code)
         self.assertEqual("key", response.text)
+
+        # key with specified content-type
+        url = "https://{}.{}:{}/with-content-type/key.js".format(
+            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
+        )
+        response = requests.get(url, headers=headers, verify=False)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("some js", response.text)
+        self.assertIn("content-type", response.headers)
+        self.assertEqual("application/javascript; charset=utf-8", response.headers["content-type"])
 
         # index document
         url = "https://{}.{}:{}/test".format(
