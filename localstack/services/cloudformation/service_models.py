@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+from urllib.parse import urlparse
 
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from moto.core.models import CloudFormationModel
@@ -1334,6 +1335,98 @@ class GatewayMethod(GenericBaseModel):
             props.get("HttpMethod"),
         )
         return result
+
+    @classmethod
+    def get_deploy_templates(cls):
+        """
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-method.html
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-methodresponse.html
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration.html
+        https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration-integrationresponse.html
+        """
+
+        def _subresources(resource_id, resources, resource_type, func, stack_name):
+            apigateway = aws_stack.connect_to_service("apigateway")
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            integration = props.get("Integration")
+            if integration:
+                api_id = resource.resolve_refs_recursively(
+                    stack_name, props["RestApiId"], resources
+                )
+                res_id = resource.resolve_refs_recursively(
+                    stack_name, props["ResourceId"], resources
+                )
+                kwargs = {}
+                if integration.get("Uri"):
+                    uri = resource.resolve_refs_recursively(
+                        stack_name, integration.get("Uri"), resources
+                    )
+
+                    # Moto has a validate method on Uri for integration_type "HTTP" | "HTTP_PROXY" that does not accept
+                    # Uri value without path, we need to add path ("/") if not exists
+                    if integration.get("Type") in ["HTTP", "HTTP_PROXY"]:
+                        rs = urlparse(uri)
+                        if not rs.path:
+                            uri = "{}/".format(uri)
+
+                    kwargs["uri"] = uri
+
+                if integration.get("IntegrationHttpMethod"):
+                    kwargs["integrationHttpMethod"] = integration["IntegrationHttpMethod"]
+
+                if integration.get("RequestTemplates"):
+                    kwargs["requestTemplates"] = integration["RequestTemplates"]
+
+                if integration.get("Credentials"):
+                    kwargs["credentials"] = integration["Credentials"]
+
+                if integration.get("RequestParameters"):
+                    kwargs["requestParameters"] = integration["RequestParameters"]
+
+                apigateway.put_integration(
+                    restApiId=api_id,
+                    resourceId=res_id,
+                    httpMethod=props["HttpMethod"],
+                    type=integration["Type"],
+                    **kwargs,
+                )
+
+            responses = props.get("MethodResponses") or []
+            for response in responses:
+                api_id = resource.resolve_refs_recursively(
+                    stack_name, props["RestApiId"], resources
+                )
+                res_id = resource.resolve_refs_recursively(
+                    stack_name, props["ResourceId"], resources
+                )
+                apigateway.put_method_response(
+                    restApiId=api_id,
+                    resourceId=res_id,
+                    httpMethod=props["HttpMethod"],
+                    statusCode=str(response["StatusCode"]),
+                    responseParameters=response.get("ResponseParameters", {}),
+                )
+
+        return {
+            "create": [
+                {
+                    "function": "put_method",
+                    "parameters": {
+                        "restApiId": "RestApiId",
+                        "resourceId": "ResourceId",
+                        "httpMethod": "HttpMethod",
+                        "authorizationType": "AuthorizationType",
+                        "authorizerId": "AuthorizerId",
+                        "requestParameters": "RequestParameters",
+                    },
+                },
+                {
+                    "function": _subresources  # dynamic mapping for additional sdk calls for this CFn resource
+                },
+            ]
+        }
 
 
 class GatewayStage(GenericBaseModel):

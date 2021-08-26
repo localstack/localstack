@@ -11,8 +11,10 @@ from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.common import short_uid
 
 if TYPE_CHECKING:
+    from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_iam import IAMClient
     from mypy_boto3_kinesis import KinesisClient
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
@@ -41,6 +43,16 @@ def _client(service):
 @pytest.fixture(scope="class")
 def dynamodb_client() -> "DynamoDBClient":
     return _client("dynamodb")
+
+
+@pytest.fixture(scope="class")
+def apigateway_client() -> "APIGatewayClient":
+    return _client("apigateway")
+
+
+@pytest.fixture(scope="class")
+def iam_client() -> "IAMClient":
+    return _client("iam")
 
 
 @pytest.fixture(scope="class")
