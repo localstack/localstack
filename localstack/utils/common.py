@@ -25,7 +25,7 @@ from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Callable, List, Optional, Sized, Union
+from typing import Callable, List, Optional, Sized, Type, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
@@ -1728,7 +1728,7 @@ def truncate(data, max_length=100):
     return ("%s..." % data[:max_length]) if len(data) > max_length else data
 
 
-def get_all_subclasses(clazz):
+def get_all_subclasses(clazz: Type):
     """Recursively get all subclasses of the given class."""
     result = set()
     subs = clazz.__subclasses__()

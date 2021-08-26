@@ -1,8 +1,15 @@
 import logging
 import os
+from typing import Optional
 
 from localstack import config
 from localstack.services import install
+from localstack.services.awslambda.lambda_executors import (
+    AdditionalInvocationOptions,
+    InvocationContext,
+    LambdaExecutorPlugin,
+    is_java_lambda,
+)
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_JAVA8
 
 
@@ -59,9 +66,9 @@ def _get_apikey(env_vars):
     return thundra_apikey
 
 
-########################################################################################################################
+#############
 # JAVA AGENT
-########################################################################################################################
+#############
 
 
 def _ensure_java_agent_initialized():
@@ -113,6 +120,31 @@ def _do_inject_java_agent(func_details):
     # If log disable is not configured explicitly, set it to false to enable log capturing by default
     if not log_disabled:
         func_details.envvars[THUNDRA_AGENT_LOG_DISABLE_VAR_NAME] = "false"
+
+
+class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
+    def should_apply(self, context: InvocationContext) -> bool:
+        # plugin currently only applied for Java Lambdas, if API key is configured
+        if not is_java_lambda(context.lambda_details.runtime):
+            return False
+        thundra_apikey = _get_apikey(context.lambda_details.environment)
+        if not thundra_apikey:
+            return False
+        return True
+
+    def prepare_invocation(
+        self, context: InvocationContext
+    ) -> Optional[AdditionalInvocationOptions]:
+        # download and initialize Java agent
+        _ensure_java_agent_initialized()
+
+        # construct additional invocation options
+        result = AdditionalInvocationOptions()
+        result.cmd_params.append("-javaagent:{agent_path}" + THUNDRA_JAVA_AGENT_LOCAL_PATH)
+        result.files_to_add["agent_path"] = THUNDRA_JAVA_AGENT_LOCAL_PATH
+        result.env_updates[THUNDRA_APIKEY_ENV_VAR_NAME] = _get_apikey(context.lambda_details.environment)
+
+        return result
 
 
 def inject_java_agent_for_local(func_details, java_opts):
@@ -192,6 +224,3 @@ def inject_java_agent_for_container(func_details, environment, docker_flags):
         THUNDRA_JAVA_AGENT_CONTAINER_SOURCE_PATH,
         THUNDRA_JAVA_AGENT_CONTAINER_TARGET_PATH,
     )
-
-
-########################################################################################################################

@@ -14,6 +14,7 @@ import uuid
 from datetime import datetime
 from io import BytesIO
 from threading import BoundedSemaphore
+from typing import Dict, List
 
 from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
@@ -134,12 +135,16 @@ CHECK_HANDLER_ON_CREATION = False
 
 
 class LambdaRegion(RegionBackend):
+    # map ARN strings to lambda function objects
+    lambdas: Dict[str, LambdaFunction]
+    # map ARN strings to CodeSigningConfig object
+    code_signing_configs: Dict[str, CodeSigningConfig]
+    # list of event source mappings for the API
+    event_source_mappings: List[Dict]
+
     def __init__(self):
-        # map ARN strings to lambda function objects
         self.lambdas = {}
-        # map ARN strings to CodeSigningConfig object
         self.code_signing_configs = {}
-        # list of event source mappings for the API
         self.event_source_mappings = []
 
 
@@ -226,7 +231,7 @@ def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     lambda_details.cwd = lambda_cwd or lambda_details.cwd
 
 
-def build_mapping_obj(data):
+def build_mapping_obj(data) -> Dict:
     mapping = {}
     function_name = data["FunctionName"]
     enabled = data.get("Enabled", True)
