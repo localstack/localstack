@@ -1,4 +1,3 @@
-import io
 import logging
 import os
 import pkgutil
@@ -416,7 +415,7 @@ def start_infra_locally():
 def validate_localstack_config(name):
     # TODO: separate functionality from CLI output
     #  (use exceptions to communicate errors, and return list of warnings)
-    from contextlib import redirect_stdout
+    from subprocess import CalledProcessError
 
     from localstack.cli import console
 
@@ -426,21 +425,11 @@ def validate_localstack_config(name):
 
     # validating docker-compose file
     cmd = ["docker-compose", "-f", compose_file_name, "config"]
-    f = io.StringIO()
     try:
-        with redirect_stdout(f):
-            run(cmd, shell=False)
-    except Exception:
-        # parse output errors
-        error = f.getvalue()
-        i = error.find("output:")
-        if i:
-            output = error[(i + 8) :]
-            if output.startswith("b'"):
-                output = eval(output).decode("UTF-8")
-        else:
-            output = error
-        raise ValueError(output.strip())
+        run(cmd, shell=False, print_error=False)
+    except CalledProcessError as e:
+        msg = f"{e}\n{to_str(e.output)}".strip()
+        raise ValueError(msg)
 
     # validating docker-compose variable
     import yaml  # keep import here to avoid issues in test Lambdas
