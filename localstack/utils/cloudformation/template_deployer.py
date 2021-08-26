@@ -5,7 +5,6 @@ import logging
 import re
 import traceback
 from typing import Optional
-from urllib.parse import urlparse
 
 import botocore
 from moto.cloudformation import parsing
@@ -258,20 +257,6 @@ RESOURCE_TO_FUNCTION = {
         },
         "delete": {"function": "delete_role", "parameters": {"RoleName": "RoleName"}},
     },
-    "ApiGateway::Method": {
-        "create": {
-            "function": "put_method",
-            "parameters": {
-                "restApiId": "RestApiId",
-                "resourceId": "ResourceId",
-                "httpMethod": "HttpMethod",
-                "authorizationType": "AuthorizationType",
-                "authorizerId": "AuthorizerId",
-                "requestParameters": "RequestParameters",
-            },
-        }
-    },
-    "ApiGateway::Method::Integration": {},
     "ApiGateway::Account": {},
     "ApiGateway::Model": {
         "create": {
@@ -1366,55 +1351,7 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
     resource_props = resource["Properties"] = resource.get("Properties", {})
 
     # some resources have attached/nested resources which we need to create recursively now
-    if resource_type == "ApiGateway::Method":
-        integration = resource_props.get("Integration")
-        apigateway = aws_stack.connect_to_service("apigateway")
-        if integration:
-            api_id = resolve_refs_recursively(stack_name, resource_props["RestApiId"], resources)
-            res_id = resolve_refs_recursively(stack_name, resource_props["ResourceId"], resources)
-            kwargs = {}
-            if integration.get("Uri"):
-                uri = resolve_refs_recursively(stack_name, integration.get("Uri"), resources)
-
-                # Moto has a validate method on Uri for integration_type "HTTP" | "HTTP_PROXY" that does not accept
-                # Uri value without path, we need to add path ("/") if not exists
-                if integration.get("Type") in ["HTTP", "HTTP_PROXY"]:
-                    rs = urlparse(uri)
-                    if not rs.path:
-                        uri = "{}/".format(uri)
-
-                kwargs["uri"] = uri
-
-            if integration.get("IntegrationHttpMethod"):
-                kwargs["integrationHttpMethod"] = integration["IntegrationHttpMethod"]
-
-            if integration.get("RequestTemplates"):
-                kwargs["requestTemplates"] = integration["RequestTemplates"]
-
-            if integration.get("Credentials"):
-                kwargs["credentials"] = integration["Credentials"]
-
-            apigateway.put_integration(
-                restApiId=api_id,
-                resourceId=res_id,
-                httpMethod=resource_props["HttpMethod"],
-                type=integration["Type"],
-                **kwargs,
-            )
-
-        responses = resource_props.get("MethodResponses") or []
-        for response in responses:
-            api_id = resolve_refs_recursively(stack_name, resource_props["RestApiId"], resources)
-            res_id = resolve_refs_recursively(stack_name, resource_props["ResourceId"], resources)
-            apigateway.put_method_response(
-                restApiId=api_id,
-                resourceId=res_id,
-                httpMethod=resource_props["HttpMethod"],
-                statusCode=str(response["StatusCode"]),
-                responseParameters=response.get("ResponseParameters", {}),
-            )
-
-    elif resource_type == "ApiGateway::RestApi":
+    if resource_type == "ApiGateway::RestApi":
         body = resource_props.get("Body")
         if body:
             client = aws_stack.connect_to_service("apigateway")
