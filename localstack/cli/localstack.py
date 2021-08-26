@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Dict
 
 import click
@@ -96,7 +97,7 @@ def cmd_start(docker: bool, host: bool):
 
 
 @localstack_config.command(
-    name="validate", help="Validate your LocalStack configuration (e.g. your docker-compose.yml)"
+    name="validate", help="Validate your LocalStack configuration (e.g., your docker-compose.yml)"
 )
 @click.option(
     "--file",
@@ -104,9 +105,21 @@ def cmd_start(docker: bool, host: bool):
     type=click.Path(exists=True, file_okay=True, readable=True),
 )
 def cmd_config_validate(file):
+    from rich.panel import Panel
+
     from localstack.utils import bootstrap
 
-    bootstrap.validate_localstack_config(file)
+    try:
+        if bootstrap.validate_localstack_config(file):
+            console.print("[green]:heavy_check_mark:[/green] config valid")
+            sys.exit(0)
+        else:
+            console.print("[red]:heavy_multiplication_x:[/red] validation error")
+            sys.exit(1)
+    except Exception as e:
+        console.print(Panel(str(e), title="[red]Error[/red]", expand=False))
+        console.print("[red]:heavy_multiplication_x:[/red] validation error")
+        sys.exit(1)
 
 
 @localstack.command(name="ssh", help="Obtain a shell in the running LocalStack container")

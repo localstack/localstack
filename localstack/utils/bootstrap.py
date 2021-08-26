@@ -1,3 +1,4 @@
+import io
 import logging
 import os
 import pkgutil
@@ -413,7 +414,11 @@ def start_infra_locally():
 
 
 def validate_localstack_config(name):
-    LOG.setLevel(logging.INFO)
+    # TODO: separate functionality from CLI output
+    #  (use exceptions to communicate errors, and return list of warnings)
+    from contextlib import redirect_stdout
+
+    from localstack.cli import console
 
     dirname = os.getcwd()
     compose_file_name = name if os.path.isabs(name) else os.path.join(dirname, name)
@@ -421,10 +426,21 @@ def validate_localstack_config(name):
 
     # validating docker-compose file
     cmd = ["docker-compose", "-f", compose_file_name, "config"]
+    f = io.StringIO()
     try:
-        run(cmd, shell=False)
-    except Exception as e:
-        LOG.warning("Looks like the docker-compose file is not valid: %s" % e)
+        with redirect_stdout(f):
+            run(cmd, shell=False)
+    except Exception:
+        # parse output errors
+        error = f.getvalue()
+        i = error.find("output:")
+        if i:
+            output = error[(i + 8) :]
+            if output.startswith("b'"):
+                output = eval(output).decode("UTF-8")
+        else:
+            output = error
+        raise ValueError(output.strip())
 
     # validating docker-compose variable
     import yaml  # keep import here to avoid issues in test Lambdas
@@ -440,12 +456,12 @@ def validate_localstack_config(name):
             'No LocalStack service found in config (looking for image names containing "localstack")'
         )
     if len(ls_service_name) > 1:
-        LOG.warning("Multiple candidates found for LocalStack service: %s" % ls_service_name)
+        warns.append(f"Multiple candidates found for LocalStack service: {ls_service_name}")
     ls_service_name = ls_service_name[0]
     ls_service_details = services_config[ls_service_name]
     image_name = ls_service_details.get("image", "")
     if image_name.split(":")[0] not in constants.OFFICIAL_IMAGES:
-        LOG.info(
+        warns.append(
             'Using custom image "%s", we recommend using an official image: %s'
             % (image_name, constants.OFFICIAL_IMAGES)
         )
@@ -507,9 +523,8 @@ def validate_localstack_config(name):
 
     # print warning/info messages
     for warning in warns:
-        LOG.warning(warning)
-    if not warnings:
-        LOG.info("Done validating config file %s - no issues found" % compose_file_name)
+        console.print("[yellow]:warning:[/yellow]", warning)
+    if not warns:
         return True
     return False
 
