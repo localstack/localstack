@@ -7,14 +7,26 @@ import click
 from localstack import __version__
 
 from .console import BANNER, console
+from .plugin import LocalstackCli, load_cli_plugins
+
+
+def create_with_plugins() -> LocalstackCli:
+    """
+    Creates a LocalstackCli instance with all cli plugins loaded.
+    :return: a LocalstackCli instance
+    """
+    cli = LocalstackCli()
+    cli.group = localstack
+    load_cli_plugins(cli)
+    return cli
 
 
 def _setup_cli_debug():
     from localstack import config
+    from localstack.utils.bootstrap import setup_logging
 
     config.DEBUG = True
     os.environ["DEBUG"] = "1"
-    from localstack.utils.bootstrap import setup_logging
 
     setup_logging()
 
@@ -40,7 +52,7 @@ def localstack_config():
 @click.pass_context
 def localstack_status(ctx):
     if ctx.invoked_subcommand is None:
-        ctx.invoke(cmd_status_docker)
+        ctx.invoke(localstack_status.get_command(ctx, "docker"))
 
 
 @localstack_status.command(
@@ -156,7 +168,7 @@ def print_docker_status():
     grid.add_column()
 
     # version
-    grid.add_row("Base version", "[bold]%s[/bold]" % get_server_version())
+    grid.add_row("Runtime version", "[bold]%s[/bold]" % get_server_version())
 
     # image
     img = get_docker_image_details()
@@ -205,7 +217,3 @@ def print_version():
 
 def print_banner():
     print(BANNER)
-
-
-if __name__ == "__main__":
-    localstack()

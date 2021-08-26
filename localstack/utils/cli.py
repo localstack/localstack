@@ -19,6 +19,7 @@ import logging
 import os
 import sys
 import traceback
+import warnings
 
 from docopt import docopt
 
@@ -37,6 +38,11 @@ from localstack.utils.bootstrap import (
 )
 from localstack.utils.docker import DOCKER_CLIENT
 from localstack.utils.run import run
+
+warnings.simplefilter("always", DeprecationWarning)
+warnings.warn(
+    "%s is deprecated in favor of localstack.cli.main" % __name__, DeprecationWarning, stacklevel=2
+)
 
 # Note: make sure we don't have other imports at the root level here
 
