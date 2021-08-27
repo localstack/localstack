@@ -154,7 +154,7 @@ class LambdaExecutorPlugin:
 
     def should_apply(self, context: InvocationContext) -> bool:
         """Whether the plugin logic should get applied for the given Lambda invocation context."""
-        return True
+        return False
 
     def prepare_invocation(
         self, context: InvocationContext
