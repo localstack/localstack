@@ -1728,6 +1728,7 @@ def truncate(data, max_length=100):
     return ("%s..." % data[:max_length]) if len(data) > max_length else data
 
 
+# this requires that all subclasses have been imported before(!)
 def get_all_subclasses(clazz: Type):
     """Recursively get all subclasses of the given class."""
     result = set()

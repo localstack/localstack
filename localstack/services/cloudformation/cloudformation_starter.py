@@ -4,6 +4,7 @@
 
 import logging
 
+# TODO: remove
 from moto.apigateway import models as apigw_models
 from moto.awslambda import models as lambda_models
 from moto.dynamodb import models as dynamodb_models
@@ -12,6 +13,14 @@ from moto.kinesis import models as kinesis_models
 
 from localstack.services.cloudformation import service_models
 from localstack.utils.aws import aws_stack
+
+from .models import (
+    elasticsearch_service_models,
+    events_service_models,
+    kinesisfirehose_service_models,
+    logs_service_models,
+    secretsmanager_service_models,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -66,23 +75,25 @@ def update_physical_resource_id(resource):
     elif isinstance(resource, kinesis_models.Stream):
         resource.physical_resource_id = resource.stream_name
 
-    elif isinstance(resource, service_models.LogsLogGroup):
+    elif isinstance(resource, logs_service_models.LogsLogGroup):
         resource.physical_resource_id = resource.params.get("LogGroupName")
 
-    elif isinstance(resource, service_models.FirehoseDeliveryStream):
+    elif isinstance(resource, kinesisfirehose_service_models.FirehoseDeliveryStream):
         resource.physical_resource_id = resource.params.get("DeliveryStreamName")
 
-    elif isinstance(resource, service_models.SecretsManagerSecret):
+    elif isinstance(resource, secretsmanager_service_models.SecretsManagerSecret):
         resource.physical_resource_id = resource.params.get("Name")
 
-    elif isinstance(resource, service_models.EventsRule):
+    elif isinstance(resource, events_service_models.EventsRule):
         resource.physical_resource_id = resource.params.get("Name")
 
-    elif isinstance(resource, service_models.ElasticsearchDomain):
+    elif isinstance(resource, elasticsearch_service_models.ElasticsearchDomain):
         resource.physical_resource_id = resource.params.get("DomainName")
 
-    elif isinstance(resource, service_models.SecretsManagerSecret):
-        secret = service_models.SecretsManagerSecret.fetch_details(resource.props["Name"])
+    elif isinstance(resource, secretsmanager_service_models.SecretsManagerSecret):
+        secret = secretsmanager_service_models.SecretsManagerSecret.fetch_details(
+            resource.props["Name"]
+        )
         if secret:
             resource.props["ARN"] = resource.physical_resource_id = secret["ARN"]
 

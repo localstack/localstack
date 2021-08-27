@@ -7,6 +7,8 @@ import traceback
 from typing import Optional
 
 import botocore
+
+# TODO: remove
 from moto.cloudformation import parsing
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.ec2.utils import generate_route_id
@@ -42,6 +44,8 @@ from localstack.utils.common import (
     to_str,
 )
 from localstack.utils.testutil import delete_all_s3_objects
+
+from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
