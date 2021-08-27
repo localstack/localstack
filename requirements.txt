@@ -47,8 +47,8 @@ isort==5.9.1                   #extended-lib
 jsondiff>=1.2.0
 jsonpatch>=1.24,<2.0
 jsonpath-rw>=1.4.0,<2.0.0
-localstack-ext[full]>=0.12.9.30
-localstack-ext>=0.12.9.30      #basic-lib
+localstack-ext[full]>=0.12.16
+localstack-ext>=0.12.16        #basic-lib
 localstack-client>=1.20        #basic-lib
 moto-ext[all]>=2.0.3.23
 pre-commit==2.13.0             #extended-lib
