@@ -1,8 +1,15 @@
 import logging
 import os
+from typing import Optional
 
 from localstack import config
 from localstack.services import install
+from localstack.services.awslambda.lambda_executors import (
+    AdditionalInvocationOptions,
+    InvocationContext,
+    LambdaExecutorPlugin,
+    is_java_lambda,
+)
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_JAVA8
 
 
@@ -34,18 +41,6 @@ THUNDRA_APIKEY = os.getenv(THUNDRA_APIKEY_ENV_VAR_NAME)
 THUNDRA_JAVA_AGENT_INITIALIZED = False
 THUNDRA_JAVA_AGENT_REMOTE_URL = None
 THUNDRA_JAVA_AGENT_LOCAL_PATH = None
-THUNDRA_JAVA_AGENT_CONTAINER_SOURCE_PATH = None
-THUNDRA_JAVA_AGENT_CONTAINER_TARGET_PATH = None
-
-
-def init():
-    """
-    Initialized Thundra plugin at startup
-    """
-
-    # If Thundra API key is initialized, init at startup
-    if THUNDRA_APIKEY:
-        _ensure_java_agent_initialized()
 
 
 def _get_apikey(env_vars):
@@ -59,9 +54,9 @@ def _get_apikey(env_vars):
     return thundra_apikey
 
 
-########################################################################################################################
+#############
 # JAVA AGENT
-########################################################################################################################
+#############
 
 
 def _ensure_java_agent_initialized():
@@ -75,8 +70,6 @@ def _ensure_java_agent_initialized():
 def _init_java_agent_configs():
     global THUNDRA_JAVA_AGENT_REMOTE_URL
     global THUNDRA_JAVA_AGENT_LOCAL_PATH
-    global THUNDRA_JAVA_AGENT_CONTAINER_SOURCE_PATH
-    global THUNDRA_JAVA_AGENT_CONTAINER_TARGET_PATH
 
     metadata_url = (
         "https://repo.thundra.io/service/local/repositories/thundra-releases/content/"
@@ -92,9 +85,6 @@ def _init_java_agent_configs():
     ).format(v=version)
     THUNDRA_JAVA_AGENT_LOCAL_PATH = "%s/%s" % (config.TMP_FOLDER, jar_name)
 
-    THUNDRA_JAVA_AGENT_CONTAINER_SOURCE_PATH = "%s/%s" % (config.HOST_TMP_FOLDER, jar_name)
-    THUNDRA_JAVA_AGENT_CONTAINER_TARGET_PATH = "/tmp/thundra-agent.jar"
-
 
 def _install_java_agent():
     # install Thundra Java agent JAR file
@@ -108,90 +98,66 @@ def _is_java8_lambda(func_details):
     return runtime == LAMBDA_RUNTIME_JAVA8
 
 
-def _do_inject_java_agent(func_details):
-    log_disabled = func_details.envvars.get(THUNDRA_AGENT_LOG_DISABLE_VAR_NAME)
-    # If log disable is not configured explicitly, set it to false to enable log capturing by default
-    if not log_disabled:
-        func_details.envvars[THUNDRA_AGENT_LOG_DISABLE_VAR_NAME] = "false"
+class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
+    def initialize(self):
+        # If Thundra API key is initialized, init at startup
+        if THUNDRA_APIKEY:
+            _ensure_java_agent_initialized()
 
+    def should_apply(self, context: InvocationContext) -> bool:
+        # plugin currently only applied for Java Lambdas, if LAMBDA_REMOTE_DOCKER=0, and if API key is configured
+        if not is_java_lambda(context.lambda_function.runtime):
+            return False
+        if "docker" in config.LAMBDA_EXECUTOR and config.LAMBDA_REMOTE_DOCKER:
+            return False
+        thundra_apikey = _get_apikey(context.environment)
+        if not thundra_apikey:
+            return False
+        return True
 
-def inject_java_agent_for_local(func_details, java_opts):
-    """
-    Injects Thundra Java agent if it is available and configured when Lambda is executed on Local
+    def prepare_invocation(
+        self, context: InvocationContext
+    ) -> Optional[AdditionalInvocationOptions]:
+        # download and initialize Java agent
+        _ensure_java_agent_initialized()
 
-    :param func_details: the function details
-    :param java_opts: existing options to be passed as VM arguments to the local JVM process
-    :return: the additional options to be passed as VM arguments to the local JVM process
-    """
+        result = AdditionalInvocationOptions()
+        environment = context.environment
+        agent_flag = "-javaagent:{agent_path}"
 
-    thundra_apikey = _get_apikey(func_details.envvars)
-    if not thundra_apikey:
-        return None
+        # Inject Thundra agent path into "JAVA_TOOL_OPTIONS" env var,
+        # so it will be automatically loaded on JVM startup
+        java_tool_opts = environment.get("JAVA_TOOL_OPTIONS", "")
+        if agent_flag not in java_tool_opts:
+            java_tool_opts += f" {agent_flag}"
+        result.env_updates["JAVA_TOOL_OPTIONS"] = java_tool_opts.strip()
 
-    _ensure_java_agent_initialized()
+        # Disable CDS (Class Data Sharing),
+        # because "-javaagent" cannot be enabled when CDS is enabled on JDK 8.
+        # CDS can only be disabled by "_JAVA_OPTIONS" env var,
+        # because by default it is enabled ("-Xshare:on")
+        # on Lambci by command line parameters and
+        # "_JAVA_OPTIONS" has precedence over command line parameters
+        # but "JAVA_TOOL_OPTIONS" is not.
+        if _is_java8_lambda(context.lambda_function):
+            java_opts = environment.get("_JAVA_OPTIONS", "")
+            java_opts += " -Xshare:off"
+            result.env_updates["_JAVA_OPTIONS"] = java_opts.strip()
 
-    if not THUNDRA_JAVA_AGENT_LOCAL_PATH:
-        return None
+        # If log disable is not configured explicitly, set it to false to enable log capturing by default
+        log_disabled = environment.get(THUNDRA_AGENT_LOG_DISABLE_VAR_NAME)
+        if not log_disabled:
+            result.env_updates[THUNDRA_AGENT_LOG_DISABLE_VAR_NAME] = "false"
 
-    func_details.envvars[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
+        # make sure API key is contained in environment
+        result.env_updates[THUNDRA_APIKEY_ENV_VAR_NAME] = _get_apikey(environment)
 
-    _do_inject_java_agent(func_details)
+        # Note: The code below doesn't seem to be required, as LAMBDA_EXECUTOR=local also picks up $JAVA_TOOL_OPTIONS
+        # if context.lambda_command:
+        #     result.updated_command = context.lambda_command.replace(
+        #         "java ", f"java {agent_flag} ", 1
+        #     )
+        # construct agent file path mapping
+        result.files_to_add["agent_path"] = THUNDRA_JAVA_AGENT_LOCAL_PATH
 
-    return "-javaagent:" + THUNDRA_JAVA_AGENT_LOCAL_PATH
-
-
-def inject_java_agent_for_container(func_details, environment, docker_flags):
-    """
-    Injects Thundra Java agent if it is available and configured when Lambda is executed in container (Docker)
-
-    :param func_details: the function details
-    :param environment: the function environment variables
-    :param docker_flags: existing Docker flags to be to "docker run" command
-    :return: the additional Docker flags to be passed to "docker run" command
-    """
-
-    thundra_apikey = _get_apikey(environment)
-    if not thundra_apikey:
-        return None
-
-    _ensure_java_agent_initialized()
-
-    if not THUNDRA_JAVA_AGENT_CONTAINER_SOURCE_PATH:
-        return None
-
-    if config.LAMBDA_REMOTE_DOCKER:
-        LOG.info(
-            "Not enabling Thundra agent, as Docker file mounting is disabled due to LAMBDA_REMOTE_DOCKER=1"
-        )
-        return None
-
-    environment[THUNDRA_APIKEY_ENV_VAR_NAME] = thundra_apikey
-
-    _do_inject_java_agent(func_details)
-
-    # Inject Thundra agent path into "JAVA_TOOL_OPTIONS" env var,
-    # so it will be automatically loaded on JVM startup
-    java_tool_opts = environment.get("JAVA_TOOL_OPTIONS", "")
-    java_tool_opts += " -javaagent:" + THUNDRA_JAVA_AGENT_CONTAINER_TARGET_PATH
-    environment["JAVA_TOOL_OPTIONS"] = java_tool_opts.strip()
-
-    # Disable CDS (Class Data Sharing),
-    # because "-javaagent" cannot be enabled when CDS is enabled on JDK 8.
-    # CDS can only be disabled by "_JAVA_OPTIONS" env var,
-    # because by default it is enabled ("-Xshare:on")
-    # on Lambci by command line parameters and
-    # "_JAVA_OPTIONS" has precedence over command line parameters
-    # but "JAVA_TOOL_OPTIONS" is not.
-    if _is_java8_lambda(func_details):
-        java_opts = environment.get("_JAVA_OPTIONS", "")
-        java_opts += " -Xshare:off"
-        environment["_JAVA_OPTIONS"] = java_opts.strip()
-
-    # Mount Thundra agent jar into container file system
-    return "-v %s:%s" % (
-        THUNDRA_JAVA_AGENT_CONTAINER_SOURCE_PATH,
-        THUNDRA_JAVA_AGENT_CONTAINER_TARGET_PATH,
-    )
-
-
-########################################################################################################################
+        return result

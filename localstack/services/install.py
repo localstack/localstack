@@ -30,7 +30,6 @@ from localstack.constants import (
     MODULE_MAIN_PATH,
     STS_JAR_URL,
 )
-from localstack.plugin import thundra
 from localstack.utils import bootstrap
 from localstack.utils.docker import DOCKER_CLIENT
 
@@ -403,9 +402,6 @@ def install_component(name):
 def install_components(names):
     parallelize(install_component, names)
     install_lambda_java_libs()
-
-    # Init Thundra
-    thundra.init()
 
 
 def install_all_components():

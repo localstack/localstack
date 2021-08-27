@@ -11,10 +11,9 @@ import threading
 import time
 import traceback
 from multiprocessing import Process, Queue
-from typing import Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 from localstack import config
-from localstack.plugin import thundra
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_JAVA11,
@@ -23,6 +22,7 @@ from localstack.services.awslambda.lambda_utils import (
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.dead_letter_queue import (
     lambda_error_to_dead_letter_queue,
     sqs_error_to_dead_letter_queue,
@@ -32,11 +32,13 @@ from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched, store_clou
 from localstack.utils.common import (
     TMP_FILES,
     CaptureOutput,
+    get_all_subclasses,
     get_free_tcp_port,
     in_docker,
     json_safe,
     last_index_of,
     long_uid,
+    md5,
     now,
     run,
     save_file,
@@ -87,6 +89,91 @@ class InvocationException(Exception):
         super(InvocationException, self).__init__(message)
         self.log_output = log_output
         self.result = result
+
+
+class AdditionalInvocationOptions:
+    # Maps file keys to file paths. The keys can be used as placeholders in the env. variables
+    #  and command args to reference files - e.g., given `files_to_add` as {"f1": "/local/path"} and
+    #  `env_updates` as {"MYENV": "{f1}"}, the Lambda handler will receive an environment variable
+    #  `MYENV=/lambda/path` and the file /lambda/path will be accessible to the Lambda handler
+    #  (either locally, or inside Docker).
+    files_to_add: Dict[str, str]
+    # Environment variable updates to apply for the invocation
+    env_updates: Dict[str, str]
+    # Updated command to use for starting the Lambda process (or None)
+    updated_command: Optional[str]
+
+    def __init__(self, files_to_add=None, env_updates=None, updated_command=None):
+        self.files_to_add = files_to_add or {}
+        self.env_updates = env_updates or {}
+        self.updated_command = updated_command
+
+
+class InvocationResult:
+    def __init__(self, result, log_output=""):
+        if isinstance(result, InvocationResult):
+            raise Exception("Unexpected invocation result type: %s" % result)
+        self.result = result
+        self.log_output = log_output or ""
+
+
+class InvocationContext:
+    lambda_function: LambdaFunction
+    event: Dict[str, Any]
+    lambda_command: str  # TODO: change to List[str] ?
+    docker_flags: str  # TODO: change to List[str] ?
+    environment: Dict[str, str]
+    context: Dict[str, Any]
+
+    def __init__(
+        self,
+        lambda_function: LambdaFunction,
+        event: Dict,
+        environment=None,
+        context=None,
+        lambda_command=None,
+        docker_flags=None,
+    ):
+        self.lambda_function = lambda_function
+        self.event = event
+        self.environment = {} if environment is None else environment
+        self.context = {} if context is None else context
+        self.lambda_command = lambda_command
+        self.docker_flags = docker_flags
+
+
+class LambdaExecutorPlugin:
+    """Plugin abstraction that allows to hook in additional functionality into the Lambda executors."""
+
+    INSTANCES = []
+
+    def initialize(self):
+        """Called once, for any active plugin to run initialization logic (e.g., downloading dependencies).
+        Uses lazy initialization - i.e., runs only after the first should_apply() call returns True"""
+        pass
+
+    def should_apply(self, context: InvocationContext) -> bool:
+        """Whether the plugin logic should get applied for the given Lambda invocation context."""
+        return False
+
+    def prepare_invocation(
+        self, context: InvocationContext
+    ) -> Optional[AdditionalInvocationOptions]:
+        """Return additional invocation options for given Lambda invocation context."""
+        return None
+
+    def process_result(
+        self, context: InvocationContext, result: InvocationResult
+    ) -> InvocationResult:
+        """Optionally modify the result returned from the given Lambda invocation."""
+        return result
+
+    @classmethod
+    def get_plugins(cls):
+        if not cls.INSTANCES:
+            classes = get_all_subclasses(LambdaExecutorPlugin)
+            cls.INSTANCES = [clazz() for clazz in classes]
+        return cls.INSTANCES
 
 
 def get_from_event(event, key):
@@ -165,14 +252,6 @@ class LambdaAsyncLocks:
 
 
 LAMBDA_ASYNC_LOCKS = LambdaAsyncLocks()
-
-
-class InvocationResult(object):
-    def __init__(self, result, log_output=""):
-        if isinstance(result, InvocationResult):
-            raise Exception("Unexpected invocation result type: %s" % result)
-        self.result = result
-        self.log_output = log_output or ""
 
 
 class LambdaExecutor(object):
@@ -261,10 +340,65 @@ class LambdaExecutor(object):
         raise NotImplementedError
 
     def startup(self):
+        """Called once during startup - can be used, e.g., to prepare Lambda Docker environment"""
         pass
 
     def cleanup(self, arn=None):
+        """Called once during startup - can be used, e.g., to clean up left-over Docker containers"""
         pass
+
+    def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
+        """Make the given file available to the Lambda process (e.g., by copying into the container) for the
+        given invocation context; Returns the path to the file that will be available to the Lambda handler."""
+        raise NotImplementedError
+
+    def apply_plugin_patches(self, inv_context: InvocationContext):
+        """Loop through the list of plugins, and apply their patches to the invocation context (if applicable)"""
+        for plugin in LambdaExecutorPlugin.get_plugins():
+            if not plugin.should_apply(inv_context):
+                continue
+
+            # initialize, if not done yet
+            if not hasattr(plugin, "_initialized"):
+                LOG.debug("Initializing Lambda executor plugin %s", plugin.__class__)
+                plugin.initialize()
+                plugin._initialized = True
+
+            # invoke plugin to prepare invocation
+            inv_options = plugin.prepare_invocation(inv_context)
+            if not inv_options:
+                continue
+
+            # copy files
+            file_keys_map = {}
+            for key, file_path in inv_options.files_to_add.items():
+                file_in_container = self.provide_file_to_lambda(file_path, inv_context)
+                file_keys_map[key] = file_in_container
+
+            # replace placeholders like "{<fileKey>}" with corresponding file path
+            for key, file_path in file_keys_map.items():
+                for env_key, env_value in inv_options.env_updates.items():
+                    inv_options.env_updates[env_key] = str(env_value).replace(
+                        "{%s}" % key, file_path
+                    )
+                if inv_options.updated_command:
+                    inv_options.updated_command = inv_options.updated_command.replace(
+                        "{%s}" % key, file_path
+                    )
+                    inv_context.lambda_command = inv_options.updated_command
+
+            # update environment
+            inv_context.environment.update(inv_options.env_updates)
+
+    def process_result_via_plugins(
+        self, inv_context: InvocationContext, invocation_result: InvocationResult
+    ) -> InvocationResult:
+        """Loop through the list of plugins, and apply their post-processing logic to the Lambda invocation result."""
+        for plugin in LambdaExecutorPlugin.get_plugins():
+            if not plugin.should_apply(inv_context):
+                continue
+            invocation_result = plugin.process_result(inv_context, invocation_result)
+        return invocation_result
 
 
 class ContainerInfo:
@@ -283,9 +417,7 @@ class LambdaExecutorContainers(LambdaExecutor):
     ) -> Tuple[bytes, bytes]:
         raise NotImplementedError
 
-    def run_lambda_executor(
-        self, event=None, func_details=None, env_vars=None, command=None, docker_flags=None
-    ):
+    def run_lambda_executor(self, event=None, func_details=None, env_vars=None, command=None):
         env_vars = dict(env_vars or {})
         runtime = func_details.runtime or ""
 
@@ -328,6 +460,14 @@ class LambdaExecutorContainers(LambdaExecutor):
                 env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
         elif "AWS_LAMBDA_EVENT_BODY" not in env_vars:
             env_vars["AWS_LAMBDA_EVENT_BODY"] = to_str(event_body)
+
+        # apply plugin patches
+        inv_context = InvocationContext(func_details, event, environment=env_vars)
+        self.apply_plugin_patches(inv_context)
+
+        docker_flags = config.LAMBDA_DOCKER_FLAGS or ""
+        if inv_context.docker_flags:
+            docker_flags = f"{docker_flags} {inv_context.docker_flags}"
 
         event_stdin_bytes = stdin_str and to_bytes(stdin_str)
         error = None
@@ -374,7 +514,11 @@ class LambdaExecutorContainers(LambdaExecutor):
                 result,
             ) from error
 
+        # create result
         invocation_result = InvocationResult(result, log_output=log_output)
+        # run plugins post-processing logic
+        invocation_result = self.process_result_via_plugins(inv_context, invocation_result)
+
         return invocation_result
 
     def prepare_event(self, environment, event_body):
@@ -383,11 +527,12 @@ class LambdaExecutorContainers(LambdaExecutor):
         environment["AWS_LAMBDA_EVENT_BODY"] = event_body
         return event_body.encode()
 
-    def _execute(self, func_arn, func_details, event, context=None, version=None):
+    def _execute(
+        self, func_arn: str, func_details: LambdaFunction, event: Dict, context=None, version=None
+    ):
         runtime = func_details.runtime
         handler = func_details.handler
         environment = self._prepare_environment(func_details)
-        given_docker_flags = config.LAMBDA_DOCKER_FLAGS
 
         # configure USE_SSL in environment
         if config.USE_SSL:
@@ -432,14 +577,6 @@ class LambdaExecutorContainers(LambdaExecutor):
                 )
                 environment["JAVA_TOOL_OPTIONS"] = config.LAMBDA_JAVA_OPTS
 
-        docker_flags = given_docker_flags or ""
-        if is_java_lambda(runtime):
-            # If runtime is Java, inject Thundra agent if it is configured
-            extra_docker_flags = thundra.inject_java_agent_for_container(
-                func_details, environment, docker_flags
-            )
-            docker_flags += " %s" % extra_docker_flags if extra_docker_flags else ""
-
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):
             environment["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
@@ -447,10 +584,23 @@ class LambdaExecutorContainers(LambdaExecutor):
         # run Lambda executor and fetch invocation result
         LOG.info("Running lambda: %s" % func_details.arn())
         result = self.run_lambda_executor(
-            event=stdin, env_vars=environment, func_details=func_details, docker_flags=docker_flags
+            event=stdin, env_vars=environment, func_details=func_details
         )
 
         return result
+
+    def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
+        if config.LAMBDA_REMOTE_DOCKER:
+            LOG.info("TODO: copy file into container for LAMBDA_REMOTE_DOCKER=1 - %s", local_file)
+            return local_file
+
+        mountable_file = Util.get_host_path_for_path_in_docker(local_file)
+        _, extension = os.path.splitext(local_file)
+        target_file_name = f"{md5(local_file)}{extension}"
+        target_path = f"/tmp/{target_file_name}"
+        inv_context.docker_flags = inv_context.docker_flags or ""
+        inv_context.docker_flags += f"-v {mountable_file}:{target_path}"
+        return target_path
 
 
 class LambdaExecutorReuseContainers(LambdaExecutorContainers):
@@ -945,16 +1095,13 @@ class LambdaExecutorLocal(LambdaExecutor):
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
 
+    def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
+        # This is a no-op for local executors - simply return the given local file path
+        return local_file
+
     def execute_java_lambda(self, event, context, main_file, func_details=None):
         func_details.envvars = func_details.envvars or {}
-        given_opts = config.LAMBDA_JAVA_OPTS or ""
-
-        # If runtime is Java, inject Thundra agent if it is configured
-        extra_opts = thundra.inject_java_agent_for_local(func_details, given_opts)
-
-        opts = given_opts
-        if extra_opts:
-            opts += " " + extra_opts
+        java_opts = config.LAMBDA_JAVA_OPTS or ""
 
         handler = func_details.handler
         func_details.envvars[LAMBDA_HANDLER_ENV_VAR_NAME] = handler
@@ -969,15 +1116,27 @@ class LambdaExecutorLocal(LambdaExecutor):
             LAMBDA_EXECUTOR_JAR,
         )
         cmd = "java %s -cp %s %s %s" % (
-            opts,
+            java_opts,
             classpath,
             LAMBDA_EXECUTOR_CLASS,
             event_file,
         )
 
+        # apply plugin patches
+        inv_context = InvocationContext(
+            func_details, event, environment=func_details.envvars, lambda_command=cmd
+        )
+        self.apply_plugin_patches(inv_context)
+
+        cmd = inv_context.lambda_command
         LOG.info(cmd)
 
-        return self._execute_in_custom_runtime(cmd, func_details=func_details)
+        # execute Lambda and get invocation result
+        invocation_result = self._execute_in_custom_runtime(cmd, func_details=func_details)
+        # run plugins post-processing logic
+        invocation_result = self.process_result_via_plugins(inv_context, invocation_result)
+
+        return invocation_result
 
     def execute_javascript_lambda(self, event, context, main_file, func_details=None):
         handler = func_details.handler
