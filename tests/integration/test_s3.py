@@ -1154,14 +1154,25 @@ class TestS3(unittest.TestCase):
         bucket_name = "test-%s" % short_uid()
 
         self.s3_client.create_bucket(Bucket=bucket_name)
-        self.s3_client.put_object(Bucket=bucket_name, Key="test/index.html", Body="index")
-        self.s3_client.put_object(Bucket=bucket_name, Key="test/error.html", Body="error")
-        self.s3_client.put_object(Bucket=bucket_name, Key="actual/key.html", Body="key")
-        self.s3_client.put_object(
+        index_obj = self.s3_client.put_object(
+            Bucket=bucket_name, Key="test/index.html", Body="index", ContentType="text/html"
+        )
+        error_obj = self.s3_client.put_object(
+            Bucket=bucket_name, Key="test/error.html", Body="error", ContentType="text/html"
+        )
+        actual_key_obj = self.s3_client.put_object(
+            Bucket=bucket_name, Key="actual/key.html", Body="key", ContentType="text/html"
+        )
+        with_content_type_obj = self.s3_client.put_object(
             Bucket=bucket_name,
             Key="with-content-type/key.js",
             Body="some js",
             ContentType="application/javascript; charset=utf-8",
+        )
+        self.s3_client.put_object(
+            Bucket=bucket_name,
+            Key="to-be-redirected.html",
+            WebsiteRedirectLocation="actual/key.html",
         )
         self.s3_client.put_bucket_website(
             Bucket=bucket_name,
@@ -1181,6 +1192,16 @@ class TestS3(unittest.TestCase):
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(200, response.status_code)
         self.assertEqual("key", response.text)
+        self.assertIn("content-type", response.headers)
+        self.assertEqual("text/html", response.headers["content-type"])
+        self.assertIn("etag", response.headers)
+        self.assertEqual(actual_key_obj["ETag"], response.headers["etag"])
+
+        # If-None-Match and Etag
+        response = requests.get(
+            url, headers={**headers, "If-None-Match": actual_key_obj["ETag"]}, verify=False
+        )
+        self.assertEqual(304, response.status_code)
 
         # key with specified content-type
         url = "https://{}.{}:{}/with-content-type/key.js".format(
@@ -1191,14 +1212,20 @@ class TestS3(unittest.TestCase):
         self.assertEqual("some js", response.text)
         self.assertIn("content-type", response.headers)
         self.assertEqual("application/javascript; charset=utf-8", response.headers["content-type"])
+        self.assertIn("etag", response.headers)
+        self.assertEqual(with_content_type_obj["ETag"], response.headers["etag"])
 
         # index document
         url = "https://{}.{}:{}/test".format(
             bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
         )
         response = requests.get(url, headers=headers, verify=False)
-        self.assertEqual(302, response.status_code)
+        self.assertEqual(200, response.status_code)
         self.assertEqual("index", response.text)
+        self.assertIn("content-type", response.headers)
+        self.assertEqual("text/html", response.headers["content-type"])
+        self.assertIn("etag", response.headers)
+        self.assertEqual(index_obj["ETag"], response.headers["etag"])
 
         # root path test
         url = "https://{}.{}:{}/".format(
@@ -1207,6 +1234,10 @@ class TestS3(unittest.TestCase):
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(404, response.status_code)
         self.assertEqual("error", response.text)
+        self.assertIn("content-type", response.headers)
+        self.assertEqual("text/html", response.headers["content-type"])
+        self.assertIn("etag", response.headers)
+        self.assertEqual(error_obj["ETag"], response.headers["etag"])
 
         # error document
         url = "https://{}.{}:{}/something".format(
@@ -1215,6 +1246,22 @@ class TestS3(unittest.TestCase):
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(404, response.status_code)
         self.assertEqual("error", response.text)
+        self.assertIn("content-type", response.headers)
+        self.assertEqual("text/html", response.headers["content-type"])
+        self.assertIn("etag", response.headers)
+        self.assertEqual(error_obj["ETag"], response.headers["etag"])
+
+        # redirect object
+        url = "https://{}.{}:{}/to-be-redirected.html".format(
+            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
+        )
+        response = requests.get(url, headers=headers, verify=False, allow_redirects=False)
+        self.assertEqual(301, response.status_code)
+        self.assertIn("location", response.headers)
+        self.assertEqual("actual/key.html", response.headers["location"])
+        response = requests.get(url, headers=headers, verify=False)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(actual_key_obj["ETag"], response.headers["etag"])
 
     def test_s3_event_notification_with_sqs(self):
         key_by_path = "aws/bucket=2020/test1.txt"
