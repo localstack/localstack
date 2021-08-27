@@ -106,7 +106,7 @@ class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
 
     def should_apply(self, context: InvocationContext) -> bool:
         # plugin currently only applied for Java Lambdas, if LAMBDA_REMOTE_DOCKER=0, and if API key is configured
-        if not is_java_lambda(context.lambda_details.runtime):
+        if not is_java_lambda(context.lambda_function.runtime):
             return False
         if "docker" in config.LAMBDA_EXECUTOR and config.LAMBDA_REMOTE_DOCKER:
             return False
@@ -139,7 +139,7 @@ class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
         # on Lambci by command line parameters and
         # "_JAVA_OPTIONS" has precedence over command line parameters
         # but "JAVA_TOOL_OPTIONS" is not.
-        if _is_java8_lambda(context.lambda_details):
+        if _is_java8_lambda(context.lambda_function):
             java_opts = environment.get("_JAVA_OPTIONS", "")
             java_opts += " -Xshare:off"
             result.env_updates["_JAVA_OPTIONS"] = java_opts.strip()

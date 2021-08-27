@@ -118,7 +118,7 @@ class InvocationResult:
 
 
 class InvocationContext:
-    lambda_details: LambdaFunction
+    lambda_function: LambdaFunction
     event: Dict[str, Any]
     lambda_command: str  # TODO: change to List[str] ?
     docker_flags: str  # TODO: change to List[str] ?
@@ -127,17 +127,17 @@ class InvocationContext:
 
     def __init__(
         self,
-        lambda_details: LambdaFunction,
+        lambda_function: LambdaFunction,
         event: Dict,
         environment=None,
         context=None,
         lambda_command=None,
         docker_flags=None,
     ):
-        self.lambda_details = lambda_details
+        self.lambda_function = lambda_function
         self.event = event
-        self.environment = environment if environment is not None else lambda_details.envvars or {}
-        self.context = context or {}
+        self.environment = {} if environment is None else environment
+        self.context = {} if context is None else context
         self.lambda_command = lambda_command
         self.docker_flags = docker_flags
 
@@ -360,7 +360,7 @@ class LambdaExecutor(object):
 
             # initialize, if not done yet
             if not hasattr(plugin, "_initialized"):
-                LOG.debug("Initializing Lambda executor plugin %s" % plugin.__class__)
+                LOG.debug("Initializing Lambda executor plugin %s", plugin.__class__)
                 plugin.initialize()
                 plugin._initialized = True
 
@@ -591,7 +591,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
     def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
         if config.LAMBDA_REMOTE_DOCKER:
-            LOG.info("TODO: copy file into container for LAMBDA_REMOTE_DOCKER=1 - %s" % local_file)
+            LOG.info("TODO: copy file into container for LAMBDA_REMOTE_DOCKER=1 - %s", local_file)
             return local_file
 
         mountable_file = Util.get_host_path_for_path_in_docker(local_file)
@@ -1123,7 +1123,9 @@ class LambdaExecutorLocal(LambdaExecutor):
         )
 
         # apply plugin patches
-        inv_context = InvocationContext(func_details, event, lambda_command=cmd)
+        inv_context = InvocationContext(
+            func_details, event, environment=func_details.envvars, lambda_command=cmd
+        )
         self.apply_plugin_patches(inv_context)
 
         cmd = inv_context.lambda_command
