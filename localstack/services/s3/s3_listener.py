@@ -22,7 +22,7 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 
 from localstack import config, constants
-from localstack.services.cloudformation.models.s3_service_models import S3Bucket
+from localstack.services.cloudformation.models.s3 import S3Bucket
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
