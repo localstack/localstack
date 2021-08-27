@@ -1028,6 +1028,14 @@ class LambdaExecutorLocal(LambdaExecutor):
         lambda_cwd = func_details.cwd
         environment = self._prepare_environment(func_details)
 
+        if func_details.timeout:
+            environment["AWS_LAMBDA_FUNCTION_TIMEOUT"] = str(func_details.timeout)
+        if context:
+            environment["AWS_LAMBDA_FUNCTION_NAME"] = context.function_name
+            environment["AWS_LAMBDA_FUNCTION_VERSION"] = context.function_version
+            environment["AWS_LAMBDA_FUNCTION_INVOKED_ARN"] = context.invoked_function_arn
+            environment["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"] = str(context.memory_limit_in_mb)
+
         # execute the Lambda function in a forked sub-process, sync result via queue
         queue = Queue()
 
