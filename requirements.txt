@@ -20,7 +20,6 @@ black==21.6b0                  #extended-lib
 cachetools>=3.1.1,<4.0.0
 cbor2>=5.2.0
 click>=7.0                     #basic-lib
-stevedore>=3.4.0               #basic-lib
 # coverage version should be synced with bin/Dockerfile.base
 coverage[toml]>=5.5
 coveralls==3.1.0
@@ -32,6 +31,7 @@ Cython                         #extended-lib
 dataclasses; python_version < '3.7' #basic-lib
 dnspython==1.16.0              #basic-lib
 docopt>=0.6.2                  #basic-lib
+docker>=3.7.2                  #basic-lib
 elasticsearch>=7.0.0,<8.0.0
 flake8>=3.6.0                  #extended-lib
 flake8-black>=0.2.1            #extended-lib
@@ -60,10 +60,12 @@ pytest-httpserver>=1.0.1
 pytest-rerunfailures==10.0
 pyyaml>=5.1                    #basic-lib
 Quart>=0.6.15
-rich>=10.7.0
+rich>=10.7.0                   #basic-lib
 readerwriterlock>=1.0.7
 requests>=2.20.0,<2.26         #basic-lib
 requests-aws4auth==0.9
 sasl>=0.2.1
+# TODO: "six" dependency still needed?
 six>=1.12.0                    #basic-lib
+stevedore>=3.4.0               #basic-lib
 xmltodict>=0.11.0
