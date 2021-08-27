@@ -313,10 +313,9 @@ def setup_logging(log_level=None):
     # overriding the log level if LS_LOG has been set
     if config.LS_LOG:
         log_level = str(config.LS_LOG).upper()
-        log_level = (
-            "WARNING" if log_level == "WARN" else "DEBUG" if log_level == "TRACE" else log_level
-        )
-        log_level = getattr(logging, log_level)
+        if log_level == "TRACE":
+            log_level = "DEBUG"
+        log_level = logging._nameToLevel[log_level]
         logging.getLogger("").setLevel(log_level)
         logging.getLogger("localstack").setLevel(log_level)
 
@@ -414,7 +413,11 @@ def start_infra_locally():
 
 
 def validate_localstack_config(name):
-    LOG.setLevel(logging.INFO)
+    # TODO: separate functionality from CLI output
+    #  (use exceptions to communicate errors, and return list of warnings)
+    from subprocess import CalledProcessError
+
+    from localstack.cli import console
 
     dirname = os.getcwd()
     compose_file_name = name if os.path.isabs(name) else os.path.join(dirname, name)
@@ -423,9 +426,10 @@ def validate_localstack_config(name):
     # validating docker-compose file
     cmd = ["docker-compose", "-f", compose_file_name, "config"]
     try:
-        run(cmd, shell=False)
-    except Exception as e:
-        LOG.warning("Looks like the docker-compose file is not valid: %s" % e)
+        run(cmd, shell=False, print_error=False)
+    except CalledProcessError as e:
+        msg = f"{e}\n{to_str(e.output)}".strip()
+        raise ValueError(msg)
 
     # validating docker-compose variable
     import yaml  # keep import here to avoid issues in test Lambdas
@@ -441,12 +445,12 @@ def validate_localstack_config(name):
             'No LocalStack service found in config (looking for image names containing "localstack")'
         )
     if len(ls_service_name) > 1:
-        LOG.warning("Multiple candidates found for LocalStack service: %s" % ls_service_name)
+        warns.append(f"Multiple candidates found for LocalStack service: {ls_service_name}")
     ls_service_name = ls_service_name[0]
     ls_service_details = services_config[ls_service_name]
     image_name = ls_service_details.get("image", "")
     if image_name.split(":")[0] not in constants.OFFICIAL_IMAGES:
-        LOG.info(
+        warns.append(
             'Using custom image "%s", we recommend using an official image: %s'
             % (image_name, constants.OFFICIAL_IMAGES)
         )
@@ -508,9 +512,8 @@ def validate_localstack_config(name):
 
     # print warning/info messages
     for warning in warns:
-        LOG.warning(warning)
-    if not warnings:
-        LOG.info("Done validating config file %s - no issues found" % compose_file_name)
+        console.print("[yellow]:warning:[/yellow]", warning)
+    if not warns:
         return True
     return False
 
