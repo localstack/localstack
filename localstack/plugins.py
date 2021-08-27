@@ -84,7 +84,7 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin("cloudformation", start=start_cloudformation))
 
-        register_plugin(Plugin("configservice", start=configservice_starter.start_configservice))
+        register_plugin(Plugin("config", start=configservice_starter.start_configservice))
 
         register_plugin(
             Plugin(
