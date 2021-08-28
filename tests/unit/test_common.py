@@ -324,6 +324,13 @@ class TestCommon(unittest.TestCase):
         self.assertEqual("1.1TB", fn(1e12 + 1e11))
         self.assertEqual("1000TB", fn(1e15))
 
+        # string input
+        self.assertEqual("123B", fn("123"))
+        # invalid number
+        self.assertEqual("n/a", fn("abc"))
+        # negative number
+        self.assertEqual("n/a", fn(-1))  # TODO: seems we could support this case
+
     def test_format_number(self):
         fn = common.format_number
         self.assertEqual("12", fn(12, decimals=0))

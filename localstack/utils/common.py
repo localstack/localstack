@@ -937,9 +937,11 @@ def disk_usage(path):
 
 
 def format_bytes(count, default="n/a"):
-    if not is_number(count) or count < 0:
+    if not is_number(count):
         return default
     cnt = float(count)
+    if cnt < 0:
+        return default
     units = ("B", "KB", "MB", "GB", "TB")
     for unit in units:
         if cnt < 1000 or unit == units[-1]:
