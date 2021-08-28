@@ -926,6 +926,12 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
 
 
 def disk_usage(path):
+    if not os.path.exists(path):
+        return 0
+
+    if os.path.isfile(path):
+        return os.path.getsize(path)
+
     total_size = 0
     for dirpath, dirnames, filenames in os.walk(path):
         for f in filenames:

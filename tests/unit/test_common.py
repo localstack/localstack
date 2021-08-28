@@ -5,6 +5,7 @@ import time
 import unittest
 from datetime import date, datetime
 
+import pytest
 import pytz
 import yaml
 
@@ -410,3 +411,86 @@ class TestCommandLine(unittest.TestCase):
             "8000/tcp": ("0.0.0.0", 5003),
         }
         self.assertEqual(expected_result, result)
+
+
+class TestCommonFileOperations:
+    def test_disk_usage(self, tmp_path):
+        f1 = tmp_path / "f1.blob"
+        f1.write_bytes(b"0" * 100)
+
+        f2 = tmp_path / "f2.blob"
+        f2.write_bytes(b"0" * 100)
+
+        # subdir
+        f3_dir = tmp_path / "foo"
+        f3_dir.mkdir()
+        f3 = f3_dir / "f3.blob"
+        f3.write_bytes(b"0" * 100)
+
+        # trees
+        assert common.disk_usage(tmp_path) == pytest.approx(300, abs=5)
+        assert common.disk_usage(f3_dir) == pytest.approx(100, abs=5)
+
+        # single file
+        assert common.disk_usage(f3) == pytest.approx(100, abs=5)
+
+        # invalid path
+        assert common.disk_usage(tmp_path / "not_in_path") == 0
+
+        # None
+        with pytest.raises(TypeError):
+            assert common.disk_usage(None) == 0
+
+    def test_replace_in_file(self, tmp_path):
+        content = """
+        1: {search}
+        2: {search}
+        3: {sear}
+        """
+        expected = """
+        1: foo
+        2: foo
+        3: {sear}
+        """
+
+        fp = tmp_path / "file.txt"
+        fp.write_text(content)
+
+        common.replace_in_file("{search}", "foo", fp)
+        assert fp.read_text() == expected
+
+        # try again, nothing should change
+        common.replace_in_file("{search}", "foo", fp)
+        assert fp.read_text() == expected
+
+    def test_replace_in_file_with_non_existing_path(self, tmp_path):
+        fp = tmp_path / "non_existing_file.txt"
+
+        assert not fp.exists()
+        common.replace_in_file("foo", "bar", fp)
+        assert not fp.exists()
+
+    def test_cp_r(self, tmp_path):
+        pytest.skip("this test does not work on python3.7 due to an issue shutil used by cp_r")
+
+        source = tmp_path / "source"
+        target = tmp_path / "target"
+
+        f1 = source / "f1.txt"
+        f2 = source / "d1" / "f2.txt"
+        f3 = source / "d1" / "d2" / "f3.txt"
+
+        source.mkdir()
+        target.mkdir()
+        f3.parent.mkdir(parents=True)
+        f1.write_text("f1")
+        f2.write_text("f2")
+        f3.write_text("f3")
+
+        common.cp_r(source, target)
+
+        assert (target / "f1.txt").is_file()
+        assert (target / "d1" / "f2.txt").is_file()
+        assert (target / "d1" / "f2.txt").is_file()
+        assert (target / "d1" / "d2" / "f3.txt").is_file()
+        assert (target / "d1" / "d2" / "f3.txt").read_text() == "f3"
