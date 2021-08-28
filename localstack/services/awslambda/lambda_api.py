@@ -2409,7 +2409,7 @@ def serve(port):
     LAMBDA_EXECUTOR.startup()
 
     # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
-    import localstack.plugin.thundra  # noqa
+    import localstack.contrib.thundra  # noqa
 
     generic_proxy.serve_flask_app(app=app, port=port)
 
