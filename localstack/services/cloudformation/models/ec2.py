@@ -373,28 +373,31 @@ class EC2Instance(GenericBaseModel):
         return "AWS::EC2::Instance"
 
     def fetch_state(self, stack_name, resources):
-        instance_id = self.physical_resource_id
-        client = aws_stack.connect_to_service("ec2")
-        kwargs = {"InstanceIds": [instance_id]}
+        instance_id = self.get_physical_resource_id()
         if not instance_id:
-            props = self.props
-            filters = []
-            kwargs = {"Filters": filters}
-            filter_attrs = {
-                "affinity": "Affinity",
-                "availability-zone": "AvailabilityZone",
-                "host-id": "HostId",
-                "image-id": "ImageId",
-                "instance-type": "InstanceType",
-                "key-name": "AvailabilityZone",
-                "subnet-id": "SubnetId",
-            }
-            for tag in props.get("Tags", []):
-                filters.append({"Name": "tag:%s" % tag["Key"], "Values": [tag["Value"]]})
-            for name, attr in filter_attrs.items():
-                if attr in props:
-                    filters.append({"Name": name, "Values": [props[attr]]})
-        resp = client.describe_instances(**kwargs)
+            return
+        client = aws_stack.connect_to_service("ec2")
+        # kwargs = {"InstanceIds": [instance_id]}
+        # if not instance_id:
+        #     props = self.props
+        #     filters = []
+        #     kwargs = {"Filters": filters}
+        #     filter_attrs = {
+        #         "affinity": "Affinity",
+        #         "availability-zone": "AvailabilityZone",
+        #         "host-id": "HostId",
+        #         "image-id": "ImageId",
+        #         "instance-type": "InstanceType",
+        #         "key-name": "AvailabilityZone",
+        #         "subnet-id": "SubnetId",
+        #     }
+        #     for tag in props.get("Tags", []):
+        #         filters.append({"Name": "tag:%s" % tag["Key"], "Values": [tag["Value"]]})
+        #     for name, attr in filter_attrs.items():
+        #         if attr in props:
+        #             filters.append({"Name": name, "Values": [props[attr]]})
+        print("FETCH_STATE", instance_id)
+        resp = client.describe_instances(InstanceIds=[instance_id])
         reservation = (resp.get("Reservations") or [{}])[0]
         return (reservation.get("Instances") or [None])[0]
 
