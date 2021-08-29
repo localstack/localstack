@@ -25,7 +25,7 @@ from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Callable, List, Optional, Sized, Union
+from typing import Callable, List, Optional, Sized, Type, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
@@ -926,6 +926,12 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
 
 
 def disk_usage(path):
+    if not os.path.exists(path):
+        return 0
+
+    if os.path.isfile(path):
+        return os.path.getsize(path)
+
     total_size = 0
     for dirpath, dirnames, filenames in os.walk(path):
         for f in filenames:
@@ -937,9 +943,11 @@ def disk_usage(path):
 
 
 def format_bytes(count, default="n/a"):
-    if not is_number(count) or count < 0:
+    if not is_number(count):
         return default
     cnt = float(count)
+    if cnt < 0:
+        return default
     units = ("B", "KB", "MB", "GB", "TB")
     for unit in units:
         if cnt < 1000 or unit == units[-1]:
@@ -1728,7 +1736,8 @@ def truncate(data, max_length=100):
     return ("%s..." % data[:max_length]) if len(data) > max_length else data
 
 
-def get_all_subclasses(clazz):
+# this requires that all subclasses have been imported before(!)
+def get_all_subclasses(clazz: Type):
     """Recursively get all subclasses of the given class."""
     result = set()
     subs = clazz.__subclasses__()

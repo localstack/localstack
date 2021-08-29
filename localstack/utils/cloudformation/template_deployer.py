@@ -7,6 +7,8 @@ import traceback
 from typing import Optional
 
 import botocore
+
+# TODO: remove
 from moto.cloudformation import parsing
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.ec2.utils import generate_route_id
@@ -42,6 +44,8 @@ from localstack.utils.common import (
     to_str,
 )
 from localstack.utils.testutil import delete_all_s3_objects
+
+from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
@@ -313,26 +317,6 @@ RESOURCE_TO_FUNCTION = {
         "delete": {
             "function": "delete_activity",
             "parameters": {"activityArn": "PhysicalResourceId"},
-        },
-    },
-    "EC2::Instance": {
-        "create": {
-            "function": "create_instances",
-            "parameters": {
-                "InstanceType": "InstanceType",
-                "SecurityGroups": "SecurityGroups",
-                "KeyName": "KeyName",
-                "ImageId": "ImageId",
-            },
-            "defaults": {"MinCount": 1, "MaxCount": 1},
-        },
-        "delete": {
-            "function": "terminate_instances",
-            "parameters": {
-                "InstanceIds": lambda params, **kw: [
-                    kw["resources"][kw["resource_id"]]["PhysicalResourceId"]
-                ]
-            },
         },
     },
 }
@@ -979,7 +963,9 @@ def update_resource(resource_id, resources, stack_name):
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class:
         instance = resource_class(resource)
-        return instance.update_resource(resource, stack_name=stack_name, resources=resources)
+        result = instance.update_resource(resource, stack_name=stack_name, resources=resources)
+        instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
+        return result
 
 
 def fix_account_id_in_arns(params):

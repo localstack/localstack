@@ -860,6 +860,15 @@ def mock_aws_request_headers(service="dynamodb", region_name=None):
     return headers
 
 
+def inject_region_into_auth_headers(region, headers):
+    auth_header = headers.get("Authorization")
+    if auth_header:
+        regex = r"Credential=([^/]+)/([^/]+)/([^/]+)/"
+        auth_header = re.sub(regex, r"Credential=\1/\2/%s/" % region, auth_header)
+        headers["Authorization"] = auth_header
+    return headers
+
+
 def dynamodb_get_item_raw(request):
     headers = mock_aws_request_headers()
     headers["X-Amz-Target"] = "DynamoDB_20120810.GetItem"

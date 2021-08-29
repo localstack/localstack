@@ -34,12 +34,12 @@ from localstack.utils import analytics, common, config_listener, persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.bootstrap import (
     canonicalize_api_names,
+    get_main_container_id,
     in_ci,
     load_plugins,
     log_duration,
     setup_logging,
 )
-from localstack.utils.cli import print_version
 from localstack.utils.common import (
     TMP_THREADS,
     ShellCommandThread,
@@ -413,6 +413,25 @@ def check_aws_credentials():
 # -------------
 
 
+def print_runtime_information(in_docker=False):
+    # FIXME: this is legacy code from the old CLI, reconcile with new CLI and runtime output
+
+    print()
+    print("LocalStack version: %s" % constants.VERSION)
+    if in_docker:
+        id = get_main_container_id()
+        if id:
+            print("LocalStack Docker container id: %s" % id[:12])
+
+    if config.LOCALSTACK_BUILD_DATE:
+        print("LocalStack build date: %s" % config.LOCALSTACK_BUILD_DATE)
+
+    if config.LOCALSTACK_BUILD_GIT_HASH:
+        print("LocalStack build git hash: %s" % config.LOCALSTACK_BUILD_GIT_HASH)
+
+    print()
+
+
 def start_infra(asynchronous=False, apis=None):
     try:
         os.environ[LOCALSTACK_INFRA_PROCESS] = "1"
@@ -439,7 +458,7 @@ def start_infra(asynchronous=False, apis=None):
                 "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR"
             )
 
-        print_version(is_in_docker)
+        print_runtime_information(is_in_docker)
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)

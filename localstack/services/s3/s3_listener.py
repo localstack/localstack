@@ -22,7 +22,7 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 
 from localstack import config, constants
-from localstack.services.cloudformation.service_models import S3Bucket
+from localstack.services.cloudformation.models.s3 import S3Bucket
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
@@ -1030,6 +1030,7 @@ def is_object_specific_request(path, headers):
     return parts > (1 if bucket_in_domain else 2)
 
 
+# TODO: remove dependency on cloudformation resource class here (extract as utility fn)
 def normalize_bucket_name(bucket_name):
     return S3Bucket.normalize_bucket_name(bucket_name)
 

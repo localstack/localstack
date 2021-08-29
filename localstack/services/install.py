@@ -30,7 +30,6 @@ from localstack.constants import (
     MODULE_MAIN_PATH,
     STS_JAR_URL,
 )
-from localstack.plugin import thundra
 from localstack.utils import bootstrap
 from localstack.utils.docker import DOCKER_CLIENT
 
@@ -89,7 +88,7 @@ SFN_PATCH_CLASS_URL = "%s/raw/master/stepfunctions-local-patch/%s" % (
 )
 
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.1.8"
+KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.1.9"
 KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
@@ -403,9 +402,6 @@ def install_component(name):
 def install_components(names):
     parallelize(install_component, names)
     install_lambda_java_libs()
-
-    # Init Thundra
-    thundra.init()
 
 
 def install_all_components():
