@@ -387,6 +387,7 @@ class EC2Instance(GenericBaseModel):
         groups = props.get("SecurityGroups", props.get("SecurityGroupIds"))
 
         client = aws_stack.connect_to_service("ec2")
+        print("tmp log (CI debug): update_resource:", groups, instance_id, props)
         client.modify_instance_attribute(
             Groups=groups,
             InstanceId=instance_id,
