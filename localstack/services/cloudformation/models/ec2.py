@@ -374,14 +374,32 @@ class EC2Instance(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         instance_id = self.physical_resource_id
-        if not instance_id:
-            return None
         client = aws_stack.connect_to_service("ec2")
-        resp = client.describe_instances(InstanceIds=[instance_id])
-        return resp["Reservations"][0]["Instances"][0]
+        kwargs = {"InstanceIds": [instance_id]}
+        if not instance_id:
+            props = self.props
+            filters = []
+            kwargs = {"Filters": filters}
+            filter_attrs = {
+                "affinity": "Affinity",
+                "availability-zone": "AvailabilityZone",
+                "host-id": "HostId",
+                "image-id": "ImageId",
+                "instance-type": "InstanceType",
+                "key-name": "AvailabilityZone",
+                "subnet-id": "SubnetId",
+            }
+            for tag in props.get("Tags", []):
+                filters.append({"Name": "tag:%s" % tag["Key"], "Values": [tag["Value"]]})
+            for name, attr in filter_attrs.items():
+                if attr in props:
+                    filters.append({"Name": name, "Values": [props[attr]]})
+        resp = client.describe_instances(**kwargs)
+        reservation = (resp.get("Reservations") or [{}])[0]
+        return (reservation.get("Instances") or [None])[0]
 
     def update_resource(self, new_resource, stack_name, resources):
-        instance_id = new_resource["PhysicalResourceId"]
+        instance_id = self.get_physical_resource_id()
         props = new_resource["Properties"]
         groups = props.get("SecurityGroups", props.get("SecurityGroupIds"))
 
@@ -393,6 +411,7 @@ class EC2Instance(GenericBaseModel):
             InstanceType={"Value": props["InstanceType"]},
         )
         resp = client.describe_instances(InstanceIds=[instance_id])
+        print("tmp log (CI debug): update_resource2:", instance_id, resp)
         return resp["Reservations"][0]["Instances"][0]
 
     def get_physical_resource_id(self, attribute=None, **kwargs):

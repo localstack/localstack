@@ -99,6 +99,7 @@ RUN pip uninstall -y dataclasses
 RUN LAMBDA_EXECUTOR=local \
     PYTEST_LOGLEVEL=info \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \
+    TEST_PATH=tests/integration/test_cloudformation.py::CloudFormationTest::test_cfn_update_ec2_instance_type \
     make test-coverage
 
 # clean up temporary files created during test execution
