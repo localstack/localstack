@@ -161,7 +161,7 @@ def sqs_create_queue(sqs_client):
         url = response["QueueUrl"]
         queue_urls.append(url)
 
-        return sqs_client.get_queue_attributes(QueueUrl=url)
+        return sqs_client.get_queue_attributes(QueueUrl=url, AttributeNames=["All"])
 
     yield factory
 

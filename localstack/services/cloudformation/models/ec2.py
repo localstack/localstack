@@ -394,3 +394,43 @@ class EC2Instance(GenericBaseModel):
         )
         resp = client.describe_instances(InstanceIds=[instance_id])
         return resp["Reservations"][0]["Instances"][0]
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.physical_resource_id or self.props.get("InstanceId")
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name in REF_ID_ATTRS:
+            return self.props.get("InstanceId")
+        if attribute_name == "PublicIp":
+            return self.props.get("PublicIpAddress") or "127.0.0.1"
+        if attribute_name == "PublicDnsName":
+            return self.props.get("PublicDnsName")
+        if attribute_name == "AvailabilityZone":
+            return (
+                self.props.get("Placement", {}).get("AvailabilityZone")
+                or f"{aws_stack.get_region()}a"
+            )
+        return super(EC2Instance, self).get_cfn_attribute(attribute_name)
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_instances",
+                "parameters": {
+                    "InstanceType": "InstanceType",
+                    "SecurityGroups": "SecurityGroups",
+                    "KeyName": "KeyName",
+                    "ImageId": "ImageId",
+                },
+                "defaults": {"MinCount": 1, "MaxCount": 1},
+            },
+            "delete": {
+                "function": "terminate_instances",
+                "parameters": {
+                    "InstanceIds": lambda params, **kw: [
+                        kw["resources"][kw["resource_id"]]["PhysicalResourceId"]
+                    ]
+                },
+            },
+        }

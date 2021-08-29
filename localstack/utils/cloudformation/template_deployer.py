@@ -319,26 +319,6 @@ RESOURCE_TO_FUNCTION = {
             "parameters": {"activityArn": "PhysicalResourceId"},
         },
     },
-    "EC2::Instance": {
-        "create": {
-            "function": "create_instances",
-            "parameters": {
-                "InstanceType": "InstanceType",
-                "SecurityGroups": "SecurityGroups",
-                "KeyName": "KeyName",
-                "ImageId": "ImageId",
-            },
-            "defaults": {"MinCount": 1, "MaxCount": 1},
-        },
-        "delete": {
-            "function": "terminate_instances",
-            "parameters": {
-                "InstanceIds": lambda params, **kw: [
-                    kw["resources"][kw["resource_id"]]["PhysicalResourceId"]
-                ]
-            },
-        },
-    },
 }
 
 
@@ -983,7 +963,9 @@ def update_resource(resource_id, resources, stack_name):
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class:
         instance = resource_class(resource)
-        return instance.update_resource(resource, stack_name=stack_name, resources=resources)
+        result = instance.update_resource(resource, stack_name=stack_name, resources=resources)
+        instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
+        return result
 
 
 def fix_account_id_in_arns(params):

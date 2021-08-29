@@ -59,7 +59,7 @@
   },
 
   "Resources" : {
-    "Instance" : {
+    "EC2Instance" : {
       "Type" : "AWS::EC2::Instance",
       "Properties" : {
         "InstanceType" : { "Ref" : "InstanceType" },
