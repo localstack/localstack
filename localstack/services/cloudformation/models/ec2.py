@@ -387,7 +387,6 @@ class EC2Instance(GenericBaseModel):
 
         client = aws_stack.connect_to_service("ec2")
         client.modify_instance_attribute(
-            Attribute="instanceType",
             Groups=groups,
             InstanceId=instance_id,
             InstanceType={"Value": props["InstanceType"]},
