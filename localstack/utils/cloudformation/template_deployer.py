@@ -1052,6 +1052,7 @@ def configure_resource_via_sdk(
     # run post-actions
     run_post_create_actions(action_name, resource_id, resources, resource_type, stack_name, result)
 
+    print("!!!result", action_name, resource_id, result)
     return result
 
 
@@ -1310,6 +1311,7 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == "EC2::Instance":
         if action == "CREATE":
+            print("!!CREATED EC2 instance", details[0].id)
             resource["PhysicalResourceId"] = details[0].id
 
     if resource_type == "EC2::SecurityGroup":

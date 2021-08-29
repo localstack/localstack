@@ -394,6 +394,7 @@ class EC2Instance(GenericBaseModel):
             InstanceType={"Value": props["InstanceType"]},
         )
         resp = client.describe_instances(InstanceIds=[instance_id])
+        print("tmp log (CI debug): update_resource2:", instance_id, resp)
         return resp["Reservations"][0]["Instances"][0]
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
