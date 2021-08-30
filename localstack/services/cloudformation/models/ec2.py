@@ -377,26 +377,6 @@ class EC2Instance(GenericBaseModel):
         if not instance_id:
             return
         client = aws_stack.connect_to_service("ec2")
-        # kwargs = {"InstanceIds": [instance_id]}
-        # if not instance_id:
-        #     props = self.props
-        #     filters = []
-        #     kwargs = {"Filters": filters}
-        #     filter_attrs = {
-        #         "affinity": "Affinity",
-        #         "availability-zone": "AvailabilityZone",
-        #         "host-id": "HostId",
-        #         "image-id": "ImageId",
-        #         "instance-type": "InstanceType",
-        #         "key-name": "AvailabilityZone",
-        #         "subnet-id": "SubnetId",
-        #     }
-        #     for tag in props.get("Tags", []):
-        #         filters.append({"Name": "tag:%s" % tag["Key"], "Values": [tag["Value"]]})
-        #     for name, attr in filter_attrs.items():
-        #         if attr in props:
-        #             filters.append({"Name": name, "Values": [props[attr]]})
-        print("FETCH_STATE", instance_id)
         resp = client.describe_instances(InstanceIds=[instance_id])
         reservation = (resp.get("Reservations") or [{}])[0]
         return (reservation.get("Instances") or [None])[0]
@@ -407,14 +387,12 @@ class EC2Instance(GenericBaseModel):
         groups = props.get("SecurityGroups", props.get("SecurityGroupIds"))
 
         client = aws_stack.connect_to_service("ec2")
-        print("tmp log (CI debug): update_resource:", groups, instance_id, props)
         client.modify_instance_attribute(
             Groups=groups,
             InstanceId=instance_id,
             InstanceType={"Value": props["InstanceType"]},
         )
         resp = client.describe_instances(InstanceIds=[instance_id])
-        print("tmp log (CI debug): update_resource2:", instance_id, resp)
         return resp["Reservations"][0]["Instances"][0]
 
     def get_physical_resource_id(self, attribute=None, **kwargs):

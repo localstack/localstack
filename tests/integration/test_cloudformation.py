@@ -2009,17 +2009,14 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
 
-        print("tmp log (CI debug): starting stack update")
         cfn.update_stack(
             StackName=stack_name,
             TemplateBody=template,
             Parameters=[{"ParameterKey": "InstanceType", "ParameterValue": "t2.medium"}],
         )
         await_stack_completion(stack_name, statuses="UPDATE_COMPLETE")
-        print("tmp log (CI debug): stack update completed")
 
         resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
-        print("tmp log (CI debug): instance:", resp)
         self.assertEqual("t2.medium", resp["Reservations"][0]["Instances"][0]["InstanceType"])
 
         # clean up
