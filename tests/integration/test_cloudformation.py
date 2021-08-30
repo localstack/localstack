@@ -2014,7 +2014,7 @@ class CloudFormationTest(unittest.TestCase):
             TemplateBody=template,
             Parameters=[{"ParameterKey": "InstanceType", "ParameterValue": "t2.medium"}],
         )
-        await_stack_completion(stack_name)
+        await_stack_completion(stack_name, statuses="UPDATE_COMPLETE")
 
         resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
         self.assertEqual("t2.medium", resp["Reservations"][0]["Instances"][0]["InstanceType"])

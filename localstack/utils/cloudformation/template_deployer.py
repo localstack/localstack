@@ -1583,6 +1583,7 @@ def update_resource_details(stack, resource_id, details, action=None):
             resource_props.get("DestinationIpv6CidrBlock"),
         )
 
+    # TODO remove!
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
         stack.moto_resource_statuses[resource_id] = details
