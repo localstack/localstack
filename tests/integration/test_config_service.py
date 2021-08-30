@@ -34,10 +34,10 @@ class TestConfigService(unittest.TestCase):
                 "name": TEST_CONFIG_RECORDER_NAME,
                 "roleARN": iam_role_arn,
                 "recordingGroup": {
-                    "allSupported": True,
-                    "includeGlobalResourceTypes": True,
-                    "resourceTypes": [TEST_RESOURCE_TYPES],
-                },
+                    "allSupported": False,
+                    "includeGlobalResourceTypes": False,
+                    "resourceTypes": [TEST_RESOURCE_TYPES]
+                }
             }
         )
 
