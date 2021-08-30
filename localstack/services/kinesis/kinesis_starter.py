@@ -5,6 +5,7 @@ from localstack import config
 from localstack.constants import MODULE_MAIN_PATH
 from localstack.services import install
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
+from localstack.services.kinesis import kinesis_listener
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import chmod_r, get_free_tcp_port, mkdir, replace_in_file, start_thread
 
@@ -12,6 +13,9 @@ LOGGER = logging.getLogger(__name__)
 
 # event to indicate that the kinesis backend service has stopped (the terminal command has returned)
 kinesis_stopped = threading.Event()
+
+# todo: will be replaced with plugism mechanism
+PROCESS_THREAD = None
 
 
 def apply_patches_kinesalite():
@@ -43,13 +47,14 @@ def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronou
 
     # TODO: generalize into service manager once it is introduced
     try:
-        kinesis_cmd = do_run(cmd, asynchronous)
+        global PROCESS_THREAD
+        PROCESS_THREAD = do_run(cmd, asynchronous)
     finally:
         if asynchronous:
 
             def _return_listener(*_):
                 try:
-                    ret_code = kinesis_cmd.result_future.result()
+                    ret_code = PROCESS_THREAD.result_future.result()
                     if ret_code != 0:
                         LOGGER.error("kinesis terminated with return code %s", ret_code)
                 finally:
@@ -59,7 +64,7 @@ def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronou
         else:
             kinesis_stopped.set()
 
-    return kinesis_cmd
+    return PROCESS_THREAD
 
 
 def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
@@ -186,3 +191,9 @@ def check_kinesis(expect_shutdown=False, print_error=False):
     else:
         assert not kinesis_stopped.is_set()
         assert out and isinstance(out.get("StreamNames"), list)
+
+
+def restart_kinesis():
+    LOGGER.debug("Restarting Kinesis service")
+    PROCESS_THREAD.stop()
+    start_kinesis(asynchronous=True, update_listener=kinesis_listener.UPDATE_KINESIS)
