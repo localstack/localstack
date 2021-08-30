@@ -5,7 +5,6 @@ from localstack.utils.aws import aws_stack
 TEST_SUPPORT_CASE = {
     "subject": "Urgent - DynamoDB is down",
     "serviceCode": "general-info",
-    "severityCode": "critical",
     "categoryCode": "Service is down",
     "ccEmailAddresses": ["my-email-address@example.com"],
     "language": "en",
@@ -20,7 +19,7 @@ class TestConfigService(unittest.TestCase):
         response = self.support_client.create_case(
             subject=TEST_SUPPORT_CASE["subject"],
             serviceCode=TEST_SUPPORT_CASE["serviceCode"],
-            severityCode=TEST_SUPPORT_CASE["severityCode"],
+            severityCode="low",
             categoryCode=TEST_SUPPORT_CASE["categoryCode"],
             communicationBody="Testing support case",
             ccEmailAddresses=TEST_SUPPORT_CASE["ccEmailAddresses"],
