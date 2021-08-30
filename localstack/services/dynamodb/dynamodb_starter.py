@@ -71,5 +71,6 @@ def start_dynamodb(port=None, asynchronous=False, update_listener=None):
 
 
 def restart_dynamodb():
+    LOGGER.debug("Restarting DynamoDB service")
     PROCESS_THREAD.stop()
     start_dynamodb(asynchronous=True, update_listener=dynamodb_listener.UPDATE_DYNAMODB)
