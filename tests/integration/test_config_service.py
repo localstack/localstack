@@ -36,8 +36,8 @@ class TestConfigService(unittest.TestCase):
                 "recordingGroup": {
                     "allSupported": False,
                     "includeGlobalResourceTypes": False,
-                    "resourceTypes": [TEST_RESOURCE_TYPES]
-                }
+                    "resourceTypes": [TEST_RESOURCE_TYPES],
+                },
             }
         )
 
