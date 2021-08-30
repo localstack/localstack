@@ -659,7 +659,7 @@ In the coverage tables below, the features are marked with their respective avai
 
 ## API Persistence Coverage (Pro)
 
-The list below summarizes the APIs for which persistence has been implemented and tested in the Pro version (list may not be exhaustive/complete). More details following soon.
+The list below summarizes the APIs for which persistence has been implemented and (ideally) tested in the Pro version (list may not be exhaustive/complete). More details following soon.
 
 - Amplify
 - Athena
@@ -675,3 +675,18 @@ The list below summarizes the APIs for which persistence has been implemented an
 - Secrets Manager
 - SNS
 - SQS
+- Route53
+- RDS
+- Appconfig
+- Appsync
+- Lambda
+- CloudFormation
+- CloudFront
+- CodeCommit
+- Cost Explorer
+- Glue
+- IoT
+- Lake Formation
+- Serverless Repo
+- SES
+- STS
