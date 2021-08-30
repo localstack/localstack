@@ -435,6 +435,7 @@ In the coverage tables below, the features are marked with their respective avai
   <tr><td colspan=4><b>Lambda</b></td></tr>
   <tr><td>Aliases</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Code Signing Configs</td><td>⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Custom Images (Pro)</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Event Invoke Configs</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Event Source Mappings</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Function Concurrencies</td><td>⭐⭐⭐</td><td></td><td></td></tr>
