@@ -3,6 +3,7 @@ import os
 import time
 import unittest
 
+import pytest
 from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
@@ -1987,6 +1988,8 @@ class CloudFormationTest(unittest.TestCase):
         # clean up
         self.cleanup(stack_name)
 
+    @pytest.mark.skip(reason="Temporarily disabled until test flakiness is fixed")
+    # TODO: re-enable this test once fixed!
     def test_cfn_update_ec2_instance_type(self):
         stack_name = "stack-%s" % short_uid()
         template = load_file(os.path.join(THIS_FOLDER, "templates", "template30.yaml"))
