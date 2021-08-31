@@ -39,6 +39,7 @@ from localstack.services.infra import start_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_stack import lambda_function_arn
 from localstack.utils.common import (
     cp_r,
     download,
@@ -102,6 +103,7 @@ TEST_LAMBDA_NAME_JAVA_KINESIS = "test_lambda_java_kinesis"
 TEST_LAMBDA_NAME_ENV = "test_lambda_env"
 
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
+TEST_LAMBDA_PARALLEL_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_parallel.py")
 TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_send_message.py")
 TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_put_item.py")
 TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_start_execution.py")
@@ -202,7 +204,7 @@ class LambdaTestBase(unittest.TestCase):
     # TODO: the test below is being executed for all subclasses - should be refactored!
     def test_create_lambda_function(self):
         func_name = "lambda_func-{}".format(short_uid())
-        kms_key_arn = "arn:aws:kms:us-east-1:000000000000:key11"
+        kms_key_arn = "arn:aws:kms:%s:000000000000:key11" % aws_stack.get_region()
         vpc_config = {
             "SubnetIds": ["subnet-123456789"],
             "SecurityGroupIds": ["sg-123456789"],
@@ -229,7 +231,7 @@ class LambdaTestBase(unittest.TestCase):
         client = aws_stack.connect_to_service("lambda")
         client.create_function(**kwargs)
 
-        function_arn = "arn:aws:lambda:us-east-1:000000000000:function:" + func_name
+        function_arn = lambda_function_arn(func_name)
         partial_function_arn = ":".join(function_arn.split(":")[3:])
 
         # Get function by Name, ARN and partial ARN
@@ -855,7 +857,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             Description="Testing CodeSigning Config",
             AllowedPublishers={
                 "SigningProfileVersionArns": [
-                    "arn:aws:signer:us-east-1:000000000000:/signing-profiles/test",
+                    "arn:aws:signer:%s:000000000000:/signing-profiles/test"
+                    % aws_stack.get_region(),
                 ]
             },
             CodeSigningPolicies={"UntrustedArtifactOnDeployment": "Enforce"},
@@ -1899,7 +1902,7 @@ class TestDockerBehaviour(LambdaTestBase):
         if not isinstance(
             lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorReuseContainers
         ):
-            pytest.skip("not testing docker reuse executor")
+            pytest.skip("only testing docker reuse executor")
 
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_destroy_idle_containers"
@@ -1935,6 +1938,96 @@ class TestDockerBehaviour(LambdaTestBase):
 
         # clean up
         testutil.delete_lambda_function(func_name)
+
+
+def test_kinesis_lambda_parallelism(lambda_client, kinesis_client):
+    old_config = config.SYNCHRONOUS_KINESIS_EVENTS
+    config.SYNCHRONOUS_KINESIS_EVENTS = False
+    try:
+        _run_kinesis_lambda_parallelism(lambda_client, kinesis_client)
+    finally:
+        config.SYNCHRONOUS_KINESIS_EVENTS = old_config
+
+
+def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
+    function_name = "lambda_func-{}".format(short_uid())
+    stream_name = "test-foobar-{}".format(short_uid())
+
+    testutil.create_lambda_function(
+        handler_file=TEST_LAMBDA_PARALLEL_FILE,
+        func_name=function_name,
+        runtime=LAMBDA_RUNTIME_PYTHON36,
+    )
+
+    arn = aws_stack.kinesis_stream_arn(stream_name, account_id="000000000000")
+
+    lambda_client.create_event_source_mapping(EventSourceArn=arn, FunctionName=function_name)
+
+    def process_records(record):
+        print("Processing {}".format(record))
+
+    aws_stack.create_kinesis_stream(stream_name, delete=True)
+    kinesis_connector.listen_to_kinesis(
+        stream_name=stream_name,
+        listener_func=process_records,
+        wait_until_started=True,
+    )
+
+    kinesis = aws_stack.connect_to_service("kinesis")
+    stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
+    assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
+    num_events_kinesis = 10
+    # assure async call
+    start = time.perf_counter()
+    kinesis.put_records(
+        Records=[
+            {"Data": '{"batch": 0}', "PartitionKey": "test_%s" % i}
+            for i in range(0, num_events_kinesis)
+        ],
+        StreamName=stream_name,
+    )
+    assert (time.perf_counter() - start) < 1  # this should not take more than a second
+    kinesis.put_records(
+        Records=[
+            {"Data": '{"batch": 1}', "PartitionKey": "test_%s" % i}
+            for i in range(0, num_events_kinesis)
+        ],
+        StreamName=stream_name,
+    )
+
+    def get_events():
+        events = get_lambda_log_events(function_name)
+        assert len(events) == 2
+        return events
+
+    events = retry(get_events, retries=5)
+
+    def assertEvent(event, batch_no):
+        assert 10 == len(event["event"]["Records"])
+
+        assert "eventID" in event["event"]["Records"][0]
+        assert "eventSourceARN" in event["event"]["Records"][0]
+        assert "eventSource" in event["event"]["Records"][0]
+        assert "eventVersion" in event["event"]["Records"][0]
+        assert "eventName" in event["event"]["Records"][0]
+        assert "invokeIdentityArn" in event["event"]["Records"][0]
+        assert "awsRegion" in event["event"]["Records"][0]
+        assert "kinesis" in event["event"]["Records"][0]
+
+        assert {"batch": batch_no} == json.loads(
+            base64.b64decode(event["event"]["Records"][0]["kinesis"]["data"]).decode(
+                config.DEFAULT_ENCODING
+            )
+        )
+
+    assertEvent(events[0], 0)
+    assertEvent(events[1], 1)
+
+    assert (events[1]["executionStart"] - events[0]["executionStart"]) > 5
+
+    # cleanup
+    lambda_client.delete_function(FunctionName=function_name)
+    kinesis_client.delete_stream(StreamName=stream_name)
 
 
 class Util(object):

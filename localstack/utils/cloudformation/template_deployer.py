@@ -1,10 +1,14 @@
 import base64
+import copy
 import json
 import logging
 import re
 import traceback
-from urllib.parse import urlparse
+from typing import Optional
 
+import botocore
+
+# TODO: remove
 from moto.cloudformation import parsing
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.ec2.utils import generate_route_id
@@ -40,6 +44,8 @@ from localstack.utils.common import (
     to_str,
 )
 from localstack.utils.testutil import delete_all_s3_objects
+
+from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
@@ -126,23 +132,6 @@ def get_ddb_kinesis_stream_specification(params, **kwargs):
     if args:
         args["TableName"] = params["TableName"]
     return args
-
-
-def get_apigw_resource_params(params, **kwargs):
-    result = {
-        "restApiId": params.get("RestApiId"),
-        "pathPart": params.get("PathPart"),
-        "parentId": params.get("ParentId"),
-    }
-    if not result.get("parentId"):
-        # get root resource id
-        apigw = aws_stack.connect_to_service("apigateway")
-        resources = apigw.get_resources(restApiId=result["restApiId"])["items"]
-        root_resource = ([r for r in resources if r["path"] == "/"] or [None])[0]
-        if not root_resource:
-            raise Exception("Unable to find root resource for REST API %s" % result["restApiId"])
-        result["parentId"] = root_resource["id"]
-    return result
 
 
 # maps resource types to functions and parameters for creation
@@ -251,10 +240,6 @@ RESOURCE_TO_FUNCTION = {
             "parameters": {"TableName": "TableName"},
         },
     },
-    "Events::EventBus": {
-        "create": {"function": "create_event_bus", "parameters": {"Name": "Name"}},
-        "delete": {"function": "delete_event_bus", "parameters": {"Name": "Name"}},
-    },
     "IAM::Role": {
         "create": {
             "function": "create_role",
@@ -276,26 +261,6 @@ RESOURCE_TO_FUNCTION = {
         },
         "delete": {"function": "delete_role", "parameters": {"RoleName": "RoleName"}},
     },
-    "ApiGateway::Resource": {
-        "create": {
-            "function": "create_resource",
-            "parameters": get_apigw_resource_params,
-        }
-    },
-    "ApiGateway::Method": {
-        "create": {
-            "function": "put_method",
-            "parameters": {
-                "restApiId": "RestApiId",
-                "resourceId": "ResourceId",
-                "httpMethod": "HttpMethod",
-                "authorizationType": "AuthorizationType",
-                "authorizerId": "AuthorizerId",
-                "requestParameters": "RequestParameters",
-            },
-        }
-    },
-    "ApiGateway::Method::Integration": {},
     "ApiGateway::Account": {},
     "ApiGateway::Model": {
         "create": {
@@ -352,26 +317,6 @@ RESOURCE_TO_FUNCTION = {
         "delete": {
             "function": "delete_activity",
             "parameters": {"activityArn": "PhysicalResourceId"},
-        },
-    },
-    "EC2::Instance": {
-        "create": {
-            "function": "create_instances",
-            "parameters": {
-                "InstanceType": "InstanceType",
-                "SecurityGroups": "SecurityGroups",
-                "KeyName": "KeyName",
-                "ImageId": "ImageId",
-            },
-            "defaults": {"MinCount": 1, "MaxCount": 1},
-        },
-        "delete": {
-            "function": "terminate_instances",
-            "parameters": {
-                "InstanceIds": lambda params, **kw: [
-                    kw["resources"][kw["resource_id"]]["PhysicalResourceId"]
-                ]
-            },
         },
     },
 }
@@ -1018,7 +963,9 @@ def update_resource(resource_id, resources, stack_name):
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class:
         instance = resource_class(resource)
-        return instance.update_resource(resource, stack_name=stack_name, resources=resources)
+        result = instance.update_resource(resource, stack_name=stack_name, resources=resources)
+        instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
+        return result
 
 
 def fix_account_id_in_arns(params):
@@ -1045,6 +992,8 @@ def convert_data_types(func_details, params):
         if _type == bool:
             return _obj in ["True", "true", True]
         if _type == str:
+            if isinstance(_obj, bool):
+                return str(_obj).lower()
             return str(_obj)
         if _type == int:
             return int(_obj)
@@ -1297,15 +1246,12 @@ def configure_resource_via_sdk(
     if params is None:
         return
 
-    # convert refs and boolean strings
+    # convert refs
     for param_key, param_value in dict(params).items():
         if param_value is not None:
             param_value = params[param_key] = resolve_refs_recursively(
                 stack_name, param_value, resources
             )
-        # Convert to boolean (TODO: do this recursively?)
-        if str(param_value).lower() in ["true", "false"]:
-            params[param_key] = str(param_value).lower() == "true"
 
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
     params = fix_account_id_in_arns(params)
@@ -1317,13 +1263,27 @@ def configure_resource_via_sdk(
     # run pre-actions
     run_pre_create_actions(action_name, resource_id, resources, resource_type, stack_name, params)
 
+    # convert boolean strings
+    #  (TODO: we should find a more reliable mechanism than this opportunistic/probabilistic approach!)
+    params_before_conversion = copy.deepcopy(params)
+    for param_key, param_value in dict(params).items():
+        # Convert to boolean (TODO: do this recursively?)
+        if str(param_value).lower() in ["true", "false"]:
+            params[param_key] = str(param_value).lower() == "true"
+
     # invoke function
     try:
         LOG.debug(
             'Request for resource type "%s" in region %s: %s %s'
             % (resource_type, aws_stack.get_region(), func_details["function"], params)
         )
-        result = function(**params)
+        try:
+            result = function(**params)
+        except botocore.exceptions.ParamValidationError as e:
+            LOG.debug(f"Trying original parameters: {params_before_conversion}")
+            if "type: <class 'bool'>" not in str(e):
+                raise
+            result = function(**params_before_conversion)
     except Exception as e:
         if action_name == "delete" and check_not_found_exception(e, resource_type, resource):
             return
@@ -1377,55 +1337,7 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
     resource_props = resource["Properties"] = resource.get("Properties", {})
 
     # some resources have attached/nested resources which we need to create recursively now
-    if resource_type == "ApiGateway::Method":
-        integration = resource_props.get("Integration")
-        apigateway = aws_stack.connect_to_service("apigateway")
-        if integration:
-            api_id = resolve_refs_recursively(stack_name, resource_props["RestApiId"], resources)
-            res_id = resolve_refs_recursively(stack_name, resource_props["ResourceId"], resources)
-            kwargs = {}
-            if integration.get("Uri"):
-                uri = resolve_refs_recursively(stack_name, integration.get("Uri"), resources)
-
-                # Moto has a validate method on Uri for integration_type "HTTP" | "HTTP_PROXY" that does not accept
-                # Uri value without path, we need to add path ("/") if not exists
-                if integration.get("Type") in ["HTTP", "HTTP_PROXY"]:
-                    rs = urlparse(uri)
-                    if not rs.path:
-                        uri = "{}/".format(uri)
-
-                kwargs["uri"] = uri
-
-            if integration.get("IntegrationHttpMethod"):
-                kwargs["integrationHttpMethod"] = integration["IntegrationHttpMethod"]
-
-            if integration.get("RequestTemplates"):
-                kwargs["requestTemplates"] = integration["RequestTemplates"]
-
-            if integration.get("Credentials"):
-                kwargs["credentials"] = integration["Credentials"]
-
-            apigateway.put_integration(
-                restApiId=api_id,
-                resourceId=res_id,
-                httpMethod=resource_props["HttpMethod"],
-                type=integration["Type"],
-                **kwargs,
-            )
-
-        responses = resource_props.get("MethodResponses") or []
-        for response in responses:
-            api_id = resolve_refs_recursively(stack_name, resource_props["RestApiId"], resources)
-            res_id = resolve_refs_recursively(stack_name, resource_props["ResourceId"], resources)
-            apigateway.put_method_response(
-                restApiId=api_id,
-                resourceId=res_id,
-                httpMethod=resource_props["HttpMethod"],
-                statusCode=str(response["StatusCode"]),
-                responseParameters=response.get("ResponseParameters", {}),
-            )
-
-    elif resource_type == "ApiGateway::RestApi":
+    if resource_type == "ApiGateway::RestApi":
         body = resource_props.get("Body")
         if body:
             client = aws_stack.connect_to_service("apigateway")
@@ -1505,6 +1417,25 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
                 InstanceProfileName=resource_props["InstanceProfileName"],
                 RoleName=resource_props["Roles"][0],
             )
+    elif resource_type == "IAM::User":
+        iam = aws_stack.connect_to_service("iam")
+        username = resource_props.get("UserName")
+        for group in resource_props.get("Groups", []):
+            iam.add_user_to_group(UserName=username, GroupName=group)
+        for managed_policy in resource_props.get("ManagedPolicyArns", []):
+            iam.attach_user_policy(UserName=username, PolicyArn=managed_policy)
+        for policy in resource_props.get("Policies", []):
+            policy_doc = json.dumps(policy.get("PolicyDocument"))
+            iam.put_user_policy(
+                UserName=username, PolicyName=policy.get("PolicyName"), PolicyDocument=policy_doc
+            )
+        login_profile = resource_props.get("LoginProfile")
+        if login_profile:
+            iam.create_login_profile(
+                UserName=username,
+                Password=login_profile.get("Password"),
+                PasswordResetRequired=login_profile.get("PasswordResetRequired"),
+            )
 
 
 def get_action_name_for_resource_change(res_change):
@@ -1515,6 +1446,7 @@ def is_none_or_empty_value(value):
     return not value or value == PLACEHOLDER_AWS_NO_VALUE
 
 
+# TODO: this shouldn't be called for stack parameters
 def determine_resource_physical_id(
     resource_id, resources=None, stack=None, attribute=None, stack_name=None
 ):
@@ -1605,6 +1537,10 @@ def update_resource_details(stack, resource_id, details, action=None):
     if not resource or not details:
         return
 
+    # TODO: we need to rethink this method - this should be encapsulated in the resource model classes.
+    #   Also, instead of actively updating the PhysicalResourceId attributes below, they should be
+    #   determined and returned by the resource model classes upon request.
+
     resource_type = resource.get("Type") or ""
     resource_type = re.sub("^AWS::", "", resource_type)
     resource_props = resource.get("Properties", {})
@@ -1624,9 +1560,6 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == "IAM::InstanceProfile":
         resource["PhysicalResourceId"] = details["InstanceProfile"]["InstanceProfileName"]
-
-    if resource_type == "Events::EventBus":
-        resource["PhysicalResourceId"] = details["EventBusArn"]
 
     if resource_type == "StepFunctions::Activity":
         resource["PhysicalResourceId"] = details["activityArn"]
@@ -1650,6 +1583,7 @@ def update_resource_details(stack, resource_id, details, action=None):
             resource_props.get("DestinationIpv6CidrBlock"),
         )
 
+    # TODO remove!
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
         stack.moto_resource_statuses[resource_id] = details
@@ -1681,7 +1615,11 @@ def add_default_resource_props(
         props["LogGroupName"] = resource_name
 
     elif res_type == "AWS::Lambda::Function" and not props.get("FunctionName"):
-        props["FunctionName"] = "{}-lambda-{}".format(stack_name[:45], short_uid())
+        # FunctionName is up to 64 characters long
+        random_id_part = short_uid()
+        resource_id_part = resource_id[:24]
+        stack_name_part = stack_name[: 63 - 2 - (len(random_id_part) + len(resource_id_part))]
+        props["FunctionName"] = f"{stack_name_part}-{resource_id_part}-{random_id_part}"
 
     elif res_type == "AWS::SNS::Topic" and not props.get("TopicName"):
         props["TopicName"] = "topic-%s" % short_uid()
@@ -2008,25 +1946,44 @@ class TemplateDeployer(object):
             "Resources"
         ][resource_id]
 
-    def apply_parameter_changes(self, old_stack, new_stack):
+    def resolve_param(
+        self, logical_id: str, param_type: str, default_value: Optional[str] = None
+    ) -> Optional[str]:
+        if param_type == "AWS::SSM::Parameter::Value<String>":
+            ssm_client = aws_stack.connect_to_service("ssm")
+            param = ssm_client.get_parameter(Name=default_value)
+            return param["Parameter"]["Value"]
+        return None
+
+    def apply_parameter_changes(self, old_stack, new_stack) -> None:
         parameters = {
-            p["ParameterKey"]: p["ParameterValue"] for p in old_stack.metadata["Parameters"]
+            p["ParameterKey"]: p
+            for p in old_stack.metadata["Parameters"]  # go through current parameter values
         }
 
-        for key, value in new_stack.template["Parameters"].items():
-            parameters[key] = value.get("Default", parameters.get(key))
+        for logical_id, value in new_stack.template["Parameters"].items():
+            default = value.get("Default")
+            provided_param_value = parameters.get(logical_id)
+            param = {
+                "ParameterKey": logical_id,
+                "ParameterValue": provided_param_value if default is None else default,
+            }
+            if default is not None:
+                resolved_value = self.resolve_param(logical_id, value.get("Type"), default)
+                if resolved_value is not None:
+                    param["ResolvedValue"] = resolved_value
 
-        parameters.update(
-            {p["ParameterKey"]: p["ParameterValue"] for p in new_stack.metadata["Parameters"]}
-        )
+            parameters[logical_id] = param
+
+        parameters.update({p["ParameterKey"]: p for p in new_stack.metadata["Parameters"]})
 
         for change_set in new_stack.change_sets:
             parameters.update({p["ParameterKey"]: p for p in change_set.metadata["Parameters"]})
 
-        old_stack.metadata["Parameters"] = [
-            {"ParameterKey": k, "ParameterValue": v} for k, v in parameters.items() if v
-        ]
+        # TODO: unclear/undocumented behavior in implicitly updating old_stack parameter here
+        old_stack.metadata["Parameters"] = [v for v in parameters.values() if v]
 
+    # TODO: fix circular import with cloudformation_api.py when importing Stack here
     def construct_changes(
         self,
         existing_stack,

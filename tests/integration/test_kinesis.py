@@ -5,8 +5,12 @@ import unittest
 from datetime import datetime
 from time import sleep
 
+import cbor2
+import requests
+
+from localstack import config, constants
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import retry, short_uid
+from localstack.utils.common import retry, select_attributes, short_uid
 from localstack.utils.kinesis import kinesis_connector
 
 
@@ -180,36 +184,55 @@ class TestKinesis(unittest.TestCase):
         stream_name = "test-%s" % short_uid()
 
         client.create_stream(StreamName=stream_name, ShardCount=1)
-        sleep(2)
+        sleep(1.5)
         client.put_records(
             StreamName=stream_name,
             Records=[{"Data": "SGVsbG8gd29ybGQ=", "PartitionKey": "1"}],
         )
 
-        response = client.describe_stream(StreamName=stream_name)
+        # get records with JSON encoding
+        iterator = self._get_shard_iterator(stream_name)
+        response = client.get_records(ShardIterator=iterator)
+        json_records = response.get("Records")
+        self.assertEqual(1, len(json_records))
+        self.assertIn("Data", json_records[0])
 
+        # get records with CBOR encoding
+        iterator = self._get_shard_iterator(stream_name)
+        url = config.get_edge_url()
+        headers = aws_stack.mock_aws_request_headers("kinesis")
+        headers["Content-Type"] = constants.APPLICATION_AMZ_CBOR_1_1
+        headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
+        data = cbor2.dumps({"ShardIterator": iterator})
+        result = requests.post(url, data, headers=headers)
+        self.assertEqual(200, result.status_code)
+        result = cbor2.loads(result.content)
+        attrs = ("Data", "EncryptionType", "PartitionKey", "SequenceNumber")
+        self.assertEqual(
+            select_attributes(json_records[0], attrs),
+            select_attributes(result["Records"][0], attrs),
+        )
+
+        # clean up
+        client.delete_stream(StreamName=stream_name)
+
+    def _get_shard_iterator(self, stream_name):
+        client = aws_stack.connect_to_service("kinesis")
+        response = client.describe_stream(StreamName=stream_name)
         sequence_number = (
             response.get("StreamDescription")
             .get("Shards")[0]
             .get("SequenceNumberRange")
             .get("StartingSequenceNumber")
         )
-
         shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
-
         response = client.get_shard_iterator(
             StreamName=stream_name,
             ShardId=shard_id,
             ShardIteratorType="AT_SEQUENCE_NUMBER",
             StartingSequenceNumber=sequence_number,
         )
-
-        response = client.get_records(ShardIterator=response.get("ShardIterator"))
-        self.assertEqual(1, len(response.get("Records")))
-        self.assertIn("Data", response.get("Records")[0])
-
-        # clean up
-        client.delete_stream(StreamName=stream_name)
+        return response.get("ShardIterator")
 
 
 class TestKinesisPythonClient(unittest.TestCase):

@@ -1,0 +1,11 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  TestParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: ls-ssm-parameter-01
+      Description: test param 1
+      Type: String
+      Value: value123
+      Tags:
+        tag1: value1

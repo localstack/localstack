@@ -13,6 +13,8 @@ import traceback
 import uuid
 from datetime import datetime
 from io import BytesIO
+from threading import BoundedSemaphore
+from typing import Dict, List
 
 from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
@@ -35,7 +37,7 @@ from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.common import (
     TMP_FILES,
-    FuncThread,
+    empty_context_manager,
     ensure_readable,
     first_char_to_lower,
     is_zip_file,
@@ -60,7 +62,8 @@ from localstack.utils.common import (
     unzip,
 )
 from localstack.utils.docker import DOCKER_CLIENT
-from localstack.utils.http_utils import parse_chunked_data
+from localstack.utils.http_utils import canonicalize_headers, parse_chunked_data
+from localstack.utils.run import FuncThread
 
 # logger
 LOG = logging.getLogger(__name__)
@@ -132,12 +135,16 @@ CHECK_HANDLER_ON_CREATION = False
 
 
 class LambdaRegion(RegionBackend):
+    # map ARN strings to lambda function objects
+    lambdas: Dict[str, LambdaFunction]
+    # map ARN strings to CodeSigningConfig object
+    code_signing_configs: Dict[str, CodeSigningConfig]
+    # list of event source mappings for the API
+    event_source_mappings: List[Dict]
+
     def __init__(self):
-        # map ARN strings to lambda function objects
         self.lambdas = {}
-        # map ARN strings to CodeSigningConfig object
         self.code_signing_configs = {}
-        # list of event source mappings for the API
         self.event_source_mappings = []
 
 
@@ -224,7 +231,7 @@ def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     lambda_details.cwd = lambda_cwd or lambda_details.cwd
 
 
-def build_mapping_obj(data):
+def build_mapping_obj(data) -> Dict:
     mapping = {}
     function_name = data["FunctionName"]
     enabled = data.get("Enabled", True)
@@ -235,6 +242,7 @@ def build_mapping_obj(data):
     mapping["StateTransitionReason"] = "User action"
     mapping["LastModified"] = format_timestamp_for_event_source_mapping()
     mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
+    mapping["ParallelizationFactor"] = data.get("ParallelizationFactor") or 1
     if "SelfManagedEventSource" in data:
         source_arn = data["SourceAccessConfigurations"][0]["URI"]
         mapping["SelfManagedEventSource"] = data["SelfManagedEventSource"]
@@ -307,7 +315,17 @@ def use_docker():
     if DO_USE_DOCKER is None:
         DO_USE_DOCKER = False
         if "docker" in config.LAMBDA_EXECUTOR:
-            DO_USE_DOCKER = DOCKER_CLIENT.has_docker()
+            has_docker = DOCKER_CLIENT.has_docker()
+            if not has_docker:
+                LOG.warning(
+                    (
+                        "Lambda executor configured as LAMBDA_EXECUTOR=%s but Docker "
+                        "is not accessible. Please make sure to mount the Docker socket "
+                        "/var/run/docker.sock into the container."
+                    )
+                    % config.LAMBDA_EXECUTOR
+                )
+            DO_USE_DOCKER = has_docker
     return DO_USE_DOCKER
 
 
@@ -380,6 +398,8 @@ def construct_invocation_event(
     method, path, headers, data, query_string_params={}, is_base64_encoded=False
 ):
     query_string_params = query_string_params or parse_request_data(method, path, "")
+    # AWS canonicalizes header names, converting them to lower-case
+    headers = canonicalize_headers(headers)
     event = {
         "path": path,
         "headers": dict(headers),
@@ -449,10 +469,11 @@ def process_kinesis_records(records, stream_name):
         for source in sources:
             arn = source["FunctionArn"]
             for chunk in chunks(records, source["BatchSize"]):
+                shard_id = "shardId-000000000000"
                 event = {
                     "Records": [
                         {
-                            "eventID": "shardId-000000000000:{0}".format(rec["sequenceNumber"]),
+                            "eventID": "{0}:{1}".format(shard_id, rec["sequenceNumber"]),
                             "eventSourceARN": stream_arn,
                             "eventSource": "aws:kinesis",
                             "eventVersion": "1.0",
@@ -466,11 +487,18 @@ def process_kinesis_records(records, stream_name):
                         for rec in chunk
                     ]
                 }
+                lock_discriminator = None
+                if not config.SYNCHRONOUS_KINESIS_EVENTS:
+                    lock_discriminator = f"{stream_arn}/{shard_id}"
+                    lambda_executors.LAMBDA_ASYNC_LOCKS.assure_lock_present(
+                        lock_discriminator, BoundedSemaphore(source["ParallelizationFactor"])
+                    )
                 run_lambda(
                     func_arn=arn,
                     event=event,
                     context={},
                     asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS,
+                    lock_discriminator=lock_discriminator,
                 )
     except Exception as e:
         LOG.warning(
@@ -706,6 +734,7 @@ def run_lambda(
     suppress_output=False,
     asynchronous=False,
     callback=None,
+    lock_discriminator: str = None,
 ):
     region_name = func_arn.split(":")[3]
     region = LambdaRegion.get(region_name)
@@ -723,13 +752,15 @@ def run_lambda(
             result = not_found_error(msg="The resource specified in the request does not exist.")
             return lambda_executors.InvocationResult(result)
 
+        context = LambdaContext(func_details, version, context)
+
         # forward invocation to external endpoint, if configured
         invocation_type = "Event" if asynchronous else "RequestResponse"
+
         invoke_result = forward_to_external_url(func_details, event, context, invocation_type)
         if invoke_result is not None:
             return invoke_result
 
-        context = LambdaContext(func_details, version, context)
         result = LAMBDA_EXECUTOR.execute(
             func_arn,
             func_details,
@@ -738,6 +769,7 @@ def run_lambda(
             version=version,
             asynchronous=asynchronous,
             callback=callback,
+            lock_discriminator=lock_discriminator,
         )
 
     except Exception as e:
@@ -766,48 +798,57 @@ def load_source(name, file):
 
 
 def exec_lambda_code(script, handler_function="handler", lambda_cwd=None, lambda_env=None):
-    if lambda_cwd or lambda_env:
-        EXEC_MUTEX.acquire()
-        if lambda_cwd:
-            previous_cwd = os.getcwd()
-            os.chdir(lambda_cwd)
-            sys.path = [lambda_cwd] + sys.path
-        if lambda_env:
-            previous_env = dict(os.environ)
-            os.environ.update(lambda_env)
-    # generate lambda file name
-    lambda_id = "l_%s" % short_uid()
-    lambda_file = LAMBDA_SCRIPT_PATTERN.replace("*", lambda_id)
-    save_file(lambda_file, script)
-    # delete temporary .py and .pyc files on exit
-    TMP_FILES.append(lambda_file)
-    TMP_FILES.append("%sc" % lambda_file)
-    try:
-        pre_sys_modules_keys = set(sys.modules.keys())
-        try:
-            handler_module = load_source(lambda_id, lambda_file)
-            module_vars = handler_module.__dict__
-        finally:
-            # the above import can bring files for the function
-            # (eg settings.py) into the global namespace. subsequent
-            # calls can pick up file from another function, causing
-            # general issues.
-            post_sys_modules_keys = set(sys.modules.keys())
-            for key in post_sys_modules_keys:
-                if key not in pre_sys_modules_keys:
-                    sys.modules.pop(key)
-    except Exception as e:
-        LOG.error("Unable to exec: %s %s" % (script, traceback.format_exc()))
-        raise e
-    finally:
+    # TODO: The code in this function is generally not thread-safe and potentially insecure
+    #  (e.g., mutating environment variables, and globally loaded modules). Should be redesigned.
+
+    def _do_exec_lambda_code():
         if lambda_cwd or lambda_env:
             if lambda_cwd:
-                os.chdir(previous_cwd)
-                sys.path.pop(0)
+                previous_cwd = os.getcwd()
+                os.chdir(lambda_cwd)
+                sys.path = [lambda_cwd] + sys.path
             if lambda_env:
-                os.environ = previous_env
-            EXEC_MUTEX.release()
-    return module_vars[handler_function]
+                previous_env = dict(os.environ)
+                os.environ.update(lambda_env)
+        # generate lambda file name
+        lambda_id = "l_%s" % short_uid()
+        lambda_file = LAMBDA_SCRIPT_PATTERN.replace("*", lambda_id)
+        save_file(lambda_file, script)
+        # delete temporary .py and .pyc files on exit
+        TMP_FILES.append(lambda_file)
+        TMP_FILES.append("%sc" % lambda_file)
+        try:
+            pre_sys_modules_keys = set(sys.modules.keys())
+            # set default env variables required for most Lambda handlers
+            env_vars_before = lambda_executors.LambdaExecutorLocal.set_default_env_variables()
+            try:
+                handler_module = load_source(lambda_id, lambda_file)
+                module_vars = handler_module.__dict__
+            finally:
+                lambda_executors.LambdaExecutorLocal.reset_default_env_variables(env_vars_before)
+                # the above import can bring files for the function
+                # (eg settings.py) into the global namespace. subsequent
+                # calls can pick up file from another function, causing
+                # general issues.
+                post_sys_modules_keys = set(sys.modules.keys())
+                for key in post_sys_modules_keys:
+                    if key not in pre_sys_modules_keys:
+                        sys.modules.pop(key)
+        except Exception as e:
+            LOG.error("Unable to exec: %s %s" % (script, traceback.format_exc()))
+            raise e
+        finally:
+            if lambda_cwd or lambda_env:
+                if lambda_cwd:
+                    os.chdir(previous_cwd)
+                    sys.path.pop(0)
+                if lambda_env:
+                    os.environ = previous_env
+        return module_vars[handler_function]
+
+    lock = EXEC_MUTEX if lambda_cwd or lambda_env else empty_context_manager()
+    with lock:
+        return _do_exec_lambda_code()
 
 
 def get_handler_function_from_name(handler_name, runtime=None):
@@ -952,6 +993,8 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
     is_local_mount = code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
     zip_file_content = None
 
+    LAMBDA_EXECUTOR.cleanup(arn)
+
     if code_passed:
         lambda_cwd = lambda_cwd or set_archive_code(code_passed, lambda_name)
         if not is_local_mount:
@@ -991,7 +1034,6 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
-        handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
         main_file = "%s/%s" % (lambda_cwd, handler_file)
 
@@ -1022,6 +1064,7 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
                 ensure_readable(main_file)
                 zip_file_content = load_file(main_file, mode="rb")
                 # extract handler
+                handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
                 lambda_handler = exec_lambda_code(
                     zip_file_content,
                     handler_function=handler_function,
@@ -1110,22 +1153,45 @@ def format_func_details(func_details, version=None, always_add_version=False):
 
 
 def forward_to_external_url(func_details, event, context, invocation_type):
+    func_forward_url = (
+        func_details.envvars.get("LOCALSTACK_LAMBDA_FORWARD_URL") or config.LAMBDA_FORWARD_URL
+    )
     """If LAMBDA_FORWARD_URL is configured, forward the invocation of this Lambda to the configured URL."""
-    if not config.LAMBDA_FORWARD_URL:
+    if not func_forward_url:
         return
+
     func_name = func_details.name()
     url = "%s%s/functions/%s/invocations" % (
-        config.LAMBDA_FORWARD_URL,
+        func_forward_url,
         PATH_ROOT,
         func_name,
     )
+
+    copied_env_vars = func_details.envvars.copy()
+    copied_env_vars["LOCALSTACK_HOSTNAME"] = config.HOSTNAME_EXTERNAL
+    copied_env_vars["LOCALSTACK_EDGE_PORT"] = str(config.EDGE_PORT)
+
     headers = aws_stack.mock_aws_request_headers("lambda")
+    headers["X-Amz-Region"] = func_details.region()
+    headers["X-Amz-Request-Id"] = context.aws_request_id
+    headers["X-Amz-Handler"] = func_details.handler
+    headers["X-Amz-Function-ARN"] = context.invoked_function_arn
+    headers["X-Amz-Function-Name"] = context.function_name
+    headers["X-Amz-Function-Version"] = context.function_version
+    headers["X-Amz-Role"] = func_details.role
+    headers["X-Amz-Runtime"] = func_details.runtime
+    headers["X-Amz-Timeout"] = str(func_details.timeout)
+    headers["X-Amz-Memory-Size"] = str(context.memory_limit_in_mb)
+    headers["X-Amz-Log-Group-Name"] = context.log_group_name
+    headers["X-Amz-Log-Stream-Name"] = context.log_stream_name
+    headers["X-Amz-Env-Vars"] = json.dumps(copied_env_vars)
+    headers["X-Amz-Last-Modified"] = str(int(func_details.last_modified.timestamp() * 1000))
     headers["X-Amz-Invocation-Type"] = invocation_type
     headers["X-Amz-Log-Type"] = "Tail"
-    client_context = context.get("client_context")
-    if client_context:
-        headers["X-Amz-Client-Context"] = client_context
-    data = json.dumps(event) if isinstance(event, dict) else str(event)
+    if context.client_context:
+        headers["X-Amz-Client-Context"] = context.client_context
+
+    data = json.dumps(json_safe(event)) if isinstance(event, dict) else str(event)
     LOG.debug("Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s" % config.LAMBDA_FORWARD_URL)
     result = safe_requests.post(url, data, headers=headers)
     content = run_safe(lambda: to_str(result.content)) or result.content
@@ -2239,4 +2305,33 @@ def serve(port):
     # initialize the Lambda executor
     LAMBDA_EXECUTOR.startup()
 
+    # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
+    import localstack.plugin.thundra  # noqa
+
     generic_proxy.serve_flask_app(app=app, port=port)
+
+
+# Config listener
+def on_config_change(config_key: str, config_newvalue: str) -> None:
+    global LAMBDA_EXECUTOR
+    if config_key != "LAMBDA_EXECUTOR":
+        return
+    LOG.debug(
+        "Received config event for lambda executor - Key: '{}', Value: {}".format(
+            config_key, config_newvalue
+        )
+    )
+    LAMBDA_EXECUTOR.cleanup()
+    LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(
+        config_newvalue, lambda_executors.DEFAULT_EXECUTOR
+    )
+    LAMBDA_EXECUTOR.startup()
+
+
+def register_config_listener():
+    from localstack.utils import config_listener
+
+    config_listener.CONFIG_LISTENERS.append(on_config_change)
+
+
+register_config_listener()

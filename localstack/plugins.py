@@ -3,6 +3,7 @@ import sys
 
 from localstack import config
 from localstack.constants import TRUE_STRINGS
+from localstack.utils.aws.request_context import patch_request_handling
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
 
 # Note: make sure not to add any additional imports at the global scope here!
@@ -32,6 +33,7 @@ def do_register_localstack_plugins():
         from localstack.services.acm import acm_starter
         from localstack.services.apigateway import apigateway_listener, apigateway_starter
         from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
+        from localstack.services.configservice import configservice_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
         from localstack.services.ec2 import ec2_listener, ec2_starter
         from localstack.services.es import es_starter
@@ -47,7 +49,7 @@ def do_register_localstack_plugins():
             start_sts,
         )
         from localstack.services.kinesis import kinesis_listener, kinesis_starter
-        from localstack.services.kms import kms_starter
+        from localstack.services.kms import kms_listener, kms_starter
         from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.plugins import Plugin, register_plugin
         from localstack.services.redshift import redshift_starter
@@ -81,6 +83,8 @@ def do_register_localstack_plugins():
         )
 
         register_plugin(Plugin("cloudformation", start=start_cloudformation))
+
+        register_plugin(Plugin("config", start=configservice_starter.start_configservice))
 
         register_plugin(
             Plugin(
@@ -126,7 +130,9 @@ def do_register_localstack_plugins():
             )
         )
 
-        register_plugin(Plugin("kms", start=kms_starter.start_kms, priority=10))
+        register_plugin(
+            Plugin("kms", start=kms_starter.start_kms, listener=kms_listener.UPDATE_KMS)
+        )
 
         register_plugin(Plugin("lambda", start=start_lambda))
 
@@ -227,6 +233,9 @@ def do_register_localstack_plugins():
         )
 
         register_plugin(Plugin("support", start=support_starter.start_support))
+
+        # apply patches
+        patch_request_handling()
 
     except Exception as e:
         if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):

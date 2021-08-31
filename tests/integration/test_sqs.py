@@ -671,7 +671,7 @@ class SQSTest(unittest.TestCase):
             QueueName=queue_name2, Attributes={"RedrivePolicy": json.dumps(policy)}
         )["QueueUrl"]
 
-        response = sqs.get_queue_attributes(QueueUrl=queue_url2)
+        response = sqs.get_queue_attributes(QueueUrl=queue_url2, AttributeNames=["All"])
 
         redrive_policy = json.loads(response["Attributes"]["RedrivePolicy"])
         self.assertEqual(redrive_policy["maxReceiveCount"], 1)

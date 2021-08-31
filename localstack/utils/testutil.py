@@ -6,6 +6,8 @@ import shutil
 import tempfile
 import time
 import zipfile
+from contextlib import contextmanager
+from typing import Dict
 
 import requests
 from six import iteritems
@@ -23,15 +25,16 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
 )
-from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     TMP_FILES,
     chmod_r,
     get_free_tcp_port,
     is_alpine,
+    is_port_open,
     load_file,
     mkdir,
+    poll_condition,
     run,
     save_file,
     to_str,
@@ -146,7 +149,6 @@ def create_zip_file(file_path, zip_file=None, get_content=False):
     if not get_content:
         TMP_FILES.append(tmp_dir)
         return full_zip_file
-    zip_file_content = None
     with open(full_zip_file, "rb") as file_obj:
         zip_file_content = file_obj.read()
     rm_dir(tmp_dir)
@@ -236,6 +238,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(
     methods=[],
     path=None,
     auth_type=None,
+    auth_creator_func=None,
     http_method=None,
 ):
     if not methods:
@@ -246,17 +249,22 @@ def connect_api_gateway_to_http_with_lambda_proxy(
     resources = {}
     resource_path = path.lstrip("/")
     resources[resource_path] = []
+
     for method in methods:
         int_meth = http_method or method
         resources[resource_path].append(
             {
                 "httpMethod": method,
                 "authorizationType": auth_type,
+                "authorizerId": None,
                 "integrations": [{"type": "AWS_PROXY", "uri": target_uri, "httpMethod": int_meth}],
             }
         )
     return aws_stack.create_api_gateway(
-        name=gateway_name, resources=resources, stage_name=stage_name
+        name=gateway_name,
+        resources=resources,
+        stage_name=stage_name,
+        auth_creator_func=auth_creator_func,
     )
 
 
@@ -269,8 +277,8 @@ def create_lambda_api_gateway_integration(
     runtime=None,
     stage_name=None,
     auth_type=None,
+    auth_creator_func=None,
 ):
-    methods = methods or ["GET", "POST"]
     path = path or "/test"
     auth_type = auth_type or "REQUEST"
     stage_name = stage_name or "test"
@@ -283,7 +291,13 @@ def create_lambda_api_gateway_integration(
 
     # connect API GW to Lambda
     result = connect_api_gateway_to_http_with_lambda_proxy(
-        gateway_name, target_arn, stage_name=stage_name, path=path, auth_type=auth_type
+        gateway_name,
+        target_arn,
+        stage_name=stage_name,
+        path=path,
+        methods=methods,
+        auth_type=auth_type,
+        auth_creator_func=auth_creator_func,
     )
     return result
 
@@ -345,6 +359,8 @@ def find_recursive(key, value, obj):
 
 
 def start_http_server(test_port=None, invocations=None):
+    # Note: leave imports here to avoid import errors (e.g., "flask") for CLI commands
+    from localstack.services.generic_proxy import ProxyListener
     from localstack.services.infra import start_proxy
 
     class TestListener(ProxyListener):
@@ -524,3 +540,39 @@ def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY
             rs.append(raw_message)
 
     return rs
+
+
+@contextmanager
+def http_server(handler, host="127.0.0.1", port=None) -> str:
+    """
+    Create a temporary http server on a random port (or the specified port) with the given handler
+    for the duration of the context manager.
+
+    Example usage:
+
+        def handler(request, data):
+            print(request.method, request.path, data)
+
+        with testutil.http_server(handler) as url:
+            requests.post(url, json={"message": "hello"})
+    """
+    from localstack.utils.server.http2_server import run_server
+
+    host = host
+    port = port or get_free_tcp_port()
+    thread = run_server(port, host, handler=handler, asynchronous=True)
+    url = f"http://{host}:{port}"
+    assert poll_condition(
+        lambda: is_port_open(port), timeout=5
+    ), f"server on port {port} did not start"
+    yield url
+    thread.stop()
+
+
+def json_response(data, code=200, headers: Dict = None) -> requests.Response:
+    r = requests.Response()
+    r._content = json.dumps(data)
+    r.status_code = code
+    if headers:
+        r.headers.update(headers)
+    return r

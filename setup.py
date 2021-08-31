@@ -4,6 +4,8 @@ import re
 
 from setuptools import find_packages, setup
 
+import localstack
+
 # marker for extended/ignored and basic libs in requirements.txt
 IGNORED_LIB_MARKER = "#extended-lib"
 BASIC_LIB_MARKER = "#basic-lib"
@@ -16,9 +18,7 @@ package_data = {}
 
 
 # determine version
-with open("localstack/constants.py") as f:
-    constants = f.read()
-version = re.search(r'^\s*VERSION\s*=\s*[\'"](.+)[\'"]\s*$', constants, re.MULTILINE).group(1)
+version = localstack.__version__
 
 
 # determine requirements

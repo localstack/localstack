@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import re
@@ -11,7 +10,6 @@ import traceback
 
 import boto3
 from moto import core as moto_core
-from requests.models import Response
 
 from localstack import config, constants
 from localstack.constants import (
@@ -25,18 +23,23 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.cloudformation import cloudformation_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.services.firehose import firehose_api
-from localstack.services.generic_proxy import ProxyListener, start_proxy_server
+from localstack.services.generic_proxy import start_proxy_server
 from localstack.services.plugins import (
     SERVICE_PLUGINS,
     check_infra,
     record_service_health,
     wait_for_infra_shutdown,
 )
-from localstack.utils import common, persistence
+from localstack.utils import analytics, common, config_listener, persistence
 from localstack.utils.analytics import event_publisher
-from localstack.utils.analytics.profiler import log_duration
-from localstack.utils.bootstrap import canonicalize_api_names, in_ci, load_plugins, setup_logging
-from localstack.utils.cli import print_version
+from localstack.utils.bootstrap import (
+    canonicalize_api_names,
+    get_main_container_id,
+    in_ci,
+    load_plugins,
+    log_duration,
+    setup_logging,
+)
 from localstack.utils.common import (
     TMP_THREADS,
     ShellCommandThread,
@@ -73,42 +76,8 @@ INFRA_READY = threading.Event()
 SHUTDOWN_INFRA = threading.Event()
 
 
-# -----------------------
-# CONFIG UPDATE BACKDOOR
-# -----------------------
-
-
-def update_config_variable(variable, new_value):
-    if new_value is not None:
-        LOG.info('Updating value of config variable "%s": %s' % (variable, new_value))
-        setattr(config, variable, new_value)
-
-
-class ConfigUpdateProxyListener(ProxyListener):
-    """Default proxy listener that intercepts requests to retrieve or update config variables."""
-
-    def forward_request(self, method, path, data, headers):
-        if path != constants.CONFIG_UPDATE_PATH or method != "POST":
-            return True
-        response = Response()
-        data = json.loads(data)
-        variable = data.get("variable", "")
-        response._content = "{}"
-        response.status_code = 200
-        if not re.match(r"^[_a-zA-Z0-9]+$", variable):
-            response.status_code = 400
-            return response
-        new_value = data.get("value")
-        update_config_variable(variable, new_value)
-        value = getattr(config, variable, None)
-        result = {"variable": variable, "value": value}
-        response._content = json.dumps(result)
-        return response
-
-
-if config.ENABLE_CONFIG_UPDATES:
-    ProxyListener.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
-
+# Start config update backdoor
+config_listener.start_listener()
 
 # -----------------
 # API ENTRY POINTS
@@ -250,7 +219,7 @@ def set_service_status(data):
         contained = [s for s in services if s.startswith(service)]
         if not contained:
             services.append(service)
-        update_config_variable(port_variable, port)
+        config_listener.update_config_variable(port_variable, port)
         new_service_list = ",".join(services)
         os.environ["SERVICES"] = new_service_list
         # TODO: expensive operation - check if we need to do this here for each service, should be optimized!
@@ -398,6 +367,7 @@ def stop_infra():
     common.INFRA_STOPPED = True
 
     event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
+    analytics.log.event("infra_stop")
 
     try:
         generic_proxy.QUIET = True
@@ -443,6 +413,25 @@ def check_aws_credentials():
 # -------------
 
 
+def print_runtime_information(in_docker=False):
+    # FIXME: this is legacy code from the old CLI, reconcile with new CLI and runtime output
+
+    print()
+    print("LocalStack version: %s" % constants.VERSION)
+    if in_docker:
+        id = get_main_container_id()
+        if id:
+            print("LocalStack Docker container id: %s" % id[:12])
+
+    if config.LOCALSTACK_BUILD_DATE:
+        print("LocalStack build date: %s" % config.LOCALSTACK_BUILD_DATE)
+
+    if config.LOCALSTACK_BUILD_GIT_HASH:
+        print("LocalStack build git hash: %s" % config.LOCALSTACK_BUILD_GIT_HASH)
+
+    print()
+
+
 def start_infra(asynchronous=False, apis=None):
     try:
         os.environ[LOCALSTACK_INFRA_PROCESS] = "1"
@@ -469,7 +458,7 @@ def start_infra(asynchronous=False, apis=None):
                 "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR"
             )
 
-        print_version(is_in_docker)
+        print_runtime_information(is_in_docker)
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
@@ -523,6 +512,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     # prepare APIs
     apis = canonicalize_api_names(apis)
+    analytics.log.event("infra_start", apis=apis)
 
     @log_duration()
     def prepare_environment():
@@ -579,5 +569,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     sys.stdout.flush()
 
     INFRA_READY.set()
+    analytics.log.event("infra_ready")
 
     return thread

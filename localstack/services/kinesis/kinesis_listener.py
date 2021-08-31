@@ -15,7 +15,7 @@ from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
-from localstack.utils.common import clone, epoch_timestamp, json_safe, now_utc, to_str
+from localstack.utils.common import clone, epoch_timestamp, json_safe, now_utc, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class ProxyListenerKinesis(ProxyListener):
             enhanced_metrics = KinesisBackend.get().enhanced_metrics
             stream_metrics = enhanced_metrics.get(stream_name) or []
             enhanced_metrics[stream_name] = [m for m in stream_metrics if m not in metrics]
-            return result
+            return {}
 
         return True
 
@@ -151,7 +151,6 @@ class ProxyListenerKinesis(ProxyListener):
         action = headers.get("X-Amz-Target", "").split(".")[-1]
         data, encoding_type = self.decode_content(data or "{}", True)
         response._content = self.replace_in_encoded(response.content or "")
-        records = []
 
         if action in ("CreateStream", "DeleteStream"):
             event_type = (
@@ -215,7 +214,7 @@ class ProxyListenerKinesis(ProxyListener):
             response._content = json.dumps(content)
             return response
         elif action == "GetRecords":
-            sdk_v2 = self.sdk_is_v2(headers.get("User-Agent", "").split(" ")[0])
+            sdk_v2 = self.is_sdk_v2_request(headers)
             results, encoding_type = self.decode_content(response.content, True)
 
             records = results.get("Records", [])
@@ -227,23 +226,31 @@ class ProxyListenerKinesis(ProxyListener):
                     record["ApproximateArrivalTimestamp"] = int(
                         record["ApproximateArrivalTimestamp"]
                     )
-                if not isinstance(record["Data"], str):
-                    # Remove double quotes from data written as bytes
+
+                tmp = record["Data"]
+                # "tmp" is either a base64-encoded string, or a dict {"data": <data_bytes...>}
+                is_base64_encoded = isinstance(tmp, str)
+                if isinstance(tmp, dict):
+                    tmp = bytearray(tmp.get("data", []))
+
+                if is_base64_encoded:
+                    tmp = base64.b64decode(tmp)
+
+                if encoding_type == APPLICATION_JSON:
+                    # Remove double quotes from data written in regular JSON encoding (not for CBOR!)
                     # https://github.com/localstack/localstack/issues/3588
-                    tmp = bytearray(record["Data"]["data"])
                     if len(tmp) >= 2 and tmp[0] == tmp[-1] == b'"'[0]:
                         tmp = tmp[1:-1]
+                if encoding_type == APPLICATION_CBOR:
+                    # Note: AWS Java SDK requires bytes embedded in CBOR encoding, not base64 strings!
+                    tmp = to_bytes(tmp)
 
-                    if encoding_type == APPLICATION_JSON:
-                        record["Data"] = to_str(base64.b64encode(tmp))
-                    else:
-                        record["Data"] = to_str(tmp)
+                if encoding_type == APPLICATION_JSON:
+                    if is_base64_encoded:
+                        tmp = base64.b64encode(tmp)
+                    tmp = to_str(tmp)
 
-                else:
-                    tmp = base64.b64decode(record["Data"])
-                    if len(tmp) >= 2 and tmp[0] == tmp[-1] == b'"'[0]:
-                        tmp = tmp[1:-1]
-                    record["Data"] = to_str(base64.b64encode(tmp))
+                record["Data"] = tmp
 
             response._content = encode_data(results, encoding_type)
             return response
@@ -257,7 +264,8 @@ class ProxyListenerKinesis(ProxyListener):
             ):
                 response.headers[HEADER_AMZN_ERROR_TYPE] = str(response_body.get("__type"))
 
-    def sdk_is_v2(self, user_agent):
+    def is_sdk_v2_request(self, headers):
+        user_agent = headers.get("User-Agent", "").split(" ")[0]
         if re.search(r"\/2.\d+.\d+", user_agent):
             return True
         return False

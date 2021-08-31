@@ -2,8 +2,10 @@ import os
 
 import localstack_client.config
 
+import localstack
+
 # LocalStack version
-VERSION = "0.12.15"
+VERSION = localstack.__version__
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = "local"
@@ -19,7 +21,6 @@ HEADER_AMZN_ERROR_TYPE = "X-Amzn-Errortype"
 
 # backend service ports, for services that are behind a proxy (counting down from 4566)
 DEFAULT_PORT_EDGE = 4566
-DEFAULT_PORT_WEB_UI = 8080
 
 # host name for localhost
 LOCALHOST = "localhost"
@@ -27,7 +28,7 @@ LOCALHOST_IP = "127.0.0.1"
 LOCALHOST_HOSTNAME = "localhost.localstack.cloud"
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = "0.2.5"
+LOCALSTACK_MAVEN_VERSION = "0.2.14"
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
@@ -71,12 +72,14 @@ ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 
 # content types
+HEADER_CONTENT_TYPE = "Content-Type"
 APPLICATION_AMZ_JSON_1_0 = "application/x-amz-json-1.0"
 APPLICATION_AMZ_JSON_1_1 = "application/x-amz-json-1.1"
 APPLICATION_AMZ_CBOR_1_1 = "application/x-amz-cbor-1.1"
 APPLICATION_CBOR = "application/cbor"
 APPLICATION_JSON = "application/json"
 APPLICATION_XML = "application/xml"
+APPLICATION_OCTET_STREAM = "application/octet-stream"
 APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded"
 
 # strings to indicate truthy/falsy values
@@ -117,13 +120,13 @@ STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctio
 KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/localstack/v3/local-kms.<arch>.bin"
 
 # TODO: Temporarily using a fixed version of DDB in Alpine, as we're hitting a SIGSEGV JVM crash with latest
-DYNAMODB_JAR_URL_ALPINE = (
-    "https://github.com/whummer/dynamodb-local/raw/master/etc/DynamoDBLocal.zip"
-)
+DYNAMODB_JAR_URL_ALPINE = "https://github.com/localstack/localstack-artifacts/raw/master/dynamodb-local-patch/etc/DynamoDBLocal.zip"
 DYNAMODB_JAR_URL = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip"
 
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
+# new analytics API endpoint
+ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack.cloud/v0"
 
 # environment variable to indicates that this process is running the Web UI
 LOCALSTACK_WEB_PROCESS = "LOCALSTACK_WEB_PROCESS"

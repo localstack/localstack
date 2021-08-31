@@ -6,9 +6,10 @@ from six.moves import queue
 
 from localstack import config
 from localstack.constants import API_ENDPOINT
-from localstack.utils.common import FuncThread, JsonObject, get_or_create_file
+from localstack.utils.common import JsonObject, get_or_create_file
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import save_file, short_uid, timestamp
+from localstack.utils.run import FuncThread
 
 PROCESS_ID = short_uid()
 MACHINE_ID = None
@@ -170,6 +171,7 @@ def fire_event(event_type, payload=None):
     if not api_key:
         # only store events if API key has been specified
         return
+    from localstack.utils.analytics import log
     from localstack.utils.testutil import (  # leave here to avoid circular dependency
         is_local_test_mode,
     )
@@ -182,5 +184,6 @@ def fire_event(event_type, payload=None):
         if is_local_test_mode():
             payload["int"] = True
 
-    event = AnalyticsEvent(event_type=event_type, payload=payload, api_key=api_key)
-    EVENT_QUEUE.put_nowait(event)
+    # event = AnalyticsEvent(event_type=event_type, payload=payload, api_key=api_key)
+    # EVENT_QUEUE.put_nowait(event) FIXME: remove old logging code entirely before next release
+    log.event("legacy", {"event": event_type, "payload": payload})

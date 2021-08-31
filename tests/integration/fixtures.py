@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import boto3
 import botocore.config
@@ -11,8 +11,13 @@ from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.common import short_uid
 
 if TYPE_CHECKING:
+    from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_iam import IAMClient
+    from mypy_boto3_kinesis import KinesisClient
+    from mypy_boto3_lambda import LambdaClient
+    from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
@@ -24,8 +29,11 @@ LOG = logging.getLogger(__name__)
 def _client(service):
     if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
         return boto3.client(service)
+    # can't set the timeouts to 0 like in the AWS CLI because the underlying http client requires values > 0
     config = (
-        botocore.config.Config(connect_timeout=0, read_timeout=0, retries={"total_max_attempts": 1})
+        botocore.config.Config(
+            connect_timeout=1_000, read_timeout=1_000, retries={"total_max_attempts": 1}
+        )
         if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
         else None
     )
@@ -35,6 +43,16 @@ def _client(service):
 @pytest.fixture(scope="class")
 def dynamodb_client() -> "DynamoDBClient":
     return _client("dynamodb")
+
+
+@pytest.fixture(scope="class")
+def apigateway_client() -> "APIGatewayClient":
+    return _client("apigateway")
+
+
+@pytest.fixture(scope="class")
+def iam_client() -> "IAMClient":
+    return _client("iam")
 
 
 @pytest.fixture(scope="class")
@@ -60,6 +78,21 @@ def cfn_client() -> "CloudFormationClient":
 @pytest.fixture(scope="class")
 def ssm_client() -> "SSMClient":
     return _client("ssm")
+
+
+@pytest.fixture(scope="class")
+def lambda_client() -> "LambdaClient":
+    return _client("lambda")
+
+
+@pytest.fixture(scope="class")
+def kinesis_client() -> "KinesisClient":
+    return _client("kinesis")
+
+
+@pytest.fixture(scope="class")
+def logs_client() -> "CloudWatchLogsClient":
+    return _client("logs")
 
 
 @pytest.fixture
@@ -128,7 +161,7 @@ def sqs_create_queue(sqs_client):
         url = response["QueueUrl"]
         queue_urls.append(url)
 
-        return sqs_client.get_queue_attributes(QueueUrl=url)
+        return sqs_client.get_queue_attributes(QueueUrl=url, AttributeNames=["All"])
 
     yield factory
 
@@ -153,3 +186,71 @@ def sns_topic(sns_client):
     topic_arn = response["TopicArn"]
     yield sns_client.get_topic_attributes(TopicArn=topic_arn)
     sns_client.delete_topic(TopicArn=topic_arn)
+
+
+# Cleanup fixtures
+@pytest.fixture
+def cleanup_stacks(cfn_client):
+    def _cleanup_stacks(stacks: List[str]) -> None:
+        for stack in stacks:
+            try:
+                cfn_client.delete_stack(StackName=stack)
+            except Exception:
+                LOG.debug(f"Failed to cleanup stack '{stack}'")
+
+    return _cleanup_stacks
+
+
+@pytest.fixture
+def cleanup_changesets(cfn_client):
+    def _cleanup_changesets(changesets: List[str]) -> None:
+        for cs in changesets:
+            try:
+                cfn_client.delete_change_set(ChangeSetName=cs)
+            except Exception:
+                LOG.debug(f"Failed to cleanup changeset '{cs}'")
+
+    return _cleanup_changesets
+
+
+# Helpers for Cfn
+
+
+@pytest.fixture
+def is_change_set_created_and_available(cfn_client):
+    def _is_change_set_created_and_available(change_set_id: str):
+        def _inner():
+            change_set = cfn_client.describe_change_set(ChangeSetName=change_set_id)
+            return (
+                change_set.get("Status") == "CREATE_COMPLETE"
+                and change_set.get("ExecutionStatus") == "AVAILABLE"
+            )
+
+        return _inner
+
+    return _is_change_set_created_and_available
+
+
+@pytest.fixture
+def is_stack_created(cfn_client):
+    def _is_stack_created(stack_id: str):
+        def _inner():
+            resp = cfn_client.describe_stacks(StackName=stack_id)
+            s = resp["Stacks"][0]  # since the lookup  uses the id we can only get a single response
+            return s.get("StackStatus") == "CREATE_COMPLETE"
+
+        return _inner
+
+    return _is_stack_created
+
+
+@pytest.fixture
+def is_change_set_finished(cfn_client):
+    def _is_change_set_finished(change_set_id: str):
+        def _inner():
+            check_set = cfn_client.describe_change_set(ChangeSetName=change_set_id)
+            return check_set.get("ExecutionStatus") == "EXECUTE_COMPLETE"
+
+        return _inner
+
+    return _is_change_set_finished

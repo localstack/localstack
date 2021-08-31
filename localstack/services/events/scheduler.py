@@ -3,7 +3,8 @@ import time
 
 from crontab import CronTab
 
-from localstack.utils.common import FuncThread, short_uid
+from localstack.utils.common import short_uid
+from localstack.utils.run import FuncThread
 
 LOG = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class Job(object):
     def should_run_now(self):
         schedule = CronTab(self.schedule)
         delay_secs = schedule.next()
-        return delay_secs < 60
+        return delay_secs is not None and delay_secs < 60
 
     def do_run(self):
         FuncThread(self.job_func).start()

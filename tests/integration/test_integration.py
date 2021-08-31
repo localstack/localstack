@@ -158,7 +158,6 @@ class IntegrationTest(unittest.TestCase):
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
     # TODO fix duplication with test_lambda_streams_batch_and_transactions(..)!
-    # @profiled()
     def test_kinesis_lambda_sns_ddb_sqs_streams(self):
         def create_kinesis_stream(name, delete=False):
             stream = aws_stack.create_kinesis_stream(name, delete=delete)

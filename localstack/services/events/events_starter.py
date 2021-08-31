@@ -116,8 +116,8 @@ def filter_event_based_on_event_format(self, rule, event):
     if not rule_information:
         LOG.info('Unable to find rule "%s" in backend: %s' % (rule, rule_information))
         return False
-    if rule_information.event_pattern._filter:
-        event_pattern = rule_information.event_pattern._filter
+    if rule_information.event_pattern._pattern:
+        event_pattern = rule_information.event_pattern._pattern
         if not filter_event(event_pattern, event):
             return False
     return True
