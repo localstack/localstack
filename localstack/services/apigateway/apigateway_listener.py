@@ -44,6 +44,7 @@ from localstack.services.apigateway.helpers import (
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.kinesis import kinesis_listener
+from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
@@ -377,8 +378,9 @@ def invoke_rest_api_integration(
         response = apply_response_parameters(response, integration, api_id=api_id)
         return response
     except Exception as e:
-        LOG.warning(str(e))
-        return make_error_response(str(e), 400)
+        msg = f"Error invoking integration for API Gateway ID '{api_id}': {e}"
+        LOG.exception(msg)
+        return make_error_response(msg, 400)
 
 
 def invoke_rest_api_integration_backend(
@@ -528,8 +530,7 @@ def invoke_rest_api_integration_backend(
             return result
 
         elif "states:action/" in uri:
-            if uri.endswith("states:action/StartExecution"):
-                action = "StartExecution"
+            action = uri.split("/")[-1]
             decoded_data = data.decode()
             payload = {}
             if "stateMachineArn" in decoded_data and "input" in decoded_data:
@@ -540,9 +541,15 @@ def invoke_rest_api_integration_backend(
             client = aws_stack.connect_to_service("stepfunctions")
 
             kwargs = {"name": payload["name"]} if "name" in payload else {}
+            sm_arn = payload.get("stateMachineArn")
+            if not sm_arn:
+                return make_error_response(
+                    "Missing 'stateMachineArn' in API GW request payload",
+                    400,
+                )
             result = client.start_execution(
-                stateMachineArn=payload["stateMachineArn"],
-                input=payload["input"],
+                stateMachineArn=sm_arn,
+                input=payload.get("input") or "{}",
                 **kwargs,
             )
             response = requests_response(
@@ -550,9 +557,19 @@ def invoke_rest_api_integration_backend(
                     "executionArn": result["executionArn"],
                     "startDate": str(result["startDate"]),
                 },
-                headers=aws_stack.mock_aws_request_headers(),
             )
-            response.headers["content-type"] = APPLICATION_JSON
+            if action == "StartSyncExecution":
+                # poll for the execution result and return it
+                result = await_sfn_execution_result(result["executionArn"])
+                result_status = result.get("status")
+                if result_status != "SUCCEEDED":
+                    return make_error_response(
+                        "StepFunctions execution %s failed with status '%s'"
+                        % (result["executionArn"], result_status),
+                        500,
+                    )
+                output = result.get("output") or "{}"
+                response = requests_response(content=json.loads(to_str(output)))
             return response
         elif "s3:path/" in uri and method == "GET":
             s3 = aws_stack.connect_to_service("s3")

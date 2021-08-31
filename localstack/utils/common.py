@@ -672,6 +672,7 @@ def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
     raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)
+    retries = int(retries)
     for i in range(0, retries + 1):
         try:
             return function(**kwargs)

@@ -604,6 +604,9 @@ def lambda_function_name(name_or_arn):
     return parts[6]
 
 
+# TODO: extract ARN utils into separate file!
+
+
 def state_machine_arn(name, account_id=None, region_name=None):
     pattern = "arn:aws:states:%s:%s:stateMachine:%s"
     return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)

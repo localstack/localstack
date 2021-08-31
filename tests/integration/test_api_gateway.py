@@ -1079,26 +1079,23 @@ class TestAPIGateway(unittest.TestCase):
             func_name=fn_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
-
-        resp = lambda_client.list_functions()
         role_arn = aws_stack.role_arn("sfn_role")
 
+        # create state machine definition
         definition = clone(state_machine_def)
         lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
         definition["States"]["step1"]["Resource"] = lambda_arn_1
         definition = json.dumps(definition)
-        sm_arn = "arn:aws:states:%s:%s:stateMachine:%s" % (
-            aws_stack.get_region(),
-            TEST_AWS_ACCOUNT_ID,
-            state_machine_name,
-        )
 
-        sfn_client.create_state_machine(
+        # create state machine
+        result = sfn_client.create_state_machine(
             name=state_machine_name, definition=definition, roleArn=role_arn
         )
+        sm_arn = result["stateMachineArn"]
+
+        # create REST API and method
         rest_api = client.create_rest_api(name="test", description="test")
         resources = client.get_resources(restApiId=rest_api["id"])
-
         client.put_method(
             restApiId=rest_api["id"],
             resourceId=resources["items"][0]["id"],
@@ -1106,22 +1103,40 @@ class TestAPIGateway(unittest.TestCase):
             authorizationType="NONE",
         )
 
-        client.put_integration(
-            restApiId=rest_api["id"],
-            resourceId=resources["items"][0]["id"],
-            httpMethod="POST",
-            integrationHttpMethod="POST",
-            type="AWS",
-            uri="arn:aws:apigateway:%s:states:action/StartExecution" % aws_stack.get_region(),
-            requestTemplates={
-                "application/json": """
-                #set($data = $util.escapeJavaScript($input.json('$')))
-                {"input": "$data","stateMachineArn": "%s"}
-                """
-                % sm_arn
-            },
+        def _prepare_method_integration(integr_kwargs={}, exec_async=True, overwrite=False):
+            if overwrite:
+                client.delete_integration(
+                    restApiId=rest_api["id"],
+                    resourceId=resources["items"][0]["id"],
+                    httpMethod="POST",
+                )
+            action = f"Start{'' if exec_async else 'Sync'}Execution"
+            uri = f"arn:aws:apigateway:{aws_stack.get_region()}:states:action/{action}"
+            client.put_integration(
+                restApiId=rest_api["id"],
+                resourceId=resources["items"][0]["id"],
+                httpMethod="POST",
+                integrationHttpMethod="POST",
+                type="AWS",
+                uri=uri,
+                **integr_kwargs,
+            )
+
+        # STEP 1: test integration with request template
+
+        _prepare_method_integration(
+            integr_kwargs={
+                "requestTemplates": {
+                    "application/json": """
+                    #set($data = $util.escapeJavaScript($input.json('$')))
+                    {"input": "$data","stateMachineArn": "%s"}
+                    """
+                    % sm_arn
+                }
+            }
         )
 
+        # invoke stepfunction via API GW, assert results
         client.create_deployment(restApiId=rest_api["id"], stageName="dev")
         url = gateway_request_url(api_id=rest_api["id"], stage_name="dev", path="/")
         test_data = {"test": "test-value"}
@@ -1130,31 +1145,30 @@ class TestAPIGateway(unittest.TestCase):
         self.assertIn("executionArn", resp.content.decode())
         self.assertIn("startDate", resp.content.decode())
 
-        client.delete_integration(
-            restApiId=rest_api["id"],
-            resourceId=resources["items"][0]["id"],
-            httpMethod="POST",
-        )
+        # STEP 2: test integration without request template
 
-        client.put_integration(
-            restApiId=rest_api["id"],
-            resourceId=resources["items"][0]["id"],
-            httpMethod="POST",
-            integrationHttpMethod="POST",
-            type="AWS",
-            uri="arn:aws:apigateway:%s:states:action/StartExecution" % aws_stack.get_region(),
-        )
+        _prepare_method_integration(overwrite=True)
 
-        test_data = {
-            "input": json.dumps({"test": "test-value"}),
+        test_data_1 = {
+            "input": json.dumps(test_data),
             "name": "MyExecution",
-            "stateMachineArn": "{}".format(sm_arn),
+            "stateMachineArn": sm_arn,
         }
 
-        resp = requests.post(url, data=json.dumps(test_data))
+        # invoke stepfunction via API GW, assert results
+        resp = requests.post(url, data=json.dumps(test_data_1))
         self.assertEqual(200, resp.status_code)
         self.assertIn("executionArn", resp.content.decode())
         self.assertIn("startDate", resp.content.decode())
+
+        # STEP 3: test integration with synchronous execution
+
+        _prepare_method_integration(overwrite=True, exec_async=False)
+
+        # invoke stepfunction via API GW, assert results
+        resp = requests.post(url, data=json.dumps(test_data_1))
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual(test_data, json.loads(to_str(resp.content.decode())))
 
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)
