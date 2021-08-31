@@ -42,10 +42,12 @@ def dummy_container(create_container):
 
 
 @pytest.fixture
-def create_container(docker_client: ContainerClient):
+def create_container(docker_client: ContainerClient, create_network):
     """
     Uses the factory as fixture pattern to wrap ContainerClient.create_container as a factory that
     removes the containers after the fixture is cleaned up.
+
+    Depends on create network for correct cleanup order
     """
     containers = list()
 
@@ -63,6 +65,29 @@ def create_container(docker_client: ContainerClient):
             docker_client.remove_container(c)
         except Exception:
             LOG.warning("failed to remove test container %s", c)
+
+
+@pytest.fixture
+def create_network():
+    """
+    Uses the factory as fixture pattern to wrap the creation of networks as a factory that
+    removes the networks after the fixture is cleaned up.
+    """
+    networks = list()
+
+    def _create_network(network_name: str):
+        network_id = safe_run([config.DOCKER_CMD, "network", "create", network_name]).strip()
+        networks.append(network_id)
+        return network_id
+
+    yield _create_network
+
+    for network in networks:
+        try:
+            LOG.debug("Removing network %s", network)
+            safe_run([config.DOCKER_CMD, "network", "remove", network])
+        except CalledProcessError:
+            pass
 
 
 class TestDockerClient:
@@ -741,6 +766,22 @@ class TestDockerClient:
     def test_get_container_ip(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         ip = docker_client.get_container_ip(dummy_container.container_id)
+        assert re.match(
+            r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+            ip,
+        )
+        assert "127.0.0.1" != ip
+
+    def test_get_container_ip_with_network(
+        self, docker_client: ContainerClient, create_container, create_network
+    ):
+        network_name = "ls_test_network_%s" % short_uid()
+        create_network(network_name)
+        container = create_container(
+            "alpine", network=network_name, command=["sh", "-c", "while true; do sleep 1; done"]
+        )
+        docker_client.start_container(container.container_id)
+        ip = docker_client.get_container_ip(container.container_id)
         assert re.match(
             r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
             ip,
