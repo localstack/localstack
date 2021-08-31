@@ -1119,7 +1119,6 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
     def get_container_ip(self, container_name_or_id: str) -> str:
-        LOG.debug("Getting container IP of %s", container_name_or_id)
         networks = self.inspect_container(container_name_or_id)["NetworkSettings"]["Networks"]
         network_names = list(networks)
         if len(network_names) > 1:
