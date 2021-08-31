@@ -7,7 +7,6 @@ import time
 
 import boto3
 import botocore
-import six
 
 from localstack import config
 from localstack.constants import (
@@ -190,7 +189,13 @@ def get_boto3_session(cache=True):
 
 
 def get_region():
-    # TODO look up region from context
+    # Note: leave import here to avoid import errors (e.g., "flask") for CLI commands
+    from localstack.utils.aws.request_context import get_region_from_request_context
+
+    region = get_region_from_request_context()
+    if region:
+        return region
+    # fall back to returning static pre-defined region
     return get_local_region()
 
 
@@ -277,7 +282,7 @@ def connect_to_service(
     env=None,
     region_name=None,
     endpoint_url=None,
-    config=None,
+    config: botocore.config.Config = None,
     verify=False,
     cache=True,
     *args,
@@ -303,20 +308,20 @@ def connect_to_service(
             backend_url = os.environ.get(backend_env_name, "").strip()
             if backend_url:
                 endpoint_url = backend_url
-        config = config or botocore.client.Config()
+        boto_config = config or botocore.client.Config()
         # configure S3 path/host style addressing
         if service_name == "s3":
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", "://%s" % get_s3_hostname())
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
-        config.max_pool_connections = MAX_POOL_CONNECTIONS
+        boto_config.max_pool_connections = MAX_POOL_CONNECTIONS
         result = method(
             service_name,
             region_name=region,
             endpoint_url=endpoint_url,
             verify=verify,
-            config=config,
+            config=boto_config,
             **kwargs,
         )
         if not cache:
@@ -378,6 +383,11 @@ def check_valid_region(headers):
 
 
 def set_default_region_in_headers(headers, service=None, region=None):
+    # this should now be a no-op, as we support arbitrary regions and don't use a "default" region
+    # TODO: remove this function once the legacy USE_SINGLE_REGION config is removed
+    if not config.USE_SINGLE_REGION:
+        return
+
     auth_header = headers.get("Authorization")
     region = region or get_region()
     if not auth_header:
@@ -413,7 +423,6 @@ def fix_account_id_in_arns(response, colon_delimiter=":", existing=None, replace
 
 
 def inject_test_credentials_into_env(env):
-    env = env or {}
     if ENV_ACCESS_KEY not in env and ENV_SECRET_KEY not in env:
         env[ENV_ACCESS_KEY] = "test"
         env[ENV_SECRET_KEY] = "test"
@@ -593,6 +602,9 @@ def lambda_function_name(name_or_arn):
     parts = name_or_arn.split(":")
     # name is index #6 in pattern: arn:aws:lambda:.*:.*:function:.*
     return parts[6]
+
+
+# TODO: extract ARN utils into separate file!
 
 
 def state_machine_arn(name, account_id=None, region_name=None):
@@ -851,6 +863,15 @@ def mock_aws_request_headers(service="dynamodb", region_name=None):
     return headers
 
 
+def inject_region_into_auth_headers(region, headers):
+    auth_header = headers.get("Authorization")
+    if auth_header:
+        regex = r"Credential=([^/]+)/([^/]+)/([^/]+)/"
+        auth_header = re.sub(regex, r"Credential=\1/\2/%s/" % region, auth_header)
+        headers["Authorization"] = auth_header
+    return headers
+
+
 def dynamodb_get_item_raw(request):
     headers = mock_aws_request_headers()
     headers["X-Amz-Target"] = "DynamoDB_20120810.GetItem"
@@ -976,25 +997,26 @@ def create_api_gateway(
     env=None,
     usage_plan_name=None,
     region_name=None,
+    auth_creator_func=None,  # function that receives an api_id and returns an authorizer_id
 ):
     client = connect_to_service("apigateway", env=env, region_name=region_name)
-    if not resources:
-        resources = []
-    if not stage_name:
-        stage_name = "testing"
-    if not usage_plan_name:
-        usage_plan_name = "Basic Usage"
-    if not description:
-        description = 'Test description for API "%s"' % name
+    resources = resources or []
+    stage_name = stage_name or "testing"
+    usage_plan_name = usage_plan_name or "Basic Usage"
+    description = description or 'Test description for API "%s"' % name
 
     LOG.info('Creating API resources under API Gateway "%s".' % name)
     api = client.create_rest_api(name=name, description=description)
-    # list resources
     api_id = api["id"]
+
+    auth_id = None
+    if auth_creator_func:
+        auth_id = auth_creator_func(api_id)
+
     resources_list = client.get_resources(restApiId=api_id)
     root_res_id = resources_list["items"][0]["id"]
     # add API resources and methods
-    for path, methods in six.iteritems(resources):
+    for path, methods in resources.items():
         # create resources recursively
         parent_id = root_res_id
         for path_part in path.split("/"):
@@ -1004,6 +1026,7 @@ def create_api_gateway(
             parent_id = api_resource["id"]
         # add methods to the API resource
         for method in methods:
+            kwargs = {"authorizerId": auth_id} if auth_id else {}
             client.put_method(
                 restApiId=api_id,
                 resourceId=api_resource["id"],
@@ -1011,6 +1034,7 @@ def create_api_gateway(
                 authorizationType=method.get("authorizationType") or "NONE",
                 apiKeyRequired=method.get("apiKeyRequired") or False,
                 requestParameters=method.get("requestParameters") or {},
+                **kwargs,
             )
             # create integrations for this API resource/method
             integrations = method["integrations"]

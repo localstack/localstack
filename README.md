@@ -27,6 +27,7 @@
   <br>–<br>
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
   <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
+  <a href="https://github.com/localstack/localstack/blob/master/doc/feature_coverage.md" target="_blank">☑️ Feature coverage</a> •
   <a href="#announcements">📢 Announcements</a>
 </p>
 
@@ -68,6 +69,7 @@ accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/pricing) supports additional APIs and advanced features, including:
 * **Amplify**
 * **API Gateway V2 (WebSockets support)**
+* **AppConfig**
 * **Application AutoScaling**
 * **AppSync**
 * **Athena**
@@ -75,15 +77,17 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Batch**
 * **CloudFront**
 * **CloudTrail**
+* **CodeCommit**
 * **Cognito**
 * **CostExplorer**
 * **DocumentDB**
-* **ECS/ECR/EKS**
+* **ECR/ECS/EKS**
 * **ElastiCache**
 * **ElasticBeanstalk**
 * **ELB/ELBv2**
 * **EMR**
 * **Glacier** / **S3 Select**
+* **Glue**
 * **IAM Security Policy Enforcement**
 * **IoT**
 * **Kinesis Data Analytics**
@@ -93,10 +97,12 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Neptune Graph DB**
 * **QLDB**
 * **RDS / Aurora Serverless**
+* **Route53 DNS integration**
+* **SageMaker**
 * **Timestream**
 * **Transfer**
 * **XRay**
-* **Advanced persistence support for most services**
+* **Advanced persistence support, Local Cloud Pods**
 * **Interactive UIs to manage resources**
 * **Test report dashboards**
 * ...and much, much more to come! (Check out our **feature roadmap** here: https://roadmap.localstack.cloud)
@@ -145,6 +151,8 @@ You can also use docker directly and use the following command to get started wi
 docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack
 ```
 
+Note that this will pull the current nighty build from the master branch and **not** the latest supported version.
+
 to run a throw-away container without any external volumes. To start a subset of services use `-e "SERVICES=dynamodb,s3"`.
 
 ### Using `docker-compose`
@@ -183,7 +191,6 @@ You can pass the following environment variables to LocalStack.
   Example value: `kinesis,lambda,sqs` to start Kinesis, Lambda, and SQS.
   In addition, the following shorthand values can be specified to run a predefined ensemble of services:
   - `serverless`: run services often used for Serverless apps (`iam`, `lambda`, `dynamodb`, `apigateway`, `s3`, `sns`)
-* `DEFAULT_REGION`: AWS region to use when talking to the API (default: `us-east-1`).
 * `EDGE_BIND_HOST`: Address the edge service binds to. (default: `127.0.0.1`, in docker containers `0.0.0.0`)
 * `EDGE_PORT`: Port number for the edge service, the main entry point for all API invocations (default: `4566`).
 * `HOSTNAME`: Name of the host to expose the services internally (default: `localhost`).
@@ -241,7 +248,7 @@ SERVICES=kinesis,lambda,sqs,dynamodb DEBUG=1 localstack start
 * `BUCKET_MARKER_LOCAL`: Optional bucket name for running lambdas locally.
 * `LAMBDA_DOCKER_NETWORK`: Optional Docker network for the container running your lambda function.
 * `LAMBDA_DOCKER_DNS`: Optional DNS server for the container running your lambda function.
-* `LAMBDA_DOCKER_FLAGS`: Additional flags passed to Lambda Docker `run`/`create` commands (e.g., useful for specifying custom volume mounts)
+* `LAMBDA_DOCKER_FLAGS`: Additional flags passed to Lambda Docker `run`/`create` commands (e.g., useful for specifying custom volume mounts). Does only support environment, volume, port and add-host flags (with `-e KEY=VALUE`, `-v host:container`, `-p host:container`, `--add-host domain:ip` respectively)
 * `LAMBDA_CONTAINER_REGISTRY` Use an alternative docker registry to pull lambda execution containers (default: `lambci/lambda`).
 * `LAMBDA_REMOVE_CONTAINERS`: Whether to remove containers after Lambdas finished executing (default: `true`).
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
@@ -268,7 +275,7 @@ Please be aware that the following configurations may have severe security impli
 
 * `DISABLE_CORS_CHECKS`: Whether to disable all CSRF mitigations (default: 0).
 * `DISABLE_CUSTOM_CORS_S3`: Whether to disable CORS override by S3 (default: 0).
-* `DISABLE_CUSTOM_CORS_APIGATEWAY`: Whteher to disable CORS override by apigateway (default: 0).
+* `DISABLE_CUSTOM_CORS_APIGATEWAY`: Whether to disable CORS override by apigateway (default: 0).
 * `EXTRA_CORS_ALLOWED_ORIGINS`: Comma-separated list of origins that are allowed to communicate with localstack.
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
@@ -277,18 +284,20 @@ Please be aware that the following configurations may have severe security impli
 
 * `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
 * `IGNORE_ES_DOWNLOAD_ERRORS`: Whether to ignore errors (e.g., network/SSL) when downloading Elasticsearch plugins.
+* `OVERRIDE_IN_DOCKER`: Overrides the check whether LocalStack is executed within a docker container. If set to true, LocalStack assumes it runs in a docker container. Should not be set unless necessary.
+* `EDGE_FORWARD_URL`: Optional target URL to forward all edge requests to (e.g., for distributed deployments).
 
 ### Debugging Configurations
 
 The following environment configurations can be useful for debugging:
-* `DEVELOP`: Starts a debugpy server before starting Localstack services
-* `DEVELOP_PORT`:  Port number for debugpy server
-* `WAIT_FOR_DEBUGGER`:  Forces LocalStack to wait for a debugger to start the services
+* `DEVELOP`: Starts a debugpy server before starting LocalStack services
+* `DEVELOP_PORT`: Port number for debugpy server
+* `WAIT_FOR_DEBUGGER`: Forces LocalStack to wait for a debugger to start the services
 
 The following environment configurations are *deprecated*:
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.
-* `START_WEB`: Flag to control whether the Web UI should be started in Docker (default: `false`; deprecated).
-* `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`). Note that the Web UI is now deprecated (needs to be activated with `START_WEB=1`), and requires to use the `localstack/localstack-full` Docker image.
+* `DEFAULT_REGION`: AWS region to use when talking to the API (needs to be activated via `USE_SINGLE_REGION=1`). Deprecated and inactive as of version 0.12.17 - LocalStack now has full multi-region support.
+* `USE_SINGLE_REGION`: Whether to use the legacy single-region mode, defined via `DEFAULT_REGION`.
 
 Additionally, the following *read-only* environment variables are available:
 
@@ -398,7 +407,7 @@ awslocal kinesis list-streams
 **UPDATE**: Use the environment variable `$LOCALSTACK_HOSTNAME` to determine the target host
 inside your Lambda function. See [Configurations](#Configurations) section for more details.
 
-## Using the official AWS CLI version 2 Docker image with Localstack Docker container
+### Using the official AWS CLI version 2 Docker image with Localstack Docker container
 
 By default the container running [amazon/aws-cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-docker.html) is isolated from `0.0.0.0:4566` on the host machine, that means that aws-cli cannot reach localstack through your shell.
 
@@ -459,7 +468,15 @@ The URL pattern for API Gateway executions is `http://localhost:4566/restapis/<a
 $ curl http://localhost:4566/restapis/nmafetnwf6/prod/_user_request_/my/path
 ```
 
-## Integration with pytest
+## Testing Backdoors and Special Features
+
+LocalStack provides a number of small backdoors and utility features that are designed to make local testing even easier and more efficient.
+
+* **Providing custom IDs for API Gateway REST APIs**: You can specify `tags={"_custom_id_":"myid123"}` on creation of an API Gateway REST API, to assign it the custom ID `"myid123"` (can be useful to have a static API GW endpoint URL for testing).
+
+## Integrations
+
+### pytest
 
 If you want to use LocalStack in your integration tests (e.g., pytest), simply fire up the
 infrastructure in your test setup method and then clean up everything in your teardown method:
@@ -479,13 +496,25 @@ def my_app_test():
 
 See the example test file `tests/integration/test_integration.py` for more details.
 
-## Integration with Serverless
+### Serverless Framework
 
 You can use the [`serverless-localstack`](https://www.npmjs.com/package/serverless-localstack) plugin to easily run [Serverless](https://serverless.com/framework/) applications on LocalStack.
 For more information, please check out the plugin repository here:
 https://github.com/localstack/serverless-localstack
 
-## Integration with Terraform
+### Thundra
+
+You can monitor and debug your AWS Lambda functions with [Thundra](https://thundra.io).
+Currently only Java Lambdas are supported in this integration - support for other runtimes (Node.js, Python, .NET, Go) is coming soon.
+
+Simply obtain a Thundra API key [here](https://console.thundra.io/onboarding/serverless) and configure the `THUNDRA_APIKEY` config variable:
+```
+THUNDRA_APIKEY=<YOUR-THUNDRA-API-KEY> localstack start
+```
+
+After invoking your AWS Lambda function you can inspect the invocations/traces in the [Thundra Console](https://console.thundra.io) (more details in the Thundra docs [here](https://apm.docs.thundra.io)).
+
+### Terraform
 
 You can use [Terraform](https://www.terraform.io) to provision your resources locally. Please refer to the Terraform AWS Provider docs [here](https://www.terraform.io/docs/providers/aws/guides/custom-service-endpoints.html#localstack) on how to configure the API endpoints on `localhost`.
 
@@ -578,6 +607,15 @@ To develop new features, or to start the stack locally (outside of Docker), the 
 * `pytest` (for unit testing)
 * `pytest-cov` (to check the unit-testing coverage)
 
+### Building the Docker image
+
+Please note that there are a few commands we need to run on the host to prepare the local environment for the Docker build - specifically, downloading some dependencies like the StepFunctions local binary. Therefore, simply running `docker build .` in a fresh clone of the repo may not work.
+
+We generally recommend using this command to build the Docker image locally (works on Linux/MacOS):
+```
+make docker-build
+```
+
 ### Development Environment
 
 If you pull the repo in order to extend/modify LocalStack, run this command to install
@@ -649,19 +687,6 @@ coverage report
 coverage html
 ```
 
-## Web Dashboard (deprecated)
-
-The projects also comes with a simple Web dashboard that allows to view the deployed AWS
-components and the relationship between them.
-
-```
-localstack web
-```
-
-Please note that the Web UI requires using the extended version of the Docker image (`localstack/localstack-full`).
-
-**Note:** The Web dashboard is not actively maintained anymore and may get removed in an upcoming release.
-
 ## Other UI Clients
 
 * [Commandeer desktop app](https://getcommandeer.com)
@@ -722,7 +747,7 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 
 ## License
 
-Copyright (c) 2017-2020 LocalStack maintainers and contributors.
+Copyright (c) 2017-2021 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 

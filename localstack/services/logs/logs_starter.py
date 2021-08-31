@@ -15,7 +15,7 @@ from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
 
 
-def patch_lambda():
+def patch_logs():
     def patch_get_function(backend):
         get_function_orig = backend.get_function
 
@@ -91,17 +91,18 @@ def patch_lambda():
         return put_subscription_filter
 
     def put_log_events_model(self, log_group_name, log_stream_name, log_events, sequence_token):
-        self.lastIngestionTime = int(unix_time_millis())
-        self.storedBytes += sum([len(log_event["message"]) for log_event in log_events])
+        # TODO: call/patch upstream method here, instead of duplicating the code!
+        self.last_ingestion_time = int(unix_time_millis())
+        self.stored_bytes += sum([len(log_event["message"]) for log_event in log_events])
         events = [
-            logs_models.LogEvent(self.lastIngestionTime, log_event) for log_event in log_events
+            logs_models.LogEvent(self.last_ingestion_time, log_event) for log_event in log_events
         ]
         self.events += events
-        self.uploadSequenceToken += 1
+        self.upload_sequence_token += 1
 
         log_events = [
             {
-                "id": event.eventId,
+                "id": event.event_id,
                 "timestamp": event.timestamp,
                 "message": event.message,
             }
@@ -197,7 +198,7 @@ def patch_lambda():
 
 def start_cloudwatch_logs(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_LOGS
-    patch_lambda()
+    patch_logs()
     return start_moto_server(
         "logs",
         port,

@@ -785,7 +785,7 @@ def create_sqs_message_attributes(subscriber, attributes):
         if value["Type"] == "Binary":
             attribute["BinaryValue"] = base64.decodebytes(to_bytes(value["Value"]))
         else:
-            attribute["StringValue"] = str(value["Value"])
+            attribute["StringValue"] = str(value.get("Value", ""))
 
         message_attributes[key] = attribute
 

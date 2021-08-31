@@ -2,7 +2,7 @@ IMAGE_NAME ?= localstack/localstack
 IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_NAME_FULL ?= localstack/localstack-full
-IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
+IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
 DOCKER_SQUASH ?= --squash
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
@@ -63,7 +63,7 @@ docker-build:      ## Build Docker image
 	# --add-host: Fix for Centos host OS
 	docker build --build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
 	  --build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") -t $(IMAGE_NAME) \
-	  --add-host="localhost.localdomain:127.0.0.1" .
+	  --add-host="localhost.localdomain:127.0.0.1" $(DOCKER_BUILD_FLAGS) .
 
 docker-squash:
 	# squash entire image
@@ -100,7 +100,7 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		IMAGE_TAG=latest make docker-squash && make docker-build-light && \
 			docker tag $(IMAGE_NAME):latest $(IMAGE_NAME_FULL):latest && \
 			docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME):latest && \
-		((! (git diff HEAD~1 localstack/constants.py | grep '^+VERSION =') && \
+		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG) && \
 				docker tag $(IMAGE_NAME_FULL):latest $(IMAGE_NAME_FULL):$(IMAGE_TAG) && \
@@ -114,7 +114,7 @@ docker-run:        ## Run Docker image locally
 
 docker-mount-run:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \
-		ENTRYPOINT="-v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/" make docker-run
+		ENTRYPOINT="-v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/plugin:/opt/code/localstack/localstack/plugin -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/" make docker-run
 
 docker-build-lambdas:
 	docker build -t localstack/lambda-js:nodejs14.x -f bin/lambda/Dockerfile.nodejs14x .
@@ -148,6 +148,7 @@ test:
 
 test-coverage:
 	($(VENV_RUN); python -m coverage --version; \
+		pip install "coverage[toml]>=5.5"; \
 		DEBUG=$(DEBUG) \
 		python -m coverage run $(COVERAGE_ARGS) -m \
 		pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
@@ -185,10 +186,10 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); python -m flake8 --show-source --config .flake8 . )
+	($(VENV_RUN); python -m pflake8 --show-source)
 
 lint-modified:      ## Run code linter on modified files
-	($(VENV_RUN); python -m flake8 --show-source --config .flake8 `git ls-files -m | grep '\.py$$' | xargs` )
+	($(VENV_RUN); python -m pflake8 --show-source `git ls-files -m | grep '\.py$$' | xargs` )
 
 format:
 	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
@@ -206,6 +207,9 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf localstack/infra/elasticmq
 	rm -rf localstack/infra/dynamodb
 	rm -rf localstack/node_modules/
+	rm -rf build/
+	rm -rf dist/
+	rm -rf *.egg-info
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 

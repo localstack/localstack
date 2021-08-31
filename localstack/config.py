@@ -18,7 +18,6 @@ from localstack.constants import (
     DEFAULT_DEVELOP_PORT,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
     DEFAULT_PORT_EDGE,
-    DEFAULT_PORT_WEB_UI,
     DEFAULT_SERVICE_PORTS,
     FALSE_STRINGS,
     LOCALHOST,
@@ -163,7 +162,11 @@ DEVELOP_PORT = int(os.environ.get("DEVELOP_PORT", "").strip() or DEFAULT_DEVELOP
 WAIT_FOR_DEBUGGER = is_env_true("WAIT_FOR_DEBUGGER")
 
 # whether to use SSL encryption for the services
+# TODO: this is deprecated and should be removed (edge port supports HTTP/HTTPS multiplexing)
 USE_SSL = is_env_true("USE_SSL")
+
+# whether to use the legacy single-region mode, defined via DEFAULT_REGION
+USE_SINGLE_REGION = is_env_true("USE_SINGLE_REGION")
 
 # whether to run in TF compatibility mode for TF integration tests
 # (e.g., returning verbatim ports for ELB resources, rather than edge port 4566, etc.)
@@ -181,8 +184,8 @@ DOCKER_FLAGS = os.environ.get("DOCKER_FLAGS", "").strip()
 # command used to run Docker containers (e.g., set to "sudo docker" to run as sudo)
 DOCKER_CMD = os.environ.get("DOCKER_CMD", "").strip() or "docker"
 
-# whether to start the web API
-START_WEB = os.environ.get("START_WEB", "").strip() in TRUE_STRINGS
+# use the command line docker client instead of the new sdk version, might get removed in the future
+LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
 
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
@@ -193,10 +196,8 @@ EDGE_BIND_HOST = os.environ.get("EDGE_BIND_HOST", "").strip() or "127.0.0.1"
 EDGE_PORT = int(os.environ.get("EDGE_PORT") or 0) or DEFAULT_PORT_EDGE
 # fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
 EDGE_PORT_HTTP = int(os.environ.get("EDGE_PORT_HTTP") or 0)
-
-# port of Web UI
-PORT_WEB_UI = int(os.environ.get("PORT_WEB_UI", "").strip() or DEFAULT_PORT_WEB_UI)
-PORT_WEB_UI_SSL = PORT_WEB_UI + 1
+# optional target URL to forward all edge requests to
+EDGE_FORWARD_URL = os.environ.get("EDGE_FORWARD_URL", "").strip()
 
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get("DOCKER_BRIDGE_IP", "").strip()
@@ -214,6 +215,7 @@ EXTRA_CORS_ALLOWED_ORIGINS = os.environ.get("EXTRA_CORS_ALLOWED_ORIGINS", "").st
 
 # whether to disable publishing events to the API
 DISABLE_EVENTS = is_env_true("DISABLE_EVENTS")
+DEBUG_ANALYTICS = is_env_true("DEBUG_ANALYTICS")
 
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
@@ -240,6 +242,9 @@ S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
 
 # whether to skip waiting for the infrastructure to shut down, or exit immediately
 FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
+
+# whether the in_docker check should always return true
+OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
 
 
 def has_docker():
@@ -290,13 +295,12 @@ CONFIG_ENV_VARS = [
     "LAMBDA_DOCKER_NETWORK",
     "LAMBDA_REMOVE_CONTAINERS",
     "USE_SSL",
+    "USE_SINGLE_REGION",
     "DEBUG",
     "KINESIS_ERROR_PROBABILITY",
     "DYNAMODB_ERROR_PROBABILITY",
-    "PORT_WEB_UI",
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
-    "START_WEB",
     "DOCKER_BRIDGE_IP",
     "DEFAULT_REGION",
     "LAMBDA_JAVA_OPTS",
@@ -307,6 +311,7 @@ CONFIG_ENV_VARS = [
     "EDGE_PORT",
     "LS_LOG",
     "EDGE_PORT_HTTP",
+    "EDGE_FORWARD_URL",
     "SKIP_INFRA_DOWNLOADS",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
@@ -329,6 +334,9 @@ CONFIG_ENV_VARS = [
     "KINESIS_INITIALIZE_STREAMS",
     "TF_COMPAT_MODE",
     "LAMBDA_DOCKER_FLAGS",
+    "LAMBDA_FORWARD_URL",
+    "THUNDRA_APIKEY",
+    "THUNDRA_AGENT_JAVA_VERSION",
 ]
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
@@ -356,6 +364,10 @@ def in_docker():
     Returns True if running in a docker container, else False
     Ref. https://docs.docker.com/config/containers/runmetrics/#control-groups
     """
+    if OVERRIDE_IN_DOCKER:
+        return True
+    if os.path.exists("/.dockerenv"):
+        return True
     if not os.path.exists("/proc/1/cgroup"):
         return False
     try:
@@ -543,9 +555,6 @@ if DEBUG:
 
 # whether to bundle multiple APIs into a single process, where possible
 BUNDLE_API_PROCESSES = True
-
-# whether to use a CPU/memory profiler when running the integration tests
-USE_PROFILER = is_env_true("USE_PROFILER")
 
 
 def load_config_file(config_file=None):

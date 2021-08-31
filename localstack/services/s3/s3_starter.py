@@ -7,13 +7,8 @@ from urllib.parse import urlparse
 from moto.s3 import models as s3_models
 from moto.s3 import responses as s3_responses
 from moto.s3.exceptions import S3ClientError
-from moto.s3.responses import (
-    S3_ALL_MULTIPARTS,
-    MalformedXML,
-    is_delete_keys,
-    minidom,
-    undo_clean_key_name,
-)
+from moto.s3.responses import S3_ALL_MULTIPARTS, MalformedXML, is_delete_keys, minidom
+from moto.s3.utils import undo_clean_key_name
 from moto.s3bucket_path import utils as s3bucket_path_utils
 
 from localstack import config
@@ -416,9 +411,9 @@ def apply_patches():
         s3_bucket_response_get, s3_responses.S3ResponseInstance
     )
 
-    copy_key_orig = s3_models.s3_backend.copy_key
+    copy_object_orig = s3_models.s3_backend.copy_object
 
-    def copy_key(
+    def copy_object(
         self,
         src_bucket_name,
         src_key_name,
@@ -430,7 +425,7 @@ def apply_patches():
         *args,
         **kwargs,
     ):
-        copy_key_orig(
+        copy_object_orig(
             src_bucket_name,
             src_key_name,
             dest_bucket_name,
@@ -442,6 +437,7 @@ def apply_patches():
             **kwargs,
         )
         key = self.get_object(dest_bucket_name, dest_key_name)
+        # reset etag
         key._etag = None
 
-    s3_models.s3_backend.copy_key = types.MethodType(copy_key, s3_models.s3_backend)
+    s3_models.s3_backend.copy_object = types.MethodType(copy_object, s3_models.s3_backend)

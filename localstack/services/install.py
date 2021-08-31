@@ -8,6 +8,7 @@ import shutil
 import sys
 import tempfile
 import time
+from pathlib import Path
 
 import requests
 
@@ -30,6 +31,7 @@ from localstack.constants import (
     STS_JAR_URL,
 )
 from localstack.utils import bootstrap
+from localstack.utils.docker import DOCKER_CLIENT
 
 if __name__ == "__main__":
     bootstrap.bootstrap_installation()
@@ -73,6 +75,7 @@ URL_LOCALSTACK_FAT_JAR = (
     "https://repo1.maven.org/maven2/"
     + "cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
 ).format(v=LOCALSTACK_MAVEN_VERSION)
+
 MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % INSTALL_DIR_INFRA
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
@@ -85,7 +88,7 @@ SFN_PATCH_CLASS_URL = "%s/raw/master/stepfunctions-local-patch/%s" % (
 )
 
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.1.4"
+KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.1.9"
 KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
@@ -285,22 +288,27 @@ def install_local_kms():
 def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
         # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
+        # TODO: works only when running on the host, outside of Docker -> add a fallback if running in Docker?
         log_install_msg("Step Functions")
         mkdir(INSTALL_DIR_STEPFUNCTIONS)
-        run("{dc} pull {img}".format(dc=config.DOCKER_CMD, img=IMAGE_NAME_SFN_LOCAL))
+        DOCKER_CLIENT.pull_image(IMAGE_NAME_SFN_LOCAL)
         docker_name = "tmp-ls-sfn"
-        run(
-            ("{dc} run --name={dn} --entrypoint= -d --rm {img} sleep 15").format(
-                dc=config.DOCKER_CMD, dn=docker_name, img=IMAGE_NAME_SFN_LOCAL
-            )
+        DOCKER_CLIENT.run_container(
+            IMAGE_NAME_SFN_LOCAL,
+            remove=True,
+            entrypoint="",
+            name=docker_name,
+            detach=True,
+            command=["sleep", "15"],
         )
         time.sleep(5)
-        run(
-            "{dc} cp {dn}:/home/stepfunctionslocal/ {tgt}".format(
-                dc=config.DOCKER_CMD, dn=docker_name, tgt=INSTALL_DIR_INFRA
-            )
+        DOCKER_CLIENT.copy_from_container(
+            docker_name, local_path=INSTALL_DIR_INFRA, container_path="/home/stepfunctionslocal/"
         )
-        run("mv %s/stepfunctionslocal/*.jar %s" % (INSTALL_DIR_INFRA, INSTALL_DIR_STEPFUNCTIONS))
+
+        path = Path(f"{INSTALL_DIR_INFRA}/stepfunctionslocal/")
+        for file in path.glob("*.jar"):
+            file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
         rm_rf("%s/stepfunctionslocal" % INSTALL_DIR_INFRA)
     # apply patches
     patch_class_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, SFN_PATCH_CLASS)
@@ -315,10 +323,10 @@ def install_stepfunctions_local():
 
 
 def install_dynamodb_local():
-    is_in_alpine = is_alpine()
     if not os.path.exists(INSTALL_PATH_DDB_JAR):
         log_install_msg("DynamoDB")
         # download and extract archive
+        is_in_alpine = is_alpine()
         tmp_archive = os.path.join(tempfile.gettempdir(), "localstack.ddb.zip")
         dynamodb_url = DYNAMODB_JAR_URL_ALPINE if is_in_alpine else DYNAMODB_JAR_URL
         download_and_extract_with_retry(dynamodb_url, tmp_archive, INSTALL_DIR_DDB)

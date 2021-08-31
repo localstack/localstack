@@ -30,7 +30,7 @@ class ProxyListenerCloudWatch(ProxyListener):
         if action == "ListTagsForResource":
             arn = req_data.get("ResourceARN")
             tags = TAGS.list_tags_for_resource(arn)
-            result = {"Tags": {"member": tags.get("Tags", [])}}
+            result = {"Tags": tags.get("Tags", [])}
             return aws_responses.requests_response_xml(action, result, xmlns=XMLNS_CLOUDWATCH)
         if path.startswith(PATH_GET_RAW_METRICS):
             result = cloudwatch_backends[aws_stack.get_region()].metric_data

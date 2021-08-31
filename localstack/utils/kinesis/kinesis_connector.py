@@ -19,7 +19,6 @@ from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.common import (
     TMP_FILES,
     TMP_THREADS,
-    FuncThread,
     ShellCommandThread,
     chmod_r,
     get_service_protocol,
@@ -33,6 +32,7 @@ from localstack.utils.common import (
 )
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
+from localstack.utils.run import FuncThread
 
 EVENTS_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.fifo")
 LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.log")

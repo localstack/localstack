@@ -30,16 +30,13 @@ RUN make install-venv-docker
 # add files required to run "make init"
 RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
   touch localstack/__init__.py localstack/utils/__init__.py localstack/services/__init__.py localstack/utils/kinesis/__init__.py
-ADD localstack/constants.py localstack/config.py localstack/
-ADD localstack/services/install.py localstack/services/
+ADD localstack/__init__.py localstack/constants.py localstack/config.py localstack/
+ADD localstack/services/awslambda localstack/services/awslambda
+ADD localstack/plugin/ localstack/plugin/
+ADD localstack/services/install.py localstack/services/generic_proxy.py localstack/services/__init__.py localstack/services/
 ADD localstack/services/cloudformation/deployment_utils.py localstack/services/cloudformation/deployment_utils.py
-ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/
-ADD localstack/utils/aws/ localstack/utils/aws/
-ADD localstack/utils/kinesis/ localstack/utils/kinesis/
-ADD localstack/utils/analytics/ localstack/utils/analytics/
-ADD localstack/utils/generic/ localstack/utils/generic/
+ADD localstack/utils/ localstack/utils/
 ADD localstack/package.json localstack/package.json
-ADD localstack/services/__init__.py localstack/services/install.py localstack/services/
 
 # initialize installation (downloads remaining dependencies)
 RUN make init-testlibs
@@ -50,8 +47,8 @@ RUN make init
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
-# expose edge service, ElasticSearch, debugpy & web dashboard ports
-EXPOSE 4566 4571 8080 5678
+# expose edge service, ElasticSearch & debugpy ports
+EXPOSE 4566 4571 5678
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
@@ -95,9 +92,10 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 # add configuration files
-ADD .coveragerc ./
+ADD pyproject.toml ./
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
 RUN pip uninstall -y argparse
+RUN pip uninstall -y dataclasses
 RUN LAMBDA_EXECUTOR=local \
     PYTEST_LOGLEVEL=info \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \

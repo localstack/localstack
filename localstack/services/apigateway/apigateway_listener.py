@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import time
+from typing import Dict, Union
 
 import requests
 from flask import Response as FlaskResponse
@@ -20,6 +21,7 @@ from localstack.constants import (
 )
 from localstack.services.apigateway import helpers
 from localstack.services.apigateway.helpers import (
+    API_REGIONS,
     PATH_REGEX_AUTHORIZERS,
     PATH_REGEX_CLIENT_CERTS,
     PATH_REGEX_DOC_PARTS,
@@ -43,6 +45,7 @@ from localstack.services.apigateway.helpers import (
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.kinesis import kinesis_listener
+from localstack.services.stepfunctions.stepfunctions_utils import await_sfn_execution_result
 from localstack.utils import common
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
@@ -52,13 +55,14 @@ from localstack.utils.aws.aws_responses import (
     request_response_stream,
     requests_response,
 )
-from localstack.utils.common import to_bytes, to_str
+from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
+from localstack.utils.common import json_safe, to_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
 
 # regex path patterns
-HOST_REGEX_EXECUTE_API = r"(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*"
+HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\..*"
 TARGET_REGEX_S3_URI = (
     r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
 )
@@ -116,6 +120,13 @@ class ProxyListenerApiGateway(ProxyListener):
             if result is not None:
                 response.status_code = 200
                 aws_responses.set_response_content(response, result, getattr(result, "headers", {}))
+
+        # keep track of API regions for faster lookup later on
+        if method == "POST" and path == "/restapis":
+            content = json.loads(to_str(response.content))
+            api_id = content["id"]
+            region = aws_stack.extract_region_from_auth_header(headers)
+            API_REGIONS[api_id] = region
 
         # publish event
         if method == "POST" and path == "/restapis":
@@ -183,7 +194,7 @@ def is_api_key_valid(is_api_key_required, headers, stage):
 
 
 def update_content_length(response):
-    if response and response.content:
+    if response and response.content is not None:
         response.headers["Content-Length"] = str(len(response.content))
 
 
@@ -256,6 +267,12 @@ def get_api_id_stage_invocation_path(path, headers):
         api_id = host_match.group(1)
         stage = path.strip("/").split("/")[0]
         relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
+    if api_id:
+        # set current region in request thread local, to ensure aws_stack.get_region() works properly
+        if getattr(THREAD_LOCAL, "request_context", None) is not None:
+            THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = API_REGIONS.get(
+                api_id, ""
+            )
     return api_id, stage, relative_path_w_query_params
 
 
@@ -362,8 +379,9 @@ def invoke_rest_api_integration(
         response = apply_response_parameters(response, integration, api_id=api_id)
         return response
     except Exception as e:
-        LOG.warning(str(e))
-        return make_error_response(str(e), 400)
+        msg = f"Error invoking integration for API Gateway ID '{api_id}': {e}"
+        LOG.exception(msg)
+        return make_error_response(msg, 400)
 
 
 def invoke_rest_api_integration_backend(
@@ -488,7 +506,7 @@ def invoke_rest_api_integration_backend(
             return response
 
         raise Exception(
-            'API Gateway %s integration action "%s", method "%s" not yet implemented'
+            'API Gateway integration type "%s", action "%s", method "%s" invalid or not yet implemented'
             % (integration_type, uri, method)
         )
 
@@ -501,33 +519,48 @@ def invoke_rest_api_integration_backend(
             if uri.endswith("kinesis:action/ListStreams"):
                 target = kinesis_listener.ACTION_LIST_STREAMS
 
-            template = integration["requestTemplates"][APPLICATION_JSON]
-            new_request = aws_stack.render_velocity_template(template, data)
+            # apply request templates
+            new_data = apply_request_response_templates(
+                data, integration.get("requestTemplates"), content_type=APPLICATION_JSON
+            )
             # forward records to target kinesis stream
             headers = aws_stack.mock_aws_request_headers(service="kinesis")
             headers["X-Amz-Target"] = target
             result = common.make_http_request(
-                url=TEST_KINESIS_URL, method="POST", data=new_request, headers=headers
+                url=TEST_KINESIS_URL, method="POST", data=new_data, headers=headers
             )
-            # TODO apply response template..?
+            # apply response template
+            result = apply_request_response_templates(
+                result, response_templates, content_type=APPLICATION_JSON
+            )
             return result
 
         elif "states:action/" in uri:
-            if uri.endswith("states:action/StartExecution"):
-                action = "StartExecution"
+            action = uri.split("/")[-1]
             decoded_data = data.decode()
-            payload = {}
             if "stateMachineArn" in decoded_data and "input" in decoded_data:
                 payload = json.loads(decoded_data)
-            elif APPLICATION_JSON in integration.get("requestTemplates", {}):
-                template = integration["requestTemplates"][APPLICATION_JSON]
-                payload = aws_stack.render_velocity_template(template, data, as_json=True)
+            else:
+                # apply request templates
+                payload = apply_request_response_templates(
+                    data,
+                    integration.get("requestTemplates"),
+                    content_type=APPLICATION_JSON,
+                    as_json=True,
+                )
+
             client = aws_stack.connect_to_service("stepfunctions")
 
             kwargs = {"name": payload["name"]} if "name" in payload else {}
+            sm_arn = payload.get("stateMachineArn")
+            if not sm_arn:
+                return make_error_response(
+                    "Missing 'stateMachineArn' in API GW request payload",
+                    400,
+                )
             result = client.start_execution(
-                stateMachineArn=payload["stateMachineArn"],
-                input=payload["input"],
+                stateMachineArn=sm_arn,
+                input=payload.get("input") or "{}",
                 **kwargs,
             )
             response = requests_response(
@@ -535,9 +568,24 @@ def invoke_rest_api_integration_backend(
                     "executionArn": result["executionArn"],
                     "startDate": str(result["startDate"]),
                 },
-                headers=aws_stack.mock_aws_request_headers(),
             )
-            response.headers["content-type"] = APPLICATION_JSON
+            if action == "StartSyncExecution":
+                # poll for the execution result and return it
+                result = await_sfn_execution_result(result["executionArn"])
+                result_status = result.get("status")
+                if result_status != "SUCCEEDED":
+                    return make_error_response(
+                        "StepFunctions execution %s failed with status '%s'"
+                        % (result["executionArn"], result_status),
+                        500,
+                    )
+                result = json_safe(result)
+                response = requests_response(content=result)
+
+            # apply response templates
+            response = apply_request_response_templates(
+                response, response_templates, content_type=APPLICATION_JSON
+            )
             return response
         elif "s3:path/" in uri and method == "GET":
             s3 = aws_stack.connect_to_service("s3")
@@ -616,9 +664,7 @@ def invoke_rest_api_integration_backend(
                     event_data[key] = data_dict[key]
 
                 table.put_item(Item=event_data)
-                response = requests_response(
-                    event_data, headers=aws_stack.mock_aws_request_headers()
-                )
+                response = requests_response(event_data)
                 return response
         else:
             raise Exception(
@@ -712,6 +758,29 @@ def get_lambda_event_request_context(
     if isinstance(auth_info, dict) and auth_info.get("context"):
         request_context["authorizer"] = auth_info["context"]
     return request_context
+
+
+def apply_request_response_templates(
+    data: Union[Response, bytes],
+    templates: Dict[str, str],
+    content_type: str = None,
+    as_json: bool = False,
+):
+    """Apply the matching request/response template (if it exists) to the payload data and return the result"""
+
+    content_type = content_type or APPLICATION_JSON
+    is_response = isinstance(data, Response)
+    templates = templates or {}
+    template = templates.get(content_type)
+    if not template:
+        return data
+    content = (data.content if is_response else data) or ""
+    result = aws_stack.render_velocity_template(template, content, as_json=as_json)
+    if is_response:
+        data._content = result
+        update_content_length(data)
+        return data
+    return result
 
 
 # instantiate listener

@@ -25,18 +25,19 @@ from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Callable, List, Union
+from typing import Callable, Dict, List, Optional, Sized, Type, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
 import requests
 import six
+from requests import Response
 
+import localstack.utils.run
 from localstack import config
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
-from localstack.utils import bootstrap
-from localstack.utils.bootstrap import FuncThread
+from localstack.utils.run import FuncThread
 
 # arrays for temporary files and resources
 TMP_FILES = []
@@ -52,6 +53,7 @@ MUTEX_CLEAN = threading.Lock()
 
 # misc. constants
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
+TIMESTAMP_FORMAT_TZ = "%Y-%m-%dT%H:%M:%SZ"
 TIMESTAMP_FORMAT_MICROS = "%Y-%m-%dT%H:%M:%S.%fZ"
 CODEC_HANDLER_UNDERSCORE = "underscore"
 
@@ -69,6 +71,9 @@ CACHE = {}
 
 # lock for creating certificate files
 SSL_CERT_LOCK = threading.RLock()
+
+# user of the currently running process
+CACHED_USER = None
 
 
 class Mock(object):
@@ -195,7 +200,8 @@ class ShellCommandThread(FuncThread):
                             if self.outfile not in [None, os.devnull]:
                                 outstream.write(line)
                                 outstream.flush()
-                self.process.wait()
+                if self.process:
+                    self.process.wait()
             else:
                 self.process.communicate()
         except Exception as e:
@@ -491,8 +497,17 @@ def md5(string):
 
 
 def select_attributes(obj, attributes):
+    """Select a subset of attributes from the given dict (returns a copy)"""
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     return dict([(k, v) for k, v in obj.items() if k in attributes])
+
+
+def remove_attributes(obj, attributes):
+    """Remove a set of attributes from the given dict (in-place)"""
+    attributes = attributes if is_list_or_tuple(attributes) else [attributes]
+    for attr in attributes:
+        obj.pop(attr, None)
+    return obj
 
 
 def is_list_or_tuple(obj):
@@ -501,47 +516,6 @@ def is_list_or_tuple(obj):
 
 def in_docker():
     return config.in_docker()
-
-
-def has_docker():
-    try:
-        run("docker ps")
-        return True
-    except Exception:
-        return False
-
-
-def get_docker_container_names():
-    return bootstrap.get_docker_container_names()
-
-
-def get_docker_image_names(strip_latest=True):
-    cmd = "%s images --format '{{.Repository}}:{{.Tag}}'" % config.DOCKER_CMD
-    try:
-        output = to_str(run(cmd))
-        image_names = re.split(r"\s+", output.strip().replace("\n", " "))
-        if strip_latest:
-            suffix = ":latest"
-            for image in list(image_names):
-                if image.endswith(suffix):
-                    image_names.append(image[: -len(suffix)])
-        return image_names
-    except Exception as e:
-        LOG.info('Unable to list Docker images via "%s": %s' % (cmd, e))
-        return []
-
-
-def rm_docker_container(container_name_or_id, check_existence=False, safe=False):
-    if not container_name_or_id:
-        return
-    if check_existence and container_name_or_id not in get_docker_container_names():
-        # TODO: check names as well as container IDs!
-        return
-    try:
-        run("%s rm -f %s" % (config.DOCKER_CMD, container_name_or_id), print_error=False)
-    except Exception:
-        if not safe:
-            raise
 
 
 def path_from_url(url):
@@ -686,10 +660,20 @@ def epoch_timestamp():
     return time.time()
 
 
+def parse_timestamp(ts_str: str) -> datetime:
+    for ts_format in [TIMESTAMP_FORMAT, TIMESTAMP_FORMAT_TZ, TIMESTAMP_FORMAT_MICROS]:
+        try:
+            return datetime.strptime(ts_str, ts_format)
+        except ValueError:
+            pass
+    raise Exception("Unable to parse timestamp string with any known formats: %s" % ts_str)
+
+
 def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
     raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)
+    retries = int(retries)
     for i in range(0, retries + 1):
         try:
             return function(**kwargs)
@@ -722,18 +706,18 @@ def poll_condition(condition, timeout: float = None, interval: float = 0.5) -> b
     return True
 
 
-def merge_recursive(source, destination, none_values=[None]):
+def merge_recursive(source, destination, none_values=[None], overwrite=False):
     for key, value in source.items():
         if isinstance(value, dict):
             # get node or create one
             node = destination.setdefault(key, {})
-            merge_recursive(value, node)
+            merge_recursive(value, node, none_values=none_values, overwrite=overwrite)
         else:
             if not isinstance(destination, dict):
                 LOG.warning(
                     "Destination for merging %s=%s is not dict: %s", key, value, destination
                 )
-            if destination.get(key) in none_values:
+            if overwrite or destination.get(key) in none_values:
                 destination[key] = value
     return destination
 
@@ -882,7 +866,10 @@ def rm_rf(path):
         except Exception:
             pass
     # Make sure all files are writeable and dirs executable to remove
-    chmod_r(path, 0o777)
+    try:
+        chmod_r(path, 0o777)
+    except PermissionError:
+        pass  # todo log
     # check if the file is either a normal file, or, e.g., a fifo
     exists_but_non_dir = os.path.exists(path) and not os.path.isdir(path)
     if os.path.isfile(path) or exists_but_non_dir:
@@ -891,23 +878,62 @@ def rm_rf(path):
         shutil.rmtree(path)
 
 
-def cp_r(src, dst, rm_dest_on_conflict=False):
+def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kwargs):
     """Recursively copies file/directory"""
-    if os.path.isfile(src):
-        return shutil.copy(src, dst)
-    kwargs = {}
-    if "dirs_exist_ok" in inspect.getfullargspec(shutil.copytree).args:
-        kwargs["dirs_exist_ok"] = True
+    # attention: this patch is not threadsafe
+    copystat_orig = shutil.copystat
+    if ignore_copystat_errors:
+
+        def _copystat(*args, **kwargs):
+            try:
+                return copystat_orig(*args, **kwargs)
+            except Exception:
+                pass
+
+        shutil.copystat = _copystat
     try:
-        return shutil.copytree(src, dst, **kwargs)
-    except FileExistsError:
-        if rm_dest_on_conflict:
-            rm_rf(dst)
+        if os.path.isfile(src):
+            if os.path.isdir(dst):
+                dst = os.path.join(dst, os.path.basename(src))
+            return shutil.copyfile(src, dst)
+        if "dirs_exist_ok" in inspect.getfullargspec(shutil.copytree).args:
+            kwargs["dirs_exist_ok"] = True
+        try:
             return shutil.copytree(src, dst, **kwargs)
+        except FileExistsError:
+            if rm_dest_on_conflict:
+                rm_rf(dst)
+                return shutil.copytree(src, dst, **kwargs)
+            raise
+    except Exception as e:
+
+        def _info(_path):
+            return "%s (file=%s, symlink=%s)" % (
+                _path,
+                os.path.isfile(_path),
+                os.path.islink(_path),
+            )
+
+        LOG.debug(
+            "Error copying files from %s to %s: %s"
+            % (
+                _info(src),
+                _info(dst),
+                e,
+            )
+        )
         raise
+    finally:
+        shutil.copystat = copystat_orig
 
 
 def disk_usage(path):
+    if not os.path.exists(path):
+        return 0
+
+    if os.path.isfile(path):
+        return os.path.getsize(path)
+
     total_size = 0
     for dirpath, dirnames, filenames in os.walk(path):
         for f in filenames:
@@ -919,9 +945,11 @@ def disk_usage(path):
 
 
 def format_bytes(count, default="n/a"):
-    if not is_number(count) or count < 0:
+    if not is_number(count):
         return default
     cnt = float(count)
+    if cnt < 0:
+        return default
     units = ("B", "KB", "MB", "GB", "TB")
     for unit in units:
         if cnt < 1000 or unit == units[-1]:
@@ -1005,7 +1033,12 @@ def first_char_to_upper(s):
 
 
 def format_number(number, decimals=2):
-    return ("{0:.%sg}" % decimals).format(number)
+    # Note: interestingly, f"{number:.3g}" seems to yield incorrect results in some cases.
+    # The logic below seems to be the most stable/reliable.
+    result = f"{number:.{decimals}f}"
+    if "." in result:
+        result = result.rstrip("0").rstrip(".")
+    return result
 
 
 def is_number(s):
@@ -1017,11 +1050,11 @@ def is_number(s):
 
 
 def is_mac_os():
-    return bootstrap.is_mac_os()
+    return localstack.utils.run.is_mac_os()
 
 
 def is_linux():
-    return bootstrap.is_linux()
+    return localstack.utils.run.is_linux()
 
 
 def is_windows():
@@ -1328,7 +1361,7 @@ def cleanup_tmp_files():
     del TMP_FILES[:]
 
 
-def new_tmp_file():
+def new_tmp_file() -> str:
     """Return a path to a new temporary file."""
     tmp_file, tmp_path = tempfile.mkstemp()
     os.close(tmp_file)
@@ -1403,8 +1436,17 @@ def untar(path, target_dir):
 
 
 def is_root():
-    out = run("whoami").strip()
-    return out == "root"
+    return get_os_user() == "root"
+
+
+def get_os_user():
+    global CACHED_USER
+    if not CACHED_USER:
+        # TODO: using getpass.getuser() seems to be reporting a different/invalid user in Docker/MacOS
+        # import getpass
+        # CACHED_USER = getpass.getuser()
+        CACHED_USER = run("whoami").strip()
+    return CACHED_USER
 
 
 def cleanup_resources():
@@ -1608,14 +1650,14 @@ def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
 
 def run(cmd, cache_duration_secs=0, **kwargs):
     def run_cmd():
-        return bootstrap.run(cmd, **kwargs)
+        return localstack.utils.run.run(cmd, **kwargs)
 
     return do_run(cmd, run_cmd, cache_duration_secs)
 
 
 def safe_run(cmd: List[str], cache_duration_secs=0, **kwargs) -> Union[str, subprocess.Popen]:
     def run_cmd():
-        return bootstrap.run(cmd, shell=False, **kwargs)
+        return localstack.utils.run.run(cmd, shell=False, **kwargs)
 
     return do_run(" ".join(cmd), run_cmd, cache_duration_secs)
 
@@ -1660,7 +1702,9 @@ class safe_requests(six.with_metaclass(_RequestsSafe)):
     pass
 
 
-def make_http_request(url, data=None, headers=None, method="GET"):
+def make_http_request(
+    url: str, data: Union[bytes, str] = None, headers: Dict[str, str] = None, method: str = "GET"
+) -> Response:
     return requests.request(
         url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
     )
@@ -1696,7 +1740,8 @@ def truncate(data, max_length=100):
     return ("%s..." % data[:max_length]) if len(data) > max_length else data
 
 
-def get_all_subclasses(clazz):
+# this requires that all subclasses have been imported before(!)
+def get_all_subclasses(clazz: Type):
     """Recursively get all subclasses of the given class."""
     result = set()
     subs = clazz.__subclasses__()
@@ -1727,6 +1772,18 @@ def isoformat_milliseconds(t):
 def replace_response_content(response, pattern, replacement):
     content = to_str(response.content or "")
     response._content = re.sub(pattern, replacement, content)
+
+
+def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
+    return (
+        obj is None
+        or (isinstance(obj, str) and obj.strip() == "")
+        or (isinstance(obj, Sized) and len(obj) == 0)
+    )
+
+
+def canonicalize_bool_to_str(val: bool) -> str:
+    return "true" if str(val).lower() == "true" else "false"
 
 
 # Code that requires util functions from above
