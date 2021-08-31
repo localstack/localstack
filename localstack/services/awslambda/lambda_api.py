@@ -752,13 +752,15 @@ def run_lambda(
             result = not_found_error(msg="The resource specified in the request does not exist.")
             return lambda_executors.InvocationResult(result)
 
+        context = LambdaContext(func_details, version, context)
+
         # forward invocation to external endpoint, if configured
         invocation_type = "Event" if asynchronous else "RequestResponse"
+
         invoke_result = forward_to_external_url(func_details, event, context, invocation_type)
         if invoke_result is not None:
             return invoke_result
 
-        context = LambdaContext(func_details, version, context)
         result = LAMBDA_EXECUTOR.execute(
             func_arn,
             func_details,
@@ -1151,22 +1153,45 @@ def format_func_details(func_details, version=None, always_add_version=False):
 
 
 def forward_to_external_url(func_details, event, context, invocation_type):
+    func_forward_url = (
+        func_details.envvars.get("LOCALSTACK_LAMBDA_FORWARD_URL") or config.LAMBDA_FORWARD_URL
+    )
     """If LAMBDA_FORWARD_URL is configured, forward the invocation of this Lambda to the configured URL."""
-    if not config.LAMBDA_FORWARD_URL:
+    if not func_forward_url:
         return
+
     func_name = func_details.name()
     url = "%s%s/functions/%s/invocations" % (
-        config.LAMBDA_FORWARD_URL,
+        func_forward_url,
         PATH_ROOT,
         func_name,
     )
+
+    copied_env_vars = func_details.envvars.copy()
+    copied_env_vars["LOCALSTACK_HOSTNAME"] = config.HOSTNAME_EXTERNAL
+    copied_env_vars["LOCALSTACK_EDGE_PORT"] = str(config.EDGE_PORT)
+
     headers = aws_stack.mock_aws_request_headers("lambda")
+    headers["X-Amz-Region"] = func_details.region()
+    headers["X-Amz-Request-Id"] = context.aws_request_id
+    headers["X-Amz-Handler"] = func_details.handler
+    headers["X-Amz-Function-ARN"] = context.invoked_function_arn
+    headers["X-Amz-Function-Name"] = context.function_name
+    headers["X-Amz-Function-Version"] = context.function_version
+    headers["X-Amz-Role"] = func_details.role
+    headers["X-Amz-Runtime"] = func_details.runtime
+    headers["X-Amz-Timeout"] = str(func_details.timeout)
+    headers["X-Amz-Memory-Size"] = str(context.memory_limit_in_mb)
+    headers["X-Amz-Log-Group-Name"] = context.log_group_name
+    headers["X-Amz-Log-Stream-Name"] = context.log_stream_name
+    headers["X-Amz-Env-Vars"] = json.dumps(copied_env_vars)
+    headers["X-Amz-Last-Modified"] = str(int(func_details.last_modified.timestamp() * 1000))
     headers["X-Amz-Invocation-Type"] = invocation_type
     headers["X-Amz-Log-Type"] = "Tail"
-    client_context = context.get("client_context")
-    if client_context:
-        headers["X-Amz-Client-Context"] = client_context
-    data = json.dumps(event) if isinstance(event, dict) else str(event)
+    if context.client_context:
+        headers["X-Amz-Client-Context"] = context.client_context
+
+    data = json.dumps(json_safe(event)) if isinstance(event, dict) else str(event)
     LOG.debug("Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s" % config.LAMBDA_FORWARD_URL)
     result = safe_requests.post(url, data, headers=headers)
     content = run_safe(lambda: to_str(result.content)) or result.content
