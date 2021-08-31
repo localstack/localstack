@@ -881,7 +881,7 @@ class SdkDockerClient(ContainerClient):
         env_vars: Dict[str, str],
         ports: PortMappings,
         mounts: List[Tuple[str, str]],
-    ) -> Tuple[Dict[str, str], PortMappings, List[Tuple[str, str]]]:
+    ) -> Tuple[Dict[str, str], PortMappings, List[Tuple[str, str]], Optional[Dict[str, str]]]:
         """Parses environment, volume and port flags passed as string
         :param additional_flags: String which contains the flag definitions
         :param env_vars: Dict with env vars. Will be modified in place.
@@ -892,6 +892,7 @@ class SdkDockerClient(ContainerClient):
                 otherwise.
         """
         cur_state = None
+        extra_hosts = None
         for flag in shlex.split(additional_flags):
             if not cur_state:
                 if flag in ["-v", "--volume"]:
@@ -900,6 +901,8 @@ class SdkDockerClient(ContainerClient):
                     cur_state = "port"
                 elif flag in ["-e", "--env"]:
                     cur_state = "env"
+                elif flag == "--add-host":
+                    cur_state = "add-host"
                 else:
                     raise NotImplementedError(
                         "Flag %s is currently not supported by this docker client."
@@ -928,8 +931,13 @@ class SdkDockerClient(ContainerClient):
                     env_split = flag.split("=")
                     env_vars = env_vars if env_vars is not None else {}
                     env_vars[env_split[0]] = env_split[1]
+                elif cur_state == "add-host":
+                    extra_hosts = extra_hosts if extra_hosts is not None else {}
+                    hosts_split = flag.split(":")
+                    extra_hosts[hosts_split[0]] = hosts_split[1]
+
                 cur_state = None
-        return env_vars, ports, mounts
+        return env_vars, ports, mounts, extra_hosts
 
     def _container_path_info(self, container: Container, container_path: str):
         """
@@ -1188,8 +1196,9 @@ class SdkDockerClient(ContainerClient):
         additional_flags: Optional[str] = None,
     ) -> str:
         LOG.debug("Creating container with image: %s", image_name)
+        extra_hosts = None
         if additional_flags:
-            env_vars, ports, mount_volumes = self._parse_additional_flags(
+            env_vars, ports, mount_volumes, extra_hosts = self._parse_additional_flags(
                 additional_flags, env_vars, ports, mount_volumes
             )
         try:
@@ -1223,6 +1232,7 @@ class SdkDockerClient(ContainerClient):
                     user=user,
                     network=network,
                     volumes=mounts,
+                    extra_hosts=extra_hosts,
                     **kwargs,
                 )
 

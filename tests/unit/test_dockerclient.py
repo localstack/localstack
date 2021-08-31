@@ -72,6 +72,14 @@ def test_argument_parsing():
     assert env_vars == {"TEST_ENV_VAR": "test_string"}
     assert ports.to_str() == "-p 80:8080/udp -p 6000:7000"
     assert mounts == [("/var/test", "/opt/test")]
+    argument_string = (
+        "--add-host host.docker.internal:host-gateway --add-host arbitrary.host:127.0.0.1"
+    )
+    _, _, _, extra_hosts = docker_client._parse_additional_flags(
+        argument_string, env_vars, ports, mounts
+    )
+    assert {"host.docker.internal": "host-gateway", "arbitrary.host": "127.0.0.1"} == extra_hosts
+
     with pytest.raises(NotImplementedError):
         argument_string = "--somerandomargument"
         docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
