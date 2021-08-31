@@ -506,7 +506,7 @@ def invoke_rest_api_integration_backend(
             return response
 
         raise Exception(
-            'API Gateway %s integration action "%s", method "%s" not yet implemented'
+            'API Gateway integration type "%s", action "%s", method "%s" invalid or not yet implemented'
             % (integration_type, uri, method)
         )
 

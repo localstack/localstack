@@ -99,6 +99,7 @@ class TestServerless(unittest.TestCase):
         queue_name = "sls-test-local-CreateQueue"
 
         lambda_client = aws_stack.connect_to_service("lambda")
+        sqs_client = aws_stack.connect_to_service("sqs")
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -110,6 +111,14 @@ class TestServerless(unittest.TestCase):
         event_source_arn = events[0]["EventSourceArn"]
 
         self.assertEqual(event_source_arn, aws_stack.sqs_queue_arn(queue_name))
+        result = sqs_client.get_queue_attributes(
+            QueueUrl=aws_stack.get_sqs_queue_url(queue_name),
+            AttributeNames=[
+                "RedrivePolicy",
+            ],
+        )
+        redrive_policy = json.loads(result["Attributes"]["RedrivePolicy"])
+        self.assertEqual(3, redrive_policy["maxReceiveCount"])
 
     def test_lambda_with_configs_deployed(self):
         function_name = "sls-test-local-test"
