@@ -14,7 +14,11 @@ from requests.models import Response
 from requests.structures import CaseInsensitiveDict
 
 from localstack import config
-from localstack.constants import HEADER_LOCALSTACK_REQUEST_URL, TEST_AWS_ACCOUNT_ID
+from localstack.constants import (
+    APPLICATION_JSON,
+    HEADER_LOCALSTACK_REQUEST_URL,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
@@ -1096,14 +1100,17 @@ class TestAPIGateway(unittest.TestCase):
         # create REST API and method
         rest_api = client.create_rest_api(name="test", description="test")
         resources = client.get_resources(restApiId=rest_api["id"])
+        root_resource_id = resources["items"][0]["id"]
         client.put_method(
             restApiId=rest_api["id"],
-            resourceId=resources["items"][0]["id"],
+            resourceId=root_resource_id,
             httpMethod="POST",
             authorizationType="NONE",
         )
 
-        def _prepare_method_integration(integr_kwargs={}, exec_async=True, overwrite=False):
+        def _prepare_method_integration(
+            integr_kwargs={}, resp_templates={}, exec_async=True, overwrite=False
+        ):
             if overwrite:
                 client.delete_integration(
                     restApiId=rest_api["id"],
@@ -1114,13 +1121,22 @@ class TestAPIGateway(unittest.TestCase):
             uri = f"arn:aws:apigateway:{aws_stack.get_region()}:states:action/{action}"
             client.put_integration(
                 restApiId=rest_api["id"],
-                resourceId=resources["items"][0]["id"],
+                resourceId=root_resource_id,
                 httpMethod="POST",
                 integrationHttpMethod="POST",
                 type="AWS",
                 uri=uri,
                 **integr_kwargs,
             )
+            if resp_templates:
+                client.put_integration_response(
+                    restApiId=rest_api["id"],
+                    resourceId=root_resource_id,
+                    selectionPattern="",
+                    responseTemplates=resp_templates,
+                    httpMethod="POST",
+                    statusCode="200",
+                )
 
         # STEP 1: test integration with request template
 
@@ -1166,6 +1182,20 @@ class TestAPIGateway(unittest.TestCase):
         _prepare_method_integration(overwrite=True, exec_async=False)
 
         # invoke stepfunction via API GW, assert results
+        test_data_1["name"] += "1"
+        resp = requests.post(url, data=json.dumps(test_data_1))
+        self.assertEqual(200, resp.status_code)
+        content = json.loads(to_str(resp.content.decode()))
+        self.assertEqual("SUCCEEDED", content.get("status"))
+        self.assertEqual(test_data, json.loads(content.get("output")))
+
+        # STEP 4: test integration with synchronous execution and response templates
+
+        resp_templates = {APPLICATION_JSON: "$input.path('$.output')"}
+        _prepare_method_integration(resp_templates=resp_templates, overwrite=True, exec_async=False)
+
+        # invoke stepfunction via API GW, assert results
+        test_data_1["name"] += "2"
         resp = requests.post(url, data=json.dumps(test_data_1))
         self.assertEqual(200, resp.status_code)
         self.assertEqual(test_data, json.loads(to_str(resp.content.decode())))
@@ -1175,7 +1205,7 @@ class TestAPIGateway(unittest.TestCase):
         sfn_client.delete_state_machine(stateMachineArn=sm_arn)
         client.delete_rest_api(restApiId=rest_api["id"])
 
-    def test_api_gateway_http_integration_with_path_request_parmeter(self):
+    def test_api_gateway_http_integration_with_path_request_parameter(self):
         client = aws_stack.connect_to_service("apigateway")
         test_port = get_free_tcp_port()
         backend_url = "http://localhost:%s/person/{id}" % (test_port)

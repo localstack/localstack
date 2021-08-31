@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import time
+from typing import Dict, Union
 
 import requests
 from flask import Response as FlaskResponse
@@ -55,7 +56,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.common import to_bytes, to_str
+from localstack.utils.common import json_safe, to_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -193,7 +194,7 @@ def is_api_key_valid(is_api_key_required, headers, stage):
 
 
 def update_content_length(response):
-    if response and response.content:
+    if response and response.content is not None:
         response.headers["Content-Length"] = str(len(response.content))
 
 
@@ -518,26 +519,36 @@ def invoke_rest_api_integration_backend(
             if uri.endswith("kinesis:action/ListStreams"):
                 target = kinesis_listener.ACTION_LIST_STREAMS
 
-            template = integration["requestTemplates"][APPLICATION_JSON]
-            new_request = aws_stack.render_velocity_template(template, data)
+            # apply request templates
+            new_data = apply_request_response_templates(
+                data, integration.get("requestTemplates"), content_type=APPLICATION_JSON
+            )
             # forward records to target kinesis stream
             headers = aws_stack.mock_aws_request_headers(service="kinesis")
             headers["X-Amz-Target"] = target
             result = common.make_http_request(
-                url=TEST_KINESIS_URL, method="POST", data=new_request, headers=headers
+                url=TEST_KINESIS_URL, method="POST", data=new_data, headers=headers
             )
-            # TODO apply response template..?
+            # apply response template
+            result = apply_request_response_templates(
+                result, response_templates, content_type=APPLICATION_JSON
+            )
             return result
 
         elif "states:action/" in uri:
             action = uri.split("/")[-1]
             decoded_data = data.decode()
-            payload = {}
             if "stateMachineArn" in decoded_data and "input" in decoded_data:
                 payload = json.loads(decoded_data)
-            elif APPLICATION_JSON in integration.get("requestTemplates", {}):
-                template = integration["requestTemplates"][APPLICATION_JSON]
-                payload = aws_stack.render_velocity_template(template, data, as_json=True)
+            else:
+                # apply request templates
+                payload = apply_request_response_templates(
+                    data,
+                    integration.get("requestTemplates"),
+                    content_type=APPLICATION_JSON,
+                    as_json=True,
+                )
+
             client = aws_stack.connect_to_service("stepfunctions")
 
             kwargs = {"name": payload["name"]} if "name" in payload else {}
@@ -568,8 +579,13 @@ def invoke_rest_api_integration_backend(
                         % (result["executionArn"], result_status),
                         500,
                     )
-                output = result.get("output") or "{}"
-                response = requests_response(content=json.loads(to_str(output)))
+                result = json_safe(result)
+                response = requests_response(content=result)
+
+            # apply response templates
+            response = apply_request_response_templates(
+                response, response_templates, content_type=APPLICATION_JSON
+            )
             return response
         elif "s3:path/" in uri and method == "GET":
             s3 = aws_stack.connect_to_service("s3")
@@ -648,9 +664,7 @@ def invoke_rest_api_integration_backend(
                     event_data[key] = data_dict[key]
 
                 table.put_item(Item=event_data)
-                response = requests_response(
-                    event_data, headers=aws_stack.mock_aws_request_headers()
-                )
+                response = requests_response(event_data)
                 return response
         else:
             raise Exception(
@@ -744,6 +758,29 @@ def get_lambda_event_request_context(
     if isinstance(auth_info, dict) and auth_info.get("context"):
         request_context["authorizer"] = auth_info["context"]
     return request_context
+
+
+def apply_request_response_templates(
+    data: Union[Response, bytes],
+    templates: Dict[str, str],
+    content_type: str = None,
+    as_json: bool = False,
+):
+    """Apply the matching request/response template (if it exists) to the payload data and return the result"""
+
+    content_type = content_type or APPLICATION_JSON
+    is_response = isinstance(data, Response)
+    templates = templates or {}
+    template = templates.get(content_type)
+    if not template:
+        return data
+    content = (data.content if is_response else data) or ""
+    result = aws_stack.render_velocity_template(template, content, as_json=as_json)
+    if is_response:
+        data._content = result
+        update_content_length(data)
+        return data
+    return result
 
 
 # instantiate listener

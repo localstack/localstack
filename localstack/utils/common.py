@@ -25,12 +25,13 @@ from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Callable, List, Optional, Sized, Type, Union
+from typing import Callable, Dict, List, Optional, Sized, Type, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
 import requests
 import six
+from requests import Response
 
 import localstack.utils.run
 from localstack import config
@@ -1701,7 +1702,9 @@ class safe_requests(six.with_metaclass(_RequestsSafe)):
     pass
 
 
-def make_http_request(url, data=None, headers=None, method="GET"):
+def make_http_request(
+    url: str, data: Union[bytes, str] = None, headers: Dict[str, str] = None, method: str = "GET"
+) -> Response:
     return requests.request(
         url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
     )
