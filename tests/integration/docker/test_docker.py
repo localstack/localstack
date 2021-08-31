@@ -722,6 +722,18 @@ class TestDockerClient:
         assert env_variable in stdout
         assert "EXISTING_VAR=test_var" in stdout
 
+    def test_run_with_additional_arguments_add_host(self, docker_client: ContainerClient):
+        additional_flags = "--add-host sometest.localstack.cloud:127.0.0.1"
+        stdout, _ = docker_client.run_container(
+            "alpine",
+            remove=True,
+            command=["getent", "hosts", "sometest.localstack.cloud"],
+            additional_flags=additional_flags,
+        )
+        stdout = stdout.decode(config.DEFAULT_ENCODING)
+        assert "127.0.0.1" in stdout
+        assert "sometest.localstack.cloud" in stdout
+
     def test_get_container_ip_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchContainer):
             docker_client.get_container_ip("hopefully_non_existent_container_%s" % short_uid())
