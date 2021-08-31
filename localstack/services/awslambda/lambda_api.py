@@ -1191,11 +1191,7 @@ def forward_to_external_url(func_details, event, context, invocation_type):
     if context.client_context:
         headers["X-Amz-Client-Context"] = context.client_context
 
-    def event_serializer(o):
-        if isinstance(o, datetime):
-            return o.isoformat()
-
-    data = json.dumps(event, default=event_serializer) if isinstance(event, dict) else str(event)
+    data = json.dumps(json_safe(event)) if isinstance(event, dict) else str(event)
     LOG.debug("Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s" % config.LAMBDA_FORWARD_URL)
     result = safe_requests.post(url, data, headers=headers)
     content = run_safe(lambda: to_str(result.content)) or result.content
