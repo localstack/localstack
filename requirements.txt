@@ -31,7 +31,7 @@ Cython                         #extended-lib
 dataclasses; python_version < '3.7' #basic-lib
 dnspython==1.16.0              #basic-lib
 docopt>=0.6.2                  #basic-lib
-docker>=3.7.2                  #basic-lib
+docker==5.0.0                  #basic-lib
 elasticsearch>=7.0.0,<8.0.0
 flake8>=3.6.0                  #extended-lib
 flake8-black>=0.2.1            #extended-lib

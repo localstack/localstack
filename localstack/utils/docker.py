@@ -256,7 +256,10 @@ class ContainerClient(metaclass=ABCMeta):
 
     @abstractmethod
     def get_container_ip(self, container_name_or_id: str) -> str:
-        """Get the IP address of a given container"""
+        """Get the IP address of a given container
+
+        If container has multiple networks, it will return the IP of the first
+        """
         pass
 
     def get_image_cmd(self, docker_image: str) -> str:
@@ -1116,7 +1119,11 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
     def get_container_ip(self, container_name_or_id: str) -> str:
-        return self.inspect_container(container_name_or_id)["NetworkSettings"]["IPAddress"]
+        networks = self.inspect_container(container_name_or_id)["NetworkSettings"]["Networks"]
+        network_names = list(networks)
+        if len(network_names) > 1:
+            LOG.info("Container has more than one assigned network. Picking the first one...")
+        return networks[network_names[0]]["IPAddress"]
 
     def has_docker(self) -> bool:
         try:
