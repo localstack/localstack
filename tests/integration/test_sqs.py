@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import random
 import time
 import unittest
 
@@ -1025,21 +1026,23 @@ class SQSTest(unittest.TestCase):
         for key in tags_keys_as_list:
             self.assertIn(key, response["Tags"])
 
-        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=[tags_keys_as_list[1]])
+        random_tag_key = random.choice(tags_keys_as_list)
+        # Pop random chosen tag key from list
+        tags_keys_as_list.pop(tags_keys_as_list.index(random_tag_key))
+
+        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=[random_tag_key])
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
         response = self.client.list_queue_tags(QueueUrl=queue_url)
-        self.assertIn(tags_keys_as_list[0], response["Tags"])
-        self.assertNotIn(tags_keys_as_list[1], response["Tags"])
-        self.assertIn(tags_keys_as_list[2], response["Tags"])
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertNotIn(random_tag_key, response["Tags"])
+        
+        for key in tags_keys_as_list:
+            self.assertIn(key, response["Tags"])
 
         # Clean up
         self.client.untag_queue(
             QueueUrl=queue_url,
-            TagKeys=[
-                tags_keys_as_list[0],
-                tags_keys_as_list[2],
-            ],
+            TagKeys=tags_keys_as_list,
         )
         self.client.delete_queue(QueueUrl=queue_url)
