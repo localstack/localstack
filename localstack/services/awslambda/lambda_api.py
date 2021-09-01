@@ -1201,8 +1201,7 @@ def forward_to_external_url(func_details, event, context, invocation_type):
         "Received result from external Lambda endpoint (status %s): %s"
         % (result.status_code, content)
     )
-    result = aws_responses.requests_to_flask_response(result)
-    result = lambda_executors.InvocationResult(result)
+    result = lambda_executors.InvocationResult(content)
     return result
 
 
