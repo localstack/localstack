@@ -1036,7 +1036,7 @@ class SQSTest(unittest.TestCase):
         response = self.client.list_queue_tags(QueueUrl=queue_url)
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
         self.assertNotIn(random_tag_key, response["Tags"])
-        
+
         for key in tags_keys_as_list:
             self.assertIn(key, response["Tags"])
 
