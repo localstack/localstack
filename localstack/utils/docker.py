@@ -843,59 +843,25 @@ class Util:
                 else:
                     LOG.debug("File to copy empty, ignoring...")
 
-
-class SdkDockerClient(ContainerClient):
-    """Class for managing docker using the python docker sdk"""
-
-    docker_client: Optional[DockerClient]
-
-    def __init__(self):
-        try:
-            self.docker_client = docker.from_env()
-            logging.getLogger("urllib3").setLevel(logging.INFO)
-        except DockerException:
-            self.docker_client = None
-
-    def client(self):
-        if self.docker_client:
-            return self.docker_client
-        else:
-            raise ContainerException("Docker not available")
-
-    def _read_from_sock(self, sock: socket, tty: bool):
-        """Reads multiplexed messages from a socket returned by attach_socket.
-
-        Uses the protocol specified here: https://docs.docker.com/engine/api/v1.41/#operation/ContainerAttach
-        """
-        stdout = b""
-        stderr = b""
-        for frame_type, frame_data in frames_iter(sock, tty):
-            if frame_type == STDOUT:
-                stdout += frame_data
-            elif frame_type == STDERR:
-                stderr += frame_data
-            else:
-                raise ContainerException("Invalid frame type when reading from socket")
-        return stdout, stderr
-
-    def _parse_additional_flags(
-        self,
+    @staticmethod
+    def parse_additional_flags(
         additional_flags: str,
-        env_vars: Dict[str, str],
-        ports: PortMappings,
-        mounts: List[Tuple[str, str]],
+        env_vars: Dict[str, str] = None,
+        ports: PortMappings = None,
+        mounts: List[Tuple[str, str]] = None,
     ) -> Tuple[Dict[str, str], PortMappings, List[Tuple[str, str]], Optional[Dict[str, str]]]:
         """Parses environment, volume and port flags passed as string
         :param additional_flags: String which contains the flag definitions
         :param env_vars: Dict with env vars. Will be modified in place.
         :param ports: PortMapping object. Will be modified in place.
-        :param mounts: List of mount tuples. Will be modified in place.
+        :param mounts: List of mount tuples (host_path, container_path). Will be modified in place.
         :return: A tuple containing the env_vars, ports and mount objects. Will return new objects if respective
                 parameters were None and additional flags contained a flag for that object, the same which are passed
                 otherwise.
         """
         cur_state = None
         extra_hosts = None
+        # TODO Use argparse to simplify this logic
         for flag in shlex.split(additional_flags):
             if not cur_state:
                 if flag in ["-v", "--volume"]:
@@ -941,6 +907,53 @@ class SdkDockerClient(ContainerClient):
 
                 cur_state = None
         return env_vars, ports, mounts, extra_hosts
+
+    @staticmethod
+    def convert_mount_list_to_dict(
+        mount_volumes: List[Tuple[str, str]]
+    ) -> Dict[str, Dict[str, str]]:
+        """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
+        return dict(
+            map(
+                lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
+                mount_volumes,
+            )
+        )
+
+
+class SdkDockerClient(ContainerClient):
+    """Class for managing docker using the python docker sdk"""
+
+    docker_client: Optional[DockerClient]
+
+    def __init__(self):
+        try:
+            self.docker_client = docker.from_env()
+            logging.getLogger("urllib3").setLevel(logging.INFO)
+        except DockerException:
+            self.docker_client = None
+
+    def client(self):
+        if self.docker_client:
+            return self.docker_client
+        else:
+            raise ContainerException("Docker not available")
+
+    def _read_from_sock(self, sock: socket, tty: bool):
+        """Reads multiplexed messages from a socket returned by attach_socket.
+
+        Uses the protocol specified here: https://docs.docker.com/engine/api/v1.41/#operation/ContainerAttach
+        """
+        stdout = b""
+        stderr = b""
+        for frame_type, frame_data in frames_iter(sock, tty):
+            if frame_type == STDOUT:
+                stdout += frame_data
+            elif frame_type == STDERR:
+                stderr += frame_data
+            else:
+                raise ContainerException("Invalid frame type when reading from socket")
+        return stdout, stderr
 
     def _container_path_info(self, container: Container, container_path: str):
         """
@@ -1205,7 +1218,7 @@ class SdkDockerClient(ContainerClient):
         LOG.debug("Creating container with image: %s", image_name)
         extra_hosts = None
         if additional_flags:
-            env_vars, ports, mount_volumes, extra_hosts = self._parse_additional_flags(
+            env_vars, ports, mount_volumes, extra_hosts = Util.parse_additional_flags(
                 additional_flags, env_vars, ports, mount_volumes
             )
         try:
@@ -1218,12 +1231,7 @@ class SdkDockerClient(ContainerClient):
                 kwargs["ports"] = ports.to_dict()
             mounts = None
             if mount_volumes:
-                mounts = dict(
-                    map(
-                        lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
-                        mount_volumes,
-                    )
-                )
+                mounts = Util.convert_mount_list_to_dict(mount_volumes)
 
             def create_container():
                 return self.client().containers.create(
