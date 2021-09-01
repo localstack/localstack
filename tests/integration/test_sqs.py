@@ -257,6 +257,15 @@ class SQSTest(unittest.TestCase):
         ]
         self.assertIn("sqs:SendMessage", attrs["Policy"])
 
+        # Setting the Policy attribute as an empty string removes it from the Attributes list
+        attributes = {"Policy": ""}
+        self.client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+
+        attrs = self.client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])[
+            "Attributes"
+        ]
+        self.assertNotIn("Policy", attrs)
+
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
