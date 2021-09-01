@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import random
 import time
 import unittest
 
@@ -58,6 +59,7 @@ TEST_POLICY = """
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
+TEST_LAMBDA_TAGS = {"tag1": "value1", "tag2": "value2", "tag3": ""}
 
 TEST_MESSAGE_ATTRIBUTES = {
     "City": {
@@ -461,7 +463,8 @@ class SQSTest(unittest.TestCase):
             AttributeNames=["MessageRetentionPeriod", "RedrivePolicy"],
         )
         supported_attribute_get = self.client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+            QueueUrl=queue_url,
+            AttributeNames=["QueueArn"],
         )
         # assertion
         self.assertTrue("MessageRetentionPeriod" in unsupported_attribute_get["Attributes"].keys())
@@ -895,31 +898,25 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    # Not the same to create a queue with tags than tagging an existing queue
+    def test_create_queue_with_tags(self):
+        queue_name = "queue-{}".format(short_uid())
+        response = self.client.create_queue(
+            QueueName=queue_name,
+            tags=TEST_LAMBDA_TAGS,
+        )
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        self.check_tagged_queue(response["QueueUrl"])
+
     def test_tag_untag_queue(self):
         queue_name = "queue-{}".format(short_uid())
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
-
         response = self.client.tag_queue(
-            QueueUrl=queue_url, Tags={"tag1": "value1", "tag2": "value2"}
+            QueueUrl=queue_url,
+            Tags=TEST_LAMBDA_TAGS,
         )
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-
-        response = self.client.list_queue_tags(QueueUrl=queue_url)
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertIn("tag1", response["Tags"])
-        self.assertIn("tag2", response["Tags"])
-
-        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=["tag2"])
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-
-        response = self.client.list_queue_tags(QueueUrl=queue_url)
-        self.assertIn("tag1", response["Tags"])
-        self.assertNotIn("tag2", response["Tags"])
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-
-        # clean up
-        self.client.untag_queue(QueueUrl=queue_url, TagKeys=["tag1"])
-        self.client.delete_queue(QueueUrl=queue_url)
+        self.check_tagged_queue(queue_url)
 
     def test_posting_to_queue_with_trailing_slash(self):
         queue_name = "queue-{}".format(short_uid())
@@ -1029,3 +1026,32 @@ class SQSTest(unittest.TestCase):
                 # probably in or around this commit:
                 # https://github.com/spulec/moto/commit/6da4905da940e25e317db60b7657ea632f58ef1d
                 # self.assertEqual(str(assert_receive_count), msg_attrs.get('ApproximateReceiveCount'))
+
+    def check_tagged_queue(self, queue_url):
+        response = self.client.list_queue_tags(QueueUrl=queue_url)
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        tags_keys_as_list = list(TEST_LAMBDA_TAGS.keys())
+
+        for key in tags_keys_as_list:
+            self.assertIn(key, response["Tags"])
+
+        random_tag_key = random.choice(tags_keys_as_list)
+        # Pop random chosen tag key from list
+        tags_keys_as_list.pop(tags_keys_as_list.index(random_tag_key))
+
+        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=[random_tag_key])
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+
+        response = self.client.list_queue_tags(QueueUrl=queue_url)
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertNotIn(random_tag_key, response["Tags"])
+
+        for key in tags_keys_as_list:
+            self.assertIn(key, response["Tags"])
+
+        # Clean up
+        self.client.untag_queue(
+            QueueUrl=queue_url,
+            TagKeys=tags_keys_as_list,
+        )
+        self.client.delete_queue(QueueUrl=queue_url)

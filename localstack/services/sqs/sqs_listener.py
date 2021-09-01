@@ -290,7 +290,7 @@ class ProxyListenerSQS(PersistingProxyListener):
                         )
 
             elif action == "SetQueueAttributes":
-                # TODO remove this function if we stop using ElasticMQ entirely
+                # TODO remove this function if we stop using ElasticMQ
                 queue_url = _queue_url(path, req_data, headers)
                 if SQS_BACKEND_IMPL == "elasticmq":
                     forward_attrs = _set_queue_attributes(queue_url, req_data)
@@ -300,7 +300,11 @@ class ProxyListenerSQS(PersistingProxyListener):
                             method, path, headers, req_data, forward_attrs
                         )
 
+            elif action == "TagQueue":
+                req_data = self.fix_missing_tag_values(req_data)
+
             elif action == "CreateQueue":
+                req_data = self.fix_missing_tag_values(req_data)
                 changed_attrs = _fix_dlq_arn_in_attributes(req_data)
                 if changed_attrs:
                     return _get_attributes_forward_request(
@@ -456,6 +460,21 @@ class ProxyListenerSQS(PersistingProxyListener):
         message_attr_hash = moto_message.attribute_md5
 
         return message_attr_hash
+
+    # Fixes tags with empty strings as value
+    def fix_missing_tag_values(self, req_data):
+        keys_matched = []
+        for k, v in req_data.items():
+            match = re.match(r"^Tag\.(\d+)\.Key", k)
+            if match:
+                index = match.group(1)
+                tag_val = "Tag.{}.Value".format(index)
+                if tag_val not in req_data.keys():
+                    keys_matched.append(tag_val)
+        if keys_matched:
+            for tag_val in keys_matched:
+                req_data[tag_val] = ""
+        return req_data
 
 
 # instantiate listener
