@@ -58,6 +58,7 @@ TEST_POLICY = """
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
+TEST_LAMBDA_TAGS = {"tag1": "value1", "tag2": "value2", "tag3": ""}
 
 TEST_MESSAGE_ATTRIBUTES = {
     "City": {
@@ -66,6 +67,7 @@ TEST_MESSAGE_ATTRIBUTES = {
     },
     "Population": {"DataType": "Number", "StringValue": "1250800"},
 }
+
 
 
 class SQSTest(unittest.TestCase):
@@ -886,32 +888,45 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    # Not the same to create a queue with tags than tagging an existing queue
+    def test_create_queue_with_tags(self):
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
+        response = self.client.tag_queue(
+            QueueUrl=queue_url,
+            tags=TEST_LAMBDA_TAGS
+        )
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        self.test_tagged_queue(queue_url)
+
     def test_tag_untag_queue(self):
         queue_name = "queue-{}".format(short_uid())
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
-
         response = self.client.tag_queue(
-            QueueUrl=queue_url, Tags={"tag1": "value1", "tag2": "value2", "tag3": ""}
+            QueueUrl=queue_url, Tags=TEST_LAMBDA_TAGS
         )
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        self.test_tagged_queue(queue_url)
 
+
+    def test_tagged_queue(self, queue_url):
         response = self.client.list_queue_tags(QueueUrl=queue_url)
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertIn("tag1", response["Tags"])
-        self.assertIn("tag2", response["Tags"])
-        self.assertIn("tag3", response["Tags"])
 
-        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=["tag2"])
+        for key in TEST_LAMBDA_TAGS.keys():
+            self.assertIn(key, response["Tags"])
+
+        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=[TEST_LAMBDA_TAGS[1]])
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
         response = self.client.list_queue_tags(QueueUrl=queue_url)
-        self.assertIn("tag1", response["Tags"])
-        self.assertNotIn("tag2", response["Tags"])
-        self.assertIn("tag3", response["Tags"])
+        self.assertIn(TEST_LAMBDA_TAGS[0], response["Tags"])
+        self.assertNotIn(TEST_LAMBDA_TAGS[1], response["Tags"])
+        self.assertIn(TEST_LAMBDA_TAGS[2], response["Tags"])
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
-        # clean up
-        self.client.untag_queue(QueueUrl=queue_url, TagKeys=["tag1", "tag3"])
+        # Clean up
+        self.client.untag_queue(QueueUrl=queue_url, TagKeys=[TEST_LAMBDA_TAGS[0], TEST_LAMBDA_TAGS[2]])
         self.client.delete_queue(QueueUrl=queue_url)
 
     def test_posting_to_queue_with_trailing_slash(self):
