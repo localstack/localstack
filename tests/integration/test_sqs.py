@@ -891,13 +891,12 @@ class SQSTest(unittest.TestCase):
     # Not the same to create a queue with tags than tagging an existing queue
     def test_create_queue_with_tags(self):
         queue_name = "queue-{}".format(short_uid())
-        queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
-        response = self.client.tag_queue(
-            QueueUrl=queue_url,
+        response = self.client.create_queue(
+            QueueName=queue_name,
             tags=TEST_LAMBDA_TAGS,
         )
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-        self.test_tagged_queue(queue_url)
+        self.test_tagged_queue(response["QueueUrl"])
 
     def test_tag_untag_queue(self):
         queue_name = "queue-{}".format(short_uid())
@@ -912,25 +911,26 @@ class SQSTest(unittest.TestCase):
     def test_tagged_queue(self, queue_url):
         response = self.client.list_queue_tags(QueueUrl=queue_url)
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        tags_keys_as_list = list(TEST_LAMBDA_TAGS.keys())
 
-        for key in TEST_LAMBDA_TAGS.keys():
+        for key in tags_keys_as_list:
             self.assertIn(key, response["Tags"])
 
-        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=[TEST_LAMBDA_TAGS[1]])
+        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=[tags_keys_as_list[0]])
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
         response = self.client.list_queue_tags(QueueUrl=queue_url)
-        self.assertIn(TEST_LAMBDA_TAGS[0], response["Tags"])
-        self.assertNotIn(TEST_LAMBDA_TAGS[1], response["Tags"])
-        self.assertIn(TEST_LAMBDA_TAGS[2], response["Tags"])
+        self.assertIn(tags_keys_as_list[0], response["Tags"])
+        self.assertNotIn(tags_keys_as_list[1], response["Tags"])
+        self.assertIn(tags_keys_as_list[2], response["Tags"])
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
         # Clean up
         self.client.untag_queue(
             QueueUrl=queue_url,
             TagKeys=[
-                TEST_LAMBDA_TAGS[0],
-                TEST_LAMBDA_TAGS[2],
+                tags_keys_as_list[0],
+                tags_keys_as_list[2],
             ],
         )
         self.client.delete_queue(QueueUrl=queue_url)
