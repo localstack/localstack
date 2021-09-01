@@ -7,12 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from localstack import config
-from localstack.utils.docker import (
-    CmdDockerClient,
-    DockerContainerStatus,
-    PortMappings,
-    SdkDockerClient,
-)
+from localstack.utils.docker import CmdDockerClient, DockerContainerStatus, PortMappings, Util
 
 LOG = logging.getLogger(__name__)
 
@@ -67,25 +62,22 @@ def test_argument_parsing():
     env_vars = {}
     ports = PortMappings()
     mounts = []
-    docker_client = SdkDockerClient()
-    docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
+    Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
     assert env_vars == {"TEST_ENV_VAR": "test_string"}
     assert ports.to_str() == "-p 80:8080/udp -p 6000:7000"
     assert mounts == [("/var/test", "/opt/test")]
     argument_string = (
         "--add-host host.docker.internal:host-gateway --add-host arbitrary.host:127.0.0.1"
     )
-    _, _, _, extra_hosts = docker_client._parse_additional_flags(
-        argument_string, env_vars, ports, mounts
-    )
+    _, _, _, extra_hosts = Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
     assert {"host.docker.internal": "host-gateway", "arbitrary.host": "127.0.0.1"} == extra_hosts
 
     with pytest.raises(NotImplementedError):
         argument_string = "--somerandomargument"
-        docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
+        Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
     with pytest.raises(ValueError):
         argument_string = "--publish 80:80:80:80"
-        docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
+        Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
 
 
 def list_in(a, b):
