@@ -1072,7 +1072,7 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
                     lambda_env=lambda_environment,
                 )
             except Exception as e:
-                raise ClientError("Unable to get handler function from lambda code.", e)
+                raise ClientError("Unable to get handler function from lambda code: %s" % e)
 
         if runtime.startswith("node") and not use_docker():
             ensure_readable(main_file)
