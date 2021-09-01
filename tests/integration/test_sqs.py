@@ -896,7 +896,7 @@ class SQSTest(unittest.TestCase):
             tags=TEST_LAMBDA_TAGS,
         )
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-        self.test_tagged_queue(response["QueueUrl"])
+        self.check_tagged_queue(response["QueueUrl"])
 
     def test_tag_untag_queue(self):
         queue_name = "queue-{}".format(short_uid())
@@ -906,34 +906,7 @@ class SQSTest(unittest.TestCase):
             Tags=TEST_LAMBDA_TAGS,
         )
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-        self.test_tagged_queue(queue_url)
-
-    def test_tagged_queue(self, queue_url):
-        response = self.client.list_queue_tags(QueueUrl=queue_url)
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-        tags_keys_as_list = list(TEST_LAMBDA_TAGS.keys())
-
-        for key in tags_keys_as_list:
-            self.assertIn(key, response["Tags"])
-
-        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=[tags_keys_as_list[0]])
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-
-        response = self.client.list_queue_tags(QueueUrl=queue_url)
-        self.assertIn(tags_keys_as_list[0], response["Tags"])
-        self.assertNotIn(tags_keys_as_list[1], response["Tags"])
-        self.assertIn(tags_keys_as_list[2], response["Tags"])
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
-
-        # Clean up
-        self.client.untag_queue(
-            QueueUrl=queue_url,
-            TagKeys=[
-                tags_keys_as_list[0],
-                tags_keys_as_list[2],
-            ],
-        )
-        self.client.delete_queue(QueueUrl=queue_url)
+        self.check_tagged_queue(queue_url)
 
     def test_posting_to_queue_with_trailing_slash(self):
         queue_name = "queue-{}".format(short_uid())
@@ -1043,3 +1016,30 @@ class SQSTest(unittest.TestCase):
                 # probably in or around this commit:
                 # https://github.com/spulec/moto/commit/6da4905da940e25e317db60b7657ea632f58ef1d
                 # self.assertEqual(str(assert_receive_count), msg_attrs.get('ApproximateReceiveCount'))
+
+    def check_tagged_queue(self, queue_url):
+        response = self.client.list_queue_tags(QueueUrl=queue_url)
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        tags_keys_as_list = list(TEST_LAMBDA_TAGS.keys())
+
+        for key in tags_keys_as_list:
+            self.assertIn(key, response["Tags"])
+
+        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=[tags_keys_as_list[1]])
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+
+        response = self.client.list_queue_tags(QueueUrl=queue_url)
+        self.assertIn(tags_keys_as_list[0], response["Tags"])
+        self.assertNotIn(tags_keys_as_list[1], response["Tags"])
+        self.assertIn(tags_keys_as_list[2], response["Tags"])
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+
+        # Clean up
+        self.client.untag_queue(
+            QueueUrl=queue_url,
+            TagKeys=[
+                tags_keys_as_list[0],
+                tags_keys_as_list[2],
+            ],
+        )
+        self.client.delete_queue(QueueUrl=queue_url)
