@@ -290,7 +290,7 @@ class ProxyListenerSQS(PersistingProxyListener):
                         )
 
             elif action == "SetQueueAttributes":
-                # TODO remove this function if we stop using ElasticMQ 
+                # TODO remove this function if we stop using ElasticMQ
                 queue_url = _queue_url(path, req_data, headers)
                 if SQS_BACKEND_IMPL == "elasticmq":
                     forward_attrs = _set_queue_attributes(queue_url, req_data)

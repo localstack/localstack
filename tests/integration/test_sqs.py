@@ -69,7 +69,6 @@ TEST_MESSAGE_ATTRIBUTES = {
 }
 
 
-
 class SQSTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -454,7 +453,8 @@ class SQSTest(unittest.TestCase):
             AttributeNames=["MessageRetentionPeriod", "RedrivePolicy"],
         )
         supported_attribute_get = self.client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+            QueueUrl=queue_url,
+            AttributeNames=["QueueArn"],
         )
         # assertion
         self.assertTrue("MessageRetentionPeriod" in unsupported_attribute_get["Attributes"].keys())
@@ -894,7 +894,7 @@ class SQSTest(unittest.TestCase):
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
         response = self.client.tag_queue(
             QueueUrl=queue_url,
-            tags=TEST_LAMBDA_TAGS
+            tags=TEST_LAMBDA_TAGS,
         )
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
         self.test_tagged_queue(queue_url)
@@ -903,11 +903,11 @@ class SQSTest(unittest.TestCase):
         queue_name = "queue-{}".format(short_uid())
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
         response = self.client.tag_queue(
-            QueueUrl=queue_url, Tags=TEST_LAMBDA_TAGS
+            QueueUrl=queue_url,
+            Tags=TEST_LAMBDA_TAGS,
         )
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
         self.test_tagged_queue(queue_url)
-
 
     def test_tagged_queue(self, queue_url):
         response = self.client.list_queue_tags(QueueUrl=queue_url)
@@ -926,7 +926,13 @@ class SQSTest(unittest.TestCase):
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
         # Clean up
-        self.client.untag_queue(QueueUrl=queue_url, TagKeys=[TEST_LAMBDA_TAGS[0], TEST_LAMBDA_TAGS[2]])
+        self.client.untag_queue(
+            QueueUrl=queue_url,
+            TagKeys=[
+                TEST_LAMBDA_TAGS[0],
+                TEST_LAMBDA_TAGS[2],
+            ],
+        )
         self.client.delete_queue(QueueUrl=queue_url)
 
     def test_posting_to_queue_with_trailing_slash(self):
