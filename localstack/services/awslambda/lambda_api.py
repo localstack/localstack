@@ -1190,6 +1190,8 @@ def forward_to_external_url(func_details, event, context, invocation_type):
     headers["X-Amz-Log-Type"] = "Tail"
     if context.client_context:
         headers["X-Amz-Client-Context"] = context.client_context
+    if context.cognito_identity:
+        headers["X-Amz-Cognito-Identity"] = context.cognito_identity
 
     data = json.dumps(json_safe(event)) if isinstance(event, dict) else str(event)
     LOG.debug("Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s" % config.LAMBDA_FORWARD_URL)
