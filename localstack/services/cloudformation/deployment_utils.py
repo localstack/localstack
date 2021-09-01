@@ -5,6 +5,8 @@ from localstack.constants import INSTALL_DIR_INFRA
 from localstack.utils import common
 
 # URL to "cfn-response" module which is required in some CF Lambdas
+from localstack.utils.common import select_attributes
+
 CFN_RESPONSE_MODULE_URL = (
     "https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js"
 )
@@ -128,4 +130,4 @@ def lambda_select_params(*selected):
 
 
 def select_parameters(*param_names):
-    return lambda params, **kwargs: dict([(k, v) for k, v in params.items() if k in param_names])
+    return lambda params, **kwargs: select_attributes(params, param_names)
