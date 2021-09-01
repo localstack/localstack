@@ -854,7 +854,7 @@ class Util:
         :param additional_flags: String which contains the flag definitions
         :param env_vars: Dict with env vars. Will be modified in place.
         :param ports: PortMapping object. Will be modified in place.
-        :param mounts: Dict of mounts. Will be modified in place.
+        :param mounts: List of mount tuples (host_path, container_path). Will be modified in place.
         :return: A tuple containing the env_vars, ports and mount objects. Will return new objects if respective
                 parameters were None and additional flags contained a flag for that object, the same which are passed
                 otherwise.
