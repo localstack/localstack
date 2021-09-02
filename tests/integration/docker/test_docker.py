@@ -557,6 +557,12 @@ class TestDockerClient:
         assert "stderrtest" == stderr.decode(config.DEFAULT_ENCODING).strip()
 
     def test_run_detached_with_logs(self, docker_client: ContainerClient):
+        self._run_detached_with_logs(docker_client)
+
+    def test_run_detached_with_logs_interactive(self, docker_client: ContainerClient):
+        self._run_detached_with_logs(docker_client, True)
+
+    def _run_detached_with_logs(self, docker_client: ContainerClient, interactive: bool = False):
         container_name = _random_container_name()
         message = "test_message"
         try:
@@ -565,6 +571,7 @@ class TestDockerClient:
                 name=container_name,
                 detach=True,
                 command=["echo", message],
+                interactive=interactive,
             )
             container_id = output.decode(config.DEFAULT_ENCODING).strip()
             logs = docker_client.get_container_logs(container_id)

@@ -1172,6 +1172,8 @@ class SdkDockerClient(ContainerClient):
                         if stdin:
                             sock.sendall(to_bytes(stdin))
                             sock.shutdown(socket.SHUT_WR)
+                        if not attach:
+                            return to_bytes(container.id), b""
                         stdout, stderr = self._read_from_sock(sock, False)
                     except socket.timeout:
                         LOG.debug(
