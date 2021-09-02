@@ -521,7 +521,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         return invocation_result
 
-    def prepare_event(self, environment, event_body):
+    def prepare_event(self, environment: Dict, event_body: str) -> bytes:
         """Return the event as a stdin string."""
         # amend the environment variables for execution
         environment["AWS_LAMBDA_EVENT_BODY"] = event_body
@@ -543,7 +543,7 @@ class LambdaExecutorContainers(LambdaExecutor):
             LOG.info('Empty event body specified for invocation of Lambda "%s"' % func_arn)
             event = {}
         event_body = json.dumps(json_safe(event))
-        stdin = self.prepare_event(environment, event_body)
+        event_bytes_for_stdin = self.prepare_event(environment, event_body)
 
         main_endpoint = get_main_endpoint_from_container()
 
@@ -584,7 +584,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         # run Lambda executor and fetch invocation result
         LOG.info("Running lambda: %s" % func_details.arn())
         result = self.run_lambda_executor(
-            event=stdin, env_vars=environment, func_details=func_details
+            event=event_bytes_for_stdin, env_vars=environment, func_details=func_details
         )
 
         return result
@@ -719,7 +719,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                         container_name, "%s/." % lambda_cwd, DOCKER_TASK_FOLDER
                     )
 
-                LOG.debug("Starting container: %s" % container_name)
+                LOG.debug("Starting docker-reuse Lambda container: %s", container_name)
                 DOCKER_CLIENT.start_container(container_name)
                 # give the container some time to start up
                 time.sleep(1)
@@ -760,6 +760,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             env_vars["HOSTNAME"] = os.environ.get("HOSTNAME")
         env_vars["EDGE_PORT"] = config.EDGE_PORT
 
+        LOG.debug(
+            "Creating docker-reuse Lambda container %s from image %s", container_name, docker_image
+        )
         return DOCKER_CLIENT.create_container(
             image_name=docker_image,
             remove=True,
@@ -792,6 +795,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             if status == -1:
                 LOG.debug("Removing container: %s" % container_name)
                 rm_docker_container(container_name, safe=True)
+
+            # clean up function invoke times, as some init logic depends on this
+            self.function_invoke_times.pop(func_arn, None)
 
     def get_all_container_names(self):
         """
@@ -894,7 +900,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         self.max_port = LAMBDA_API_UNIQUE_PORTS
         self.port_offset = LAMBDA_API_PORT_OFFSET
 
-    def prepare_event(self, environment, event_body):
+    def prepare_event(self, environment: Dict, event_body: str) -> bytes:
         # Tell Lambci to use STDIN for the event
         environment["DOCKER_LAMBDA_USE_STDIN"] = "1"
         return event_body.encode()

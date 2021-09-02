@@ -527,7 +527,7 @@ def service_port(service_key):
             #  the edge service, as that would require too many route mappings. In the future, we
             #  should integrate them with the port range for external services (4510-4530)
             return SERVICE_PORTS.get(service_key, 0)
-        return EDGE_PORT_HTTP or EDGE_PORT
+        return get_edge_port_http()
     return SERVICE_PORTS.get(service_key, 0)
 
 
@@ -540,8 +540,12 @@ def external_service_url(service_key, host=None):
     return "%s://%s:%s" % (get_protocol(), host, service_port(service_key))
 
 
+def get_edge_port_http():
+    return EDGE_PORT_HTTP or EDGE_PORT
+
+
 def get_edge_url():
-    port = EDGE_PORT_HTTP or EDGE_PORT
+    port = get_edge_port_http()
     return "%s://%s:%s" % (get_protocol(), LOCALSTACK_HOSTNAME, port)
 
 

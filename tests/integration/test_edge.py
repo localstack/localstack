@@ -15,7 +15,7 @@ from localstack.utils.common import get_free_tcp_port, get_service_protocol, sho
 
 class TestEdgeAPI(unittest.TestCase):
     def test_invoke_apis_via_edge(self):
-        edge_port = config.EDGE_PORT_HTTP or config.EDGE_PORT
+        edge_port = config.get_edge_port_http()
         edge_url = "%s://localhost:%s" % (get_service_protocol(), edge_port)
 
         if is_api_enabled("s3"):
@@ -128,7 +128,7 @@ class TestEdgeAPI(unittest.TestCase):
         proxy.stop()
 
     def test_invoke_sns_sqs_integration_using_edge_port(self):
-        edge_port = config.EDGE_PORT_HTTP or config.EDGE_PORT
+        edge_port = config.get_edge_port_http()
         region_original = os.environ.get("DEFAULT_REGION")
         os.environ["DEFAULT_REGION"] = "us-southeast-2"
         edge_url = "%s://localhost:%s" % (get_service_protocol(), edge_port)

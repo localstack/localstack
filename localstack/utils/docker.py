@@ -1325,7 +1325,7 @@ class SdkDockerClient(ContainerClient):
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
-        LOG.debug("Executing in container: %s", container_name_or_id)
+        LOG.debug("Executing command in container %s: %s", container_name_or_id, command)
         try:
             container: Container = self.client().containers.get(container_name_or_id)
             result = container.exec_run(

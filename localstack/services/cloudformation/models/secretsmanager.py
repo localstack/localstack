@@ -47,7 +47,7 @@ class SecretsManagerSecret(GenericBaseModel):
         excl_punct: bool,
         incl_spaces: bool,
         req_each: bool,
-    ):
+    ) -> str:
         """WARN: This is NOT a secure way to generate secrets - use only for testing and not in production use cases!"""
 
         # TODO: add a couple of unit tests for this function ...
