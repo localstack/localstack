@@ -152,6 +152,23 @@ def cmd_ssh():
         pass
 
 
+# legacy support
+@localstack.group(
+    name="infra",
+    help="Manipulate LocalStack infrastructure (legacy)",
+)
+def infra():
+    pass
+
+
+@infra.command("start")
+@click.pass_context
+@click.option("--docker", is_flag=True, help="Start LocalStack in a docker container (default)")
+@click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
+def cmd_infra_start(ctx, *args, **kwargs):
+    ctx.invoke(cmd_start, *args, **kwargs)
+
+
 def print_docker_status():
     from rich.table import Table
 
