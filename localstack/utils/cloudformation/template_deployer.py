@@ -126,21 +126,6 @@ def get_ddb_kinesis_stream_specification(params, **kwargs):
 
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
-    "KinesisFirehose::DeliveryStream": {
-        "create": {
-            "function": "create_delivery_stream",
-            "parameters": select_parameters(
-                "DeliveryStreamName",
-                "DeliveryStreamType",
-                "S3DestinationConfiguration",
-                "ElasticsearchDestinationConfiguration",
-            ),
-        },
-        "delete": {
-            "function": "delete_delivery_stream",
-            "parameters": {"DeliveryStreamName": "DeliveryStreamName"},
-        },
-    },
     "Elasticsearch::Domain": {
         "create": [
             {
