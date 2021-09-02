@@ -482,7 +482,10 @@ class TestDockerClient:
             )
 
             output, _ = docker_client.start_container(
-                container_name, interactive=True, stdin=message.encode(config.DEFAULT_ENCODING)
+                container_name,
+                interactive=True,
+                attach=True,
+                stdin=message.encode(config.DEFAULT_ENCODING),
             )
 
             assert message == output.decode(config.DEFAULT_ENCODING).strip()
