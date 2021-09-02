@@ -120,25 +120,6 @@ def get_ddb_kinesis_stream_specification(params, **kwargs):
 
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
-    "Lambda::Version": {
-        "create": {
-            "function": "publish_version",
-            "parameters": select_parameters("FunctionName", "CodeSha256", "Description"),
-        }
-    },
-    "Lambda::EventSourceMapping": {
-        "create": {
-            "function": "create_event_source_mapping",
-            "parameters": select_parameters(
-                "FunctionName",
-                "EventSourceArn",
-                "Enabled",
-                "StartingPosition",
-                "BatchSize",
-                "StartingPositionTimestamp",
-            ),
-        }
-    },
     "DynamoDB::Table": {
         "create": [
             {

@@ -130,6 +130,15 @@ class LambdaFunctionVersion(GenericBaseModel):
         )
         return ([v for v in versions["Versions"] if v["Version"] == func_version] or [None])[0]
 
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "publish_version",
+                "parameters": select_parameters("FunctionName", "CodeSha256", "Description"),
+            }
+        }
+
 
 class LambdaEventSourceMapping(GenericBaseModel):
     @staticmethod
@@ -160,6 +169,22 @@ class LambdaEventSourceMapping(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("UUID")
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_event_source_mapping",
+                "parameters": select_parameters(
+                    "FunctionName",
+                    "EventSourceArn",
+                    "Enabled",
+                    "StartingPosition",
+                    "BatchSize",
+                    "StartingPositionTimestamp",
+                ),
+            }
+        }
 
 
 class LambdaPermission(GenericBaseModel):
