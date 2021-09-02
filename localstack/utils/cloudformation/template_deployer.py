@@ -83,16 +83,6 @@ def lambda_get_params():
     return lambda params, **kwargs: params
 
 
-def rename_params(func, rename_map):
-    def do_rename(params, **kwargs):
-        values = func(params, **kwargs) if func else params
-        for old_param, new_param in rename_map.items():
-            values[new_param] = values.pop(old_param, None)
-        return values
-
-    return do_rename
-
-
 def es_add_tags_params(params, **kwargs):
     es_arn = aws_stack.es_domain_arn(params.get("DomainName"))
     tags = params.get("Tags", [])
@@ -136,14 +126,6 @@ def get_ddb_kinesis_stream_specification(params, **kwargs):
 
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
-    "S3::BucketPolicy": {
-        "create": {
-            "function": "put_bucket_policy",
-            "parameters": rename_params(
-                dump_json_params(None, "PolicyDocument"), {"PolicyDocument": "Policy"}
-            ),
-        }
-    },
     "KinesisFirehose::DeliveryStream": {
         "create": {
             "function": "create_delivery_stream",
