@@ -82,40 +82,6 @@ def lambda_get_params():
 
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
-    "ApiGateway::Account": {},
-    "ApiGateway::Model": {
-        "create": {
-            "function": "create_model",
-            "parameters": {
-                "name": "Name",
-                "restApiId": "RestApiId",
-            },
-            "defaults": {"contentType": "application/json"},
-        }
-    },
-    "ApiGateway::Deployment": {
-        "create": {
-            "function": "create_deployment",
-            "parameters": {
-                "restApiId": "RestApiId",
-                "stageName": "StageName",
-                "stageDescription": "StageDescription",
-                "description": "Description",
-            },
-        }
-    },
-    "ApiGateway::GatewayResponse": {
-        "create": {
-            "function": "put_gateway_response",
-            "parameters": {
-                "restApiId": "RestApiId",
-                "responseType": "ResponseType",
-                "statusCode": "StatusCode",
-                "responseParameters": "ResponseParameters",
-                "responseTemplates": "ResponseTemplates",
-            },
-        }
-    },
     "StepFunctions::StateMachine": {
         "create": {
             "function": "create_state_machine",

@@ -23,6 +23,21 @@ class GatewayResponse(GenericBaseModel):
         result = client.get_gateway_response(restApiId=api_id, responseType=props["ResponseType"])
         return result if "responseType" in result else None
 
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "put_gateway_response",
+                "parameters": {
+                    "restApiId": "RestApiId",
+                    "responseType": "ResponseType",
+                    "statusCode": "StatusCode",
+                    "responseParameters": "ResponseParameters",
+                    "responseTemplates": "ResponseTemplates",
+                },
+            }
+        }
+
 
 class GatewayRequestValidator(GenericBaseModel):
     @staticmethod
@@ -113,6 +128,20 @@ class GatewayDeployment(GenericBaseModel):
         # TODO possibly filter results by stage name or other criteria
 
         return result[0] if result else None
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_deployment",
+                "parameters": {
+                    "restApiId": "RestApiId",
+                    "stageName": "StageName",
+                    "stageDescription": "StageDescription",
+                    "description": "Description",
+                },
+            }
+        }
 
 
 class GatewayResource(GenericBaseModel):
@@ -496,6 +525,19 @@ class GatewayModel(GenericBaseModel):
             return models[0]
 
         return None
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_model",
+                "parameters": {
+                    "name": "Name",
+                    "restApiId": "RestApiId",
+                },
+                "defaults": {"contentType": "application/json"},
+            }
+        }
 
 
 class GatewayAccount(GenericBaseModel):
