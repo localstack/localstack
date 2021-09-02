@@ -50,3 +50,4 @@ requirements.copy.txt
 .python-version
 
 venv
+api_states
