@@ -83,79 +83,8 @@ def lambda_get_params():
     return lambda params, **kwargs: params
 
 
-def get_ddb_provisioned_throughput(params, **kwargs):
-    args = params.get("ProvisionedThroughput")
-    if args == PLACEHOLDER_AWS_NO_VALUE:
-        return {}
-    if args:
-        if isinstance(args["ReadCapacityUnits"], str):
-            args["ReadCapacityUnits"] = int(args["ReadCapacityUnits"])
-        if isinstance(args["WriteCapacityUnits"], str):
-            args["WriteCapacityUnits"] = int(args["WriteCapacityUnits"])
-    return args
-
-
-def get_ddb_global_sec_indexes(params, **kwargs):
-    args = params.get("GlobalSecondaryIndexes")
-    if args:
-        for index in args:
-            provisoned_throughput = index["ProvisionedThroughput"]
-            if isinstance(provisoned_throughput["ReadCapacityUnits"], str):
-                provisoned_throughput["ReadCapacityUnits"] = int(
-                    provisoned_throughput["ReadCapacityUnits"]
-                )
-            if isinstance(provisoned_throughput["WriteCapacityUnits"], str):
-                provisoned_throughput["WriteCapacityUnits"] = int(
-                    provisoned_throughput["WriteCapacityUnits"]
-                )
-    return args
-
-
-def get_ddb_kinesis_stream_specification(params, **kwargs):
-    args = params.get("KinesisStreamSpecification")
-    if args:
-        args["TableName"] = params["TableName"]
-    return args
-
-
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
-    "DynamoDB::Table": {
-        "create": [
-            {
-                "function": "create_table",
-                "parameters": {
-                    "TableName": "TableName",
-                    "AttributeDefinitions": "AttributeDefinitions",
-                    "KeySchema": "KeySchema",
-                    "ProvisionedThroughput": get_ddb_provisioned_throughput,
-                    "LocalSecondaryIndexes": "LocalSecondaryIndexes",
-                    "GlobalSecondaryIndexes": get_ddb_global_sec_indexes,
-                    "StreamSpecification": lambda params, **kwargs: (
-                        common.merge_dicts(
-                            params.get("StreamSpecification"),
-                            {"StreamEnabled": True},
-                            default=None,
-                        )
-                    ),
-                },
-                "defaults": {
-                    "ProvisionedThroughput": {
-                        "ReadCapacityUnits": 5,
-                        "WriteCapacityUnits": 5,
-                    }
-                },
-            },
-            {
-                "function": "enable_kinesis_streaming_destination",
-                "parameters": get_ddb_kinesis_stream_specification,
-            },
-        ],
-        "delete": {
-            "function": "delete_table",
-            "parameters": {"TableName": "TableName"},
-        },
-    },
     "IAM::Role": {
         "create": {
             "function": "create_role",
