@@ -83,12 +83,6 @@ def lambda_get_params():
     return lambda params, **kwargs: params
 
 
-def es_add_tags_params(params, **kwargs):
-    es_arn = aws_stack.es_domain_arn(params.get("DomainName"))
-    tags = params.get("Tags", [])
-    return {"ARN": es_arn, "TagList": tags}
-
-
 def get_ddb_provisioned_throughput(params, **kwargs):
     args = params.get("ProvisionedThroughput")
     if args == PLACEHOLDER_AWS_NO_VALUE:
@@ -126,32 +120,6 @@ def get_ddb_kinesis_stream_specification(params, **kwargs):
 
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
-    "Elasticsearch::Domain": {
-        "create": [
-            {
-                "function": "create_elasticsearch_domain",
-                "parameters": select_parameters(
-                    "AccessPolicies",
-                    "AdvancedOptions",
-                    "CognitoOptions",
-                    "DomainName",
-                    "EBSOptions",
-                    "ElasticsearchClusterConfig",
-                    "ElasticsearchVersion",
-                    "EncryptionAtRestOptions",
-                    "LogPublishingOptions",
-                    "NodeToNodeEncryptionOptions",
-                    "SnapshotOptions",
-                    "VPCOptions",
-                ),
-            },
-            {"function": "add_tags", "parameters": es_add_tags_params},
-        ],
-        "delete": {
-            "function": "delete_elasticsearch_domain",
-            "parameters": {"DomainName": "DomainName"},
-        },
-    },
     "Lambda::Version": {
         "create": {
             "function": "publish_version",
