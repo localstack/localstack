@@ -2,7 +2,13 @@ import json
 
 from moto.iam.models import Role as MotoRole
 
-from localstack.services.cloudformation.deployment_utils import remove_none_values
+from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_RESOURCE_NAME,
+    dump_json_params,
+    param_defaults,
+    remove_none_values,
+    select_parameters,
+)
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -97,6 +103,30 @@ class IAMRole(GenericBaseModel, MotoRole):
         return client.update_role(
             RoleName=props.get("RoleName"), Description=props.get("Description") or ""
         )
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_role",
+                "parameters": param_defaults(
+                    dump_json_params(
+                        select_parameters(
+                            "Path",
+                            "RoleName",
+                            "AssumeRolePolicyDocument",
+                            "Description",
+                            "MaxSessionDuration",
+                            "PermissionsBoundary",
+                            "Tags",
+                        ),
+                        "AssumeRolePolicyDocument",
+                    ),
+                    {"RoleName": PLACEHOLDER_RESOURCE_NAME},
+                ),
+            },
+            "delete": {"function": "delete_role", "parameters": {"RoleName": "RoleName"}},
+        }
 
 
 class IAMPolicy(GenericBaseModel):

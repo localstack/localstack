@@ -18,10 +18,7 @@ from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME, TEST
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
-    dump_json_params,
-    param_defaults,
     remove_none_values,
-    select_parameters,
 )
 from localstack.services.cloudformation.service_models import (
     KEY_RESOURCE_STATE,
@@ -85,27 +82,6 @@ def lambda_get_params():
 
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
-    "IAM::Role": {
-        "create": {
-            "function": "create_role",
-            "parameters": param_defaults(
-                dump_json_params(
-                    select_parameters(
-                        "Path",
-                        "RoleName",
-                        "AssumeRolePolicyDocument",
-                        "Description",
-                        "MaxSessionDuration",
-                        "PermissionsBoundary",
-                        "Tags",
-                    ),
-                    "AssumeRolePolicyDocument",
-                ),
-                {"RoleName": PLACEHOLDER_RESOURCE_NAME},
-            ),
-        },
-        "delete": {"function": "delete_role", "parameters": {"RoleName": "RoleName"}},
-    },
     "ApiGateway::Account": {},
     "ApiGateway::Model": {
         "create": {
