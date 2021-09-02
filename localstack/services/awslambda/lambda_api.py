@@ -1197,7 +1197,9 @@ def forward_to_external_url(func_details, event, context, invocation_type):
     LOG.debug("Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s" % config.LAMBDA_FORWARD_URL)
     result = safe_requests.post(url, data, headers=headers)
     if result.status_code >= 400:
-        raise Exception("Received error status code %s from external Lambda invocation" % result.status_code)
+        raise Exception(
+            "Received error status code %s from external Lambda invocation" % result.status_code
+        )
     content = run_safe(lambda: to_str(result.content)) or result.content
     LOG.debug(
         "Received result from external Lambda endpoint (status %s): %s"
