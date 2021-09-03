@@ -1648,7 +1648,8 @@ def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
     return result
 
 
-def run(cmd, cache_duration_secs=0, **kwargs):
+def run(cmd: Union[str, List[str]], cache_duration_secs=0, **kwargs):
+    # TODO: should be unified and replaced with safe_run(..) over time! (allowing only lists for cmd parameter)
     def run_cmd():
         return localstack.utils.run.run(cmd, **kwargs)
 
