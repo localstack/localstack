@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from localstack.utils.common import is_none_or_empty, synchronized, run
+from localstack.utils.common import is_none_or_empty, run, synchronized
 
 
 class SynchronizedTest(unittest.TestCase):
