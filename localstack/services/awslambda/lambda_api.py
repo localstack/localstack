@@ -29,6 +29,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
+    get_lambda_runtime,
     multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
@@ -985,7 +986,7 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
     region = LambdaRegion.get()
     arn = func_arn(lambda_name)
     lambda_details = region.lambdas[arn]
-    runtime = lambda_details.runtime
+    runtime = get_lambda_runtime(lambda_details)
     lambda_environment = lambda_details.envvars
     handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
     code_passed = code
@@ -1689,14 +1690,14 @@ def invoke_function(function):
     # function here can either be an arn or a function name
     arn = func_arn(function)
 
-    # arn can also contain a qualifier, extract it from there if so
+    # ARN can also contain a qualifier, extract it from there if so
     m = re.match("(arn:aws:lambda:.*:.*:function:[a-zA-Z0-9-_]+)(:.*)?", arn)
     if m and m.group(2):
         qualifier = m.group(2)[1:]
         arn = m.group(1)
     else:
         qualifier = request.args.get("Qualifier")
-    data = request.get_data()
+    data = request.get_data() or ""
     if data:
         try:
             data = to_str(data)
