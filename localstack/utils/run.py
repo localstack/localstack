@@ -33,6 +33,18 @@ def run(
         env_dict.update(env_vars)
     env_dict = dict([(k, to_str(str(v))) for k, v in env_dict.items()])
 
+    if isinstance(cmd, list):
+        # See docs of subprocess.Popen(...):
+        #  "On POSIX with shell=True, the shell defaults to /bin/sh. If args is a string,
+        #   the string specifies the command to execute through the shell. [...] If args is
+        #   a sequence, the first item specifies the command string, and any additional
+        #   items will be treated as additional arguments to the shell itself."
+        # Hence, we should *disable* shell mode here to be on the safe side, to prevent
+        #  arguments in the cmd list from leaking into arguments to the shell itself. This will
+        #  effectively allow us to call run(..) with both - str and list - as cmd argument, although
+        #  over time we should move from "cmd: Union[str, List[str]]" to "cmd: List[str]" only.
+        shell = False
+
     if tty:
         asynchronous = True
         stdin = True

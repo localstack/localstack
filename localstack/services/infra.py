@@ -7,6 +7,7 @@ import sys
 import threading
 import time
 import traceback
+from typing import Dict, List, Union
 
 import boto3
 from moto import core as moto_core
@@ -266,7 +267,13 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
-def do_run(cmd, asynchronous, print_output=None, env_vars={}, auto_restart=False):
+def do_run(
+    cmd: Union[str, List],
+    asynchronous: bool,
+    print_output: bool = None,
+    env_vars: Dict[str, str] = {},
+    auto_restart=False,
+):
     sys.stdout.flush()
     if asynchronous:
         if config.DEBUG and print_output is None:
