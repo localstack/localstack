@@ -224,14 +224,6 @@ def check_batch_size_range(source_arn, batch_size=None):
     return batch_size
 
 
-def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
-    region = LambdaRegion.get()
-    arn = func_arn(lambda_name)
-    lambda_details = region.lambdas[arn]
-    lambda_details.versions.get(VERSION_LATEST)["Function"] = lambda_handler
-    lambda_details.cwd = lambda_cwd or lambda_details.cwd
-
-
 def build_mapping_obj(data) -> Dict:
     mapping = {}
     function_name = data["FunctionName"]
@@ -963,18 +955,21 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     return tmp_dir
 
 
-def set_function_code(code, lambda_name, lambda_cwd=None):
+def set_function_code(lambda_function: LambdaFunction):
     def _set_and_configure():
-        lambda_handler = do_set_function_code(code, lambda_name, lambda_cwd=lambda_cwd)
-        add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
+        lambda_handler = do_set_function_code(lambda_function)
+        lambda_function.versions.get(VERSION_LATEST)["Function"] = lambda_handler
+        # initialize function code via plugins
+        for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
+            plugin.init_function_code(lambda_function)
 
     # unzipping can take some time - limit the execution time to avoid client/network timeout issues
     run_for_max_seconds(25, _set_and_configure)
-    return {"FunctionName": lambda_name}
+    return {"FunctionName": lambda_function.name()}
 
 
-def do_set_function_code(code, lambda_name, lambda_cwd=None):
-    def generic_handler(event, context):
+def do_set_function_code(lambda_function: LambdaFunction):
+    def generic_handler(*_):
         raise ClientError(
             (
                 'Unable to find executor for Lambda function "%s". Note that '
@@ -984,15 +979,16 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
         )
 
     region = LambdaRegion.get()
-    arn = func_arn(lambda_name)
+    lambda_name = lambda_function.name()
+    arn = lambda_function.arn()
     lambda_details = region.lambdas[arn]
     runtime = get_lambda_runtime(lambda_details)
     lambda_environment = lambda_details.envvars
     handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
-    code_passed = code
-    code = code or lambda_details.code
-    is_local_mount = code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    code_passed = lambda_function.code
+    is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
     zip_file_content = None
+    lambda_cwd = lambda_function.cwd
 
     LAMBDA_EXECUTOR.cleanup(arn)
 
@@ -1361,7 +1357,7 @@ def create_function():
         func_details.image_config = data.get("ImageConfig", {})
         func_details.tracing_config = data.get("TracingConfig", {})
         func_details.set_dead_letter_config(data)
-        result = set_function_code(func_details.code, lambda_name)
+        result = set_function_code(func_details)
         if isinstance(result, Response):
             del region.lambdas[arn]
             return result
@@ -1460,13 +1456,14 @@ def update_function_code(function):
     """
     region = LambdaRegion.get()
     arn = func_arn(function)
-    if arn not in region.lambdas:
+    func_details = region.lambdas.get(arn)
+    if not func_details:
         return not_found_error("Function not found: %s" % arn)
     data = json.loads(to_str(request.data))
-    result = set_function_code(data, function)
+    func_details.code = data
+    result = set_function_code(func_details)
     if isinstance(result, Response):
         return result
-    func_details = region.lambdas.get(arn)
     func_details.last_modified = datetime.utcnow()
     result.update(format_func_details(func_details))
     if data.get("Publish"):
@@ -1557,6 +1554,10 @@ def update_function_configuration(function):
     result = data
     func_details = region.lambdas.get(arn)
     result.update(format_func_details(func_details))
+
+    # initialize plugins
+    for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
+        plugin.init_function_configuration(func_details)
 
     return jsonify(result)
 

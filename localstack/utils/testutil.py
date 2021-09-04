@@ -1,5 +1,6 @@
 import glob
 import importlib
+import io
 import json
 import os
 import shutil
@@ -7,7 +8,7 @@ import tempfile
 import time
 import zipfile
 from contextlib import contextmanager
-from typing import Dict
+from typing import Callable, Dict, List
 
 import requests
 from six import iteritems
@@ -35,14 +36,18 @@ from localstack.utils.common import (
     load_file,
     mkdir,
     poll_condition,
+    rm_rf,
     run,
     save_file,
+    short_uid,
     to_str,
 )
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
 LAMBDA_TIMEOUT_SEC = 8
+LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"
+MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 
 def is_local_test_mode():
@@ -64,48 +69,63 @@ def rm_dir(dir):
     shutil.rmtree(dir)
 
 
-def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file_name=None):
+def create_lambda_archive(
+    script: str,
+    get_content: bool = False,
+    libs: List[str] = [],
+    runtime: str = None,
+    file_name: str = None,
+    exclude_func: Callable[[str], bool] = None,
+):
     """Utility method to create a Lambda function archive"""
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
-    tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
-    TMP_FILES.append(tmp_dir)
-    file_name = file_name or get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
-    script_file = os.path.join(tmp_dir, file_name)
-    if os.path.sep in script_file:
-        mkdir(os.path.dirname(script_file))
-        # create __init__.py files along the path to allow Python imports
-        path = file_name.split(os.path.sep)
-        for i in range(1, len(path)):
-            save_file(os.path.join(tmp_dir, *(path[:i] + ["__init__.py"])), "")
-    save_file(script_file, script)
-    chmod_r(script_file, 0o777)
-    # copy libs
-    for lib in libs:
-        paths = [lib, "%s.py" % lib]
-        try:
-            module = importlib.import_module(lib)
-            paths.append(module.__file__)
-        except Exception:
-            pass
-        target_dir = tmp_dir
-        root_folder = os.path.join(LOCALSTACK_VENV_FOLDER, "lib/python*/site-packages")
-        if lib == "localstack":
-            paths = ["localstack/*.py", "localstack/utils"]
-            root_folder = LOCALSTACK_ROOT_FOLDER
-            target_dir = os.path.join(tmp_dir, lib)
-            mkdir(target_dir)
-        for path in paths:
-            file_to_copy = path if path.startswith("/") else os.path.join(root_folder, path)
-            for file_path in glob.glob(file_to_copy):
-                name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
-                if os.path.isdir(file_path):
-                    copy_dir(file_path, name)
-                else:
-                    shutil.copyfile(file_path, name)
 
-    # create zip file
-    result = create_zip_file(tmp_dir, get_content=get_content)
-    return result
+    with tempfile.TemporaryDirectory(prefix=ARCHIVE_DIR_PREFIX) as tmp_dir:
+        file_name = file_name or get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
+        script_file = os.path.join(tmp_dir, file_name)
+        if os.path.sep in script_file:
+            mkdir(os.path.dirname(script_file))
+            # create __init__.py files along the path to allow Python imports
+            path = file_name.split(os.path.sep)
+            for i in range(1, len(path)):
+                save_file(os.path.join(tmp_dir, *(path[:i] + ["__init__.py"])), "")
+        save_file(script_file, script)
+        chmod_r(script_file, 0o777)
+        # copy libs
+        for lib in libs:
+            paths = [lib, "%s.py" % lib]
+            try:
+                module = importlib.import_module(lib)
+                paths.append(module.__file__)
+            except Exception:
+                pass
+            target_dir = tmp_dir
+            root_folder = os.path.join(LOCALSTACK_VENV_FOLDER, "lib/python*/site-packages")
+            if lib == "localstack":
+                paths = ["localstack/*.py", "localstack/utils"]
+                root_folder = LOCALSTACK_ROOT_FOLDER
+                target_dir = os.path.join(tmp_dir, lib)
+                mkdir(target_dir)
+            for path in paths:
+                file_to_copy = path if path.startswith("/") else os.path.join(root_folder, path)
+                for file_path in glob.glob(file_to_copy):
+                    name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
+                    if os.path.isdir(file_path):
+                        copy_dir(file_path, name)
+                    else:
+                        shutil.copyfile(file_path, name)
+
+        if exclude_func:
+            for dirpath, folders, files in os.walk(tmp_dir):
+                for name in list(folders) + list(files):
+                    full_name = os.path.join(dirpath, name)
+                    relative = os.path.relpath(full_name, start=tmp_dir)
+                    if exclude_func(relative):
+                        rm_rf(full_name)
+
+        # create zip file
+        result = create_zip_file(tmp_dir, get_content=get_content)
+        return result
 
 
 def delete_lambda_function(name):
@@ -125,7 +145,7 @@ def create_zip_file_python(source_path, base_dir, zip_file):
         for root, dirs, files in os.walk(base_dir):
             for name in files:
                 full_name = os.path.join(root, name)
-                relative = root[len(base_dir) :].lstrip(os.path.sep)
+                relative = os.path.relpath(root, start=base_dir)
                 dest = os.path.join(relative, name)
                 zip_file.write(full_name, dest)
 
@@ -198,6 +218,16 @@ def create_lambda_function(
         except Exception:
             pass
 
+    lambda_code = {"ZipFile": zip_file}
+    if len(zip_file) > MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE:
+        s3 = aws_stack.connect_to_service("s3")
+        aws_stack.get_or_create_bucket(LAMBDA_ASSETS_BUCKET_NAME)
+        asset_key = f"{short_uid()}.zip"
+        s3.upload_fileobj(
+            Fileobj=io.BytesIO(zip_file), Bucket=LAMBDA_ASSETS_BUCKET_NAME, Key=asset_key
+        )
+        lambda_code = {"S3Bucket": LAMBDA_ASSETS_BUCKET_NAME, "S3Key": asset_key}
+
     # create function
     additional_kwargs = kwargs
     kwargs = {
@@ -205,7 +235,7 @@ def create_lambda_function(
         "Runtime": runtime,
         "Handler": handler,
         "Role": LAMBDA_TEST_ROLE,
-        "Code": {"ZipFile": zip_file},
+        "Code": lambda_code,
         "Timeout": LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
         "Tags": tags,
