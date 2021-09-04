@@ -258,7 +258,6 @@ SERVICES=kinesis,lambda,sqs,dynamodb DEBUG=1 localstack start
 
 ### Service-Specific Configurations
 
-* `KINESIS_PROVIDER`: Determines which provider to use for Kinesis. Valid values are `kinesalite` and `kinesis-mock` (default).
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
 * `KINESIS_SHARD_LIMIT`: Integer value (default: `100`) or `Infinity` (to disable), causing the Kinesis API to start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
@@ -279,6 +278,14 @@ Please be aware that the following configurations may have severe security impli
 * `EXTRA_CORS_ALLOWED_ORIGINS`: Comma-separated list of origins that are allowed to communicate with localstack.
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
+
+### Providers Configurations
+
+Most of the services use `moto` as backend, but some of them are configurable.
+
+* `KINESIS_PROVIDER`: Valid options are `kinesalite` and `kinesis-mock`. Defaults to `kinesis-mock`.
+* `KMS_PROVIDER`: Valid options are `moto` and `local-kms`. Defaults to `moto`.
+* `SQS_PROVIDER`: Valid options are `moto` and `elasticmq`. Defaults to `moto`.
 
 ### Miscellaneous Configurations
 
