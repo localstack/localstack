@@ -544,9 +544,11 @@ def get_edge_port_http():
     return EDGE_PORT_HTTP or EDGE_PORT
 
 
-def get_edge_url():
+def get_edge_url(localstack_hostname=None, protocol=None):
     port = get_edge_port_http()
-    return "%s://%s:%s" % (get_protocol(), LOCALSTACK_HOSTNAME, port)
+    protocol = protocol or get_protocol()
+    localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
+    return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
 
 # initialize config values

@@ -281,11 +281,11 @@ Please be aware that the following configurations may have severe security impli
 
 ### Providers Configurations
 
-Most of the services use `moto` as backend, but some of them are configurable.
+Some of the services can be configured to switch to a particular provider:
 
-* `KINESIS_PROVIDER`: Valid options are `kinesalite` and `kinesis-mock`. Defaults to `kinesis-mock`.
-* `KMS_PROVIDER`: Valid options are `moto` and `local-kms`. Defaults to `moto`.
-* `SQS_PROVIDER`: Valid options are `moto` and `elasticmq`. Defaults to `moto`.
+* `KINESIS_PROVIDER`: Valid options are `kinesis-mock` (default) and `kinesalite`.
+* `KMS_PROVIDER`: Valid options are `moto` (default) and `local-kms`.
+* `SQS_PROVIDER`: Valid options are `moto` (default) and `elasticmq`.
 
 ### Miscellaneous Configurations
 

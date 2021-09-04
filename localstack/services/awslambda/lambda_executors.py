@@ -553,9 +553,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         event_body = json.dumps(json_safe(event))
         event_bytes_for_stdin = self.prepare_event(environment, event_body)
 
-        main_endpoint = get_main_endpoint_from_container()
-
-        environment["LOCALSTACK_HOSTNAME"] = main_endpoint
+        Util.inject_endpoints_into_env(environment)
         environment["EDGE_PORT"] = str(config.EDGE_PORT)
         environment[LAMBDA_HANDLER_ENV_VAR_NAME] = handler
         if os.environ.get("HTTP_PROXY"):
@@ -747,9 +745,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         container_name = self.get_container_name(func_details.arn())
 
         # make sure we set LOCALSTACK_HOSTNAME
-        if not env_vars.get("LOCALSTACK_HOSTNAME"):
-            main_endpoint = get_main_endpoint_from_container()
-            env_vars["LOCALSTACK_HOSTNAME"] = main_endpoint
+        Util.inject_endpoints_into_env(env_vars)
 
         # make sure AWS_LAMBDA_EVENT_BODY is not set (otherwise causes issues with "docker exec ..." above)
         env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
@@ -1284,6 +1280,20 @@ class Util:
         f = os.path.join(config.TMP_FOLDER, short_uid())
         TMP_FILES.append(f)
         return f
+
+    @staticmethod
+    def inject_endpoints_into_env(env_vars: Dict[str, str]):
+        env_vars = env_vars or {}
+        main_endpoint = get_main_endpoint_from_container()
+        if not env_vars.get("LOCALSTACK_HOSTNAME"):
+            env_vars["LOCALSTACK_HOSTNAME"] = main_endpoint
+        if not env_vars.get("AWS_ENDPOINT_URL"):
+            # Note that $AWS_ENDPOINT_URL is currently not (yet) supported by AWS, but we
+            #  can use it to ship patched Lambda runtimes that can interpret this config.
+            env_vars["AWS_ENDPOINT_URL"] = config.get_edge_url(
+                localstack_hostname=main_endpoint, protocol="http"
+            )
+        return env_vars
 
 
 # --------------
