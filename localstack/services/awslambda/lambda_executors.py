@@ -11,7 +11,7 @@ import threading
 import time
 import traceback
 from multiprocessing import Process, Queue
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from localstack import config
 from localstack.services.awslambda.lambda_utils import (
@@ -145,7 +145,7 @@ class InvocationContext:
 class LambdaExecutorPlugin:
     """Plugin abstraction that allows to hook in additional functionality into the Lambda executors."""
 
-    INSTANCES = []
+    INSTANCES: List["LambdaExecutorPlugin"] = []
 
     def initialize(self):
         """Called once, for any active plugin to run initialization logic (e.g., downloading dependencies).
@@ -168,8 +168,16 @@ class LambdaExecutorPlugin:
         """Optionally modify the result returned from the given Lambda invocation."""
         return result
 
+    def init_function_configuration(self, lambda_function: LambdaFunction):
+        """Initialize the configuration of the given function upon creation or function update."""
+        pass
+
+    def init_function_code(self, lambda_function: LambdaFunction):
+        """Initialize the code of the given function upon creation or function update."""
+        pass
+
     @classmethod
-    def get_plugins(cls):
+    def get_plugins(cls) -> List["LambdaExecutorPlugin"]:
         if not cls.INSTANCES:
             classes = get_all_subclasses(LambdaExecutorPlugin)
             cls.INSTANCES = [clazz() for clazz in classes]
