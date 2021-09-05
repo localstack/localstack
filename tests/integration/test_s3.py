@@ -1407,17 +1407,14 @@ class TestS3(unittest.TestCase):
             CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
         )
 
-        with self.assertRaises(ClientError) as error:
-            self.s3_client.create_bucket(
-                Bucket=bucket_name,
-                CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
-            )
-        self.assertIn("BucketAlreadyExists", str(error.exception))
+        for loc_constraint in ["us-west-1", "us-east-1"]:
+            with self.assertRaises(ClientError) as error:
+                self.s3_client.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={"LocationConstraint": loc_constraint},
+                )
+            self.assertIn("BucketAlreadyOwnedByYou", str(error.exception))
 
-        self.s3_client.create_bucket(
-            Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": "us-east-1"},
-        )
         self.s3_client.delete_bucket(Bucket=bucket_name)
         bucket_name = "bucket-%s" % short_uid()
         response = self.s3_client.create_bucket(
