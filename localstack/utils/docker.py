@@ -1215,7 +1215,13 @@ class SdkDockerClient(ContainerClient):
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
     ) -> str:
-        LOG.debug("Creating container with image: %s", image_name)
+        LOG.debug(
+            "Creating container with image %s, command '%s', volumes %s, env vars %s",
+            image_name,
+            command,
+            mount_volumes,
+            env_vars,
+        )
         extra_hosts = None
         if additional_flags:
             env_vars, ports, mount_volumes, extra_hosts = Util.parse_additional_flags(

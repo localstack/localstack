@@ -1017,7 +1017,13 @@ def do_set_function_code(lambda_function: LambdaFunction):
         # The Lambda executors for Docker subclass LambdaExecutorContainers, which
         # runs Lambda in Docker by passing all *.jar files in the function working
         # directory as part of the classpath. Obtain a Java handler function below.
-        lambda_handler = get_java_handler(zip_file_content, tmp_file, func_details=lambda_details)
+        try:
+            lambda_handler = get_java_handler(
+                zip_file_content, tmp_file, func_details=lambda_details
+            )
+        except Exception as e:
+            # this can happen, e.g., for Lambda code mounted via __local__ -> ignore
+            LOG.debug("Unable to determine Lambda Java handler: %s", e)
 
     if not is_local_mount:
         # Lambda code must be uploaded in Zip format
