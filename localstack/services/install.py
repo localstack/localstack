@@ -105,9 +105,6 @@ JAVAC_TARGET_VERSION = "1.8"
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 
-# TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
-OVERWRITE_DDB_FILES_IN_DOCKER = False
-
 # GO Lambda runtime
 GO_RUNTIME_DOWNLOAD_URL = (
     "https://github.com/localstack/awslamba-go-runtime/releases/download/first/runtime.zip"
