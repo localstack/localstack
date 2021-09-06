@@ -1200,26 +1200,30 @@ class LambdaExecutorLocal(LambdaExecutor):
         LOG.info(cmd)
         result = self._execute_in_custom_runtime(cmd, func_details=func_details)
         return result
-    
+
     def execute_javascript_lambda(self, event, context, main_file, func_details=None):
         handler = func_details.handler
-        function = handler.split('.')[-1]
-        event_json_string = '%s' % (json.dumps(event) if event else '{}')
-        context_json_string = '%s' % (json.dumps(context.__dict__) if context else '{}')
-        cmd = 'node -e \'require("%s").%s(%s,%s)\'' % (main_file, function, event_json_string, context_json_string)
+        function = handler.split(".")[-1]
+        event_json_string = "%s" % (json.dumps(event) if event else "{}")
+        context_json_string = "%s" % (json.dumps(context.__dict__) if context else "{}")
+        cmd = "node -e 'require(\"%s\").%s(%s,%s)'" % (
+            main_file,
+            function,
+            event_json_string,
+            context_json_string,
+        )
         LOG.info(cmd)
         result = self.run_lambda_executor(cmd, func_details=func_details)
         return result
 
     def execute_go_lambda(self, event, context, main_file, func_details=None):
-        event_json_string = '%s' % (json.dumps(event) if event else '{}')
-        cmd = '%s' % (GO_LAMBDA_RUNTIME)
+        event_json_string = "%s" % (json.dumps(event) if event else "{}")
+        cmd = "%s" % (GO_LAMBDA_RUNTIME)
         LOG.info(cmd)
-        env = {
-            'AWS_LAMBDA_FUNCTION_HANDLER': main_file,
-            'AWS_LAMBDA_EVENT_BODY': event_json_string
-        }
-        result = self.run_lambda_executor(GO_LAMBDA_RUNTIME, func_details=func_details, env_vars=env)
+        env = {"AWS_LAMBDA_FUNCTION_HANDLER": main_file, "AWS_LAMBDA_EVENT_BODY": event_json_string}
+        result = self.run_lambda_executor(
+            GO_LAMBDA_RUNTIME, func_details=func_details, env_vars=env
+        )
         return result
 
 
