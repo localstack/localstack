@@ -1,3 +1,4 @@
+from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_RESOURCE_NAME
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -14,6 +15,19 @@ class SFNActivity(GenericBaseModel):
         client = aws_stack.connect_to_service("stepfunctions")
         result = client.describe_activity(activityArn=activity_arn)
         return result
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_activity",
+                "parameters": {"name": ["Name", PLACEHOLDER_RESOURCE_NAME], "tags": "Tags"},
+            },
+            "delete": {
+                "function": "delete_activity",
+                "parameters": {"activityArn": "PhysicalResourceId"},
+            },
+        }
 
 
 class SFNStateMachine(GenericBaseModel):
@@ -50,3 +64,20 @@ class SFNStateMachine(GenericBaseModel):
             "definition": props["DefinitionString"],
         }
         return client.update_state_machine(**kwargs)
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_state_machine",
+                "parameters": {
+                    "name": ["StateMachineName", PLACEHOLDER_RESOURCE_NAME],
+                    "definition": "DefinitionString",
+                    "roleArn": "RoleArn",
+                },
+            },
+            "delete": {
+                "function": "delete_state_machine",
+                "parameters": {"stateMachineArn": "PhysicalResourceId"},
+            },
+        }

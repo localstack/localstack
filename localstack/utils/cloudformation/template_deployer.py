@@ -81,32 +81,7 @@ def lambda_get_params():
 
 
 # maps resource types to functions and parameters for creation
-RESOURCE_TO_FUNCTION = {
-    "StepFunctions::StateMachine": {
-        "create": {
-            "function": "create_state_machine",
-            "parameters": {
-                "name": ["StateMachineName", PLACEHOLDER_RESOURCE_NAME],
-                "definition": "DefinitionString",
-                "roleArn": lambda params, **kwargs: get_role_arn(params.get("RoleArn"), **kwargs),
-            },
-        },
-        "delete": {
-            "function": "delete_state_machine",
-            "parameters": {"stateMachineArn": "PhysicalResourceId"},
-        },
-    },
-    "StepFunctions::Activity": {
-        "create": {
-            "function": "create_activity",
-            "parameters": {"name": ["Name", PLACEHOLDER_RESOURCE_NAME], "tags": "Tags"},
-        },
-        "delete": {
-            "function": "delete_activity",
-            "parameters": {"activityArn": "PhysicalResourceId"},
-        },
-    },
-}
+RESOURCE_TO_FUNCTION = {}
 
 
 # ----------------
@@ -127,11 +102,6 @@ def retrieve_topic_arn(topic_name):
     topics = aws_stack.connect_to_service("sns").list_topics()["Topics"]
     topic_arns = [t["TopicArn"] for t in topics if t["TopicArn"].endswith(":%s" % topic_name)]
     return topic_arns[0]
-
-
-def get_role_arn(role_arn, **kwargs):
-    role_arn = resolve_refs_recursively(kwargs.get("stack_name"), role_arn, kwargs.get("resources"))
-    return aws_stack.role_arn(role_arn)
 
 
 def find_stack(stack_name):
