@@ -54,7 +54,7 @@ coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
 infra:             ## Manually start the local infrastructure for testing
-	($(VENV_RUN); exec bin/localstack start --host)
+	($(VENV_RUN); exec bin/localstack start --host --no-banner)
 
 docker-build:      ## Build Docker image
 	# prepare

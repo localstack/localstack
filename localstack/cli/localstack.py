@@ -87,22 +87,26 @@ def cmd_status_services():
 @localstack.command(name="start", help="Start LocalStack")
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container (default)")
 @click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
-def cmd_start(docker: bool, host: bool):
+@click.option("--no-banner", is_flag=True, help="Disable LocalStack banner", default=False)
+def cmd_start(docker: bool, host: bool, no_banner: bool):
     if docker and host:
         raise click.ClickException("Please specify either --docker or --host")
 
-    print_banner()
-    print_version()
-    console.line()
+    if not no_banner:
+        print_banner()
+        print_version()
+        console.line()
 
     from localstack.utils import bootstrap
 
-    if host:
-        console.log("starting LocalStack in host mode :laptop_computer:")
-    else:
-        console.log("starting LocalStack in Docker mode :whale:")
+    if not no_banner:
+        if host:
+            console.log("starting LocalStack in host mode :laptop_computer:")
+        else:
+            console.log("starting LocalStack in Docker mode :whale:")
 
-    console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
+        console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
+
     if host:
         bootstrap.start_infra_locally()
     else:
