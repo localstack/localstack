@@ -51,3 +51,5 @@ requirements.copy.txt
 
 venv
 api_states
+
+/integration/lambdas/golang/handler.zip
