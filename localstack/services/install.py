@@ -5,6 +5,7 @@ import os
 import platform
 import re
 import shutil
+import stat
 import sys
 import tempfile
 import time
@@ -113,6 +114,7 @@ GO_RUNTIME_DOWNLOAD_URL = (
 )
 GO_INSTALL_FOLDER = config.TMP_FOLDER + "/runtime"
 GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + "/aws-lambda-mock"
+GO_LAMBDA_MOCKSERVER = GO_INSTALL_FOLDER + "/mockserver"
 GO_ZIP_NAME = "runtime.zip"
 
 # set up logger
@@ -409,6 +411,9 @@ def install_go_lambda_runtime():
             raise ValueError("Downloaded file is not zip ")
 
         zipfile.ZipFile(file_location).extractall(config.TMP_FOLDER)
+        st = os.stat(GO_LAMBDA_RUNTIME)
+        os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IEXEC)
+        os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IEXEC)
 
 
 def install_cloudformation_libs():
