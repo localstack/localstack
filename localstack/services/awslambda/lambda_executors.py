@@ -19,7 +19,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_PROVIDED,
 )
-from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR, GO_LAMBDA_RUNTIME
+from localstack.services.install import GO_LAMBDA_RUNTIME, INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction

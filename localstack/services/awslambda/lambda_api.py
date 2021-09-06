@@ -66,8 +66,6 @@ from localstack.utils.common import (
 from localstack.utils.docker import DOCKER_CLIENT
 from localstack.utils.http_utils import canonicalize_headers, parse_chunked_data
 from localstack.utils.run import FuncThread
-from localstack.utils.aws.aws_models import LambdaFunction, CodeSigningConfig
-from localstack.services.install import install_go_lambda_runtime
 
 # logger
 LOG = logging.getLogger(__name__)

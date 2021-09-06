@@ -9,8 +9,8 @@ import stat
 import sys
 import tempfile
 import time
-from pathlib import Path
 import zipfile
+from pathlib import Path
 
 import requests
 
