@@ -1987,8 +1987,6 @@ class CloudFormationTest(unittest.TestCase):
         # clean up
         self.cleanup(stack_name)
 
-    # @pytest.mark.skip(reason="Temporarily disabled until test flakiness is fixed")
-    # TODO: re-enable this test once fixed!
     def test_cfn_update_ec2_instance_type(self):
         stack_name = "stack-%s" % short_uid()
         template = load_file(os.path.join(THIS_FOLDER, "templates", "template30.yaml"))
@@ -2007,7 +2005,9 @@ class CloudFormationTest(unittest.TestCase):
         instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
         self.assertEqual(1, len(instances))
 
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
+        print(instances)
+        instance_id = instances[0]["PhysicalResourceId"]
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
 
@@ -2020,9 +2020,11 @@ class CloudFormationTest(unittest.TestCase):
         await_stack_completion(stack_name, statuses="UPDATE_COMPLETE")
         print("tmp log (CI debug): stack update completed")
 
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
         print("tmp log (CI debug): instance:", resp)
-        self.assertEqual("t2.medium", resp["Reservations"][0]["Instances"][0]["InstanceType"])
+        reservations = resp["Reservations"]
+        self.assertEqual(1, len(reservations))
+        self.assertEqual("t2.medium", [0]["Instances"][0]["InstanceType"])
 
         # clean up
         self.cleanup(stack_name)
