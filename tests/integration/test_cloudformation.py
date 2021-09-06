@@ -2010,8 +2010,10 @@ class CloudFormationTest(unittest.TestCase):
         instance_id = get_instance_id()
         print("!!!!!instance_id1", instance_id)
         resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+        print("!!!!!describe_instances1", ec2_client.describe_instances())
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
+        print("!!!!!resp1", resp)
 
         cfn.update_stack(
             StackName=stack_name,
@@ -2023,6 +2025,8 @@ class CloudFormationTest(unittest.TestCase):
         instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
         print("!!!!!instance_id2", instance_id)
         resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+        print("!!!!!resp2", resp)
+        print("!!!!!describe_instances2", ec2_client.describe_instances())
         reservations = resp["Reservations"]
         self.assertEqual(1, len(reservations))
         self.assertEqual("t2.medium", reservations[0]["Instances"][0]["InstanceType"])

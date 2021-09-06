@@ -1082,7 +1082,7 @@ def run_pre_create_actions(
             if "NoSuchBucket" not in str(e):
                 raise
         # hack: make sure the bucket actually exists, to prevent delete_bucket operation later on from failing
-        s3.create_bucket(Bucket=bucket_name)
+        aws_stack.get_or_create_bucket(bucket_name)
 
 
 # TODO: move as individual functions to RESOURCE_TO_FUNCTION
