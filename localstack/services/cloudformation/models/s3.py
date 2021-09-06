@@ -4,9 +4,13 @@ import re
 from moto.s3.models import FakeBucket
 
 from localstack.constants import AWS_REGION_US_EAST_1, S3_VIRTUAL_HOSTNAME
-from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_RESOURCE_NAME
+from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_RESOURCE_NAME,
+    dump_json_params,
+)
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
+from localstack.utils.cloudformation.cfn_utils import rename_params
 from localstack.utils.common import canonical_json, md5
 
 
@@ -23,6 +27,17 @@ class S3BucketPolicy(GenericBaseModel):
         bucket_name = self.props.get("Bucket") or self.resource_id
         bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
         return aws_stack.connect_to_service("s3").get_bucket_policy(Bucket=bucket_name)
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "put_bucket_policy",
+                "parameters": rename_params(
+                    dump_json_params(None, "PolicyDocument"), {"PolicyDocument": "Policy"}
+                ),
+            }
+        }
 
 
 class S3Bucket(GenericBaseModel, FakeBucket):
