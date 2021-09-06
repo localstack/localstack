@@ -410,12 +410,8 @@ def install_go_lambda_runtime():
 
     if not os.path.isfile(GO_LAMBDA_RUNTIME):
         log_install_msg("Installing golang runtime")
-        response = requests.get(GO_RUNTIME_DOWNLOAD_URL, allow_redirects=True)
-        if not response.ok:
-            raise ValueError("golang runtime zip not downloaded")
-
-        file_location = config.TMP_FOLDER + "/" + GO_ZIP_NAME
-        open(file_location, "wb").write(response.content)
+        file_location = os.path.join(config.TMP_FOLDER, GO_ZIP_NAME)
+        download(GO_RUNTIME_DOWNLOAD_URL, file_location)
 
         if not zipfile.is_zipfile(file_location):
             raise ValueError("Downloaded file is not zip ")
@@ -442,15 +438,8 @@ def install_glibc_for_alpine():
         except Exception:
             raise Exception("ca-certificates not installed")
 
-        response = requests.get(GLIBC_KEY_URL, allow_redirects=True)
-        if not response.ok:
-            raise Exception("glibc key not downloaded")
-        open(GLIBC_KEY, "wb").write(response.content)
-
-        response = requests.get(GLIBC_URL, allow_redirects=True)
-        if not response.ok:
-            raise Exception("glibc key not downloaded")
-        open(GLIBC_PATH, "wb").write(response.content)
+        download(GLIBC_KEY_URL, GLIBC_KEY)
+        download(GLIBC_URL, GLIBC_PATH)
 
         run("apk add %s" % GLIBC_PATH)
 
