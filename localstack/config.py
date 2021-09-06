@@ -451,7 +451,11 @@ else:
 CLI_COMMANDS = {}
 
 # set of valid regions
-VALID_REGIONS = set(Session().get_available_regions("sns"))
+VALID_PARTITIONS = set(Session().get_available_partitions())
+VALID_REGIONS = set()
+for partition in VALID_PARTITIONS:
+    for region in Session().get_available_regions("sns", partition):
+        VALID_REGIONS.add(region)
 
 
 def parse_service_ports():
