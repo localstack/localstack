@@ -19,7 +19,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_PROVIDED,
 )
-from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR, GO_LAMBDA_RUNTIME
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -27,6 +27,9 @@ from localstack.utils.aws.dead_letter_queue import (
     lambda_error_to_dead_letter_queue,
     sqs_error_to_dead_letter_queue,
 )
+from localstack.utils.common import (
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker, last_index_of,
+    long_uid, now, to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port, rm_docker_container)
 from localstack.utils.aws.lambda_destinations import lambda_result_to_destination
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched, store_cloudwatch_logs
 from localstack.utils.common import (
@@ -1189,6 +1192,13 @@ class LambdaExecutorLocal(LambdaExecutor):
             os.environ[env_name] = env_value_before or ""
             if env_value_before is None:
                 os.environ.pop(env_name, None)
+
+    def execute_go_lambda(self, event, context, main_file, func_details=None):
+        event_json_string = '%s' % (json.dumps(event) if event else '{}')
+        cmd = '%s %s \'%s\'' % (GO_LAMBDA_RUNTIME, main_file, event_json_string)
+        LOG.info(cmd)
+        result = self.run_lambda_executor(GO_LAMBDA_RUNTIME, func_details=func_details)
+        return result
 
 
 class Util:
