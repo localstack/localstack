@@ -118,7 +118,7 @@ class Stack(object):
         self.metadata["StackStatus"] = "CREATE_IN_PROGRESS"
         self.metadata["CreationTime"] = self.metadata.get("CreationTime") or timestamp_millis()
         # maps resource id to resource state
-        self.resource_states = {}
+        self._resource_states = {}
         # maps resource id to moto resource class instance (TODO: remove in the future)
         self.moto_resource_statuses = {}
         # list of stack events
@@ -166,7 +166,7 @@ class Stack(object):
         )
         self.add_stack_event(self.stack_name, self.stack_id, status)
 
-    def add_stack_event(self, resource_id, physical_res_id, status):
+    def add_stack_event(self, resource_id: str, physical_res_id: str, status: str):
         event = {
             "EventId": long_uid(),
             "Timestamp": timestamp_millis(),
@@ -179,27 +179,40 @@ class Stack(object):
         }
         self.events.insert(0, event)
 
-    def set_resource_status(self, resource_id, status, physical_res_id=None):
+    def set_resource_status(self, resource_id: str, status: str, physical_res_id: str = None):
+        """Update the deployment status of the given resource ID and publish a corresponding stack event."""
+        self._set_resource_status_details(resource_id, physical_res_id=physical_res_id)
+        state = self.resource_states.setdefault(resource_id, {})
+        state["PreviousResourceStatus"] = state.get("ResourceStatus")
+        state["ResourceStatus"] = status
+        state["LastUpdatedTimestamp"] = timestamp_millis()
+        self.add_stack_event(resource_id, physical_res_id, status)
+
+    def _set_resource_status_details(self, resource_id: str, physical_res_id: str = None):
+        """Helper function to ensure that the status details for the given resource ID are up-to-date."""
         resource = self.resources[resource_id]
-        state = self.resource_states[resource_id] = self.resource_states.get(resource_id) or {}
+        state = self._resource_states.setdefault(resource_id, {})
         attr_defaults = (
             ("LogicalResourceId", resource_id),
             ("PhysicalResourceId", physical_res_id),
         )
+        print("!set_resource_status", attr_defaults)
         for res in [resource, state]:
             for attr, default in attr_defaults:
                 res[attr] = res.get(attr) or default
-        state["PreviousResourceStatus"] = state.get("ResourceStatus")
-        state["ResourceStatus"] = status
         state["StackName"] = state.get("StackName") or self.stack_name
         state["StackId"] = state.get("StackId") or self.stack_id
         state["ResourceType"] = state.get("ResourceType") or self.resources[resource_id].get("Type")
-        state["LastUpdatedTimestamp"] = timestamp_millis()
-        self.add_stack_event(resource_id, physical_res_id, status)
 
-    def resource_status(self, resource_id):
+    def resource_status(self, resource_id: str):
         result = self._lookup(self.resource_states, resource_id)
         return result
+
+    @property
+    def resource_states(self):
+        for resource_id in self._resource_states.keys():
+            self._set_resource_status_details(resource_id)
+        return self._resource_states
 
     @property
     def stack_name(self):
