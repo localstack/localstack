@@ -374,6 +374,7 @@ class EC2Instance(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         instance_id = self.get_physical_resource_id()
+        print("!!!!EC2 inst fetch_state", instance_id)
         if not instance_id:
             return
         return self._get_state()
@@ -396,7 +397,9 @@ class EC2Instance(GenericBaseModel):
         client = client or aws_stack.connect_to_service("ec2")
         resp = client.describe_instances(InstanceIds=[instance_id])
         reservation = (resp.get("Reservations") or [{}])[0]
-        return (reservation.get("Instances") or [None])[0]
+        result = (reservation.get("Instances") or [None])[0]
+        print("!!!!EC2 inst fetch_state 2", instance_id, reservation, result)
+        return result
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get("InstanceId")
@@ -417,6 +420,7 @@ class EC2Instance(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        print("!!EC2 get_deploy_templates")
         return {
             "create": {
                 "function": "create_instances",
