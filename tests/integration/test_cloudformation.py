@@ -3,7 +3,6 @@ import os
 import time
 import unittest
 
-import pytest
 from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
@@ -1988,8 +1987,6 @@ class CloudFormationTest(unittest.TestCase):
         # clean up
         self.cleanup(stack_name)
 
-    @pytest.mark.skip(reason="Temporarily disabled until test flakiness is fixed")
-    # TODO: re-enable this test once fixed!
     def test_cfn_update_ec2_instance_type(self):
         stack_name = "stack-%s" % short_uid()
         template = load_file(os.path.join(THIS_FOLDER, "templates", "template30.yaml"))
@@ -2003,12 +2000,14 @@ class CloudFormationTest(unittest.TestCase):
             Parameters=[{"ParameterKey": "KeyName", "ParameterValue": "testkey"}],
         )
 
-        resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+        def get_instance_id():
+            resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+            instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
+            self.assertEqual(1, len(instances))
+            return instances[0]["PhysicalResourceId"]
 
-        instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
-        self.assertEqual(1, len(instances))
-
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
+        instance_id = get_instance_id()
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
 
@@ -2019,8 +2018,11 @@ class CloudFormationTest(unittest.TestCase):
         )
         await_stack_completion(stack_name, statuses="UPDATE_COMPLETE")
 
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
-        self.assertEqual("t2.medium", resp["Reservations"][0]["Instances"][0]["InstanceType"])
+        instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+        reservations = resp["Reservations"]
+        self.assertEqual(1, len(reservations))
+        self.assertEqual("t2.medium", reservations[0]["Instances"][0]["InstanceType"])
 
         # clean up
         self.cleanup(stack_name)

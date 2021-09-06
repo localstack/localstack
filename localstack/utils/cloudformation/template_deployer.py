@@ -1082,7 +1082,7 @@ def run_pre_create_actions(
             if "NoSuchBucket" not in str(e):
                 raise
         # hack: make sure the bucket actually exists, to prevent delete_bucket operation later on from failing
-        s3.create_bucket(Bucket=bucket_name)
+        aws_stack.get_or_create_bucket(bucket_name)
 
 
 # TODO: move as individual functions to RESOURCE_TO_FUNCTION
@@ -1309,8 +1309,10 @@ def update_resource_details(stack, resource_id, details, action=None):
         resource["PhysicalResourceId"] = details["KeyMetadata"]["KeyId"]
 
     if resource_type == "EC2::Instance":
-        if action == "CREATE":
+        if details and isinstance(details, list) and hasattr(details[0], "id"):
             resource["PhysicalResourceId"] = details[0].id
+        if isinstance(details, dict) and details.get("InstanceId"):
+            resource["PhysicalResourceId"] = details["InstanceId"]
 
     if resource_type == "EC2::SecurityGroup":
         resource["PhysicalResourceId"] = details["GroupId"]
