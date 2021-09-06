@@ -1450,6 +1450,9 @@ def add_default_resource_props(
             # append tags, to allow us to determine in service_models.py whether this key is already deployed
             tags.append({"Key": "localstack-key-id", "Value": short_uid()})
 
+    elif res_type == "AWS::IAM::ManagedPolicy":
+        props["ManagedPolicyName"] = props.get("ManagedPolicyName") or _generate_res_name()
+
     # generate default names for certain resource types
     default_attrs = (("AWS::IAM::Role", "RoleName"), ("AWS::Events::Rule", "Name"))
     for entry in default_attrs:
