@@ -96,8 +96,8 @@ KINESIS_MOCK_RELEASE_URL = (
 )
 
 # debugpy module
-DEBUGPY_MODULE = 'debugpy'
-DEBUGPY_DEPENDENCIES = ['gcc', 'python3-dev', 'musl-dev']
+DEBUGPY_MODULE = "debugpy"
+DEBUGPY_DEPENDENCIES = ["gcc", "python3-dev", "musl-dev"]
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = "1.8"
