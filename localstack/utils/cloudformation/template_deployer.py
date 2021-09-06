@@ -1312,6 +1312,9 @@ def update_resource_details(stack, resource_id, details, action=None):
         print("UPDATE EC2::Instance PhysicalResourceId", details, resource)
         if details and isinstance(details, list) and hasattr(details[0], "id"):
             resource["PhysicalResourceId"] = details[0].id
+        if isinstance(details, dict) and details.get("InstanceId"):
+            print("!!!SETTING TO INSTANCE ID", details.get("InstanceId"))
+            resource["PhysicalResourceId"] = details["InstanceId"]
 
     if resource_type == "EC2::SecurityGroup":
         resource["PhysicalResourceId"] = details["GroupId"]
