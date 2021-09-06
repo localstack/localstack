@@ -396,7 +396,6 @@ class EC2Instance(GenericBaseModel):
         instance_id = self.get_physical_resource_id()
         client = client or aws_stack.connect_to_service("ec2")
         resp = client.describe_instances(InstanceIds=[instance_id])
-        print("tmp log (CI debug): GET RES:", instance_id, resp)
         reservation = (resp.get("Reservations") or [{}])[0]
         return (reservation.get("Instances") or [None])[0]
 

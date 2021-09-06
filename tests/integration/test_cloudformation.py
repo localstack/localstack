@@ -2002,6 +2002,7 @@ class CloudFormationTest(unittest.TestCase):
 
         def get_instance_id():
             resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+            print("resources", resources)
             instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
             self.assertEqual(1, len(instances))
             return instances[0]["PhysicalResourceId"]
@@ -2011,18 +2012,15 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
 
-        print("tmp log (CI debug): starting stack update")
         cfn.update_stack(
             StackName=stack_name,
             TemplateBody=template,
             Parameters=[{"ParameterKey": "InstanceType", "ParameterValue": "t2.medium"}],
         )
         await_stack_completion(stack_name, statuses="UPDATE_COMPLETE")
-        print("tmp log (CI debug): stack update completed")
 
         instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
         resp = ec2_client.describe_instances(InstanceIds=[instance_id])
-        print("tmp log (CI debug): instance:", resp)
         reservations = resp["Reservations"]
         self.assertEqual(1, len(reservations))
         self.assertEqual("t2.medium", reservations[0]["Instances"][0]["InstanceType"])
