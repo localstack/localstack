@@ -1310,10 +1310,11 @@ def update_resource_details(stack, resource_id, details, action=None):
         resource["PhysicalResourceId"] = details["KeyMetadata"]["KeyId"]
 
     if resource_type == "EC2::Instance":
-        print("!!!!UPDATE EC2 details", details, resource)
+        print("!!!!UPDATE EC2 details", action, details, resource)
         if details and isinstance(details, list) and hasattr(details[0], "id"):
             # if action == "CREATE":
             #     print("!!CREATED EC2 instance", details[0].id)
+            print("!!!UPDATE PhysicalResourceId", details[0].id)
             resource["PhysicalResourceId"] = details[0].id
 
     if resource_type == "EC2::SecurityGroup":

@@ -2000,9 +2000,8 @@ class CloudFormationTest(unittest.TestCase):
             Parameters=[{"ParameterKey": "KeyName", "ParameterValue": "testkey"}],
         )
 
-        resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
-
         def get_instance_id():
+            resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
             instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
             self.assertEqual(1, len(instances))
             return instances[0]["PhysicalResourceId"]
