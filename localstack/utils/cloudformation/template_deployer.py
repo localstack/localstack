@@ -1052,7 +1052,6 @@ def configure_resource_via_sdk(
     # run post-actions
     run_post_create_actions(action_name, resource_id, resources, resource_type, stack_name, result)
 
-    print("!!!result", action_name, resource_id, result)
     return result
 
 

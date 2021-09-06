@@ -2008,6 +2008,7 @@ class CloudFormationTest(unittest.TestCase):
             return instances[0]["PhysicalResourceId"]
 
         instance_id = get_instance_id()
+        print("!!!!!instance_id1", instance_id)
         resp = ec2_client.describe_instances(InstanceIds=[instance_id])
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
@@ -2020,6 +2021,7 @@ class CloudFormationTest(unittest.TestCase):
         await_stack_completion(stack_name, statuses="UPDATE_COMPLETE")
 
         instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
+        print("!!!!!instance_id2", instance_id)
         resp = ec2_client.describe_instances(InstanceIds=[instance_id])
         reservations = resp["Reservations"]
         self.assertEqual(1, len(reservations))

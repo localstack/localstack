@@ -38,38 +38,6 @@ LOG = logging.getLogger(__name__)
 XMLNS_CF = "http://cloudformation.amazonaws.com/doc/2010-05-15/"
 
 
-class CloudFormationRegion(RegionBackend):
-    def __init__(self):
-        # maps stack ID to stack details
-        self.stacks = {}
-        # maps stack set ID to stack set details
-        self.stack_sets = {}
-
-    @property
-    def exports(self):
-        exports = []
-        output_keys = {}
-        for stack_id, stack in self.stacks.items():
-            for output in stack.outputs:
-                export_name = output.get("ExportName")
-                if not export_name:
-                    continue
-                if export_name in output_keys:
-                    # TODO: raise exception on stack creation in case of duplicate exports
-                    LOG.warning(
-                        "Found duplicate export name %s in stacks: %s %s"
-                        % (export_name, output_keys[export_name], stack.stack_id)
-                    )
-                entry = {
-                    "ExportingStackId": stack.stack_id,
-                    "Name": export_name,
-                    "Value": output["OutputValue"],
-                }
-                exports.append(entry)
-                output_keys[export_name] = stack.stack_id
-        return exports
-
-
 class StackSet(object):
     """A stack set contains multiple stack instances."""
 
@@ -196,10 +164,16 @@ class Stack(object):
             ("LogicalResourceId", resource_id),
             ("PhysicalResourceId", physical_res_id),
         )
-        print("!set_resource_status", attr_defaults)
         for res in [resource, state]:
             for attr, default in attr_defaults:
                 res[attr] = res.get(attr) or default
+        print("!set_resource_status", resource_id, res.get("PhysicalResourceId"), attr_defaults)
+        LOG.debug(
+            "!set_resource_status: %s %s %s",
+            resource_id,
+            res.get("PhysicalResourceId"),
+            attr_defaults,
+        )
         state["StackName"] = state.get("StackName") or self.stack_name
         state["StackId"] = state.get("StackId") or self.stack_id
         state["ResourceType"] = state.get("ResourceType") or self.resources[resource_id].get("Type")
@@ -444,6 +418,38 @@ class StackChangeSet(Stack):
         return result
 
 
+class CloudFormationRegion(RegionBackend):
+    def __init__(self):
+        # maps stack ID to stack details
+        self.stacks: Dict[str, Stack] = {}
+        # maps stack set ID to stack set details
+        self.stack_sets: Dict[str, StackSet] = {}
+
+    @property
+    def exports(self):
+        exports = []
+        output_keys = {}
+        for stack_id, stack in self.stacks.items():
+            for output in stack.outputs:
+                export_name = output.get("ExportName")
+                if not export_name:
+                    continue
+                if export_name in output_keys:
+                    # TODO: raise exception on stack creation in case of duplicate exports
+                    LOG.warning(
+                        "Found duplicate export name %s in stacks: %s %s"
+                        % (export_name, output_keys[export_name], stack.stack_id)
+                    )
+                entry = {
+                    "ExportingStackId": stack.stack_id,
+                    "Name": export_name,
+                    "Value": output["OutputValue"],
+                }
+                exports.append(entry)
+                output_keys[export_name] = stack.stack_id
+        return exports
+
+
 # --------------
 # API ENDPOINTS
 # --------------
@@ -674,9 +680,10 @@ def describe_stack_resources(req_params):
     stack = find_stack(stack_name)
     if not stack:
         return stack_not_found_error(stack_name)
+    LOG.debug("describe_stack_resources", stack.resource_states)  # TODO
     statuses = [
-        stack.resource_status(res_id)
-        for res_id, _ in stack.resource_states.items()
+        res_status
+        for res_id, res_status in stack.resource_states.items()
         if resource_id in [res_id, None]
     ]
     return {"StackResources": statuses}
@@ -1046,7 +1053,7 @@ def clone_stack_params(stack_params):
         return stack_params
 
 
-def find_stack(stack_name: str) -> Optional[str]:
+def find_stack(stack_name: str) -> Optional[Stack]:
     state = CloudFormationRegion.get()
     return (
         [s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None]
