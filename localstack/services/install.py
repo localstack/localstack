@@ -395,6 +395,7 @@ def install_lambda_java_libs():
 
 
 def install_go_lambda_runtime():
+
     if not os.path.isfile(GO_LAMBDA_RUNTIME):
         log_install_msg("Installing golang runtime")
         response = requests.get(GO_RUNTIME_DOWNLOAD_URL, allow_redirects=True)

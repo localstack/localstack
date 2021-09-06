@@ -1199,7 +1199,7 @@ class LambdaExecutorLocal(LambdaExecutor):
             GO_LAMBDA_RUNTIME, func_details=func_details, env_vars=env
         )
         return result
-
+    
     def execute_javascript_lambda(self, event, context, main_file, func_details=None):
         handler = func_details.handler
         function = handler.split('.')[-1]
@@ -1208,6 +1208,13 @@ class LambdaExecutorLocal(LambdaExecutor):
         cmd = 'node -e \'require("%s").%s(%s,%s)\'' % (main_file, function, event_json_string, context_json_string)
         LOG.info(cmd)
         result = self.run_lambda_executor(cmd, func_details=func_details)
+        return result
+
+    def execute_go_lambda(self, event, context, main_file, func_details=None):
+        event_json_string = '%s' % (json.dumps(event) if event else '{}')
+        cmd = '%s %s \'%s\'' % (GO_LAMBDA_RUNTIME, main_file, event_json_string)
+        LOG.info(cmd)
+        result = self.run_lambda_executor(GO_LAMBDA_RUNTIME, func_details=func_details)
         return result
 
 

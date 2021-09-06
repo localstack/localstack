@@ -1103,6 +1103,17 @@ def do_set_function_code(lambda_function: LambdaFunction):
 
             lambda_handler = execute_go
 
+        if runtime.startswith('go1') and not use_docker():
+            install_go_lambda_runtime()
+            ensure_readable(main_file)
+            zip_file_content = load_file(main_file, mode='rb')
+
+            def execute_go(event, context):
+                result = lambda_executors.EXECUTOR_LOCAL.execute_go_lambda(
+                    event, context, main_file=main_file, func_details=lambda_details)
+                return result
+            lambda_handler = execute_go
+
     return lambda_handler
 
 
