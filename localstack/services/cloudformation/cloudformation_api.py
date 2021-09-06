@@ -167,13 +167,6 @@ class Stack(object):
         for res in [resource, state]:
             for attr, default in attr_defaults:
                 res[attr] = res.get(attr) or default
-        print("!set_resource_status", resource_id, res.get("PhysicalResourceId"), attr_defaults)
-        LOG.debug(
-            "!set_resource_status: %s %s %s",
-            resource_id,
-            res.get("PhysicalResourceId"),
-            attr_defaults,
-        )
         state["StackName"] = state.get("StackName") or self.stack_name
         state["StackId"] = state.get("StackId") or self.stack_id
         state["ResourceType"] = state.get("ResourceType") or self.resources[resource_id].get("Type")
@@ -680,7 +673,6 @@ def describe_stack_resources(req_params):
     stack = find_stack(stack_name)
     if not stack:
         return stack_not_found_error(stack_name)
-    LOG.debug("describe_stack_resources", stack.resource_states)  # TODO
     statuses = [
         res_status
         for res_id, res_status in stack.resource_states.items()
