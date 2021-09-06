@@ -544,3 +544,7 @@ class GatewayAccount(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::ApiGateway::Account"
+
+    @staticmethod
+    def get_deploy_templates():
+        return {}
