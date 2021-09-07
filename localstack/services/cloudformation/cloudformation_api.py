@@ -164,12 +164,29 @@ class Stack(object):
             ("LogicalResourceId", resource_id),
             ("PhysicalResourceId", physical_res_id),
         )
+        print(
+            "!!!!_set_resource_status_details",
+            resource_id,
+            id(resource),
+            physical_res_id,
+            attr_defaults,
+            resource.get("PhysicalResourceId"),
+            state.get("PhysicalResourceId"),
+        )
         for res in [resource, state]:
             for attr, default in attr_defaults:
                 res[attr] = res.get(attr) or default
         state["StackName"] = state.get("StackName") or self.stack_name
         state["StackId"] = state.get("StackId") or self.stack_id
         state["ResourceType"] = state.get("ResourceType") or self.resources[resource_id].get("Type")
+
+        print(
+            "!!!!_set_resource_status_details AFTER",
+            resource_id,
+            id(resource),
+            resource.get("PhysicalResourceId"),
+            state.get("PhysicalResourceId"),
+        )
 
     def resource_status(self, resource_id: str):
         result = self._lookup(self.resource_states, resource_id)

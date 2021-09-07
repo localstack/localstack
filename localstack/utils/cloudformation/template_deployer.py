@@ -1226,7 +1226,7 @@ def determine_resource_physical_id(
         if result:
             return result
 
-    # TODO: put logic into resource-specific model classes
+    # TODO: put logic into resource-specific model classes!
     if resource_type == "ApiGateway::RestApi":
         result = resource_props.get("id")
         if result:
@@ -1321,6 +1321,12 @@ def update_resource_details(stack, resource_id, details, action=None):
             resource["PhysicalResourceId"] = details[0].id
         if isinstance(details, dict) and details.get("InstanceId"):
             resource["PhysicalResourceId"] = details["InstanceId"]
+        print(
+            "!!EC2 phys ID after update!!",
+            id(resource),
+            resource.get("PhysicalResourceId"),
+            resource,
+        )
 
     if resource_type == "EC2::SecurityGroup":
         resource["PhysicalResourceId"] = details["GroupId"]
@@ -1657,9 +1663,12 @@ class TemplateDeployer(object):
 
         physical_id = physical_id or determine_resource_physical_id(resource_id, stack=stack)
         if not resource.get("PhysicalResourceId") or action == "UPDATE":
-            resource["PhysicalResourceId"] = physical_id
+            print("!!!!UPDATING PhysicalResourceId", id(resource), action, physical_id)
+            if physical_id:
+                resource["PhysicalResourceId"] = physical_id
 
         # set resource status
+        print("!!!!!update_resource_details set_resource_status", resource_id, action, physical_id)
         stack.set_resource_status(resource_id, "%s_COMPLETE" % action, physical_res_id=physical_id)
 
         return physical_id
@@ -1896,6 +1905,8 @@ class TemplateDeployer(object):
                                 i + 1,
                             )
                         )
+                        if resource_id == "EC2Instance":  # TODO remove
+                            print("!SHOULD DEPLOY EC2Instance", resource_id, should_deploy)
                         if not should_deploy:
                             del changes[j]
                             stack_action = get_action_name_for_resource_change(action)
