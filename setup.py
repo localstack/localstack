@@ -36,11 +36,6 @@ version = localstack.__version__
 with open("requirements.txt") as f:
     req = parse_requirements(f.readlines())
 
-# copy requirements file, to make it available inside the package at runtime
-with open("localstack/requirements.copy.txt", "w") as f:
-    with open("requirements.txt") as source:
-        f.write(source.read())
-
 package_data = {
     "": ["Makefile", "*.md"],
     "localstack": [
