@@ -391,16 +391,6 @@ class CaptureOutput(object):
         return stream.getvalue() if hasattr(stream, "getvalue") else stream
 
 
-class AccessTrackingDict(dict):
-    def __init__(self, wrapped, callback: Callable = None):
-        super().__init__(wrapped)
-        self.callback = callback
-
-    def __setitem__(self, key, value):
-        self.callback and self.callback(self, "__setitem__", key, value)
-        return super().__setitem__(key, value)
-
-
 # ----------------
 # UTILITY METHODS
 # ----------------

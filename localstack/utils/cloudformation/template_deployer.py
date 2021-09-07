@@ -30,7 +30,6 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import (
-    AccessTrackingDict,
     canonical_json,
     get_all_subclasses,
     json_safe,
@@ -41,6 +40,7 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
+from localstack.utils.generic.dict_utils import AccessTrackingDict
 from localstack.utils.testutil import delete_all_s3_objects
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
@@ -466,7 +466,9 @@ def resolve_ref(stack_name, ref, resources, attribute):
 
     is_ref_attribute = attribute in ["Ref", "PhysicalResourceId", "Arn"]
     if is_ref_attribute:
-        resolve_refs_recursively(stack_name, resources.get(ref, {}), resources)
+        # extract the Properties here, as we only want to recurse over the resource props...
+        resource_props = resources.get(ref, {}).get("Properties")
+        resolve_refs_recursively(stack_name, resource_props, resources)
         return determine_resource_physical_id(
             resource_id=ref,
             resources=resources,
@@ -507,7 +509,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
 
 
 # Using a @prevent_stack_overflow decorator here to avoid infinite recursion
-# in case we load stack exports that have circula dependencies (see issue 3438)
+# in case we load stack exports that have circular dependencies (see issue 3438)
 # TODO: Potentially think about a better approach in the future
 @prevent_stack_overflow(match_parameters=True)
 def resolve_refs_recursively(stack_name, value, resources):
@@ -1808,7 +1810,7 @@ class TemplateDeployer(object):
         self.init_resource_status(old_resources, action="UPDATE")
 
         # TODO temp - remove
-        def _log(inst, op, *args):
+        def _log(inst, op, args, kwargs):
             if (
                 op == "__setitem__"
                 and args[0] == "PhysicalResourceId"
@@ -1817,7 +1819,7 @@ class TemplateDeployer(object):
                 print("!!SETTING dict ID!!", id(inst), args)
                 import traceback
 
-                traceback.print_stack(limit=5)
+                traceback.print_stack(limit=9)
 
         for res_id, resource in new_resources.items():
             new_resources[res_id] = AccessTrackingDict(resource, callback=_log)
