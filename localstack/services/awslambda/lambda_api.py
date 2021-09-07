@@ -964,7 +964,7 @@ def set_function_code(lambda_function: LambdaFunction):
             plugin.init_function_code(lambda_function)
 
     # unzipping can take some time - limit the execution time to avoid client/network timeout issues
-    run_for_max_seconds(25, _set_and_configure)
+    run_for_max_seconds(config.LAMBDA_CODE_EXTRACT_TIME, _set_and_configure)
     return {"FunctionName": lambda_function.name()}
 
 

@@ -275,6 +275,10 @@ LAMBDA_FALLBACK_URL = os.environ.get("LAMBDA_FALLBACK_URL", "").strip()
 # Forward URL used to forward any Lambda invocations to an external
 # endpoint (can use useful for advanced test setups)
 LAMBDA_FORWARD_URL = os.environ.get("LAMBDA_FORWARD_URL", "").strip()
+# Time in seconds to wait at max while extracting Lambda code.
+# By default it is 25 seconds for limiting the execution time
+# to avoid client/network timeout issues
+LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 
 # A comma-delimited string of stream names and its corresponding shard count to
 # initialize during startup.
@@ -335,6 +339,7 @@ CONFIG_ENV_VARS = [
     "TF_COMPAT_MODE",
     "LAMBDA_DOCKER_FLAGS",
     "LAMBDA_FORWARD_URL",
+    "LAMBDA_CODE_EXTRACT_TIME",
     "THUNDRA_APIKEY",
     "THUNDRA_AGENT_JAVA_VERSION",
 ]
