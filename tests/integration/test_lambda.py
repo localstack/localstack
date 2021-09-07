@@ -1510,7 +1510,6 @@ class TestCustomRuntimes(LambdaTestBase):
         )
         result_data = result["Payload"].read()
 
-        print(result_data)
         self.assertEqual(200, result["StatusCode"])
         self.assertEqual(
             """Echoing request: '{"text": "bar with \'quotes\\""}'""",
