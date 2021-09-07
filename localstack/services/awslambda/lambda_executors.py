@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from localstack import config
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_JAVA8_AL2,
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_PROVIDED,
 )
@@ -193,7 +194,7 @@ def get_from_event(event, key):
 
 def is_java_lambda(lambda_details):
     runtime = getattr(lambda_details, "runtime", lambda_details)
-    return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11]
+    return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA8_AL2, LAMBDA_RUNTIME_JAVA11]
 
 
 def is_nodejs_runtime(lambda_details):
