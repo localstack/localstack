@@ -10,7 +10,10 @@ from localstack.services.awslambda.lambda_executors import (
     LambdaExecutorPlugin,
     is_java_lambda,
 )
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_JAVA8
+from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_JAVA8_AL2,
+)
 
 
 def get_latest_java_agent_version(metadata_url):
@@ -95,7 +98,7 @@ def _install_java_agent():
 
 def _is_java8_lambda(func_details):
     runtime = getattr(func_details, "runtime", func_details)
-    return runtime == LAMBDA_RUNTIME_JAVA8
+    return runtime == LAMBDA_RUNTIME_JAVA8 or runtime == LAMBDA_RUNTIME_JAVA8_AL2
 
 
 class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
