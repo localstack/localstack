@@ -23,20 +23,20 @@ RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ss
 RUN pip install awscli awscli-local requests --upgrade
 RUN apk add iputils
 
-# add files required to install virtualenv dependencies
-ADD Makefile requirements.txt ./
-RUN make install-venv-docker
+# add configuration and source files
+ADD Makefile setup.py requirements.txt ./
+ADD localstack/ localstack/
+ADD bin/localstack bin/localstack
+# necessary for running pip install -e
+ADD bin/localstack.bat bin/localstack.bat
 
-# add files required to run "make init"
-RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
-  touch localstack/__init__.py localstack/utils/__init__.py localstack/services/__init__.py localstack/utils/kinesis/__init__.py
-ADD localstack/__init__.py localstack/constants.py localstack/config.py localstack/
-ADD localstack/services/awslambda localstack/services/awslambda
-ADD localstack/plugin/ localstack/plugin/
-ADD localstack/services/install.py localstack/services/generic_proxy.py localstack/services/__init__.py localstack/services/
-ADD localstack/services/cloudformation/deployment_utils.py localstack/services/cloudformation/deployment_utils.py
-ADD localstack/utils/ localstack/utils/
-ADD localstack/package.json localstack/package.json
+# install dependencies to run the localstack runtime and save which ones were installed
+RUN make install-runtime
+RUN make freeze > requirements-runtime.txt
+
+# install dependencies run localstack tests
+RUN make install-test
+RUN make freeze > requirements-test.txt
 
 # initialize installation (downloads remaining dependencies)
 RUN make init-testlibs
@@ -69,10 +69,6 @@ RUN if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt
 ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages:/opt/code/localstack/.venv/lib/python3.7/site-packages
 RUN which awslocal
 
-# add rest of the code
-ADD localstack/ localstack/
-ADD bin/localstack bin/localstack
-
 # fix some permissions and create local user
 RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     mkdir -p /.npm && \
@@ -94,14 +90,18 @@ ADD tests/ tests/
 # add configuration files
 ADD pyproject.toml ./
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
-RUN pip uninstall -y argparse
-RUN pip uninstall -y dataclasses
+RUN pip uninstall -y argparse dataclasses
 RUN LAMBDA_EXECUTOR=local \
     PYTEST_LOGLEVEL=info \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \
     make test-coverage
 
+# clean up tests (created earlier via make freeze)
+RUN (. .venv/bin/activate; comm -3 requirements-runtime.txt requirements-test.txt | cut -d'=' -f1 | xargs pip uninstall -y )
+RUN rm -rf tests/ requirements-*.txt
+
 # clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
     rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform /root/.serverless; \
+    rm -rf .pytest_cache/; \
     mkdir /root/.serverless; chmod -R 777 /root/.serverless

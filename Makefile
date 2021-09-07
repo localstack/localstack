@@ -23,6 +23,9 @@ venv:                  ## Create a new (empty) virtual environment
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR))
 
+freeze:                   ## Run pip freeze -l in the virtual environment
+	@$(VENV_RUN); pip freeze -l
+
 install-basic: venv       ## Install basic dependencies for CLI usage into venv
 	$(VENV_RUN); $(PIP_CMD) install -e ".[cli]"
 
