@@ -40,7 +40,6 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
-from localstack.utils.generic.dict_utils import AccessTrackingDict
 from localstack.utils.testutil import delete_all_s3_objects
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
@@ -1312,24 +1311,10 @@ def update_resource_details(stack, resource_id, details, action=None):
         resource["PhysicalResourceId"] = details["KeyMetadata"]["KeyId"]
 
     if resource_type == "EC2::Instance":
-        print(
-            "EC2 update_resource_details res_hash:",
-            id(resource),
-            id(stack.resources),
-            resource_id,
-            details,
-            stack,
-        )
         if details and isinstance(details, list) and hasattr(details[0], "id"):
             resource["PhysicalResourceId"] = details[0].id
         if isinstance(details, dict) and details.get("InstanceId"):
             resource["PhysicalResourceId"] = details["InstanceId"]
-        print(
-            "!!EC2 phys ID after update!!",
-            id(resource),
-            resource.get("PhysicalResourceId"),
-            resource,
-        )
 
     if resource_type == "EC2::SecurityGroup":
         resource["PhysicalResourceId"] = details["GroupId"]
@@ -1666,12 +1651,10 @@ class TemplateDeployer(object):
 
         physical_id = physical_id or determine_resource_physical_id(resource_id, stack=stack)
         if not resource.get("PhysicalResourceId") or action == "UPDATE":
-            print("!!!!UPDATING PhysicalResourceId", id(resource), action, physical_id)
             if physical_id:
                 resource["PhysicalResourceId"] = physical_id
 
         # set resource status
-        print("!!!!!update_resource_details set_resource_status", resource_id, action, physical_id)
         stack.set_resource_status(resource_id, "%s_COMPLETE" % action, physical_res_id=physical_id)
 
         return physical_id
@@ -1809,21 +1792,6 @@ class TemplateDeployer(object):
         action = action or "CREATE"
         self.init_resource_status(old_resources, action="UPDATE")
 
-        # TODO temp - remove
-        def _log(inst, op, args, kwargs):
-            if (
-                op == "__setitem__"
-                and args[0] == "PhysicalResourceId"
-                and inst.get("Type") == "AWS::EC2::Instance"
-            ):
-                print("!!SETTING dict ID!!", id(inst), args)
-                import traceback
-
-                traceback.print_stack(limit=9)
-
-        for res_id, resource in new_resources.items():
-            new_resources[res_id] = AccessTrackingDict(resource, callback=_log)
-
         # apply parameter changes to existing stack
         self.apply_parameter_changes(existing_stack, new_stack)
 
@@ -1923,8 +1891,6 @@ class TemplateDeployer(object):
                                 i + 1,
                             )
                         )
-                        if resource_id == "EC2Instance":  # TODO remove
-                            print("!SHOULD DEPLOY EC2Instance", resource_id, should_deploy)
                         if not should_deploy:
                             del changes[j]
                             stack_action = get_action_name_for_resource_change(action)

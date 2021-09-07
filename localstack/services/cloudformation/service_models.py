@@ -1,5 +1,6 @@
 import logging
 
+# TODO: remove
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from moto.core.models import CloudFormationModel
 

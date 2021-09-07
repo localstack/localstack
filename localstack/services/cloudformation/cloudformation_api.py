@@ -171,15 +171,6 @@ class Stack(object):
         state["StackId"] = state.get("StackId") or self.stack_id
         state["ResourceType"] = state.get("ResourceType") or self.resources[resource_id].get("Type")
 
-        if resource.get("Type") == "AWS::EC2::Instance":
-            print(
-                "!!!!_set_resource_status_details AFTER",
-                resource_id,
-                id(resource),
-                resource.get("PhysicalResourceId"),
-                state.get("PhysicalResourceId"),
-            )
-
     def resource_status(self, resource_id: str):
         result = self._lookup(self.resource_states, resource_id)
         return result
