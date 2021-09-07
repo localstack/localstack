@@ -30,6 +30,7 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import (
+    AccessTrackingDict,
     canonical_json,
     get_all_subclasses,
     json_safe,
@@ -1805,6 +1806,21 @@ class TemplateDeployer(object):
         new_resources = new_stack.template["Resources"]
         action = action or "CREATE"
         self.init_resource_status(old_resources, action="UPDATE")
+
+        # TODO temp - remove
+        def _log(inst, op, *args):
+            if (
+                op == "__setitem__"
+                and args[0] == "PhysicalResourceId"
+                and inst.get("Type") == "AWS::EC2::Instance"
+            ):
+                print("!!SETTING dict ID!!", id(inst), args)
+                import traceback
+
+                traceback.print_stack(limit=5)
+
+        for res_id, resource in new_resources.items():
+            new_resources[res_id] = AccessTrackingDict(resource, callback=_log)
 
         # apply parameter changes to existing stack
         self.apply_parameter_changes(existing_stack, new_stack)
