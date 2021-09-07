@@ -2010,7 +2010,7 @@ class CloudFormationTest(unittest.TestCase):
         resp = ec2_client.describe_instances(InstanceIds=[instance_id])
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
-        print("!!!!resp2", instance_id, resp)
+        print("!!!!resp1", instance_id, resp)
 
         cfn.update_stack(
             StackName=stack_name,

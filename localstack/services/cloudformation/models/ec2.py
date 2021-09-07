@@ -374,7 +374,7 @@ class EC2Instance(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         instance_id = self.get_physical_resource_id()
-        print("!!!!EC2 inst fetch_state", instance_id)
+        print("!!!!EC2 inst fetch_state", instance_id, id(self.resource_json), id(resources))
         if not instance_id:
             return
         return self._get_state()
@@ -390,6 +390,7 @@ class EC2Instance(GenericBaseModel):
             InstanceId=instance_id,
             InstanceType={"Value": props["InstanceType"]},
         )
+        print("!!!UPDATE EC2 RES", id(self.resource_json), id(resources))
         return self._get_state(client)
 
     def _get_state(self, client=None):
@@ -398,10 +399,19 @@ class EC2Instance(GenericBaseModel):
         resp = client.describe_instances(InstanceIds=[instance_id])
         reservation = (resp.get("Reservations") or [{}])[0]
         result = (reservation.get("Instances") or [None])[0]
-        print("!!!!EC2 inst fetch_state 2", instance_id, reservation, result)
+        print(
+            "!!!!EC2 inst fetch_state 2", instance_id, id(self.resource_json), reservation, result
+        )
         return result
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
+        print(
+            "!!!!!EC2 get_physical_resource_id",
+            self.physical_resource_id,
+            id(self.resource_json),
+            self.props,
+            self.resource_json,
+        )
         return self.physical_resource_id or self.props.get("InstanceId")
 
     def get_cfn_attribute(self, attribute_name):
@@ -420,7 +430,6 @@ class EC2Instance(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        print("!!EC2 get_deploy_templates")
         return {
             "create": {
                 "function": "create_instances",

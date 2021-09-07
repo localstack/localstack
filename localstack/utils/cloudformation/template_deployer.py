@@ -1309,7 +1309,14 @@ def update_resource_details(stack, resource_id, details, action=None):
         resource["PhysicalResourceId"] = details["KeyMetadata"]["KeyId"]
 
     if resource_type == "EC2::Instance":
-        print("EC2 update_resource_details", stack, resource_id, details)
+        print(
+            "EC2 update_resource_details res_hash:",
+            id(resource),
+            id(stack.resources),
+            resource_id,
+            details,
+            stack,
+        )
         if details and isinstance(details, list) and hasattr(details[0], "id"):
             resource["PhysicalResourceId"] = details[0].id
         if isinstance(details, dict) and details.get("InstanceId"):
