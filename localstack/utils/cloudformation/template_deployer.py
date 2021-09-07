@@ -465,7 +465,9 @@ def resolve_ref(stack_name, ref, resources, attribute):
 
     is_ref_attribute = attribute in ["Ref", "PhysicalResourceId", "Arn"]
     if is_ref_attribute:
-        resolve_refs_recursively(stack_name, resources.get(ref, {}), resources)
+        # extract the Properties here, as we only want to recurse over the resource props...
+        resource_props = resources.get(ref, {}).get("Properties")
+        resolve_refs_recursively(stack_name, resource_props, resources)
         return determine_resource_physical_id(
             resource_id=ref,
             resources=resources,
@@ -506,7 +508,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
 
 
 # Using a @prevent_stack_overflow decorator here to avoid infinite recursion
-# in case we load stack exports that have circula dependencies (see issue 3438)
+# in case we load stack exports that have circular dependencies (see issue 3438)
 # TODO: Potentially think about a better approach in the future
 @prevent_stack_overflow(match_parameters=True)
 def resolve_refs_recursively(stack_name, value, resources):
@@ -1082,7 +1084,7 @@ def run_pre_create_actions(
             if "NoSuchBucket" not in str(e):
                 raise
         # hack: make sure the bucket actually exists, to prevent delete_bucket operation later on from failing
-        s3.create_bucket(Bucket=bucket_name)
+        aws_stack.get_or_create_bucket(bucket_name)
 
 
 # TODO: move as individual functions to RESOURCE_TO_FUNCTION
@@ -1226,7 +1228,7 @@ def determine_resource_physical_id(
         if result:
             return result
 
-    # TODO: put logic into resource-specific model classes
+    # TODO: put logic into resource-specific model classes!
     if resource_type == "ApiGateway::RestApi":
         result = resource_props.get("id")
         if result:
@@ -1309,8 +1311,10 @@ def update_resource_details(stack, resource_id, details, action=None):
         resource["PhysicalResourceId"] = details["KeyMetadata"]["KeyId"]
 
     if resource_type == "EC2::Instance":
-        if action == "CREATE":
+        if details and isinstance(details, list) and hasattr(details[0], "id"):
             resource["PhysicalResourceId"] = details[0].id
+        if isinstance(details, dict) and details.get("InstanceId"):
+            resource["PhysicalResourceId"] = details["InstanceId"]
 
     if resource_type == "EC2::SecurityGroup":
         resource["PhysicalResourceId"] = details["GroupId"]
@@ -1647,7 +1651,8 @@ class TemplateDeployer(object):
 
         physical_id = physical_id or determine_resource_physical_id(resource_id, stack=stack)
         if not resource.get("PhysicalResourceId") or action == "UPDATE":
-            resource["PhysicalResourceId"] = physical_id
+            if physical_id:
+                resource["PhysicalResourceId"] = physical_id
 
         # set resource status
         stack.set_resource_status(resource_id, "%s_COMPLETE" % action, physical_res_id=physical_id)

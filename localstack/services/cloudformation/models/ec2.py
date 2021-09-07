@@ -376,10 +376,7 @@ class EC2Instance(GenericBaseModel):
         instance_id = self.get_physical_resource_id()
         if not instance_id:
             return
-        client = aws_stack.connect_to_service("ec2")
-        resp = client.describe_instances(InstanceIds=[instance_id])
-        reservation = (resp.get("Reservations") or [{}])[0]
-        return (reservation.get("Instances") or [None])[0]
+        return self._get_state()
 
     def update_resource(self, new_resource, stack_name, resources):
         instance_id = self.get_physical_resource_id()
@@ -392,8 +389,15 @@ class EC2Instance(GenericBaseModel):
             InstanceId=instance_id,
             InstanceType={"Value": props["InstanceType"]},
         )
+        return self._get_state(client)
+
+    def _get_state(self, client=None):
+        instance_id = self.get_physical_resource_id()
+        client = client or aws_stack.connect_to_service("ec2")
         resp = client.describe_instances(InstanceIds=[instance_id])
-        return resp["Reservations"][0]["Instances"][0]
+        reservation = (resp.get("Reservations") or [{}])[0]
+        result = (reservation.get("Instances") or [None])[0]
+        return result
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get("InstanceId")

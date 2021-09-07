@@ -1,4 +1,21 @@
 import re
+from typing import Any, Callable, Dict, List
+
+
+class AccessTrackingDict(dict):
+    """
+    Simple utility class that can be used to track (write) accesses to a dict's attributes.
+    Note: could also be written as a proxy, to preserve the identity of "wrapped" - for now, it
+          simply duplicates the entries of "wrapped" in the constructor, for simplicity.
+    """
+
+    def __init__(self, wrapped, callback: Callable[[Dict, str, List, Dict], Any] = None):
+        super().__init__(wrapped)
+        self.callback = callback
+
+    def __setitem__(self, key, value):
+        self.callback and self.callback(self, "__setitem__", [key, value], {})
+        return super().__setitem__(key, value)
 
 
 def get_safe(dictionary, path, default_value=None):

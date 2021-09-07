@@ -25,7 +25,7 @@ class KMSKey(GenericBaseModel):
                 ):
                     physical_res_id = key["KeyId"]
                     # TODO should this be removed from here? It seems that somewhere along the execution
-                    # chain the 'PhysicalResourceId' gets overwritten with None, hence setting it here
+                    #  chain the 'PhysicalResourceId' gets overwritten with None, hence setting it here
                     self.resource_json["PhysicalResourceId"] = physical_res_id
                     break
         if not physical_res_id:
