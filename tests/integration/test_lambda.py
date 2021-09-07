@@ -1506,10 +1506,11 @@ class TestCustomRuntimes(LambdaTestBase):
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
-            Payload=b'{"text":"bar with \'quotes\\""}',
+            Payload=b'{"text": "bar with \'quotes\\""}',
         )
         result_data = result["Payload"].read()
 
+        print(result_data)
         self.assertEqual(200, result["StatusCode"])
         self.assertEqual(
             """Echoing request: '{"text": "bar with \'quotes\\""}'""",
