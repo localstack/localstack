@@ -195,7 +195,7 @@ def _assess_lambda_destination_invocation(condition, payload, test):
         msg = json.loads(msg)
         test.assertEqual(condition, msg["requestContext"]["condition"])
 
-    retry(receive_message, retries=5, sleep=2)
+    retry(receive_message, retries=10, sleep=3)
     # clean up
     sqs_client.delete_queue(QueueUrl=queue_url)
     lambda_client.delete_function(FunctionName=lambda_name)
