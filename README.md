@@ -246,6 +246,7 @@ SERVICES=kinesis,lambda,sqs,dynamodb DEBUG=1 localstack start
       mount like `${HOST_TMP_FOLDER}:/tmp/localstack` needs to be configured if you're using
       docker-compose.
 * `BUCKET_MARKER_LOCAL`: Optional bucket name for running lambdas locally.
+* `LAMBDA_CODE_EXTRACT_TIME`: Time in seconds to wait at max while extracting Lambda code. By default it is `25` seconds for limiting the execution time to avoid client/network timeout issues.
 * `LAMBDA_DOCKER_NETWORK`: Optional Docker network for the container running your lambda function.
 * `LAMBDA_DOCKER_DNS`: Optional DNS server for the container running your lambda function.
 * `LAMBDA_DOCKER_FLAGS`: Additional flags passed to Lambda Docker `run`/`create` commands (e.g., useful for specifying custom volume mounts). Does only support environment, volume, port and add-host flags (with `-e KEY=VALUE`, `-v host:container`, `-p host:container`, `--add-host domain:ip` respectively)
