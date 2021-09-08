@@ -60,7 +60,6 @@ jobs:
           path: localstack-ext/.venv
           key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml') }}
       - name: Install Python Dependencies for LocalStack Pro
-        if: steps.ext-cache.outputs.cache-hit != 'true'
         run: make install
       - name: Cache LocalStack community dependencies (venv, infra)
         uses: actions/cache@v2
@@ -72,7 +71,6 @@ jobs:
             localstack/localstack/node_modules
           key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack/localstack/services/install.py', 'localstack/requirements.txt', 'localstack/localstack/constants.py') }}
       - name: Install Dependencies for LocalStack Community # lambda tests look for libraries in this virtualenv
-        if: steps.os-cache.outputs.cache-hit != 'true'
         working-directory: localstack
         run: |
           make install
