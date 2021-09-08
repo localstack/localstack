@@ -1520,9 +1520,14 @@ class TestCustomRuntimes(LambdaTestBase):
         result_data = result["Payload"].read()
 
         self.assertEqual(200, result["StatusCode"])
-        self.assertEqual(
-            """Echoing request: '{"text": "bar with \'quotes\\""}'""",
-            to_str(result_data).strip(),
+        result_data = to_str(result_data).strip()
+        # jsonify in pro (re-)formats the event json so we allow both versions here
+        self.assertIn(
+            result_data,
+            (
+                """Echoing request: '{"text": "bar with \'quotes\\""}'""",
+                """Echoing request: '{"text":"bar with \'quotes\\""}'""",
+            ),
         )
 
         # assert that logs are present
