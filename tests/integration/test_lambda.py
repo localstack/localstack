@@ -66,6 +66,7 @@ from localstack.utils.testutil import (
     get_lambda_log_events,
 )
 
+from .fixtures import only_in_alpine
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -1605,6 +1606,7 @@ class TestGolangRuntimes(LambdaTestBase):
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service("lambda")
 
+    @only_in_alpine
     def test_golang_lambda_running_locally(self):
         if use_docker():
             return
