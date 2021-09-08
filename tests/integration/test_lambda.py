@@ -189,7 +189,6 @@ def _assess_lambda_destination_invocation(condition, payload, test):
 
     def receive_message():
         rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
-        print(rs)
         test.assertGreater(len(rs["Messages"]), 0)
         msg = rs["Messages"][0]["Body"]
         msg = json.loads(msg)
