@@ -263,6 +263,6 @@ def is_change_set_finished(cfn_client):
 
 
 only_in_alpine = pytest.mark.skipif(
-    is_alpine(),
+    not is_alpine(),
     reason="test only applicable if run in alpine",
 )
