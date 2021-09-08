@@ -3,7 +3,6 @@ import os
 import pkgutil
 import re
 import shlex
-import shutil
 import sys
 import threading
 import time
@@ -11,7 +10,6 @@ import warnings
 from datetime import datetime
 from functools import wraps
 
-import pip as pip_mod
 import six
 
 from localstack import config, constants
@@ -74,50 +72,6 @@ MAIN_CONTAINER_NAME_CACHED = None
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = "LS_SCRIPT_STARTING_DOCKER"
-
-
-def bootstrap_installation():
-    try:
-        from localstack.services import infra
-
-        assert infra
-    except Exception:
-        install_dependencies()
-
-
-def install_dependencies():
-    # determine requirements
-    root_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
-    reqs_file = os.path.join(root_folder, "requirements.txt")
-    reqs_copy_file = os.path.join(root_folder, "localstack", "requirements.copy.txt")
-    if not os.path.exists(reqs_copy_file):
-        shutil.copy(reqs_file, reqs_copy_file)
-    with open(reqs_copy_file) as f:
-        requirements = f.read()
-    install_requires = []
-    for line in re.split("\n", requirements):
-        if line and line[0] != "#":
-            if BASIC_LIB_MARKER not in line and IGNORED_LIB_MARKER not in line:
-                line = line.split(" #")[0].strip()
-                install_requires.append(line)
-    LOG.info(
-        "Lazily installing missing pip dependencies, this could take a while: %s"
-        % ", ".join(install_requires)
-    )
-    args = ["install"] + install_requires
-    return run_pip_main(args)
-
-
-def run_pip_main(args):
-    if hasattr(pip_mod, "main"):
-        return pip_mod.main(args)
-    import pip._internal
-
-    if hasattr(pip._internal, "main"):
-        return pip._internal.main(args)
-    import pip._internal.main
-
-    return pip._internal.main.main(args)
 
 
 def log_duration(name=None):
@@ -406,7 +360,6 @@ def is_api_enabled(api):
 
 
 def start_infra_locally():
-    bootstrap_installation()
     from localstack.services import infra
 
     return infra.start_infra()

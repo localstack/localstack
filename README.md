@@ -641,7 +641,7 @@ additional native libs installed.
 The Makefile contains a target to conveniently run the local infrastructure for development:
 
 ```
-make infra
+make start
 ```
 
 #### Starting LocalStack using Vagrant (Centos 8)
@@ -680,13 +680,19 @@ target:
 make test
 ```
 
+to run a specific test, you can use the `TEST_PATH` variable, for example:
+
+```
+TEST_PATH='tests/unit/sns_test.py' make test
+```
+
 ## To check the Code Coverage
 
 Once the new feature / bug fix is done, run the unit testing and check for the coverage.
 
 ```
 # To run the particular test file (sample)
-pytest --cov=localstack tests/unit/test_common.py
+TEST_PATH='tests/unit/sns_test.py' make test-coverage
 
 # To check the coverage in the console
 coverage report

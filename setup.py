@@ -1,45 +1,40 @@
 #!/usr/bin/env python
 
 import re
+from collections import defaultdict
 
 from setuptools import find_packages, setup
 
 import localstack
 
-# marker for extended/ignored and basic libs in requirements.txt
-IGNORED_LIB_MARKER = "#extended-lib"
-BASIC_LIB_MARKER = "#basic-lib"
 
-# parameter variables
-install_requires = []
-extra_requires = []
-dependency_links = []
-package_data = {}
+def parse_requirements(lines):
+    requirements = defaultdict(list)
+    extra = "install"
+
+    for line in lines:
+        line = line.strip()
+        if line.startswith("# extra="):
+            # all subsequent lines are associated with this extra, until a new extra appears
+            extra = line.split("=")[1]
+            continue
+
+        if line and line[0] == "#" and "#egg=" in line:
+            line = re.search(r"#\s*(.*)", line).group(1)
+
+        if line and line[0] != "#":
+            lib_stripped = line.split(" #")[0].strip()
+            requirements[extra].append(lib_stripped)
+
+    return requirements
 
 
 # determine version
 version = localstack.__version__
 
-
 # determine requirements
 with open("requirements.txt") as f:
-    requirements = f.read()
-for line in re.split("\n", requirements):
-    if line and line[0] == "#" and "#egg=" in line:
-        line = re.search(r"#\s*(.*)", line).group(1)
-    if line and line[0] != "#":
-        # include only basic requirements here
-        if IGNORED_LIB_MARKER not in line:
-            lib_stripped = line.split(" #")[0].strip()
-            if BASIC_LIB_MARKER in line:
-                install_requires.append(lib_stripped)
-            else:
-                extra_requires.append(lib_stripped)
-
-# copy requirements file, to make it available inside the package at runtime
-with open("localstack/requirements.copy.txt", "w") as f:
-    f.write(requirements)
-
+    req = parse_requirements(f.readlines())
 
 package_data = {
     "": ["Makefile", "*.md"],
@@ -55,9 +50,17 @@ package_data = {
     ],
 }
 
+install_requires = req["install"]
+
+extras_require = {
+    "cli": req["install"],
+    "runtime": req["runtime"],
+    "test": req["test"],
+    "dev": req["dev"],
+}
+extras_require["full"] = extras_require["cli"] + extras_require["runtime"]  # deprecated
 
 if __name__ == "__main__":
-
     setup(
         name="localstack",
         version=version,
@@ -69,8 +72,7 @@ if __name__ == "__main__":
         packages=find_packages(exclude=("tests", "tests.*")),
         package_data=package_data,
         install_requires=install_requires,
-        extras_require={"full": extra_requires},
-        dependency_links=dependency_links,
+        extras_require=extras_require,
         test_suite="tests",
         license="Apache License 2.0",
         zip_safe=False,

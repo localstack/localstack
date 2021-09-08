@@ -15,7 +15,7 @@ from pathlib import Path
 import requests
 
 from localstack import config
-from localstack.config import KINESIS_PROVIDER, is_env_true
+from localstack.config import is_env_true
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
@@ -33,11 +33,6 @@ from localstack.constants import (
     STS_JAR_URL,
 )
 from localstack.utils import bootstrap
-from localstack.utils.docker import DOCKER_CLIENT
-
-if __name__ == "__main__":
-    bootstrap.bootstrap_installation()
-# noqa: E402
 from localstack.utils.common import (
     chmod_r,
     download,
@@ -56,6 +51,7 @@ from localstack.utils.common import (
     untar,
     unzip,
 )
+from localstack.utils.docker import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
 
@@ -230,12 +226,12 @@ def install_elasticmq():
 
 
 def install_kinesis():
-    if KINESIS_PROVIDER == "kinesalite":
+    if config.KINESIS_PROVIDER == "kinesalite":
         return install_kinesalite()
-    elif KINESIS_PROVIDER == "kinesis-mock":
+    elif config.KINESIS_PROVIDER == "kinesis-mock":
         return install_kinesis_mock()
     else:
-        raise ValueError("unknown kinesis provider %s" % KINESIS_PROVIDER)
+        raise ValueError("unknown kinesis provider %s" % config.KINESIS_PROVIDER)
 
 
 def install_kinesalite():

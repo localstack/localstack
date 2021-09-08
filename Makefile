@@ -16,45 +16,46 @@ else
 	VENV_RUN = . $(VENV_DIR)/bin/activate
 endif
 
-usage:             ## Show this help
-	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
+usage:                 ## Show this help
+	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-20s %s\n", $$1, $$2 }'
 
-setup-venv:
+venv:                  ## Create a new (empty) virtual environment
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR))
 
-install-venv:
-	make setup-venv && \
-		test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt)
+freeze:                   ## Run pip freeze -l in the virtual environment
+	@$(VENV_RUN); pip freeze -l
 
-install-venv-docker: # make install-venv for the docker environment (hack to remove black and isort)
-	make setup-venv && \
-		test ! -e requirements.txt || \
-		($(VENV_RUN);  $(PIP_CMD) install `grep -v '^ *#\|^black\|^isort\|^flake8' requirements.txt | cut -d' ' -f1 | grep .`)
+install-basic: venv       ## Install basic dependencies for CLI usage into venv
+	$(VENV_RUN); $(PIP_CMD) install -e ".[cli]"
 
-init:              ## Initialize the infrastructure, make sure all libs are downloaded
+install-runtime: venv     ## Install dependencies for the localstack runtime into venv
+	$(VENV_RUN); $(PIP_CMD) install -e ".[cli,runtime]"
+
+install-test: venv        ## Install requirements to run tests into venv
+	$(VENV_RUN); $(PIP_CMD) install -e ".[cli,runtime,test]"
+
+install-dev: venv         ## Install developer requirements into venv
+	$(VENV_RUN); $(PIP_CMD) install -e ".[cli,runtime,test,dev]"
+
+install:                  ## Install full dependencies into venv, and download third-party services
+	(make install-dev && make init-testlibs) || exit 1
+
+init:                     ## Initialize the infrastructure, make sure all libs are downloaded
 	$(VENV_RUN); python -m localstack.services.install libs
 
 init-testlibs:
 	$(VENV_RUN); python -m localstack.services.install testlibs
 
-install:           ## Install full dependencies in virtualenv
-	(make install-venv && make init-testlibs) || exit 1
-
-install-basic:     ## Install basic dependencies for CLI usage in virtualenv
-	make setup-venv && \
-		($(VENV_RUN); cat requirements.txt | grep -ve '^#' | grep '#\(basic\|extended\)' | sed 's/ #.*//' \
-			| xargs $(PIP_CMD) install)
-
 publish:           ## Publish the library to the central PyPi repository
 	# build and upload archive
-	($(VENV_RUN) && ./setup.py sdist upload)
+	($(VENV_RUN) && python setup.py sdist upload)
 
 coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
-infra:             ## Manually start the local infrastructure for testing
-	($(VENV_RUN); exec bin/localstack start --host --no-banner)
+start:             ## Manually start the local infrastructure for testing
+	($(VENV_RUN); exec bin/localstack start --host)
 
 docker-build:      ## Build Docker image
 	# prepare
@@ -85,7 +86,7 @@ docker-push:       ## Push Docker image to registry
 	make docker-squash
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
 
-docker-push-master:## Push Docker image to registry IF we are currently on the master branch
+docker-push-master: ## Push Docker image to registry IF we are currently on the master branch
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
@@ -119,17 +120,6 @@ docker-mount-run:
 docker-build-lambdas:
 	docker build -t localstack/lambda-js:nodejs14.x -f bin/lambda/Dockerfile.nodejs14x .
 
-vagrant-start:
-	@vagrant up || EXIT_CODE=$$? ;\
- 	if [ "$EXIT_CODE" != "0" ]; then\
- 		echo "Predicted error. Ignoring...";\
-		vagrant ssh -c "sudo yum install -y epel-release && sudo yum update -y && sudo yum -y install wget perl gcc gcc-c++ dkms kernel-devel kernel-headers make bzip2";\
-		vagrant reload --provision;\
-	fi
-
-vagrant-stop:
-	vagrant halt
-
 docker-build-light:
 	@img_name=$(IMAGE_NAME_LIGHT); \
 		docker build -t $$img_name -f bin/Dockerfile.light .; \
@@ -142,13 +132,11 @@ docker-cp-coverage:
 		docker cp $$id:/opt/code/localstack/.coverage .coverage; \
 		docker rm -v $$id
 
-## Run automated tests
-test:
+test:              ## Run automated tests
 	($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
-test-coverage:
+test-coverage:     ## Run automated tests and create coverage report
 	($(VENV_RUN); python -m coverage --version; \
-		pip install "coverage[toml]>=5.5"; \
 		DEBUG=$(DEBUG) \
 		python -m coverage run $(COVERAGE_ARGS) -m \
 		pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
@@ -188,16 +176,16 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 lint:              ## Run code linter to check code style
 	($(VENV_RUN); python -m pflake8 --show-source)
 
-lint-modified:      ## Run code linter on modified files
+lint-modified:     ## Run code linter on modified files
 	($(VENV_RUN); python -m pflake8 --show-source `git ls-files -m | grep '\.py$$' | xargs` )
 
-format:
+format:            ## Run black and isort code formatter
 	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
 
-format-modified:
+format-modified:   ## Run black and isort code formatter on modified files
 	($(VENV_RUN); python -m isort `git ls-files -m | grep '\.py$$' | xargs`; python -m black `git ls-files -m | grep '\.py$$' | xargs` )
 
-init-precommit:
+init-precommit:    ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
@@ -213,4 +201,27 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
-.PHONY: usage compile clean install infra test test-coverage install-venv-docker lint lint-modified format format-modified
+vagrant-start:
+	@vagrant up || EXIT_CODE=$$? ;\
+ 	if [ "$EXIT_CODE" != "0" ]; then\
+ 		echo "Predicted error. Ignoring...";\
+		vagrant ssh -c "sudo yum install -y epel-release && sudo yum update -y && sudo yum -y install wget perl gcc gcc-c++ dkms kernel-devel kernel-headers make bzip2";\
+		vagrant reload --provision;\
+	fi
+
+vagrant-stop:
+	vagrant halt
+
+# deprecated commands
+
+setup-venv: venv
+	@echo "this command is deprecated, use: make venv"
+
+install-venv: venv
+	@echo "this command is deprecated, use: make install-dev"
+	test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt)
+
+infra:             # legacy command used in the supervisord file to
+	($(VENV_RUN); exec bin/localstack start --host --no-banner)
+
+.PHONY: usage compile clean install-basic install-runtime install-test install-dev infra run-dev test test-coverage install-venv-docker lint lint-modified format format-modified venv
