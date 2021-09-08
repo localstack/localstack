@@ -8,7 +8,7 @@ import pytest
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
-from localstack.utils.common import short_uid
+from localstack.utils.common import is_alpine, short_uid
 
 if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
@@ -260,3 +260,9 @@ def is_change_set_finished(cfn_client):
         return _inner
 
     return _is_change_set_finished
+
+
+only_in_alpine = pytest.mark.skipif(
+    not is_alpine(),
+    reason="test only applicable if run in alpine",
+)
