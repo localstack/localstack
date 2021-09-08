@@ -86,22 +86,11 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     log_level_param = "LOG_LEVEL=%s" % log_level
     latency = config.KINESIS_LATENCY + "ms"
     latency_param = (
-        "CREATE_STREAM_DURATION=%s DELETE_STREAM_DURATION=%s REGISTER_STREAM_CONSUMER_DURATION=%s "
-        "START_STREAM_ENCRYPTION_DURATION=%s STOP_STREAM_ENCRYPTION_DURATION=%s "
-        "DEREGISTER_STREAM_CONSUMER_DURATION=%s MERGE_SHARDS_DURATION=%s SPLIT_SHARD_DURATION=%s "
-        "UPDATE_SHARD_COUNT_DURATION=%s"
-        % (
-            latency,
-            latency,
-            latency,
-            latency,
-            latency,
-            latency,
-            latency,
-            latency,
-            latency,
-        )
-    )
+        "CREATE_STREAM_DURATION={l} DELETE_STREAM_DURATION={l} REGISTER_STREAM_CONSUMER_DURATION={l} "
+        "START_STREAM_ENCRYPTION_DURATION={l} STOP_STREAM_ENCRYPTION_DURATION={l} "
+        "DEREGISTER_STREAM_CONSUMER_DURATION={l} MERGE_SHARDS_DURATION={l} SPLIT_SHARD_DURATION={l} "
+        "UPDATE_SHARD_COUNT_DURATION={l}"
+    ).format(l=latency)
 
     if config.KINESIS_INITIALIZE_STREAMS != "":
         initialize_streams_param = "INITIALIZE_STREAMS=%s" % config.KINESIS_INITIALIZE_STREAMS
