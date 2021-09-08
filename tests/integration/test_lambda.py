@@ -202,7 +202,7 @@ def _assess_lambda_destination_invocation(condition, payload, test):
         msg = json.loads(msg)
         test.assertEqual(condition, msg["requestContext"]["condition"])
 
-    retry(receive_message, retries=5, sleep=2)
+    retry(receive_message, retries=10, sleep=3)
     # clean up
     sqs_client.delete_queue(QueueUrl=queue_url)
     lambda_client.delete_function(FunctionName=lambda_name)
@@ -1151,12 +1151,12 @@ class TestPythonRuntimes(LambdaTestBase):
             get_content=True,
             libs=TEST_LAMBDA_LIBS,
             runtime=LAMBDA_RUNTIME_PYTHON36,
-            file_name="abc/def/main.py",
+            file_name="localstack_package/def/main.py",
         )
         testutil.create_lambda_function(
             func_name=func_name,
             zip_file=zip_file,
-            handler="abc.def.main.handler",
+            handler="localstack_package.def.main.handler",
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
@@ -1237,6 +1237,7 @@ class TestPythonRuntimes(LambdaTestBase):
             sleep=1,
             function_name=function_name,
             expected_length=1,
+            regex_filter="Records.*Sns",
         )
         notification = events[0]["Records"][0]["Sns"]
 
@@ -1513,7 +1514,7 @@ class TestCustomRuntimes(LambdaTestBase):
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
-            Payload=b'{"text":"bar with \'quotes\\""}',
+            Payload=b'{"text": "bar with \'quotes\\""}',
         )
         result_data = result["Payload"].read()
 
@@ -1846,7 +1847,7 @@ class TestJavaRuntimes(LambdaTestBase):
             Endpoint=aws_stack.lambda_function_arn(function_name),
         )
 
-        events_before = run_safe(get_lambda_log_events, function_name) or []
+        events_before = run_safe(get_lambda_log_events, function_name, regex_filter="Records") or []
 
         s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
         time.sleep(2)
@@ -1858,6 +1859,7 @@ class TestJavaRuntimes(LambdaTestBase):
             sleep=1,
             expected_length=len(events_before) + 1,
             function_name=function_name,
+            regex_filter="Records",
         )
 
         # clean up
@@ -2038,7 +2040,7 @@ def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     )
 
     def get_events():
-        events = get_lambda_log_events(function_name)
+        events = get_lambda_log_events(function_name, regex_filter=r"event.*Records")
         assert len(events) == 2
         return events
 

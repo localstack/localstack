@@ -614,10 +614,11 @@ def run_process_as_sudo(component, port, asynchronous=False):
     sudo_cmd = "sudo -n "
     python_cmd = sys.executable
     edge_url = config.get_edge_url()
-    cmd = "%sPYTHONPATH=.:%s EDGE_FORWARD_URL=%s %s %s %s %s" % (
+    cmd = "%sPYTHONPATH=.:%s EDGE_FORWARD_URL=%s EDGE_BIND_HOST=%s %s %s %s %s" % (
         sudo_cmd,
         LOCALSTACK_ROOT_FOLDER,
         edge_url,
+        config.EDGE_BIND_HOST,
         python_cmd,
         __file__,
         component,
