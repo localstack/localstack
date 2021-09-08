@@ -20,7 +20,7 @@ jobs:
       run:
         working-directory: localstack-ext
     environment: localstack-ext-tests
-    if: github.event.pull_request.head.repo.full_name == github.repository  # skip job if fork PR
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository  # skip job if fork PR
     steps:
       - name: Checkout Pro
         uses: actions/checkout@v2
