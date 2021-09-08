@@ -5,9 +5,11 @@ import os
 import platform
 import re
 import shutil
+import stat
 import sys
 import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 import requests
@@ -93,6 +95,7 @@ KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
 
+# debugpy module
 DEBUGPY_MODULE = "debugpy"
 DEBUGPY_DEPENDENCIES = ["gcc", "python3-dev", "musl-dev"]
 
@@ -101,6 +104,30 @@ JAVAC_TARGET_VERSION = "1.8"
 
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
+
+# GO Lambda runtime
+GO_RUNTIME_DOWNLOAD_URL = (
+    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/runtime.zip"
+)
+GO_INSTALL_FOLDER = config.TMP_FOLDER + "/runtime"
+GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + "/aws-lambda-mock"
+GO_LAMBDA_MOCKSERVER = GO_INSTALL_FOLDER + "/mockserver"
+GO_ZIP_NAME = "runtime.zip"
+
+
+GLIBC_KEY_URL = "https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub"
+GLIBC_KEY = "/etc/apk/keys/sgerrand.rsa.pub"
+GLIBC_VERSION = "2.32-r0"
+GLIBC_FILE = "glibc-%s.apk" % GLIBC_VERSION
+GLIBC_URL = "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/%s/%s" % (
+    GLIBC_VERSION,
+    GLIBC_FILE,
+)
+GLIBC_PATH = config.TMP_FOLDER + "/" + GLIBC_FILE
+CA_CERTIFICATES = "ca-certificates"
+
+# set up logger
+LOG = logging.getLogger(__name__)
 
 
 def get_elasticsearch_install_version(version=None):
@@ -376,6 +403,48 @@ def install_lambda_java_libs():
     if not os.path.exists(INSTALL_PATH_LOCALSTACK_FAT_JAR):
         log_install_msg("LocalStack Java libraries", verbatim=True)
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
+
+
+def install_go_lambda_runtime():
+    install_glibc_for_alpine()
+
+    if not os.path.isfile(GO_LAMBDA_RUNTIME):
+        log_install_msg("Installing golang runtime")
+        file_location = os.path.join(config.TMP_FOLDER, GO_ZIP_NAME)
+        download(GO_RUNTIME_DOWNLOAD_URL, file_location)
+
+        if not zipfile.is_zipfile(file_location):
+            raise ValueError("Downloaded file is not zip ")
+
+        zipfile.ZipFile(file_location).extractall(config.TMP_FOLDER)
+        st = os.stat(GO_LAMBDA_RUNTIME)
+        os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+        st = os.stat(GO_LAMBDA_MOCKSERVER)
+        os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def install_glibc_for_alpine():
+    try:
+        run("apk info glibc")
+        return
+    except Exception:
+        pass
+
+    log_install_msg("Installing glibc")
+    try:
+        try:
+            run("apk add %s" % CA_CERTIFICATES)
+        except Exception:
+            raise Exception("ca-certificates not installed")
+
+        download(GLIBC_KEY_URL, GLIBC_KEY)
+        download(GLIBC_URL, GLIBC_PATH)
+
+        run("apk add %s" % GLIBC_PATH)
+
+    except Exception as e:
+        log_install_msg("glibc installation failed: " + str(e))
 
 
 def install_cloudformation_libs():

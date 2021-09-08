@@ -13,6 +13,7 @@ localstack/infra/
 package-lock.json
 /nosetests.xml
 
+venv
 /.venv*
 /.coverage
 .settings/
@@ -51,3 +52,6 @@ requirements.copy.txt
 
 venv
 api_states
+
+/integration/lambdas/golang/handler.zip
+/tests/integration/lambdas/golang/handler.zip

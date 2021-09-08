@@ -9,6 +9,7 @@ from datetime import datetime
 from io import BytesIO
 
 import pytest
+import requests
 import six
 from botocore.exceptions import ClientError
 
@@ -25,6 +26,7 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_DOTNETCORE31,
+    LAMBDA_RUNTIME_GOLANG,
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_NODEJS14X,
@@ -71,6 +73,7 @@ TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.py
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "lambdas", "lambda_python3.py")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.js")
+TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "lambdas", "golang", "handler.zip")
 TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.rb")
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore2", "dotnetcore2.zip")
 TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore31", "dotnetcore31.zip")
@@ -93,6 +96,7 @@ TEST_LAMBDA_NAME_PY = "test_lambda_py"
 TEST_LAMBDA_NAME_PY3 = "test_lambda_py3"
 TEST_LAMBDA_NAME_JS = "test_lambda_js"
 TEST_LAMBDA_NAME_RUBY = "test_lambda_ruby"
+TEST_LAMBDA_NAME_GOLANG = "test_lambda_GOLANG"
 TEST_LAMBDA_NAME_DOTNETCORE2 = "test_lambda_dotnetcore2"
 TEST_LAMBDA_NAME_DOTNETCORE31 = "test_lambda_dotnetcore31"
 TEST_LAMBDA_NAME_CUSTOM_RUNTIME = "test_lambda_custom_runtime"
@@ -113,6 +117,10 @@ TEST_SNS_TOPIC_NAME = "sns-topic-1"
 TEST_STAGE_NAME = "testing"
 
 MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
+
+TEST_GOLANG_LAMBDA_URL = (
+    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/example.zip"
+)
 
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
@@ -1589,6 +1597,40 @@ class TestRubyRuntimes(LambdaTestBase):
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_RUBY)
+
+
+class TestGolangRuntimes(LambdaTestBase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service("lambda")
+
+    def test_golang_lambda_running_locally(self):
+        if use_docker():
+            return
+
+        response = requests.get(TEST_GOLANG_LAMBDA_URL, allow_redirects=True)
+        if not response.ok:
+            raise ValueError("golang runtime zip not downloaded")
+
+        open(TEST_LAMBDA_GOLANG_ZIP, "wb").write(response.content)
+
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_GOLANG,
+            zip_file=load_file(TEST_LAMBDA_GOLANG_ZIP, mode="rb"),
+            handler="handler",
+            runtime=LAMBDA_RUNTIME_GOLANG,
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=json.dumps({"name": "Test"})
+        )
+        result_data = result["Payload"].read()
+        self.maxDiff = None
+        self.assertEqual(200, result["StatusCode"])
+        self.assertEqual('"Hello Test!"', to_str(result_data).strip())
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_GOLANG)
+        os.remove(TEST_LAMBDA_GOLANG_ZIP)
 
 
 class TestJavaRuntimes(LambdaTestBase):

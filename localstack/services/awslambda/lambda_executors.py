@@ -20,7 +20,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_PROVIDED,
 )
-from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.services.install import GO_LAMBDA_RUNTIME, INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -1190,6 +1190,17 @@ class LambdaExecutorLocal(LambdaExecutor):
             os.environ[env_name] = env_value_before or ""
             if env_value_before is None:
                 os.environ.pop(env_name, None)
+
+    def execute_go_lambda(self, event, context, main_file, func_details=None):
+        event_json_string = "%s" % (json.dumps(event) if event else "{}")
+        cmd = "AWS_LAMBDA_FUNCTION_HANDLER=%s AWS_LAMBDA_EVENT_BODY='%s' %s" % (
+            main_file,
+            event_json_string,
+            GO_LAMBDA_RUNTIME,
+        )
+        LOG.info(cmd)
+        result = self._execute_in_custom_runtime(cmd, func_details=func_details)
+        return result
 
 
 class Util:
