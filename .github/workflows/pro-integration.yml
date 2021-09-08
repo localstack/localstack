@@ -52,7 +52,7 @@ jobs:
           terraform_version: 0.13.7
       - name: Set up system wide dependencies
         run: |
-          sudo apt-get install libsasl2-dev
+          sudo apt-get install libsasl2-dev jq
       - name: Cache LocalStack-ext dependencies (venv)
         uses: actions/cache@v2
         id: ext-cache
@@ -80,6 +80,14 @@ jobs:
         run: |
           source .venv/bin/activate
           pip install -e ../localstack
+      - name: Test LocalStack Pro startup
+        env:
+          DEBUG: 1
+          DNS_ADDRESS: 0
+          LOCALSTACK_API_KEY: "test"
+        run: |
+          source .venv/bin/activate
+          bin/test_localstack_pro.sh
       - name: Run community integration tests
         env:
           DEBUG: 0
@@ -95,7 +103,6 @@ jobs:
           source .venv/bin/activate
           python -m pytest --durations=10 --junitxml=target/reports/pytest.xml --show-capture=no ../localstack/tests/integration/
       - name: Run Lambda Tests for lambda executor docker
-        if: always()
         env:
           DEBUG: 0
           PROXY_MAX_RETRIES: 0
@@ -107,7 +114,6 @@ jobs:
           source .venv/bin/activate
           python -m pytest --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker' ../localstack/tests/integration/test_lambda.py ../localstack/tests/integration/test_integration.py
       - name: Run Lambda Tests for lambda executor docker-reuse
-        if: always()
         env:
           DEBUG: 0
           PROXY_MAX_RETRIES: 0
