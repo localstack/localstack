@@ -6,7 +6,7 @@ from localstack.services.cloudformation.deployment_utils import (
     get_cfn_response_mod_file,
     select_parameters,
 )
-from localstack.services.cloudformation.service_models import LOG, GenericBaseModel
+from localstack.services.cloudformation.service_models import LOG, REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import cp_r, is_base64, mkdir, new_tmp_dir, rm_rf, save_file, short_uid
 from localstack.utils.testutil import create_zip_file
@@ -149,42 +149,37 @@ class LambdaEventSourceMapping(GenericBaseModel):
         props = self.props
         resource_id = props["FunctionName"] or self.resource_id
         source_arn = props.get("EventSourceArn")
+        self_managed_src = props.get("SelfManagedEventSource")
         resource_id = self.resolve_refs_recursively(stack_name, resource_id, resources)
         source_arn = self.resolve_refs_recursively(stack_name, source_arn, resources)
-        if not resource_id or not source_arn:
+        if not resource_id or (not source_arn and not self_managed_src):
             raise Exception("ResourceNotFound")
-        mappings = aws_stack.connect_to_service("lambda").list_event_source_mappings(
-            FunctionName=resource_id, EventSourceArn=source_arn
-        )
-        mapping = list(
-            filter(
-                lambda m: m["EventSourceArn"] == source_arn
-                and m["FunctionArn"] == aws_stack.lambda_function_arn(resource_id),
-                mappings["EventSourceMappings"],
+        client = aws_stack.connect_to_service("lambda")
+
+        def _matches(m):
+            return m["FunctionArn"] == aws_stack.lambda_function_arn(resource_id) and (
+                m.get("EventSourceArn") == source_arn
+                or m.get("SelfManagedEventSource") == self_managed_src
             )
-        )
+
+        kwargs = {"EventSourceArn": source_arn} if source_arn else {}
+        mappings = client.list_event_source_mappings(FunctionName=resource_id, **kwargs)
+        mapping = list(filter(lambda m: _matches(m), mappings["EventSourceMappings"]))
         if not mapping:
             raise Exception("ResourceNotFound")
         return mapping[0]
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name in REF_ID_ATTRS:
+            return self.props.get("UUID")
+        return super(LambdaEventSourceMapping, self).get_cfn_attribute(attribute_name)
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("UUID")
 
     @staticmethod
     def get_deploy_templates():
-        return {
-            "create": {
-                "function": "create_event_source_mapping",
-                "parameters": select_parameters(
-                    "FunctionName",
-                    "EventSourceArn",
-                    "Enabled",
-                    "StartingPosition",
-                    "BatchSize",
-                    "StartingPositionTimestamp",
-                ),
-            }
-        }
+        return {"create": {"function": "create_event_source_mapping"}}
 
 
 class LambdaPermission(GenericBaseModel):
@@ -261,6 +256,7 @@ class LambdaEventInvokeConfig(GenericBaseModel):
             props.get("Qualifier"),
         )
 
+    @staticmethod
     def get_deploy_templates():
         return {
             "create": {"function": "put_function_event_invoke_config"},
