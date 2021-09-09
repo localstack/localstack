@@ -32,10 +32,7 @@ def parse_requirements(lines):
 # determine version
 version = localstack.__version__
 
-# determine requirements
-with open("requirements.txt") as f:
-    req = parse_requirements(f.readlines())
-
+# define package data
 package_data = {
     "": ["Makefile", "*.md"],
     "localstack": [
@@ -49,6 +46,14 @@ package_data = {
         "utils/kinesis/java/cloud/localstack/*.*",
     ],
 }
+
+# load README.md as long description
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+# determine requirements
+with open("requirements.txt") as f:
+    req = parse_requirements(f.readlines())
 
 install_requires = req["install"]
 
@@ -65,6 +70,8 @@ if __name__ == "__main__":
         name="localstack",
         version=version,
         description="LocalStack - A fully functional local Cloud stack",
+        long_description=long_description,
+        long_description_content_type="text/markdown",
         author="Waldemar Hummer",
         author_email="waldemar.hummer@gmail.com",
         url="https://github.com/localstack/localstack",
@@ -77,16 +84,12 @@ if __name__ == "__main__":
         license="Apache License 2.0",
         zip_safe=False,
         classifiers=[
-            "Programming Language :: Python :: 2",
-            "Programming Language :: Python :: 2.6",
-            "Programming Language :: Python :: 2.7",
-            "Programming Language :: Python :: 3",
-            "Programming Language :: Python :: 3.3",
-            "Programming Language :: Python :: 3.4",
             "Programming Language :: Python :: 3.6",
             "Programming Language :: Python :: 3.7",
             "Programming Language :: Python :: 3.8",
             "License :: OSI Approved :: Apache Software License",
+            "Topic :: Internet",
             "Topic :: Software Development :: Testing",
+            "Topic :: System :: Emulators",
         ],
     )
