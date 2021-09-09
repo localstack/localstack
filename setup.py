@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 import re
 from collections import defaultdict
 
@@ -48,8 +48,12 @@ package_data = {
 }
 
 # load README.md as long description
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+if os.path.isfile("README.md"):
+    with open("README.md", "r") as fh:
+        long_description = fh.read()
+else:
+    # may happen in foreign build environments (like Docker)
+    long_description = ""
 
 # determine requirements
 with open("requirements.txt") as f:
