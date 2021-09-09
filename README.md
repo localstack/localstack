@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/localstack-readme-header.png" alt="LocalStack - A fully functional local cloud stack">
+  <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-header.png" alt="LocalStack - A fully functional local cloud stack">
 </p>
 
 <p align="center">
