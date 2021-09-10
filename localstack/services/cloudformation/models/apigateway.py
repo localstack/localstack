@@ -116,18 +116,20 @@ class GatewayDeployment(GenericBaseModel):
         return "AWS::ApiGateway::Deployment"
 
     def fetch_state(self, stack_name, resources):
-        api_id = self.props.get("RestApiId") or self.resource_id
+        api_id = self.props.get("RestApiId")
         api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
 
         if not api_id:
             return None
 
-        result = aws_stack.connect_to_service("apigateway").get_deployments(restApiId=api_id)[
-            "items"
-        ]
+        client = aws_stack.connect_to_service("apigateway")
+        result = client.get_deployments(restApiId=api_id)["items"]
         # TODO possibly filter results by stage name or other criteria
 
         return result[0] if result else None
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("id")
 
     @staticmethod
     def get_deploy_templates():
