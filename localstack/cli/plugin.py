@@ -31,13 +31,6 @@ class LocalstackCliPlugin(Plugin):
         """
 
 
-class MyCliPlugin(LocalstackCliPlugin):
-    name = "mine"
-
-    def attach(self, cli: LocalstackCli) -> None:
-        pass
-
-
 def load_cli_plugins(cli):
     from localstack.plugin.manager import PluginManager
 

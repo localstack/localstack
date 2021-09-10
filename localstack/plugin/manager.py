@@ -1,6 +1,5 @@
 import logging
 import threading
-from importlib.metadata import EntryPoint
 from typing import Any, Callable, Dict, Generic, List, Tuple, TypeVar, Union
 
 from .core import Plugin, PluginFinder, PluginLifecycleListener, PluginSpec, PluginSpecResolver
@@ -272,7 +271,7 @@ class StevedorePluginFinder(PluginFinder):
     def __init__(
         self,
         namespace: str,
-        on_resolve_exception_callback: Callable[[str, EntryPoint, Exception], None] = None,
+        on_resolve_exception_callback: Callable[[str, Any, Exception], None] = None,
         spec_resolver: PluginSpecResolver = None,
     ) -> None:
         super().__init__()

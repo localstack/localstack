@@ -20,8 +20,7 @@ usage:                 ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-20s %s\n", $$1, $$2 }'
 
 venv:                  ## Create a new (empty) virtual environment
-	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
-		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR))
+	(test -e $(VENV_DIR) || ((test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && virtualenv $(VENV_OPTS) $(VENV_DIR)))
 
 freeze:                   ## Run pip freeze -l in the virtual environment
 	@$(VENV_RUN); pip freeze -l
@@ -39,7 +38,10 @@ install-dev: venv         ## Install developer requirements into venv
 	$(VENV_RUN); $(PIP_CMD) install -e ".[cli,runtime,test,dev]"
 
 install:                  ## Install full dependencies into venv, and download third-party services
-	(make install-dev && make init-testlibs) || exit 1
+	(make install-dev && make entrypoints && make init-testlibs) || exit 1
+
+entrypoints:              ## Run setup.py install to build entry points
+	$(VENV_RUN); python setup.py develop
 
 init:                     ## Initialize the infrastructure, make sure all libs are downloaded
 	$(VENV_RUN); python -m localstack.services.install libs
