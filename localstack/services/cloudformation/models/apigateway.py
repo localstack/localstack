@@ -508,6 +508,68 @@ class GatewayUsagePlanKey(GenericBaseModel):
         return self.props.get("id")
 
 
+class GatewayDomain(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::ApiGateway::DomainName"
+
+    def fetch_state(self, stack_name, resources):
+        return aws_stack.connect_to_service("apigateway").get_domain_name(
+            domainName=self.props["DomainName"]
+        )
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_domain_name",
+                "parameters": lambda_keys_to_lower(),
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("domainName")
+
+
+class GatewayBasePathMapping(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::ApiGateway::BasePathMapping"
+
+    def fetch_state(self, stack_name, resources):
+        resources = (
+            aws_stack.connect_to_service("apigateway")
+            .get_base_path_mappings(domainName=self.props.get("DomainName"))
+            .get("items", [])
+        )
+
+        comparable = (
+            [self.props.get("BasePath")] if self.props.get("BasePath") else [None, "", "(none)"]
+        )
+
+        return next(iter([res for res in resources if res.get("basePath") in comparable]))
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create_base_path_mapping(resource_id, resources, *args, **kwargs):
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            kwargs = {
+                "domainName": props.get("DomainName"),
+                "restApiId": props.get("RestApiId"),
+                **({"basePath": props.get("BasePath")} if props.get("BasePath") else {}),
+                **({"stage": props.get("Stage")} if props.get("Stage") else {}),
+            }
+
+            aws_stack.connect_to_service("apigateway").create_base_path_mapping(**kwargs)
+
+        return {"create": {"function": _create_base_path_mapping}}
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("id")
+
+
 class GatewayModel(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
