@@ -59,6 +59,12 @@ class PluginSpec:
         self.requirements = requirements or []
         self.metadata = metadata or {}
 
+    def __str__(self):
+        return "PluginSpec(%s.%s = %s)" % (self.namespace, self.name, self.factory)
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class PluginSpecResolver:
     def resolve(self, source: Any) -> PluginSpec:
