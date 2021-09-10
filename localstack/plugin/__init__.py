@@ -1,4 +1,4 @@
-from .core import Plugin, PluginLifecycleListener, PluginSpec, PluginType
+from .core import Plugin, PluginFinder, PluginLifecycleListener, PluginSpec, PluginType
 from .manager import PluginManager, PluginSpecResolver
 
 name = "plugin"
@@ -8,6 +8,7 @@ __all__ = [
     "PluginSpec",
     "PluginType",
     "PluginLifecycleListener",
+    "PluginFinder",
     "PluginManager",
     "PluginSpecResolver",
 ]

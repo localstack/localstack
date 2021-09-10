@@ -1,55 +1,16 @@
-import abc
 import importlib
 import inspect
 import logging
 import sys
-from collections import defaultdict
 from types import ModuleType
-from typing import Dict, Iterable, List, NamedTuple
+from typing import Iterable, List
 
-from .core import PluginSpec, PluginSpecResolver
+from .core import PluginFinder, PluginSpec, PluginSpecResolver
 
 LOG = logging.getLogger(__name__)
 
 
-class EntryPoint(NamedTuple):
-    name: str
-    value: str
-    group: str
-
-
-EntryPointDict = Dict[str, List[str]]
-
-
-def to_entry_point_dict(eps: List[EntryPoint]) -> EntryPointDict:
-    result = defaultdict(list)
-    for ep in eps:
-        result[ep.group].append("%s=%s" % (ep.name, ep.value))
-    return result
-
-
-def spec_to_entry_point(spec: PluginSpec) -> EntryPoint:
-    module = inspect.getmodule(spec.factory)
-    name = spec.factory.__name__
-    path = f"{module}:{name}"
-    return EntryPoint(group=spec.namespace, name=spec.name, value=path)
-
-
-class PluginCollector(abc.ABC):
-    def get_entry_points(self) -> EntryPointDict:
-        """
-        Creates a dictionary for the entry_points attribute of setuptools' setup(), where keys are
-        stevedore plugin namespaces, and values are lists of "name = module:object" pairs.
-
-        :return: an entry_point dictionary
-        """
-        return to_entry_point_dict([spec_to_entry_point(spec) for spec in self.collect_plugins()])
-
-    def collect_plugins(self) -> List[PluginSpec]:
-        raise NotImplementedError
-
-
-class ModuleScanningPluginCollector(PluginCollector):
+class ModuleScanningPluginFinder(PluginFinder):
     """
     A PluginCollector that scans the members of given modules for available PluginSpecs. Each member is evaluated
     with a PluginSpecResolver, and all successful calls resulting in a PluginSpec are collected and returned.
@@ -60,7 +21,7 @@ class ModuleScanningPluginCollector(PluginCollector):
         self.modules = modules
         self.resolver = resolver or PluginSpecResolver()
 
-    def collect_plugins(self) -> List[PluginSpec]:
+    def find_plugins(self) -> List[PluginSpec]:
         plugins = list()
 
         for module in self.modules:
@@ -79,10 +40,11 @@ class ModuleScanningPluginCollector(PluginCollector):
         return plugins
 
 
-class SetuptoolsPluginCollector(PluginCollector):
+class PackagePathPluginFinder(PluginFinder):
     """
     Uses setuptools and pkgutil to find and import modules (with the same API as setuptools.find_packages),
-    and then uses a ModuleScanningPluginCollector to resolve the available plugins.
+    within a given path and then uses a ModuleScanningPluginCollector to resolve the available plugins.
+    The constructor has the same signature as setuptools.find_packages(where, exclude, include).
     """
 
     def __init__(self, where=".", exclude=(), include=("*",)) -> None:
@@ -90,9 +52,9 @@ class SetuptoolsPluginCollector(PluginCollector):
         self.exclude = exclude
         self.include = include
 
-    def collect_plugins(self) -> List[PluginSpec]:
-        collector = ModuleScanningPluginCollector(self.load_modules())
-        return collector.collect_plugins()
+    def find_plugins(self) -> List[PluginSpec]:
+        collector = ModuleScanningPluginFinder(self.load_modules())
+        return collector.find_plugins()
 
     def load_modules(self):
         for module_name in self.list_module_names():

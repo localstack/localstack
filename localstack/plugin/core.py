@@ -65,6 +65,26 @@ class PluginSpec:
     def __repr__(self):
         return self.__str__()
 
+    def __eq__(self, other):
+        attrs = [
+            "namespace",
+            "name",
+            "factory",
+            "metadata",
+            "requirements",
+        ]
+
+        for attr in attrs:
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+
+        return True
+
+
+class PluginFinder(abc.ABC):
+    def find_plugins(self) -> List[PluginSpec]:
+        raise NotImplementedError  # pragma: no cover
+
 
 class PluginSpecResolver:
     def resolve(self, source: Any) -> PluginSpec:
@@ -79,10 +99,10 @@ class PluginSpecResolver:
         if inspect.isclass(source):
             if issubclass(source, Plugin):
                 return PluginSpec(source.namespace, source.name, source)
-            # TODO: check for @spec wrapper
+            # TODO: check for @plugin wrapper
 
         if inspect.isfunction(source):
-            # TODO: check if is @spec wrapper
+            # TODO: check if is @plugin wrapper
             pass
 
         # TODO: add more options to specify plugin specs
@@ -90,7 +110,7 @@ class PluginSpecResolver:
         raise ValueError("cannot resolve plugin specification from %s" % source)
 
 
-class PluginLifecycleListener:
+class PluginLifecycleListener:  # pragma: no cover
     def on_resolve_exception(self, namespace: str, entrypoint, exception: Exception):
         pass
 
