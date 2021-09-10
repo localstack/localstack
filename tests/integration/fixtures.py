@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
+    from mypy_boto3_stepfunctions import SFNClient
 
 LOG = logging.getLogger(__name__)
 
@@ -99,6 +100,11 @@ def logs_client() -> "CloudWatchLogsClient":
 @pytest.fixture(scope="class")
 def secretsmanager_client() -> "SecretsManagerClient":
     return _client("secretsmanager")
+
+
+@pytest.fixture(scope="class")
+def stepfunctions_client() -> "SFNClient":
+    return _client("stepfunctions")
 
 
 @pytest.fixture
