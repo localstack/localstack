@@ -785,13 +785,6 @@ def prepare_template_body(req_data):
 
 def deploy_resource(resource_id, resources, stack_name):
     result = execute_resource_action(resource_id, resources, stack_name, ACTION_CREATE)
-
-    # fetch and update resource state
-    instance = get_resource_model_instance(resource_id, resources)
-    if instance:
-        state = instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
-        return state
-
     return result
 
 

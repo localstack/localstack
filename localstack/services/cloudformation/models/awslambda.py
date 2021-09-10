@@ -147,23 +147,23 @@ class LambdaEventSourceMapping(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        resource_id = props["FunctionName"] or self.resource_id
         source_arn = props.get("EventSourceArn")
         self_managed_src = props.get("SelfManagedEventSource")
-        resource_id = self.resolve_refs_recursively(stack_name, resource_id, resources)
+        function_name = self.resolve_refs_recursively(stack_name, props["FunctionName"], resources)
         source_arn = self.resolve_refs_recursively(stack_name, source_arn, resources)
-        if not resource_id or (not source_arn and not self_managed_src):
+        if not function_name or (not source_arn and not self_managed_src):
             raise Exception("ResourceNotFound")
-        client = aws_stack.connect_to_service("lambda")
 
         def _matches(m):
-            return m["FunctionArn"] == aws_stack.lambda_function_arn(resource_id) and (
+            return m["FunctionArn"] == lambda_arn and (
                 m.get("EventSourceArn") == source_arn
                 or m.get("SelfManagedEventSource") == self_managed_src
             )
 
+        client = aws_stack.connect_to_service("lambda")
+        lambda_arn = aws_stack.lambda_function_arn(function_name)
         kwargs = {"EventSourceArn": source_arn} if source_arn else {}
-        mappings = client.list_event_source_mappings(FunctionName=resource_id, **kwargs)
+        mappings = client.list_event_source_mappings(FunctionName=function_name, **kwargs)
         mapping = list(filter(lambda m: _matches(m), mappings["EventSourceMappings"]))
         if not mapping:
             raise Exception("ResourceNotFound")
