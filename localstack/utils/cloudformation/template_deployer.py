@@ -215,11 +215,9 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             % (resource_id, resource, resources)
         )
     try:
-        # try to look up resource class
-        canonical_type = canonical_resource_type(resource_type)
-        resource_class = RESOURCE_MODELS.get(canonical_type)
-        if resource_class:
-            instance = resource_class(resource)
+        # convert resource props to resource entity
+        instance = get_resource_model_instance(resource_id, resources)
+        if instance:
             state = instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
             return state
 
@@ -287,7 +285,7 @@ def extract_resource_attribute(
         resource = resources[resource_id]
 
     if not resource_state:
-        resource_state = retrieve_resource_details(resource_id, {}, resources, stack_name) or {}
+        resource_state = retrieve_resource_details(resource_id, {}, resources, stack_name)
         if not resource_state:
             raise DependencyNotYetSatisfied(
                 resource_ids=resource_id,
@@ -314,6 +312,8 @@ def extract_resource_attribute(
         )
 
     # extract resource specific attributes
+    # TODO: remove the code below - move into resource model classes!
+
     resource_props = resource.get("Properties", {})
     if resource_type == "Parameter":
         result = None
@@ -430,8 +430,7 @@ def canonical_resource_type(resource_type):
 
 def get_attr_from_model_instance(resource, attribute, resource_type, resource_id=None):
     resource_type = canonical_resource_type(resource_type)
-    # TODO: remove moto.MODEL_MAP here
-    model_class = RESOURCE_MODELS.get(resource_type) or parsing.MODEL_MAP.get(resource_type)
+    model_class = RESOURCE_MODELS.get(resource_type)
     if not model_class:
         if resource_type not in ["AWS::Parameter", "Parameter"]:
             LOG.debug('Unable to find model class for resource type "%s"' % resource_type)
@@ -718,13 +717,23 @@ def update_resource(resource_id, resources, stack_name):
         return
     LOG.info("Updating resource %s of type %s" % (resource_id, resource_type))
 
-    canonical_type = canonical_resource_type(resource_type)
-    resource_class = RESOURCE_MODELS.get(canonical_type)
-    if resource_class:
-        instance = resource_class(resource)
+    instance = get_resource_model_instance(resource_id, resources)
+    if instance:
         result = instance.update_resource(resource, stack_name=stack_name, resources=resources)
         instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
         return result
+
+
+def get_resource_model_instance(resource_id, resources) -> GenericBaseModel:
+    """Obtain a typed resource entity instance representing the given stack resource."""
+    resource = resources[resource_id]
+    resource_type = get_resource_type(resource)
+    canonical_type = canonical_resource_type(resource_type)
+    resource_class = RESOURCE_MODELS.get(canonical_type)
+    if not resource_class:
+        return None
+    instance = resource_class(resource)
+    return instance
 
 
 def fix_account_id_in_arns(params):
@@ -775,7 +784,8 @@ def prepare_template_body(req_data):
 
 
 def deploy_resource(resource_id, resources, stack_name):
-    return execute_resource_action(resource_id, resources, stack_name, ACTION_CREATE)
+    result = execute_resource_action(resource_id, resources, stack_name, ACTION_CREATE)
+    return result
 
 
 def delete_resource(resource_id, resources, stack_name):
@@ -1962,12 +1972,14 @@ class TemplateDeployer(object):
         if not evaluate_resource_condition(resource, stack_name, new_resources):
             return
         # execute resource action
+        result = None
         if action == "Add":
             result = deploy_resource(resource_id, new_resources, stack_name)
         elif action == "Remove":
             result = delete_resource(resource_id, old_stack.resources, stack_name)
         elif action == "Modify":
             result = update_resource(resource_id, new_resources, stack_name)
+
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)
         self.update_resource_details(resource_id, result, stack=old_stack, action=stack_action)
