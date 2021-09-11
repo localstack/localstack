@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import pickle
 import traceback
 from typing import Any, Dict, List, Optional, overload
 
@@ -8,6 +10,7 @@ from flask import Flask, request
 from requests.models import Response
 from typing_extensions import Literal
 
+from localstack import config
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_responses import (
@@ -23,6 +26,7 @@ from localstack.utils.common import (
     clone_safe,
     is_none_or_empty,
     long_uid,
+    mkdir,
     parse_request_data,
     recurse_object,
     select_attributes,
@@ -418,6 +422,20 @@ class CloudFormationRegion(RegionBackend):
         # maps stack set ID to stack set details
         self.stack_sets: Dict[str, StackSet] = {}
 
+    @classmethod
+    def get(cls, region=None):
+        region = region or cls.get_current_request_region()
+        regions = cls.regions()
+        if regions.get(region):
+            return regions.get(region)
+        if config.DATA_DIR:
+            cloudformation_region_file = get_region_data_file(region)
+            if os.path.isfile(cloudformation_region_file):
+                with open(cloudformation_region_file, "rb") as inp:
+                    regions[region] = pickle.load(inp)
+                    return regions[region]
+        return super(CloudFormationRegion, cls).get(region)
+
     @property
     def exports(self):
         exports = []
@@ -788,6 +806,13 @@ def create_change_set(req_params: Dict[str, Any]):
     return {"StackId": change_set.stack_id, "Id": change_set.change_set_id}
 
 
+def get_region_data_file(region):
+    cloudformation_data_dir = "%s/cloudformation" % config.DATA_DIR
+    mkdir(cloudformation_data_dir)
+    cloudformation_region_file = "%s/%s.pkl" % (cloudformation_data_dir, region)
+    return cloudformation_region_file
+
+
 def execute_change_set(req_params):
     stack_name = req_params.get("StackName")
     cs_name = req_params.get("ChangeSetName")
@@ -803,6 +828,12 @@ def execute_change_set(req_params):
     deployer = template_deployer.TemplateDeployer(change_set.stack)
     deployer.apply_change_set(change_set)
     change_set.stack.metadata["ChangeSetId"] = change_set.change_set_id
+    if config.DATA_DIR:
+        region = CloudFormationRegion.get_current_request_region()
+        cloudformation_region_file = get_region_data_file(region)
+        state = CloudFormationRegion.get()
+        with open(cloudformation_region_file, "wb") as outp:
+            pickle.dump(state, outp, pickle.HIGHEST_PROTOCOL)
     return {}
 
 
