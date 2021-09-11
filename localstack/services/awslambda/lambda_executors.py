@@ -1192,12 +1192,19 @@ class LambdaExecutorLocal(LambdaExecutor):
                 os.environ.pop(env_name, None)
 
     def execute_go_lambda(self, event, context, main_file, func_details=None):
-        event_json_string = "%s" % (json.dumps(event) if event else "{}")
-        cmd = "AWS_LAMBDA_FUNCTION_HANDLER=%s AWS_LAMBDA_EVENT_BODY='%s' %s" % (
-            main_file,
-            event_json_string,
-            GO_LAMBDA_RUNTIME,
-        )
+        cmd = GO_LAMBDA_RUNTIME
+
+        if func_details:
+            func_details.envvars["AWS_LAMBDA_FUNCTION_HANDLER"] = main_file
+            func_details.envvars["AWS_LAMBDA_EVENT_BODY"] = event
+        else:
+            func_details = {
+                "envvars": {
+                    "AWS_LAMBDA_FUNCTION_HANDLER": main_file,
+                    "AWS_LAMBDA_EVENT_BODY": event,
+                }
+            }
+
         LOG.info(cmd)
         result = self._execute_in_custom_runtime(cmd, func_details=func_details)
         return result
