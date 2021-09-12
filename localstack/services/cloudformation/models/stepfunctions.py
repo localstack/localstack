@@ -1,3 +1,6 @@
+import re
+from typing import Dict
+
 from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_RESOURCE_NAME
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
@@ -65,19 +68,43 @@ class SFNStateMachine(GenericBaseModel):
         }
         return client.update_state_machine(**kwargs)
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create_params(params, **kwargs):
+            def _get_definition(params):
+                definition_str = params.get("DefinitionString")
+                substitutions = params.get("DefinitionSubstitutions")
+                if substitutions is not None:
+                    definition_str = _apply_substitutions(definition_str, substitutions)
+                return definition_str
+
+            return {
+                "name": params.get("StateMachineName", PLACEHOLDER_RESOURCE_NAME),
+                "definition": _get_definition(params),
+                "roleArn": params.get("RoleArn"),
+                "type": params.get("StateMachineTyp", None),
+            }
+
         return {
             "create": {
                 "function": "create_state_machine",
-                "parameters": {
-                    "name": ["StateMachineName", PLACEHOLDER_RESOURCE_NAME],
-                    "definition": "DefinitionString",
-                    "roleArn": "RoleArn",
-                },
+                "parameters": _create_params,
             },
             "delete": {
                 "function": "delete_state_machine",
                 "parameters": {"stateMachineArn": "PhysicalResourceId"},
             },
         }
+
+
+def _apply_substitutions(definition: str, substitutions: Dict[str, str]) -> str:
+    substitution_regex = re.compile("\\${[a-zA-Z0-9_]+}")  # might be a bit too strict in some cases
+    tokens = substitution_regex.findall(definition)
+    result = definition
+    for token in tokens:
+        raw_token = token[2:-1]  # strip ${ and }
+        if raw_token not in substitutions.keys():
+            raise
+        result = result.replace(token, substitutions[raw_token])
+
+    return result
