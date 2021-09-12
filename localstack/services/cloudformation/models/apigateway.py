@@ -508,6 +508,7 @@ class GatewayUsagePlanKey(GenericBaseModel):
         return self.props.get("id")
 
 
+# TODO: add tests for this resource type
 class GatewayDomain(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -531,6 +532,7 @@ class GatewayDomain(GenericBaseModel):
         return self.props.get("domainName")
 
 
+# TODO: add tests for this resource type
 class GatewayBasePathMapping(GenericBaseModel):
     @staticmethod
     def cloudformation_type():

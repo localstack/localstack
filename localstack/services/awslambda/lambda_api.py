@@ -42,6 +42,7 @@ from localstack.utils.common import (
     empty_context_manager,
     ensure_readable,
     first_char_to_lower,
+    get_all_subclasses,
     is_zip_file,
     isoformat_milliseconds,
     json_safe,
@@ -120,10 +121,6 @@ POSSIBLE_JSON_TYPES = (str, bytes)
 JSON_START_TYPES = tuple(set(JSON_START_CHAR_MAP.keys()) - set(POSSIBLE_JSON_TYPES))
 JSON_START_CHARS = tuple(set(functools.reduce(lambda x, y: x + y, JSON_START_CHAR_MAP.values())))
 
-# SQS listener thread settings
-SQS_LISTENER_THREAD = {}
-SQS_POLL_INTERVAL_SEC = 1
-
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(
     config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR
@@ -183,6 +180,173 @@ class LambdaContext(object):
         return 1000 * 60
 
 
+class EventSourceListener:
+    INSTANCES: Dict[str, "EventSourceListener"] = {}
+
+    @classmethod
+    def get(cls, source_type):
+        # TODO: potentially to be replaced with new plugin loading mechanism...
+        if not cls.INSTANCES:
+            for clazz in get_all_subclasses(EventSourceListener):
+                cls.INSTANCES[clazz.source_type()] = clazz()
+        return cls.INSTANCES.get(source_type)
+
+    @staticmethod
+    def source_type() -> str:
+        """Type discriminator - to be implemented by subclasses."""
+        raise NotImplementedError
+
+    def start(self):
+        """Start listener in the background - to be implemented by subclasses."""
+        pass
+
+    @staticmethod
+    def start_listeners(event_source_mapping: Dict):
+        source_arn = event_source_mapping.get("EventSourceArn") or ""
+        parts = source_arn.split(":")
+        service_type = parts[2] if len(parts) > 2 else ""
+        if not service_type:
+            self_managed_endpoints = event_source_mapping.get("SelfManagedEventSource", {}).get(
+                "Endpoints", {}
+            )
+            if self_managed_endpoints.get("KAFKA_BOOTSTRAP_SERVERS"):
+                service_type = "kafka"
+        instance = EventSourceListener.get(service_type)
+        if instance:
+            instance.start()
+
+
+class EventSourceListenerSQS(EventSourceListener):
+    # SQS listener thread settings
+    SQS_LISTENER_THREAD: Dict = {}
+    SQS_POLL_INTERVAL_SEC: float = 1
+
+    @staticmethod
+    def source_type():
+        return "sqs"
+
+    def start(self):
+        if self.SQS_LISTENER_THREAD:
+            return
+
+        LOG.debug("Starting SQS message polling thread for Lambda API")
+        self.SQS_LISTENER_THREAD["_thread_"] = thread = FuncThread(self._listener_loop)
+        thread.start()
+
+    def get_matching_event_sources(self) -> List[Dict]:
+        return get_event_sources(source_arn=r".*:sqs:.*")
+
+    def _listener_loop(self, *args):
+        while True:
+            try:
+                sources = self.get_matching_event_sources()
+                if not sources:
+                    # Temporarily disable polling if no event sources are configured
+                    # anymore. The loop will get restarted next time a message
+                    # arrives and if an event source is configured.
+                    self.SQS_LISTENER_THREAD.pop("_thread_")
+                    return
+
+                unprocessed_messages = {}
+
+                sqs_client = aws_stack.connect_to_service("sqs")
+                for source in sources:
+                    queue_arn = source["EventSourceArn"]
+                    lambda_arn = source["FunctionArn"]
+                    batch_size = max(min(source.get("BatchSize", 1), 10), 1)
+
+                    try:
+                        region_name = queue_arn.split(":")[3]
+                        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+                        messages = unprocessed_messages.pop(queue_arn, None)
+                        if not messages:
+                            result = sqs_client.receive_message(
+                                QueueUrl=queue_url,
+                                MessageAttributeNames=["All"],
+                                MaxNumberOfMessages=batch_size,
+                            )
+                            messages = result.get("Messages")
+                            if not messages:
+                                continue
+
+                        LOG.debug(
+                            "Sending event from event source %s to Lambda %s"
+                            % (queue_arn, lambda_arn)
+                        )
+                        res = self._send_event_to_lambda(
+                            queue_arn,
+                            queue_url,
+                            lambda_arn,
+                            messages,
+                            region=region_name,
+                        )
+                        if not res:
+                            unprocessed_messages[queue_arn] = messages
+
+                    except Exception as e:
+                        LOG.debug("Unable to poll SQS messages for queue %s: %s" % (queue_arn, e))
+
+            except Exception:
+                pass
+            finally:
+                time.sleep(self.SQS_POLL_INTERVAL_SEC)
+
+    def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region):
+        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
+            if error and not dlq_sent:
+                # Skip deleting messages from the queue in case of processing errors AND if
+                # the message has not yet been sent to a dead letter queue (DLQ).
+                # We'll pick them up and retry next time they become available on the queue.
+                return
+
+            sqs_client = aws_stack.connect_to_service("sqs")
+            entries = [
+                {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
+            ]
+            try:
+                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+            except Exception as e:
+                LOG.info(
+                    "Unable to delete Lambda events from SQS queue "
+                    + "(please check SQS visibility timeout settings): %s - %s" % (entries, e)
+                )
+
+        records = []
+        for msg in messages:
+            message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
+            records.append(
+                {
+                    "body": msg["Body"],
+                    "receiptHandle": msg["ReceiptHandle"],
+                    "md5OfBody": msg["MD5OfBody"],
+                    "eventSourceARN": queue_arn,
+                    "eventSource": lambda_executors.EVENT_SOURCE_SQS,
+                    "awsRegion": region,
+                    "messageId": msg["MessageId"],
+                    "attributes": msg.get("Attributes", {}),
+                    "messageAttributes": message_attrs,
+                    "md5OfMessageAttributes": msg.get("MD5OfMessageAttributes"),
+                    "sqs": True,
+                }
+            )
+
+        event = {"Records": records}
+
+        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
+        res = run_lambda(
+            func_arn=lambda_arn,
+            event=event,
+            context={},
+            asynchronous=True,
+            callback=delete_messages,
+        )
+        if isinstance(res, lambda_executors.InvocationResult):
+            status_code = getattr(res.result, "status_code", 0)
+            if status_code >= 400:
+                return False
+        return True
+
+
 def cleanup():
     region = LambdaRegion.get()
     region.lambdas = {}
@@ -237,10 +401,10 @@ def build_mapping_obj(data) -> Dict:
     mapping["LastModified"] = format_timestamp_for_event_source_mapping()
     mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
     mapping["ParallelizationFactor"] = data.get("ParallelizationFactor") or 1
+    mapping["Topics"] = data.get("Topics") or []
     if "SelfManagedEventSource" in data:
         source_arn = data["SourceAccessConfigurations"][0]["URI"]
         mapping["SelfManagedEventSource"] = data["SelfManagedEventSource"]
-        mapping["Topics"] = data["Topics"]
         mapping["SourceAccessConfigurations"] = data["SourceAccessConfigurations"]
     else:
         source_arn = data["EventSourceArn"]
@@ -265,6 +429,7 @@ def add_event_source(data):
     region = LambdaRegion.get()
     mapping = build_mapping_obj(data)
     region.event_source_mappings.append(mapping)
+    EventSourceListener.start_listeners(mapping)
     return mapping
 
 
@@ -501,127 +666,13 @@ def process_kinesis_records(records, stream_name):
 
 
 def start_lambda_sqs_listener():
-    if SQS_LISTENER_THREAD:
-        return
-
-    def send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region):
-        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
-            if error and not dlq_sent:
-                # Skip deleting messages from the queue in case of processing errors AND if
-                # the message has not yet been sent to a dead letter queue (DLQ).
-                # We'll pick them up and retry next time they become available on the queue.
-                return
-
-            sqs_client = aws_stack.connect_to_service("sqs")
-            entries = [
-                {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
-            ]
-            try:
-                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
-            except Exception as e:
-                LOG.info(
-                    "Unable to delete Lambda events from SQS queue "
-                    + "(please check SQS visibility timeout settings): %s - %s" % (entries, e)
-                )
-
-        records = []
-        for msg in messages:
-            message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
-            records.append(
-                {
-                    "body": msg["Body"],
-                    "receiptHandle": msg["ReceiptHandle"],
-                    "md5OfBody": msg["MD5OfBody"],
-                    "eventSourceARN": queue_arn,
-                    "eventSource": lambda_executors.EVENT_SOURCE_SQS,
-                    "awsRegion": region,
-                    "messageId": msg["MessageId"],
-                    "attributes": msg.get("Attributes", {}),
-                    "messageAttributes": message_attrs,
-                    "md5OfMessageAttributes": msg.get("MD5OfMessageAttributes"),
-                    "sqs": True,
-                }
-            )
-
-        event = {"Records": records}
-
-        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
-        res = run_lambda(
-            func_arn=lambda_arn,
-            event=event,
-            context={},
-            asynchronous=True,
-            callback=delete_messages,
-        )
-        if (
-            isinstance(res, lambda_executors.InvocationResult)
-            and getattr(res.result, "status_code", 0) >= 400
-        ):
-            return False
-        return True
-
-    def listener_loop(*args):
-        while True:
-            try:
-                sources = get_event_sources(source_arn=r".*:sqs:.*")
-                if not sources:
-                    # Temporarily disable polling if no event sources are configured
-                    # anymore. The loop will get restarted next time a message
-                    # arrives and if an event source is configured.
-                    SQS_LISTENER_THREAD.pop("_thread_")
-                    return
-
-                unprocessed_messages = {}
-
-                sqs_client = aws_stack.connect_to_service("sqs")
-                for source in sources:
-                    queue_arn = source["EventSourceArn"]
-                    lambda_arn = source["FunctionArn"]
-                    batch_size = max(min(source.get("BatchSize", 1), 10), 1)
-
-                    try:
-                        region_name = queue_arn.split(":")[3]
-                        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-                        messages = unprocessed_messages.pop(queue_arn, None)
-                        if not messages:
-                            result = sqs_client.receive_message(
-                                QueueUrl=queue_url,
-                                MessageAttributeNames=["All"],
-                                MaxNumberOfMessages=batch_size,
-                            )
-                            messages = result.get("Messages")
-                            if not messages:
-                                continue
-
-                        LOG.debug(
-                            "Sending event from event source %s to Lambda %s"
-                            % (queue_arn, lambda_arn)
-                        )
-                        res = send_event_to_lambda(
-                            queue_arn,
-                            queue_url,
-                            lambda_arn,
-                            messages,
-                            region=region_name,
-                        )
-                        if not res:
-                            unprocessed_messages[queue_arn] = messages
-
-                    except Exception as e:
-                        LOG.debug("Unable to poll SQS messages for queue %s: %s" % (queue_arn, e))
-
-            except Exception:
-                pass
-            finally:
-                time.sleep(SQS_POLL_INTERVAL_SEC)
-
-    LOG.debug("Starting SQS message polling thread for Lambda API")
-    SQS_LISTENER_THREAD["_thread_"] = FuncThread(listener_loop)
-    SQS_LISTENER_THREAD["_thread_"].start()
+    EventSourceListener.get("sqs").start()
 
 
 def process_sqs_message(queue_name, region_name=None):
     # feed message into the first listening lambda (message should only get processed once)
+    # TODO: optimize the performance of this function - we should run start_lambda_sqs_listener() only if
+    #  event source mappings or queue configurations change, but not for every single incoming message!
     try:
         region_name = region_name or aws_stack.get_region()
         queue_arn = aws_stack.sqs_queue_arn(queue_name, region_name=region_name)

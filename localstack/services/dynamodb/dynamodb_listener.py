@@ -110,6 +110,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             return error_response_throughput()
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
+        table_def = None
         if "TableName" in data:
             table_def = DynamoDBRegion.get().table_definitions.get(data["TableName"]) or {}
 
