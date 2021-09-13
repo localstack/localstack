@@ -1196,13 +1196,12 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         if func_details:
             func_details.envvars["AWS_LAMBDA_FUNCTION_HANDLER"] = main_file
-            func_details.envvars["AWS_LAMBDA_EVENT_BODY"] = event
+            func_details.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
         else:
-            func_details = {
-                "envvars": {
-                    "AWS_LAMBDA_FUNCTION_HANDLER": main_file,
-                    "AWS_LAMBDA_EVENT_BODY": event,
-                }
+            func_details = {}
+            func_details.envvars = {
+                "AWS_LAMBDA_FUNCTION_HANDLER": main_file,
+                "AWS_LAMBDA_EVENT_BODY": json.dumps(json_safe(event)),
             }
 
         LOG.info(cmd)
