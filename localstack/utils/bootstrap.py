@@ -500,7 +500,7 @@ def start_infra_in_docker():
 
     if DOCKER_CLIENT.is_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
-    if config.TMP_FOLDER != config.HOST_TMP_FOLDER:
+    if config.TMP_FOLDER != config.HOST_TMP_FOLDER and config.LAMBDA_REMOTE_DOCKER:
         print(
             f"WARNING: The detected temp folder for localstack ({config.TMP_FOLDER}) is not equal to the "
             f"HOST_TMP_FOLDER environment variable set ({config.HOST_TMP_FOLDER})."
