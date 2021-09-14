@@ -1198,11 +1198,7 @@ class LambdaExecutorLocal(LambdaExecutor):
             func_details.envvars["AWS_LAMBDA_FUNCTION_HANDLER"] = main_file
             func_details.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
         else:
-            func_details = {}
-            func_details.envvars = {
-                "AWS_LAMBDA_FUNCTION_HANDLER": main_file,
-                "AWS_LAMBDA_EVENT_BODY": json.dumps(json_safe(event)),
-            }
+            LOG.warn("Function details are empty")
 
         LOG.info(cmd)
         result = self._execute_in_custom_runtime(cmd, func_details=func_details)
