@@ -185,7 +185,8 @@ class LambdaExecutorPlugin:
         return cls.INSTANCES
 
 
-def get_from_event(event, key):
+def get_from_event(event: Dict, key: str):
+    """Retrieve a field with the given key from the list of Records within 'event'."""
     try:
         return event["Records"][0][key]
     except KeyError:
