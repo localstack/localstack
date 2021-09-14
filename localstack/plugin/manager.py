@@ -12,7 +12,7 @@ P = TypeVar("P", bound=Plugin)
 def _call_safe(func: Callable, args: Tuple, exception_message: str):
     """
     Call the given function with the given arguments, and if it fails, log the given exception_message.
-    If loggin.DEBUG is set for the logger, then we also log the traceback.
+    If logging.DEBUG is set for the logger, then we also log the traceback.
 
     :param func: function to call
     :param args: arguments to pass
@@ -39,7 +39,7 @@ class PluginLifecycleNotifierMixin:
         _call_safe(
             self.listener.on_resolve_after,
             (plugin_spec,),  #
-            "error while calling on_import_after",
+            "error while calling on_resolve_after",
         )
 
     def _fire_on_resolve_exception(self, namespace, entrypoint, exception):
@@ -87,7 +87,7 @@ class PluginLifecycleNotifierMixin:
 
 class PluginContainer(Generic[P]):
     """
-    Object to pass around the plugin state inside a PluginLoader.
+    Object to pass around the plugin state inside a PluginManager.
     """
 
     name: str
@@ -108,6 +108,13 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
     """
     Manages Plugins within a namespace discovered by a PluginFinder. The default mechanism is to resolve plugins from
     entry points using a StevedorePluginFinder.
+
+    A Plugin that is managed by a PluginManager can be in three states:
+        * resolved: the entrypoint pointing to the PluginSpec was imported and the PluginSpec instance was created
+        * init: the PluginFactory of the PluginSpec was successfully invoked
+        * loaded: the load method of the Plugin was successfully invoked
+
+    Internally, the PluginManager uses PluginContainer instances to keep the state of Plugin instances.
     """
 
     namespace: str
@@ -138,6 +145,12 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
         self._init_mutex = threading.Lock()
 
     def load(self, name: str) -> P:
+        """
+        Loads the Plugin with the given name using the load args and kwargs set in the plugin manager constructor.
+        If at any point in the lifecycle the plugin loading fails, the load method will raise the respective exception.
+
+        Load is idempotent, so once the plugin is loaded, load will return the same instance again.
+        """
         container = self._require_plugin(name)
 
         if not container.is_loaded:
@@ -156,6 +169,10 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
         return container.plugin
 
     def load_all(self, propagate_exceptions=False) -> List[P]:
+        """
+        Attempts to load all plugins found in the namespace, and returns those that were loaded successfully. If
+        propagate_exception is set to True, then the method will re-raise any errors as soon as it encouters them.
+        """
         plugins = list()
 
         for name, container in self._plugins.items():
@@ -166,9 +183,11 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
             try:
                 plugin = self.load(name)
                 plugins.append(plugin)
-            except Exception:
+            except Exception as e:
                 if propagate_exceptions:
                     raise
+                else:
+                    LOG.error("exception while loading plugin %s:%s: %s", self.namespace, name, e)
 
         return plugins
 
@@ -216,6 +235,8 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
                     container.is_init = True
                     self._fire_on_init_after(container.plugin)
                 except Exception as e:
+                    # TODO: maybe we should move these logging blocks to `load_all`, since this is the only instance
+                    #  where exceptions messages may get lost.
                     if LOG.isEnabledFor(logging.DEBUG):
                         LOG.exception("error instantiating plugin %s", container.plugin_spec)
 

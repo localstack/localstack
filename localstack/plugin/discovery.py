@@ -1,7 +1,6 @@
 import importlib
 import inspect
 import logging
-import sys
 from types import ModuleType
 from typing import Iterable, List
 
@@ -12,7 +11,7 @@ LOG = logging.getLogger(__name__)
 
 class ModuleScanningPluginFinder(PluginFinder):
     """
-    A PluginCollector that scans the members of given modules for available PluginSpecs. Each member is evaluated
+    A PluginFinder that scans the members of given modules for available PluginSpecs. Each member is evaluated
     with a PluginSpecResolver, and all successful calls resulting in a PluginSpec are collected and returned.
     """
 
@@ -74,15 +73,8 @@ class PackagePathPluginFinder(PluginFinder):
         for pkg in find_packages(self.where, self.exclude, self.include):
             modules.add(pkg)
             pkgpath = self.where + "/" + pkg.replace(".", "/")
-            if sys.version_info.major == 2 or (
-                sys.version_info.major == 3 and sys.version_info.minor < 6
-            ):
-                for _, name, is_pkg in iter_modules([pkgpath]):
-                    if not is_pkg:
-                        modules.add(pkg + "." + name)
-            else:
-                for info in iter_modules([pkgpath]):
-                    if not info.ispkg:
-                        modules.add(pkg + "." + info.name)
+            for info in iter_modules([pkgpath]):
+                if not info.ispkg:
+                    modules.add(pkg + "." + info.name)
 
         return modules
