@@ -11,6 +11,7 @@ from localstack.services.cloudformation.service_models import (
 )
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 
 class EventConnection(GenericBaseModel):
@@ -130,3 +131,68 @@ class EventsRule(GenericBaseModel):
                 "parameters": {"Name": "PhysicalResourceId"},
             },
         }
+
+
+class EventBusPolicy(GenericBaseModel):
+    @classmethod
+    def cloudformation_type(cls):
+        return "AWS::Events::EventBusPolicy"
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, resource_type, func, stack_name):
+            events = aws_stack.connect_to_service("events")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+
+            resource["PhysicalResourceId"] = f"EventBusPolicy-{short_uid()}"
+
+            event_bus_name = props.get("EventBusName")
+            policy = props.get("Statement")  # either this field  is set or all other fields
+            statement_id = props.get("StatementId")
+            if policy is not None:
+                events.put_permission(EventBusName=event_bus_name, Policy=json.dumps(policy))
+            else:
+                condition = props.get("Condition")
+                if condition is not None:
+                    events.put_permission(
+                        EventBusName=event_bus_name,
+                        StatementId=statement_id,
+                        Action=props["Action"],
+                        Principal=props["Principal"],
+                        Condition=condition,
+                    )
+                else:
+                    # note: setting condition to None here is *NOT* equivalent to not specifying it and will throw
+                    events.put_permission(
+                        EventBusName=event_bus_name,
+                        StatementId=statement_id,
+                        Action=props["Action"],
+                        Principal=props["Principal"],
+                    )
+
+        def _delete(resource_id, resources, resource_type, func, stack_name):
+            events = aws_stack.connect_to_service("events")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            event_bus_name = props.get("EventBusName")
+            statement_id = props.get("StatementId")
+            try:
+                events.remove_permission(
+                    EventBusName=event_bus_name,
+                    StatementId=statement_id,
+                    RemoveAllPermissions=False,
+                )
+            except Exception as err:
+                if err.response["Error"]["Code"] == "ResourceNotFoundException":
+                    pass  # expected behavior ("parent" resource event bus already deleted)
+                else:
+                    raise err
+
+        return {
+            "create": {"function": _create},
+            "delete": {"function": _delete},
+        }
+
+
+# TODO: AWS::Events::Archive

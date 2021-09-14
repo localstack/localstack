@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_iam import IAMClient
     from mypy_boto3_kinesis import KinesisClient
     from mypy_boto3_lambda import LambdaClient
@@ -95,6 +96,11 @@ def kinesis_client() -> "KinesisClient":
 @pytest.fixture(scope="class")
 def logs_client() -> "CloudWatchLogsClient":
     return _client("logs")
+
+
+@pytest.fixture(scope="class")
+def events_client() -> "EventBridgeClient":
+    return _client("events")
 
 
 @pytest.fixture(scope="class")
