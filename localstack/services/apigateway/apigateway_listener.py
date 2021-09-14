@@ -551,7 +551,13 @@ def invoke_rest_api_integration_backend(
             client = aws_stack.connect_to_service("stepfunctions")
 
             method_name = camel_to_snake_case(action)
-            method = getattr(client, method_name)
+            try:
+            	method = getattr(client, method_name)
+            except AttributeError:
+                msg = "Invalid step function action: %s" % method_name
+                LOG.error(msg)
+                return make_error_response(msg, 400)
+
             result = method(
                 **payload,
             )
