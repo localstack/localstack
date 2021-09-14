@@ -134,9 +134,6 @@ class EventsRule(GenericBaseModel):
 
 
 class EventBusPolicy(GenericBaseModel):
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return f"EventBusPolicy-{short_uid()}"
-
     @classmethod
     def cloudformation_type(cls):
         return "AWS::Events::EventBusPolicy"
@@ -147,6 +144,8 @@ class EventBusPolicy(GenericBaseModel):
             events = aws_stack.connect_to_service("events")
             resource = resources[resource_id]
             props = resource["Properties"]
+
+            resource["PhysicalResourceId"] = f"EventBusPolicy-{short_uid()}"
 
             event_bus_name = props.get("EventBusName")
             policy = props.get("Statement")  # either this field  is set or all other fields
