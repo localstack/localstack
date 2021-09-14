@@ -217,7 +217,7 @@ You can pass the following environment variables to LocalStack.
 * `DOCKER_CMD`: Shell command used to run Docker containers, e.g., set to `"sudo docker"` to run as sudo (default: `docker`).
 * `MAIN_CONTAINER_NAME`: Specify the main docker container name (default: `localstack_main`).
 * `INIT_SCRIPTS_PATH`: Specify the path to the initializing files with extensions .sh that are found default in `/docker-entrypoint-initaws.d`.
-* `LS_LOG`: Specify the log level('trace', 'debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration. Enable `LS_LOG=trace` to print detailed request/response messages.
+* `LS_LOG`: Specify the log level('trace', 'debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration. Enable `LS_LOG=trace` to print detailed request/response messages (or `LS_LOG=trace-internal` to include internal calls as well).
 
 An example passing the above environment variables to LocalStack to start Kinesis, Lambda, Dynamodb and SQS:
 

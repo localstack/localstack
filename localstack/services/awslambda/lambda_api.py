@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime
 from io import BytesIO
 from threading import BoundedSemaphore
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
@@ -57,6 +57,7 @@ from localstack.utils.common import (
     safe_requests,
     save_file,
     short_uid,
+    start_worker_thread,
     synchronized,
     timestamp,
     timestamp_millis,
@@ -197,7 +198,11 @@ class EventSourceListener:
         raise NotImplementedError
 
     def start(self):
-        """Start listener in the background - to be implemented by subclasses."""
+        """Start listener in the background (for polling mode) - to be implemented by subclasses."""
+        pass
+
+    def process_event(self, event: Any):
+        """Process the given event (for reactive mode)"""
         pass
 
     @staticmethod
@@ -215,17 +220,35 @@ class EventSourceListener:
         if instance:
             instance.start()
 
+    @staticmethod
+    def process_event_via_listener(service_type: str, event: Any):
+        """Process event for the given service type (for reactive mode)"""
+        instance = EventSourceListener.get(service_type)
+        if not instance:
+            return
+
+        def _process(*args):
+            instance.process_event(event)
+
+        # start processing in background
+        start_worker_thread(_process)
+
 
 class EventSourceListenerSQS(EventSourceListener):
     # SQS listener thread settings
     SQS_LISTENER_THREAD: Dict = {}
     SQS_POLL_INTERVAL_SEC: float = 1
+    # Whether to use polling via SQS API (or, alternatively, reactive mode with SQS updates received directly in-memory)
+    # Advantage of polling is that we can delete messages directly from the queue (via 'ReceiptHandle') after processing
+    USE_POLLING = True
 
     @staticmethod
     def source_type():
         return "sqs"
 
     def start(self):
+        if not self.USE_POLLING:
+            return
         if self.SQS_LISTENER_THREAD:
             return
 
@@ -235,6 +258,30 @@ class EventSourceListenerSQS(EventSourceListener):
 
     def get_matching_event_sources(self) -> List[Dict]:
         return get_event_sources(source_arn=r".*:sqs:.*")
+
+    def process_event(self, event: Any):
+        if self.USE_POLLING:
+            return
+        # feed message into the first listening lambda (message should only get processed once)
+        queue_url = event["QueueUrl"]
+        try:
+            queue_name = queue_url.rpartition("/")[2]
+            queue_arn = aws_stack.sqs_queue_arn(queue_name)
+            sources = get_event_sources(source_arn=queue_arn)
+            arns = [s.get("FunctionArn") for s in sources]
+            source = (sources or [None])[0]
+            if not source:
+                return False
+
+            LOG.debug(
+                "Found %s source mappings for event from SQS queue %s: %s"
+                % (len(arns), queue_arn, arns)
+            )
+            # TODO: support message BatchSize here, same as for polling mode below
+            messages = event["Messages"]
+            self._process_messages_for_event_source(source, messages)
+        except Exception:
+            LOG.exception(f"Unable to run Lambda function on SQS messages from queue {queue_url}")
 
     def _listener_loop(self, *args):
         while True:
@@ -249,14 +296,14 @@ class EventSourceListenerSQS(EventSourceListener):
 
                 unprocessed_messages = {}
 
-                sqs_client = aws_stack.connect_to_service("sqs")
+                sqs_client = aws_stack.connect_to_service(
+                    "sqs",
+                )
                 for source in sources:
                     queue_arn = source["EventSourceArn"]
-                    lambda_arn = source["FunctionArn"]
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
 
                     try:
-                        region_name = queue_arn.split(":")[3]
                         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
                         messages = unprocessed_messages.pop(queue_arn, None)
                         if not messages:
@@ -269,17 +316,7 @@ class EventSourceListenerSQS(EventSourceListener):
                             if not messages:
                                 continue
 
-                        LOG.debug(
-                            "Sending event from event source %s to Lambda %s"
-                            % (queue_arn, lambda_arn)
-                        )
-                        res = self._send_event_to_lambda(
-                            queue_arn,
-                            queue_url,
-                            lambda_arn,
-                            messages,
-                            region=region_name,
-                        )
+                        res = self._process_messages_for_event_source(source, messages)
                         if not res:
                             unprocessed_messages[queue_arn] = messages
 
@@ -290,6 +327,21 @@ class EventSourceListenerSQS(EventSourceListener):
                 pass
             finally:
                 time.sleep(self.SQS_POLL_INTERVAL_SEC)
+
+    def _process_messages_for_event_source(self, source, messages):
+        lambda_arn = source["FunctionArn"]
+        queue_arn = source["EventSourceArn"]
+        region_name = queue_arn.split(":")[3]
+        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+        LOG.debug("Sending event from event source %s to Lambda %s" % (queue_arn, lambda_arn))
+        res = self._send_event_to_lambda(
+            queue_arn,
+            queue_url,
+            lambda_arn,
+            messages,
+            region=region_name,
+        )
+        return res
 
     def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region):
         def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
@@ -316,9 +368,9 @@ class EventSourceListenerSQS(EventSourceListener):
             message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
             records.append(
                 {
-                    "body": msg["Body"],
-                    "receiptHandle": msg["ReceiptHandle"],
-                    "md5OfBody": msg["MD5OfBody"],
+                    "body": msg.get("Body", "MessageBody"),
+                    "receiptHandle": msg.get("ReceiptHandle"),
+                    "md5OfBody": msg.get("MD5OfBody") or msg.get("MD5OfMessageBody"),
                     "eventSourceARN": queue_arn,
                     "eventSource": lambda_executors.EVENT_SOURCE_SQS,
                     "awsRegion": region,
@@ -662,35 +714,6 @@ def process_kinesis_records(records, stream_name):
     except Exception as e:
         LOG.warning(
             "Unable to run Lambda function on Kinesis records: %s %s" % (e, traceback.format_exc())
-        )
-
-
-def start_lambda_sqs_listener():
-    EventSourceListener.get("sqs").start()
-
-
-def process_sqs_message(queue_name, region_name=None):
-    # feed message into the first listening lambda (message should only get processed once)
-    # TODO: optimize the performance of this function - we should run start_lambda_sqs_listener() only if
-    #  event source mappings or queue configurations change, but not for every single incoming message!
-    try:
-        region_name = region_name or aws_stack.get_region()
-        queue_arn = aws_stack.sqs_queue_arn(queue_name, region_name=region_name)
-        sources = get_event_sources(source_arn=queue_arn)
-        arns = [s.get("FunctionArn") for s in sources]
-        source = (sources or [None])[0]
-        if not source:
-            return False
-
-        LOG.debug(
-            "Found %s source mappings for event from SQS queue %s: %s"
-            % (len(arns), queue_arn, arns)
-        )
-        start_lambda_sqs_listener()
-        return True
-    except Exception as e:
-        LOG.warning(
-            "Unable to run Lambda function on SQS messages: %s %s" % (e, traceback.format_exc())
         )
 
 
