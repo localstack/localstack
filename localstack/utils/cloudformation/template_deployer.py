@@ -1398,9 +1398,6 @@ def add_default_resource_props(
     elif res_type == "AWS::SQS::Queue" and not props.get("QueueName"):
         props["QueueName"] = "queue-%s" % short_uid()
 
-    elif res_type == "AWS::SQS::QueuePolicy" and not resource.get("PhysicalResourceId"):
-        resource["PhysicalResourceId"] = _generate_res_name()
-
     elif res_type == "AWS::IAM::ManagedPolicy" and not resource.get("ManagedPolicyName"):
         resource["ManagedPolicyName"] = _generate_res_name()
 

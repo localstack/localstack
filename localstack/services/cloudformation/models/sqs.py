@@ -1,3 +1,7 @@
+import json
+import logging
+
+from moto.sqs.exceptions import QueueDoesNotExist
 from moto.sqs.models import Queue as MotoQueue
 
 from localstack.services.cloudformation.deployment_utils import (
@@ -10,19 +14,56 @@ from localstack.services.cloudformation.service_models import (
     GenericBaseModel,
 )
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
+
+LOG = logging.getLogger(__name__)
 
 
 class QueuePolicy(GenericBaseModel):
-    @staticmethod
-    def cloudformation_type():
+    @classmethod
+    def cloudformation_type(cls):
         return "AWS::SQS::QueuePolicy"
 
-    # TODO: add deployment methods
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, resource_type, func, stack_name):
+            sqs_client = aws_stack.connect_to_service("sqs")
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            # TODO: generalize/support in get_physical_resource_id
+            resources[resource_id]["PhysicalResourceId"] = "%s-%s-%s" % (
+                stack_name,
+                resource_id,
+                short_uid(),
+            )
+
+            policy = json.dumps(props["PolicyDocument"])
+            for queue in props["Queues"]:
+                sqs_client.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": policy})
+
+        def _delete(resource_id, resources, *args, **kwargs):
+            sqs_client = aws_stack.connect_to_service("sqs")
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            for queue in props["Queues"]:
+                try:
+                    sqs_client.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": ""})
+                except QueueDoesNotExist:
+                    LOG.debug("Queue resource was already deleted.")
+
+        return {
+            "create": {"function": _create},
+            "delete": {
+                "function": _delete,
+            },
+        }
 
 
 class SQSQueue(GenericBaseModel, MotoQueue):
-    @staticmethod
-    def cloudformation_type():
+    @classmethod
+    def cloudformation_type(cls):
         return "AWS::SQS::Queue"
 
     def get_resource_name(self):
@@ -62,10 +103,10 @@ class SQSQueue(GenericBaseModel, MotoQueue):
         result["Arn"] = result["QueueArn"]
         return result
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
         def _queue_url(params, resources, resource_id, **kwargs):
-            resource = SQSQueue(resources[resource_id])
+            resource = cls(resources[resource_id])
             props = resource.props
             queue_url = resource.physical_resource_id or props.get("QueueUrl")
             if queue_url:
