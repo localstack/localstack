@@ -13,6 +13,7 @@ from functools import wraps
 import six
 
 from localstack import config, constants
+from localstack.constants import TRACE_LOG_LEVELS
 from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
 
 # set up logger
@@ -267,7 +268,7 @@ def setup_logging(log_level=None):
     # overriding the log level if LS_LOG has been set
     if config.LS_LOG:
         log_level = str(config.LS_LOG).upper()
-        if log_level == "TRACE":
+        if log_level.lower() in TRACE_LOG_LEVELS:
             log_level = "DEBUG"
         log_level = logging._nameToLevel[log_level]
         logging.getLogger("").setLevel(log_level)

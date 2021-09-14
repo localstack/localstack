@@ -238,8 +238,9 @@ class EventSourceListenerSQS(EventSourceListener):
     # SQS listener thread settings
     SQS_LISTENER_THREAD: Dict = {}
     SQS_POLL_INTERVAL_SEC: float = 1
-    # whether to use polling via SQS API (or, alternatively, reactive mode with SQS updates received directly in-memory)
-    USE_POLLING = False
+    # Whether to use polling via SQS API (or, alternatively, reactive mode with SQS updates received directly in-memory)
+    # Advantage of polling is that we can delete messages directly from the queue (via 'ReceiptHandle') after processing
+    USE_POLLING = True
 
     @staticmethod
     def source_type():
@@ -295,7 +296,9 @@ class EventSourceListenerSQS(EventSourceListener):
 
                 unprocessed_messages = {}
 
-                sqs_client = aws_stack.connect_to_service("sqs")
+                sqs_client = aws_stack.connect_to_service(
+                    "sqs",
+                )
                 for source in sources:
                     queue_arn = source["EventSourceArn"]
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
