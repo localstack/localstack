@@ -25,12 +25,13 @@ from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Callable, List, Optional, Sized, Union
+from typing import Callable, Dict, List, Optional, Sized, Type, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
 import requests
 import six
+from requests import Response
 
 import localstack.utils.run
 from localstack import config
@@ -52,6 +53,7 @@ MUTEX_CLEAN = threading.Lock()
 
 # misc. constants
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
+TIMESTAMP_FORMAT_TZ = "%Y-%m-%dT%H:%M:%SZ"
 TIMESTAMP_FORMAT_MICROS = "%Y-%m-%dT%H:%M:%S.%fZ"
 CODEC_HANDLER_UNDERSCORE = "underscore"
 
@@ -488,39 +490,48 @@ def is_base64(s):
     return is_string(s) and re.match(regex, s)
 
 
-def md5(string):
+def md5(string: Union[str, bytes]) -> str:
     m = hashlib.md5()
     m.update(to_bytes(string))
     return m.hexdigest()
 
 
-def select_attributes(obj, attributes):
+def select_attributes(obj: Dict, attributes: List[str]) -> Dict:
     """Select a subset of attributes from the given dict (returns a copy)"""
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     return dict([(k, v) for k, v in obj.items() if k in attributes])
 
 
-def remove_attributes(obj, attributes):
+def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False) -> Dict:
     """Remove a set of attributes from the given dict (in-place)"""
+    if recursive:
+
+        def _remove(o, **kwargs):
+            if isinstance(o, dict):
+                remove_attributes(o, attributes)
+            return o
+
+        return recurse_object(obj, _remove)
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     for attr in attributes:
         obj.pop(attr, None)
     return obj
 
 
-def is_list_or_tuple(obj):
+def is_list_or_tuple(obj) -> bool:
     return isinstance(obj, (list, tuple))
 
 
-def in_docker():
+def in_docker() -> bool:
     return config.in_docker()
 
 
-def path_from_url(url):
+def path_from_url(url: str) -> str:
     return "/%s" % str(url).partition("://")[2].partition("/")[2] if "://" in url else url
 
 
-def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=["tcp"]):
+def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=None):
+    protocols = protocols or ["tcp"]
     port = port_or_url
     if is_number(port):
         port = int(port)
@@ -658,10 +669,20 @@ def epoch_timestamp():
     return time.time()
 
 
+def parse_timestamp(ts_str: str) -> datetime:
+    for ts_format in [TIMESTAMP_FORMAT, TIMESTAMP_FORMAT_TZ, TIMESTAMP_FORMAT_MICROS]:
+        try:
+            return datetime.strptime(ts_str, ts_format)
+        except ValueError:
+            pass
+    raise Exception("Unable to parse timestamp string with any known formats: %s" % ts_str)
+
+
 def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
     raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)
+    retries = int(retries)
     for i in range(0, retries + 1):
         try:
             return function(**kwargs)
@@ -916,6 +937,12 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
 
 
 def disk_usage(path):
+    if not os.path.exists(path):
+        return 0
+
+    if os.path.isfile(path):
+        return os.path.getsize(path)
+
     total_size = 0
     for dirpath, dirnames, filenames in os.walk(path):
         for f in filenames:
@@ -927,9 +954,11 @@ def disk_usage(path):
 
 
 def format_bytes(count, default="n/a"):
-    if not is_number(count) or count < 0:
+    if not is_number(count):
         return default
     cnt = float(count)
+    if cnt < 0:
+        return default
     units = ("B", "KB", "MB", "GB", "TB")
     for unit in units:
         if cnt < 1000 or unit == units[-1]:
@@ -1013,7 +1042,12 @@ def first_char_to_upper(s):
 
 
 def format_number(number, decimals=2):
-    return ("{0:.%sg}" % decimals).format(number)
+    # Note: interestingly, f"{number:.3g}" seems to yield incorrect results in some cases.
+    # The logic below seems to be the most stable/reliable.
+    result = f"{number:.{decimals}f}"
+    if "." in result:
+        result = result.rstrip("0").rstrip(".")
+    return result
 
 
 def is_number(s):
@@ -1557,13 +1591,14 @@ def generate_ssl_cert(
     return file_content
 
 
-def run_safe(_python_lambda, *args, **kwargs):
+def run_safe(_python_lambda, *args, _default=None, **kwargs):
     print_error = kwargs.get("print_error", False)
     try:
         return _python_lambda(*args, **kwargs)
     except Exception as e:
         if print_error:
             LOG.warning("Unable to execute function: %s" % e)
+        return _default
 
 
 def run_cmd_safe(**kwargs):
@@ -1623,7 +1658,8 @@ def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
     return result
 
 
-def run(cmd, cache_duration_secs=0, **kwargs):
+def run(cmd: Union[str, List[str]], cache_duration_secs=0, **kwargs):
+    # TODO: should be unified and replaced with safe_run(..) over time! (allowing only lists for cmd parameter)
     def run_cmd():
         return localstack.utils.run.run(cmd, **kwargs)
 
@@ -1677,7 +1713,9 @@ class safe_requests(six.with_metaclass(_RequestsSafe)):
     pass
 
 
-def make_http_request(url, data=None, headers=None, method="GET"):
+def make_http_request(
+    url: str, data: Union[bytes, str] = None, headers: Dict[str, str] = None, method: str = "GET"
+) -> Response:
     return requests.request(
         url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
     )
@@ -1713,7 +1751,8 @@ def truncate(data, max_length=100):
     return ("%s..." % data[:max_length]) if len(data) > max_length else data
 
 
-def get_all_subclasses(clazz):
+# this requires that all subclasses have been imported before(!)
+def get_all_subclasses(clazz: Type):
     """Recursively get all subclasses of the given class."""
     result = set()
     subs = clazz.__subclasses__()
@@ -1752,6 +1791,10 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
         or (isinstance(obj, str) and obj.strip() == "")
         or (isinstance(obj, Sized) and len(obj) == 0)
     )
+
+
+def canonicalize_bool_to_str(val: bool) -> str:
+    return "true" if str(val).lower() == "true" else "false"
 
 
 # Code that requires util functions from above

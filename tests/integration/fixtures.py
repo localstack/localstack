@@ -8,18 +8,23 @@ import pytest
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
-from localstack.utils.common import short_uid
+from localstack.utils.common import is_alpine, short_uid
 
 if TYPE_CHECKING:
+    from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_events import EventBridgeClient
+    from mypy_boto3_iam import IAMClient
     from mypy_boto3_kinesis import KinesisClient
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_s3 import S3Client
+    from mypy_boto3_secretsmanager import SecretsManagerClient
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
+    from mypy_boto3_stepfunctions import SFNClient
 
 LOG = logging.getLogger(__name__)
 
@@ -41,6 +46,16 @@ def _client(service):
 @pytest.fixture(scope="class")
 def dynamodb_client() -> "DynamoDBClient":
     return _client("dynamodb")
+
+
+@pytest.fixture(scope="class")
+def apigateway_client() -> "APIGatewayClient":
+    return _client("apigateway")
+
+
+@pytest.fixture(scope="class")
+def iam_client() -> "IAMClient":
+    return _client("iam")
 
 
 @pytest.fixture(scope="class")
@@ -81,6 +96,21 @@ def kinesis_client() -> "KinesisClient":
 @pytest.fixture(scope="class")
 def logs_client() -> "CloudWatchLogsClient":
     return _client("logs")
+
+
+@pytest.fixture(scope="class")
+def events_client() -> "EventBridgeClient":
+    return _client("events")
+
+
+@pytest.fixture(scope="class")
+def secretsmanager_client() -> "SecretsManagerClient":
+    return _client("secretsmanager")
+
+
+@pytest.fixture(scope="class")
+def stepfunctions_client() -> "SFNClient":
+    return _client("stepfunctions")
 
 
 @pytest.fixture
@@ -149,7 +179,7 @@ def sqs_create_queue(sqs_client):
         url = response["QueueUrl"]
         queue_urls.append(url)
 
-        return sqs_client.get_queue_attributes(QueueUrl=url)
+        return sqs_client.get_queue_attributes(QueueUrl=url, AttributeNames=["All"])
 
     yield factory
 
@@ -242,3 +272,9 @@ def is_change_set_finished(cfn_client):
         return _inner
 
     return _is_change_set_finished
+
+
+only_in_alpine = pytest.mark.skipif(
+    not is_alpine(),
+    reason="test only applicable if run in alpine",
+)

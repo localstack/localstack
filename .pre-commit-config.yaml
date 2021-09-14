@@ -22,6 +22,9 @@ repos:
     rev: 3.9.2
     hooks:
       - id: flake8
+        entry: pflake8
+        additional_dependencies:
+          - pyproject-flake8
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1

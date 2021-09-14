@@ -525,12 +525,22 @@ def start_proxy_server(
 
     ssl_creds = (None, None)
     if use_ssl:
+        install_predefined_cert_if_available()
         _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
         ssl_creds = (cert_file_name, key_file_name)
 
     return http2_server.run_server(
         port, bind_address, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds
     )
+
+
+def install_predefined_cert_if_available():
+    try:
+        from localstack_ext.bootstrap import install
+
+        install.setup_ssl_cert()
+    except Exception:
+        pass
 
 
 def serve_flask_app(app, port, host=None, cors=True):

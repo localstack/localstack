@@ -1,7 +1,12 @@
+import logging
 import os
 from collections import defaultdict
+from typing import Dict, List, Union
 
+from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.common import to_str
+
+LOG = logging.getLogger(__name__)
 
 # Lambda runtime constants
 LAMBDA_RUNTIME_PYTHON36 = "python3.6"
@@ -15,6 +20,7 @@ LAMBDA_RUNTIME_NODEJS10X = "nodejs10.x"
 LAMBDA_RUNTIME_NODEJS12X = "nodejs12.x"
 LAMBDA_RUNTIME_NODEJS14X = "nodejs14.x"
 LAMBDA_RUNTIME_JAVA8 = "java8"
+LAMBDA_RUNTIME_JAVA8_AL2 = "java8.al2"
 LAMBDA_RUNTIME_JAVA11 = "java11"
 LAMBDA_RUNTIME_DOTNETCORE2 = "dotnetcore2.0"
 LAMBDA_RUNTIME_DOTNETCORE21 = "dotnetcore2.1"
@@ -38,7 +44,7 @@ DOTNET_LAMBDA_RUNTIMES = [
 ]
 
 
-def multi_value_dict_for_list(elements):
+def multi_value_dict_for_list(elements: List) -> Dict:
     temp_mv_dict = defaultdict(list)
     for key in elements:
         if isinstance(key, (list, tuple)):
@@ -51,7 +57,22 @@ def multi_value_dict_for_list(elements):
     return dict((k, tuple(v)) for k, v in temp_mv_dict.items())
 
 
-def get_handler_file_from_name(handler_name, runtime=None):
+def get_lambda_runtime(runtime_details: Union[LambdaFunction, str]) -> str:
+    """Return the runtime string from the given LambdaFunction (or runtime string)."""
+    if isinstance(runtime_details, LambdaFunction):
+        runtime_details = runtime_details.runtime
+    if not isinstance(runtime_details, str):
+        LOG.warning("Unable to determine Lambda runtime from parameter: %s", runtime_details)
+    return runtime_details or ""
+
+
+def is_provided_runtime(runtime_details: Union[LambdaFunction, str]) -> bool:
+    """Whether the given LambdaFunction uses a 'provided' runtime."""
+    runtime = get_lambda_runtime(runtime_details) or ""
+    return runtime.startswith("provided")
+
+
+def get_handler_file_from_name(handler_name: str, runtime: str = None):
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
     if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
         return "bootstrap"

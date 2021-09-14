@@ -1,4 +1,7 @@
 import re
+from typing import Dict, Union
+
+from requests.models import CaseInsensitiveDict
 
 
 def uses_chunked_encoding(response):
@@ -21,7 +24,7 @@ def parse_chunked_data(data):
     return "".join(chunks)
 
 
-def create_chunked_data(data, chunk_size=80):
+def create_chunked_data(data, chunk_size: int = 80):
     dl = len(data)
     ret = ""
     for i in range(dl // chunk_size):
@@ -34,3 +37,14 @@ def create_chunked_data(data, chunk_size=80):
 
     ret += "0\r\n\r\n"
     return ret
+
+
+def canonicalize_headers(headers: Union[Dict, CaseInsensitiveDict]) -> Dict:
+    if not headers:
+        return headers
+
+    def _normalize(name):
+        return name.lower()
+
+    result = {_normalize(k): v for k, v in headers.items()}
+    return result

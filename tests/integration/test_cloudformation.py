@@ -2000,12 +2000,14 @@ class CloudFormationTest(unittest.TestCase):
             Parameters=[{"ParameterKey": "KeyName", "ParameterValue": "testkey"}],
         )
 
-        resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+        def get_instance_id():
+            resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+            instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
+            self.assertEqual(1, len(instances))
+            return instances[0]["PhysicalResourceId"]
 
-        instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
-        self.assertEqual(1, len(instances))
-
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
+        instance_id = get_instance_id()
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
 
@@ -2014,10 +2016,13 @@ class CloudFormationTest(unittest.TestCase):
             TemplateBody=template,
             Parameters=[{"ParameterKey": "InstanceType", "ParameterValue": "t2.medium"}],
         )
-        await_stack_completion(stack_name)
+        await_stack_completion(stack_name, statuses="UPDATE_COMPLETE")
 
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
-        self.assertEqual("t2.medium", resp["Reservations"][0]["Instances"][0]["InstanceType"])
+        instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+        reservations = resp["Reservations"]
+        self.assertEqual(1, len(reservations))
+        self.assertEqual("t2.medium", reservations[0]["Instances"][0]["InstanceType"])
 
         # clean up
         self.cleanup(stack_name)
@@ -2047,22 +2052,25 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(queue_url, output)
 
     def test_cfn_event_bus_resource(self):
+        event_client = aws_stack.connect_to_service("events")
+
+        def _assert(expected_len):
+            rs = event_client.list_event_buses()
+            event_buses = [eb for eb in rs["EventBuses"] if eb["Name"] == "my-test-bus"]
+            self.assertEqual(expected_len, len(event_buses))
+            rs = event_client.list_connections()
+            connections = [con for con in rs["Connections"] if con["Name"] == "my-test-conn"]
+            self.assertEqual(expected_len, len(connections))
+
+        # deploy stack
         stack_name = "stack-%s" % short_uid()
         template = load_file(os.path.join(THIS_FOLDER, "templates", "template31.yaml"))
         deploy_cf_stack(stack_name=stack_name, template_body=template)
-
-        event_client = aws_stack.connect_to_service("events")
-
-        rs = event_client.list_event_buses()
-        event_buses = [eb for eb in rs["EventBuses"] if eb["Name"] == "my-testing"]
-        self.assertEqual(1, len(event_buses))
+        _assert(1)
 
         # clean up
         self.cleanup(stack_name)
-
-        rs = event_client.list_event_buses()
-        event_buses = [eb for eb in rs["EventBuses"] if eb["Name"] == "my-testing"]
-        self.assertEqual(0, len(event_buses))
+        _assert(0)
 
     def test_cfn_statemachine_with_dependencies(self):
         stack_name = "stack-%s" % short_uid()

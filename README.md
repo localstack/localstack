@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="doc/localstack-readme-header.png" alt="LocalStack - A fully functional local cloud stack">
+  <img src="https://raw.githubusercontent.com/localstack/localstack/master/doc/localstack-readme-header.png" alt="LocalStack - A fully functional local cloud stack">
 </p>
 
 <p align="center">
@@ -27,6 +27,7 @@
   <br>–<br>
   <a href="https://docs.localstack.cloud" target="_blank">📖 Docs</a> •
   <a href="https://app.localstack.cloud" target="_blank">💻 Pro version</a> •
+  <a href="https://github.com/localstack/localstack/blob/master/doc/feature_coverage.md" target="_blank">☑️ Feature coverage</a> •
   <a href="#announcements">📢 Announcements</a>
 </p>
 
@@ -68,6 +69,7 @@ accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/pricing) supports additional APIs and advanced features, including:
 * **Amplify**
 * **API Gateway V2 (WebSockets support)**
+* **AppConfig**
 * **Application AutoScaling**
 * **AppSync**
 * **Athena**
@@ -75,15 +77,17 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Batch**
 * **CloudFront**
 * **CloudTrail**
+* **CodeCommit**
 * **Cognito**
 * **CostExplorer**
 * **DocumentDB**
-* **ECS/ECR/EKS**
+* **ECR/ECS/EKS**
 * **ElastiCache**
 * **ElasticBeanstalk**
 * **ELB/ELBv2**
 * **EMR**
 * **Glacier** / **S3 Select**
+* **Glue**
 * **IAM Security Policy Enforcement**
 * **IoT**
 * **Kinesis Data Analytics**
@@ -93,10 +97,12 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Neptune Graph DB**
 * **QLDB**
 * **RDS / Aurora Serverless**
+* **Route53 DNS integration**
+* **SageMaker**
 * **Timestream**
 * **Transfer**
 * **XRay**
-* **Advanced persistence support for most services**
+* **Advanced persistence support, Local Cloud Pods**
 * **Interactive UIs to manage resources**
 * **Test report dashboards**
 * ...and much, much more to come! (Check out our **feature roadmap** here: https://roadmap.localstack.cloud)
@@ -145,7 +151,7 @@ You can also use docker directly and use the following command to get started wi
 docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack
 ```
 
-Note that this will pull the current nighty build from the master branch and **not** the latest supported version. 
+Note that this will pull the current nighty build from the master branch and **not** the latest supported version.
 
 to run a throw-away container without any external volumes. To start a subset of services use `-e "SERVICES=dynamodb,s3"`.
 
@@ -196,7 +202,7 @@ You can pass the following environment variables to LocalStack.
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.
-* `TMPDIR`: Temporary folder inside the LocalStack container (default: `/tmp`).
+* `TMPDIR`: Temporary folder on the host running the CLI and inside the LocalStack container (default: `/tmp`).
 * `HOST_TMP_FOLDER`: Temporary folder on the host that gets mounted as `$TMPDIR/localstack` into the LocalStack container. Required only for Lambda volume mounts when using `LAMBDA_REMOTE_DOCKER=false`.
 * `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:
   Kinesis, DynamoDB, Elasticsearch, S3, Secretsmanager, SSM, SQS, SNS). Set it to `/tmp/localstack/data` to enable persistence
@@ -240,9 +246,10 @@ SERVICES=kinesis,lambda,sqs,dynamodb DEBUG=1 localstack start
       mount like `${HOST_TMP_FOLDER}:/tmp/localstack` needs to be configured if you're using
       docker-compose.
 * `BUCKET_MARKER_LOCAL`: Optional bucket name for running lambdas locally.
+* `LAMBDA_CODE_EXTRACT_TIME`: Time in seconds to wait at max while extracting Lambda code. By default it is `25` seconds for limiting the execution time to avoid client/network timeout issues.
 * `LAMBDA_DOCKER_NETWORK`: Optional Docker network for the container running your lambda function.
 * `LAMBDA_DOCKER_DNS`: Optional DNS server for the container running your lambda function.
-* `LAMBDA_DOCKER_FLAGS`: Additional flags passed to Lambda Docker `run`/`create` commands (e.g., useful for specifying custom volume mounts)
+* `LAMBDA_DOCKER_FLAGS`: Additional flags passed to Lambda Docker `run`/`create` commands (e.g., useful for specifying custom volume mounts). Does only support environment, volume, port and add-host flags (with `-e KEY=VALUE`, `-v host:container`, `-p host:container`, `--add-host domain:ip` respectively)
 * `LAMBDA_CONTAINER_REGISTRY` Use an alternative docker registry to pull lambda execution containers (default: `lambci/lambda`).
 * `LAMBDA_REMOVE_CONTAINERS`: Whether to remove containers after Lambdas finished executing (default: `true`).
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
@@ -252,12 +259,11 @@ SERVICES=kinesis,lambda,sqs,dynamodb DEBUG=1 localstack start
 
 ### Service-Specific Configurations
 
-* `KINESIS_PROVIDER`: Determines which provider to use for Kinesis. Valid values are `kinesalite` and `kinesis-mock` (default).
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
 * `KINESIS_SHARD_LIMIT`: Integer value (default: `100`) or `Infinity` (to disable), causing the Kinesis API to start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
 * `KINESIS_LATENCY`: Integer value of milliseconds (default: `500`) or `0` (to disable), causing the Kinesis API to delay returning a response in order to mimick latency from a live AWS call.
-* `KINESIS_INITIALIZE_STREAMS`: A comma-delimited string of stream names and its corresponding shard count to initialize during startup. For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1". Only works
+* `KINESIS_INITIALIZE_STREAMS`: A comma-delimited string of stream names, its corresponding shard count and an optional region to initialize during startup. If the region is not provided, the default region is used. For example: "my-first-stream:1,my-other-stream:2:us-west-2,my-last-stream:1" Only works
 with the `kinesis-mock` KINESIS_PROVIDER.
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
 * `DYNAMODB_HEAP_SIZE`: Sets the JAVA EE maximum memory size for dynamodb values are (integer)m for MB, (integer)G for GB default(256m), full table scans require more memory
@@ -273,6 +279,14 @@ Please be aware that the following configurations may have severe security impli
 * `EXTRA_CORS_ALLOWED_ORIGINS`: Comma-separated list of origins that are allowed to communicate with localstack.
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
+
+### Providers Configurations
+
+Some of the services can be configured to switch to a particular provider:
+
+* `KINESIS_PROVIDER`: Valid options are `kinesis-mock` (default) and `kinesalite`.
+* `KMS_PROVIDER`: Valid options are `moto` (default) and `local-kms`.
+* `SQS_PROVIDER`: Valid options are `moto` (default) and `elasticmq`.
 
 ### Miscellaneous Configurations
 
@@ -627,7 +641,7 @@ additional native libs installed.
 The Makefile contains a target to conveniently run the local infrastructure for development:
 
 ```
-make infra
+make start
 ```
 
 #### Starting LocalStack using Vagrant (Centos 8)
@@ -666,13 +680,19 @@ target:
 make test
 ```
 
+to run a specific test, you can use the `TEST_PATH` variable, for example:
+
+```
+TEST_PATH='tests/unit/sns_test.py' make test
+```
+
 ## To check the Code Coverage
 
 Once the new feature / bug fix is done, run the unit testing and check for the coverage.
 
 ```
 # To run the particular test file (sample)
-pytest --cov=localstack tests/unit/test_common.py
+TEST_PATH='tests/unit/sns_test.py' make test-coverage
 
 # To check the coverage in the console
 coverage report

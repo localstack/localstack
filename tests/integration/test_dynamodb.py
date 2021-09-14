@@ -788,6 +788,7 @@ class TestDynamoDB(unittest.TestCase):
             sleep=1,
             function_name=function_name,
             expected_length=1,
+            regex_filter=r"Records",
         )
 
         self.assertEqual(1, len(events))

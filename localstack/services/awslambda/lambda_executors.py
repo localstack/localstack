@@ -11,18 +11,19 @@ import threading
 import time
 import traceback
 from multiprocessing import Process, Queue
-from typing import Dict, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from localstack import config
-from localstack.plugin import thundra
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_JAVA8_AL2,
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_PROVIDED,
 )
-from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.services.install import GO_LAMBDA_RUNTIME, INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.dead_letter_queue import (
     lambda_error_to_dead_letter_queue,
     sqs_error_to_dead_letter_queue,
@@ -32,11 +33,13 @@ from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched, store_clou
 from localstack.utils.common import (
     TMP_FILES,
     CaptureOutput,
+    get_all_subclasses,
     get_free_tcp_port,
     in_docker,
     json_safe,
     last_index_of,
     long_uid,
+    md5,
     now,
     run,
     save_file,
@@ -89,6 +92,99 @@ class InvocationException(Exception):
         self.result = result
 
 
+class AdditionalInvocationOptions:
+    # Maps file keys to file paths. The keys can be used as placeholders in the env. variables
+    #  and command args to reference files - e.g., given `files_to_add` as {"f1": "/local/path"} and
+    #  `env_updates` as {"MYENV": "{f1}"}, the Lambda handler will receive an environment variable
+    #  `MYENV=/lambda/path` and the file /lambda/path will be accessible to the Lambda handler
+    #  (either locally, or inside Docker).
+    files_to_add: Dict[str, str]
+    # Environment variable updates to apply for the invocation
+    env_updates: Dict[str, str]
+    # Updated command to use for starting the Lambda process (or None)
+    updated_command: Optional[str]
+
+    def __init__(self, files_to_add=None, env_updates=None, updated_command=None):
+        self.files_to_add = files_to_add or {}
+        self.env_updates = env_updates or {}
+        self.updated_command = updated_command
+
+
+class InvocationResult:
+    def __init__(self, result, log_output=""):
+        if isinstance(result, InvocationResult):
+            raise Exception("Unexpected invocation result type: %s" % result)
+        self.result = result
+        self.log_output = log_output or ""
+
+
+class InvocationContext:
+    lambda_function: LambdaFunction
+    event: Dict[str, Any]
+    lambda_command: str  # TODO: change to List[str] ?
+    docker_flags: str  # TODO: change to List[str] ?
+    environment: Dict[str, str]
+    context: Dict[str, Any]
+
+    def __init__(
+        self,
+        lambda_function: LambdaFunction,
+        event: Dict,
+        environment=None,
+        context=None,
+        lambda_command=None,
+        docker_flags=None,
+    ):
+        self.lambda_function = lambda_function
+        self.event = event
+        self.environment = {} if environment is None else environment
+        self.context = {} if context is None else context
+        self.lambda_command = lambda_command
+        self.docker_flags = docker_flags
+
+
+class LambdaExecutorPlugin:
+    """Plugin abstraction that allows to hook in additional functionality into the Lambda executors."""
+
+    INSTANCES: List["LambdaExecutorPlugin"] = []
+
+    def initialize(self):
+        """Called once, for any active plugin to run initialization logic (e.g., downloading dependencies).
+        Uses lazy initialization - i.e., runs only after the first should_apply() call returns True"""
+        pass
+
+    def should_apply(self, context: InvocationContext) -> bool:
+        """Whether the plugin logic should get applied for the given Lambda invocation context."""
+        return False
+
+    def prepare_invocation(
+        self, context: InvocationContext
+    ) -> Optional[AdditionalInvocationOptions]:
+        """Return additional invocation options for given Lambda invocation context."""
+        return None
+
+    def process_result(
+        self, context: InvocationContext, result: InvocationResult
+    ) -> InvocationResult:
+        """Optionally modify the result returned from the given Lambda invocation."""
+        return result
+
+    def init_function_configuration(self, lambda_function: LambdaFunction):
+        """Initialize the configuration of the given function upon creation or function update."""
+        pass
+
+    def init_function_code(self, lambda_function: LambdaFunction):
+        """Initialize the code of the given function upon creation or function update."""
+        pass
+
+    @classmethod
+    def get_plugins(cls) -> List["LambdaExecutorPlugin"]:
+        if not cls.INSTANCES:
+            classes = get_all_subclasses(LambdaExecutorPlugin)
+            cls.INSTANCES = [clazz() for clazz in classes]
+        return cls.INSTANCES
+
+
 def get_from_event(event, key):
     try:
         return event["Records"][0][key]
@@ -98,7 +194,7 @@ def get_from_event(event, key):
 
 def is_java_lambda(lambda_details):
     runtime = getattr(lambda_details, "runtime", lambda_details)
-    return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11]
+    return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA8_AL2, LAMBDA_RUNTIME_JAVA11]
 
 
 def is_nodejs_runtime(lambda_details):
@@ -165,14 +261,6 @@ class LambdaAsyncLocks:
 
 
 LAMBDA_ASYNC_LOCKS = LambdaAsyncLocks()
-
-
-class InvocationResult(object):
-    def __init__(self, result, log_output=""):
-        if isinstance(result, InvocationResult):
-            raise Exception("Unexpected invocation result type: %s" % result)
-        self.result = result
-        self.log_output = log_output or ""
 
 
 class LambdaExecutor(object):
@@ -261,10 +349,65 @@ class LambdaExecutor(object):
         raise NotImplementedError
 
     def startup(self):
+        """Called once during startup - can be used, e.g., to prepare Lambda Docker environment"""
         pass
 
     def cleanup(self, arn=None):
+        """Called once during startup - can be used, e.g., to clean up left-over Docker containers"""
         pass
+
+    def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
+        """Make the given file available to the Lambda process (e.g., by copying into the container) for the
+        given invocation context; Returns the path to the file that will be available to the Lambda handler."""
+        raise NotImplementedError
+
+    def apply_plugin_patches(self, inv_context: InvocationContext):
+        """Loop through the list of plugins, and apply their patches to the invocation context (if applicable)"""
+        for plugin in LambdaExecutorPlugin.get_plugins():
+            if not plugin.should_apply(inv_context):
+                continue
+
+            # initialize, if not done yet
+            if not hasattr(plugin, "_initialized"):
+                LOG.debug("Initializing Lambda executor plugin %s", plugin.__class__)
+                plugin.initialize()
+                plugin._initialized = True
+
+            # invoke plugin to prepare invocation
+            inv_options = plugin.prepare_invocation(inv_context)
+            if not inv_options:
+                continue
+
+            # copy files
+            file_keys_map = {}
+            for key, file_path in inv_options.files_to_add.items():
+                file_in_container = self.provide_file_to_lambda(file_path, inv_context)
+                file_keys_map[key] = file_in_container
+
+            # replace placeholders like "{<fileKey>}" with corresponding file path
+            for key, file_path in file_keys_map.items():
+                for env_key, env_value in inv_options.env_updates.items():
+                    inv_options.env_updates[env_key] = str(env_value).replace(
+                        "{%s}" % key, file_path
+                    )
+                if inv_options.updated_command:
+                    inv_options.updated_command = inv_options.updated_command.replace(
+                        "{%s}" % key, file_path
+                    )
+                    inv_context.lambda_command = inv_options.updated_command
+
+            # update environment
+            inv_context.environment.update(inv_options.env_updates)
+
+    def process_result_via_plugins(
+        self, inv_context: InvocationContext, invocation_result: InvocationResult
+    ) -> InvocationResult:
+        """Loop through the list of plugins, and apply their post-processing logic to the Lambda invocation result."""
+        for plugin in LambdaExecutorPlugin.get_plugins():
+            if not plugin.should_apply(inv_context):
+                continue
+            invocation_result = plugin.process_result(inv_context, invocation_result)
+        return invocation_result
 
 
 class ContainerInfo:
@@ -283,9 +426,7 @@ class LambdaExecutorContainers(LambdaExecutor):
     ) -> Tuple[bytes, bytes]:
         raise NotImplementedError
 
-    def run_lambda_executor(
-        self, event=None, func_details=None, env_vars=None, command=None, docker_flags=None
-    ):
+    def run_lambda_executor(self, event=None, func_details=None, env_vars=None, command=None):
         env_vars = dict(env_vars or {})
         runtime = func_details.runtime or ""
 
@@ -328,6 +469,14 @@ class LambdaExecutorContainers(LambdaExecutor):
                 env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
         elif "AWS_LAMBDA_EVENT_BODY" not in env_vars:
             env_vars["AWS_LAMBDA_EVENT_BODY"] = to_str(event_body)
+
+        # apply plugin patches
+        inv_context = InvocationContext(func_details, event, environment=env_vars)
+        self.apply_plugin_patches(inv_context)
+
+        docker_flags = config.LAMBDA_DOCKER_FLAGS or ""
+        if inv_context.docker_flags:
+            docker_flags = f"{docker_flags} {inv_context.docker_flags}"
 
         event_stdin_bytes = stdin_str and to_bytes(stdin_str)
         error = None
@@ -374,20 +523,25 @@ class LambdaExecutorContainers(LambdaExecutor):
                 result,
             ) from error
 
+        # create result
         invocation_result = InvocationResult(result, log_output=log_output)
+        # run plugins post-processing logic
+        invocation_result = self.process_result_via_plugins(inv_context, invocation_result)
+
         return invocation_result
 
-    def prepare_event(self, environment, event_body):
+    def prepare_event(self, environment: Dict, event_body: str) -> bytes:
         """Return the event as a stdin string."""
         # amend the environment variables for execution
         environment["AWS_LAMBDA_EVENT_BODY"] = event_body
         return event_body.encode()
 
-    def _execute(self, func_arn, func_details, event, context=None, version=None):
+    def _execute(
+        self, func_arn: str, func_details: LambdaFunction, event: Dict, context=None, version=None
+    ):
         runtime = func_details.runtime
         handler = func_details.handler
         environment = self._prepare_environment(func_details)
-        given_docker_flags = config.LAMBDA_DOCKER_FLAGS
 
         # configure USE_SSL in environment
         if config.USE_SSL:
@@ -398,11 +552,9 @@ class LambdaExecutorContainers(LambdaExecutor):
             LOG.info('Empty event body specified for invocation of Lambda "%s"' % func_arn)
             event = {}
         event_body = json.dumps(json_safe(event))
-        stdin = self.prepare_event(environment, event_body)
+        event_bytes_for_stdin = self.prepare_event(environment, event_body)
 
-        main_endpoint = get_main_endpoint_from_container()
-
-        environment["LOCALSTACK_HOSTNAME"] = main_endpoint
+        Util.inject_endpoints_into_env(environment)
         environment["EDGE_PORT"] = str(config.EDGE_PORT)
         environment[LAMBDA_HANDLER_ENV_VAR_NAME] = handler
         if os.environ.get("HTTP_PROXY"):
@@ -432,14 +584,6 @@ class LambdaExecutorContainers(LambdaExecutor):
                 )
                 environment["JAVA_TOOL_OPTIONS"] = config.LAMBDA_JAVA_OPTS
 
-        docker_flags = given_docker_flags or ""
-        if is_java_lambda(runtime):
-            # If runtime is Java, inject Thundra agent if it is configured
-            extra_docker_flags = thundra.inject_java_agent_for_container(
-                func_details, environment, docker_flags
-            )
-            docker_flags += " %s" % extra_docker_flags if extra_docker_flags else ""
-
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):
             environment["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
@@ -447,10 +591,23 @@ class LambdaExecutorContainers(LambdaExecutor):
         # run Lambda executor and fetch invocation result
         LOG.info("Running lambda: %s" % func_details.arn())
         result = self.run_lambda_executor(
-            event=stdin, env_vars=environment, func_details=func_details, docker_flags=docker_flags
+            event=event_bytes_for_stdin, env_vars=environment, func_details=func_details
         )
 
         return result
+
+    def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
+        if config.LAMBDA_REMOTE_DOCKER:
+            LOG.info("TODO: copy file into container for LAMBDA_REMOTE_DOCKER=1 - %s", local_file)
+            return local_file
+
+        mountable_file = Util.get_host_path_for_path_in_docker(local_file)
+        _, extension = os.path.splitext(local_file)
+        target_file_name = f"{md5(local_file)}{extension}"
+        target_path = f"/tmp/{target_file_name}"
+        inv_context.docker_flags = inv_context.docker_flags or ""
+        inv_context.docker_flags += f"-v {mountable_file}:{target_path}"
+        return target_path
 
 
 class LambdaExecutorReuseContainers(LambdaExecutorContainers):
@@ -569,7 +726,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                         container_name, "%s/." % lambda_cwd, DOCKER_TASK_FOLDER
                     )
 
-                LOG.debug("Starting container: %s" % container_name)
+                LOG.debug("Starting docker-reuse Lambda container: %s", container_name)
                 DOCKER_CLIENT.start_container(container_name)
                 # give the container some time to start up
                 time.sleep(1)
@@ -589,9 +746,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         container_name = self.get_container_name(func_details.arn())
 
         # make sure we set LOCALSTACK_HOSTNAME
-        if not env_vars.get("LOCALSTACK_HOSTNAME"):
-            main_endpoint = get_main_endpoint_from_container()
-            env_vars["LOCALSTACK_HOSTNAME"] = main_endpoint
+        Util.inject_endpoints_into_env(env_vars)
 
         # make sure AWS_LAMBDA_EVENT_BODY is not set (otherwise causes issues with "docker exec ..." above)
         env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
@@ -610,6 +765,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             env_vars["HOSTNAME"] = os.environ.get("HOSTNAME")
         env_vars["EDGE_PORT"] = config.EDGE_PORT
 
+        LOG.debug(
+            "Creating docker-reuse Lambda container %s from image %s", container_name, docker_image
+        )
         return DOCKER_CLIENT.create_container(
             image_name=docker_image,
             remove=True,
@@ -642,6 +800,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             if status == -1:
                 LOG.debug("Removing container: %s" % container_name)
                 rm_docker_container(container_name, safe=True)
+
+            # clean up function invoke times, as some init logic depends on this
+            self.function_invoke_times.pop(func_arn, None)
 
     def get_all_container_names(self):
         """
@@ -744,7 +905,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         self.max_port = LAMBDA_API_UNIQUE_PORTS
         self.port_offset = LAMBDA_API_PORT_OFFSET
 
-    def prepare_event(self, environment, event_body):
+    def prepare_event(self, environment: Dict, event_body: str) -> bytes:
         # Tell Lambci to use STDIN for the event
         environment["DOCKER_LAMBDA_USE_STDIN"] = "1"
         return event_body.encode()
@@ -878,6 +1039,14 @@ class LambdaExecutorLocal(LambdaExecutor):
         lambda_cwd = func_details.cwd
         environment = self._prepare_environment(func_details)
 
+        if func_details.timeout:
+            environment["AWS_LAMBDA_FUNCTION_TIMEOUT"] = str(func_details.timeout)
+        if context:
+            environment["AWS_LAMBDA_FUNCTION_NAME"] = context.function_name
+            environment["AWS_LAMBDA_FUNCTION_VERSION"] = context.function_version
+            environment["AWS_LAMBDA_FUNCTION_INVOKED_ARN"] = context.invoked_function_arn
+            environment["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"] = str(context.memory_limit_in_mb)
+
         # execute the Lambda function in a forked sub-process, sync result via queue
         queue = Queue()
 
@@ -945,16 +1114,13 @@ class LambdaExecutorLocal(LambdaExecutor):
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
 
+    def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
+        # This is a no-op for local executors - simply return the given local file path
+        return local_file
+
     def execute_java_lambda(self, event, context, main_file, func_details=None):
         func_details.envvars = func_details.envvars or {}
-        given_opts = config.LAMBDA_JAVA_OPTS or ""
-
-        # If runtime is Java, inject Thundra agent if it is configured
-        extra_opts = thundra.inject_java_agent_for_local(func_details, given_opts)
-
-        opts = given_opts
-        if extra_opts:
-            opts += " " + extra_opts
+        java_opts = config.LAMBDA_JAVA_OPTS or ""
 
         handler = func_details.handler
         func_details.envvars[LAMBDA_HANDLER_ENV_VAR_NAME] = handler
@@ -969,15 +1135,27 @@ class LambdaExecutorLocal(LambdaExecutor):
             LAMBDA_EXECUTOR_JAR,
         )
         cmd = "java %s -cp %s %s %s" % (
-            opts,
+            java_opts,
             classpath,
             LAMBDA_EXECUTOR_CLASS,
             event_file,
         )
 
+        # apply plugin patches
+        inv_context = InvocationContext(
+            func_details, event, environment=func_details.envvars, lambda_command=cmd
+        )
+        self.apply_plugin_patches(inv_context)
+
+        cmd = inv_context.lambda_command
         LOG.info(cmd)
 
-        return self._execute_in_custom_runtime(cmd, func_details=func_details)
+        # execute Lambda and get invocation result
+        invocation_result = self._execute_in_custom_runtime(cmd, func_details=func_details)
+        # run plugins post-processing logic
+        invocation_result = self.process_result_via_plugins(inv_context, invocation_result)
+
+        return invocation_result
 
     def execute_javascript_lambda(self, event, context, main_file, func_details=None):
         handler = func_details.handler
@@ -1012,6 +1190,17 @@ class LambdaExecutorLocal(LambdaExecutor):
             os.environ[env_name] = env_value_before or ""
             if env_value_before is None:
                 os.environ.pop(env_name, None)
+
+    def execute_go_lambda(self, event, context, main_file, func_details=None):
+        event_json_string = "%s" % (json.dumps(event) if event else "{}")
+        cmd = "AWS_LAMBDA_FUNCTION_HANDLER=%s AWS_LAMBDA_EVENT_BODY='%s' %s" % (
+            main_file,
+            event_json_string,
+            GO_LAMBDA_RUNTIME,
+        )
+        LOG.info(cmd)
+        result = self._execute_in_custom_runtime(cmd, func_details=func_details)
+        return result
 
 
 class Util:
@@ -1048,6 +1237,10 @@ class Util:
     @classmethod
     def docker_image_for_lambda(cls, func_details):
         runtime = func_details.runtime or ""
+        if func_details.code.get("ImageUri"):
+            LOG.warning(
+                "ImageUri is set: Using Lambda container images is only supported in LocalStack Pro"
+            )
         docker_tag = runtime
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
         # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
@@ -1099,6 +1292,20 @@ class Util:
         f = os.path.join(config.TMP_FOLDER, short_uid())
         TMP_FILES.append(f)
         return f
+
+    @staticmethod
+    def inject_endpoints_into_env(env_vars: Dict[str, str]):
+        env_vars = env_vars or {}
+        main_endpoint = get_main_endpoint_from_container()
+        if not env_vars.get("LOCALSTACK_HOSTNAME"):
+            env_vars["LOCALSTACK_HOSTNAME"] = main_endpoint
+        if not env_vars.get("AWS_ENDPOINT_URL"):
+            # Note that $AWS_ENDPOINT_URL is currently not (yet) supported by AWS, but we
+            #  can use it to ship patched Lambda runtimes that can interpret this config.
+            env_vars["AWS_ENDPOINT_URL"] = config.get_edge_url(
+                localstack_hostname=main_endpoint, protocol="http"
+            )
+        return env_vars
 
 
 # --------------

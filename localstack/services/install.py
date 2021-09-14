@@ -5,15 +5,17 @@ import os
 import platform
 import re
 import shutil
+import stat
 import sys
 import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 import requests
 
 from localstack import config
-from localstack.config import KINESIS_PROVIDER, is_env_true
+from localstack.config import is_env_true
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
@@ -30,13 +32,7 @@ from localstack.constants import (
     MODULE_MAIN_PATH,
     STS_JAR_URL,
 )
-from localstack.plugin import thundra
 from localstack.utils import bootstrap
-from localstack.utils.docker import DOCKER_CLIENT
-
-if __name__ == "__main__":
-    bootstrap.bootstrap_installation()
-# noqa: E402
 from localstack.utils.common import (
     chmod_r,
     download,
@@ -55,6 +51,7 @@ from localstack.utils.common import (
     untar,
     unzip,
 )
+from localstack.utils.docker import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
 
@@ -89,11 +86,12 @@ SFN_PATCH_CLASS_URL = "%s/raw/master/stepfunctions-local-patch/%s" % (
 )
 
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.1.8"
+KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.0"
 KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
 
+# debugpy module
 DEBUGPY_MODULE = "debugpy"
 DEBUGPY_DEPENDENCIES = ["gcc", "python3-dev", "musl-dev"]
 
@@ -102,6 +100,30 @@ JAVAC_TARGET_VERSION = "1.8"
 
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
+
+# GO Lambda runtime
+GO_RUNTIME_DOWNLOAD_URL = (
+    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/runtime.zip"
+)
+GO_INSTALL_FOLDER = config.TMP_FOLDER + "/runtime"
+GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + "/aws-lambda-mock"
+GO_LAMBDA_MOCKSERVER = GO_INSTALL_FOLDER + "/mockserver"
+GO_ZIP_NAME = "runtime.zip"
+
+
+GLIBC_KEY_URL = "https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub"
+GLIBC_KEY = "/etc/apk/keys/sgerrand.rsa.pub"
+GLIBC_VERSION = "2.32-r0"
+GLIBC_FILE = "glibc-%s.apk" % GLIBC_VERSION
+GLIBC_URL = "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/%s/%s" % (
+    GLIBC_VERSION,
+    GLIBC_FILE,
+)
+GLIBC_PATH = config.TMP_FOLDER + "/" + GLIBC_FILE
+CA_CERTIFICATES = "ca-certificates"
+
+# set up logger
+LOG = logging.getLogger(__name__)
 
 
 def get_elasticsearch_install_version(version=None):
@@ -204,12 +226,12 @@ def install_elasticmq():
 
 
 def install_kinesis():
-    if KINESIS_PROVIDER == "kinesalite":
+    if config.KINESIS_PROVIDER == "kinesalite":
         return install_kinesalite()
-    elif KINESIS_PROVIDER == "kinesis-mock":
+    elif config.KINESIS_PROVIDER == "kinesis-mock":
         return install_kinesis_mock()
     else:
-        raise ValueError("unknown kinesis provider %s" % KINESIS_PROVIDER)
+        raise ValueError("unknown kinesis provider %s" % config.KINESIS_PROVIDER)
 
 
 def install_kinesalite():
@@ -379,6 +401,48 @@ def install_lambda_java_libs():
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
 
 
+def install_go_lambda_runtime():
+    install_glibc_for_alpine()
+
+    if not os.path.isfile(GO_LAMBDA_RUNTIME):
+        log_install_msg("Installing golang runtime")
+        file_location = os.path.join(config.TMP_FOLDER, GO_ZIP_NAME)
+        download(GO_RUNTIME_DOWNLOAD_URL, file_location)
+
+        if not zipfile.is_zipfile(file_location):
+            raise ValueError("Downloaded file is not zip ")
+
+        zipfile.ZipFile(file_location).extractall(config.TMP_FOLDER)
+        st = os.stat(GO_LAMBDA_RUNTIME)
+        os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+        st = os.stat(GO_LAMBDA_MOCKSERVER)
+        os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def install_glibc_for_alpine():
+    try:
+        run("apk info glibc")
+        return
+    except Exception:
+        pass
+
+    log_install_msg("Installing glibc")
+    try:
+        try:
+            run("apk add %s" % CA_CERTIFICATES)
+        except Exception:
+            raise Exception("ca-certificates not installed")
+
+        download(GLIBC_KEY_URL, GLIBC_KEY)
+        download(GLIBC_URL, GLIBC_PATH)
+
+        run("apk add %s" % GLIBC_PATH)
+
+    except Exception as e:
+        log_install_msg("glibc installation failed: " + str(e))
+
+
 def install_cloudformation_libs():
     from localstack.services.cloudformation import deployment_utils
 
@@ -403,9 +467,6 @@ def install_component(name):
 def install_components(names):
     parallelize(install_component, names)
     install_lambda_java_libs()
-
-    # Init Thundra
-    thundra.init()
 
 
 def install_all_components():

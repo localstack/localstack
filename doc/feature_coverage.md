@@ -75,6 +75,16 @@ In the coverage tables below, the features are marked with their respective avai
   <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>VPC Links</td><td>⭐⭐⭐</td><td></td><td></td></tr>
 
+  <tr><td colspan=4><b>AppConfig</b> (Pro)</td></tr>
+  <tr><td>Applications</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Configuration Profiles</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Configurations</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Deployment Strategies</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Deployments</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Environments</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Hosted Configuration Versions</td><td>⭐⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Tags</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
+
   <tr><td colspan=4><b>Application Autoscaling</b> (Pro)</td></tr>
   <tr><td>Scalable Targets</td><td>⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Scaling Activities</td><td>⭐⭐</td><td></td><td></td></tr>
@@ -425,6 +435,7 @@ In the coverage tables below, the features are marked with their respective avai
   <tr><td colspan=4><b>Lambda</b></td></tr>
   <tr><td>Aliases</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Code Signing Configs</td><td>⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Custom Images (Pro)</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Event Invoke Configs</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Event Source Mappings</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Function Concurrencies</td><td>⭐⭐⭐</td><td></td><td></td></tr>
@@ -646,21 +657,36 @@ In the coverage tables below, the features are marked with their respective avai
 
 </table>
 
-## API Persistence Coverage
+## API Persistence Coverage (Pro)
 
-Details following soon. For now, only listing those that are at least (superficially) tested
+The list below summarizes the APIs for which persistence has been implemented and (ideally) tested in the Pro version (list may not be exhaustive/complete). More details following soon.
 
-- Kinesis
-- DynamoDB
+- Amplify
 - Athena
-- Secrets Manager
-- SNS
-- S3
-- SQS
-- QLDB
 - Backup
-- Elastic File System
-- EC2
 - Cognito Identity
 - Cognito Identity Provider
-- Amplify
+- DynamoDB
+- EC2
+- Elastic File System
+- Kinesis
+- QLDB
+- S3
+- Secrets Manager
+- SNS
+- SQS
+- Route53
+- RDS
+- Appconfig
+- Appsync
+- Lambda
+- CloudFormation
+- CloudFront
+- CodeCommit
+- Cost Explorer
+- Glue
+- IoT
+- Lake Formation
+- Serverless Repo
+- SES
+- STS

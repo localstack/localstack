@@ -38,6 +38,7 @@ from localstack.utils.common import (
     empty_context_manager,
     get_service_protocol,
     in_docker,
+    is_port_open,
     is_root,
     parse_request_data,
     run,
@@ -57,6 +58,8 @@ HEADER_TARGET_API = "x-localstack-tgt-api"
 
 # lock obtained during boostrapping (persistence restoration) to avoid concurrency issues
 BOOTSTRAP_LOCK = threading.RLock()
+
+PORT_DNS = 53
 
 GZIP_ENCODING = "GZIP"
 IDENTITY_ENCODING = "IDENTITY"
@@ -554,13 +557,16 @@ def start_dns_server(asynchronous=False):
         # start local DNS server, if present
         from localstack_ext.services import dns_server
 
+        if is_port_open(PORT_DNS):
+            return
+
         if is_root():
             result = dns_server.start_servers()
             if not asynchronous:
                 sleep_forever()
             return result
         # note: running in a separate process breaks integration with Route53 (to be fixed for local dev mode!)
-        return run_process_as_sudo("dns", 53, asynchronous=asynchronous)
+        return run_process_as_sudo("dns", PORT_DNS, asynchronous=asynchronous)
     except Exception:
         pass
 
@@ -608,10 +614,11 @@ def run_process_as_sudo(component, port, asynchronous=False):
     sudo_cmd = "sudo -n "
     python_cmd = sys.executable
     edge_url = config.get_edge_url()
-    cmd = "%sPYTHONPATH=.:%s EDGE_FORWARD_URL=%s %s %s %s %s" % (
+    cmd = "%sPYTHONPATH=.:%s EDGE_FORWARD_URL=%s EDGE_BIND_HOST=%s %s %s %s %s" % (
         sudo_cmd,
         LOCALSTACK_ROOT_FOLDER,
         edge_url,
+        config.EDGE_BIND_HOST,
         python_cmd,
         __file__,
         component,

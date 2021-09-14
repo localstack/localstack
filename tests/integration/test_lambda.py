@@ -9,6 +9,7 @@ from datetime import datetime
 from io import BytesIO
 
 import pytest
+import requests
 import six
 from botocore.exceptions import ClientError
 
@@ -25,6 +26,7 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_DOTNETCORE31,
+    LAMBDA_RUNTIME_GOLANG,
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_NODEJS14X,
@@ -64,6 +66,7 @@ from localstack.utils.testutil import (
     get_lambda_log_events,
 )
 
+from .fixtures import only_in_alpine
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -71,6 +74,7 @@ TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.py
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "lambdas", "lambda_python3.py")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.js")
+TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "lambdas", "golang", "handler.zip")
 TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.rb")
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore2", "dotnetcore2.zip")
 TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore31", "dotnetcore31.zip")
@@ -93,6 +97,7 @@ TEST_LAMBDA_NAME_PY = "test_lambda_py"
 TEST_LAMBDA_NAME_PY3 = "test_lambda_py3"
 TEST_LAMBDA_NAME_JS = "test_lambda_js"
 TEST_LAMBDA_NAME_RUBY = "test_lambda_ruby"
+TEST_LAMBDA_NAME_GOLANG = "test_lambda_GOLANG"
 TEST_LAMBDA_NAME_DOTNETCORE2 = "test_lambda_dotnetcore2"
 TEST_LAMBDA_NAME_DOTNETCORE31 = "test_lambda_dotnetcore31"
 TEST_LAMBDA_NAME_CUSTOM_RUNTIME = "test_lambda_custom_runtime"
@@ -113,6 +118,10 @@ TEST_SNS_TOPIC_NAME = "sns-topic-1"
 TEST_STAGE_NAME = "testing"
 
 MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
+
+TEST_GOLANG_LAMBDA_URL = (
+    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/example.zip"
+)
 
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
@@ -194,7 +203,7 @@ def _assess_lambda_destination_invocation(condition, payload, test):
         msg = json.loads(msg)
         test.assertEqual(condition, msg["requestContext"]["condition"])
 
-    retry(receive_message, retries=5, sleep=2)
+    retry(receive_message, retries=10, sleep=3)
     # clean up
     sqs_client.delete_queue(QueueUrl=queue_url)
     lambda_client.delete_function(FunctionName=lambda_name)
@@ -1143,12 +1152,12 @@ class TestPythonRuntimes(LambdaTestBase):
             get_content=True,
             libs=TEST_LAMBDA_LIBS,
             runtime=LAMBDA_RUNTIME_PYTHON36,
-            file_name="abc/def/main.py",
+            file_name="localstack_package/def/main.py",
         )
         testutil.create_lambda_function(
             func_name=func_name,
             zip_file=zip_file,
-            handler="abc.def.main.handler",
+            handler="localstack_package.def.main.handler",
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
@@ -1229,6 +1238,7 @@ class TestPythonRuntimes(LambdaTestBase):
             sleep=1,
             function_name=function_name,
             expected_length=1,
+            regex_filter="Records.*Sns",
         )
         notification = events[0]["Records"][0]["Sns"]
 
@@ -1505,14 +1515,19 @@ class TestCustomRuntimes(LambdaTestBase):
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
-            Payload=b'{"text":"bar with \'quotes\\""}',
+            Payload=b'{"text": "bar with \'quotes\\""}',
         )
         result_data = result["Payload"].read()
 
         self.assertEqual(200, result["StatusCode"])
-        self.assertEqual(
-            """Echoing request: '{"text": "bar with \'quotes\\""}'""",
-            to_str(result_data).strip(),
+        result_data = to_str(result_data).strip()
+        # jsonify in pro (re-)formats the event json so we allow both versions here
+        self.assertIn(
+            result_data,
+            (
+                """Echoing request: '{"text": "bar with \'quotes\\""}'""",
+                """Echoing request: '{"text":"bar with \'quotes\\""}'""",
+            ),
         )
 
         # assert that logs are present
@@ -1589,6 +1604,41 @@ class TestRubyRuntimes(LambdaTestBase):
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_RUBY)
+
+
+class TestGolangRuntimes(LambdaTestBase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service("lambda")
+
+    @only_in_alpine
+    def test_golang_lambda_running_locally(self):
+        if use_docker():
+            return
+
+        response = requests.get(TEST_GOLANG_LAMBDA_URL, allow_redirects=True)
+        if not response.ok:
+            raise ValueError("golang runtime zip not downloaded")
+
+        open(TEST_LAMBDA_GOLANG_ZIP, "wb").write(response.content)
+
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_GOLANG,
+            zip_file=load_file(TEST_LAMBDA_GOLANG_ZIP, mode="rb"),
+            handler="handler",
+            runtime=LAMBDA_RUNTIME_GOLANG,
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=json.dumps({"name": "Test"})
+        )
+        result_data = result["Payload"].read()
+        self.maxDiff = None
+        self.assertEqual(200, result["StatusCode"])
+        self.assertEqual('"Hello Test!"', to_str(result_data).strip())
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_GOLANG)
+        os.remove(TEST_LAMBDA_GOLANG_ZIP)
 
 
 class TestJavaRuntimes(LambdaTestBase):
@@ -1804,7 +1854,7 @@ class TestJavaRuntimes(LambdaTestBase):
             Endpoint=aws_stack.lambda_function_arn(function_name),
         )
 
-        events_before = run_safe(get_lambda_log_events, function_name) or []
+        events_before = run_safe(get_lambda_log_events, function_name, regex_filter="Records") or []
 
         s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
         time.sleep(2)
@@ -1816,6 +1866,7 @@ class TestJavaRuntimes(LambdaTestBase):
             sleep=1,
             expected_length=len(events_before) + 1,
             function_name=function_name,
+            regex_filter="Records",
         )
 
         # clean up
@@ -1996,7 +2047,7 @@ def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     )
 
     def get_events():
-        events = get_lambda_log_events(function_name)
+        events = get_lambda_log_events(function_name, regex_filter=r"event.*Records")
         assert len(events) == 2
         return events
 

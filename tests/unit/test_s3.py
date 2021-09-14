@@ -430,8 +430,8 @@ class S3BackendTest(unittest.TestCase):
         file_value = b"content"
 
         s3_backend.create_bucket(bucket_name, region)
-        s3_backend.set_object(bucket_name, file1_name, file_value)
-        s3_backend.set_object(bucket_name, file2_name, file_value)
+        s3_backend.put_object(bucket_name, file1_name, file_value)
+        s3_backend.put_object(bucket_name, file2_name, file_value)
 
         key = s3_backend.get_object(bucket_name, file2_name)
 

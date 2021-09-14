@@ -22,7 +22,7 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 
 from localstack import config, constants
-from localstack.services.cloudformation.service_models import S3Bucket
+from localstack.services.cloudformation.models.s3 import S3Bucket
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
@@ -1030,6 +1030,7 @@ def is_object_specific_request(path, headers):
     return parts > (1 if bucket_in_domain else 2)
 
 
+# TODO: remove dependency on cloudformation resource class here (extract as utility fn)
 def normalize_bucket_name(bucket_name):
     return S3Bucket.normalize_bucket_name(bucket_name)
 
@@ -1291,12 +1292,12 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98
-        # TODO we should evaluate whether to replace moto s3 with scality/S3:
-        # https://github.com/scality/S3/issues/237
+        # TODO: can potentially be removed after this fix in moto: https://github.com/spulec/moto/pull/4201
         is_streaming_payload = headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD
         if is_streaming_payload:
             modified_data = strip_chunk_signatures(not_none_or(modified_data, data))
             headers["Content-Length"] = headers.get("x-amz-decoded-content-length")
+            headers.pop(CONTENT_SHA256_HEADER)
 
         # POST requests to S3 may include a "${filename}" placeholder in the
         # key, which should be replaced with an actual file name before storing.
@@ -1630,8 +1631,10 @@ def serve_static_website(headers, path, bucket_name):
     try:
         if path != "/":
             path = path.lstrip("/")
-            content = s3_client.get_object(Bucket=bucket_name, Key=path)["Body"].read()
-            return requests_response(status_code=200, content=content)
+            obj = s3_client.get_object(Bucket=bucket_name, Key=path)
+            content = obj["Body"].read()
+            headers = {"Content-Type": obj["ContentType"]} if obj.get("ContentType") else {}
+            return requests_response(status_code=200, content=content, headers=headers)
     except ClientError:
         LOGGER.debug("No such key found. %s" % path)
 

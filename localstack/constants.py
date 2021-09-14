@@ -2,8 +2,10 @@ import os
 
 import localstack_client.config
 
+import localstack
+
 # LocalStack version
-VERSION = "0.12.16"
+VERSION = localstack.__version__
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = "local"
@@ -70,6 +72,7 @@ ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 
 # content types
+HEADER_CONTENT_TYPE = "Content-Type"
 APPLICATION_AMZ_JSON_1_0 = "application/x-amz-json-1.0"
 APPLICATION_AMZ_JSON_1_1 = "application/x-amz-json-1.1"
 APPLICATION_AMZ_CBOR_1_1 = "application/x-amz-cbor-1.1"

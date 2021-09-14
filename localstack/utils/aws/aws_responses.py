@@ -13,7 +13,12 @@ from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
 from localstack.config import DEFAULT_ENCODING
-from localstack.constants import MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
+from localstack.constants import (
+    APPLICATION_JSON,
+    HEADER_CONTENT_TYPE,
+    MOTO_ACCOUNT_ID,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     json_safe,
@@ -238,11 +243,15 @@ def get_response_payload(response, as_json=False):
 
 def requests_response(content, status_code=200, headers={}):
     resp = RequestsResponse()
-    content = json.dumps(content) if isinstance(content, dict) else content
+    headers = CaseInsensitiveDict(dict(headers or {}))
+    if isinstance(content, dict):
+        content = json.dumps(content)
+        if not headers.get(HEADER_CONTENT_TYPE):
+            headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
     resp._content = content
     resp.status_code = int(status_code)
     # Note: update headers (instead of assigning directly), to ensure we're using a case-insensitive dict
-    resp.headers.update(headers or {})
+    resp.headers.update(headers)
     return resp
 
 

@@ -184,6 +184,9 @@ DOCKER_FLAGS = os.environ.get("DOCKER_FLAGS", "").strip()
 # command used to run Docker containers (e.g., set to "sudo docker" to run as sudo)
 DOCKER_CMD = os.environ.get("DOCKER_CMD", "").strip() or "docker"
 
+# use the command line docker client instead of the new sdk version, might get removed in the future
+LEGACY_DOCKER_CLIENT = is_env_true("LEGACY_DOCKER_CLIENT")
+
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
 FORWARD_EDGE_INMEM = True
@@ -272,6 +275,10 @@ LAMBDA_FALLBACK_URL = os.environ.get("LAMBDA_FALLBACK_URL", "").strip()
 # Forward URL used to forward any Lambda invocations to an external
 # endpoint (can use useful for advanced test setups)
 LAMBDA_FORWARD_URL = os.environ.get("LAMBDA_FORWARD_URL", "").strip()
+# Time in seconds to wait at max while extracting Lambda code.
+# By default it is 25 seconds for limiting the execution time
+# to avoid client/network timeout issues
+LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 
 # A comma-delimited string of stream names and its corresponding shard count to
 # initialize during startup.
@@ -331,6 +338,8 @@ CONFIG_ENV_VARS = [
     "KINESIS_INITIALIZE_STREAMS",
     "TF_COMPAT_MODE",
     "LAMBDA_DOCKER_FLAGS",
+    "LAMBDA_FORWARD_URL",
+    "LAMBDA_CODE_EXTRACT_TIME",
     "THUNDRA_APIKEY",
     "THUNDRA_AGENT_JAVA_VERSION",
 ]
@@ -447,7 +456,11 @@ else:
 CLI_COMMANDS = {}
 
 # set of valid regions
-VALID_REGIONS = set(Session().get_available_regions("sns"))
+VALID_PARTITIONS = set(Session().get_available_partitions())
+VALID_REGIONS = set()
+for partition in VALID_PARTITIONS:
+    for region in Session().get_available_regions("sns", partition):
+        VALID_REGIONS.add(region)
 
 
 def parse_service_ports():
@@ -523,7 +536,7 @@ def service_port(service_key):
             #  the edge service, as that would require too many route mappings. In the future, we
             #  should integrate them with the port range for external services (4510-4530)
             return SERVICE_PORTS.get(service_key, 0)
-        return EDGE_PORT_HTTP or EDGE_PORT
+        return get_edge_port_http()
     return SERVICE_PORTS.get(service_key, 0)
 
 
@@ -536,9 +549,15 @@ def external_service_url(service_key, host=None):
     return "%s://%s:%s" % (get_protocol(), host, service_port(service_key))
 
 
-def get_edge_url():
-    port = EDGE_PORT_HTTP or EDGE_PORT
-    return "%s://%s:%s" % (get_protocol(), LOCALSTACK_HOSTNAME, port)
+def get_edge_port_http():
+    return EDGE_PORT_HTTP or EDGE_PORT
+
+
+def get_edge_url(localstack_hostname=None, protocol=None):
+    port = get_edge_port_http()
+    protocol = protocol or get_protocol()
+    localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
+    return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
 
 # initialize config values

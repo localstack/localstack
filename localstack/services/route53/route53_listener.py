@@ -80,13 +80,17 @@ def handle_delegation_sets_request(match, method, data):
             if not result:
                 return 404
             return {"GetReusableDelegationSetResponse": {"DelegationSet": result}}
-        result = {"DelegationSet": list(region_details.reusable_delegation_sets.values())}
-        return {
+        reusable_sets_list = list(region_details.reusable_delegation_sets.values())
+        result = {
             "ListReusableDelegationSetsResponse": {
-                "DelegationSets": result,
                 "IsTruncated": False,
             }
         }
+        if len(reusable_sets_list) > 0:
+            result["ListReusableDelegationSetsResponse"]["DelegationSets"] = {
+                "DelegationSet": reusable_sets_list
+            }
+        return result
     if method == "POST":
         req_data = xmltodict.parse(to_str(data))
         req_data = req_data.get("CreateReusableDelegationSetRequest")

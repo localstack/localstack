@@ -1147,6 +1147,12 @@ class TestS3(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key="test/index.html", Body="index")
         self.s3_client.put_object(Bucket=bucket_name, Key="test/error.html", Body="error")
         self.s3_client.put_object(Bucket=bucket_name, Key="actual/key.html", Body="key")
+        self.s3_client.put_object(
+            Bucket=bucket_name,
+            Key="with-content-type/key.js",
+            Body="some js",
+            ContentType="application/javascript; charset=utf-8",
+        )
         self.s3_client.put_bucket_website(
             Bucket=bucket_name,
             WebsiteConfiguration={
@@ -1165,6 +1171,16 @@ class TestS3(unittest.TestCase):
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(200, response.status_code)
         self.assertEqual("key", response.text)
+
+        # key with specified content-type
+        url = "https://{}.{}:{}/with-content-type/key.js".format(
+            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
+        )
+        response = requests.get(url, headers=headers, verify=False)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("some js", response.text)
+        self.assertIn("content-type", response.headers)
+        self.assertEqual("application/javascript; charset=utf-8", response.headers["content-type"])
 
         # index document
         url = "https://{}.{}:{}/test".format(
@@ -1391,17 +1407,14 @@ class TestS3(unittest.TestCase):
             CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
         )
 
-        with self.assertRaises(ClientError) as error:
-            self.s3_client.create_bucket(
-                Bucket=bucket_name,
-                CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
-            )
-        self.assertIn("BucketAlreadyExists", str(error.exception))
+        for loc_constraint in ["us-west-1", "us-east-1"]:
+            with self.assertRaises(ClientError) as error:
+                self.s3_client.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={"LocationConstraint": loc_constraint},
+                )
+            self.assertIn("BucketAlreadyOwnedByYou", str(error.exception))
 
-        self.s3_client.create_bucket(
-            Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": "us-east-1"},
-        )
         self.s3_client.delete_bucket(Bucket=bucket_name)
         bucket_name = "bucket-%s" % short_uid()
         response = self.s3_client.create_bucket(

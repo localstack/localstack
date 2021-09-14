@@ -14,6 +14,7 @@ import uuid
 from datetime import datetime
 from io import BytesIO
 from threading import BoundedSemaphore
+from typing import Dict, List
 
 from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
@@ -28,9 +29,11 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
+    get_lambda_runtime,
     multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
+from localstack.services.install import install_go_lambda_runtime
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
@@ -39,6 +42,7 @@ from localstack.utils.common import (
     empty_context_manager,
     ensure_readable,
     first_char_to_lower,
+    get_all_subclasses,
     is_zip_file,
     isoformat_milliseconds,
     json_safe,
@@ -61,7 +65,7 @@ from localstack.utils.common import (
     unzip,
 )
 from localstack.utils.docker import DOCKER_CLIENT
-from localstack.utils.http_utils import parse_chunked_data
+from localstack.utils.http_utils import canonicalize_headers, parse_chunked_data
 from localstack.utils.run import FuncThread
 
 # logger
@@ -117,10 +121,6 @@ POSSIBLE_JSON_TYPES = (str, bytes)
 JSON_START_TYPES = tuple(set(JSON_START_CHAR_MAP.keys()) - set(POSSIBLE_JSON_TYPES))
 JSON_START_CHARS = tuple(set(functools.reduce(lambda x, y: x + y, JSON_START_CHAR_MAP.values())))
 
-# SQS listener thread settings
-SQS_LISTENER_THREAD = {}
-SQS_POLL_INTERVAL_SEC = 1
-
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(
     config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR
@@ -134,12 +134,16 @@ CHECK_HANDLER_ON_CREATION = False
 
 
 class LambdaRegion(RegionBackend):
+    # map ARN strings to lambda function objects
+    lambdas: Dict[str, LambdaFunction]
+    # map ARN strings to CodeSigningConfig object
+    code_signing_configs: Dict[str, CodeSigningConfig]
+    # list of event source mappings for the API
+    event_source_mappings: List[Dict]
+
     def __init__(self):
-        # map ARN strings to lambda function objects
         self.lambdas = {}
-        # map ARN strings to CodeSigningConfig object
         self.code_signing_configs = {}
-        # list of event source mappings for the API
         self.event_source_mappings = []
 
 
@@ -174,6 +178,173 @@ class LambdaContext(object):
     def get_remaining_time_in_millis(self):
         # TODO implement!
         return 1000 * 60
+
+
+class EventSourceListener:
+    INSTANCES: Dict[str, "EventSourceListener"] = {}
+
+    @classmethod
+    def get(cls, source_type):
+        # TODO: potentially to be replaced with new plugin loading mechanism...
+        if not cls.INSTANCES:
+            for clazz in get_all_subclasses(EventSourceListener):
+                cls.INSTANCES[clazz.source_type()] = clazz()
+        return cls.INSTANCES.get(source_type)
+
+    @staticmethod
+    def source_type() -> str:
+        """Type discriminator - to be implemented by subclasses."""
+        raise NotImplementedError
+
+    def start(self):
+        """Start listener in the background - to be implemented by subclasses."""
+        pass
+
+    @staticmethod
+    def start_listeners(event_source_mapping: Dict):
+        source_arn = event_source_mapping.get("EventSourceArn") or ""
+        parts = source_arn.split(":")
+        service_type = parts[2] if len(parts) > 2 else ""
+        if not service_type:
+            self_managed_endpoints = event_source_mapping.get("SelfManagedEventSource", {}).get(
+                "Endpoints", {}
+            )
+            if self_managed_endpoints.get("KAFKA_BOOTSTRAP_SERVERS"):
+                service_type = "kafka"
+        instance = EventSourceListener.get(service_type)
+        if instance:
+            instance.start()
+
+
+class EventSourceListenerSQS(EventSourceListener):
+    # SQS listener thread settings
+    SQS_LISTENER_THREAD: Dict = {}
+    SQS_POLL_INTERVAL_SEC: float = 1
+
+    @staticmethod
+    def source_type():
+        return "sqs"
+
+    def start(self):
+        if self.SQS_LISTENER_THREAD:
+            return
+
+        LOG.debug("Starting SQS message polling thread for Lambda API")
+        self.SQS_LISTENER_THREAD["_thread_"] = thread = FuncThread(self._listener_loop)
+        thread.start()
+
+    def get_matching_event_sources(self) -> List[Dict]:
+        return get_event_sources(source_arn=r".*:sqs:.*")
+
+    def _listener_loop(self, *args):
+        while True:
+            try:
+                sources = self.get_matching_event_sources()
+                if not sources:
+                    # Temporarily disable polling if no event sources are configured
+                    # anymore. The loop will get restarted next time a message
+                    # arrives and if an event source is configured.
+                    self.SQS_LISTENER_THREAD.pop("_thread_")
+                    return
+
+                unprocessed_messages = {}
+
+                sqs_client = aws_stack.connect_to_service("sqs")
+                for source in sources:
+                    queue_arn = source["EventSourceArn"]
+                    lambda_arn = source["FunctionArn"]
+                    batch_size = max(min(source.get("BatchSize", 1), 10), 1)
+
+                    try:
+                        region_name = queue_arn.split(":")[3]
+                        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+                        messages = unprocessed_messages.pop(queue_arn, None)
+                        if not messages:
+                            result = sqs_client.receive_message(
+                                QueueUrl=queue_url,
+                                MessageAttributeNames=["All"],
+                                MaxNumberOfMessages=batch_size,
+                            )
+                            messages = result.get("Messages")
+                            if not messages:
+                                continue
+
+                        LOG.debug(
+                            "Sending event from event source %s to Lambda %s"
+                            % (queue_arn, lambda_arn)
+                        )
+                        res = self._send_event_to_lambda(
+                            queue_arn,
+                            queue_url,
+                            lambda_arn,
+                            messages,
+                            region=region_name,
+                        )
+                        if not res:
+                            unprocessed_messages[queue_arn] = messages
+
+                    except Exception as e:
+                        LOG.debug("Unable to poll SQS messages for queue %s: %s" % (queue_arn, e))
+
+            except Exception:
+                pass
+            finally:
+                time.sleep(self.SQS_POLL_INTERVAL_SEC)
+
+    def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region):
+        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
+            if error and not dlq_sent:
+                # Skip deleting messages from the queue in case of processing errors AND if
+                # the message has not yet been sent to a dead letter queue (DLQ).
+                # We'll pick them up and retry next time they become available on the queue.
+                return
+
+            sqs_client = aws_stack.connect_to_service("sqs")
+            entries = [
+                {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
+            ]
+            try:
+                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+            except Exception as e:
+                LOG.info(
+                    "Unable to delete Lambda events from SQS queue "
+                    + "(please check SQS visibility timeout settings): %s - %s" % (entries, e)
+                )
+
+        records = []
+        for msg in messages:
+            message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
+            records.append(
+                {
+                    "body": msg["Body"],
+                    "receiptHandle": msg["ReceiptHandle"],
+                    "md5OfBody": msg["MD5OfBody"],
+                    "eventSourceARN": queue_arn,
+                    "eventSource": lambda_executors.EVENT_SOURCE_SQS,
+                    "awsRegion": region,
+                    "messageId": msg["MessageId"],
+                    "attributes": msg.get("Attributes", {}),
+                    "messageAttributes": message_attrs,
+                    "md5OfMessageAttributes": msg.get("MD5OfMessageAttributes"),
+                    "sqs": True,
+                }
+            )
+
+        event = {"Records": records}
+
+        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
+        res = run_lambda(
+            func_arn=lambda_arn,
+            event=event,
+            context={},
+            asynchronous=True,
+            callback=delete_messages,
+        )
+        if isinstance(res, lambda_executors.InvocationResult):
+            status_code = getattr(res.result, "status_code", 0)
+            if status_code >= 400:
+                return False
+        return True
 
 
 def cleanup():
@@ -218,15 +389,7 @@ def check_batch_size_range(source_arn, batch_size=None):
     return batch_size
 
 
-def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
-    region = LambdaRegion.get()
-    arn = func_arn(lambda_name)
-    lambda_details = region.lambdas[arn]
-    lambda_details.versions.get(VERSION_LATEST)["Function"] = lambda_handler
-    lambda_details.cwd = lambda_cwd or lambda_details.cwd
-
-
-def build_mapping_obj(data):
+def build_mapping_obj(data) -> Dict:
     mapping = {}
     function_name = data["FunctionName"]
     enabled = data.get("Enabled", True)
@@ -238,10 +401,10 @@ def build_mapping_obj(data):
     mapping["LastModified"] = format_timestamp_for_event_source_mapping()
     mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
     mapping["ParallelizationFactor"] = data.get("ParallelizationFactor") or 1
+    mapping["Topics"] = data.get("Topics") or []
     if "SelfManagedEventSource" in data:
         source_arn = data["SourceAccessConfigurations"][0]["URI"]
         mapping["SelfManagedEventSource"] = data["SelfManagedEventSource"]
-        mapping["Topics"] = data["Topics"]
         mapping["SourceAccessConfigurations"] = data["SourceAccessConfigurations"]
     else:
         source_arn = data["EventSourceArn"]
@@ -266,6 +429,7 @@ def add_event_source(data):
     region = LambdaRegion.get()
     mapping = build_mapping_obj(data)
     region.event_source_mappings.append(mapping)
+    EventSourceListener.start_listeners(mapping)
     return mapping
 
 
@@ -310,7 +474,17 @@ def use_docker():
     if DO_USE_DOCKER is None:
         DO_USE_DOCKER = False
         if "docker" in config.LAMBDA_EXECUTOR:
-            DO_USE_DOCKER = DOCKER_CLIENT.has_docker()
+            has_docker = DOCKER_CLIENT.has_docker()
+            if not has_docker:
+                LOG.warning(
+                    (
+                        "Lambda executor configured as LAMBDA_EXECUTOR=%s but Docker "
+                        "is not accessible. Please make sure to mount the Docker socket "
+                        "/var/run/docker.sock into the container."
+                    )
+                    % config.LAMBDA_EXECUTOR
+                )
+            DO_USE_DOCKER = has_docker
     return DO_USE_DOCKER
 
 
@@ -383,6 +557,8 @@ def construct_invocation_event(
     method, path, headers, data, query_string_params={}, is_base64_encoded=False
 ):
     query_string_params = query_string_params or parse_request_data(method, path, "")
+    # AWS canonicalizes header names, converting them to lower-case
+    headers = canonicalize_headers(headers)
     event = {
         "path": path,
         "headers": dict(headers),
@@ -490,127 +666,13 @@ def process_kinesis_records(records, stream_name):
 
 
 def start_lambda_sqs_listener():
-    if SQS_LISTENER_THREAD:
-        return
-
-    def send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region):
-        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
-            if error and not dlq_sent:
-                # Skip deleting messages from the queue in case of processing errors AND if
-                # the message has not yet been sent to a dead letter queue (DLQ).
-                # We'll pick them up and retry next time they become available on the queue.
-                return
-
-            sqs_client = aws_stack.connect_to_service("sqs")
-            entries = [
-                {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
-            ]
-            try:
-                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
-            except Exception as e:
-                LOG.info(
-                    "Unable to delete Lambda events from SQS queue "
-                    + "(please check SQS visibility timeout settings): %s - %s" % (entries, e)
-                )
-
-        records = []
-        for msg in messages:
-            message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
-            records.append(
-                {
-                    "body": msg["Body"],
-                    "receiptHandle": msg["ReceiptHandle"],
-                    "md5OfBody": msg["MD5OfBody"],
-                    "eventSourceARN": queue_arn,
-                    "eventSource": lambda_executors.EVENT_SOURCE_SQS,
-                    "awsRegion": region,
-                    "messageId": msg["MessageId"],
-                    "attributes": msg.get("Attributes", {}),
-                    "messageAttributes": message_attrs,
-                    "md5OfMessageAttributes": msg.get("MD5OfMessageAttributes"),
-                    "sqs": True,
-                }
-            )
-
-        event = {"Records": records}
-
-        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
-        res = run_lambda(
-            func_arn=lambda_arn,
-            event=event,
-            context={},
-            asynchronous=True,
-            callback=delete_messages,
-        )
-        if (
-            isinstance(res, lambda_executors.InvocationResult)
-            and getattr(res.result, "status_code", 0) >= 400
-        ):
-            return False
-        return True
-
-    def listener_loop(*args):
-        while True:
-            try:
-                sources = get_event_sources(source_arn=r".*:sqs:.*")
-                if not sources:
-                    # Temporarily disable polling if no event sources are configured
-                    # anymore. The loop will get restarted next time a message
-                    # arrives and if an event source is configured.
-                    SQS_LISTENER_THREAD.pop("_thread_")
-                    return
-
-                unprocessed_messages = {}
-
-                sqs_client = aws_stack.connect_to_service("sqs")
-                for source in sources:
-                    queue_arn = source["EventSourceArn"]
-                    lambda_arn = source["FunctionArn"]
-                    batch_size = max(min(source.get("BatchSize", 1), 10), 1)
-
-                    try:
-                        region_name = queue_arn.split(":")[3]
-                        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-                        messages = unprocessed_messages.pop(queue_arn, None)
-                        if not messages:
-                            result = sqs_client.receive_message(
-                                QueueUrl=queue_url,
-                                MessageAttributeNames=["All"],
-                                MaxNumberOfMessages=batch_size,
-                            )
-                            messages = result.get("Messages")
-                            if not messages:
-                                continue
-
-                        LOG.debug(
-                            "Sending event from event source %s to Lambda %s"
-                            % (queue_arn, lambda_arn)
-                        )
-                        res = send_event_to_lambda(
-                            queue_arn,
-                            queue_url,
-                            lambda_arn,
-                            messages,
-                            region=region_name,
-                        )
-                        if not res:
-                            unprocessed_messages[queue_arn] = messages
-
-                    except Exception as e:
-                        LOG.debug("Unable to poll SQS messages for queue %s: %s" % (queue_arn, e))
-
-            except Exception:
-                pass
-            finally:
-                time.sleep(SQS_POLL_INTERVAL_SEC)
-
-    LOG.debug("Starting SQS message polling thread for Lambda API")
-    SQS_LISTENER_THREAD["_thread_"] = FuncThread(listener_loop)
-    SQS_LISTENER_THREAD["_thread_"].start()
+    EventSourceListener.get("sqs").start()
 
 
 def process_sqs_message(queue_name, region_name=None):
     # feed message into the first listening lambda (message should only get processed once)
+    # TODO: optimize the performance of this function - we should run start_lambda_sqs_listener() only if
+    #  event source mappings or queue configurations change, but not for every single incoming message!
     try:
         region_name = region_name or aws_stack.get_region()
         queue_arn = aws_stack.sqs_queue_arn(queue_name, region_name=region_name)
@@ -735,13 +797,15 @@ def run_lambda(
             result = not_found_error(msg="The resource specified in the request does not exist.")
             return lambda_executors.InvocationResult(result)
 
+        context = LambdaContext(func_details, version, context)
+
         # forward invocation to external endpoint, if configured
         invocation_type = "Event" if asynchronous else "RequestResponse"
+
         invoke_result = forward_to_external_url(func_details, event, context, invocation_type)
         if invoke_result is not None:
             return invoke_result
 
-        context = LambdaContext(func_details, version, context)
         result = LAMBDA_EXECUTOR.execute(
             func_arn,
             func_details,
@@ -943,18 +1007,21 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     return tmp_dir
 
 
-def set_function_code(code, lambda_name, lambda_cwd=None):
+def set_function_code(lambda_function: LambdaFunction):
     def _set_and_configure():
-        lambda_handler = do_set_function_code(code, lambda_name, lambda_cwd=lambda_cwd)
-        add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
+        lambda_handler = do_set_function_code(lambda_function)
+        lambda_function.versions.get(VERSION_LATEST)["Function"] = lambda_handler
+        # initialize function code via plugins
+        for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
+            plugin.init_function_code(lambda_function)
 
     # unzipping can take some time - limit the execution time to avoid client/network timeout issues
-    run_for_max_seconds(25, _set_and_configure)
-    return {"FunctionName": lambda_name}
+    run_for_max_seconds(config.LAMBDA_CODE_EXTRACT_TIME, _set_and_configure)
+    return {"FunctionName": lambda_function.name()}
 
 
-def do_set_function_code(code, lambda_name, lambda_cwd=None):
-    def generic_handler(event, context):
+def do_set_function_code(lambda_function: LambdaFunction):
+    def generic_handler(*_):
         raise ClientError(
             (
                 'Unable to find executor for Lambda function "%s". Note that '
@@ -964,15 +1031,16 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
         )
 
     region = LambdaRegion.get()
-    arn = func_arn(lambda_name)
+    lambda_name = lambda_function.name()
+    arn = lambda_function.arn()
     lambda_details = region.lambdas[arn]
-    runtime = lambda_details.runtime
+    runtime = get_lambda_runtime(lambda_details)
     lambda_environment = lambda_details.envvars
     handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
-    code_passed = code
-    code = code or lambda_details.code
-    is_local_mount = code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    code_passed = lambda_function.code
+    is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
     zip_file_content = None
+    lambda_cwd = lambda_function.cwd
 
     LAMBDA_EXECUTOR.cleanup(arn)
 
@@ -1001,7 +1069,13 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
         # The Lambda executors for Docker subclass LambdaExecutorContainers, which
         # runs Lambda in Docker by passing all *.jar files in the function working
         # directory as part of the classpath. Obtain a Java handler function below.
-        lambda_handler = get_java_handler(zip_file_content, tmp_file, func_details=lambda_details)
+        try:
+            lambda_handler = get_java_handler(
+                zip_file_content, tmp_file, func_details=lambda_details
+            )
+        except Exception as e:
+            # this can happen, e.g., for Lambda code mounted via __local__ -> ignore
+            LOG.debug("Unable to determine Lambda Java handler: %s", e)
 
     if not is_local_mount:
         # Lambda code must be uploaded in Zip format
@@ -1053,7 +1127,7 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
                     lambda_env=lambda_environment,
                 )
             except Exception as e:
-                raise ClientError("Unable to get handler function from lambda code.", e)
+                raise ClientError("Unable to get handler function from lambda code: %s" % e)
 
         if runtime.startswith("node") and not use_docker():
             ensure_readable(main_file)
@@ -1065,6 +1139,18 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
                 return result
 
             lambda_handler = execute
+
+        if runtime.startswith("go1") and not use_docker():
+            install_go_lambda_runtime()
+            ensure_readable(main_file)
+
+            def execute_go(event, context):
+                result = lambda_executors.EXECUTOR_LOCAL.execute_go_lambda(
+                    event, context, main_file=main_file, func_details=lambda_details
+                )
+                return result
+
+            lambda_handler = execute_go
 
     return lambda_handler
 
@@ -1134,31 +1220,59 @@ def format_func_details(func_details, version=None, always_add_version=False):
 
 
 def forward_to_external_url(func_details, event, context, invocation_type):
+    func_forward_url = (
+        func_details.envvars.get("LOCALSTACK_LAMBDA_FORWARD_URL") or config.LAMBDA_FORWARD_URL
+    )
     """If LAMBDA_FORWARD_URL is configured, forward the invocation of this Lambda to the configured URL."""
-    if not config.LAMBDA_FORWARD_URL:
+    if not func_forward_url:
         return
+
     func_name = func_details.name()
     url = "%s%s/functions/%s/invocations" % (
-        config.LAMBDA_FORWARD_URL,
+        func_forward_url,
         PATH_ROOT,
         func_name,
     )
+
+    copied_env_vars = func_details.envvars.copy()
+    copied_env_vars["LOCALSTACK_HOSTNAME"] = config.HOSTNAME_EXTERNAL
+    copied_env_vars["LOCALSTACK_EDGE_PORT"] = str(config.EDGE_PORT)
+
     headers = aws_stack.mock_aws_request_headers("lambda")
+    headers["X-Amz-Region"] = func_details.region()
+    headers["X-Amz-Request-Id"] = context.aws_request_id
+    headers["X-Amz-Handler"] = func_details.handler
+    headers["X-Amz-Function-ARN"] = context.invoked_function_arn
+    headers["X-Amz-Function-Name"] = context.function_name
+    headers["X-Amz-Function-Version"] = context.function_version
+    headers["X-Amz-Role"] = func_details.role
+    headers["X-Amz-Runtime"] = func_details.runtime
+    headers["X-Amz-Timeout"] = str(func_details.timeout)
+    headers["X-Amz-Memory-Size"] = str(context.memory_limit_in_mb)
+    headers["X-Amz-Log-Group-Name"] = context.log_group_name
+    headers["X-Amz-Log-Stream-Name"] = context.log_stream_name
+    headers["X-Amz-Env-Vars"] = json.dumps(copied_env_vars)
+    headers["X-Amz-Last-Modified"] = str(int(func_details.last_modified.timestamp() * 1000))
     headers["X-Amz-Invocation-Type"] = invocation_type
     headers["X-Amz-Log-Type"] = "Tail"
-    client_context = context.get("client_context")
-    if client_context:
-        headers["X-Amz-Client-Context"] = client_context
-    data = json.dumps(event) if isinstance(event, dict) else str(event)
+    if context.client_context:
+        headers["X-Amz-Client-Context"] = context.client_context
+    if context.cognito_identity:
+        headers["X-Amz-Cognito-Identity"] = context.cognito_identity
+
+    data = json.dumps(json_safe(event)) if isinstance(event, dict) else str(event)
     LOG.debug("Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s" % config.LAMBDA_FORWARD_URL)
     result = safe_requests.post(url, data, headers=headers)
+    if result.status_code >= 400:
+        raise Exception(
+            "Received error status code %s from external Lambda invocation" % result.status_code
+        )
     content = run_safe(lambda: to_str(result.content)) or result.content
     LOG.debug(
         "Received result from external Lambda endpoint (status %s): %s"
         % (result.status_code, content)
     )
-    result = aws_responses.requests_to_flask_response(result)
-    result = lambda_executors.InvocationResult(result)
+    result = lambda_executors.InvocationResult(content)
     return result
 
 
@@ -1313,7 +1427,7 @@ def create_function():
         func_details.image_config = data.get("ImageConfig", {})
         func_details.tracing_config = data.get("TracingConfig", {})
         func_details.set_dead_letter_config(data)
-        result = set_function_code(func_details.code, lambda_name)
+        result = set_function_code(func_details)
         if isinstance(result, Response):
             del region.lambdas[arn]
             return result
@@ -1412,13 +1526,14 @@ def update_function_code(function):
     """
     region = LambdaRegion.get()
     arn = func_arn(function)
-    if arn not in region.lambdas:
+    func_details = region.lambdas.get(arn)
+    if not func_details:
         return not_found_error("Function not found: %s" % arn)
     data = json.loads(to_str(request.data))
-    result = set_function_code(data, function)
+    func_details.code = data
+    result = set_function_code(func_details)
     if isinstance(result, Response):
         return result
-    func_details = region.lambdas.get(arn)
     func_details.last_modified = datetime.utcnow()
     result.update(format_func_details(func_details))
     if data.get("Publish"):
@@ -1509,6 +1624,10 @@ def update_function_configuration(function):
     result = data
     func_details = region.lambdas.get(arn)
     result.update(format_func_details(func_details))
+
+    # initialize plugins
+    for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
+        plugin.init_function_configuration(func_details)
 
     return jsonify(result)
 
@@ -1642,14 +1761,14 @@ def invoke_function(function):
     # function here can either be an arn or a function name
     arn = func_arn(function)
 
-    # arn can also contain a qualifier, extract it from there if so
+    # ARN can also contain a qualifier, extract it from there if so
     m = re.match("(arn:aws:lambda:.*:.*:function:[a-zA-Z0-9-_]+)(:.*)?", arn)
     if m and m.group(2):
         qualifier = m.group(2)[1:]
         arn = m.group(1)
     else:
         qualifier = request.args.get("Qualifier")
-    data = request.get_data()
+    data = request.get_data() or ""
     if data:
         try:
             data = to_str(data)
@@ -2263,6 +2382,9 @@ def serve(port):
     # initialize the Lambda executor
     LAMBDA_EXECUTOR.startup()
 
+    # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
+    import localstack.plugin.thundra  # noqa
+
     generic_proxy.serve_flask_app(app=app, port=port)
 
 
@@ -2272,7 +2394,7 @@ def on_config_change(config_key: str, config_newvalue: str) -> None:
     if config_key != "LAMBDA_EXECUTOR":
         return
     LOG.debug(
-        "Recieved config event for lambda executor! Key: {} Value: {}".format(
+        "Received config event for lambda executor - Key: '{}', Value: {}".format(
             config_key, config_newvalue
         )
     )
