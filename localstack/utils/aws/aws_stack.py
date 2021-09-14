@@ -4,6 +4,7 @@ import os
 import re
 import socket
 import time
+from typing import Dict
 
 import boto3
 import botocore
@@ -457,11 +458,11 @@ def sqs_queue_url_for_arn(queue_arn):
 
 
 # TODO: remove and merge with sqs_queue_url_for_arn(..) above!!
-def get_sqs_queue_url(queue_arn):
+def get_sqs_queue_url(queue_arn: str) -> str:
     return sqs_queue_url_for_arn(queue_arn)
 
 
-def extract_region_from_auth_header(headers, use_default=True):
+def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -> str:
     auth = headers.get("Authorization") or ""
     region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
     if region == auth:
@@ -471,12 +472,20 @@ def extract_region_from_auth_header(headers, use_default=True):
     return region
 
 
-def extract_region_from_arn(arn):
+def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> str:
+    auth = headers.get("Authorization") or ""
+    access_id = re.sub(r".*Credential=([^/]+)/[^/]+/[^/]+/.*", r"\1", auth)
+    if access_id == auth:
+        access_id = None
+    return access_id
+
+
+def extract_region_from_arn(arn: str) -> str:
     parts = arn.split(":")
     return parts[3] if len(parts) > 1 else None
 
 
-def extract_service_from_arn(arn):
+def extract_service_from_arn(arn: str) -> str:
     parts = arn.split(":")
     return parts[2] if len(parts) > 1 else None
 
@@ -840,14 +849,14 @@ def kinesis_stream_name(kinesis_arn):
     return kinesis_arn.split(":stream/")[-1]
 
 
-def mock_aws_request_headers(service="dynamodb", region_name=None):
+def mock_aws_request_headers(service="dynamodb", region_name=None, access_key=None):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
     elif service in ["sns", "sqs"]:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
 
-    access_key = get_boto3_credentials().access_key
+    access_key = access_key or get_boto3_credentials().access_key
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,

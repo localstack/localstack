@@ -490,39 +490,48 @@ def is_base64(s):
     return is_string(s) and re.match(regex, s)
 
 
-def md5(string):
+def md5(string: Union[str, bytes]) -> str:
     m = hashlib.md5()
     m.update(to_bytes(string))
     return m.hexdigest()
 
 
-def select_attributes(obj, attributes):
+def select_attributes(obj: Dict, attributes: List[str]) -> Dict:
     """Select a subset of attributes from the given dict (returns a copy)"""
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     return dict([(k, v) for k, v in obj.items() if k in attributes])
 
 
-def remove_attributes(obj, attributes):
+def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False) -> Dict:
     """Remove a set of attributes from the given dict (in-place)"""
+    if recursive:
+
+        def _remove(o, **kwargs):
+            if isinstance(o, dict):
+                remove_attributes(o, attributes)
+            return o
+
+        return recurse_object(obj, _remove)
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     for attr in attributes:
         obj.pop(attr, None)
     return obj
 
 
-def is_list_or_tuple(obj):
+def is_list_or_tuple(obj) -> bool:
     return isinstance(obj, (list, tuple))
 
 
-def in_docker():
+def in_docker() -> bool:
     return config.in_docker()
 
 
-def path_from_url(url):
+def path_from_url(url: str) -> str:
     return "/%s" % str(url).partition("://")[2].partition("/")[2] if "://" in url else url
 
 
-def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=["tcp"]):
+def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=None):
+    protocols = protocols or ["tcp"]
     port = port_or_url
     if is_number(port):
         port = int(port)
@@ -1582,13 +1591,14 @@ def generate_ssl_cert(
     return file_content
 
 
-def run_safe(_python_lambda, *args, **kwargs):
+def run_safe(_python_lambda, *args, _default=None, **kwargs):
     print_error = kwargs.get("print_error", False)
     try:
         return _python_lambda(*args, **kwargs)
     except Exception as e:
         if print_error:
             LOG.warning("Unable to execute function: %s" % e)
+        return _default
 
 
 def run_cmd_safe(**kwargs):
