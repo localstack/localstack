@@ -913,14 +913,19 @@ class SNSTest(unittest.TestCase):
         test_queue = self.sqs_client.create_queue(QueueName="test_queue3")
 
         queue_url = test_queue["QueueUrl"]
-        self.sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
+        subscription_arn = self.sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_url,
+            Attributes={"RawMessageDelivery": "true"},
+        )["SubscriptionArn"]
         self.sns_client.publish(
             TargetArn=topic_arn,
             Message="Test msg",
             MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "99.12"}},
         )
 
-        def get_message(queue_url):
+        def get_message_with_attributes(queue_url):
             response = self.sqs_client.receive_message(
                 QueueUrl=queue_url, MessageAttributeNames=["All"]
             )
@@ -928,8 +933,37 @@ class SNSTest(unittest.TestCase):
                 response["Messages"][0]["MessageAttributes"],
                 {"attr1": {"DataType": "Number", "StringValue": "99.12"}},
             )
+            self.sqs_client.delete_message(
+                QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+            )
 
-        retry(get_message, retries=3, sleep=10, queue_url=queue_url)
+        retry(get_message_with_attributes, retries=3, sleep=10, queue_url=queue_url)
+
+        self.sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription_arn,
+            AttributeName="RawMessageDelivery",
+            AttributeValue="false",
+        )
+        self.sns_client.publish(
+            TargetArn=topic_arn,
+            Message="Test msg",
+            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "100.12"}},
+        )
+
+        def get_message_without_attributes(queue_url):
+            response = self.sqs_client.receive_message(
+                QueueUrl=queue_url, MessageAttributeNames=["All"]
+            )
+            self.assertIsNone(response["Messages"][0].get("MessageAttributes"))
+            self.assertIn(
+                "100.12",
+                response["Messages"][0]["Body"],
+            )
+            self.sqs_client.delete_message(
+                QueueUrl=queue_url, ReceiptHandle=response["Messages"][0]["ReceiptHandle"]
+            )
+
+        retry(get_message_without_attributes, retries=3, sleep=10, queue_url=queue_url)
 
     def add_xray_header(self, request, **kwargs):
         request.headers[

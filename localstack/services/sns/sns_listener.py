@@ -775,9 +775,8 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
 
 
 def create_sqs_message_attributes(subscriber, attributes):
-    # Message attributes are going empty because of this hence removing this check.
-    # if not is_raw_message_delivery(subscriber):
-    #     return {}
+    if not is_raw_message_delivery(subscriber):
+        return {}
 
     message_attributes = {}
     for key, value in attributes.items():
