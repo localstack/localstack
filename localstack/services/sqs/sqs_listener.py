@@ -23,6 +23,7 @@ from localstack.utils.aws.aws_responses import (
 )
 from localstack.utils.common import (
     clone,
+    ensure_list,
     get_service_protocol,
     parse_request_data,
     path_from_url,
@@ -224,7 +225,9 @@ def _process_sent_message(path: str, req_data: Dict[str, str], headers: Dict, re
     elif action == "SendMessageBatch":
         messages = parse_urlencoded_data(req_data, "SendMessageBatchRequestEntry")
         # Note: only forwarding messages from 'Successful', not from 'Failed' list
-        for successful in response_data.get("SendMessageBatchResultEntry") or []:
+        entries = response_data.get("SendMessageBatchResultEntry") or []
+        entries = ensure_list(entries)
+        for successful in entries:
             msg = [m for m in messages if m["Id"] == successful["Id"]][0]
             msg.update(successful)
 

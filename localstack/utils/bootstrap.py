@@ -13,7 +13,7 @@ from functools import wraps
 import six
 
 from localstack import config, constants
-from localstack.constants import TRACE_LOG_LEVELS
+from localstack.constants import LS_LOG_TRACE_INTERNAL, TRACE_LOG_LEVELS
 from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
 
 # set up logger
@@ -297,12 +297,16 @@ def setup_logging(log_level=None):
     logging.captureWarnings(True)
     logging.getLogger("asyncio").setLevel(logging.INFO)
     logging.getLogger("boto3").setLevel(logging.INFO)
-    logging.getLogger("s3transfer").setLevel(logging.INFO)
-    logging.getLogger("docker").setLevel(logging.WARNING)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("botocore").setLevel(logging.ERROR)
+    logging.getLogger("docker").setLevel(logging.WARNING)
     logging.getLogger("elasticsearch").setLevel(logging.ERROR)
+    logging.getLogger("moto").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("s3transfer").setLevel(logging.INFO)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    if config.LS_LOG != LS_LOG_TRACE_INTERNAL:
+        # disable werkzeug API logs, unless detailed internal trace logging is enabled
+        logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
 
 # --------------
