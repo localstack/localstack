@@ -79,6 +79,17 @@ def test_argument_parsing():
         argument_string = "--publish 80:80:80:80"
         Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
 
+    # Test windows paths
+    argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task"'
+    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
+    argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task:ro"'
+    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
+    argument_string = r'-v "/var/test:/var/task:ro"'
+    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    assert mounts == [("/var/test", "/var/task")]
+
 
 def list_in(a, b):
     return len(a) <= len(b) and any(

@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import os
+import re
 import shlex
 import socket
 import subprocess
@@ -855,9 +856,9 @@ class Util:
         :param env_vars: Dict with env vars. Will be modified in place.
         :param ports: PortMapping object. Will be modified in place.
         :param mounts: List of mount tuples (host_path, container_path). Will be modified in place.
-        :return: A tuple containing the env_vars, ports and mount objects. Will return new objects if respective
-                parameters were None and additional flags contained a flag for that object, the same which are passed
-                otherwise.
+        :return: A tuple containing the env_vars, ports, mount and extra_hosts objects. Will return new objects if
+                respective parameters were None and additional flags contained a flag for that object, the same which
+                are passed otherwise.
         """
         cur_state = None
         extra_hosts = None
@@ -879,7 +880,16 @@ class Util:
             else:
                 if cur_state == "volume":
                     mounts = mounts if mounts is not None else []
-                    mounts.append(tuple(flag.split(":")))
+                    match = re.match(
+                        r"(?P<host>[\w\\\/:\-]+?):(?P<container>[\w\/\-]+)(?::(?P<arg>ro|rw|z|Z))?",
+                        flag,
+                    )
+                    host_path = match.group("host")
+                    container_path = match.group("container")
+                    rw_args = match.group("arg")
+                    if rw_args:
+                        LOG.info("Volume options like :ro or :rw are currently ignored.")
+                    mounts.append((host_path, container_path))
                 elif cur_state == "port":
                     port_split = flag.split(":")
                     protocol = "tcp"
