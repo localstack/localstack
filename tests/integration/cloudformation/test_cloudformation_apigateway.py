@@ -35,12 +35,14 @@ def test_cfn_apigateway_aws_integration(
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
         wait_until(is_stack_created(stack_id))
 
+        # check resources creation
         apis = [
             api for api in apigateway_client.get_rest_apis()["items"] if api["name"] == api_name
         ]
         assert len(apis) == 1
         api_id = apis[0]["id"]
 
+        # check resources creation
         resources = apigateway_client.get_resources(restApiId=api_id)["items"]
         assert (
             resources[0]["resourceMethods"]["GET"]["requestParameters"]["method.request.path.id"]
@@ -52,6 +54,23 @@ def test_cfn_apigateway_aws_integration(
             ]
             == "method.request.path.id"
         )
+
+        # check domains creation
+        domain_names = [
+            domain["domainName"] for domain in apigateway_client.get_domain_names()["items"]
+        ]
+        assert len(domain_names) == 1
+        assert domain_names[0] == "localstack.cloud"
+
+        # check basepath mappings creation
+        mappings = [
+            mapping["basePath"]
+            for mapping in apigateway_client.get_base_path_mappings(domainName=domain_names[0])[
+                "items"
+            ]
+        ]
+        assert len(mappings) == 1
+        assert mappings[0] == "(none)"
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])

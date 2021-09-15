@@ -1879,6 +1879,39 @@ class TestDockerBehaviour(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service("lambda")
+        cls.s3_client = aws_stack.connect_to_service("s3")
+
+    def test_code_updated_on_redeployment(self):
+        lambda_api.LAMBDA_EXECUTOR.cleanup()
+
+        func_name = "test_code_updated_on_redeployment"
+
+        # deploy function for the first time
+        testutil.create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_ENV,
+            libs=TEST_LAMBDA_LIBS,
+            envvars={"Hello": "World"},
+        )
+
+        # test first invocation
+        result = self.lambda_client.invoke(FunctionName=func_name, Payload=b"{}")
+        payload = json.loads(to_str(result["Payload"].read()))
+
+        assert payload["Hello"] == "World"
+
+        # replacement code
+        updated_handler = "handler = lambda event, context: {'Hello': 'Elon Musk'}"
+        updated_handler = testutil.create_lambda_archive(
+            updated_handler, libs=TEST_LAMBDA_LIBS, get_content=True
+        )
+        self.lambda_client.update_function_code(FunctionName=func_name, ZipFile=updated_handler)
+
+        # second invocation should exec updated lambda code
+        result = self.lambda_client.invoke(FunctionName=func_name, Payload=b"{}")
+        payload = json.loads(to_str(result["Payload"].read()))
+
+        assert payload["Hello"] == "Elon Musk"
 
     def test_prime_and_destroy_containers(self):
         # run these tests only for the "reuse containers" Lambda executor
