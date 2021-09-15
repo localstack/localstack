@@ -138,6 +138,32 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_delete_message_deletes_visibility_agnostic(self):
+        queue_name = "queue-%s" % short_uid()
+        queue_info = self.client.create_queue(QueueName=queue_name)
+        queue_url = queue_info["QueueUrl"]
+        self.assertIn(queue_name, queue_url)
+
+        # publish/receive message with change_message_visibility
+        self.client.send_message(QueueUrl=queue_url, MessageBody="msg234")
+        messages = self.client.receive_message(QueueUrl=queue_url)["Messages"]
+        response = self.client.receive_message(QueueUrl=queue_url)
+        self.assertFalse(response.get("Messages"))
+        self.client.change_message_visibility(
+            QueueUrl=queue_url,
+            ReceiptHandle=messages[0]["ReceiptHandle"],
+            VisibilityTimeout=0,
+        )
+
+        # delete message with changed visibility
+        self.client.delete_message(
+            QueueUrl=queue_url,
+            ReceiptHandle=messages[0]["ReceiptHandle"],
+        )
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     def test_publish_get_delete_message_batch(self):
         queue_name = "queue-%s" % short_uid()
         queue_info = self.client.create_queue(QueueName=queue_name)
