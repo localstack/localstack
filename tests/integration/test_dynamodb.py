@@ -8,13 +8,14 @@ from time import sleep
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.aws.aws_stack import get_environment
-from localstack.utils.common import json_safe, retry, short_uid
+from localstack.utils.common import json_safe, long_uuid, retry, short_uid
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 PARTITION_KEY = "id"
@@ -825,6 +826,34 @@ class TestDynamoDB(unittest.TestCase):
         )
 
         self.assertEqual({}, result.get("UnprocessedItems"))
+
+    def test_dynamodb_create_table_with_sse_specification(self):
+        dynamodb = aws_stack.connect_to_service("dynamodb")
+        table_name = "ddb-table-%s" % short_uid()
+
+        kms_master_key_id = long_uuid()
+        sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
+        kms_master_key_arn = "arn:aws:kms:%s:%s:key/%s" % (
+            aws_stack.get_local_region(),
+            TEST_AWS_ACCOUNT_ID,
+            kms_master_key_id,
+        )
+
+        result = dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            SSESpecification=sse_specification,
+            Tags=TEST_DDB_TAGS,
+        )
+
+        self.assertTrue(result["TableDescription"]["SSEDescription"])
+        self.assertEqual("ENABLED", result["TableDescription"]["SSEDescription"]["Status"])
+        self.assertEqual(
+            kms_master_key_arn,
+            result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"],
+        )
 
 
 def delete_table(name):
