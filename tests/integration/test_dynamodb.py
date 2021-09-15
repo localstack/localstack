@@ -831,7 +831,7 @@ class TestDynamoDB(unittest.TestCase):
         dynamodb = aws_stack.connect_to_service("dynamodb")
         table_name = "ddb-table-%s" % short_uid()
 
-        kms_master_key_id = long_uuid()
+        kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
         kms_master_key_arn = "arn:aws:kms:%s:%s:key/%s" % (
             aws_stack.get_local_region(),
