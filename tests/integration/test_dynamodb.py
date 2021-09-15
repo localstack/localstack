@@ -15,7 +15,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.aws.aws_stack import get_environment
-from localstack.utils.common import json_safe, long_uuid, retry, short_uid
+from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 PARTITION_KEY = "id"
