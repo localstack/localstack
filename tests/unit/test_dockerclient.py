@@ -79,6 +79,28 @@ def test_argument_parsing():
         argument_string = "--publish 80:80:80:80"
         Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
 
+    # Test windows paths
+    argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task"'
+    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
+    argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task:ro"'
+    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
+    argument_string = r'-v "C:\Users\Some User\Some Path:/var/task:ro"'
+    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"C:\Users\Some User\Some Path", "/var/task")]
+    argument_string = r'-v "/var/test:/var/task:ro"'
+    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    assert mounts == [("/var/test", "/var/task")]
+
+    # Test file paths
+    argument_string = r'-v "/tmp/test.jar:/tmp/foo bar/test.jar"'
+    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"/tmp/test.jar", "/tmp/foo bar/test.jar")]
+    argument_string = r'-v "/tmp/test-foo_bar.jar:/tmp/test-foo_bar2.jar"'
+    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"/tmp/test-foo_bar.jar", "/tmp/test-foo_bar2.jar")]
+
 
 def list_in(a, b):
     return len(a) <= len(b) and any(

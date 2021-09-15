@@ -218,6 +218,7 @@ class TestEc2Integrations(unittest.TestCase):
         self.assertEqual(vpc_id, gateways["VpnGateways"][0]["VpcAttachments"][0]["VpcId"])
 
         # clean up
+        ec2.detach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
         ec2.delete_vpn_gateway(VpnGatewayId=gateway_id)
         ec2.delete_vpc(VpcId=vpc_id)
 

@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from binascii import crc32
 from struct import pack
 from typing import Optional
+from urllib.parse import parse_qs
 
 import xmltodict
 from flask import Response as FlaskResponse
@@ -330,6 +331,21 @@ def extract_url_encoded_param_list(req_data, pattern):
         if value is None:
             break
         result.append(value)
+    return result
+
+
+def parse_urlencoded_data(qs_data, top_level_attribute):
+    # TODO: potentially find a better way than calling moto here...
+    from moto.core.responses import BaseResponse
+
+    if qs_data and isinstance(qs_data, dict):
+        # make sure we're using the array form of query string dict here
+        qs_data = {k: v if isinstance(v, list) else [v] for k, v in qs_data.items()}
+    if isinstance(qs_data, (str, bytes)):
+        qs_data = parse_qs(qs_data)
+    response = BaseResponse()
+    response.querystring = qs_data
+    result = response._get_multi_param(top_level_attribute, skip_result_conversion=True)
     return result
 
 

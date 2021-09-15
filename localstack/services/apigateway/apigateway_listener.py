@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import time
-from typing import Dict, Union
+from typing import Dict, Tuple, Union
 
 import requests
 from flask import Response as FlaskResponse
@@ -12,9 +12,10 @@ from moto.apigateway.models import apigateway_backends
 from requests.models import Response
 from six.moves.urllib_parse import urljoin
 
-from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
+from localstack import config
 from localstack.constants import (
     APPLICATION_JSON,
+    HEADER_LOCALSTACK_EDGE_URL,
     LOCALHOST_HOSTNAME,
     PATH_USER_REQUEST,
     TEST_AWS_ACCOUNT_ID,
@@ -61,13 +62,18 @@ from localstack.utils.common import json_safe, to_bytes, to_str
 # set up logger
 LOG = logging.getLogger(__name__)
 
-# regex path patterns
-HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\..*"
+# target ARN patterns
 TARGET_REGEX_S3_URI = (
     r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
 )
+# regex path pattern for user requests
 PATH_REGEX_USER_REQUEST = (
     r"^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$" % PATH_USER_REQUEST
+)
+# URL pattern for invocations
+HOST_REGEX_EXECUTE_API = (
+    r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(%s|([^\.]+)\.amazonaws\.com)(.*)"
+    % LOCALHOST_HOSTNAME
 )
 
 
@@ -77,7 +83,9 @@ class AuthorizationError(Exception):
 
 class ProxyListenerApiGateway(ProxyListener):
     def forward_request(self, method, path, data, headers):
-        if re.match(PATH_REGEX_USER_REQUEST, path):
+
+        forwarded_for = headers.get(HEADER_LOCALSTACK_EDGE_URL, "")
+        if re.match(PATH_REGEX_USER_REQUEST, path) or "execute-api" in forwarded_for:
             result = invoke_rest_api_from_request(method, path, data, headers)
             if result is not None:
                 return result
@@ -255,18 +263,20 @@ def apply_response_parameters(response, integration, api_id=None):
     return response
 
 
-def get_api_id_stage_invocation_path(path, headers):
+def get_api_id_stage_invocation_path(path: str, headers: Dict[str, str]) -> Tuple[str, str, str]:
     path_match = re.search(PATH_REGEX_USER_REQUEST, path)
-    host_header = headers.get("Host", "")
+    host_header = headers.get(HEADER_LOCALSTACK_EDGE_URL, "") or headers.get("Host") or ""
     host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
     if path_match:
         api_id = path_match.group(1)
         stage = path_match.group(2)
         relative_path_w_query_params = "/%s" % path_match.group(3)
     elif host_match:
-        api_id = host_match.group(1)
+        api_id = extract_api_id_from_hostname_in_url(host_header)
         stage = path.strip("/").split("/")[0]
         relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
+    else:
+        raise Exception(f"Unable to extract API Gateway details from request: {path} {headers}")
     if api_id:
         # set current region in request thread local, to ensure aws_stack.get_region() works properly
         if getattr(THREAD_LOCAL, "request_context", None) is not None:
@@ -274,6 +284,13 @@ def get_api_id_stage_invocation_path(path, headers):
                 api_id, ""
             )
     return api_id, stage, relative_path_w_query_params
+
+
+def extract_api_id_from_hostname_in_url(hostname: str) -> str:
+    """Extract API ID 'id123' from URLs like https://id123.execute-api.localhost.localstack.cloud:4566"""
+    match = re.match(HOST_REGEX_EXECUTE_API, hostname)
+    api_id = match.group(1)
+    return api_id
 
 
 def invoke_rest_api_from_request(method, path, data, headers, context={}, auth_info={}, **kwargs):
@@ -527,7 +544,7 @@ def invoke_rest_api_integration_backend(
             headers = aws_stack.mock_aws_request_headers(service="kinesis")
             headers["X-Amz-Target"] = target
             result = common.make_http_request(
-                url=TEST_KINESIS_URL, method="POST", data=new_data, headers=headers
+                url=config.TEST_KINESIS_URL, method="POST", data=new_data, headers=headers
             )
             # apply response template
             result = apply_request_response_templates(
@@ -625,7 +642,7 @@ def invoke_rest_api_integration_backend(
                 )
                 headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
 
-                url = urljoin(TEST_SQS_URL, "%s/%s" % (TEST_AWS_ACCOUNT_ID, queue))
+                url = urljoin(config.TEST_SQS_URL, "%s/%s" % (TEST_AWS_ACCOUNT_ID, queue))
                 result = common.make_http_request(
                     url, method="POST", headers=headers, data=new_request
                 )

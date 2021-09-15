@@ -3,6 +3,8 @@ from urllib.parse import parse_qs
 
 from moto.core.responses import BaseResponse
 
+from localstack.utils.aws.aws_responses import parse_urlencoded_data
+
 
 class TestMoto(unittest.TestCase):
     def test_request_parsing(self):
@@ -43,5 +45,8 @@ class TestMoto(unittest.TestCase):
         response = BaseResponse()
         response.querystring = parse_qs(qs)
         result = response._get_multi_param("Metrics.member", skip_result_conversion=True)
+        self.assertEqual(result, expected)
 
+        # assert parsing via util
+        result = parse_urlencoded_data(parse_qs(qs), "Metrics.member")
         self.assertEqual(result, expected)

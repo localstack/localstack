@@ -23,6 +23,7 @@ from localstack.constants import (
     LOCALHOST,
     LOCALHOST_IP,
     LOG_LEVELS,
+    TRACE_LOG_LEVELS,
     TRUE_STRINGS,
 )
 
@@ -150,7 +151,7 @@ HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
 
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
-DEBUG = is_env_true("DEBUG") or LS_LOG == "trace"
+DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
 
 # whether to enable debugpy
 DEVELOP = is_env_true("DEVELOP")
@@ -585,7 +586,7 @@ def load_config_file(config_file=None):
     return configs
 
 
-if LS_LOG == "trace":
+if LS_LOG in TRACE_LOG_LEVELS:
     load_end_time = time.time()
     LOG = logging.getLogger(__name__)
     LOG.debug(
