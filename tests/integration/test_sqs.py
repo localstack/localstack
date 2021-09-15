@@ -138,7 +138,6 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
-    # issue #4470
     def test_delete_message_deletes_visibility_agnostic(self):
         queue_name = "queue-%s" % short_uid()
         queue_info = self.client.create_queue(QueueName=queue_name)
@@ -155,6 +154,8 @@ class SQSTest(unittest.TestCase):
             ReceiptHandle=messages[0]["ReceiptHandle"],
             VisibilityTimeout=0,
         )
+
+        # delete message with changed visibility
         self.client.delete_message(
             QueueUrl=queue_url,
             ReceiptHandle=messages[0]["ReceiptHandle"],
@@ -162,7 +163,6 @@ class SQSTest(unittest.TestCase):
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
-        pass
 
     def test_publish_get_delete_message_batch(self):
         queue_name = "queue-%s" % short_uid()
@@ -1030,7 +1030,6 @@ class SQSTest(unittest.TestCase):
         res = self.list_queues_with_auth_in_presigned_url(method="GET")
         self.assertEqual(res.status_code, 200)
         self.assertTrue(b"<ListQueuesResponse>" in res.content)
-
 
     # ---------------
     # HELPER METHODS
