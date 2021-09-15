@@ -185,7 +185,8 @@ class LambdaExecutorPlugin:
         return cls.INSTANCES
 
 
-def get_from_event(event, key):
+def get_from_event(event: Dict, key: str):
+    """Retrieve a field with the given key from the list of Records within 'event'."""
     try:
         return event["Records"][0][key]
     except KeyError:
@@ -1192,12 +1193,14 @@ class LambdaExecutorLocal(LambdaExecutor):
                 os.environ.pop(env_name, None)
 
     def execute_go_lambda(self, event, context, main_file, func_details=None):
-        event_json_string = "%s" % (json.dumps(event) if event else "{}")
-        cmd = "AWS_LAMBDA_FUNCTION_HANDLER=%s AWS_LAMBDA_EVENT_BODY='%s' %s" % (
-            main_file,
-            event_json_string,
-            GO_LAMBDA_RUNTIME,
-        )
+
+        if func_details:
+            func_details.envvars["AWS_LAMBDA_FUNCTION_HANDLER"] = main_file
+            func_details.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
+        else:
+            LOG.warning("Unable to get function details for local execution of Golang Lambda")
+
+        cmd = GO_LAMBDA_RUNTIME
         LOG.info(cmd)
         result = self._execute_in_custom_runtime(cmd, func_details=func_details)
         return result

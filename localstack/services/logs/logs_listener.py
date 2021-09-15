@@ -65,7 +65,7 @@ def publish_log_metrics_for_events(data):
     data = data if isinstance(data, dict) else json.loads(data)
     log_events = data.get("logEvents") or []
     logs_backend = logs_backends[aws_stack.get_region()]
-    metric_filters = logs_backend.metric_filters = getattr(logs_backend, "metric_filters", [])
+    metric_filters = logs_backend.filters.metric_filters
     client = aws_stack.connect_to_service("cloudwatch")
     for metric_filter in metric_filters:
         pattern = metric_filter.get("filterPattern", "")

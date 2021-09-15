@@ -85,7 +85,8 @@ APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded"
 # strings to indicate truthy/falsy values
 TRUE_STRINGS = ("1", "true", "True")
 FALSE_STRINGS = ("0", "false", "False")
-LOG_LEVELS = ("trace", "debug", "info", "warn", "error", "warning")
+# strings with valid log levels for LS_LOG
+LOG_LEVELS = ("trace-internal", "trace", "debug", "info", "warn", "error", "warning")
 
 # Lambda defaults
 LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
@@ -163,6 +164,11 @@ TEST_AWS_SECRET_ACCESS_KEY = "test"
 # credentials being used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
+
+# trace log levels (excluding/including internal API calls), configurable via $LS_LOG
+LS_LOG_TRACE = "trace"
+LS_LOG_TRACE_INTERNAL = "trace-internal"
+TRACE_LOG_LEVELS = [LS_LOG_TRACE, LS_LOG_TRACE_INTERNAL]
 
 # list of official docker images
 OFFICIAL_IMAGES = [

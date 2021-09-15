@@ -217,7 +217,7 @@ class CloudWatchLogsTest(unittest.TestCase):
 
         # clean up
         self.cleanup(log_group, log_stream)
-        response = kinesis_client.delete_stream(StreamName=kinesis, EnforceConsumerDeletion=True)
+        kinesis_client.delete_stream(StreamName=kinesis, EnforceConsumerDeletion=True)
 
     def test_metric_filters(self):
         log_group = "g-%s" % short_uid()

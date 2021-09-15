@@ -217,7 +217,7 @@ You can pass the following environment variables to LocalStack.
 * `DOCKER_CMD`: Shell command used to run Docker containers, e.g., set to `"sudo docker"` to run as sudo (default: `docker`).
 * `MAIN_CONTAINER_NAME`: Specify the main docker container name (default: `localstack_main`).
 * `INIT_SCRIPTS_PATH`: Specify the path to the initializing files with extensions .sh that are found default in `/docker-entrypoint-initaws.d`.
-* `LS_LOG`: Specify the log level('trace', 'debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration. Enable `LS_LOG=trace` to print detailed request/response messages.
+* `LS_LOG`: Specify the log level('trace', 'debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration. Enable `LS_LOG=trace` to print detailed request/response messages (or `LS_LOG=trace-internal` to include internal calls as well).
 
 An example passing the above environment variables to LocalStack to start Kinesis, Lambda, Dynamodb and SQS:
 
@@ -468,12 +468,15 @@ $ ▶ laws lambda list-functions
 
 ### Invoking API Gateway
 
-While API Gateway endpoints on AWS use a custom DNS name to identify the API ID (e.g., `https://nmafetnwf6.execute-api.us-east-1.amazonaws.com/prod/my/path`), LocalStack uses the special URL path indicator `.../_user_request_/...` to indicate the execution of a REST API method.
-
-The URL pattern for API Gateway executions is `http://localhost:4566/restapis/<apiId>/<stage>/_user_request_/<methodPath>`. The example URL above would map to the following `localhost` URL:
+To invoke the path `/my/path` of an API Gateway with ID `id123` in stage `prod`, you can use the special hostname/URL syntax below:
 
 ```
-$ curl http://localhost:4566/restapis/nmafetnwf6/prod/_user_request_/my/path
+$ curl http://id123.execute-api.localhost.localstack.cloud:4566/prod/my/path
+```
+
+Alternatively, if your system is facing issues resolving the custom DNS name, you can use this URL pattern instead:
+```
+$ curl http://localhost:4566/restapis/id123/prod/_user_request_/my/path
 ```
 
 ## Testing Backdoors and Special Features

@@ -25,7 +25,7 @@ from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Callable, Dict, List, Optional, Sized, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Sized, Type, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
@@ -520,6 +520,13 @@ def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False)
 
 def is_list_or_tuple(obj) -> bool:
     return isinstance(obj, (list, tuple))
+
+
+def ensure_list(obj: Any, wrap_none=False) -> List:
+    """Wrap the given object in a list, or return the object itself if it already is a list."""
+    if obj is None and not wrap_none:
+        return obj
+    return obj if isinstance(obj, list) else [obj]
 
 
 def in_docker() -> bool:

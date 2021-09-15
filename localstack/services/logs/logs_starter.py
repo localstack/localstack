@@ -6,7 +6,6 @@ from gzip import GzipFile
 from moto.awslambda import models as lambda_models
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
-from moto.logs import responses as logs_responses
 from moto.logs.exceptions import InvalidParameterException, ResourceNotFoundException
 from moto.logs.models import LogStream
 
@@ -151,49 +150,6 @@ def patch_logs():
         lambda_backend.get_function = patch_get_function(lambda_backend)
     for logs_backend in logs_models.logs_backends.values():
         logs_backend.put_subscription_filter = patch_put_subscription_filter(logs_backend)
-
-    def put_metric_filter(self):
-        data = dict(self.request_params)
-        metric_filters = self.logs_backend.metric_filters = getattr(
-            self.logs_backend, "metric_filters", []
-        )
-        metric_filters.append(data)
-        return json.dumps({})
-
-    if not hasattr(logs_responses.LogsResponse, "put_metric_filter"):
-        logs_responses.LogsResponse.put_metric_filter = put_metric_filter
-
-    def describe_metric_filters(self):
-        log_group_name = self._get_param("logGroupName")
-        name_prefix = self._get_param("filterNamePrefix") or ""
-        metric_filters = self.logs_backend.metric_filters = getattr(
-            self.logs_backend, "metric_filters", []
-        )
-        metric_filters = [
-            mf for mf in metric_filters if log_group_name in (None, mf["logGroupName"])
-        ]
-        metric_filters = [mf for mf in metric_filters if mf["filterName"].startswith(name_prefix)]
-        result = {"metricFilters": metric_filters}
-        return json.dumps(result)
-
-    if not hasattr(logs_responses.LogsResponse, "describe_metric_filters"):
-        logs_responses.LogsResponse.describe_metric_filters = describe_metric_filters
-
-    def delete_metric_filter(self):
-        log_group_name = self._get_param("logGroupName")
-        filter_name = self._get_param("filterName")
-        metric_filters = self.logs_backend.metric_filters = getattr(
-            self.logs_backend, "metric_filters", []
-        )
-        self.logs_backend.metric_filters = [
-            mf
-            for mf in metric_filters
-            if mf["filterName"] != filter_name or mf["logGroupName"] != log_group_name
-        ]
-        return json.dumps({})
-
-    if not hasattr(logs_responses.LogsResponse, "delete_metric_filter"):
-        logs_responses.LogsResponse.delete_metric_filter = delete_metric_filter
 
 
 def start_cloudwatch_logs(port=None, asynchronous=False, update_listener=None):

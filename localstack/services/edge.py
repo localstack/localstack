@@ -14,9 +14,11 @@ from localstack import config
 from localstack.constants import (
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
+    INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
+    LS_LOG_TRACE_INTERNAL,
     PATH_USER_REQUEST,
 )
 from localstack.dashboard import infra as dashboard_infra
@@ -96,7 +98,7 @@ class ProxyListenerEdge(ProxyListener):
         # extract API details
         api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
 
-        if api and config.LS_LOG:
+        if api and is_trace_logging_enabled(headers):
             # print request trace for debugging, if enabled
             LOG.debug(
                 'IN(%s): "%s %s" - headers: %s - data: %s'
@@ -116,7 +118,7 @@ class ProxyListenerEdge(ProxyListener):
 
         if not port:
             if method == "OPTIONS":
-                if api and config.LS_LOG:
+                if api and is_trace_logging_enabled(headers):
                     # print request trace for debugging, if enabled
                     LOG.debug('OUT(%s): "%s %s" - status: %s' % (api, method, path, 200))
                 return 200
@@ -167,7 +169,7 @@ class ProxyListenerEdge(ProxyListener):
     def return_response(self, method, path, data, headers, response, request_handler=None):
         api = headers.get(HEADER_TARGET_API) or ""
 
-        if config.LS_LOG:
+        if is_trace_logging_enabled(headers):
             # print response trace for debugging, if enabled
             if api and api != API_UNKNOWN:
                 LOG.debug(
@@ -509,6 +511,15 @@ def get_service_port_for_account(service, headers):
 
 
 PROXY_LISTENER_EDGE = ProxyListenerEdge()
+
+
+def is_trace_logging_enabled(headers):
+    if not config.LS_LOG:
+        return False
+    if config.LS_LOG == LS_LOG_TRACE_INTERNAL:
+        return True
+    auth_header = headers.get("Authorization") or ""
+    return INTERNAL_AWS_ACCESS_KEY_ID not in auth_header
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
