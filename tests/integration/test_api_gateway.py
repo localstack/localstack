@@ -17,6 +17,7 @@ from localstack import config
 from localstack.constants import (
     APPLICATION_JSON,
     HEADER_LOCALSTACK_REQUEST_URL,
+    LOCALHOST_HOSTNAME,
     TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services.apigateway.helpers import (
@@ -1244,19 +1245,42 @@ class TestAPIGateway(unittest.TestCase):
             requestParameters={"integration.request.path.id": "method.request.path.id"},
         )
         client.create_deployment(restApiId=api_id, stageName="test")
-        url = (
-            f"http://localhost:{config.EDGE_PORT}/restapis/{api_id}/test/_user_request_/person/123"
-        )
-        result = requests.get(url)
-        content = json.loads(result._content)
-        self.assertEqual(200, result.status_code)
-        self.assertEqual(
-            f"http://localhost:{config.EDGE_PORT}/person/123",
-            content["headers"].get(HEADER_LOCALSTACK_REQUEST_URL),
-        )
+
+        def _test_invoke(url):
+            result = requests.get(url)
+            content = json.loads(result._content)
+            self.assertEqual(200, result.status_code)
+            self.assertRegexpMatches(
+                content["headers"].get(HEADER_LOCALSTACK_REQUEST_URL),
+                f"http://.*localhost.*:{config.EDGE_PORT}/person/123",
+            )
+
+        for use_hostname in [True, False]:
+            for use_ssl in [True, False] if use_hostname else [False]:
+                url = self._get_invoke_endpoint(
+                    api_id,
+                    stage="test",
+                    path="/person/123",
+                    use_hostname=use_hostname,
+                    use_ssl=use_ssl,
+                )
+                _test_invoke(url)
+
         # clean up
         client.delete_rest_api(restApiId=api_id)
         proxy.stop()
+
+    def _get_invoke_endpoint(
+        self, api_id, stage="test", path="/", use_hostname=False, use_ssl=False
+    ):
+        path = path or "/"
+        path = path if path.startswith(path) else f"/{path}"
+        proto = "https" if use_ssl else "http"
+        if use_hostname:
+            return f"{proto}://{api_id}.execute-api.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}/{stage}{path}"
+        return (
+            f"{proto}://localhost:{config.EDGE_PORT}/restapis/{api_id}/{stage}/_user_request_{path}"
+        )
 
     def test_api_gateway_s3_get_integration(self):
         apigw_client = aws_stack.connect_to_service("apigateway")
