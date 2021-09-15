@@ -1,6 +1,7 @@
 import importlib
 import inspect
 import logging
+import os
 from types import ModuleType
 from typing import Iterable, List
 
@@ -32,7 +33,7 @@ class ModuleScanningPluginFinder(PluginFinder):
                     try:
                         spec = self.resolver.resolve(member[1])
                         plugins.append(spec)
-                        LOG.info("found plugin spec in %s:%s %s", module.__name__, member[0], spec)
+                        LOG.debug("found plugin spec in %s:%s %s", module.__name__, member[0], spec)
                     except Exception:
                         pass
 
@@ -41,9 +42,9 @@ class ModuleScanningPluginFinder(PluginFinder):
 
 class PackagePathPluginFinder(PluginFinder):
     """
-    Uses setuptools and pkgutil to find and import modules (with the same API as setuptools.find_packages),
-    within a given path and then uses a ModuleScanningPluginCollector to resolve the available plugins.
-    The constructor has the same signature as setuptools.find_packages(where, exclude, include).
+    Uses setuptools and pkgutil to find and import modules within a given path and then uses a
+    ModuleScanningPluginFinder to resolve the available plugins. The constructor has the same signature as
+    setuptools.find_packages(where, exclude, include).
     """
 
     def __init__(self, where=".", exclude=(), include=("*",)) -> None:
@@ -72,7 +73,7 @@ class PackagePathPluginFinder(PluginFinder):
 
         for pkg in find_packages(self.where, self.exclude, self.include):
             modules.add(pkg)
-            pkgpath = self.where + "/" + pkg.replace(".", "/")
+            pkgpath = self.where + os.pathsep + pkg.replace(".", os.pathsep)
             for info in iter_modules([pkgpath]):
                 if not info.ispkg:
                     modules.add(pkg + "." + info.name)

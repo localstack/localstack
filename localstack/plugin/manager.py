@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Any, Callable, Dict, Generic, List, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, Iterable, List, Tuple, TypeVar, Union
 
 from .core import Plugin, PluginFinder, PluginLifecycleListener, PluginSpec, PluginSpecResolver
 
@@ -91,7 +91,7 @@ class PluginContainer(Generic[P]):
     """
 
     name: str
-    lock: threading.Lock
+    lock: threading.RLock
 
     plugin_spec: PluginSpec
     plugin: P = None
@@ -142,7 +142,7 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
         )
 
         self._plugin_index = None
-        self._init_mutex = threading.Lock()
+        self._init_mutex = threading.RLock()
 
     def load(self, name: str) -> P:
         """
@@ -269,12 +269,14 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
     def _init_plugin_index(self) -> Dict[str, PluginContainer]:
         return {plugin.name: plugin for plugin in self._import_plugins() if plugin}
 
-    def _import_plugins(self) -> List[PluginContainer]:
-        return [
-            self._create_container(spec)
-            for spec in self.finder.find_plugins()
-            if spec.namespace == self.namespace
-        ]
+    def _import_plugins(self) -> Iterable[PluginContainer]:
+        for spec in self.finder.find_plugins():
+            self._fire_on_resolve_after(spec)
+
+            if spec.namespace == self.namespace:
+                continue
+
+            yield self._create_container(spec)
 
     def _create_container(self, plugin_spec: PluginSpec) -> PluginContainer:
         container = PluginContainer()

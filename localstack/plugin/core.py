@@ -68,17 +68,11 @@ class PluginSpec:
         return self.__str__()
 
     def __eq__(self, other):
-        attrs = [
-            "namespace",
-            "name",
-            "factory",
-        ]
-
-        for attr in attrs:
-            if getattr(self, attr) != getattr(other, attr):
-                return False
-
-        return True
+        return (
+            self.namespace == other.namespace
+            and self.name == other.name
+            and self.factory == other.factory
+        )
 
 
 class PluginFinder(abc.ABC):
