@@ -881,9 +881,12 @@ class Util:
                 if cur_state == "volume":
                     mounts = mounts if mounts is not None else []
                     match = re.match(
-                        r"(?P<host>[\w\\\/:\-]+?):(?P<container>[\w\/\-]+)(?::(?P<arg>ro|rw|z|Z))?",
+                        r"(?P<host>[\w\s\\\/:\-.]+?):(?P<container>[\w\s\/\-.]+)(?::(?P<arg>ro|rw|z|Z))?",
                         flag,
                     )
+                    if not match:
+                        LOG.warning("Unable to parse volume mount Docker flags: %s", flag)
+                        continue
                     host_path = match.group("host")
                     container_path = match.group("container")
                     rw_args = match.group("arg")
