@@ -1083,9 +1083,9 @@ def do_set_function_code(lambda_function: LambdaFunction):
 
     if not zip_file_content:
         zip_file_content = load_file(tmp_file, mode="rb")
-
-    # override lambda archive with fresh code if we got an update
-    save_file(tmp_file, zip_file_content)
+    else:
+        # override lambda archive with fresh code if we got an update
+        save_file(tmp_file, zip_file_content)
 
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
