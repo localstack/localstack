@@ -54,7 +54,7 @@ class TestDockerClient(unittest.TestCase):
 def test_argument_parsing():
     test_port_string = "-p 80:8080/udp"
     test_port_string_with_host = "-p 127.0.0.1:6000:7000/tcp"
-    test_env_string = "-e TEST_ENV_VAR=test_string"
+    test_env_string = "-e TEST_ENV_VAR=test_string=123"
     test_mount_string = "-v /var/test:/opt/test"
     argument_string = (
         f"{test_port_string} {test_env_string} {test_mount_string} {test_port_string_with_host}"
@@ -63,13 +63,13 @@ def test_argument_parsing():
     ports = PortMappings()
     mounts = []
     Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
-    assert env_vars == {"TEST_ENV_VAR": "test_string"}
+    assert env_vars == {"TEST_ENV_VAR": "test_string=123"}
     assert ports.to_str() == "-p 80:8080/udp -p 6000:7000"
     assert mounts == [("/var/test", "/opt/test")]
     argument_string = (
         "--add-host host.docker.internal:host-gateway --add-host arbitrary.host:127.0.0.1"
     )
-    _, _, _, extra_hosts = Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
+    _, _, _, extra_hosts, _ = Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
     assert {"host.docker.internal": "host-gateway", "arbitrary.host": "127.0.0.1"} == extra_hosts
 
     with pytest.raises(NotImplementedError):
@@ -81,25 +81,30 @@ def test_argument_parsing():
 
     # Test windows paths
     argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task"'
-    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
     assert mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
     argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task:ro"'
-    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
     assert mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
     argument_string = r'-v "C:\Users\Some User\Some Path:/var/task:ro"'
-    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
     assert mounts == [(r"C:\Users\Some User\Some Path", "/var/task")]
     argument_string = r'-v "/var/test:/var/task:ro"'
-    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
     assert mounts == [("/var/test", "/var/task")]
 
     # Test file paths
     argument_string = r'-v "/tmp/test.jar:/tmp/foo bar/test.jar"'
-    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
     assert mounts == [(r"/tmp/test.jar", "/tmp/foo bar/test.jar")]
     argument_string = r'-v "/tmp/test-foo_bar.jar:/tmp/test-foo_bar2.jar"'
-    env_vars, ports, mounts, extra_hosts = Util.parse_additional_flags(argument_string)
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
     assert mounts == [(r"/tmp/test-foo_bar.jar", "/tmp/test-foo_bar2.jar")]
+
+    # Test file paths
+    argument_string = r'-v "/tmp/test.jar:/tmp/foo bar/test.jar" --network mynet123'
+    _, _, _, _, network = Util.parse_additional_flags(argument_string)
+    assert network == "mynet123"
 
 
 def list_in(a, b):
