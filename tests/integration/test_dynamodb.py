@@ -855,6 +855,8 @@ class TestDynamoDB(unittest.TestCase):
             result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"],
         )
 
+        delete_table(table_name)
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.connect_to_service("dynamodb")
