@@ -280,7 +280,7 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
 
     def _create_container(self, plugin_spec: PluginSpec) -> PluginContainer:
         container = PluginContainer()
-        container.lock = threading.Lock()
+        container.lock = threading.RLock()
         container.name = plugin_spec.name
         container.plugin_spec = plugin_spec
         return container
