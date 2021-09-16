@@ -634,6 +634,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
         handler = func_details.handler
+        env_vars = {} if env_vars is None else env_vars
 
         # check whether the Lambda has been invoked before
         has_been_invoked_before = func_arn in self.function_invoke_times
