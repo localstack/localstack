@@ -42,8 +42,8 @@ THUNDRA_APIKEY = os.getenv(THUNDRA_APIKEY_ENV_VAR_NAME)
 
 # Java related constants
 THUNDRA_JAVA_AGENT_INITIALIZED = False
-THUNDRA_JAVA_AGENT_REMOTE_URL = None
-THUNDRA_JAVA_AGENT_LOCAL_PATH = None
+THUNDRA_JAVA_AGENT_REMOTE_URL: Optional[str] = None
+THUNDRA_JAVA_AGENT_LOCAL_PATH: Optional[str] = None
 
 
 def _get_apikey(env_vars):

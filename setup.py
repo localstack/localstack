@@ -6,6 +6,7 @@ from collections import defaultdict
 from setuptools import find_packages, setup
 
 import localstack
+from localstack.plugin.entrypoint import find_plugins
 
 
 def parse_requirements(lines):
@@ -84,6 +85,7 @@ if __name__ == "__main__":
         package_data=package_data,
         install_requires=install_requires,
         extras_require=extras_require,
+        entry_points=find_plugins(exclude=("tests", "tests.*")),
         test_suite="tests",
         license="Apache License 2.0",
         zip_safe=False,

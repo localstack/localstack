@@ -57,7 +57,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.common import json_safe, to_bytes, to_str
+from localstack.utils.common import camel_to_snake_case, json_safe, to_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -554,38 +554,40 @@ def invoke_rest_api_integration_backend(
 
         elif "states:action/" in uri:
             action = uri.split("/")[-1]
-            decoded_data = data.decode()
-            if "stateMachineArn" in decoded_data and "input" in decoded_data:
-                payload = json.loads(decoded_data)
-            else:
-                # apply request templates
+            payload = {}
+
+            if APPLICATION_JSON in integration.get("requestTemplates", {}):
                 payload = apply_request_response_templates(
                     data,
                     integration.get("requestTemplates"),
                     content_type=APPLICATION_JSON,
                     as_json=True,
                 )
-
+            else:
+                payload = json.loads(data.decode("utf-8"))
             client = aws_stack.connect_to_service("stepfunctions")
 
-            kwargs = {"name": payload["name"]} if "name" in payload else {}
-            sm_arn = payload.get("stateMachineArn")
-            if not sm_arn:
-                return make_error_response(
-                    "Missing 'stateMachineArn' in API GW request payload",
-                    400,
-                )
-            result = client.start_execution(
-                stateMachineArn=sm_arn,
-                input=payload.get("input") or "{}",
-                **kwargs,
+            # Hot fix since step functions local package responses: Unsupported Operation: 'StartSyncExecution'
+            method_name = (
+                camel_to_snake_case(action) if action != "StartSyncExecution" else "start_execution"
             )
+
+            try:
+                method = getattr(client, method_name)
+            except AttributeError:
+                msg = "Invalid step function action: %s" % method_name
+                LOG.error(msg)
+                return make_error_response(msg, 400)
+
+            result = method(
+                **payload,
+            )
+            result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
             response = requests_response(
-                content={
-                    "executionArn": result["executionArn"],
-                    "startDate": str(result["startDate"]),
-                },
+                content=result,
+                headers=aws_stack.mock_aws_request_headers(),
             )
+
             if action == "StartSyncExecution":
                 # poll for the execution result and return it
                 result = await_sfn_execution_result(result["executionArn"])
