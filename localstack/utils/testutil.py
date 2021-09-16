@@ -9,7 +9,7 @@ import tempfile
 import time
 import zipfile
 from contextlib import contextmanager
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import requests
 from six import iteritems
@@ -619,3 +619,57 @@ def json_response(data, code=200, headers: Dict = None) -> requests.Response:
     if headers:
         r.headers.update(headers)
     return r
+
+
+def list_all_resources(
+    page_function: Callable[[dict], Any],
+    last_token_attr_name: str,
+    list_attr_name: str,
+    next_token_attr_name: Optional[str] = None,
+) -> list:
+    """
+    List all available resources by loading all available pages using `page_function`.
+
+    :type page_function: Callable
+    :param page_function: callable function or lambda that accepts kwargs with next token
+                          and returns the next results page
+
+    :type last_token_attr_name: str
+    :param last_token_attr_name: where to look for the last evaluated token
+
+    :type list_attr_name: str
+    :param list_attr_name: where to look for the list of items
+
+    :type next_token_attr_name: Optional[str]
+    :param next_token_attr_name: name of kwarg with the next token, default is the same as `last_token_attr_name`
+
+    Example usage:
+
+        all_log_groups = list_all_resources(
+            lambda kwargs: logs.describe_log_groups(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="logGroups"
+        )
+
+        all_records = list_all_resources(
+            lambda kwargs: dynamodb.scan(**{**kwargs, **dynamodb_kwargs}),
+            last_token_attr_name="LastEvaluatedKey",
+            next_token_attr_name="ExclusiveStartKey",
+            list_attr_name="Items"
+        )
+    """
+
+    if next_token_attr_name is None:
+        next_token_attr_name = last_token_attr_name
+
+    result = None
+    collected_items = []
+    last_evaluated_token = None
+
+    while not result or last_evaluated_token:
+        kwargs = {next_token_attr_name: last_evaluated_token} if last_evaluated_token else {}
+        result = page_function(kwargs)
+        last_evaluated_token = result.get(last_token_attr_name)
+        collected_items += result.get(list_attr_name, [])
+
+    return collected_items
