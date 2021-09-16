@@ -1110,7 +1110,7 @@ class TestAPIGateway(unittest.TestCase):
         )
 
         def _prepare_method_integration(
-            integr_kwargs={}, resp_templates={}, exec_async=True, overwrite=False
+            integr_kwargs={}, resp_templates={}, action="StartExecution", overwrite=False
         ):
             if overwrite:
                 client.delete_integration(
@@ -1118,7 +1118,6 @@ class TestAPIGateway(unittest.TestCase):
                     resourceId=resources["items"][0]["id"],
                     httpMethod="POST",
                 )
-            action = f"Start{'' if exec_async else 'Sync'}Execution"
             uri = f"arn:aws:apigateway:{aws_stack.get_region()}:states:action/{action}"
             client.put_integration(
                 restApiId=rest_api["id"],
@@ -1180,7 +1179,7 @@ class TestAPIGateway(unittest.TestCase):
 
         # STEP 3: test integration with synchronous execution
 
-        _prepare_method_integration(overwrite=True, exec_async=False)
+        _prepare_method_integration(overwrite=True, action="StartSyncExecution")
 
         # invoke stepfunction via API GW, assert results
         test_data_1["name"] += "1"
@@ -1193,7 +1192,9 @@ class TestAPIGateway(unittest.TestCase):
         # STEP 4: test integration with synchronous execution and response templates
 
         resp_templates = {APPLICATION_JSON: "$input.path('$.output')"}
-        _prepare_method_integration(resp_templates=resp_templates, overwrite=True, exec_async=False)
+        _prepare_method_integration(
+            resp_templates=resp_templates, overwrite=True, action="StartSyncExecution"
+        )
 
         # invoke stepfunction via API GW, assert results
         test_data_1["name"] += "2"
@@ -1201,9 +1202,14 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(200, resp.status_code)
         self.assertEqual(test_data, json.loads(to_str(resp.content.decode())))
 
+        _prepare_method_integration(overwrite=True, action="DeleteStateMachine")
+
+        # Remove state machine with API GW
+        resp = requests.post(url, data=json.dumps({"stateMachineArn": sm_arn}))
+        self.assertEqual(200, resp.status_code)
+
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)
-        sfn_client.delete_state_machine(stateMachineArn=sm_arn)
         client.delete_rest_api(restApiId=rest_api["id"])
 
     def test_api_gateway_http_integration_with_path_request_parameter(self):

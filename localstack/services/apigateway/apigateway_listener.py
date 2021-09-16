@@ -57,7 +57,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.common import json_safe, camel_to_snake_case, to_bytes, to_str
+from localstack.utils.common import camel_to_snake_case, json_safe, to_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -567,9 +567,13 @@ def invoke_rest_api_integration_backend(
                 payload = json.loads(data.decode("utf-8"))
             client = aws_stack.connect_to_service("stepfunctions")
 
-            method_name = camel_to_snake_case(action)
+            # Hot fix since step functions local package responses: Unsupported Operation: 'StartSyncExecution'
+            method_name = (
+                camel_to_snake_case(action) if action != "StartSyncExecution" else "start_execution"
+            )
+
             try:
-            	method = getattr(client, method_name)
+                method = getattr(client, method_name)
             except AttributeError:
                 msg = "Invalid step function action: %s" % method_name
                 LOG.error(msg)
@@ -578,10 +582,24 @@ def invoke_rest_api_integration_backend(
             result = method(
                 **payload,
             )
+            result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
             response = requests_response(
                 content=result,
                 headers=aws_stack.mock_aws_request_headers(),
             )
+
+            if action == "StartSyncExecution":
+                # poll for the execution result and return it
+                result = await_sfn_execution_result(result["executionArn"])
+                result_status = result.get("status")
+                if result_status != "SUCCEEDED":
+                    return make_error_response(
+                        "StepFunctions execution %s failed with status '%s'"
+                        % (result["executionArn"], result_status),
+                        500,
+                    )
+                result = json_safe(result)
+                response = requests_response(content=result)
 
             # apply response templates
             response = apply_request_response_templates(
