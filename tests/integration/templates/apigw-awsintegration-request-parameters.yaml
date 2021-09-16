@@ -116,6 +116,23 @@ Resources:
               - /{object}.json
       RequestParameters:
         method.request.path.id: false
+  RestApiCustomDomainBA087742:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: localstack.cloud
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: arn:aws:acm:us-east-1:000000000000:certificate/00000000-0000-0000-0000-000000000000
+  RestApiCustomDomainMapMyStackLocalRestApiE67E15D45F8B292A:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName:
+        Ref: RestApiCustomDomainBA087742
+      RestApiId:
+        Ref: RestApi0C43BF4B
+      Stage:
+        Ref: RestApiDeploymentStageprod3855DE66
 Outputs:
   RestApiEndpoint0551178A:
     Value:

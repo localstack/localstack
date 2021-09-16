@@ -1078,11 +1078,14 @@ def do_set_function_code(lambda_function: LambdaFunction):
     if not lambda_cwd:
         return
 
-    # get local lambda working directory
+    # get local lambda code archive path
     tmp_file = os.path.join(lambda_cwd, LAMBDA_ZIP_FILE_NAME)
 
     if not zip_file_content:
         zip_file_content = load_file(tmp_file, mode="rb")
+    else:
+        # override lambda archive with fresh code if we got an update
+        save_file(tmp_file, zip_file_content)
 
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
