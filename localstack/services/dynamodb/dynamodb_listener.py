@@ -493,7 +493,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     )
 
                 if data.get("Tags"):
-                    table_arn = content["TableArn"]
+                    table_arn = content["TableDescription"]["TableArn"]
                     DynamoDBRegion.TABLE_TAGS[table_arn] = {
                         tag["Key"]: tag["Value"] for tag in data["Tags"]
                     }
