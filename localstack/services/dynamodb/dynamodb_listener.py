@@ -566,7 +566,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             # Update only TableId and SSEDescription if present
             table_definitions = DynamoDBRegion.get().table_definitions.get(table_name)
             for key in ["TableId", "SSEDescription"]:
-                if table_definitions.get(key):
+                if table_definitions and table_definitions.get(key):
                     content = json.loads(to_str(response.content))
                     content.get("Table", {})[key] = table_definitions[key]
                     update_response_content(response, content)
