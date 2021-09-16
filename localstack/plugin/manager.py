@@ -273,7 +273,7 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
         for spec in self.finder.find_plugins():
             self._fire_on_resolve_after(spec)
 
-            if spec.namespace == self.namespace:
+            if spec.namespace != self.namespace:
                 continue
 
             yield self._create_container(spec)

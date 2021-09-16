@@ -73,7 +73,7 @@ class PackagePathPluginFinder(PluginFinder):
 
         for pkg in find_packages(self.where, self.exclude, self.include):
             modules.add(pkg)
-            pkgpath = self.where + os.pathsep + pkg.replace(".", os.pathsep)
+            pkgpath = self.where + os.sep + pkg.replace(".", os.sep)
             for info in iter_modules([pkgpath]):
                 if not info.ispkg:
                     modules.add(pkg + "." + info.name)
