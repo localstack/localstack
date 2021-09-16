@@ -167,9 +167,10 @@ class ProxyListenerDynamoDB(ProxyListener):
             if not self.table_exists(ddb_client, data["TableName"]):
                 return get_table_not_found_error()
 
-        # Check if table exists, to avoid error log output from DynamoDBLocal
-        elif action == "DeleteTable" and not self.table_exists(ddb_client, data["TableName"]):
-            return get_table_not_found_error()
+        elif action == "DeleteTable":
+            # Check if table exists, to avoid error log output from DynamoDBLocal
+            if not self.table_exists(ddb_client, data["TableName"]):
+                return get_table_not_found_error()
 
         elif action == "BatchWriteItem":
             existing_items = []
@@ -437,22 +438,23 @@ class ProxyListenerDynamoDB(ProxyListener):
                     if existing_item:
                         record["dynamodb"]["OldImage"] = existing_item
 
-        elif action in ("GetItem", "Query") and response.status_code == 200:
-            content = json.loads(to_str(response.content))
-            # make sure we append 'ConsumedCapacity', which is properly
-            # returned by dynalite, but not by AWS's DynamoDBLocal
-            if "ConsumedCapacity" not in content and data.get("ReturnConsumedCapacity") in [
-                "TOTAL",
-                "INDEXES",
-            ]:
-                content["ConsumedCapacity"] = {
-                    "TableName": table_name,
-                    "CapacityUnits": 5,  # TODO hardcoded
-                    "ReadCapacityUnits": 2,
-                    "WriteCapacityUnits": 3,
-                }
-                response._content = json.dumps(content)
-                fix_headers_for_updated_response(response)
+        elif action in ("GetItem", "Query"):
+            if response.status_code == 200:
+                content = json.loads(to_str(response.content))
+                # make sure we append 'ConsumedCapacity', which is properly
+                # returned by dynalite, but not by AWS's DynamoDBLocal
+                if "ConsumedCapacity" not in content and data.get("ReturnConsumedCapacity") in [
+                    "TOTAL",
+                    "INDEXES",
+                ]:
+                    content["ConsumedCapacity"] = {
+                        "TableName": table_name,
+                        "CapacityUnits": 5,  # TODO hardcoded
+                        "ReadCapacityUnits": 2,
+                        "WriteCapacityUnits": 3,
+                    }
+                    response._content = json.dumps(content)
+                    fix_headers_for_updated_response(response)
 
         elif action == "DeleteItem":
             if response.status_code == 200 and event_sources_or_streams_enabled:
@@ -478,7 +480,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
                 if "SSESpecification" in table_definitions:
                     sse_specification = table_definitions.pop("SSESpecification")
-                    table_definitions["SSEDescription"] = set_sse_description(sse_specification)
+                    table_definitions["SSEDescription"] = get_sse_description(sse_specification)
 
                 content = json.loads(to_str(response.content))
                 if table_definitions:
@@ -782,13 +784,11 @@ class ProxyListenerDynamoDB(ProxyListener):
             return default
 
 
-def set_sse_description(data):
+def get_sse_description(data):
     return {
         "Status": "ENABLED" if data["Enabled"] else "UPDATING",
         "SSEType": data["SSEType"],
-        "KMSMasterKeyArn": "arn:aws:kms:{}:{}:key/{}".format(
-            aws_stack.get_region(), constants.TEST_AWS_ACCOUNT_ID, data["KMSMasterKeyId"]
-        ),
+        "KMSMasterKeyArn": aws_stack.kms_key_arn(data["KMSMasterKeyId"]),
     }
 
 

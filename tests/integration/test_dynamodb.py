@@ -8,7 +8,6 @@ from time import sleep
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
@@ -833,11 +832,7 @@ class TestDynamoDB(unittest.TestCase):
 
         kms_master_key_id = long_uid()
         sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
-        kms_master_key_arn = "arn:aws:kms:%s:%s:key/%s" % (
-            aws_stack.get_local_region(),
-            TEST_AWS_ACCOUNT_ID,
-            kms_master_key_id,
-        )
+        kms_master_key_arn = aws_stack.kms_key_arn(kms_master_key_id)
 
         result = dynamodb.create_table(
             TableName=table_name,
