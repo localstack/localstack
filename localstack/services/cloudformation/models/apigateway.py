@@ -354,6 +354,7 @@ class GatewayMethod(GenericBaseModel):
                         "restApiId": "RestApiId",
                         "resourceId": "ResourceId",
                         "httpMethod": "HttpMethod",
+                        "apiKeyRequired": "ApiKeyRequired",
                         "authorizationType": "AuthorizationType",
                         "authorizerId": "AuthorizerId",
                         "requestParameters": "RequestParameters",
