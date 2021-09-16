@@ -556,12 +556,20 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         elif action == "DescribeTable":
             table_name = data.get("TableName")
-            table_definitions = DynamoDBRegion.get().table_definitions.get(data["TableName"])
-            if table_definitions:
+            table_props = DynamoDBRegion.get().table_properties.get(table_name)
+
+            if table_props:
                 content = json.loads(to_str(response.content))
-                table_content = content.get("Table", {})
-                table_content.update(table_definitions)
+                content.get("Table", {}).update(table_props)
                 update_response_content(response, content)
+
+            # Update only TableId and SSEDescription if present
+            table_definitions = DynamoDBRegion.get().table_definitions.get(table_name)
+            for key in ["TableId", "SSEDescription"]:
+                if table_definitions.get(key):
+                    content = json.loads(to_str(response.content))
+                    content.get("Table", {})[key] = table_definitions[key]
+                    update_response_content(response, content)
 
         elif action == "TagResource":
             table_arn = data["ResourceArn"]
