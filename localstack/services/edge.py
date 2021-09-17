@@ -290,7 +290,7 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
     host = headers.get("host", "")
     auth_header = headers.get("authorization", "")
 
-    if not auth_header and "." not in host:
+    if not auth_header and not target and "." not in host:
         return result[0], result[1], path, host
 
     path = path or "/"

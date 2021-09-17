@@ -881,7 +881,7 @@ class Util:
                     cur_state = "set-network"
                 else:
                     raise NotImplementedError(
-                        "Flag %s is currently not supported by this docker client."
+                        f"Flag {flag} is currently not supported by this Docker client."
                     )
             else:
                 if cur_state == "volume":

@@ -1247,13 +1247,13 @@ def replace_in_file(search, replace, file_path):
         save_file(file_path, content_new)
 
 
-def to_str(obj, encoding=DEFAULT_ENCODING, errors="strict"):
+def to_str(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> str:
     """If ``obj`` is an instance of ``binary_type``, return
     ``obj.decode(encoding, errors)``, otherwise return ``obj``"""
     return obj.decode(encoding, errors) if isinstance(obj, six.binary_type) else obj
 
 
-def to_bytes(obj, encoding=DEFAULT_ENCODING, errors="strict"):
+def to_bytes(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> bytes:
     """If ``obj`` is an instance of ``text_type``, return
     ``obj.encode(encoding, errors)``, otherwise return ``obj``"""
     return obj.encode(encoding, errors) if isinstance(obj, six.text_type) else obj
