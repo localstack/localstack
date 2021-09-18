@@ -111,7 +111,7 @@ SERIALIZERS: Dict[str, StateSerializer] = {}
 # -----------------
 
 
-class Plugin(object):
+class Service(object):
     def __init__(self, name, start, check=None, listener=None, priority=0, active=False):
         self.plugin_name = name
         self.start_function = start
@@ -142,16 +142,50 @@ class Plugin(object):
         return self.name() in api_names
 
 
-def register_plugin(plugin):
-    existing = SERVICE_PLUGINS.get(plugin.name())
-    if existing:
-        if existing.priority > plugin.priority:
-            return
-    SERVICE_PLUGINS[plugin.name()] = plugin
+class ServiceManager:
+
+    services: Dict[str, Service]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.services = dict()
+
+    def add_service(self, service: Service) -> bool:
+        existing = self.services.get(service.name())
+        if existing:
+            if existing.priority > service.priority:
+                return False
+
+        self.services[service.name()] = service
+        return True
+
+    def get_service(self, name: str) -> Optional[Service]:
+        return self.services.get(name)
+
+    # legacy map compatibility
+
+    def items(self):
+        return self.services.items()
+
+    def keys(self):
+        return self.services.keys()
+
+    def values(self):
+        return self.services.values()
+
+    def get(self, *args, **kwargs):
+        return self.services.get(*args, **kwargs)
+
+    def __iter__(self):
+        return self.services
+
+
+def register_service(service):
+    SERVICE_PLUGINS.add_service(service)
 
 
 # map of service plugins, mapping from service name to plugin details
-SERVICE_PLUGINS: Dict[str, Plugin] = {}
+SERVICE_PLUGINS: ServiceManager = ServiceManager()
 
 
 # -------------------------

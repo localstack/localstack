@@ -51,7 +51,7 @@ def do_register_localstack_plugins():
         from localstack.services.kinesis import kinesis_listener, kinesis_starter
         from localstack.services.kms import kms_listener, kms_starter
         from localstack.services.logs import logs_listener, logs_starter
-        from localstack.services.plugins import Plugin, register_plugin
+        from localstack.services.plugins import Service, register_service
         from localstack.services.redshift import redshift_starter
         from localstack.services.resourcegroups import rg_listener, rg_starter
         from localstack.services.resourcegroupstaggingapi import rgta_listener, rgta_starter
@@ -70,32 +70,32 @@ def do_register_localstack_plugins():
         from localstack.services.support import support_starter
         from localstack.services.swf import swf_listener, swf_starter
 
-        register_plugin(Plugin("edge", start=edge.start_edge, active=True))
+        register_service(Service("edge", start=edge.start_edge, active=True))
 
-        register_plugin(Plugin("acm", start=acm_starter.start_acm))
+        register_service(Service("acm", start=acm_starter.start_acm))
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "apigateway",
                 start=apigateway_starter.start_apigateway,
                 listener=apigateway_listener.UPDATE_APIGATEWAY,
             )
         )
 
-        register_plugin(Plugin("cloudformation", start=start_cloudformation))
+        register_service(Service("cloudformation", start=start_cloudformation))
 
-        register_plugin(Plugin("config", start=configservice_starter.start_configservice))
+        register_service(Service("config", start=configservice_starter.start_configservice))
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "cloudwatch",
                 start=cloudwatch_starter.start_cloudwatch,
                 listener=cloudwatch_listener.UPDATE_CLOUD_WATCH,
             )
         )
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "dynamodb",
                 start=dynamodb_starter.start_dynamodb,
                 check=dynamodb_starter.check_dynamodb,
@@ -103,26 +103,26 @@ def do_register_localstack_plugins():
             )
         )
 
-        register_plugin(Plugin("dynamodbstreams", start=start_dynamodbstreams))
+        register_service(Service("dynamodbstreams", start=start_dynamodbstreams))
 
-        register_plugin(
-            Plugin("ec2", start=ec2_starter.start_ec2, listener=ec2_listener.UPDATE_EC2)
+        register_service(
+            Service("ec2", start=ec2_starter.start_ec2, listener=ec2_listener.UPDATE_EC2)
         )
 
-        register_plugin(Plugin("es", start=es_starter.start_elasticsearch_service))
+        register_service(Service("es", start=es_starter.start_elasticsearch_service))
 
-        register_plugin(Plugin("firehose", start=start_firehose))
+        register_service(Service("firehose", start=start_firehose))
 
-        register_plugin(
-            Plugin("iam", start=iam_starter.start_iam, listener=iam_listener.UPDATE_IAM)
+        register_service(
+            Service("iam", start=iam_starter.start_iam, listener=iam_listener.UPDATE_IAM)
         )
 
-        register_plugin(
-            Plugin("sts", start=sts_starter.start_sts, listener=sts_listener.UPDATE_STS)
+        register_service(
+            Service("sts", start=sts_starter.start_sts, listener=sts_listener.UPDATE_STS)
         )
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "kinesis",
                 start=kinesis_starter.start_kinesis,
                 check=kinesis_starter.check_kinesis,
@@ -130,32 +130,32 @@ def do_register_localstack_plugins():
             )
         )
 
-        register_plugin(
-            Plugin("kms", start=kms_starter.start_kms, listener=kms_listener.UPDATE_KMS)
+        register_service(
+            Service("kms", start=kms_starter.start_kms, listener=kms_listener.UPDATE_KMS)
         )
 
-        register_plugin(Plugin("lambda", start=start_lambda))
+        register_service(Service("lambda", start=start_lambda))
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "logs",
                 start=logs_starter.start_cloudwatch_logs,
                 listener=logs_listener.UPDATE_LOGS,
             )
         )
 
-        register_plugin(Plugin("redshift", start=redshift_starter.start_redshift))
+        register_service(Service("redshift", start=redshift_starter.start_redshift))
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "route53",
                 start=route53_starter.start_route53,
                 listener=route53_listener.UPDATE_ROUTE53,
             )
         )
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "s3",
                 start=s3_starter.start_s3,
                 check=s3_starter.check_s3,
@@ -163,8 +163,8 @@ def do_register_localstack_plugins():
             )
         )
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "secretsmanager",
                 start=secretsmanager_starter.start_secretsmanager,
                 check=secretsmanager_starter.check_secretsmanager,
@@ -172,14 +172,14 @@ def do_register_localstack_plugins():
             )
         )
 
-        register_plugin(
-            Plugin("ses", start=ses_starter.start_ses, listener=ses_listener.UPDATE_SES)
+        register_service(
+            Service("ses", start=ses_starter.start_ses, listener=ses_listener.UPDATE_SES)
         )
 
-        register_plugin(Plugin("sns", start=start_sns, listener=sns_listener.UPDATE_SNS))
+        register_service(Service("sns", start=start_sns, listener=sns_listener.UPDATE_SNS))
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "sqs",
                 start=sqs_starter.start_sqs,
                 listener=sqs_listener.UPDATE_SQS,
@@ -187,28 +187,28 @@ def do_register_localstack_plugins():
             )
         )
 
-        register_plugin(Plugin("ssm", start=start_ssm, listener=ssm_listener.UPDATE_SSM))
+        register_service(Service("ssm", start=start_ssm, listener=ssm_listener.UPDATE_SSM))
 
-        register_plugin(Plugin("sts", start=start_sts))
+        register_service(Service("sts", start=start_sts))
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "events",
                 start=events_starter.start_events,
                 listener=events_listener.UPDATE_EVENTS,
             )
         )
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "stepfunctions",
                 start=stepfunctions_starter.start_stepfunctions,
                 listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS,
             )
         )
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "swf",
                 start=swf_starter.start_swf,
                 check=swf_starter.check_swf,
@@ -216,23 +216,23 @@ def do_register_localstack_plugins():
             )
         )
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "resourcegroupstaggingapi",
                 start=rgta_starter.start_rgsa,
                 listener=rgta_listener.UPDATE_RGSA,
             )
         )
 
-        register_plugin(
-            Plugin(
+        register_service(
+            Service(
                 "resource-groups",
                 start=rg_starter.start_rg,
                 listener=rg_listener.UPDATE_RG,
             )
         )
 
-        register_plugin(Plugin("support", start=support_starter.start_support))
+        register_service(Service("support", start=support_starter.start_support))
 
         # apply patches
         patch_request_handling()
