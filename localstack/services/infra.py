@@ -20,10 +20,6 @@ from localstack.constants import (
     LOCALSTACK_VENV_FOLDER,
 )
 from localstack.services import generic_proxy, install
-from localstack.services.awslambda import lambda_api
-from localstack.services.cloudformation import cloudformation_api
-from localstack.services.dynamodbstreams import dynamodbstreams_api
-from localstack.services.firehose import firehose_api
 from localstack.services.generic_proxy import start_proxy_server
 from localstack.services.plugins import (
     SERVICE_PLUGINS,
@@ -102,6 +98,8 @@ def start_sts(port=None, asynchronous=False):
 
 
 def start_firehose(port=None, asynchronous=False):
+    from localstack.services.firehose import firehose_api
+
     port = port or config.PORT_FIREHOSE
     return start_local_api(
         "Firehose",
@@ -113,6 +111,8 @@ def start_firehose(port=None, asynchronous=False):
 
 
 def start_dynamodbstreams(port=None, asynchronous=False):
+    from localstack.services.dynamodbstreams import dynamodbstreams_api
+
     port = port or config.PORT_DYNAMODBSTREAMS
     return start_local_api(
         "DynamoDB Streams",
@@ -124,6 +124,8 @@ def start_dynamodbstreams(port=None, asynchronous=False):
 
 
 def start_lambda(port=None, asynchronous=False):
+    from localstack.services.awslambda import lambda_api
+
     port = port or config.PORT_LAMBDA
     return start_local_api(
         "Lambda", port, api="lambda", method=lambda_api.serve, asynchronous=asynchronous
@@ -131,6 +133,8 @@ def start_lambda(port=None, asynchronous=False):
 
 
 def start_cloudformation(port=None, asynchronous=False):
+    from localstack.services.cloudformation import cloudformation_api
+
     port = port or config.PORT_CLOUDFORMATION
     return start_local_api(
         "CloudFormation",
@@ -369,6 +373,8 @@ def start_local_api(name, port, api, method, asynchronous=False):
 
 
 def stop_infra():
+    from localstack.services.awslambda import lambda_api
+
     if common.INFRA_STOPPED:
         return
     common.INFRA_STOPPED = True
