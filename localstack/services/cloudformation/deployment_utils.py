@@ -131,3 +131,7 @@ def lambda_select_params(*selected):
 
 def select_parameters(*param_names):
     return lambda params, **kwargs: select_attributes(params, param_names)
+
+
+def is_none_or_empty_value(value):
+    return not value or value == PLACEHOLDER_AWS_NO_VALUE

@@ -18,6 +18,7 @@ from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME, TEST
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
+    is_none_or_empty_value,
     remove_none_values,
 )
 from localstack.services.cloudformation.service_models import (
@@ -95,12 +96,6 @@ def get_secret_arn(secret_name, account_id=None):
     storage = secretsmanager_starter.SECRET_ARN_STORAGE
     key = "%s_%s" % (aws_stack.get_region(), secret_name)
     return storage.get(key) or storage.get(secret_name)
-
-
-def retrieve_topic_arn(topic_name):
-    topics = aws_stack.connect_to_service("sns").list_topics()["Topics"]
-    topic_arns = [t["TopicArn"] for t in topics if t["TopicArn"].endswith(":%s" % topic_name)]
-    return topic_arns[0]
 
 
 def find_stack(stack_name):
@@ -1080,17 +1075,6 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
             body = json.dumps(body) if isinstance(body, dict) else body
             client.put_rest_api(restApiId=result["id"], body=to_bytes(body))
 
-    elif resource_type == "SNS::Topic":
-        subscriptions = resource_props.get("Subscription", [])
-        for subscription in subscriptions:
-            if is_none_or_empty_value(subscription):
-                continue
-            endpoint = resolve_refs_recursively(stack_name, subscription["Endpoint"], resources)
-            topic_arn = retrieve_topic_arn(resource_props["TopicName"])
-            aws_stack.connect_to_service("sns").subscribe(
-                TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
-            )
-
     elif resource_type == "IAM::Role":
         policies = resource_props.get("Policies", [])
         for policy in policies:
@@ -1169,10 +1153,6 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
 
 def get_action_name_for_resource_change(res_change):
     return {"Add": "CREATE", "Remove": "DELETE", "Modify": "UPDATE"}.get(res_change)
-
-
-def is_none_or_empty_value(value):
-    return not value or value == PLACEHOLDER_AWS_NO_VALUE
 
 
 # TODO: this shouldn't be called for stack parameters
