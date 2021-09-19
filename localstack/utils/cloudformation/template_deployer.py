@@ -1068,14 +1068,7 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
     resource_props = resource["Properties"] = resource.get("Properties", {})
 
     # some resources have attached/nested resources which we need to create recursively now
-    if resource_type == "ApiGateway::RestApi":
-        body = resource_props.get("Body")
-        if body:
-            client = aws_stack.connect_to_service("apigateway")
-            body = json.dumps(body) if isinstance(body, dict) else body
-            client.put_rest_api(restApiId=result["id"], body=to_bytes(body))
-
-    elif resource_type == "IAM::Role":
+    if resource_type == "IAM::Role":
         policies = resource_props.get("Policies", [])
         for policy in policies:
             policy = policy[0] if isinstance(policy, list) and len(policy) == 1 else policy

@@ -1,7 +1,5 @@
 import json
 
-import mypy_boto3_sns
-
 from localstack.services.cloudformation.deployment_utils import is_none_or_empty_value
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
@@ -55,11 +53,11 @@ class SNSTopic(GenericBaseModel):
             return result
 
         def _topic_arn(params, resources, resource_id, **kwargs):
-            resource = SNSTopic(resources[resource_id])
+            resource = cls(resources[resource_id])
             return resource.physical_resource_id or resource.get_physical_resource_id()
 
         def _add_topics(resource_id, resources, resource_type, func, stack_name):
-            sns: mypy_boto3_sns.SNSClient = aws_stack.connect_to_service("sns")
+            sns = aws_stack.connect_to_service("sns")
             resource = cls(resources[resource_id])
             props = resource.props
 
@@ -74,7 +72,6 @@ class SNSTopic(GenericBaseModel):
                 )
 
         return {
-            # TODO: add second creation function to add topic subscriptions
             "create": [
                 {
                     "function": "create_topic",
