@@ -249,14 +249,27 @@ class InstanceProfile(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _add_roles(resource_id, resources, resource_type, func, stack_name):
+            client = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            if props.get("Roles", []):
+                client.add_role_to_instance_profile(
+                    InstanceProfileName=props["InstanceProfileName"],
+                    RoleName=props["Roles"][0],
+                )
+
         return {
-            "create": {
-                "function": "create_instance_profile",
-                "parameters": {
-                    "InstanceProfileName": "InstanceProfileName",
-                    "Path": "Path",
+            "create": [
+                {
+                    "function": "create_instance_profile",
+                    "parameters": {
+                        "InstanceProfileName": "InstanceProfileName",
+                        "Path": "Path",
+                    },
                 },
-            },
+                {"function": _add_roles},
+            ],
             "delete": {
                 "function": "delete_instance_profile",
                 "parameters": {"InstanceProfileName": "InstanceProfileName"},

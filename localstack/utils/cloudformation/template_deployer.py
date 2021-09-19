@@ -1116,13 +1116,6 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
         for user in users:
             iam.attach_user_policy(UserName=user, PolicyArn=policy_arn)
 
-    elif resource_type == "IAM::InstanceProfile":
-        if resource_props.get("Roles", []):
-            iam = aws_stack.connect_to_service("iam")
-            iam.add_role_to_instance_profile(
-                InstanceProfileName=resource_props["InstanceProfileName"],
-                RoleName=resource_props["Roles"][0],
-            )
     elif resource_type == "IAM::User":
         iam = aws_stack.connect_to_service("iam")
         username = resource_props.get("UserName")
