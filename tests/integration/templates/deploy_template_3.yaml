@@ -50,8 +50,8 @@ Resources:
       - AttributeName: startTime
         KeyType: RANGE
       ProvisionedThroughput:
-        ReadCapacityUnits: '5'
-        WriteCapacityUnits: '5'
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
       StreamSpecification:
         StreamViewType: NEW_IMAGE
       GlobalSecondaryIndexes:
@@ -64,8 +64,8 @@ Resources:
         Projection:
           ProjectionType: ALL
         ProvisionedThroughput:
-          ReadCapacityUnits: '5'
-          WriteCapacityUnits: '5'
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
 Outputs:
   Name:
     Value:
