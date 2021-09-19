@@ -240,6 +240,7 @@ def is_change_set_created_and_available(cfn_client):
         def _inner():
             change_set = cfn_client.describe_change_set(ChangeSetName=change_set_id)
             return (
+                # TODO: CREATE_FAILED should also not lead to further retries
                 change_set.get("Status") == "CREATE_COMPLETE"
                 and change_set.get("ExecutionStatus") == "AVAILABLE"
             )
@@ -255,7 +256,7 @@ def is_stack_created(cfn_client):
         def _inner():
             resp = cfn_client.describe_stacks(StackName=stack_id)
             s = resp["Stacks"][0]  # since the lookup  uses the id we can only get a single response
-            return s.get("StackStatus") == "CREATE_COMPLETE"
+            return s.get("StackStatus") in ["CREATE_COMPLETE", "CREATE_FAILED"]
 
         return _inner
 
