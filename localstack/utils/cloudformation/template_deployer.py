@@ -1091,13 +1091,6 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
                 TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
             )
 
-    elif resource_type == "S3::Bucket":
-        tags = resource_props.get("Tags")
-        if tags:
-            aws_stack.connect_to_service("s3").put_bucket_tagging(
-                Bucket=resource_props["BucketName"], Tagging={"TagSet": tags}
-            )
-
     elif resource_type == "IAM::Role":
         policies = resource_props.get("Policies", [])
         for policy in policies:

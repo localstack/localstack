@@ -1,6 +1,7 @@
 import json
 import re
 
+import mypy_boto3_s3
 from moto.s3.models import FakeBucket
 
 from localstack.constants import AWS_REGION_US_EAST_1, S3_VIRTUAL_HOSTNAME
@@ -125,6 +126,15 @@ class S3Bucket(GenericBaseModel, FakeBucket):
                 if "NoSuchBucket" not in str(e):
                     raise
 
+        def _add_bucket_tags(resource_id, resources, resource_type, func, stack_name):
+            s3: mypy_boto3_s3.S3Client = aws_stack.connect_to_service("s3")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            tags = props.get("Tags", [])
+            if len(tags) > 0:
+                s3.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": tags})
+
         result = {
             "create": [
                 {
@@ -141,6 +151,7 @@ class S3Bucket(GenericBaseModel, FakeBucket):
                     "function": "put_bucket_notification_configuration",
                     "parameters": s3_bucket_notification_config,
                 },
+                {"function": _add_bucket_tags},
             ],
             "delete": [
                 {"function": _pre_delete},
