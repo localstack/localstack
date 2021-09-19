@@ -40,7 +40,6 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
-from localstack.utils.testutil import delete_all_s3_objects
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
 
@@ -1029,9 +1028,6 @@ def configure_resource_via_sdk(
     # remove None values, as they usually raise boto3 errors
     params = remove_none_values(params)
 
-    # run pre-actions
-    run_pre_create_actions(action_name, resource_id, resources, resource_type, stack_name, params)
-
     # convert boolean strings
     #  (TODO: we should find a more reliable mechanism than this opportunistic/probabilistic approach!)
     params_before_conversion = copy.deepcopy(params)
@@ -1068,36 +1064,7 @@ def configure_resource_via_sdk(
 
 
 # TODO: move as individual functions to RESOURCE_TO_FUNCTION
-def run_pre_create_actions(
-    action_name, resource_id, resources, resource_type, stack_name, resource_params
-):
-    resource = resources[resource_id]
-    resource_props = resource["Properties"] = resource.get("Properties", {})
-    if resource_type == "IAM::Role" and action_name == ACTION_DELETE:
-        iam = aws_stack.connect_to_service("iam")
-        role_name = resource_props["RoleName"]
-        for policy in iam.list_attached_role_policies(RoleName=role_name).get(
-            "AttachedPolicies", []
-        ):
-            iam.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
-    if resource_type == "S3::Bucket" and action_name == ACTION_DELETE:
-        s3 = aws_stack.connect_to_service("s3")
-        bucket_name = resource_props.get("BucketName")
-        try:
-            s3.delete_bucket_policy(Bucket=bucket_name)
-        except Exception:
-            pass
-        # TODO: verify whether AWS CF automatically deletes all bucket objects, or fails if bucket is non-empty
-        try:
-            delete_all_s3_objects(bucket_name)
-        except Exception as e:
-            if "NoSuchBucket" not in str(e):
-                raise
-        # hack: make sure the bucket actually exists, to prevent delete_bucket operation later on from failing
-        aws_stack.get_or_create_bucket(bucket_name)
-
-
-# TODO: move as individual functions to RESOURCE_TO_FUNCTION
+# TODO: this is actually mis-named, it isn't just executed after create
 def run_post_create_actions(action_name, resource_id, resources, resource_type, stack_name, result):
     if action_name == ACTION_DELETE:
         return result

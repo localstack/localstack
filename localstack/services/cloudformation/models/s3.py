@@ -12,6 +12,7 @@ from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation.cfn_utils import rename_params
 from localstack.utils.common import canonical_json, md5
+from localstack.utils.testutil import delete_all_s3_objects
 
 
 class S3BucketPolicy(GenericBaseModel):
@@ -36,10 +37,12 @@ class S3BucketPolicy(GenericBaseModel):
                 "parameters": rename_params(
                     dump_json_params(None, "PolicyDocument"), {"PolicyDocument": "Policy"}
                 ),
-            }
+            },
+            "delete": {"function": "delete_bucket_policy", "parameters": {"Bucket": "Bucket"}},
         }
 
 
+# TODO: moto dependency
 class S3Bucket(GenericBaseModel, FakeBucket):
     def get_resource_name(self):
         return self.normalize_bucket_name(self.props.get("BucketName"))
@@ -51,8 +54,8 @@ class S3Bucket(GenericBaseModel, FakeBucket):
         bucket_name = bucket_name.lower()
         return bucket_name
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
         def convert_acl_cf_to_s3(acl):
             """Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read')"""
             return re.sub("(?<!^)(?=[A-Z])", "-", acl).lower()
@@ -106,6 +109,22 @@ class S3Bucket(GenericBaseModel, FakeBucket):
                 return None
             return {"LocationConstraint": region}
 
+        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+            s3 = aws_stack.connect_to_service("s3")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            try:
+                s3.delete_bucket_policy(Bucket=bucket_name)
+            except Exception:
+                pass
+            # TODO: divergence from how AWS deals with bucket deletes (should throw an error)
+            try:
+                delete_all_s3_objects(bucket_name)
+            except Exception as e:
+                if "NoSuchBucket" not in str(e):
+                    raise
+
         result = {
             "create": [
                 {
@@ -123,7 +142,10 @@ class S3Bucket(GenericBaseModel, FakeBucket):
                     "parameters": s3_bucket_notification_config,
                 },
             ],
-            "delete": [{"function": "delete_bucket", "parameters": {"Bucket": "BucketName"}}],
+            "delete": [
+                {"function": _pre_delete},
+                {"function": "delete_bucket", "parameters": {"Bucket": "BucketName"}},
+            ],
         }
         return result
 

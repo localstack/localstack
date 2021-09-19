@@ -104,28 +104,56 @@ class IAMRole(GenericBaseModel, MotoRole):
             RoleName=props.get("RoleName"), Description=props.get("Description") or ""
         )
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
+        def _attach_policies(resource_id, resources, resource_type, func, stack_name):
+            """attaches managed policies from the template to the role"""
+            iam = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            role_name = props["RoleName"]
+
+            policy_arns = props.get("ManagedPolicyArns", [])
+            for arn in policy_arns:
+                iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
+
+        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+            """detach managed policies from role before deleting"""
+            iam = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            role_name = props["RoleName"]
+            for policy in iam.list_attached_role_policies(RoleName=role_name).get(
+                "AttachedPolicies", []
+            ):
+                iam.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
+
         return {
-            "create": {
-                "function": "create_role",
-                "parameters": param_defaults(
-                    dump_json_params(
-                        select_parameters(
-                            "Path",
-                            "RoleName",
+            "create": [
+                {
+                    "function": "create_role",
+                    "parameters": param_defaults(
+                        dump_json_params(
+                            select_parameters(
+                                "Path",
+                                "RoleName",
+                                "AssumeRolePolicyDocument",
+                                "Description",
+                                "MaxSessionDuration",
+                                "PermissionsBoundary",
+                                "Tags",
+                            ),
                             "AssumeRolePolicyDocument",
-                            "Description",
-                            "MaxSessionDuration",
-                            "PermissionsBoundary",
-                            "Tags",
                         ),
-                        "AssumeRolePolicyDocument",
+                        {"RoleName": PLACEHOLDER_RESOURCE_NAME},
                     ),
-                    {"RoleName": PLACEHOLDER_RESOURCE_NAME},
-                ),
-            },
-            "delete": {"function": "delete_role", "parameters": {"RoleName": "RoleName"}},
+                },
+                {"function": _attach_policies},
+            ],
+            "delete": [
+                {"function": _pre_delete},
+                {"function": "delete_role", "parameters": {"RoleName": "RoleName"}},
+            ],
         }
 
 
