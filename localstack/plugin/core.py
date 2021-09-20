@@ -126,14 +126,20 @@ class PluginLifecycleListener:  # pragma: no cover
     def on_init_exception(self, plugin_spec: PluginSpec, exception: Exception):
         pass
 
-    def on_init_after(self, plugin: Plugin):
+    def on_init_after(self, plugin_spec: PluginSpec, plugin: Plugin):
         pass
 
-    def on_load_before(self, plugin: Plugin, load_args: Union[List, Tuple], load_kwargs: Dict):
+    def on_load_before(
+        self,
+        plugin_spec: PluginSpec,
+        plugin: Plugin,
+        load_args: Union[List, Tuple],
+        load_kwargs: Dict,
+    ):
         pass
 
-    def on_load_after(self, plugin: Plugin, load_result: Any = None):
+    def on_load_after(self, plugin_spec: PluginSpec, plugin: Plugin, load_result: Any = None):
         pass
 
-    def on_load_exception(self, plugin: Plugin, exception: Exception):
+    def on_load_exception(self, plugin_spec: PluginSpec, plugin: Plugin, exception: Exception):
         pass

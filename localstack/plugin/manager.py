@@ -49,10 +49,13 @@ class PluginLifecycleNotifierMixin:
             "error while calling on_resolve_exception",
         )
 
-    def _fire_on_init_after(self, plugin):
+    def _fire_on_init_after(self, plugin_spec, plugin):
         _call_safe(
             self.listener.on_init_after,
-            (plugin,),  #
+            (
+                plugin_spec,
+                plugin,
+            ),  #
             "error while calling on_init_after",
         )
 
@@ -63,24 +66,24 @@ class PluginLifecycleNotifierMixin:
             "error while calling on_init_exception",
         )
 
-    def _fire_on_load_before(self, plugin, load_args, load_kwargs):
+    def _fire_on_load_before(self, plugin_spec, plugin, load_args, load_kwargs):
         _call_safe(
             self.listener.on_load_before,
-            (plugin, load_args, load_kwargs),
+            (plugin_spec, plugin, load_args, load_kwargs),
             "error while calling on_load_before",
         )
 
-    def _fire_on_load_after(self, plugin, result):
+    def _fire_on_load_after(self, plugin_spec, plugin, result):
         _call_safe(
             self.listener.on_load_after,
-            (plugin, result),
+            (plugin_spec, plugin, result),
             "error while calling on_load_after",
         )
 
-    def _fire_on_load_exception(self, plugin, exception):
+    def _fire_on_load_exception(self, plugin_spec, plugin, exception):
         _call_safe(
             self.listener.on_load_exception,
-            (plugin, exception),
+            (plugin_spec, plugin, exception),
             "error while calling on_load_exception",
         )
 
@@ -226,44 +229,45 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
 
     def _load_plugin(self, container: PluginContainer):
         with container.lock:
+            plugin_spec = container.plugin_spec
 
             # instantiate Plugin from spec if necessary
             if not container.is_init:
                 try:
-                    LOG.debug("instantiating plugin %s", container.plugin_spec)
-                    container.plugin = container.plugin_spec.factory()
+                    LOG.debug("instantiating plugin %s", plugin_spec)
+                    container.plugin = plugin_spec.factory()
                     container.is_init = True
-                    self._fire_on_init_after(container.plugin)
+                    self._fire_on_init_after(plugin_spec, container.plugin)
                 except Exception as e:
                     # TODO: maybe we should move these logging blocks to `load_all`, since this is the only instance
                     #  where exceptions messages may get lost.
                     if LOG.isEnabledFor(logging.DEBUG):
-                        LOG.exception("error instantiating plugin %s", container.plugin_spec)
+                        LOG.exception("error instantiating plugin %s", plugin_spec)
 
-                    self._fire_on_init_exception(container.plugin_spec, e)
+                    self._fire_on_init_exception(plugin_spec, e)
                     container.init_error = e
                     return
 
             plugin = container.plugin
 
             if not plugin.should_load():
-                LOG.debug("not loading deactivated plugin %s", container.plugin_spec)
+                LOG.debug("not loading deactivated plugin %s", plugin_spec)
                 return
 
             args = self.load_args
             kwargs = self.load_kwargs
 
-            self._fire_on_load_before(plugin, args, kwargs)
+            self._fire_on_load_before(plugin_spec, plugin, args, kwargs)
             try:
-                LOG.debug("loading plugin %s:%s", self.namespace, container.plugin_spec.name)
+                LOG.debug("loading plugin %s:%s", self.namespace, plugin_spec.name)
                 result = plugin.load(*args, *kwargs)
-                self._fire_on_load_after(plugin, result)
+                self._fire_on_load_after(plugin_spec, plugin, result)
                 container.load_value = result
                 container.is_loaded = True
             except Exception as e:
                 if LOG.isEnabledFor(logging.DEBUG):
-                    LOG.exception("error loading plugin %s", container.plugin_spec)
-                self._fire_on_load_exception(plugin, e)
+                    LOG.exception("error loading plugin %s", plugin_spec)
+                self._fire_on_load_exception(plugin_spec, plugin, e)
                 container.load_error = e
 
     def _init_plugin_index(self) -> Dict[str, PluginContainer]:
