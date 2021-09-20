@@ -1,8 +1,11 @@
 import json
+import logging
 
 from moto.iam.models import Role as MotoRole
 
+from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
     dump_json_params,
     param_defaults,
@@ -11,6 +14,8 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
+
+LOG = logging.getLogger(__name__)
 
 
 class IAMManagedPolicy(GenericBaseModel):
@@ -73,15 +78,71 @@ class IAMUser(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
+        def _post_create(resource_id, resources, resource_type, func, stack_name):
+            client = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            username = props["UserName"]
+
+            for group in props.get("Groups", []):
+                client.add_user_to_group(UserName=username, GroupName=group)
+            for managed_policy in props.get("ManagedPolicyArns", []):
+                client.attach_user_policy(UserName=username, PolicyArn=managed_policy)
+            for policy in props.get("Policies", []):
+                policy_doc = json.dumps(policy.get("PolicyDocument"))
+                client.put_user_policy(
+                    UserName=username,
+                    PolicyName=policy.get("PolicyName"),
+                    PolicyDocument=policy_doc,
+                )
+            login_profile = props.get("LoginProfile")
+            if login_profile:
+                client.create_login_profile(
+                    UserName=username,
+                    Password=login_profile.get("Password"),
+                    PasswordResetRequired=login_profile.get("PasswordResetRequired"),
+                )
+
+        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+            client = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            user_name = props["UserName"]
+
+            for managed_policy in props.get("ManagedPolicyArns", []):
+                client.detach_user_policy(UserName=user_name, PolicyArn=managed_policy)
+
+            for inline_policy in props.get("Policies", []):
+                client.delete_user_policy(
+                    UserName=user_name, PolicyName=inline_policy.get("PolicyName")
+                )
+
+            if props.get("LoginProfile"):
+                client.delete_login_profile(UserName=user_name)
+
+            for group in props.get("Groups", []):
+                client.remove_user_from_group(UserName=user_name, GroupName=group)
+
+            # TODO: remove this after stack resource deletion order is fixed
+            remaining_policies = client.list_user_policies(UserName=user_name)["PolicyNames"]
+            for inline_policy_name in remaining_policies:
+                client.delete_user_policy(UserName=user_name, PolicyName=inline_policy_name)
+
         return {
-            "create": {
-                "function": "create_user",
-                "parameters": ["Path", "UserName", "PermissionsBoundary", "Tags"],
-            },
-            "delete": {
-                "function": "delete_user",
-                "parameters": ["UserName"],
-            },
+            "create": [
+                {
+                    "function": "create_user",
+                    "parameters": ["Path", "UserName", "PermissionsBoundary", "Tags"],
+                },
+                {"function": _post_create},
+            ],
+            "delete": [
+                {"function": _pre_delete},
+                {
+                    "function": "delete_user",
+                    "parameters": ["UserName"],
+                },
+            ],
         }
 
 
@@ -106,16 +167,47 @@ class IAMRole(GenericBaseModel, MotoRole):
 
     @classmethod
     def get_deploy_templates(cls):
-        def _attach_policies(resource_id, resources, resource_type, func, stack_name):
+        def _post_create(resource_id, resources, resource_type, func, stack_name):
             """attaches managed policies from the template to the role"""
             iam = aws_stack.connect_to_service("iam")
             resource = resources[resource_id]
             props = resource["Properties"]
             role_name = props["RoleName"]
 
+            # attach managed policies
             policy_arns = props.get("ManagedPolicyArns", [])
             for arn in policy_arns:
                 iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
+
+            # add inline policies
+            inline_policies = props.get("Policies", [])
+            for policy in inline_policies:
+                # TODO: when would this be a list?
+                policy = policy[0] if isinstance(policy, list) and len(policy) == 1 else policy
+                if policy == PLACEHOLDER_AWS_NO_VALUE:
+                    continue
+                if not isinstance(policy, dict):
+                    LOG.info(
+                        'Invalid format of policy for IAM role "%s": %s'
+                        % (props.get("RoleName"), policy)
+                    )
+                    continue
+                pol_name = policy.get("PolicyName")
+                doc = dict(policy["PolicyDocument"])
+                doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
+                statements = (
+                    doc["Statement"] if isinstance(doc["Statement"], list) else [doc["Statement"]]
+                )
+                for statement in statements:
+                    if isinstance(statement.get("Resource"), list):
+                        # filter out empty resource strings
+                        statement["Resource"] = [r for r in statement["Resource"] if r]
+                doc = json.dumps(doc)
+                iam.put_role_policy(
+                    RoleName=props["RoleName"],
+                    PolicyName=pol_name,
+                    PolicyDocument=doc,
+                )
 
         def _pre_delete(resource_id, resources, resource_type, func, stack_name):
             """detach managed policies from role before deleting"""
@@ -123,10 +215,18 @@ class IAMRole(GenericBaseModel, MotoRole):
             resource = resources[resource_id]
             props = resource["Properties"]
             role_name = props["RoleName"]
+
+            # TODO: this should probably only remove the policies that are specified in the stack (verify with AWS)
+            # detach managed policies
             for policy in iam.list_attached_role_policies(RoleName=role_name).get(
                 "AttachedPolicies", []
             ):
                 iam.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
+            # delete inline policies
+            for inline_policy_name in iam.list_role_policies(RoleName=role_name).get(
+                "PolicyNames", []
+            ):
+                iam.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
 
         return {
             "create": [
@@ -148,7 +248,7 @@ class IAMRole(GenericBaseModel, MotoRole):
                         {"RoleName": PLACEHOLDER_RESOURCE_NAME},
                     ),
                 },
-                {"function": _attach_policies},
+                {"function": _post_create},
             ],
             "delete": [
                 {"function": _pre_delete},
@@ -185,7 +285,6 @@ class IAMPolicy(GenericBaseModel):
                 iam.put_group_policy(
                     GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc
                 )
-            return {}
 
         return {"create": {"function": _create}}
 
@@ -274,4 +373,85 @@ class InstanceProfile(GenericBaseModel):
                 "function": "delete_instance_profile",
                 "parameters": {"InstanceProfileName": "InstanceProfileName"},
             },
+        }
+
+
+class IAMGroup(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::IAM::Group"
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("GroupName")
+
+    def get_resource_name(self):
+        return self.props.get("GroupName")
+
+    def fetch_state(self, stack_name, resources):
+        group_name = self.resolve_refs_recursively(
+            stack_name, self.props.get("GroupName"), resources
+        )
+        return aws_stack.connect_to_service("iam").get_group(GroupName=group_name)["Group"]
+
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource["Properties"]
+        return aws_stack.connect_to_service("iam").update_group(
+            GroupName=props.get("GroupName"),
+            NewPath=props.get("NewPath") or "",
+            NewGroupName=props.get("NewGroupName") or "",
+        )
+
+    @staticmethod
+    def get_deploy_templates():
+        def _post_create(resource_id, resources, resource_type, func, stack_name):
+            client = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            group_name = props["GroupName"]
+
+            for managed_policy in props.get("ManagedPolicyArns", []):
+                client.attach_group_policy(GroupName=group_name, PolicyArn=managed_policy)
+
+            for inline_policy in props.get("Policies", []):
+                doc = json.dumps(inline_policy.get("PolicyDocument"))
+                client.put_group_policy(
+                    GroupName=group_name,
+                    PolicyName=inline_policy.get("PolicyName"),
+                    PolicyDocument=doc,
+                )
+
+        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+            client = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            group_name = props["GroupName"]
+
+            for managed_policy in props.get("ManagedPolicyArns", []):
+                client.detach_group_policy(GroupName=group_name, PolicyArn=managed_policy)
+
+            for inline_policy in props.get("Policies", []):
+                client.delete_group_policy(
+                    GroupName=group_name, PolicyName=inline_policy.get("PolicyName")
+                )
+
+            # TODO: remove this after stack resource deletion order is fixed
+            remaining_policies = client.list_group_policies(GroupName=group_name)["PolicyNames"]
+            for inline_policy_name in remaining_policies:
+                client.delete_group_policy(GroupName=group_name, PolicyName=inline_policy_name)
+
+        return {
+            "create": [
+                {
+                    "function": "create_group",
+                    "parameters": ["GroupName", "Path"],
+                },
+                {"function": _post_create},
+            ],
+            "delete": [
+                {"function": _pre_delete},
+                {
+                    "function": "delete_group",
+                    "parameters": ["GroupName"],
+                },
+            ],
         }
