@@ -120,7 +120,7 @@ TEST_STAGE_NAME = "testing"
 MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
 
 TEST_GOLANG_LAMBDA_URL = (
-    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/example.zip"
+    "https://github.com/localstack/awslamba-go-runtime/releases/download/v0.2/example-lambda.zip"
 )
 
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
