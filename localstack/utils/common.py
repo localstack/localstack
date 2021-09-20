@@ -1505,8 +1505,6 @@ def generate_ssl_cert(
         return cert_file_name, key_file_name
 
     if target_file and not overwrite and os.path.exists(target_file):
-        key_file_name = ""
-        cert_file_name = ""
         try:
             cert_file_name, key_file_name = store_cert_key_files(target_file)
         except Exception as e:
