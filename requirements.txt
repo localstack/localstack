@@ -47,6 +47,7 @@ jsonpatch>=1.24,<2.0
 jsonpath-rw>=1.4.0,<2.0.0
 localstack-ext[full]>=0.12.16
 moto-ext[all]>=2.0.3.23
+pproxy>=2.7.0
 psutil>=5.4.8,<6.0.0
 #pympler>=0.6
 pyopenssl==17.5.0

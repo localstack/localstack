@@ -857,7 +857,7 @@ def chown_r(path, user):
             os.chown(os.path.join(root, filename), uid, gid)
 
 
-def chmod_r(path, mode):
+def chmod_r(path: str, mode: int):
     """Recursive chmod"""
     if not os.path.exists(path):
         return
@@ -869,7 +869,7 @@ def chmod_r(path, mode):
             os.chmod(os.path.join(root, filename), mode)
 
 
-def rm_rf(path):
+def rm_rf(path: str):
     """
     Recursively removes a file or directory
     """
@@ -894,7 +894,7 @@ def rm_rf(path):
         shutil.rmtree(path)
 
 
-def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kwargs):
+def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kwargs):
     """Recursively copies file/directory"""
     # attention: this patch is not threadsafe
     copystat_orig = shutil.copystat
@@ -943,7 +943,7 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
         shutil.copystat = copystat_orig
 
 
-def disk_usage(path):
+def disk_usage(path: str):
     if not os.path.exists(path):
         return 0
 
@@ -975,7 +975,7 @@ def format_bytes(count, default="n/a"):
     return count
 
 
-def download(url, path, verify_ssl=True):
+def download(url: str, path: str, verify_ssl=True):
     """Downloads file at url to the given path"""
     # make sure we're creating a new session here to
     # enable parallel file downloads during installation!
@@ -1022,7 +1022,7 @@ def download(url, path, verify_ssl=True):
         s.close()
 
 
-def parse_request_data(method, path, data=None, headers={}):
+def parse_request_data(method, path, data=None, headers=None):
     """Extract request data either from query string (for GET) or request body (for POST)."""
     result = {}
     headers = headers or {}
@@ -1091,6 +1091,7 @@ def is_alpine():
     return CACHE["_is_alpine_"]
 
 
+# TODO: rename to "get_os()"
 def get_arch():
     if is_mac_os():
         return "osx"
@@ -1100,7 +1101,7 @@ def get_arch():
         return "linux"
     if is_windows():
         return "windows"
-    raise Exception("Unable to determine system architecture")
+    raise Exception("Unable to determine local operating system")
 
 
 def is_command_available(cmd):
@@ -1504,8 +1505,6 @@ def generate_ssl_cert(
         return cert_file_name, key_file_name
 
     if target_file and not overwrite and os.path.exists(target_file):
-        key_file_name = ""
-        cert_file_name = ""
         try:
             cert_file_name, key_file_name = store_cert_key_files(target_file)
         except Exception as e:

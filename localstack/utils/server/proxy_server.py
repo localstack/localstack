@@ -1,9 +1,25 @@
-import asyncio
+import logging
+import os
 import select
 import socket
+from typing import Tuple
+
+import requests
 
 from localstack.constants import BIND_HOST, LOCALHOST_IP
-from localstack.utils.common import is_number, run_safe, start_worker_thread
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server
+from localstack.utils.async_utils import ensure_event_loop
+from localstack.utils.common import (
+    TMP_THREADS,
+    is_number,
+    new_tmp_file,
+    run_safe,
+    save_file,
+    start_worker_thread,
+)
+from localstack.utils.run import FuncThread
+
+LOG = logging.getLogger(__name__)
 
 BUFFER_SIZE = 2 ** 10  # 1024
 
@@ -69,18 +85,45 @@ def start_tcp_proxy(src, dst, handler, **kwargs):
             pass
 
 
-def start_ssl_proxy(port, target, target_ssl=False):
+def start_ssl_proxy(
+    port,
+    target,
+    target_ssl=False,
+    client_cert_key: Tuple[str, str] = None,
+    asynchronous: bool = False,
+):
+    """Start a proxy server that accepts SSL requests and forwards requests to a backend (either SSL or non-SSL)"""
+
+    if client_cert_key:
+        # use a custom proxy listener, in case the user provides client certificates for authentication
+        result = _do_start_ssl_proxy_with_client_auth(port, target, client_cert_key=client_cert_key)
+        if not asynchronous:
+            result.join()
+        return result
+
+    def _run(*args):
+        return _do_start_ssl_proxy(port, target, target_ssl=target_ssl)
+
+    if not asynchronous:
+        return _run()
+    proxy = FuncThread(_run)
+    TMP_THREADS.append(proxy)
+    proxy.start()
+    return proxy
+
+
+def _do_start_ssl_proxy(port: int, target: str, target_ssl=False):
     import pproxy
 
     from localstack.services.generic_proxy import GenericProxy
 
     if ":" not in str(target):
         target = "127.0.0.1:%s" % target
-    print("Starting SSL proxy server %s -> %s" % (port, target))
+    LOG.debug("Starting SSL proxy server %s -> %s" % (port, target))
 
     # create server and remote connection
     server = pproxy.Server("secure+tunnel://0.0.0.0:%s" % port)
-    target_proto = "secure+tunnel" if target_ssl else "tunnel"
+    target_proto = "ssl+tunnel" if target_ssl else "tunnel"
     remote = pproxy.Connection("%s://%s" % (target_proto, target))
     args = dict(rserver=[remote], verbose=print)
 
@@ -89,7 +132,7 @@ def start_ssl_proxy(port, target, target_ssl=False):
     for context in pproxy.server.sslcontexts:
         context.load_cert_chain(cert_file_name, key_file_name)
 
-    loop = asyncio.get_event_loop()
+    loop = ensure_event_loop()
     handler = loop.run_until_complete(server.start_server(args))
     try:
         loop.run_forever()
@@ -100,3 +143,30 @@ def start_ssl_proxy(port, target, target_ssl=False):
     loop.run_until_complete(handler.wait_closed())
     loop.run_until_complete(loop.shutdown_asyncgens())
     loop.close()
+
+
+def _do_start_ssl_proxy_with_client_auth(port: int, target: str, client_cert_key: Tuple[str, str]):
+    base_url = f"{'https://' if '://' not in target else ''}{target.rstrip('/')}"
+
+    # prepare cert files (TODO: check whether/how we can pass cert strings to requests.request(..) directly)
+    cert_file = client_cert_key[0]
+    if not os.path.exists(cert_file):
+        cert_file = new_tmp_file()
+        save_file(cert_file, client_cert_key[0])
+    key_file = client_cert_key[1]
+    if not os.path.exists(key_file):
+        key_file = new_tmp_file()
+        save_file(key_file, client_cert_key[1])
+    cert_params = (cert_file, key_file)
+
+    # define forwarding listener
+    class Listener(ProxyListener):
+        def forward_request(self, method, path, data, headers):
+            url = f"{base_url}{path}"
+            result = requests.request(
+                method=method, url=url, data=data, headers=headers, cert=cert_params, verify=False
+            )
+            return result
+
+    proxy_thread = start_proxy_server(port, update_listener=Listener(), use_ssl=True)
+    return proxy_thread
