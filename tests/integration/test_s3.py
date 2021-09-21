@@ -1863,7 +1863,7 @@ class TestS3(unittest.TestCase):
 
         OBJECT_KEY = "temp 1.txt"
         OBJECT_DATA = "this should be found in when you download {}.".format(OBJECT_KEY)
-        BUCKET = "test"
+        BUCKET = f"test-{short_uid()}"
         EXPIRES = 4
 
         def make_v2_url_invalid(url):

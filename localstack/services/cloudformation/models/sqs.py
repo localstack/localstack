@@ -1,7 +1,7 @@
 import json
 import logging
 
-from moto.sqs.exceptions import QueueDoesNotExist
+from botocore.exceptions import ClientError
 from moto.sqs.models import Queue as MotoQueue
 
 from localstack.services.cloudformation.deployment_utils import (
@@ -50,8 +50,9 @@ class QueuePolicy(GenericBaseModel):
             for queue in props["Queues"]:
                 try:
                     sqs_client.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": ""})
-                except QueueDoesNotExist:
-                    LOG.debug("Queue resource was already deleted.")
+                except ClientError as err:
+                    if "AWS.SimpleQueueService.NonExistentQueue" != err.response["Error"]["Code"]:
+                        raise
 
         return {
             "create": {"function": _create},

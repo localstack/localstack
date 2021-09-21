@@ -18,6 +18,7 @@ from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME, TEST
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
+    is_none_or_empty_value,
     remove_none_values,
 )
 from localstack.services.cloudformation.service_models import (
@@ -40,7 +41,6 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
-from localstack.utils.testutil import delete_all_s3_objects
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
 
@@ -96,12 +96,6 @@ def get_secret_arn(secret_name, account_id=None):
     storage = secretsmanager_starter.SECRET_ARN_STORAGE
     key = "%s_%s" % (aws_stack.get_region(), secret_name)
     return storage.get(key) or storage.get(secret_name)
-
-
-def retrieve_topic_arn(topic_name):
-    topics = aws_stack.connect_to_service("sns").list_topics()["Topics"]
-    topic_arns = [t["TopicArn"] for t in topics if t["TopicArn"].endswith(":%s" % topic_name)]
-    return topic_arns[0]
 
 
 def find_stack(stack_name):
@@ -1029,9 +1023,6 @@ def configure_resource_via_sdk(
     # remove None values, as they usually raise boto3 errors
     params = remove_none_values(params)
 
-    # run pre-actions
-    run_pre_create_actions(action_name, resource_id, resources, resource_type, stack_name, params)
-
     # convert boolean strings
     #  (TODO: we should find a more reliable mechanism than this opportunistic/probabilistic approach!)
     params_before_conversion = copy.deepcopy(params)
@@ -1061,158 +1052,11 @@ def configure_resource_via_sdk(
         )
         raise e
 
-    # run post-actions
-    run_post_create_actions(action_name, resource_id, resources, resource_type, stack_name, result)
-
     return result
-
-
-# TODO: move as individual functions to RESOURCE_TO_FUNCTION
-def run_pre_create_actions(
-    action_name, resource_id, resources, resource_type, stack_name, resource_params
-):
-    resource = resources[resource_id]
-    resource_props = resource["Properties"] = resource.get("Properties", {})
-    if resource_type == "IAM::Role" and action_name == ACTION_DELETE:
-        iam = aws_stack.connect_to_service("iam")
-        role_name = resource_props["RoleName"]
-        for policy in iam.list_attached_role_policies(RoleName=role_name).get(
-            "AttachedPolicies", []
-        ):
-            iam.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
-    if resource_type == "S3::Bucket" and action_name == ACTION_DELETE:
-        s3 = aws_stack.connect_to_service("s3")
-        bucket_name = resource_props.get("BucketName")
-        try:
-            s3.delete_bucket_policy(Bucket=bucket_name)
-        except Exception:
-            pass
-        # TODO: verify whether AWS CF automatically deletes all bucket objects, or fails if bucket is non-empty
-        try:
-            delete_all_s3_objects(bucket_name)
-        except Exception as e:
-            if "NoSuchBucket" not in str(e):
-                raise
-        # hack: make sure the bucket actually exists, to prevent delete_bucket operation later on from failing
-        aws_stack.get_or_create_bucket(bucket_name)
-
-
-# TODO: move as individual functions to RESOURCE_TO_FUNCTION
-def run_post_create_actions(action_name, resource_id, resources, resource_type, stack_name, result):
-    if action_name == ACTION_DELETE:
-        return result
-
-    resource = resources[resource_id]
-    resource_props = resource["Properties"] = resource.get("Properties", {})
-
-    # some resources have attached/nested resources which we need to create recursively now
-    if resource_type == "ApiGateway::RestApi":
-        body = resource_props.get("Body")
-        if body:
-            client = aws_stack.connect_to_service("apigateway")
-            body = json.dumps(body) if isinstance(body, dict) else body
-            client.put_rest_api(restApiId=result["id"], body=to_bytes(body))
-
-    elif resource_type == "SNS::Topic":
-        subscriptions = resource_props.get("Subscription", [])
-        for subscription in subscriptions:
-            if is_none_or_empty_value(subscription):
-                continue
-            endpoint = resolve_refs_recursively(stack_name, subscription["Endpoint"], resources)
-            topic_arn = retrieve_topic_arn(resource_props["TopicName"])
-            aws_stack.connect_to_service("sns").subscribe(
-                TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
-            )
-
-    elif resource_type == "S3::Bucket":
-        tags = resource_props.get("Tags")
-        if tags:
-            aws_stack.connect_to_service("s3").put_bucket_tagging(
-                Bucket=resource_props["BucketName"], Tagging={"TagSet": tags}
-            )
-
-    elif resource_type == "IAM::Role":
-        policies = resource_props.get("Policies", [])
-        for policy in policies:
-            policy = policy[0] if isinstance(policy, list) and len(policy) == 1 else policy
-            iam = aws_stack.connect_to_service("iam")
-            if policy == PLACEHOLDER_AWS_NO_VALUE:
-                continue
-            if not isinstance(policy, dict):
-                LOG.info(
-                    'Invalid format of policy for IAM role "%s": %s'
-                    % (resource_props.get("RoleName"), policy)
-                )
-                continue
-            pol_name = policy.get("PolicyName")
-            doc = dict(policy["PolicyDocument"])
-            doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
-            statements = (
-                doc["Statement"] if isinstance(doc["Statement"], list) else [doc["Statement"]]
-            )
-            for statement in statements:
-                if isinstance(statement.get("Resource"), list):
-                    # filter out empty resource strings
-                    statement["Resource"] = [r for r in statement["Resource"] if r]
-            doc = json.dumps(doc)
-            LOG.debug(
-                "Running put_role_policy(...) for IAM::Role policy: %s %s %s"
-                % (resource_props["RoleName"], pol_name, doc)
-            )
-            iam.put_role_policy(
-                RoleName=resource_props["RoleName"],
-                PolicyName=pol_name,
-                PolicyDocument=doc,
-            )
-
-    elif resource_type == "IAM::Policy":
-        # associate policies with users, groups, roles
-        groups = resource_props.get("Groups", [])
-        roles = resource_props.get("Roles", [])
-        users = resource_props.get("Users", [])
-        policy_arn = aws_stack.policy_arn(resource_props.get("PolicyName"))
-        iam = aws_stack.connect_to_service("iam")
-        for group in groups:
-            iam.attach_group_policy(GroupName=group, PolicyArn=policy_arn)
-        for role in roles:
-            iam.attach_role_policy(RoleName=role, PolicyArn=policy_arn)
-        for user in users:
-            iam.attach_user_policy(UserName=user, PolicyArn=policy_arn)
-
-    elif resource_type == "IAM::InstanceProfile":
-        if resource_props.get("Roles", []):
-            iam = aws_stack.connect_to_service("iam")
-            iam.add_role_to_instance_profile(
-                InstanceProfileName=resource_props["InstanceProfileName"],
-                RoleName=resource_props["Roles"][0],
-            )
-    elif resource_type == "IAM::User":
-        iam = aws_stack.connect_to_service("iam")
-        username = resource_props.get("UserName")
-        for group in resource_props.get("Groups", []):
-            iam.add_user_to_group(UserName=username, GroupName=group)
-        for managed_policy in resource_props.get("ManagedPolicyArns", []):
-            iam.attach_user_policy(UserName=username, PolicyArn=managed_policy)
-        for policy in resource_props.get("Policies", []):
-            policy_doc = json.dumps(policy.get("PolicyDocument"))
-            iam.put_user_policy(
-                UserName=username, PolicyName=policy.get("PolicyName"), PolicyDocument=policy_doc
-            )
-        login_profile = resource_props.get("LoginProfile")
-        if login_profile:
-            iam.create_login_profile(
-                UserName=username,
-                Password=login_profile.get("Password"),
-                PasswordResetRequired=login_profile.get("PasswordResetRequired"),
-            )
 
 
 def get_action_name_for_resource_change(res_change):
     return {"Add": "CREATE", "Remove": "DELETE", "Modify": "UPDATE"}.get(res_change)
-
-
-def is_none_or_empty_value(value):
-    return not value or value == PLACEHOLDER_AWS_NO_VALUE
 
 
 # TODO: this shouldn't be called for stack parameters

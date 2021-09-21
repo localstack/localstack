@@ -1,3 +1,4 @@
+import json
 from urllib.parse import urlparse
 
 from localstack.services.cloudformation.deployment_utils import (
@@ -6,7 +7,7 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import keys_to_lower, select_attributes
+from localstack.utils.common import keys_to_lower, select_attributes, to_bytes
 
 
 class GatewayResponse(GenericBaseModel):
@@ -90,17 +91,27 @@ class GatewayRestAPI(GenericBaseModel):
         result = list(filter(lambda api: api["name"] == api_name, apis))
         return result[0] if result else None
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
         def _api_id(params, resources, resource_id, **kwargs):
-            resource = GatewayRestAPI(resources[resource_id])
+            resource = cls(resources[resource_id])
             return resource.physical_resource_id or resource.get_physical_resource_id()
 
+        def _create(resource_id, resources, resource_type, func, stack_name):
+            client = aws_stack.connect_to_service("apigateway")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+
+            result = client.create_rest_api(
+                name=props["Name"], description=props.get("Description", "")
+            )  # TODO: rest of the attributes
+            body = props.get("Body")
+            if body is not None:
+                body = json.dumps(body) if isinstance(body, dict) else body
+                client.put_rest_api(restApiId=result["id"], body=to_bytes(body))
+
         return {
-            "create": {
-                "function": "create_rest_api",
-                "parameters": {"name": "Name", "description": "Description"},
-            },
+            "create": [{"function": _create}],
             "delete": {
                 "function": "delete_rest_api",
                 "parameters": {

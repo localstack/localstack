@@ -1984,6 +1984,12 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(metric_alarms) + 1, len(metric_alarms_after))
         self.assertEqual(len(composite_alarms) + 1, len(composite_alarms_after))
 
+        iam_client = aws_stack.connect_to_service("iam")
+        profiles = iam_client.list_instance_profiles().get("InstanceProfiles", [])
+        assert len(profiles) > 0
+        profile = profiles[0]
+        assert len(profile["Roles"]) > 0
+
         # clean up
         self.cleanup(stack_name)
 
