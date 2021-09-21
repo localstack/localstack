@@ -23,6 +23,7 @@ from six.moves.urllib.parse import urlparse
 from localstack import config
 from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_executors
+from localstack.services.awslambda.lambda_executors import LambdaContext
 from localstack.services.awslambda.lambda_utils import (
     DOTNET_LAMBDA_RUNTIMES,
     LAMBDA_DEFAULT_HANDLER,
@@ -59,7 +60,6 @@ from localstack.utils.common import (
     short_uid,
     start_worker_thread,
     synchronized,
-    timestamp,
     timestamp_millis,
     to_bytes,
     to_str,
@@ -158,27 +158,6 @@ class ClientError(Exception):
         if isinstance(self.msg, Response):
             return self.msg
         return error_response(self.msg, self.code)
-
-
-class LambdaContext(object):
-    DEFAULT_MEMORY_LIMIT = 1536
-
-    def __init__(self, func_details, qualifier=None, context=None):
-        self.function_name = func_details.name()
-        self.function_version = func_details.get_qualifier_version(qualifier)
-        self.client_context = context.get("client_context")
-        self.invoked_function_arn = func_details.arn()
-        if qualifier:
-            self.invoked_function_arn += ":" + qualifier
-        self.cognito_identity = context.get("identity")
-        self.aws_request_id = str(uuid.uuid4())
-        self.memory_limit_in_mb = func_details.memory_size or self.DEFAULT_MEMORY_LIMIT
-        self.log_group_name = "/aws/lambda/%s" % self.function_name
-        self.log_stream_name = "%s/[1]%s" % (timestamp(format="%Y/%m/%d"), short_uid())
-
-    def get_remaining_time_in_millis(self):
-        # TODO implement!
-        return 1000 * 60
 
 
 class EventSourceListener:
