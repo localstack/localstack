@@ -23,6 +23,7 @@ from six.moves.urllib.parse import urlparse
 from localstack import config
 from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_executors
+from localstack.services.awslambda.lambda_executors import LambdaContext
 from localstack.services.awslambda.lambda_utils import (
     DOTNET_LAMBDA_RUNTIMES,
     LAMBDA_DEFAULT_HANDLER,
@@ -59,7 +60,6 @@ from localstack.utils.common import (
     short_uid,
     start_worker_thread,
     synchronized,
-    timestamp,
     timestamp_millis,
     to_bytes,
     to_str,
@@ -158,27 +158,6 @@ class ClientError(Exception):
         if isinstance(self.msg, Response):
             return self.msg
         return error_response(self.msg, self.code)
-
-
-class LambdaContext(object):
-    DEFAULT_MEMORY_LIMIT = 1536
-
-    def __init__(self, func_details, qualifier=None, context=None):
-        self.function_name = func_details.name()
-        self.function_version = func_details.get_qualifier_version(qualifier)
-        self.client_context = context.get("client_context")
-        self.invoked_function_arn = func_details.arn()
-        if qualifier:
-            self.invoked_function_arn += ":" + qualifier
-        self.cognito_identity = context.get("identity")
-        self.aws_request_id = str(uuid.uuid4())
-        self.memory_limit_in_mb = func_details.memory_size or self.DEFAULT_MEMORY_LIMIT
-        self.log_group_name = "/aws/lambda/%s" % self.function_name
-        self.log_stream_name = "%s/[1]%s" % (timestamp(format="%Y/%m/%d"), short_uid())
-
-    def get_remaining_time_in_millis(self):
-        # TODO implement!
-        return 1000 * 60
 
 
 class EventSourceListener:
@@ -754,9 +733,9 @@ def get_function_version(arn, version):
 
 def publish_new_function_version(arn):
     region = LambdaRegion.get()
-    func_details = region.lambdas.get(arn)
-    versions = func_details.versions
-    max_version_number = func_details.max_version()
+    lambda_function = region.lambdas.get(arn)
+    versions = lambda_function.versions
+    max_version_number = lambda_function.max_version()
     next_version_number = max_version_number + 1
     latest_hash = versions.get(VERSION_LATEST).get("CodeSha256")
     max_version = versions.get(str(max_version_number))
@@ -814,24 +793,24 @@ def run_lambda(
         sys.stderr = stream
     try:
         func_arn = aws_stack.fix_arn(func_arn)
-        func_details = region.lambdas.get(func_arn)
-        if not func_details:
+        lambda_function = region.lambdas.get(func_arn)
+        if not lambda_function:
             LOG.debug("Unable to find details for Lambda %s in region %s" % (func_arn, region_name))
             result = not_found_error(msg="The resource specified in the request does not exist.")
             return lambda_executors.InvocationResult(result)
 
-        context = LambdaContext(func_details, version, context)
+        context = LambdaContext(lambda_function, version, context)
 
         # forward invocation to external endpoint, if configured
         invocation_type = "Event" if asynchronous else "RequestResponse"
 
-        invoke_result = forward_to_external_url(func_details, event, context, invocation_type)
+        invoke_result = forward_to_external_url(lambda_function, event, context, invocation_type)
         if invoke_result is not None:
             return invoke_result
 
         result = LAMBDA_EXECUTOR.execute(
             func_arn,
-            func_details,
+            lambda_function,
             event,
             context=context,
             version=version,
@@ -957,7 +936,7 @@ def get_zip_bytes(function_code):
     return zip_file_content
 
 
-def get_java_handler(zip_file_content, main_file, func_details=None):
+def get_java_handler(zip_file_content, main_file, lambda_function=None):
     """Creates a Java handler from an uploaded ZIP or JAR.
 
     :type zip_file_content: bytes
@@ -973,7 +952,7 @@ def get_java_handler(zip_file_content, main_file, func_details=None):
 
         def execute(event, context):
             result = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
-                event, context, main_file=main_file, func_details=func_details
+                event, context, main_file=main_file, lambda_function=lambda_function
             )
             return result
 
@@ -1097,7 +1076,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
         # directory as part of the classpath. Obtain a Java handler function below.
         try:
             lambda_handler = get_java_handler(
-                zip_file_content, tmp_file, func_details=lambda_details
+                zip_file_content, tmp_file, lambda_function=lambda_details
             )
         except Exception as e:
             # this can happen, e.g., for Lambda code mounted via __local__ -> ignore
@@ -1160,7 +1139,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
 
             def execute(event, context):
                 result = lambda_executors.EXECUTOR_LOCAL.execute_javascript_lambda(
-                    event, context, main_file=main_file, func_details=lambda_details
+                    event, context, main_file=main_file, lambda_function=lambda_function
                 )
                 return result
 
@@ -1172,7 +1151,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
 
             def execute_go(event, context):
                 result = lambda_executors.EXECUTOR_LOCAL.execute_go_lambda(
-                    event, context, main_file=main_file, func_details=lambda_details
+                    event, context, main_file=main_file, lambda_function=lambda_function
                 )
                 return result
 
@@ -1196,48 +1175,50 @@ def do_list_functions():
 
         func_name = f_arn.split(":function:")[-1]
         arn = func_arn(func_name)
-        func_details = region.lambdas.get(arn)
-        if not func_details:
+        lambda_function = region.lambdas.get(arn)
+        if not lambda_function:
             # this can happen if we're accessing Lambdas from a different region (ARN mismatch)
             continue
 
-        details = format_func_details(func_details)
+        details = format_func_details(lambda_function)
         details["Tags"] = func.tags
 
         funcs.append(details)
     return funcs
 
 
-def format_func_details(func_details, version=None, always_add_version=False):
+def format_func_details(
+    lambda_function: LambdaFunction, version: str = None, always_add_version=False
+) -> Dict[str, Any]:
     version = version or VERSION_LATEST
-    func_version = func_details.get_version(version)
+    func_version = lambda_function.get_version(version)
     result = {
         "CodeSha256": func_version.get("CodeSha256"),
-        "Role": func_details.role,
-        "KMSKeyArn": func_details.kms_key_arn,
+        "Role": lambda_function.role,
+        "KMSKeyArn": lambda_function.kms_key_arn,
         "Version": version,
-        "VpcConfig": func_details.vpc_config,
-        "FunctionArn": func_details.arn(),
-        "FunctionName": func_details.name(),
+        "VpcConfig": lambda_function.vpc_config,
+        "FunctionArn": lambda_function.arn(),
+        "FunctionName": lambda_function.name(),
         "CodeSize": func_version.get("CodeSize"),
-        "Handler": func_details.handler,
-        "Runtime": func_details.runtime,
-        "Timeout": func_details.timeout,
-        "Description": func_details.description,
-        "MemorySize": func_details.memory_size,
-        "LastModified": format_timestamp(func_details.last_modified),
-        "TracingConfig": func_details.tracing_config or {"Mode": "PassThrough"},
+        "Handler": lambda_function.handler,
+        "Runtime": lambda_function.runtime,
+        "Timeout": lambda_function.timeout,
+        "Description": lambda_function.description,
+        "MemorySize": lambda_function.memory_size,
+        "LastModified": format_timestamp(lambda_function.last_modified),
+        "TracingConfig": lambda_function.tracing_config or {"Mode": "PassThrough"},
         "RevisionId": func_version.get("RevisionId"),
         "State": "Active",
         "LastUpdateStatus": "Successful",
-        "PackageType": func_details.package_type,
-        "ImageConfig": getattr(func_details, "image_config", None),
+        "PackageType": lambda_function.package_type,
+        "ImageConfig": getattr(lambda_function, "image_config", None),
     }
-    if func_details.dead_letter_config:
-        result["DeadLetterConfig"] = func_details.dead_letter_config
+    if lambda_function.dead_letter_config:
+        result["DeadLetterConfig"] = lambda_function.dead_letter_config
 
-    if func_details.envvars:
-        result["Environment"] = {"Variables": func_details.envvars}
+    if lambda_function.envvars:
+        result["Environment"] = {"Variables": lambda_function.envvars}
     if (always_add_version or version != VERSION_LATEST) and len(
         result["FunctionArn"].split(":")
     ) <= 7:
@@ -1245,40 +1226,40 @@ def format_func_details(func_details, version=None, always_add_version=False):
     return result
 
 
-def forward_to_external_url(func_details, event, context, invocation_type):
+def forward_to_external_url(lambda_function, event, context, invocation_type):
     func_forward_url = (
-        func_details.envvars.get("LOCALSTACK_LAMBDA_FORWARD_URL") or config.LAMBDA_FORWARD_URL
+        lambda_function.envvars.get("LOCALSTACK_LAMBDA_FORWARD_URL") or config.LAMBDA_FORWARD_URL
     )
     """If LAMBDA_FORWARD_URL is configured, forward the invocation of this Lambda to the configured URL."""
     if not func_forward_url:
         return
 
-    func_name = func_details.name()
+    func_name = lambda_function.name()
     url = "%s%s/functions/%s/invocations" % (
         func_forward_url,
         PATH_ROOT,
         func_name,
     )
 
-    copied_env_vars = func_details.envvars.copy()
+    copied_env_vars = lambda_function.envvars.copy()
     copied_env_vars["LOCALSTACK_HOSTNAME"] = config.HOSTNAME_EXTERNAL
     copied_env_vars["LOCALSTACK_EDGE_PORT"] = str(config.EDGE_PORT)
 
     headers = aws_stack.mock_aws_request_headers("lambda")
-    headers["X-Amz-Region"] = func_details.region()
+    headers["X-Amz-Region"] = lambda_function.region()
     headers["X-Amz-Request-Id"] = context.aws_request_id
-    headers["X-Amz-Handler"] = func_details.handler
+    headers["X-Amz-Handler"] = lambda_function.handler
     headers["X-Amz-Function-ARN"] = context.invoked_function_arn
     headers["X-Amz-Function-Name"] = context.function_name
     headers["X-Amz-Function-Version"] = context.function_version
-    headers["X-Amz-Role"] = func_details.role
-    headers["X-Amz-Runtime"] = func_details.runtime
-    headers["X-Amz-Timeout"] = str(func_details.timeout)
+    headers["X-Amz-Role"] = lambda_function.role
+    headers["X-Amz-Runtime"] = lambda_function.runtime
+    headers["X-Amz-Timeout"] = str(lambda_function.timeout)
     headers["X-Amz-Memory-Size"] = str(context.memory_limit_in_mb)
     headers["X-Amz-Log-Group-Name"] = context.log_group_name
     headers["X-Amz-Log-Stream-Name"] = context.log_stream_name
     headers["X-Amz-Env-Vars"] = json.dumps(copied_env_vars)
-    headers["X-Amz-Last-Modified"] = str(int(func_details.last_modified.timestamp() * 1000))
+    headers["X-Amz-Last-Modified"] = str(int(lambda_function.last_modified.timestamp() * 1000))
     headers["X-Amz-Invocation-Type"] = invocation_type
     headers["X-Amz-Log-Type"] = "Tail"
     if context.client_context:
@@ -1430,37 +1411,37 @@ def create_function():
                 409,
                 error_type="ResourceConflictException",
             )
-        region.lambdas[arn] = func_details = LambdaFunction(arn)
-        func_details.versions = {VERSION_LATEST: {"RevisionId": str(uuid.uuid4())}}
-        func_details.vpc_config = data.get("VpcConfig", {})
-        func_details.last_modified = datetime.utcnow()
-        func_details.description = data.get("Description", "")
-        func_details.handler = data.get("Handler")
-        func_details.runtime = data.get("Runtime")
-        func_details.envvars = data.get("Environment", {}).get("Variables", {})
-        func_details.tags = data.get("Tags", {})
-        func_details.timeout = data.get("Timeout", LAMBDA_DEFAULT_TIMEOUT)
-        func_details.role = data["Role"]
-        func_details.kms_key_arn = data.get("KMSKeyArn")
+        region.lambdas[arn] = lambda_function = LambdaFunction(arn)
+        lambda_function.versions = {VERSION_LATEST: {"RevisionId": str(uuid.uuid4())}}
+        lambda_function.vpc_config = data.get("VpcConfig", {})
+        lambda_function.last_modified = datetime.utcnow()
+        lambda_function.description = data.get("Description", "")
+        lambda_function.handler = data.get("Handler")
+        lambda_function.runtime = data.get("Runtime")
+        lambda_function.envvars = data.get("Environment", {}).get("Variables", {})
+        lambda_function.tags = data.get("Tags", {})
+        lambda_function.timeout = data.get("Timeout", LAMBDA_DEFAULT_TIMEOUT)
+        lambda_function.role = data["Role"]
+        lambda_function.kms_key_arn = data.get("KMSKeyArn")
         # Oddity in Lambda API (discovered when testing against Terraform test suite)
         # See https://github.com/hashicorp/terraform-provider-aws/issues/6366
-        if not func_details.envvars:
-            func_details.kms_key_arn = None
-        func_details.memory_size = data.get("MemorySize")
-        func_details.code_signing_config_arn = data.get("CodeSigningConfigArn")
-        func_details.code = data["Code"]
-        func_details.package_type = data.get("PackageType") or "Zip"
-        func_details.image_config = data.get("ImageConfig", {})
-        func_details.tracing_config = data.get("TracingConfig", {})
-        func_details.set_dead_letter_config(data)
-        result = set_function_code(func_details)
+        if not lambda_function.envvars:
+            lambda_function.kms_key_arn = None
+        lambda_function.memory_size = data.get("MemorySize")
+        lambda_function.code_signing_config_arn = data.get("CodeSigningConfigArn")
+        lambda_function.code = data["Code"]
+        lambda_function.package_type = data.get("PackageType") or "Zip"
+        lambda_function.image_config = data.get("ImageConfig", {})
+        lambda_function.tracing_config = data.get("TracingConfig", {})
+        lambda_function.set_dead_letter_config(data)
+        result = set_function_code(lambda_function)
         if isinstance(result, Response):
             del region.lambdas[arn]
             return result
         # remove content from code attribute, if present
-        func_details.code.pop("ZipFile", None)
+        lambda_function.code.pop("ZipFile", None)
         # prepare result
-        result.update(format_func_details(func_details))
+        result.update(format_func_details(lambda_function))
         if data.get("Publish"):
             result["Version"] = publish_new_function_version(arn)["Version"]
         return jsonify(result or {})
@@ -1552,16 +1533,16 @@ def update_function_code(function):
     """
     region = LambdaRegion.get()
     arn = func_arn(function)
-    func_details = region.lambdas.get(arn)
-    if not func_details:
+    lambda_function = region.lambdas.get(arn)
+    if not lambda_function:
         return not_found_error("Function not found: %s" % arn)
     data = json.loads(to_str(request.data))
-    func_details.code = data
-    result = set_function_code(func_details)
+    lambda_function.code = data
+    result = set_function_code(lambda_function)
     if isinstance(result, Response):
         return result
-    func_details.last_modified = datetime.utcnow()
-    result.update(format_func_details(func_details))
+    lambda_function.last_modified = datetime.utcnow()
+    result.update(format_func_details(lambda_function))
     if data.get("Publish"):
         result["Version"] = publish_new_function_version(arn)["Version"]
     return jsonify(result or {})
@@ -1576,10 +1557,10 @@ def get_function_code(function):
     """
     region = LambdaRegion.get()
     arn = func_arn(function)
-    func_details = region.lambdas.get(arn)
-    if not func_details:
+    lambda_function = region.lambdas.get(arn)
+    if not lambda_function:
         return not_found_error(arn)
-    lambda_cwd = func_details.cwd
+    lambda_cwd = lambda_function.cwd
     tmp_file = "%s/%s" % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
     return Response(
         load_file(tmp_file, mode="rb"),
@@ -1648,12 +1629,12 @@ def update_function_configuration(function):
         lambda_details.tracing_config = data["TracingConfig"]
     lambda_details.last_modified = datetime.utcnow()
     result = data
-    func_details = region.lambdas.get(arn)
-    result.update(format_func_details(func_details))
+    lambda_function = region.lambdas.get(arn)
+    result.update(format_func_details(lambda_function))
 
     # initialize plugins
     for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
-        plugin.init_function_configuration(func_details)
+        plugin.init_function_configuration(lambda_function)
 
     return jsonify(result)
 
@@ -2103,10 +2084,10 @@ def function_concurrency(version, function):
 @app.route("/<version>/tags/<arn>", methods=["GET"])
 def list_tags(version, arn):
     region = LambdaRegion.get()
-    func_details = region.lambdas.get(arn)
-    if not func_details:
+    lambda_function = region.lambdas.get(arn)
+    if not lambda_function:
         return not_found_error(arn)
-    result = {"Tags": func_details.tags}
+    result = {"Tags": lambda_function.tags}
     return jsonify(result)
 
 
@@ -2116,11 +2097,11 @@ def tag_resource(version, arn):
     data = json.loads(request.data)
     tags = data.get("Tags", {})
     if tags:
-        func_details = region.lambdas.get(arn)
-        if not func_details:
+        lambda_function = region.lambdas.get(arn)
+        if not lambda_function:
             return not_found_error(arn)
-        if func_details:
-            func_details.tags.update(tags)
+        if lambda_function:
+            lambda_function.tags.update(tags)
     return jsonify({})
 
 
@@ -2128,11 +2109,11 @@ def tag_resource(version, arn):
 def untag_resource(version, arn):
     region = LambdaRegion.get()
     tag_keys = request.args.getlist("tagKeys")
-    func_details = region.lambdas.get(arn)
-    if not func_details:
+    lambda_function = region.lambdas.get(arn)
+    if not lambda_function:
         return not_found_error(arn)
     for tag_key in tag_keys:
-        func_details.tags.pop(tag_key, None)
+        lambda_function.tags.pop(tag_key, None)
     return jsonify({})
 
 

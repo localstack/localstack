@@ -62,7 +62,7 @@ def get_lambda_runtime(runtime_details: Union[LambdaFunction, str]) -> str:
     if isinstance(runtime_details, LambdaFunction):
         runtime_details = runtime_details.runtime
     if not isinstance(runtime_details, str):
-        LOG.warning("Unable to determine Lambda runtime from parameter: %s", runtime_details)
+        LOG.info("Unable to determine Lambda runtime from parameter: %s", runtime_details)
     return runtime_details or ""
 
 

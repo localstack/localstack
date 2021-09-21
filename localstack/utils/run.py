@@ -26,7 +26,7 @@ def run(
     inherit_env=True,
     tty=False,
     shell=True,
-):
+) -> Union[str, subprocess.Popen]:
     LOG.debug("Executing command: %s", cmd)
     env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
@@ -109,22 +109,22 @@ def run(
         raise e
 
 
-def is_mac_os():
+def is_mac_os() -> bool:
     return "Darwin" in get_uname()
 
 
-def is_linux():
+def is_linux() -> bool:
     return "Linux" in get_uname()
 
 
-def get_uname():
+def get_uname() -> str:
     try:
         return to_str(subprocess.check_output("uname -a", shell=True))
     except Exception:
         return ""
 
 
-def to_str(obj, errors="strict"):
+def to_str(obj: Union[str, bytes], errors="strict"):
     return obj.decode(config.DEFAULT_ENCODING, errors) if isinstance(obj, bytes) else obj
 
 

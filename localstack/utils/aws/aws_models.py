@@ -318,10 +318,10 @@ class LambdaFunction(Component):
     def arn(self):
         return self.id
 
-    def function(self, qualifier=None):
+    def function(self, qualifier: str = None):
         return self.versions.get(self.get_qualifier_version(qualifier)).get("Function")
 
-    def get_qualifier_version(self, qualifier=None):
+    def get_qualifier_version(self, qualifier: str = None) -> str:
         if not qualifier:
             qualifier = "$LATEST"
         return (
