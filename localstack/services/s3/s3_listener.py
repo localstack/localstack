@@ -22,7 +22,6 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 
 from localstack import config, constants
-from localstack.services.cloudformation.models.s3 import S3Bucket
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
@@ -34,6 +33,7 @@ from localstack.services.s3.s3_utils import (
     get_forwarded_for_host,
     is_expired,
     is_static_website,
+    normalize_bucket_name,
     uses_host_addressing,
     validate_bucket_name,
 )
@@ -1028,11 +1028,6 @@ def is_object_specific_request(path, headers):
     bucket_in_domain = is_bucket_specified_in_domain_name(path, headers)
     parts = len(path.split("/"))
     return parts > (1 if bucket_in_domain else 2)
-
-
-# TODO: remove dependency on cloudformation resource class here (extract as utility fn)
-def normalize_bucket_name(bucket_name):
-    return S3Bucket.normalize_bucket_name(bucket_name)
 
 
 def empty_response():
