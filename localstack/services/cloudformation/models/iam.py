@@ -14,6 +14,7 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import ensure_list
 
 LOG = logging.getLogger(__name__)
 
@@ -182,8 +183,9 @@ class IAMRole(GenericBaseModel, MotoRole):
             # add inline policies
             inline_policies = props.get("Policies", [])
             for policy in inline_policies:
-                # TODO: when would this be a list?
-                policy = policy[0] if isinstance(policy, list) and len(policy) == 1 else policy
+                assert not isinstance(
+                    policy, list
+                )  # remove if this doesn't make any problems for a while
                 if policy == PLACEHOLDER_AWS_NO_VALUE:
                     continue
                 if not isinstance(policy, dict):
@@ -195,9 +197,7 @@ class IAMRole(GenericBaseModel, MotoRole):
                 pol_name = policy.get("PolicyName")
                 doc = dict(policy["PolicyDocument"])
                 doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
-                statements = (
-                    doc["Statement"] if isinstance(doc["Statement"], list) else [doc["Statement"]]
-                )
+                statements = ensure_list(doc["Statement"])
                 for statement in statements:
                     if isinstance(statement.get("Resource"), list):
                         # filter out empty resource strings
@@ -352,10 +352,13 @@ class InstanceProfile(GenericBaseModel):
             client = aws_stack.connect_to_service("iam")
             resource = resources[resource_id]
             props = resource["Properties"]
-            if props.get("Roles", []):
+            roles = props.get("Roles")
+            if roles:
+                if len(roles) > 1:
+                    raise Exception("Roles has too many elements. The limit is 1.")
                 client.add_role_to_instance_profile(
                     InstanceProfileName=props["InstanceProfileName"],
-                    RoleName=props["Roles"][0],
+                    RoleName=roles[0],
                 )
 
         return {
