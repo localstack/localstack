@@ -1017,6 +1017,7 @@ class TestPythonRuntimes(LambdaTestBase):
             Publish=True,
             Handler="handler.handler",
             Code={"S3Bucket": bucket_name, "S3Key": bucket_key},
+            Timeout=10,
         )
         self.assertIn("Version", response)
 
@@ -1110,6 +1111,7 @@ class TestPythonRuntimes(LambdaTestBase):
             Handler="handler.handler",
             Role="r1",
             Code={"S3Bucket": bucket_name, "S3Key": bucket_key},
+            Timeout=10,
         )
 
         # invoke lambda function

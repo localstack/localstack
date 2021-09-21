@@ -101,6 +101,7 @@ class LambdaContext(object):
     DEFAULT_MEMORY_LIMIT = 1536
 
     def __init__(self, func_details, qualifier=None, context=None):
+        context = context or {}
         self.function_name = func_details.name()
         self.function_version = func_details.get_qualifier_version(qualifier)
         self.client_context = context.get("client_context")
@@ -171,6 +172,7 @@ class InvocationContext:
         context=None,
         lambda_command=None,
         docker_flags=None,
+        function_version=None,
     ):
         self.lambda_function = lambda_function
         self.handler = lambda_function.handler
@@ -179,7 +181,7 @@ class InvocationContext:
         self.context = {} if context is None else context
         self.lambda_command = lambda_command
         self.docker_flags = docker_flags
-        self.function_version = None
+        self.function_version = function_version
 
 
 class LambdaExecutorPlugin:
@@ -344,7 +346,9 @@ class LambdaExecutor(object):
                     raised_error = None
                     result = None
                     dlq_sent = None
-                    inv_context = InvocationContext(func_details, event=event)
+                    inv_context = InvocationContext(
+                        func_details, event=event, function_version=version, context=context
+                    )
                     try:
                         result = self._execute(func_details, inv_context)
                     except Exception as e:
@@ -522,12 +526,11 @@ class LambdaExecutorContainers(LambdaExecutor):
             env_vars["AWS_LAMBDA_EVENT_BODY"] = to_str(event_body)
 
         # apply plugin patches
-        inv_context = InvocationContext(func_details, event, environment=env_vars)
+        # inv_context = InvocationContext(func_details, event, environment=env_vars)  # TODO remove
         self.apply_plugin_patches(inv_context)
 
-        docker_flags = config.LAMBDA_DOCKER_FLAGS or ""
-        if inv_context.docker_flags:
-            docker_flags = f"{docker_flags} {inv_context.docker_flags}"
+        if inv_context.docker_flags and config.LAMBDA_DOCKER_FLAGS:
+            inv_context.docker_flags = f"{config.LAMBDA_DOCKER_FLAGS} {inv_context.docker_flags}"
 
         event_stdin_bytes = stdin_str and to_bytes(stdin_str)
         error = None
