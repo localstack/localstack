@@ -103,11 +103,20 @@ class AdditionalInvocationOptions:
     env_updates: Dict[str, str]
     # Updated command to use for starting the Lambda process (or None)
     updated_command: Optional[str]
+    # Updated handler as entry point of Lambda function (or None)
+    updated_handler: Optional[str]
 
-    def __init__(self, files_to_add=None, env_updates=None, updated_command=None):
+    def __init__(
+        self,
+        files_to_add=None,
+        env_updates=None,
+        updated_command=None,
+        updated_handler=None,
+    ):
         self.files_to_add = files_to_add or {}
         self.env_updates = env_updates or {}
         self.updated_command = updated_command
+        self.updated_handler = updated_handler
 
 
 class InvocationResult:
@@ -120,6 +129,7 @@ class InvocationResult:
 
 class InvocationContext:
     lambda_function: LambdaFunction
+    handler: str
     event: Dict[str, Any]
     lambda_command: str  # TODO: change to List[str] ?
     docker_flags: str  # TODO: change to List[str] ?
@@ -136,6 +146,7 @@ class InvocationContext:
         docker_flags=None,
     ):
         self.lambda_function = lambda_function
+        self.handler = lambda_function.handler
         self.event = event
         self.environment = {} if environment is None else environment
         self.context = {} if context is None else context
@@ -400,6 +411,10 @@ class LambdaExecutor(object):
             # update environment
             inv_context.environment.update(inv_options.env_updates)
 
+            # update handler
+            if inv_options.updated_handler:
+                inv_context.handler = inv_options.updated_handler
+
     def process_result_via_plugins(
         self, inv_context: InvocationContext, invocation_result: InvocationResult
     ) -> InvocationResult:
@@ -423,7 +438,14 @@ class LambdaExecutorContainers(LambdaExecutor):
     """Abstract executor class for executing Lambda functions in Docker containers"""
 
     def execute_in_container(
-        self, func_details, env_vars, command, docker_flags=None, stdin=None, background=False
+        self,
+        func_details,
+        handler,
+        env_vars,
+        command,
+        docker_flags=None,
+        stdin=None,
+        background=False,
     ) -> Tuple[bytes, bytes]:
         raise NotImplementedError
 
@@ -483,7 +505,12 @@ class LambdaExecutorContainers(LambdaExecutor):
         error = None
         try:
             result, log_output = self.execute_in_container(
-                func_details, env_vars, command, docker_flags=docker_flags, stdin=event_stdin_bytes
+                func_details,
+                inv_context.handler,
+                env_vars,
+                command,
+                docker_flags=docker_flags,
+                stdin=event_stdin_bytes,
             )
         except ContainerException as e:
             result = e.stdout or ""
@@ -628,12 +655,18 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.port_offset = LAMBDA_SERVER_PORT_OFFSET
 
     def execute_in_container(
-        self, func_details, env_vars, command, docker_flags=None, stdin=None, background=False
+        self,
+        func_details,
+        handler,
+        env_vars,
+        command,
+        docker_flags=None,
+        stdin=None,
+        background=False,
     ) -> Tuple[bytes, bytes]:
         func_arn = func_details.arn()
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
-        handler = func_details.handler
         env_vars = {} if env_vars is None else env_vars
 
         # check whether the Lambda has been invoked before
@@ -913,10 +946,16 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         return event_body.encode()
 
     def execute_in_container(
-        self, func_details, env_vars, command, docker_flags=None, stdin=None, background=False
+        self,
+        func_details,
+        handler,
+        env_vars,
+        command,
+        docker_flags=None,
+        stdin=None,
+        background=False,
     ) -> Tuple[bytes, bytes]:
         lambda_cwd = func_details.cwd
-        handler = func_details.handler
 
         entrypoint = None
         if command:
