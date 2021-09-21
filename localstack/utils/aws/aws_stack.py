@@ -596,7 +596,7 @@ def lambda_function_or_layer_arn(
         return entity_name
     if ":" in entity_name:
         client = connect_to_service("lambda")
-        entity_name, alias = entity_name.split(":")
+        entity_name, _, alias = entity_name.rpartition(":")
         try:
             alias_response = client.get_alias(FunctionName=entity_name, Name=alias)
             version = alias_response["FunctionVersion"]
