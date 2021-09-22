@@ -1,6 +1,6 @@
+import json
 import logging
 import os
-import subprocess
 from typing import Optional
 
 from localstack import config
@@ -11,6 +11,7 @@ from localstack.services.awslambda.lambda_executors import (
     LambdaExecutorPlugin,
     is_java_lambda,
     is_nodejs_runtime,
+    is_python_runtime,
 )
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA8,
@@ -19,7 +20,11 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_NODEJS10X,
     LAMBDA_RUNTIME_NODEJS12X,
     LAMBDA_RUNTIME_NODEJS14X,
+    LAMBDA_RUNTIME_PYTHON36,
+    LAMBDA_RUNTIME_PYTHON37,
+    LAMBDA_RUNTIME_PYTHON38,
 )
+from localstack.utils import common
 
 # logger
 LOG = logging.getLogger(__name__)
@@ -39,6 +44,11 @@ THUNDRA_JAVA_AGENT_LOCAL_PATH: Optional[str] = None
 THUNDRA_NODE_AGENT_INITIALIZED = False
 THUNDRA_NODE_AGENT_VERSION: Optional[str] = None
 THUNDRA_NODE_AGENT_LOCAL_PATH: Optional[str] = None
+
+# Python related constants
+THUNDRA_PYTHON_AGENT_INITIALIZED = False
+THUNDRA_PYTHON_AGENT_LOCAL_PATH: Optional[str] = None
+THUNDRA_PYTHON_AGENT_VERSION: Optional[str] = None
 
 
 ################
@@ -186,9 +196,9 @@ def _ensure_node_agent_initialized():
 
 def _get_latest_node_agent_version():
     try:
-        return subprocess.check_output("npm view @thundra/core version", shell=True).decode()
+        return common.run("npm view @thundra/core version".split())
     except Exception as e:
-        print("Unable to get latest version of Thundra Node agent: %s" % e.output.decode())
+        print("Unable to get latest version of Thundra Node agent: %s" % e)
         return None
 
 
@@ -219,9 +229,9 @@ def _install_node_agent() -> bool:
                 THUNDRA_NODE_AGENT_LOCAL_PATH,
                 THUNDRA_NODE_AGENT_VERSION,
             )
-            subprocess.check_output(install_thundra_cmd, shell=True).decode()
+            common.run(install_thundra_cmd.split())
         except Exception as e:
-            print("Unable to install Thundra Node agent: %s" % e.output.decode())
+            print("Unable to install Thundra Node agent: %s" % e)
             return False
     return True
 
@@ -257,10 +267,115 @@ def _prepare_invocation_for_node_lambda(context: InvocationContext) -> Additiona
     if not log_disabled:
         result.env_updates[THUNDRA_AGENT_LOG_DISABLE_ENV_VAR_NAME] = "false"
 
-    # Map Thundra agent path into container so it will be able to accessible by Lambda function node environment
+    # Map Thundra agent path into container so it will be accessible by Lambda function Node environment
     agent_path_mapping = (
         "-v %s/node_modules/:/opt/nodejs/node_modules/" % THUNDRA_NODE_AGENT_LOCAL_PATH
     )
+
+    if context.docker_flags:
+        context.docker_flags = f"{context.docker_flags} {agent_path_mapping}"
+    else:
+        context.docker_flags = agent_path_mapping
+
+    return result
+
+
+################
+# PYTHON AGENT
+################
+
+
+def _ensure_python_agent_initialized():
+    global THUNDRA_PYTHON_AGENT_INITIALIZED
+    if not THUNDRA_PYTHON_AGENT_INITIALIZED:
+        if _init_python_agent_configs() and _install_python_agent():
+            THUNDRA_PYTHON_AGENT_INITIALIZED = True
+
+
+def _get_latest_python_agent_version():
+    try:
+        from distutils.version import StrictVersion
+
+        import requests
+
+        response = requests.get("https://pypi.org/pypi/thundra/json")
+        data = json.loads(response.content.decode())
+        versions = sorted(list(data["releases"].keys()), key=StrictVersion, reverse=True)
+        return versions[0]
+    except Exception as e:
+        print("Unable to get latest version of Thundra Python agent: %s" % e)
+        return None
+
+
+def _init_python_agent_configs() -> bool:
+    global THUNDRA_PYTHON_AGENT_VERSION
+    global THUNDRA_PYTHON_AGENT_LOCAL_PATH
+
+    latest_version = _get_latest_python_agent_version()
+    version = os.getenv("THUNDRA_AGENT_PYTHON_VERSION", latest_version)
+    if not version:
+        return False
+
+    THUNDRA_PYTHON_AGENT_VERSION = version.strip()
+    THUNDRA_PYTHON_AGENT_LOCAL_PATH = "%s/thundra/python/%s/" % (
+        config.TMP_FOLDER,
+        THUNDRA_PYTHON_AGENT_VERSION,
+    )
+
+    return True
+
+
+def _install_python_agent() -> bool:
+    # Install Thundra Python agent PIP package
+    if not os.path.exists(THUNDRA_PYTHON_AGENT_LOCAL_PATH):
+        install.log_install_msg("Thundra Python agent", verbatim=True)
+        try:
+            install_thundra_cmd = "pip install --target=%s thundra==%s --no-warn-conflicts" % (
+                THUNDRA_PYTHON_AGENT_LOCAL_PATH,
+                THUNDRA_PYTHON_AGENT_VERSION,
+            )
+            common.run(install_thundra_cmd.split())
+        except Exception as e:
+            print("Unable to install Thundra Python agent: %s" % e)
+            return False
+    return True
+
+
+def _is_python_lambda_with_support_version(func_details):
+    runtime = getattr(func_details, "runtime", func_details)
+    return runtime in [
+        LAMBDA_RUNTIME_PYTHON36,
+        LAMBDA_RUNTIME_PYTHON37,
+        LAMBDA_RUNTIME_PYTHON38,
+    ]
+
+
+def _prepare_invocation_for_python_lambda(
+    context: InvocationContext,
+) -> AdditionalInvocationOptions:
+    # Download and initialize Python agent
+    _ensure_python_agent_initialized()
+
+    # If agent could not be initialized, skip here
+    if not THUNDRA_PYTHON_AGENT_INITIALIZED:
+        return None
+
+    result = AdditionalInvocationOptions()
+
+    # Make sure API key is contained in environment
+    result.env_updates[THUNDRA_APIKEY_ENV_VAR_NAME] = _get_apikey(context.environment)
+
+    # Switch handler to Thundra and pass original handler to Thundra through environment variable
+    result.env_updates[THUNDRA_AGENT_LAMBDA_HANDLER_ENV_VAR_NAME] = context.handler
+    result.updated_handler = "thundra.handler.wrapper"
+
+    # If log disable is not configured explicitly, set it to false to enable log capturing by default
+    log_disabled = context.environment.get(THUNDRA_AGENT_LOG_DISABLE_ENV_VAR_NAME)
+    if not log_disabled:
+        result.env_updates[THUNDRA_AGENT_LOG_DISABLE_ENV_VAR_NAME] = "false"
+
+    # Map Thundra agent path into container so it will be accessible by Lambda function Python environment
+    agent_path_mapping = "-v %s/:/opt/python/" % THUNDRA_PYTHON_AGENT_LOCAL_PATH
 
     if context.docker_flags:
         context.docker_flags = f"{context.docker_flags} {agent_path_mapping}"
@@ -298,6 +413,10 @@ class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
         if _is_node_lambda_with_support_version(context.lambda_function.runtime):
             return True
 
+        # Plugin can be applied for Python Lambdas with supported versions
+        if _is_python_lambda_with_support_version(context.lambda_function.runtime):
+            return True
+
         # Not applicable for Thundra plugin
         return False
 
@@ -308,4 +427,6 @@ class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
             return _prepare_invocation_for_java_lambda(context)
         elif is_nodejs_runtime(context.lambda_function):
             return _prepare_invocation_for_node_lambda(context)
+        elif is_python_runtime(context.lambda_function):
+            return _prepare_invocation_for_python_lambda(context)
         return None
