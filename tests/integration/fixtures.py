@@ -252,15 +252,24 @@ def is_change_set_created_and_available(cfn_client):
 
 @pytest.fixture
 def is_stack_created(cfn_client):
-    def _is_stack_created(stack_id: str):
+    return _has_stack_status(cfn_client, ["CREATE_COMPLETE", "CREATE_FAILED"])
+
+
+@pytest.fixture
+def is_stack_updated(cfn_client):
+    return _has_stack_status(cfn_client, ["UPDATE_COMPLETE", "UPDATE_FAILED"])
+
+
+def _has_stack_status(cfn_client, statuses: List[str]):
+    def _has_status(stack_id: str):
         def _inner():
             resp = cfn_client.describe_stacks(StackName=stack_id)
             s = resp["Stacks"][0]  # since the lookup  uses the id we can only get a single response
-            return s.get("StackStatus") in ["CREATE_COMPLETE", "CREATE_FAILED"]
+            return s.get("StackStatus") in statuses
 
         return _inner
 
-    return _is_stack_created
+    return _has_status
 
 
 @pytest.fixture
