@@ -9,6 +9,7 @@ from localstack.services.cloudformation.deployment_utils import (
     dump_json_params,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
+from localstack.services.s3 import s3_utils
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation.cfn_utils import rename_params
 from localstack.utils.common import canonical_json, md5
@@ -49,10 +50,7 @@ class S3Bucket(GenericBaseModel, FakeBucket):
 
     @staticmethod
     def normalize_bucket_name(bucket_name):
-        bucket_name = bucket_name or ""
-        # AWS automatically converts upper to lower case chars in bucket names
-        bucket_name = bucket_name.lower()
-        return bucket_name
+        return s3_utils.normalize_bucket_name(bucket_name)
 
     @classmethod
     def get_deploy_templates(cls):
