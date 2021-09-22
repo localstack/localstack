@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import subprocess
 from typing import Optional
 
 from localstack import config
@@ -25,6 +24,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON37,
     LAMBDA_RUNTIME_PYTHON38,
 )
+from localstack.utils import common
 
 # logger
 LOG = logging.getLogger(__name__)
@@ -196,9 +196,9 @@ def _ensure_node_agent_initialized():
 
 def _get_latest_node_agent_version():
     try:
-        return subprocess.check_output("npm view @thundra/core version", shell=True).decode()
+        return common.run("npm view @thundra/core version".split())
     except Exception as e:
-        print("Unable to get latest version of Thundra Node agent: %s" % e.output.decode())
+        print("Unable to get latest version of Thundra Node agent: %s" % e)
         return None
 
 
@@ -229,9 +229,9 @@ def _install_node_agent() -> bool:
                 THUNDRA_NODE_AGENT_LOCAL_PATH,
                 THUNDRA_NODE_AGENT_VERSION,
             )
-            subprocess.check_output(install_thundra_cmd, shell=True).decode()
+            common.run(install_thundra_cmd.split())
         except Exception as e:
-            print("Unable to install Thundra Node agent: %s" % e.output.decode())
+            print("Unable to install Thundra Node agent: %s" % e)
             return False
     return True
 
@@ -334,9 +334,9 @@ def _install_python_agent() -> bool:
                 THUNDRA_PYTHON_AGENT_LOCAL_PATH,
                 THUNDRA_PYTHON_AGENT_VERSION,
             )
-            subprocess.check_output(install_thundra_cmd, shell=True).decode()
+            common.run(install_thundra_cmd.split())
         except Exception as e:
-            print("Unable to install Thundra Python agent: %s" % e.output.decode())
+            print("Unable to install Thundra Python agent: %s" % e)
             return False
     return True
 
