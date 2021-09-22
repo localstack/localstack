@@ -566,8 +566,8 @@ def start_component(component: str, port=None, use_ssl=True, asynchronous=False)
 def start_dns_server(asynchronous=False):
     try:
         # start local DNS server, if present
-        from localstack_ext.services import dns_server
         from localstack_ext import config as config_ext
+        from localstack_ext.services import dns_server
 
         if config_ext.DNS_ADDRESS in config.FALSE_STRINGS:
             return
