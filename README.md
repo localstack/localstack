@@ -516,14 +516,46 @@ https://github.com/localstack/serverless-localstack
 ### Thundra
 
 You can monitor and debug your AWS Lambda functions with [Thundra](https://thundra.io).
-Currently only Java Lambdas are supported in this integration - support for other runtimes (Node.js, Python, .NET, Go) is coming soon.
+Currently only **Node.js**, **Python** and **Java** Lambdas are supported in this integration - support for other runtimes (.NET, Go) is coming soon.
 
-Simply obtain a Thundra API key [here](https://console.thundra.io/onboarding/serverless) and configure the `THUNDRA_APIKEY` config variable:
+Simply obtain a Thundra API key [here](https://console.thundra.io/onboarding/serverless) 
+and add Thundra API key as environment variable (`THUNDRA_APIKEY`) into your Lambda functions's environment variables:
+- #### AWS SAM
+```yaml
+Resources:
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      // other function properties
+      Environment:
+        Variables:
+          // other environment variables
+          THUNDRA_APIKEY: <YOUR-THUNDRA-API-KEY>
 ```
-THUNDRA_APIKEY=<YOUR-THUNDRA-API-KEY> localstack start
+- #### AWS CDK
+```js
+const myFunction = new Function(this, "MyFunction", {
+    ..., // other function properties
+    environment: {
+        ..., // other environment variables
+        THUNDRA_APIKEY: <MY-THUNDRA-API-KEY>
+    } 
+});
+```
+- #### Serverless Framework
+```yaml
+functions:
+  MyFunction:
+    // other function properties
+    environment:
+      // other environment variables
+      THUNDRA_APIKEY: <YOUR-THUNDRA-API-KEY>
 ```
 
 After invoking your AWS Lambda function you can inspect the invocations/traces in the [Thundra Console](https://console.thundra.io) (more details in the Thundra docs [here](https://apm.docs.thundra.io)).
+
+For a complete example, you may check our blog post [Test Monitoring for LocalStack Apps with Thundra](https://localstack.cloud/blog/2021-09-16-test-monitoring-for-localstack-apps) 
+and access the project [here](https://github.com/thundra-io/thundra-demo-localstack-java).
 
 ### Terraform
 
