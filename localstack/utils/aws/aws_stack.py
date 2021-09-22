@@ -595,7 +595,15 @@ def lambda_function_or_layer_arn(
     if re.match(pattern, entity_name):
         return entity_name
     if ":" in entity_name:
-        raise Exception('Lambda %s name should not contain a colon ":": %s' % (type, entity_name))
+        client = connect_to_service("lambda")
+        entity_name, _, alias = entity_name.rpartition(":")
+        try:
+            alias_response = client.get_alias(FunctionName=entity_name, Name=alias)
+            version = alias_response["FunctionVersion"]
+
+        except Exception:
+            raise Exception("Alias %s of %s not found" % (alias, entity_name))
+
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
     pattern = re.sub(r"\([^\|]+\|.+\)", type, pattern)
