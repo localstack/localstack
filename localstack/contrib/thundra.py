@@ -391,10 +391,6 @@ def _prepare_invocation_for_python_lambda(
 
 
 class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
-    def initialize(self):
-        # Do nothing at startup, let the initializations done later on demand
-        return None
-
     def should_apply(self, context: InvocationContext) -> bool:
         # Plugin can only applied if LAMBDA_REMOTE_DOCKER=0
         if "docker" in config.LAMBDA_EXECUTOR and config.LAMBDA_REMOTE_DOCKER:
