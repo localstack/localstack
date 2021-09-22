@@ -89,7 +89,6 @@ jobs:
       - name: Run community integration tests
         env:
           DEBUG: 0
-          PROXY_MAX_RETRIES: 0
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "local"
           LOCALSTACK_API_KEY: "test"
@@ -103,7 +102,6 @@ jobs:
       - name: Run Lambda Tests for lambda executor docker
         env:
           DEBUG: 0
-          PROXY_MAX_RETRIES: 0
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "docker"
           LOCALSTACK_API_KEY: "test"
@@ -114,7 +112,6 @@ jobs:
       - name: Run Lambda Tests for lambda executor docker-reuse
         env:
           DEBUG: 0
-          PROXY_MAX_RETRIES: 0
           DNS_ADDRESS: 0
           LAMBDA_EXECUTOR: "docker-reuse"
           LOCALSTACK_API_KEY: "test"
