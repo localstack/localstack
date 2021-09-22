@@ -246,6 +246,11 @@ def is_nodejs_runtime(lambda_details):
     return runtime.startswith("nodejs")
 
 
+def is_python_runtime(lambda_details):
+    runtime = getattr(lambda_details, "runtime", lambda_details) or ""
+    return runtime.startswith("python")
+
+
 def _store_logs(
     lambda_function: LambdaFunction, log_output: str, invocation_time=None, container_id=None
 ):
