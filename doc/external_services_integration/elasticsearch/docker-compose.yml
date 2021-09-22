@@ -27,7 +27,6 @@ services:
     ports:
       - "4566:4566"
       - "4571:4571"
-      - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
     depends_on:
       - elasticsearch
     environment:
@@ -35,7 +34,6 @@ services:
       - ELASTICSEARCH_BACKEND=http://elasticsearch:9200
       - DEBUG=${DEBUG- }
       - DATA_DIR=${DATA_DIR- }
-      - PORT_WEB_UI=${PORT_WEB_UI- }
       - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
       - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
       - DOCKER_HOST=unix:///var/run/docker.sock
