@@ -288,6 +288,7 @@ class EventSourceListenerSQS(EventSourceListener):
                         if not messages:
                             result = sqs_client.receive_message(
                                 QueueUrl=queue_url,
+                                AttributeNames=["All"],
                                 MessageAttributeNames=["All"],
                                 MaxNumberOfMessages=batch_size,
                             )
