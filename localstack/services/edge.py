@@ -567,6 +567,10 @@ def start_dns_server(asynchronous=False):
     try:
         # start local DNS server, if present
         from localstack_ext.services import dns_server
+        from localstack_ext import config as config_ext
+
+        if config_ext.DNS_ADDRESS in config.FALSE_STRINGS:
+            return
 
         if is_port_open(PORT_DNS):
             return
