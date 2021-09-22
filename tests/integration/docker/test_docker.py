@@ -676,7 +676,7 @@ class TestDockerClient:
 
     def test_inspect_image(self, docker_client: ContainerClient):
         docker_client.pull_image("alpine")
-        assert "alpine:latest" == docker_client.inspect_image("alpine")["RepoTags"][0]
+        assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]
 
     def test_copy_from_container(self, tmpdir, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)

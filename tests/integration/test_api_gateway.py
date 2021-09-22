@@ -1258,7 +1258,7 @@ class TestAPIGateway(unittest.TestCase):
             self.assertEqual(200, result.status_code)
             self.assertRegexpMatches(
                 content["headers"].get(HEADER_LOCALSTACK_REQUEST_URL),
-                f"http://.*localhost.*:{config.EDGE_PORT}/person/123",
+                "http://.*localhost.*/person/123",
             )
 
         for use_hostname in [True, False]:
