@@ -1,6 +1,7 @@
 import json
 import logging
 
+from moto.kms.exceptions import NotFoundException, ValidationException
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.common import to_str, short_uid, long_uid
@@ -12,27 +13,45 @@ LOG = logging.getLogger(__name__)
 # event types
 EVENT_KMS_CREATE_KEY = "kms.ck"
 
+# valid operations
+VALID_OPERATIONS = ["Decrypt", "Encrypt", "GenerateDataKey", "GenerateDataKeyWithoutPlaintext", "ReEncryptFrom",
+                    "ReEncryptTo", "Sign", "Verify", "GetPublicKey", "CreateGrant", "RetireGrant", "DescribeKey",
+                    "GenerateDataKeyPair", "GenerateDataKeyPairWithoutPlaintext"]
+
+# grant attributes
+KEY_ID = "KeyId"
+GRANTEE_PRINCIPAL = "GranteePrincipal"
+RETIRING_PRINCIPAL = "RetiringPrincipal"
+OPERATIONS = "Operations"
+GRANT_ID = "GrantId"
+GRANT_TOKEN = "GrantToken"
+
 
 def validate_grant(data):
-    # TODO required fields (keyid, grantee-principal, operations)
-    # TODO kms key exists
+    if KEY_ID not in data or GRANTEE_PRINCIPAL not in data or OPERATIONS not in data:
+        raise ValidationException("Grant ID, key ID and grantee principal must be specified")
+
+    for operation in data[OPERATIONS]:
+        if operation not in VALID_OPERATIONS:
+            raise ValidationException(
+                f"Value {[OPERATIONS]} at 'operations' failed to satisfy constraint: Member must satisfy"
+                f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]")
+
+    # TODO kms key id corresponds to key in moto (possible?)
     # TODO grantee principal is ARN for principal (possible?)
-    # TODO Operations are the proper list
     # TODO retiring principal is ARN for principal (possible?)
-    return True
 
 
 def handle_create_grant(data):
-    if not validate_grant(data):
-        return False
+    validate_grant(data)
 
     grants = KMSBackend.get().grants
 
-    data["GrantId"] = long_uid()
-    data["GrantToken"] = long_uid()
+    data[GRANT_ID] = long_uid()
+    data[GRANT_TOKEN] = long_uid()
 
-    grants[data["GrantId"]] = data
-    return {"GrantId": data["GrantId"], "GrantToken": data["GrantToken"]}
+    grants[data[GRANT_ID]] = data
+    return {GRANT_ID: data[GRANT_ID], GRANT_TOKEN: data[GRANT_TOKEN]}
 
 
 def filter_if_present(grant, data, filter_key):
@@ -40,16 +59,16 @@ def filter_if_present(grant, data, filter_key):
 
 
 def filter_grantee_principal(grant, data):
-    return filter_if_present(grant, data, "GranteePrincipal")
+    return filter_if_present(grant, data, GRANTEE_PRINCIPAL)
 
 
 def filter_grant_id(grant, data):
-    return filter_if_present(grant, data, "GrantId")
+    return filter_if_present(grant, data, GRANT_ID)
 
 
 def handle_list_grants(data):
-    if "KeyId" not in data:
-        return False
+    if KEY_ID not in data:
+        raise ValidationException("")
 
     grants = KMSBackend.get().grants
 
@@ -59,13 +78,10 @@ def handle_list_grants(data):
 
     # TODO use limit
     filtered = [grant for grant in grants.values() if
-                grant["KeyId"] == data["KeyId"] and
+                grant[KEY_ID] == data[KEY_ID] and
                 filter_grant_id(grant, data) and
                 filter_grantee_principal(grant, data)
                 ]
-
-    if len(filtered) == 0:
-        return False
 
     # TODO add NextMarker for when truncated
     return {"Grants": filtered, "Truncated": False}
@@ -74,29 +90,29 @@ def handle_list_grants(data):
 def handle_retire_grant(data):
     grants = KMSBackend.get().grants
 
-    if "GrantId" in data and "KeyId" in data and grants[data["GrantId"]]["KeyId"] == data["KeyId"]:
-        del grants[data["GrantId"]]
-    elif "GrantToken" in data:
+    if GRANT_ID in data and KEY_ID in data and grants[data[GRANT_ID]][KEY_ID] == data[KEY_ID]:
+        del grants[data[GRANT_ID]]
+    elif GRANT_TOKEN in data:
         KMSBackend.get().grants = {grant_id: grant for grant_id, grant in grants.items() if
-                                   data["GrantToken"] != grant["GrantToken"]}
+                                   data[GRANT_TOKEN] != grant[GRANT_TOKEN]}
     else:
-        return False
-    return True
+        raise ValidationException("Grant token OR (grant ID, key ID) must be specified")
+    return {}
 
 
 def handle_revoke_grant(data):
     grants = KMSBackend.get().grants
 
-    if "GrantId" in data and "KeyId" in data and grants[data["GrantId"]]["KeyId"] == data["KeyId"]:
-        del grants[data["GrantId"]]
-        return True
+    if GRANT_ID in data and KEY_ID in data and grants[data[GRANT_ID]][KEY_ID] == data[KEY_ID]:
+        del grants[data[GRANT_ID]]
+        return {}
     else:
-        return False
+        raise ValidationException("Grant ID, key ID must be specified")
 
 
 def handle_list_retirable_grants(data):
-    if "RetiringPrincipal" not in data:
-        return False
+    if RETIRING_PRINCIPAL not in data:
+        raise ValidationException("Retiring principal must be specified")
 
     grants = KMSBackend.get().grants
 
@@ -106,15 +122,11 @@ def handle_list_retirable_grants(data):
 
     # TODO use limit
     filtered = [grant for grant in grants.values() if
-                "RetiringPrincipal" in grant and grant["RetiringPrincipal"] == data["RetiringPrincipal"]
+                RETIRING_PRINCIPAL in grant and grant[RETIRING_PRINCIPAL] == data[RETIRING_PRINCIPAL]
                 ]
-
-    if len(filtered) == 0:
-        return False
 
     # TODO add NextMarker for when truncated
     return {"Grants": filtered, "Truncated": False}
-
 
 
 class ProxyListenerKMS(ProxyListener):
