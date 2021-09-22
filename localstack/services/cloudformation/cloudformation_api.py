@@ -158,7 +158,11 @@ class Stack(object):
 
     def _set_resource_status_details(self, resource_id: str, physical_res_id: str = None):
         """Helper function to ensure that the status details for the given resource ID are up-to-date."""
-        resource = self.resources[resource_id]
+        resource = self.resources.get(resource_id)
+        if resource is None:
+            # make sure we delete the states for any non-existing/deleted resources
+            self._resource_states.pop(resource_id, None)
+            return
         state = self._resource_states.setdefault(resource_id, {})
         attr_defaults = (
             ("LogicalResourceId", resource_id),
@@ -170,6 +174,7 @@ class Stack(object):
         state["StackName"] = state.get("StackName") or self.stack_name
         state["StackId"] = state.get("StackId") or self.stack_id
         state["ResourceType"] = state.get("ResourceType") or self.resources[resource_id].get("Type")
+        return state
 
     def resource_status(self, resource_id: str):
         result = self._lookup(self.resource_states, resource_id)
@@ -177,7 +182,7 @@ class Stack(object):
 
     @property
     def resource_states(self):
-        for resource_id in self._resource_states.keys():
+        for resource_id in list(self._resource_states.keys()):
             self._set_resource_status_details(resource_id)
         return self._resource_states
 
