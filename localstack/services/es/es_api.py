@@ -84,8 +84,8 @@ def _run_cluster_startup_monitor(cluster):
         for domain, domain_cluster in region.es_clusters.items():
             LOG.debug("checking cluster for domain %s", domain)
             if cluster is domain_cluster:
-                if domain in region.es_clusters:
-                    region.es_clusters[domain]["Created"] = status
+                if domain in region.es_domains:
+                    region.es_domains[domain]["Created"] = status
 
 
 def _create_cluster(domain_name, data):
