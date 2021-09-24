@@ -1,30 +1,37 @@
 import json
 import time
+from typing import Dict
 
 from flask import Flask, jsonify, make_response, request
 
 from localstack.services import generic_proxy
+from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc, to_str
 
 APP_NAME = "ddb_streams_api"
-
 app = Flask(APP_NAME)
-
-DDB_STREAMS = {}
 
 DDB_KINESIS_STREAM_NAME_PREFIX = "__ddb_stream_"
 
 ACTION_HEADER_PREFIX = "DynamoDBStreams_20120810"
 
-SEQUENCE_NUMBER_COUNTER = 1
+
+class DynamoDBStreamsBackend(RegionBackend):
+    SEQUENCE_NUMBER_COUNTER = 1
+    # maps table names to DynamoDB stream details
+    ddb_streams: Dict[str, Dict]
+
+    def __init__(self):
+        self.ddb_streams = {}
 
 
 def add_dynamodb_stream(
     table_name, latest_stream_label=None, view_type="NEW_AND_OLD_IMAGES", enabled=True
 ):
     if enabled:
+        region = DynamoDBStreamsBackend.get()
         # create kinesis stream as a backend
         stream_name = get_kinesis_stream_name(table_name)
         aws_stack.create_kinesis_stream(stream_name)
@@ -40,8 +47,7 @@ def add_dynamodb_stream(
             "Shards": [],
             "StreamViewType": view_type,
         }
-        table_arn = aws_stack.dynamodb_table_arn(table_name)
-        DDB_STREAMS[table_arn] = stream
+        region.ddb_streams[table_name] = stream
         # record event
         event_publisher.fire_event(
             event_publisher.EVENT_DYNAMODB_CREATE_STREAM,
@@ -50,16 +56,20 @@ def add_dynamodb_stream(
 
 
 def get_stream_for_table(table_arn):
-    return DDB_STREAMS.get(table_arn)
+    region = DynamoDBStreamsBackend.get()
+    table_name = table_name_from_stream_arn(table_arn)
+    return region.ddb_streams.get(table_name)
 
 
 def forward_events(records):
-    global SEQUENCE_NUMBER_COUNTER
+
     kinesis = aws_stack.connect_to_service("kinesis")
     for record in records:
         if "SequenceNumber" not in record["dynamodb"]:
-            record["dynamodb"]["SequenceNumber"] = str(SEQUENCE_NUMBER_COUNTER)
-            SEQUENCE_NUMBER_COUNTER += 1
+            record["dynamodb"]["SequenceNumber"] = str(
+                DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER
+            )
+            DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER += 1
         table_arn = record["eventSourceARN"]
         stream = get_stream_for_table(table_arn)
         if stream:
@@ -69,10 +79,10 @@ def forward_events(records):
 
 
 def delete_streams(table_arn):
-    table_arn = aws_stack.dynamodb_table_arn(table_arn)
-    stream = DDB_STREAMS.pop(table_arn, None)
+    region = DynamoDBStreamsBackend.get()
+    table_name = table_name_from_table_arn(table_arn)
+    stream = region.ddb_streams.pop(table_name, None)
     if stream:
-        table_name = table_arn.split("/")[-1]
         stream_name = get_kinesis_stream_name(table_name)
         try:
             aws_stack.connect_to_service("kinesis").delete_stream(StreamName=stream_name)
@@ -84,16 +94,17 @@ def delete_streams(table_arn):
 
 @app.route("/", methods=["POST"])
 def post_request():
+    region = DynamoDBStreamsBackend.get()
     action = request.headers.get("x-amz-target", "")
     action = action.split(".")[-1]
     data = json.loads(to_str(request.data))
     result = {}
     kinesis = aws_stack.connect_to_service("kinesis")
     if action == "ListStreams":
-        result = {"Streams": list(DDB_STREAMS.values())}
+        result = {"Streams": list(region.ddb_streams.values())}
 
     elif action == "DescribeStream":
-        for stream in DDB_STREAMS.values():
+        for stream in region.ddb_streams.values():
             if stream["StreamArn"] == data["StreamArn"]:
                 result = {"StreamDescription": stream}
                 # get stream details
@@ -167,7 +178,11 @@ def get_kinesis_stream_name(table_name):
 
 
 def table_name_from_stream_arn(stream_arn):
-    return stream_arn.split(":table/")[1].split("/")[0]
+    return stream_arn.split(":table/", 1)[-1].split("/")[0]
+
+
+def table_name_from_table_arn(table_arn):
+    return table_name_from_stream_arn(table_arn)
 
 
 def stream_name_from_stream_arn(stream_arn):

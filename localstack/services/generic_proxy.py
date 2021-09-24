@@ -6,6 +6,7 @@ import re
 import socket
 import ssl
 from asyncio.selector_events import BaseSelectorEventLoop
+from typing import Dict
 
 import requests
 from flask_cors import CORS
@@ -140,6 +141,8 @@ class ProxyListener(object):
 class RegionBackend(object):
     """Base class for region-specific backends for the different APIs."""
 
+    REGIONS: Dict[str, "RegionBackend"]
+
     @classmethod
     def get(cls, region=None):
         regions = cls.regions()
@@ -148,7 +151,7 @@ class RegionBackend(object):
         return regions[region]
 
     @classmethod
-    def regions(cls):
+    def regions(cls) -> Dict[str, "RegionBackend"]:
         if not hasattr(cls, "REGIONS"):
             # maps region name to region backend instance
             cls.REGIONS = {}
@@ -157,6 +160,13 @@ class RegionBackend(object):
     @classmethod
     def get_current_request_region(cls):
         return aws_stack.get_region()
+
+    @classmethod
+    def reset(cls):
+        """Reset the (in-memory) state of this service region backend."""
+        # for now, simply reset the regions and discard all existing region instances
+        cls.REGIONS = {}
+        return cls.regions()
 
 
 # ---------------------
