@@ -75,7 +75,7 @@ MAIN_CONTAINER_NAME_CACHED = None
 ENV_SCRIPT_STARTING_DOCKER = "LS_SCRIPT_STARTING_DOCKER"
 
 
-def log_duration(name=None):
+def log_duration(name=None, min_ms=500):
     """Function decorator to log the duration of function invocations."""
 
     def wrapper(f):
@@ -90,7 +90,7 @@ def log_duration(name=None):
                 end_time = now_utc(millis=True)
                 func_name = name or f.__name__
                 duration = end_time - start_time
-                if duration > 500:
+                if duration > min_ms:
                     LOG.info('Execution of "%s" took %.2fms', func_name, duration)
 
         return wrapped

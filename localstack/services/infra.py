@@ -5,7 +5,6 @@ import signal
 import subprocess
 import sys
 import threading
-import time
 import traceback
 from typing import Dict, List, Union
 
@@ -19,14 +18,10 @@ from localstack.constants import (
     LOCALSTACK_INFRA_PROCESS,
     LOCALSTACK_VENV_FOLDER,
 )
+from localstack.plugin import PluginDisabled
 from localstack.services import generic_proxy, install
 from localstack.services.generic_proxy import start_proxy_server
-from localstack.services.plugins import (
-    SERVICE_PLUGINS,
-    check_infra,
-    record_service_health,
-    wait_for_infra_shutdown,
-)
+from localstack.services.plugins import SERVICE_PLUGINS, wait_for_infra_shutdown
 from localstack.utils import analytics, common, config_listener, persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.bootstrap import (
@@ -45,6 +40,7 @@ from localstack.utils.common import (
     in_docker,
     is_linux,
     is_port_open,
+    poll_condition,
     run,
     start_thread,
 )
@@ -72,9 +68,9 @@ INFRA_READY = threading.Event()
 # event flag indicating that the infrastructure has been shut down
 SHUTDOWN_INFRA = threading.Event()
 
-
 # Start config update backdoor
 config_listener.start_listener()
+
 
 # -----------------
 # API ENTRY POINTS
@@ -403,7 +399,7 @@ def stop_infra():
 
 
 def log_startup_message(service):
-    print("Starting mock %s service on %s ..." % (service, edge_ports_info()))
+    LOG.info("Starting mock %s service on %s ...", service, edge_ports_info())
 
 
 def check_aws_credentials():
@@ -502,9 +498,6 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
-    # import to avoid cyclic dependency
-    from localstack.services.edge import BOOTSTRAP_LOCK
-
     event_publisher.fire_event(
         event_publisher.EVENT_START_INFRA,
         {"d": is_in_docker and 1 or 0, "c": in_ci() and 1 or 0},
@@ -544,39 +537,54 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         install.install_components(apis)
 
     @log_duration()
-    def start_api_services():
+    def preload_services():
+        """
+        Preload services if EAGER_SERVICE_LOADING is true.
+        """
+        if not config.is_env_not_false("EAGER_SERVICE_LOADING"):
+            # TODO: lazy loading should become the default beginning 0.13.0
+            return
 
-        # Some services take a bit to come up
-        sleep_time = 5
-        # start services
-        thread = None
+        apis = list()
+        for api in SERVICE_PLUGINS.list_available():
+            try:
+                SERVICE_PLUGINS.require(api)
+                apis.append(api)
+            except PluginDisabled as e:
+                LOG.debug("%s", e)
+            except Exception as e:
+                LOG.error("could not load service plugin %s: %s", api, e)
 
-        # loop through plugins and start each service
-        for name, plugin in SERVICE_PLUGINS.items():
-            if plugin.is_enabled(api_names=apis):
-                record_service_health(name, "starting")
-                t1 = plugin.start(asynchronous=True)
-                thread = thread or t1
-
-        time.sleep(sleep_time)
-        # ensure that all infra components are up and running
-        check_infra(apis=apis)
-        # restore persisted data
-        record_service_health(
-            "features:persistence", "initializing" if config.DATA_DIR else "disabled"
-        )
-        persistence.restore_persisted_data(apis=apis)
         if config.DATA_DIR:
-            record_service_health("features:persistence", "initialized")
-        return thread
+            if not config.is_env_true(constants.ENV_PRO_ACTIVATED):
+                LOG.warning(
+                    "persistence mechanism of community services will be deprecated in 0.13.0"
+                )
+
+            persistence.restore_persisted_data(apis)
+
+    @log_duration()
+    def start_runtime_components():
+        from localstack.services.edge import start_edge
+
+        # TODO: we want a composable LocalStack runtime (edge proxy, service manager, dns, ...)
+        t = start_thread(start_edge)
+
+        # TODO: properly encapsulate starting/stopping of edge server in a class
+        if not poll_condition(lambda: is_port_open(config.get_edge_url()), timeout=5, interval=0.1):
+            raise TimeoutError(
+                f"gave up waiting for edge server on {config.EDGE_BIND_HOST}:{config.EDGE_PORT}"
+            )
+
+        return t
 
     prepare_environment()
     prepare_installation()
-    with BOOTSTRAP_LOCK:
-        thread = start_api_services()
+    thread = start_runtime_components()
+    preload_services()
 
-        if config.DATA_DIR:
-            persistence.save_startup_info()
+    if config.DATA_DIR:
+        persistence.save_startup_info()
 
     print(READY_MARKER_OUTPUT)
     sys.stdout.flush()

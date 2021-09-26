@@ -215,6 +215,13 @@ def print_docker_status():
 def print_service_table(services: Dict[str, str]):
     from rich.table import Table
 
+    status_display = {
+        "running": "[green]:heavy_check_mark:[/green] running",
+        "starting": ":hourglass_flowing_sand: starting",
+        "available": "[grey]:heavy_check_mark:[/grey] available",
+        "error": "[red]:heavy_multiplication_x:[/red] error",
+    }
+
     table = Table()
     table.add_column("Service")
     table.add_column("Status")
@@ -223,10 +230,8 @@ def print_service_table(services: Dict[str, str]):
     services.sort(key=lambda item: item[0])
 
     for service, status in services:
-        if status == "running":
-            status = "[green]:heavy_check_mark:[/green] running"
-        elif status == "starting":
-            status = ":hourglass_flowing_sand: starting"
+        if status in status_display:
+            status = status_display[status]
 
         table.add_row(service, status)
 
