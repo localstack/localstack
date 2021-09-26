@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple
 
 import pytest
 
-from localstack.plugin import Plugin, PluginFinder, PluginManager, PluginSpec
+from localstack.plugin import Plugin, PluginDisabled, PluginFinder, PluginManager, PluginSpec
 
 
 class DummyPlugin(Plugin):
@@ -166,5 +166,14 @@ class TestPluginManager:
             manager.load_all(propagate_exceptions=True)
 
         ex.match("controlled load fail")
+
+    def test_load_disabled_plugin(self, dummy_plugin_finder):
+        manager = PluginManager("test.plugins.dummy", finder=dummy_plugin_finder)
+
+        with pytest.raises(PluginDisabled) as ex:
+            manager.load("shouldnotload")
+
+        assert ex.value.namespace == "test.plugins.dummy"
+        assert ex.value.name == "shouldnotload"
 
     # TODO: test lifecycle listeners

@@ -2,7 +2,15 @@ import logging
 import threading
 from typing import Any, Callable, Dict, Generic, Iterable, List, Tuple, TypeVar, Union
 
-from .core import Plugin, PluginFinder, PluginLifecycleListener, PluginSpec, PluginSpecResolver
+from .core import (
+    Plugin,
+    PluginDisabled,
+    PluginException,
+    PluginFinder,
+    PluginLifecycleListener,
+    PluginSpec,
+    PluginSpecResolver,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -166,8 +174,9 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
             raise container.load_error
 
         if not container.is_loaded:
-            # plugin should_load returned False
-            raise ValueError("plugin %s:%s is deactivated" % (self.namespace, name))
+            raise PluginException(
+                "plugin did not load correctly", namespace=self.namespace, name=name
+            )
 
         return container.plugin
 
@@ -186,6 +195,8 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
             try:
                 plugin = self.load(name)
                 plugins.append(plugin)
+            except PluginDisabled as e:
+                LOG.debug("%s", e)
             except Exception as e:
                 if propagate_exceptions:
                     raise
@@ -251,8 +262,7 @@ class PluginManager(PluginLifecycleNotifierMixin, Generic[P]):
             plugin = container.plugin
 
             if not plugin.should_load():
-                LOG.debug("not loading deactivated plugin %s", plugin_spec)
-                return
+                raise PluginDisabled(namespace=self.namespace, name=container.plugin_spec.name)
 
             args = self.load_args
             kwargs = self.load_kwargs

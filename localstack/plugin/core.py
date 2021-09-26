@@ -3,6 +3,20 @@ import inspect
 from typing import Any, Callable, Dict, List, Tuple, Type, Union
 
 
+class PluginException(Exception):
+    def __init__(self, message, namespace: str = None, name: str = None) -> None:
+        super().__init__(message)
+        self.namespace = namespace
+        self.name = name
+
+
+class PluginDisabled(PluginException):
+    def __init__(self, namespace: str, name: str):
+        super(PluginDisabled, self).__init__("plugin %s:%s is disabled" % (namespace, name))
+        self.namespace = namespace
+        self.name = name
+
+
 class Plugin(abc.ABC):
     """A generic LocalStack plugin.
 

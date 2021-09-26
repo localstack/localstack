@@ -1,4 +1,12 @@
-from .core import Plugin, PluginFinder, PluginLifecycleListener, PluginSpec, PluginType
+from .core import (
+    Plugin,
+    PluginDisabled,
+    PluginException,
+    PluginFinder,
+    PluginLifecycleListener,
+    PluginSpec,
+    PluginType,
+)
 from .manager import PluginManager, PluginSpecResolver
 
 name = "plugin"
@@ -11,4 +19,6 @@ __all__ = [
     "PluginFinder",
     "PluginManager",
     "PluginSpecResolver",
+    "PluginException",
+    "PluginDisabled",
 ]
