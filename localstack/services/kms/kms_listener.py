@@ -85,21 +85,31 @@ def handle_list_grants(data):
 
     grants = KMSBackend.get().grants
 
-    # limit = data.get("Limit", 50)
+    limit = data.get("Limit", 50)
 
-    # TODO marker
+    if "Marker" in data:
+        markers = KMSBackend.get().markers
+        filtered = markers.get(data["Marker"], [])
+    else:
+        filtered = [
+            grant
+            for grant in grants.values()
+            if grant[KEY_ID] == data[KEY_ID]
+            and filter_grant_id(grant, data)
+            and filter_grantee_principal(grant, data)
+        ]
+    if len(filtered) <= limit:
+        return {"Grants": filtered, "Truncated": False}
 
-    # TODO use limit
-    filtered = [
-        grant
-        for grant in grants.values()
-        if grant[KEY_ID] == data[KEY_ID]
-        and filter_grant_id(grant, data)
-        and filter_grantee_principal(grant, data)
-    ]
+    markers = KMSBackend.get().markers
 
-    # TODO add NextMarker for when truncated
-    return {"Grants": filtered, "Truncated": False}
+    in_limit = filtered[:limit]
+    out_limit = filtered[limit:]
+
+    marker_id = long_uid()
+    markers[marker_id] = out_limit
+
+    return {"Grants": in_limit, "Truncated": True, "NextMarker": marker_id}
 
 
 def handle_retire_grant(data):
@@ -134,19 +144,29 @@ def handle_list_retirable_grants(data):
 
     grants = KMSBackend.get().grants
 
-    # limit = data.get("Limit", 50)
+    limit = data.get("Limit", 50)
 
-    # TODO marker
+    if "Marker" in data:
+        markers = KMSBackend.get().markers
+        filtered = markers.get(data["Marker"], [])
+    else:
+        filtered = [
+            grant
+            for grant in grants.values()
+            if RETIRING_PRINCIPAL in grant and grant[RETIRING_PRINCIPAL] == data[RETIRING_PRINCIPAL]
+        ]
+    if len(filtered) <= limit:
+        return {"Grants": filtered, "Truncated": False}
 
-    # TODO use limit
-    filtered = [
-        grant
-        for grant in grants.values()
-        if RETIRING_PRINCIPAL in grant and grant[RETIRING_PRINCIPAL] == data[RETIRING_PRINCIPAL]
-    ]
+    markers = KMSBackend.get().markers
 
-    # TODO add NextMarker for when truncated
-    return {"Grants": filtered, "Truncated": False}
+    in_limit = filtered[:limit]
+    out_limit = filtered[limit:]
+
+    marker_id = long_uid()
+    markers[marker_id] = out_limit
+
+    return {"Grants": in_limit, "Truncated": True, "NextMarker": marker_id}
 
 
 class ProxyListenerKMS(ProxyListener):
@@ -176,6 +196,7 @@ class ProxyListenerKMS(ProxyListener):
 class KMSBackend(RegionBackend):
     def __init__(self):
         self.grants = {}
+        self.markers = {}
 
 
 # instantiate listener
