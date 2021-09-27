@@ -1,12 +1,11 @@
 import json
 import logging
 
-from moto.kms.exceptions import NotFoundException, ValidationException
+from moto.kms.exceptions import ValidationException
+
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
-from localstack.utils.common import to_str, short_uid, long_uid
-from requests.models import Response
-from localstack.constants import APPLICATION_JSON
+from localstack.utils.common import long_uid, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -14,9 +13,22 @@ LOG = logging.getLogger(__name__)
 EVENT_KMS_CREATE_KEY = "kms.ck"
 
 # valid operations
-VALID_OPERATIONS = ["Decrypt", "Encrypt", "GenerateDataKey", "GenerateDataKeyWithoutPlaintext", "ReEncryptFrom",
-                    "ReEncryptTo", "Sign", "Verify", "GetPublicKey", "CreateGrant", "RetireGrant", "DescribeKey",
-                    "GenerateDataKeyPair", "GenerateDataKeyPairWithoutPlaintext"]
+VALID_OPERATIONS = [
+    "Decrypt",
+    "Encrypt",
+    "GenerateDataKey",
+    "GenerateDataKeyWithoutPlaintext",
+    "ReEncryptFrom",
+    "ReEncryptTo",
+    "Sign",
+    "Verify",
+    "GetPublicKey",
+    "CreateGrant",
+    "RetireGrant",
+    "DescribeKey",
+    "GenerateDataKeyPair",
+    "GenerateDataKeyPairWithoutPlaintext",
+]
 
 # grant attributes
 KEY_ID = "KeyId"
@@ -35,9 +47,10 @@ def validate_grant(data):
         if operation not in VALID_OPERATIONS:
             raise ValidationException(
                 f"Value {[OPERATIONS]} at 'operations' failed to satisfy constraint: Member must satisfy"
-                f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]")
+                f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
+            )
 
-    # TODO kms key id corresponds to key in moto (possible?)
+    # TODO kms key id corresponds to key in moto (possible?) -> BOTO client aws_stack
     # TODO grantee principal is ARN for principal (possible?)
     # TODO retiring principal is ARN for principal (possible?)
 
@@ -72,16 +85,18 @@ def handle_list_grants(data):
 
     grants = KMSBackend.get().grants
 
-    limit = data.get("Limit", 50)
+    # limit = data.get("Limit", 50)
 
     # TODO marker
 
     # TODO use limit
-    filtered = [grant for grant in grants.values() if
-                grant[KEY_ID] == data[KEY_ID] and
-                filter_grant_id(grant, data) and
-                filter_grantee_principal(grant, data)
-                ]
+    filtered = [
+        grant
+        for grant in grants.values()
+        if grant[KEY_ID] == data[KEY_ID]
+        and filter_grant_id(grant, data)
+        and filter_grantee_principal(grant, data)
+    ]
 
     # TODO add NextMarker for when truncated
     return {"Grants": filtered, "Truncated": False}
@@ -93,8 +108,11 @@ def handle_retire_grant(data):
     if GRANT_ID in data and KEY_ID in data and grants[data[GRANT_ID]][KEY_ID] == data[KEY_ID]:
         del grants[data[GRANT_ID]]
     elif GRANT_TOKEN in data:
-        KMSBackend.get().grants = {grant_id: grant for grant_id, grant in grants.items() if
-                                   data[GRANT_TOKEN] != grant[GRANT_TOKEN]}
+        KMSBackend.get().grants = {
+            grant_id: grant
+            for grant_id, grant in grants.items()
+            if data[GRANT_TOKEN] != grant[GRANT_TOKEN]
+        }
     else:
         raise ValidationException("Grant token OR (grant ID, key ID) must be specified")
     return {}
@@ -116,14 +134,16 @@ def handle_list_retirable_grants(data):
 
     grants = KMSBackend.get().grants
 
-    limit = data.get("Limit", 50)
+    # limit = data.get("Limit", 50)
 
     # TODO marker
 
     # TODO use limit
-    filtered = [grant for grant in grants.values() if
-                RETIRING_PRINCIPAL in grant and grant[RETIRING_PRINCIPAL] == data[RETIRING_PRINCIPAL]
-                ]
+    filtered = [
+        grant
+        for grant in grants.values()
+        if RETIRING_PRINCIPAL in grant and grant[RETIRING_PRINCIPAL] == data[RETIRING_PRINCIPAL]
+    ]
 
     # TODO add NextMarker for when truncated
     return {"Grants": filtered, "Truncated": False}
@@ -137,7 +157,9 @@ class ProxyListenerKMS(ProxyListener):
 
             if action.endswith(".CreateKey"):
                 descr = parsed_data.get("Description") or ""
-                event_publisher.fire_event(EVENT_KMS_CREATE_KEY, {"k": event_publisher.get_hash(descr)})
+                event_publisher.fire_event(
+                    EVENT_KMS_CREATE_KEY, {"k": event_publisher.get_hash(descr)}
+                )
             elif action.endswith(".CreateGrant"):
                 return handle_create_grant(parsed_data)
             elif action.endswith(".ListGrants"):
