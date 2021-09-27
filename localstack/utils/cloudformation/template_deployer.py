@@ -1222,11 +1222,7 @@ def add_default_resource_props(
         return "%s-%s-%s" % (stack_name, resource_name or resource_id, short_uid())
 
     # TODO: move logic below into resource classes!
-
-    if res_type == "AWS::Lambda::EventSourceMapping" and not props.get("StartingPosition"):
-        props["StartingPosition"] = "LATEST"
-
-    elif res_type == "AWS::Logs::LogGroup" and not props.get("LogGroupName") and resource_name:
+    if res_type == "AWS::Logs::LogGroup" and not props.get("LogGroupName") and resource_name:
         props["LogGroupName"] = resource_name
 
     elif res_type == "AWS::Lambda::Function" and not props.get("FunctionName"):
@@ -1249,7 +1245,7 @@ def add_default_resource_props(
         props["Name"] = _generate_res_name()
 
     elif res_type == "AWS::ApiGateway::Stage" and not props.get("StageName"):
-        props["StageName"] = "default"
+        props["StageName"] = "default"  # TODO
 
     elif res_type == "AWS::ApiGateway::ApiKey" and not props.get("Name"):
         props["Name"] = _generate_res_name()
