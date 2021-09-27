@@ -5,6 +5,7 @@ from moto.kms.exceptions import ValidationException
 
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import long_uid, to_str
 
 LOG = logging.getLogger(__name__)
@@ -39,6 +40,14 @@ GRANT_ID = "GrantId"
 GRANT_TOKEN = "GrantToken"
 
 
+def verify_key_exists(key_id):
+    try:
+        aws_stack.connect_to_service("kms").describe_key(KeyId=key_id)
+    # FIXME catch the proper exception
+    except Exception:
+        raise ValidationException(f"Invalid keyId {KEY_ID}")
+
+
 def validate_grant(data):
     if KEY_ID not in data or GRANTEE_PRINCIPAL not in data or OPERATIONS not in data:
         raise ValidationException("Grant ID, key ID and grantee principal must be specified")
@@ -50,9 +59,7 @@ def validate_grant(data):
                 f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
             )
 
-    # TODO kms key id corresponds to key in moto (possible?) -> BOTO client aws_stack
-    # TODO grantee principal is ARN for principal (possible?)
-    # TODO retiring principal is ARN for principal (possible?)
+    verify_key_exists(data[KEY_ID])
 
 
 def handle_create_grant(data):
@@ -81,7 +88,8 @@ def filter_grant_id(grant, data):
 
 def handle_list_grants(data):
     if KEY_ID not in data:
-        raise ValidationException("")
+        raise ValidationException("KeyId must be specified")
+    verify_key_exists(data[KEY_ID])
 
     grants = KMSBackend.get().grants
 
