@@ -1263,10 +1263,6 @@ def add_default_resource_props(
     elif res_type == "AWS::ApiGateway::RequestValidator" and not props.get("Name"):
         props["Name"] = _generate_res_name()
 
-    elif res_type == "AWS::DynamoDB::Table":
-        update_dynamodb_index_resource(resource)
-        props["TableName"] = props.get("TableName") or _generate_res_name()
-
     elif res_type == "AWS::CloudWatch::Alarm":
         props["AlarmName"] = props.get("AlarmName") or _generate_res_name()
 
@@ -1316,16 +1312,6 @@ def add_default_resource_props(
                 resource_id = canonical_json(json_safe(props))
                 resource_id = md5(resource_id)
             props[entry[1]] = "cf-%s-%s" % (stack_name, resource_id)
-
-
-def update_dynamodb_index_resource(resource):
-    if resource.get("Properties").get("BillingMode") == "PAY_PER_REQUEST":
-        for glob_index in resource.get("Properties", {}).get("GlobalSecondaryIndexes", []):
-            if not glob_index.get("ProvisionedThroughput"):
-                glob_index["ProvisionedThroughput"] = {
-                    "ReadCapacityUnits": 99,
-                    "WriteCapacityUnits": 99,
-                }
 
 
 # -----------------------
