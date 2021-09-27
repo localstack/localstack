@@ -398,11 +398,12 @@ class GatewayStage(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_params(params, **kwargs):
-            result = keys_to_lower(params)
+        def get_params(resource_props, stack_name, resources, resource_id):
+            stage_name = resource_props.get("StageName", "default")
+            resources[resource_id]["Properties"]["StageName"] = stage_name
+            result = keys_to_lower(resource_props)
             param_names = [
                 "restApiId",
-                "stageName",
                 "deploymentId",
                 "description",
                 "cacheClusterEnabled",
@@ -415,9 +416,15 @@ class GatewayStage(GenericBaseModel):
             ]
             result = select_attributes(result, param_names)
             result["tags"] = {t["key"]: t["value"] for t in result.get("tags", [])}
+            result["stageName"] = stage_name
             return result
 
-        return {"create": {"function": "create_stage", "parameters": get_params}}
+        return {
+            "create": {
+                "function": "create_stage",
+                "parameters": get_params,
+            }
+        }
 
 
 class GatewayUsagePlan(GenericBaseModel):

@@ -1226,6 +1226,7 @@ def add_default_resource_props(
         props["LogGroupName"] = resource_name
 
     elif res_type == "AWS::Lambda::Function" and not props.get("FunctionName"):
+        # TODO: generalize this for all auto-name generations
         # FunctionName is up to 64 characters long
         random_id_part = short_uid()
         resource_id_part = resource_id[:24]
@@ -1243,9 +1244,6 @@ def add_default_resource_props(
 
     elif res_type == "AWS::ApiGateway::RestApi" and not props.get("Name"):
         props["Name"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::Stage" and not props.get("StageName"):
-        props["StageName"] = "default"  # TODO
 
     elif res_type == "AWS::ApiGateway::ApiKey" and not props.get("Name"):
         props["Name"] = _generate_res_name()
@@ -1291,6 +1289,7 @@ def add_default_resource_props(
         props["LogGroupName"] = props.get("LogGroupName") or _generate_res_name()
 
     elif res_type == "AWS::KMS::Key":
+        # TODO: inspect
         tags = props["Tags"] = props.get("Tags", [])
         existing = [t for t in tags if t["Key"] == "localstack-key-id"]
         if not existing:
@@ -1307,7 +1306,7 @@ def add_default_resource_props(
             if not resource_id:
                 resource_id = canonical_json(json_safe(props))
                 resource_id = md5(resource_id)
-            props[entry[1]] = "cf-%s-%s" % (stack_name, resource_id)
+            props[entry[1]] = "cf-%s-%s" % (stack_name, resource_id)  # TODO: not valid AWS behavior
 
 
 # -----------------------
