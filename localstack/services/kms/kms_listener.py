@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 from moto.kms.exceptions import ValidationException
 
@@ -37,7 +38,11 @@ GRANTEE_PRINCIPAL = "GranteePrincipal"
 RETIRING_PRINCIPAL = "RetiringPrincipal"
 OPERATIONS = "Operations"
 GRANT_ID = "GrantId"
-GRANT_TOKEN = "GrantToken"
+GRANT_TOKENS = "GrantTokens"
+NAME = "Name"
+CONSTRAINTS = "Constraints"
+ISSUING_ACCOUNT = "IssuingAccount"
+CREATION_DATE = "CreationDate"
 
 
 def verify_key_exists(key_id):
@@ -45,7 +50,7 @@ def verify_key_exists(key_id):
         aws_stack.connect_to_service("kms").describe_key(KeyId=key_id)
     # FIXME catch the proper exception
     except Exception:
-        raise ValidationException(f"Invalid keyId {KEY_ID}")
+        raise ValidationException(f"Invalid keyId {key_id}")
 
 
 def validate_grant(data):
@@ -68,10 +73,13 @@ def handle_create_grant(data):
     grants = KMSBackend.get().grants
 
     data[GRANT_ID] = long_uid()
-    data[GRANT_TOKEN] = long_uid()
+    data[GRANT_TOKENS] = [long_uid()]
+    if NAME not in data:
+        data[NAME] = ""
+    data[CREATION_DATE] = time.time()
 
     grants[data[GRANT_ID]] = data
-    return {GRANT_ID: data[GRANT_ID], GRANT_TOKEN: data[GRANT_TOKEN]}
+    return {GRANT_ID: data[GRANT_ID], "GrantToken": data[GRANT_TOKENS][0]}
 
 
 def filter_if_present(grant, data, filter_key):
@@ -125,11 +133,11 @@ def handle_retire_grant(data):
 
     if GRANT_ID in data and KEY_ID in data and grants[data[GRANT_ID]][KEY_ID] == data[KEY_ID]:
         del grants[data[GRANT_ID]]
-    elif GRANT_TOKEN in data:
+    elif "GrantToken" in data:
         KMSBackend.get().grants = {
             grant_id: grant
             for grant_id, grant in grants.items()
-            if data[GRANT_TOKEN] != grant[GRANT_TOKEN]
+            if data["GrantToken"] not in grant[GRANT_TOKENS]
         }
     else:
         raise ValidationException("Grant token OR (grant ID, key ID) must be specified")
