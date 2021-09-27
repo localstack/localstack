@@ -1483,7 +1483,9 @@ class TemplateDeployer(object):
     def add_default_resource_props(self, resources=None):
         resources = resources or self.resources
         for resource_id, resource in resources.items():
-            add_default_resource_props(resource, self.stack_name, resource_id=resource_id)
+            add_default_resource_props(
+                resource, self.stack_name, resource_id=resource_id, existing_resources=resources
+            )
 
     def init_resource_status(self, resources=None, stack=None, action="CREATE"):
         resources = resources or self.resources
