@@ -617,7 +617,7 @@ def process_sns_notification(
     event = {
         "Records": [
             {
-                "EventSource": "localstack:sns",
+                "EventSource": "aws:sns",
                 "EventVersion": "1.0",
                 "EventSubscriptionArn": subscription_arn,
                 "Sns": {
