@@ -507,7 +507,7 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
     mkdir(target_dir)
 
     tmp_archive = tmp_archive or new_tmp_file()
-    if not os.path.exists(tmp_archive):
+    if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
         # create temporary placeholder file, to avoid duplicate parallel downloads
         save_file(tmp_archive, "")
         for i in range(retries + 1):
