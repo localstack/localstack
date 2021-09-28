@@ -214,15 +214,15 @@ def _process_sent_message(path: str, req_data: Dict[str, str], headers: Dict, re
 
     # extract data from XML response - assume data is wrapped in 2 parent elements
     response_data = xmltodict.parse(response.content)
-    response_data = list(response_data.values())[0]
-    response_data = list(response_data.values())[0]
 
     messages = []
     if action == "SendMessage":
+        response_data = response_data["SendMessageResponse"]["SendMessageResult"]
         message = clone(req_data)
         message.update(response_data)
         messages.append(message)
     elif action == "SendMessageBatch":
+        response_data = response_data["SendMessageBatchResponse"]["SendMessageBatchResult"]
         messages = parse_urlencoded_data(req_data, "SendMessageBatchRequestEntry")
         # Note: only forwarding messages from 'Successful', not from 'Failed' list
         entries = response_data.get("SendMessageBatchResultEntry") or []
