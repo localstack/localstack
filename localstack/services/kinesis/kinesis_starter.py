@@ -1,5 +1,6 @@
 import logging
 import threading
+import time
 
 from localstack import config
 from localstack.constants import MODULE_MAIN_PATH
@@ -185,4 +186,8 @@ def check_kinesis(expect_shutdown=False, print_error=False):
 def restart_kinesis():
     LOGGER.debug("Restarting Kinesis process ...")
     PROCESS_THREAD.stop()
+    kinesis_stopped.wait()
+    kinesis_stopped.clear()
     start_kinesis(asynchronous=True, update_listener=kinesis_listener.UPDATE_KINESIS)
+    # giving the process some time to startup; TODO: to be replaced with service lifecycle plugin
+    time.sleep(1)
