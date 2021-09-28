@@ -44,11 +44,13 @@ THUNDRA_JAVA_AGENT_LOCAL_PATH: Optional[str] = None
 THUNDRA_NODE_AGENT_INITIALIZED = False
 THUNDRA_NODE_AGENT_VERSION: Optional[str] = None
 THUNDRA_NODE_AGENT_LOCAL_PATH: Optional[str] = None
+THUNDRA_NODE_AGENT_LOCAL_PATH_ON_HOST: Optional[str] = None
 
 # Python related constants
 THUNDRA_PYTHON_AGENT_INITIALIZED = False
-THUNDRA_PYTHON_AGENT_LOCAL_PATH: Optional[str] = None
 THUNDRA_PYTHON_AGENT_VERSION: Optional[str] = None
+THUNDRA_PYTHON_AGENT_LOCAL_PATH: Optional[str] = None
+THUNDRA_PYTHON_AGENT_LOCAL_PATH_ON_HOST: Optional[str] = None
 
 
 ################
@@ -205,6 +207,7 @@ def _get_latest_node_agent_version():
 def _init_node_agent_configs() -> bool:
     global THUNDRA_NODE_AGENT_VERSION
     global THUNDRA_NODE_AGENT_LOCAL_PATH
+    global THUNDRA_NODE_AGENT_LOCAL_PATH_ON_HOST
 
     latest_version = _get_latest_node_agent_version()
     version = os.getenv("THUNDRA_AGENT_NODE_VERSION", latest_version)
@@ -214,6 +217,10 @@ def _init_node_agent_configs() -> bool:
     THUNDRA_NODE_AGENT_VERSION = version.strip()
     THUNDRA_NODE_AGENT_LOCAL_PATH = "%s/thundra/node/%s/" % (
         config.TMP_FOLDER,
+        THUNDRA_NODE_AGENT_VERSION,
+    )
+    THUNDRA_NODE_AGENT_LOCAL_PATH_ON_HOST = "%s/thundra/node/%s/" % (
+        config.HOST_TMP_FOLDER,
         THUNDRA_NODE_AGENT_VERSION,
     )
 
@@ -269,7 +276,7 @@ def _prepare_invocation_for_node_lambda(context: InvocationContext) -> Additiona
 
     # Map Thundra agent path into container so it will be accessible by Lambda function Node environment
     agent_path_mapping = (
-        "-v %s/node_modules/:/opt/nodejs/node_modules/" % THUNDRA_NODE_AGENT_LOCAL_PATH
+        "-v %s/node_modules/:/opt/nodejs/node_modules/" % THUNDRA_NODE_AGENT_LOCAL_PATH_ON_HOST
     )
 
     if context.docker_flags:
@@ -310,6 +317,7 @@ def _get_latest_python_agent_version():
 def _init_python_agent_configs() -> bool:
     global THUNDRA_PYTHON_AGENT_VERSION
     global THUNDRA_PYTHON_AGENT_LOCAL_PATH
+    global THUNDRA_PYTHON_AGENT_LOCAL_PATH_ON_HOST
 
     latest_version = _get_latest_python_agent_version()
     version = os.getenv("THUNDRA_AGENT_PYTHON_VERSION", latest_version)
@@ -319,6 +327,10 @@ def _init_python_agent_configs() -> bool:
     THUNDRA_PYTHON_AGENT_VERSION = version.strip()
     THUNDRA_PYTHON_AGENT_LOCAL_PATH = "%s/thundra/python/%s/" % (
         config.TMP_FOLDER,
+        THUNDRA_PYTHON_AGENT_VERSION,
+    )
+    THUNDRA_PYTHON_AGENT_LOCAL_PATH_ON_HOST = "%s/thundra/python/%s/" % (
+        config.HOST_TMP_FOLDER,
         THUNDRA_PYTHON_AGENT_VERSION,
     )
 
@@ -375,7 +387,7 @@ def _prepare_invocation_for_python_lambda(
         result.env_updates[THUNDRA_AGENT_LOG_DISABLE_ENV_VAR_NAME] = "false"
 
     # Map Thundra agent path into container so it will be accessible by Lambda function Python environment
-    agent_path_mapping = "-v %s/:/opt/python/" % THUNDRA_PYTHON_AGENT_LOCAL_PATH
+    agent_path_mapping = "-v %s/:/opt/python/" % THUNDRA_PYTHON_AGENT_LOCAL_PATH_ON_HOST
 
     if context.docker_flags:
         context.docker_flags = f"{context.docker_flags} {agent_path_mapping}"
