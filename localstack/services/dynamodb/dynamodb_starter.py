@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 # backend service port (updated on startup)
 PORT_DYNAMODB_BACKEND = None
 
-# todo: will be replaced with plugism mechanism
+# todo: will be replaced with plugin mechanism
 PROCESS_THREAD = None
 
 
@@ -36,7 +36,7 @@ def check_dynamodb(expect_shutdown=False, print_error=False):
 
 
 def start_dynamodb(port=None, asynchronous=False, update_listener=None):
-    global PORT_DYNAMODB_BACKEND
+    global PROCESS_THREAD, PORT_DYNAMODB_BACKEND
     PORT_DYNAMODB_BACKEND = get_free_tcp_port()
     port = port or config.PORT_DYNAMODB
     install.install_dynamodb_local()
@@ -65,12 +65,11 @@ def start_dynamodb(port=None, asynchronous=False, update_listener=None):
         update_listener=update_listener,
     )
     # todo: extract reference from do_run (should return pid)
-    global PROCESS_THREAD
     PROCESS_THREAD = do_run(cmd, asynchronous, auto_restart=True)
     return PROCESS_THREAD
 
 
 def restart_dynamodb():
-    LOGGER.debug("Restarting DynamoDB service")
+    LOGGER.debug("Restarting DynamoDB process ...")
     PROCESS_THREAD.stop()
     start_dynamodb(asynchronous=True, update_listener=dynamodb_listener.UPDATE_DYNAMODB)

@@ -4,12 +4,16 @@ from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import install
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
+from localstack.services.stepfunctions import stepfunctions_listener
 from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
 
 # max heap size allocated for the Java process
 MAX_HEAP_SIZE = "256m"
+
+# todo: will be replaced with plugin mechanism
+PROCESS_THREAD = None
 
 
 def get_command(backend_port):
@@ -59,4 +63,14 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
     cmd = get_command(backend_port)
     log_startup_message("StepFunctions")
     start_proxy_for_service("stepfunctions", port, backend_port, update_listener)
-    return do_run(cmd, asynchronous)
+    global PROCESS_THREAD
+    PROCESS_THREAD = do_run(cmd, asynchronous)
+    return PROCESS_THREAD
+
+
+def restart_stepfunctions():
+    LOG.debug("Restarting StepFunctions process ...")
+    PROCESS_THREAD.stop()
+    start_stepfunctions(
+        asynchronous=True, update_listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS
+    )

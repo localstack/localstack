@@ -14,7 +14,7 @@ LOGGER = logging.getLogger(__name__)
 # event to indicate that the kinesis backend service has stopped (the terminal command has returned)
 kinesis_stopped = threading.Event()
 
-# todo: will be replaced with plugism mechanism
+# todo: will be replaced with plugin mechanism
 PROCESS_THREAD = None
 
 
@@ -42,12 +42,12 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
 
 
 def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronous):
+    global PROCESS_THREAD
     log_startup_message("Kinesis")
     start_proxy_for_service("kinesis", port, backend_port, update_listener)
 
     # TODO: generalize into service manager once it is introduced
     try:
-        global PROCESS_THREAD
         PROCESS_THREAD = do_run(cmd, asynchronous)
     finally:
         if asynchronous:
@@ -183,6 +183,6 @@ def check_kinesis(expect_shutdown=False, print_error=False):
 
 
 def restart_kinesis():
-    LOGGER.debug("Restarting Kinesis service")
+    LOGGER.debug("Restarting Kinesis process ...")
     PROCESS_THREAD.stop()
     start_kinesis(asynchronous=True, update_listener=kinesis_listener.UPDATE_KINESIS)
