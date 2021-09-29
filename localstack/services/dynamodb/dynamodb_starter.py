@@ -8,7 +8,12 @@ from localstack.services import install
 from localstack.services.dynamodb import dynamodb_listener
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import get_free_tcp_port, mkdir, wait_for_port_open
+from localstack.utils.common import (
+    get_free_tcp_port,
+    mkdir,
+    wait_for_port_closed,
+    wait_for_port_open,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -72,4 +77,5 @@ def start_dynamodb(port=None, asynchronous=False, update_listener=None):
 def restart_dynamodb():
     LOGGER.debug("Restarting DynamoDB process ...")
     PROCESS_THREAD.stop()
+    wait_for_port_closed(PORT_DYNAMODB_BACKEND)
     start_dynamodb(asynchronous=True, update_listener=dynamodb_listener.UPDATE_DYNAMODB)

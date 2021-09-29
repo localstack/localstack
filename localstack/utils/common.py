@@ -588,10 +588,38 @@ def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=Non
 def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sleep_time=0.5):
     """Ping the given network port until it becomes available (for a given number of retries).
     If 'http_path' is set, make a GET request to this path and assert a non-error response."""
+    return wait_for_port_status(
+        port,
+        http_path=http_path,
+        expect_success=expect_success,
+        retries=retries,
+        sleep_time=sleep_time,
+    )
+
+
+def wait_for_port_closed(port, http_path=None, expect_success=True, retries=10, sleep_time=0.5):
+    return wait_for_port_status(
+        port,
+        http_path=http_path,
+        expect_success=expect_success,
+        retries=retries,
+        sleep_time=sleep_time,
+        expect_closed=True,
+    )
+
+
+def wait_for_port_status(
+    port, http_path=None, expect_success=True, retries=10, sleep_time=0.5, expect_closed=False
+):
+    """Ping the given network port until it becomes (un)available (for a given number of retries)."""
 
     def check():
-        if not is_port_open(port, http_path=http_path, expect_success=expect_success):
-            raise Exception("Port %s (path: %s) was not open" % (port, http_path))
+        status = is_port_open(port, http_path=http_path, expect_success=expect_success)
+        if bool(status) != (not expect_closed):
+            raise Exception(
+                "Port %s (path: %s) was not %s"
+                % (port, http_path, "closed" if expect_closed else "open")
+            )
 
     return retry(check, sleep=sleep_time, retries=retries)
 
