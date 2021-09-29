@@ -1317,9 +1317,14 @@ def last_index_of(array, value):
     return result
 
 
-def is_sub_dict(child_dict, parent_dict):
+def is_sub_dict(child_dict: Dict, parent_dict: Dict) -> bool:
     """Returns whether the first dict is a sub-dict (subset) of the second dict."""
     return all(parent_dict.get(key) == val for key, val in child_dict.items())
+
+
+def not_none_or(value: Any, alternative: Any) -> Any:
+    """Return 'value' if it is not None, or 'alternative' otherwise."""
+    return value if value is not None else alternative
 
 
 def cleanup(files=True, env=ENV_DEV, quiet=True):

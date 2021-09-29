@@ -45,6 +45,7 @@ from localstack.utils.common import (
     get_service_protocol,
     is_base64,
     md5,
+    not_none_or,
     short_uid,
     timestamp_millis,
     to_bytes,
@@ -1140,10 +1141,6 @@ def handle_put_bucket_notification(bucket, data):
 def remove_bucket_notification(bucket):
     if bucket in S3_NOTIFICATIONS:
         del S3_NOTIFICATIONS[bucket]
-
-
-def not_none_or(value, alternative):
-    return value if value is not None else alternative
 
 
 class ProxyListenerS3(PersistingProxyListener):
