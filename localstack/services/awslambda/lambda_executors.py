@@ -236,6 +236,20 @@ def get_from_event(event: Dict, key: str):
         return None
 
 
+def handle_error(
+    lambda_function: LambdaFunction, event: Dict, error: Exception, asynchronous: bool = False
+):
+    if asynchronous:
+        if get_from_event(event, "eventSource") == EVENT_SOURCE_SQS:
+            sqs_queue_arn = get_from_event(event, "eventSourceARN")
+            if sqs_queue_arn:
+                # event source is SQS, send event back to dead letter queue
+                return sqs_error_to_dead_letter_queue(sqs_queue_arn, event, error)
+        else:
+            # event source is not SQS, send back to lambda dead letter queue
+            lambda_error_to_dead_letter_queue(lambda_function, event, error)
+
+
 def is_java_lambda(lambda_details):
     runtime = getattr(lambda_details, "runtime", lambda_details)
     return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA8_AL2, LAMBDA_RUNTIME_JAVA11]
@@ -362,17 +376,7 @@ class LambdaExecutor(object):
                         result = self._execute(lambda_function, inv_context)
                     except Exception as e:
                         raised_error = e
-                        if asynchronous:
-                            if get_from_event(event, "eventSource") == EVENT_SOURCE_SQS:
-                                sqs_queue_arn = get_from_event(event, "eventSourceARN")
-                                if sqs_queue_arn:
-                                    # event source is SQS, send event back to dead letter queue
-                                    dlq_sent = sqs_error_to_dead_letter_queue(
-                                        sqs_queue_arn, event, e
-                                    )
-                            else:
-                                # event source is not SQS, send back to lambda dead letter queue
-                                lambda_error_to_dead_letter_queue(lambda_function, event, e)
+                        dlq_sent = handle_error(lambda_function, event, e, asynchronous)
                         raise e
                     finally:
                         self.function_invoke_times[func_arn] = invocation_time
