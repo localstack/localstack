@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_iam import IAMClient
     from mypy_boto3_kinesis import KinesisClient
+    from mypy_boto3_kms import KMSClient
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_s3 import S3Client
@@ -91,6 +92,11 @@ def lambda_client() -> "LambdaClient":
 @pytest.fixture(scope="class")
 def kinesis_client() -> "KinesisClient":
     return _client("kinesis")
+
+
+@pytest.fixture(scope="class")
+def kms_client() -> "KMSClient":
+    return _client("kms")
 
 
 @pytest.fixture(scope="class")
@@ -204,6 +210,25 @@ def sns_topic(sns_client):
     topic_arn = response["TopicArn"]
     yield sns_client.get_topic_attributes(TopicArn=topic_arn)
     sns_client.delete_topic(TopicArn=topic_arn)
+
+
+@pytest.fixture
+def kms_key(kms_client):
+    return kms_client.create_key(
+        Policy="policy1", Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
+    )
+
+
+@pytest.fixture
+def kms_grant_and_key(kms_client, kms_key):
+    return [
+        kms_client.create_grant(
+            KeyId=kms_key["KeyMetadata"]["KeyId"],
+            GranteePrincipal="arn:aws:iam::000000000000:role/test",
+            Operations=["Decrypt", "Encrypt"],
+        ),
+        kms_key,
+    ]
 
 
 # Cleanup fixtures
