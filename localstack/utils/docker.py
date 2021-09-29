@@ -63,6 +63,13 @@ class NoSuchImage(ContainerException):
         self.image_name = image_name
 
 
+class NoSuchNetwork(ContainerException):
+    def __init__(self, network_name: str, message=None, stdout=None, stderr=None) -> None:
+        message = message or f"Docker network {network_name} not found"
+        super().__init__(message, stdout, stderr)
+        self.network_name = network_name
+
+
 class PortMappings(object):
     """Maps source to target port ranges for Docker port mappings."""
 
@@ -242,6 +249,14 @@ class ContainerClient(metaclass=ABCMeta):
     @abstractmethod
     def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
         """Get detailed attributes of an image.
+
+        :return: Dict containing docker attributes as returned by the daemon
+        """
+        pass
+
+    @abstractmethod
+    def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
+        """Get detailed attributes of an network.
 
         :return: Dict containing docker attributes as returned by the daemon
         """
@@ -576,6 +591,12 @@ class CmdDockerClient(ContainerClient):
             return self._inspect_object(image_name)
         except NoSuchObject as e:
             raise NoSuchImage(image_name=e.object_id)
+
+    def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
+        try:
+            return self._inspect_object(network_name)
+        except NoSuchObject as e:
+            raise NoSuchNetwork(network_name=e.object_id)
 
     def get_container_ip(self, container_name_or_id: str) -> str:
         cmd = self._docker_cmd()
@@ -1155,6 +1176,14 @@ class SdkDockerClient(ContainerClient):
             return self.client().images.get(image_name).attrs
         except NotFound:
             raise NoSuchImage(image_name)
+        except APIError:
+            raise ContainerException()
+
+    def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
+        try:
+            return self.client().networks.get(network_name).attrs
+        except NotFound:
+            raise NoSuchNetwork(network_name)
         except APIError:
             raise ContainerException()
 
