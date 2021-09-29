@@ -14,6 +14,7 @@ from localstack.utils.docker import (
     DockerContainerStatus,
     NoSuchContainer,
     NoSuchImage,
+    NoSuchNetwork,
     PortMappings,
     Util,
 )
@@ -677,6 +678,17 @@ class TestDockerClient:
     def test_inspect_image(self, docker_client: ContainerClient):
         docker_client.pull_image("alpine")
         assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]
+
+    def test_inspect_network(self, docker_client: ContainerClient, create_network):
+        network_name = "ls_test_network_%s" % short_uid()
+        network_id = create_network(network_name)
+        assert network_name == docker_client.inspect_network(network_name)["Name"]
+        assert network_id == docker_client.inspect_network(network_name)["Id"]
+
+    def test_inspect_network_non_existent_network(self, docker_client: ContainerClient):
+        network_name = "ls_test_network_non_existent"
+        with pytest.raises(NoSuchNetwork):
+            docker_client.inspect_network(network_name)
 
     def test_copy_from_container(self, tmpdir, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
