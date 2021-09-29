@@ -23,7 +23,11 @@ from six.moves.urllib.parse import urlparse
 from localstack import config
 from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_executors
-from localstack.services.awslambda.lambda_executors import LambdaContext
+from localstack.services.awslambda.lambda_executors import (
+    LambdaContext,
+    handle_error,
+    lambda_result_to_destination,
+)
 from localstack.services.awslambda.lambda_utils import (
     DOTNET_LAMBDA_RUNTIMES,
     LAMBDA_DEFAULT_HANDLER,
@@ -805,9 +809,27 @@ def run_lambda(
         # forward invocation to external endpoint, if configured
         invocation_type = "Event" if asynchronous else "RequestResponse"
 
-        invoke_result = forward_to_external_url(lambda_function, event, context, invocation_type)
+        dlq_sent = None
+        raised_error = None
+        try:
+            invoke_result = forward_to_external_url(
+                lambda_function, event, context, invocation_type
+            )
+        except Exception as e:
+            raised_error = e
+            dlq_sent = handle_error(lambda_function, event, e, asynchronous)
+        # check whether forwarding has taken in place (returned result or raised error)
+        if invoke_result is not None or raised_error is not None:
+            callback and callback(
+                invoke_result, func_arn, event, error=raised_error, dlq_sent=dlq_sent
+            )
+            lambda_result_to_destination(
+                lambda_function, event, invoke_result, asynchronous, raised_error
+            )
         if invoke_result is not None:
             return invoke_result
+        elif raised_error is not None:
+            raise raised_error
 
         result = LAMBDA_EXECUTOR.execute(
             func_arn,
