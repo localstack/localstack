@@ -1414,6 +1414,8 @@ class SdkDockerClient(ContainerClient):
                     except socket.timeout:
                         pass
             else:
+                if detach:
+                    return b"", b""
                 return_code = result[0]
                 if isinstance(result[1], bytes):
                     stdout = result[1]
