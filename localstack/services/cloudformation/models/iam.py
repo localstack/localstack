@@ -251,9 +251,7 @@ class IAMRole(GenericBaseModel, MotoRole):
         ):
             iam.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
         # delete inline policies
-        for inline_policy_name in iam.list_role_policies(RoleName=role_name).get(
-            "PolicyNames", []
-        ):
+        for inline_policy_name in iam.list_role_policies(RoleName=role_name).get("PolicyNames", []):
             iam.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
 
     @classmethod
