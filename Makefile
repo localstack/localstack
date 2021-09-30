@@ -51,7 +51,7 @@ init-testlibs:
 
 publish:           ## Publish the library to the central PyPi repository
 	# build and upload archive
-	($(VENV_RUN) && python setup.py sdist upload)
+	($(VENV_RUN) && python setup.py sdist; twine upload dist/*.tar.gz)
 
 coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)

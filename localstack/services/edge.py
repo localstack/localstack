@@ -35,6 +35,7 @@ from localstack.utils.aws.aws_stack import (
     is_internal_call_context,
     set_default_region_in_headers,
 )
+from localstack.utils.aws.request_routing import extract_version_and_action, matches_service_action
 from localstack.utils.common import (
     TMP_THREADS,
     empty_context_manager,
@@ -98,13 +99,6 @@ class ProxyListenerEdge(ProxyListener):
         # extract API details
         api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
 
-        if api and is_trace_logging_enabled(headers):
-            # print request trace for debugging, if enabled
-            LOG.debug(
-                'IN(%s): "%s %s" - headers: %s - data: %s'
-                % (api, method, path, dict(headers), data)
-            )
-
         set_default_region_in_headers(headers)
 
         if port and int(port) < 0:
@@ -116,11 +110,19 @@ class ProxyListenerEdge(ProxyListener):
                 port,
             )
 
+        should_log_trace = is_trace_logging_enabled(headers)
+        if api and should_log_trace:
+            # print request trace for debugging, if enabled
+            LOG.debug(
+                'IN(%s): "%s %s" - headers: %s - data: %s'
+                % (api, method, path, dict(headers), data)
+            )
+
         if not port:
             if method == "OPTIONS":
-                if api and is_trace_logging_enabled(headers):
+                if api and should_log_trace:
                     # print request trace for debugging, if enabled
-                    LOG.debug('OUT(%s): "%s %s" - status: %s' % (api, method, path, 200))
+                    LOG.debug('IN(%s): "%s %s" - status: %s' % (api, method, path, 200))
                 return 200
 
             if api in ["", None, API_UNKNOWN]:
@@ -164,7 +166,21 @@ class ProxyListenerEdge(ProxyListener):
             lock_ctx = empty_context_manager()
 
         with lock_ctx:
-            return do_forward_request(api, method, path, data, headers, port=port)
+            result = do_forward_request(api, method, path, data, headers, port=port)
+            if should_log_trace and result not in [None, False, True]:
+                result_status_code = getattr(result, "status_code", result)
+                result_headers = getattr(result, "headers", {})
+                result_content = getattr(result, "content", "")
+                LOG.debug(
+                    'OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s',
+                    api,
+                    method,
+                    path,
+                    result_status_code,
+                    dict(result_headers or {}),
+                    result_content,
+                )
+            return result
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
         api = headers.get(HEADER_TARGET_API) or ""
@@ -428,6 +444,10 @@ def get_api_from_custom_rules(method, path, data, headers):
         return "apigateway", config.PORT_APIGATEWAY
 
     data_bytes = to_bytes(data or "")
+    version, action = extract_version_and_action(path, data_bytes)
+
+    def _in_path_or_payload(search_str):
+        return to_str(search_str) in path or to_bytes(search_str) in data_bytes
 
     if path == "/" and b"QueueName=" in data_bytes:
         return "sqs", config.PORT_SQS
@@ -438,13 +458,10 @@ def get_api_from_custom_rules(method, path, data, headers):
     if path.startswith("/2015-03-31/functions/"):
         return "lambda", config.PORT_LAMBDA
 
-    if (
-        b"Action=AssumeRoleWithWebIdentity" in data_bytes
-        or "Action=AssumeRoleWithWebIdentity" in path
-    ):
+    if _in_path_or_payload("Action=AssumeRoleWithWebIdentity"):
         return "sts", config.PORT_STS
 
-    if b"Action=AssumeRoleWithSAML" in data_bytes or "Action=AssumeRoleWithSAML" in path:
+    if _in_path_or_payload("Action=AssumeRoleWithSAML"):
         return "sts", config.PORT_STS
 
     # CloudWatch backdoor API to retrieve raw metrics
@@ -452,10 +469,14 @@ def get_api_from_custom_rules(method, path, data, headers):
         return "cloudwatch", config.PORT_CLOUDWATCH
 
     # SQS queue requests
-    if ("QueueUrl=" in path and "Action=" in path) or (
-        b"QueueUrl=" in data_bytes and b"Action=" in data_bytes
-    ):
+    if _in_path_or_payload("QueueUrl=") and _in_path_or_payload("Action="):
         return "sqs", config.PORT_SQS
+    if matches_service_action("sqs", action, version=version):
+        return "sqs", config.PORT_SQS
+
+    # SNS topic requests
+    if matches_service_action("sns", action, version=version):
+        return "sns", config.PORT_SNS
 
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip("/")
