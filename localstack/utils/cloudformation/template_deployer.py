@@ -1215,9 +1215,10 @@ def add_default_resource_props(
     props = resource["Properties"] = resource.get("Properties", {})
     existing_resources = existing_resources or {}
 
-    my_instance = get_resource_model_instance(resource_id, existing_resources)
-    if my_instance is not None:
-        my_instance.add_defaults(resource, stack_name)
+    canonical_type = canonical_resource_type(res_type)
+    resource_class = RESOURCE_MODELS.get(canonical_type)
+    if resource_class is not None:
+        resource_class.add_defaults(resource, stack_name)
 
     def _generate_res_name():
         return "%s-%s-%s" % (stack_name, resource_name or resource_id, short_uid())
