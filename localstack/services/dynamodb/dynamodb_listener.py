@@ -787,8 +787,10 @@ class ProxyListenerDynamoDB(ProxyListener):
 def get_sse_description(data):
     return {
         "Status": "ENABLED" if data["Enabled"] else "UPDATING",
-        "SSEType": data["SSEType"],
-        "KMSMasterKeyArn": aws_stack.kms_key_arn(data["KMSMasterKeyId"]),
+        "SSEType": data["SSEType"] if data["Enabled"] else None,
+        "KMSMasterKeyArn": aws_stack.kms_key_arn(data["KMSMasterKeyId"])
+        if data["Enabled"]
+        else None,
     }
 
 
