@@ -191,3 +191,8 @@ class TestTerraform(unittest.TestCase):
                 service_apis.append(rest_api)
 
         self.assertEqual(1, len(service_apis))
+
+    def test_dynamodb(self):
+        dynamo_client = aws_stack.connect_to_service("dynamodb")
+        tables = dynamo_client.list_tables()
+        self.assertEqual(3, len(tables["TableNames"]))
