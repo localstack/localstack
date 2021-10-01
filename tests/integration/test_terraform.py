@@ -195,6 +195,7 @@ class TestTerraform(unittest.TestCase):
     def test_dynamodb(self):
         def _table_exists(tablename, dynamotables):
             return any(name for name in dynamotables["TableNames"] if name == tablename)
+
         dynamo_client = aws_stack.connect_to_service("dynamodb")
         tables = dynamo_client.list_tables()
         self.assertTrue(_table_exists("tf_dynamotable1", tables))
