@@ -1488,8 +1488,12 @@ def get_function(function):
     """
     region = LambdaRegion.get()
     funcs = do_list_functions()
+    arn_regex = r".*%s($|:.+)" % function
+    is_arn = ":" in function
     for func in funcs:
-        if function == func["FunctionName"] or function == func["FunctionArn"]:
+        if function == func["FunctionName"] or (
+            is_arn and re.match(arn_regex, func["FunctionArn"])
+        ):
             return lookup_function(func, region, request.url)
     return not_found_error(func_arn(function))
 
