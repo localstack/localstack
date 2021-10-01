@@ -39,6 +39,7 @@ class GenericBaseModel(CloudFormationModel):
     """
 
     def __init__(self, resource_json, region_name=None, **params):
+        # self.stack_name = stack_name # TODO: add stack name to params
         self.region_name = region_name or aws_stack.get_region()
         self.resource_json = resource_json
         self.resource_type = resource_json["Type"]
@@ -81,6 +82,12 @@ class GenericBaseModel(CloudFormationModel):
     @staticmethod
     def get_deploy_templates():
         """Return template configurations used to create the final API requests (implemented by subclasses)."""
+        pass
+
+    # TODO: rework to normal instance method when resources aren't mutated in different place anymore
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        """Set any defaults required, including auto-generating names. Must be called before deploying the resource"""
         pass
 
     # ----------------------

@@ -31,10 +31,7 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import (
-    canonical_json,
     get_all_subclasses,
-    json_safe,
-    md5,
     prevent_stack_overflow,
     short_uid,
     start_worker_thread,
@@ -718,7 +715,7 @@ def update_resource(resource_id, resources, stack_name):
         return result
 
 
-def get_resource_model_instance(resource_id, resources) -> GenericBaseModel:
+def get_resource_model_instance(resource_id: str, resources) -> Optional[GenericBaseModel]:
     """Obtain a typed resource entity instance representing the given stack resource."""
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
@@ -1218,6 +1215,10 @@ def add_default_resource_props(
     props = resource["Properties"] = resource.get("Properties", {})
     existing_resources = existing_resources or {}
 
+    my_instance = get_resource_model_instance(resource_id, existing_resources)
+    if my_instance is not None:
+        my_instance.add_defaults(resource, stack_name)
+
     def _generate_res_name():
         return "%s-%s-%s" % (stack_name, resource_name or resource_id, short_uid())
 
@@ -1298,15 +1299,6 @@ def add_default_resource_props(
 
     elif res_type == "AWS::IAM::ManagedPolicy":
         props["ManagedPolicyName"] = props.get("ManagedPolicyName") or _generate_res_name()
-
-    # generate default names for certain resource types
-    default_attrs = (("AWS::IAM::Role", "RoleName"), ("AWS::Events::Rule", "Name"))
-    for entry in default_attrs:
-        if res_type == entry[0] and not props.get(entry[1]):
-            if not resource_id:
-                resource_id = canonical_json(json_safe(props))
-                resource_id = md5(resource_id)
-            props[entry[1]] = "cf-%s-%s" % (stack_name, resource_id)  # TODO: not valid AWS behavior
 
 
 # -----------------------
@@ -1683,7 +1675,7 @@ class TemplateDeployer(object):
         # run deployment in background loop, to avoid client network timeouts
         return start_worker_thread(_run)
 
-    def do_apply_changes_in_loop(self, changes, stack, stack_name):
+    def do_apply_changes_in_loop(self, changes, stack, stack_name: str):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
         changes_done = []
         max_iters = 30

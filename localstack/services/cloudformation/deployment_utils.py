@@ -5,7 +5,7 @@ from localstack.constants import INSTALL_DIR_INFRA
 from localstack.utils import common
 
 # URL to "cfn-response" module which is required in some CF Lambdas
-from localstack.utils.common import select_attributes
+from localstack.utils.common import select_attributes, short_uid
 
 CFN_RESPONSE_MODULE_URL = (
     "https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js"
@@ -135,3 +135,20 @@ def select_parameters(*param_names):
 
 def is_none_or_empty_value(value):
     return not value or value == PLACEHOLDER_AWS_NO_VALUE
+
+
+def generate_default_name(stack_name: str, logical_resource_id: str):
+    random_id_part = short_uid()
+    resource_id_part = logical_resource_id[:24]
+    stack_name_part = stack_name[: 63 - 2 - (len(random_id_part) + len(resource_id_part))]
+    return f"{stack_name_part}-{resource_id_part}-{random_id_part}"
+
+
+def pre_create_default_name(key: str):
+    def _pre_create_default_name(resource_id, resources, resource_type, func, stack_name):
+        resource = resources[resource_id]
+        props = resource["Properties"]
+        if not props.get(key):
+            props[key] = generate_default_name(stack_name, resource_id)
+
+    return _pre_create_default_name
