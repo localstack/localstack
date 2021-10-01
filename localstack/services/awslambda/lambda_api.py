@@ -1489,7 +1489,7 @@ def get_function(function):
     region = LambdaRegion.get()
     funcs = do_list_functions()
     for func in funcs:
-        if function == func["FunctionName"]:
+        if function == func["FunctionName"] or function == func["FunctionArn"]:
             return lookup_function(func, region, request.url)
     return not_found_error(func_arn(function))
 
