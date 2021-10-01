@@ -809,6 +809,7 @@ def run_lambda(
         # forward invocation to external endpoint, if configured
         invocation_type = "Event" if asynchronous else "RequestResponse"
 
+        invoke_result = None
         dlq_sent = None
         raised_error = None
         try:
