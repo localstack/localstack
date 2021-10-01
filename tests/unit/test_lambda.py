@@ -58,6 +58,72 @@ class TestLambdaAPI(unittest.TestCase):
                 result["message"],
             )
 
+    def test_get_function_single_function_returns_correect_function(self):
+        with self.app.test_request_context():
+            self._create_function("myFunction")
+            result = json.loads(lambda_api.get_function("myFunction").get_data())
+            self.assertEquals(
+                result["Configuration"]["FunctionArn"],
+                "arn:aws:lambda:us-east-1:000000000000:function:myFunction",
+            )
+
+    def test_get_function_two_functions_with_similar_names_match_by_name(self):
+        with self.app.test_request_context():
+            self._create_function("myFunctions")
+            self._create_function("myFunction")
+            result = json.loads(lambda_api.get_function("myFunction").get_data())
+            self.assertEquals(
+                result["Configuration"]["FunctionArn"],
+                "arn:aws:lambda:us-east-1:000000000000:function:myFunction",
+            )
+            result = json.loads(lambda_api.get_function("myFunctions").get_data())
+            self.assertEquals(
+                result["Configuration"]["FunctionArn"],
+                "arn:aws:lambda:us-east-1:000000000000:function:myFunctions",
+            )
+
+    def test_get_function_two_functions_with_similar_names_match_by_arn(self):
+        with self.app.test_request_context():
+            self._create_function("myFunctions")
+            self._create_function("myFunction")
+            result = json.loads(
+                lambda_api.get_function(
+                    "arn:aws:lambda:us-east-1:000000000000:function:myFunction"
+                ).get_data()
+            )
+            self.assertEquals(
+                result["Configuration"]["FunctionArn"],
+                "arn:aws:lambda:us-east-1:000000000000:function:myFunction",
+            )
+            result = json.loads(
+                lambda_api.get_function(
+                    "arn:aws:lambda:us-east-1:000000000000:function:myFunctions"
+                ).get_data()
+            )
+            self.assertEquals(
+                result["Configuration"]["FunctionArn"],
+                "arn:aws:lambda:us-east-1:000000000000:function:myFunctions",
+            )
+
+    def test_get_function_two_functions_with_similar_names_match_by_partial_arn(self):
+        with self.app.test_request_context():
+            self._create_function("myFunctions")
+            self._create_function("myFunction")
+            result = json.loads(
+                lambda_api.get_function("us-east-1:000000000000:function:myFunction").get_data()
+            )
+            self.assertEquals(
+                result["Configuration"]["FunctionArn"],
+                "arn:aws:lambda:us-east-1:000000000000:function:myFunction",
+            )
+            result = json.loads(
+                lambda_api.get_function("us-east-1:000000000000:function:myFunctions").get_data()
+            )
+            self.assertEquals(
+                result["Configuration"]["FunctionArn"],
+                "arn:aws:lambda:us-east-1:000000000000:function:myFunctions",
+            )
+
     def test_get_event_source_mapping(self):
         region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
