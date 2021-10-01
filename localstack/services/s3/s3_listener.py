@@ -226,7 +226,9 @@ def send_notifications(method, bucket_name, object_path, version_id, headers):
             }[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
-            if action == "ObjectCreated" and method == "POST":
+            if action == "ObjectCreated" and method == "PUT" and "x-amz-copy-source" in headers:
+                api_method = "Copy"
+            elif action == "ObjectCreated" and method == "POST":
                 api_method = "CompleteMultipartUpload"
             else:
                 api_method = {"PUT": "Put", "POST": "Post", "DELETE": "Delete"}[method]
