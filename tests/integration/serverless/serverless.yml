@@ -122,6 +122,10 @@ resources:
         QueueName: "${self:service}-${opt:stage}-CreateBackupQueue"
 
 functions:
+  tests:
+    handler: "handler.tests"
+    maximumEventAge: 7200
+    maximumRetryAttempts: 2
   test:
     handler: "handler.test"
     maximumEventAge: 7200
