@@ -86,19 +86,24 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             self._create_function("myFunctions")
             self._create_function("myFunction")
-            result = json.loads(lambda_api.get_function("arn:aws:lambda:us-east-1:000000000000:function:myFunction")
-                                .get_data())
+            result = json.loads(
+                lambda_api.get_function(
+                    "arn:aws:lambda:us-east-1:000000000000:function:myFunction"
+                ).get_data()
+            )
             self.assertEquals(
                 result["Configuration"]["FunctionArn"],
                 "arn:aws:lambda:us-east-1:000000000000:function:myFunction",
             )
-            result = json.loads(lambda_api.get_function("arn:aws:lambda:us-east-1:000000000000:function:myFunctions")
-                                .get_data())
+            result = json.loads(
+                lambda_api.get_function(
+                    "arn:aws:lambda:us-east-1:000000000000:function:myFunctions"
+                ).get_data()
+            )
             self.assertEquals(
                 result["Configuration"]["FunctionArn"],
                 "arn:aws:lambda:us-east-1:000000000000:function:myFunctions",
             )
-
 
     def test_get_event_source_mapping(self):
         region = lambda_api.LambdaRegion.get()
