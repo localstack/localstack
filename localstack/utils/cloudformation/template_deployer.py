@@ -1241,9 +1241,6 @@ def add_default_resource_props(
     elif res_type == "AWS::SQS::Queue" and not props.get("QueueName"):
         props["QueueName"] = "queue-%s" % short_uid()
 
-    elif res_type == "AWS::IAM::ManagedPolicy" and not resource.get("ManagedPolicyName"):
-        resource["ManagedPolicyName"] = _generate_res_name()
-
     elif res_type == "AWS::ApiGateway::RestApi" and not props.get("Name"):
         props["Name"] = _generate_res_name()
 
@@ -1284,9 +1281,6 @@ def add_default_resource_props(
     elif res_type == "AWS::Redshift::Cluster":
         props["ClusterIdentifier"] = props.get("ClusterIdentifier") or _generate_res_name()
 
-    elif res_type == "AWS::IAM::InstanceProfile":
-        props["InstanceProfileName"] = props.get("InstanceProfileName") or _generate_res_name()
-
     elif res_type == "AWS::Logs::LogGroup":
         props["LogGroupName"] = props.get("LogGroupName") or _generate_res_name()
 
@@ -1297,9 +1291,6 @@ def add_default_resource_props(
         if not existing:
             # append tags, to allow us to determine in service_models.py whether this key is already deployed
             tags.append({"Key": "localstack-key-id", "Value": short_uid()})
-
-    elif res_type == "AWS::IAM::ManagedPolicy":
-        props["ManagedPolicyName"] = props.get("ManagedPolicyName") or _generate_res_name()
 
 
 # -----------------------

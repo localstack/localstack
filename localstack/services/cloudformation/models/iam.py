@@ -31,6 +31,14 @@ class IAMManagedPolicy(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
 
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("ManagedPolicyName")
+        if not role_name:
+            resource["Properties"]["ManagedPolicyName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
     @classmethod
     def get_deploy_templates(cls):
         def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
@@ -354,6 +362,14 @@ class InstanceProfile(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get("InstanceProfileName")
+
+    @staticmethod
+    def add_defaults(resource, stack_name):
+        role_name = resource.get("Properties", {}).get("InstanceProfileName")
+        if not role_name:
+            resource["Properties"]["InstanceProfileName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():
