@@ -42,7 +42,7 @@ DEFAULT_ES_CLUSTER_CONFIG = {
 }
 
 # timeout in seconds when giving up on waiting for the cluster to start
-CLUSTER_STARTUP_TIMEOUT = 120
+CLUSTER_STARTUP_TIMEOUT = 600
 
 # ideally, each domain gets its own cluster. to save resources, we currently re-use the same
 # cluster instance. this also means we lie to the client about the the elasticsearch domain
