@@ -1213,79 +1213,17 @@ def add_default_resource_props(
 
     res_type = resource["Type"]
     props = resource["Properties"] = resource.get("Properties", {})
-    existing_resources = existing_resources or {}
 
     canonical_type = canonical_resource_type(res_type)
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class is not None:
         resource_class.add_defaults(resource, stack_name)
 
-    def _generate_res_name():
-        return "%s-%s-%s" % (stack_name, resource_name or resource_id, short_uid())
-
     # TODO: move logic below into resource classes!
     if res_type == "AWS::Logs::LogGroup" and not props.get("LogGroupName") and resource_name:
         props["LogGroupName"] = resource_name
 
-    elif res_type == "AWS::Lambda::Function" and not props.get("FunctionName"):
-        # TODO: generalize this for all auto-name generations
-        # FunctionName is up to 64 characters long
-        random_id_part = short_uid()
-        resource_id_part = resource_id[:24]
-        stack_name_part = stack_name[: 63 - 2 - (len(random_id_part) + len(resource_id_part))]
-        props["FunctionName"] = f"{stack_name_part}-{resource_id_part}-{random_id_part}"
-
-    elif res_type == "AWS::SNS::Topic" and not props.get("TopicName"):
-        props["TopicName"] = "topic-%s" % short_uid()
-
-    elif res_type == "AWS::SQS::Queue" and not props.get("QueueName"):
-        props["QueueName"] = "queue-%s" % short_uid()
-
-    elif res_type == "AWS::ApiGateway::RestApi" and not props.get("Name"):
-        props["Name"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::ApiKey" and not props.get("Name"):
-        props["Name"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::UsagePlan" and not props.get("UsagePlanName"):
-        props["UsagePlanName"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::Model" and not props.get("Name"):
-        props["Name"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::RequestValidator" and not props.get("Name"):
-        props["Name"] = _generate_res_name()
-
-    elif res_type == "AWS::CloudWatch::Alarm":
-        props["AlarmName"] = props.get("AlarmName") or _generate_res_name()
-
-    elif res_type == "AWS::SecretsManager::Secret":
-        props["Name"] = props.get("Name") or _generate_res_name()
-
-    elif res_type == "AWS::S3::Bucket" and not props.get("BucketName"):
-        existing_bucket = existing_resources.get(resource_id) or {}
-        bucket_name = (
-            existing_bucket.get("Properties", {}).get("BucketName") or _generate_res_name()
-        )
-        props["BucketName"] = s3_listener.normalize_bucket_name(bucket_name)
-
-    elif res_type == "AWS::StepFunctions::StateMachine" and not props.get("StateMachineName"):
-        props["StateMachineName"] = _generate_res_name()
-
-    elif res_type == "AWS::CloudFormation::Stack" and not props.get("StackName"):
-        props["StackName"] = _generate_res_name()
-
-    elif res_type == "AWS::EC2::SecurityGroup":
-        props["GroupName"] = props.get("GroupName") or _generate_res_name()
-
-    elif res_type == "AWS::Redshift::Cluster":
-        props["ClusterIdentifier"] = props.get("ClusterIdentifier") or _generate_res_name()
-
-    elif res_type == "AWS::Logs::LogGroup":
-        props["LogGroupName"] = props.get("LogGroupName") or _generate_res_name()
-
     elif res_type == "AWS::KMS::Key":
-        # TODO: inspect
         tags = props["Tags"] = props.get("Tags", [])
         existing = [t for t in tags if t["Key"] == "localstack-key-id"]
         if not existing:

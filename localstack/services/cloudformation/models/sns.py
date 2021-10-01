@@ -1,6 +1,9 @@
 import json
 
-from localstack.services.cloudformation.deployment_utils import is_none_or_empty_value
+from localstack.services.cloudformation.deployment_utils import (
+    generate_default_name,
+    is_none_or_empty_value,
+)
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import canonicalize_bool_to_str
@@ -30,6 +33,14 @@ class SNSTopic(GenericBaseModel):
             )
         )
         return result[0] if result else None
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("TopicName")
+        if not role_name:
+            resource["Properties"]["TopicName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @classmethod
     def get_deploy_templates(cls):

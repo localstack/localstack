@@ -66,3 +66,37 @@ def test_bucketpolicy(
         # pass
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])
+
+
+def test_bucket_autoname(
+    cfn_client,
+    cleanup_stacks,
+    cleanup_changesets,
+    is_change_set_created_and_available,
+    is_stack_created,
+):
+    stack_name = f"STACK-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+    response = cfn_client.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=load_template_raw("s3_bucket_autoname.yaml"),
+        ChangeSetType="CREATE",
+    )
+    change_set_id = response["Id"]
+    stack_id = response["StackId"]
+
+    try:
+        wait_until(is_change_set_created_and_available(change_set_id))
+        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        wait_until(is_stack_created(stack_id))
+
+        descr_response = cfn_client.describe_stacks(StackName=stack_id)
+        output = descr_response["Stacks"][0]["Outputs"][0]
+
+        assert output["OutputKey"] == "BucketNameOutput"
+        assert stack_name.lower() in output["OutputValue"]
+
+    finally:
+        cleanup_changesets([change_set_id])
+        cleanup_stacks([stack_id])

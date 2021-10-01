@@ -3,6 +3,7 @@ import os
 from localstack.services.awslambda.lambda_api import LAMBDA_POLICY_NAME_PATTERN
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
+    generate_default_name,
     get_cfn_response_mod_file,
     select_parameters,
 )
@@ -58,6 +59,14 @@ class LambdaFunction(GenericBaseModel):
                 k: str(v) for k, v in environment_variables.items()
             }
         return client.update_function_configuration(**update_props)
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("FunctionName")
+        if not role_name:
+            resource["Properties"]["FunctionName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():

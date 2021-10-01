@@ -3,6 +3,7 @@ import logging
 import random
 import string
 
+from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import (
     REF_ARN_ATTRS,
     REF_ID_ATTRS,
@@ -73,6 +74,14 @@ class SecretsManagerSecret(GenericBaseModel):
         result = [alphabet[random.randrange(len(alphabet))] for _ in range(length)]
         result = "".join(result)
         return result
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("Name")
+        if not role_name:
+            resource["Properties"]["Name"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @classmethod
     def get_deploy_templates(cls):

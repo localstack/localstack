@@ -7,9 +7,10 @@ from localstack.constants import AWS_REGION_US_EAST_1, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
     dump_json_params,
+    generate_default_name,
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
-from localstack.services.s3 import s3_utils
+from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation.cfn_utils import rename_params
 from localstack.utils.common import canonical_json, md5
@@ -51,6 +52,14 @@ class S3Bucket(GenericBaseModel, FakeBucket):
     @staticmethod
     def normalize_bucket_name(bucket_name):
         return s3_utils.normalize_bucket_name(bucket_name)
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("BucketName")
+        if not role_name:
+            resource["Properties"]["BucketName"] = s3_listener.normalize_bucket_name(
+                generate_default_name(stack_name, resource["LogicalResourceId"])
+            )
 
     @classmethod
     def get_deploy_templates(cls):

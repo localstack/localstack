@@ -1,3 +1,4 @@
+from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -24,6 +25,14 @@ class LogsLogGroup(GenericBaseModel):
         logs = aws_stack.connect_to_service("logs")
         groups = logs.describe_log_groups(logGroupNamePrefix=group_name)["logGroups"]
         return ([g for g in groups if g["logGroupName"] == group_name] or [None])[0]
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("LogGroupName")
+        if not role_name:
+            resource["Properties"]["LogGroupName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():
