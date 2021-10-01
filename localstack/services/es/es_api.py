@@ -11,11 +11,7 @@ from typing import Dict, Optional
 from flask import Flask, jsonify, make_response, request
 
 from localstack import config, constants
-from localstack.constants import (
-    ELASTICSEARCH_DEFAULT_VERSION,
-    ELASTICSEARCH_URLS,
-    TEST_AWS_ACCOUNT_ID,
-)
+from localstack.constants import ELASTICSEARCH_URLS, TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.services.es.cluster import ProxiedElasticsearchCluster
 from localstack.services.generic_proxy import RegionBackend
@@ -300,19 +296,6 @@ def get_domain_status(domain_name, deleted=False):
             "CognitoOptions": {"Enabled": False},
         }
     }
-
-
-def get_install_version_for_api_version(version):
-    result = ELASTICSEARCH_DEFAULT_VERSION
-    if version.startswith("6."):
-        result = "6.7.0"
-    elif version == "7.4":
-        result = "7.4.0"
-    elif version == "7.7":
-        result = "7.7.0"
-    if not result.startswith(result):
-        LOG.warning("Elasticsearch version %s not yet supported, defaulting to %s", version, result)
-    return result
 
 
 @app.route("%s/domain" % API_PREFIX, methods=["GET"])

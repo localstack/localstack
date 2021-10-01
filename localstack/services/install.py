@@ -122,9 +122,6 @@ GLIBC_URL = "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/%s/%
 GLIBC_PATH = config.TMP_FOLDER + "/" + GLIBC_FILE
 CA_CERTIFICATES = "ca-certificates"
 
-# set up logger
-LOG = logging.getLogger(__name__)
-
 
 def get_elasticsearch_install_version(version=None):
     if config.SKIP_INFRA_DOWNLOADS:
@@ -174,7 +171,7 @@ def install_elasticsearch(version=None):
             plugin_binary = os.path.join(install_dir, "bin", "elasticsearch-plugin")
             plugin_dir = os.path.join(install_dir, "plugins", plugin)
             if not os.path.exists(plugin_dir):
-                LOG.info("Installing Elasticsearch plugin %s" % (plugin))
+                LOG.info("Installing Elasticsearch plugin %s" % plugin)
 
                 def try_install():
                     safe_run([plugin_binary, "install", "-b", plugin])
