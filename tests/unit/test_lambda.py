@@ -7,9 +7,10 @@ import unittest
 
 import mock
 
-from localstack.constants import LAMBDA_TEST_ROLE
-from localstack.services.awslambda import lambda_api, lambda_executors
+from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
+from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
 from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file
 
@@ -65,7 +66,7 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.get_function("myFunction").get_data())
             self.assertEquals(
                 result["Configuration"]["FunctionArn"],
-                "arn:aws:lambda:us-east-1:000000000000:function:myFunction",
+                aws_stack.lambda_function_arn("myFunction"),
             )
 
     def test_get_function_two_functions_with_similar_names_match_by_name(self):
@@ -75,12 +76,11 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(lambda_api.get_function("myFunction").get_data())
             self.assertEquals(
                 result["Configuration"]["FunctionArn"],
-                "arn:aws:lambda:us-east-1:000000000000:function:myFunction",
+                aws_stack.lambda_function_arn("myFunction"),
             )
             result = json.loads(lambda_api.get_function("myFunctions").get_data())
             self.assertEquals(
-                result["Configuration"]["FunctionArn"],
-                "arn:aws:lambda:us-east-1:000000000000:function:myFunctions",
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
             )
 
     def test_get_function_two_functions_with_similar_names_match_by_arn(self):
@@ -88,22 +88,16 @@ class TestLambdaAPI(unittest.TestCase):
             self._create_function("myFunctions")
             self._create_function("myFunction")
             result = json.loads(
-                lambda_api.get_function(
-                    "arn:aws:lambda:us-east-1:000000000000:function:myFunction"
-                ).get_data()
+                lambda_api.get_function(aws_stack.lambda_function_arn("myFunction")).get_data()
             )
             self.assertEquals(
-                result["Configuration"]["FunctionArn"],
-                "arn:aws:lambda:us-east-1:000000000000:function:myFunction",
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunction")
             )
             result = json.loads(
-                lambda_api.get_function(
-                    "arn:aws:lambda:us-east-1:000000000000:function:myFunctions"
-                ).get_data()
+                lambda_api.get_function(aws_stack.lambda_function_arn("myFunctions")).get_data()
             )
             self.assertEquals(
-                result["Configuration"]["FunctionArn"],
-                "arn:aws:lambda:us-east-1:000000000000:function:myFunctions",
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
             )
 
     def test_get_function_two_functions_with_similar_names_match_by_partial_arn(self):
@@ -111,18 +105,20 @@ class TestLambdaAPI(unittest.TestCase):
             self._create_function("myFunctions")
             self._create_function("myFunction")
             result = json.loads(
-                lambda_api.get_function("us-east-1:000000000000:function:myFunction").get_data()
+                lambda_api.get_function(
+                    f"{aws_stack.get_region()}:000000000000:function:myFunction"
+                ).get_data()
             )
             self.assertEquals(
-                result["Configuration"]["FunctionArn"],
-                "arn:aws:lambda:us-east-1:000000000000:function:myFunction",
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunction")
             )
             result = json.loads(
-                lambda_api.get_function("us-east-1:000000000000:function:myFunctions").get_data()
+                lambda_api.get_function(
+                    f"{aws_stack.get_region()}:000000000000:function:myFunctions"
+                ).get_data()
             )
             self.assertEquals(
-                result["Configuration"]["FunctionArn"],
-                "arn:aws:lambda:us-east-1:000000000000:function:myFunctions",
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
             )
 
     def test_get_event_source_mapping(self):
@@ -752,12 +748,10 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_get_container_name(self):
         executor = lambda_executors.EXECUTOR_CONTAINERS_REUSE
-        name = executor.get_container_name(
-            "arn:aws:lambda:us-east-1:00000000:function:my_function_name"
-        )
+        name = executor.get_container_name(aws_stack.lambda_function_arn("my_function_name"))
         self.assertEqual(
             name,
-            "localstack_lambda_arn_aws_lambda_us-east-1_00000000_function_my_function_name",
+            f"localstack_lambda_arn_aws_lambda_{aws_stack.get_region()}_{TEST_AWS_ACCOUNT_ID}_function_my_function_name",
         )
 
     def test_concurrency(self):
@@ -981,14 +975,14 @@ class TestLambdaAPI(unittest.TestCase):
     def test_get_java_lib_folder_classpath_archive_is_None(self):
         self.assertRaises(TypeError, lambda_executors.Util.get_java_classpath, None)
 
-    @mock.patch("localstack.utils.cloudwatch.cloudwatch_util.store_cloudwatch_logs")
+    @mock.patch("localstack.services.awslambda.lambda_utils.store_cloudwatch_logs")
     def test_executor_store_logs_can_handle_milliseconds(self, mock_store_cloudwatch_logs):
         mock_details = mock.Mock()
         t_sec = time.time()  # plain old epoch secs
         t_ms = time.time() * 1000  # epoch ms as a long-int like AWS
 
-        # pass t_ms millisecs to _store_logs
-        lambda_executors._store_logs(mock_details, "mock log output", t_ms)
+        # pass t_ms millisecs to store_cloudwatch_logs
+        lambda_utils.store_lambda_logs(mock_details, "mock log output", t_ms)
 
         # expect the computed log-stream-name to having a prefix matching the date derived from t_sec
         today = datetime.datetime.utcfromtimestamp(t_sec).strftime("%Y/%m/%d")

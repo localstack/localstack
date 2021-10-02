@@ -601,8 +601,10 @@ def lambda_function_or_layer_arn(
             alias_response = client.get_alias(FunctionName=entity_name, Name=alias)
             version = alias_response["FunctionVersion"]
 
-        except Exception:
-            raise Exception("Alias %s of %s not found" % (alias, entity_name))
+        except Exception as e:
+            msg = "Alias %s of %s not found" % (alias, entity_name)
+            LOG.info(f"{msg}: {e}")
+            raise Exception(msg)
 
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
