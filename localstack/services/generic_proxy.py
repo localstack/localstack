@@ -226,16 +226,23 @@ def cors_error_response():
     return response
 
 
+def _is_in_allowed_origins(allowed_origins, origin):
+    for allowed_origin in allowed_origins:
+        if allowed_origin == "*" or origin == allowed_origin:
+            return True
+    return False
+
+
 def is_cors_origin_allowed(headers, allowed_origins=None):
     """Returns true if origin is allowed to perform cors requests, false otherwise"""
     allowed_origins = ALLOWED_CORS_ORIGINS if allowed_origins is None else allowed_origins
     origin = headers.get("origin")
     referer = headers.get("referer")
     if origin:
-        return origin in allowed_origins
+        return _is_in_allowed_origins(allowed_origins, origin)
     elif referer:
         referer_uri = "{uri.scheme}://{uri.netloc}".format(uri=urlparse(referer))
-        return referer_uri in allowed_origins
+        return _is_in_allowed_origins(allowed_origins, referer_uri)
     # If both headers are not set, let it through (awscli etc. do not send these headers)
     return True
 
