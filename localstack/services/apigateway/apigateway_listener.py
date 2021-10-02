@@ -244,6 +244,8 @@ def apply_template(integration, req_res_type, data, path_params={}, query_params
 
 
 def apply_response_parameters(response, integration, api_id=None):
+    if response.headers.get("Access-Control-Allow-Origin") != "*":
+        response.headers["Access-Control-Allow-Credentials"] = "true"
     int_responses = integration.get("integrationResponses") or {}
     if not int_responses:
         return response
