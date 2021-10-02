@@ -1170,6 +1170,11 @@ class LambdaExecutorLocal(LambdaExecutor):
         self, lambda_function: LambdaFunction, inv_context: InvocationContext
     ) -> InvocationResult:
 
+        # apply plugin patches to prepare invocation context
+        result = self.apply_plugin_patches(inv_context)
+        if isinstance(result, InvocationResult):
+            return result
+
         lambda_cwd = lambda_function.cwd
         environment = self._prepare_environment(lambda_function)
 
@@ -1248,7 +1253,10 @@ class LambdaExecutorLocal(LambdaExecutor):
             )
             raise InvocationException(result, log_output)
 
+        # construct final invocation result
         invocation_result = InvocationResult(result, log_output=log_output)
+        # run plugins post-processing logic
+        invocation_result = self.process_result_via_plugins(inv_context, invocation_result)
         return invocation_result
 
     def provide_file_to_lambda(self, local_file: str, inv_context: InvocationContext) -> str:
@@ -1293,8 +1301,6 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         # execute Lambda and get invocation result
         invocation_result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
-        # run plugins post-processing logic
-        invocation_result = self.process_result_via_plugins(inv_context, invocation_result)
 
         return invocation_result
 
