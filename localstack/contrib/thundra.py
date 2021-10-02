@@ -1,17 +1,17 @@
 import json
 import logging
 import os
-from typing import Optional
+from typing import Optional, Union
 
 from localstack import config
 from localstack.services import install
 from localstack.services.awslambda.lambda_executors import (
     AdditionalInvocationOptions,
     InvocationContext,
+    InvocationResult,
     LambdaExecutorPlugin,
     is_java_lambda,
     is_nodejs_runtime,
-    is_python_runtime,
 )
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_JAVA8,
@@ -23,6 +23,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON37,
     LAMBDA_RUNTIME_PYTHON38,
+    is_python_runtime,
 )
 from localstack.utils import common
 
@@ -430,7 +431,7 @@ class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
 
     def prepare_invocation(
         self, context: InvocationContext
-    ) -> Optional[AdditionalInvocationOptions]:
+    ) -> Optional[Union[AdditionalInvocationOptions, InvocationResult]]:
         if is_java_lambda(context.lambda_function):
             return _prepare_invocation_for_java_lambda(context)
         elif is_nodejs_runtime(context.lambda_function):

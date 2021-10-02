@@ -23,12 +23,9 @@ from six.moves.urllib.parse import urlparse
 from localstack import config
 from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_executors
-from localstack.services.awslambda.lambda_executors import (
-    LambdaContext,
-    handle_error,
-    lambda_result_to_destination,
-)
+from localstack.services.awslambda.lambda_executors import LambdaContext
 from localstack.services.awslambda.lambda_utils import (
+    API_PATH_ROOT,
     DOTNET_LAMBDA_RUNTIMES,
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
@@ -58,7 +55,6 @@ from localstack.utils.common import (
     parse_request_data,
     run,
     run_for_max_seconds,
-    run_safe,
     safe_requests,
     save_file,
     short_uid,
@@ -80,7 +76,6 @@ LOG = logging.getLogger(__name__)
 LAMBDA_POLICY_NAME_PATTERN = "lambda_policy_%s"
 # constants
 APP_NAME = "lambda_api"
-PATH_ROOT = "/2015-03-31"
 ARCHIVE_FILE_PATTERN = "%s/lambda.handler.*.jar" % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = "%s/lambda_script_*.py" % config.TMP_FOLDER
 LAMBDA_ZIP_FILE_NAME = "original_lambda_archive.zip"
@@ -805,33 +800,6 @@ def run_lambda(
             return lambda_executors.InvocationResult(result)
 
         context = LambdaContext(lambda_function, version, context)
-
-        # forward invocation to external endpoint, if configured
-        invocation_type = "Event" if asynchronous else "RequestResponse"
-
-        invoke_result = None
-        dlq_sent = None
-        raised_error = None
-        try:
-            invoke_result = forward_to_external_url(
-                lambda_function, event, context, invocation_type
-            )
-        except Exception as e:
-            raised_error = e
-            dlq_sent = handle_error(lambda_function, event, e, asynchronous)
-        # check whether forwarding has taken in place (returned result or raised error)
-        if invoke_result is not None or raised_error is not None:
-            callback and callback(
-                invoke_result, func_arn, event, error=raised_error, dlq_sent=dlq_sent
-            )
-            lambda_result_to_destination(
-                lambda_function, event, invoke_result, asynchronous, raised_error
-            )
-        if invoke_result is not None:
-            return invoke_result
-        elif raised_error is not None:
-            raise raised_error
-
         result = LAMBDA_EXECUTOR.execute(
             func_arn,
             lambda_function,
@@ -1250,63 +1218,6 @@ def format_func_details(
     return result
 
 
-def forward_to_external_url(lambda_function, event, context, invocation_type):
-    func_forward_url = (
-        lambda_function.envvars.get("LOCALSTACK_LAMBDA_FORWARD_URL") or config.LAMBDA_FORWARD_URL
-    )
-    """If LAMBDA_FORWARD_URL is configured, forward the invocation of this Lambda to the configured URL."""
-    if not func_forward_url:
-        return
-
-    func_name = lambda_function.name()
-    url = "%s%s/functions/%s/invocations" % (
-        func_forward_url,
-        PATH_ROOT,
-        func_name,
-    )
-
-    copied_env_vars = lambda_function.envvars.copy()
-    copied_env_vars["LOCALSTACK_HOSTNAME"] = config.HOSTNAME_EXTERNAL
-    copied_env_vars["LOCALSTACK_EDGE_PORT"] = str(config.EDGE_PORT)
-
-    headers = aws_stack.mock_aws_request_headers("lambda")
-    headers["X-Amz-Region"] = lambda_function.region()
-    headers["X-Amz-Request-Id"] = context.aws_request_id
-    headers["X-Amz-Handler"] = lambda_function.handler
-    headers["X-Amz-Function-ARN"] = context.invoked_function_arn
-    headers["X-Amz-Function-Name"] = context.function_name
-    headers["X-Amz-Function-Version"] = context.function_version
-    headers["X-Amz-Role"] = lambda_function.role
-    headers["X-Amz-Runtime"] = lambda_function.runtime
-    headers["X-Amz-Timeout"] = str(lambda_function.timeout)
-    headers["X-Amz-Memory-Size"] = str(context.memory_limit_in_mb)
-    headers["X-Amz-Log-Group-Name"] = context.log_group_name
-    headers["X-Amz-Log-Stream-Name"] = context.log_stream_name
-    headers["X-Amz-Env-Vars"] = json.dumps(copied_env_vars)
-    headers["X-Amz-Last-Modified"] = str(int(lambda_function.last_modified.timestamp() * 1000))
-    headers["X-Amz-Invocation-Type"] = invocation_type
-    headers["X-Amz-Log-Type"] = "Tail"
-    if context.client_context:
-        headers["X-Amz-Client-Context"] = context.client_context
-    if context.cognito_identity:
-        headers["X-Amz-Cognito-Identity"] = context.cognito_identity
-
-    data = json.dumps(json_safe(event)) if isinstance(event, dict) else str(event)
-    LOG.debug("Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s" % config.LAMBDA_FORWARD_URL)
-    result = safe_requests.post(url, data, headers=headers)
-    if result.status_code >= 400:
-        raise Exception(
-            "Received error status code %s from external Lambda invocation" % result.status_code
-        )
-    content = run_safe(lambda: to_str(result.content)) or result.content
-    LOG.debug(
-        "Received result from external Lambda endpoint (status %s): %s"
-        % (result.status_code, content)
-    )
-    result = lambda_executors.InvocationResult(content)
-    return result
-
-
 def forward_to_fallback_url(func_arn, data):
     """If LAMBDA_FALLBACK_URL is configured, forward the invocation of this non-existing
     Lambda to the configured URL."""
@@ -1403,7 +1314,7 @@ def before_request():
         request.environ["wsgi.input_terminated"] = True
 
 
-@app.route("%s/functions" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions" % API_PATH_ROOT, methods=["POST"])
 def create_function():
     """Create new function
     ---
@@ -1476,7 +1387,7 @@ def create_function():
         return error_response("Unknown error: %s %s" % (e, traceback.format_exc()))
 
 
-@app.route("%s/functions/<function>" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>" % API_PATH_ROOT, methods=["GET"])
 def get_function(function):
     """Get details for a single function
     ---
@@ -1499,7 +1410,7 @@ def get_function(function):
     return not_found_error(func_arn(function))
 
 
-@app.route("%s/functions/" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/" % API_PATH_ROOT, methods=["GET"])
 def list_functions():
     """List functions
     ---
@@ -1513,7 +1424,7 @@ def list_functions():
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>" % PATH_ROOT, methods=["DELETE"])
+@app.route("%s/functions/<function>" % API_PATH_ROOT, methods=["DELETE"])
 def delete_function(function):
     """Delete an existing function
     ---
@@ -1548,7 +1459,7 @@ def delete_function(function):
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>/code" % PATH_ROOT, methods=["PUT"])
+@app.route("%s/functions/<function>/code" % API_PATH_ROOT, methods=["PUT"])
 def update_function_code(function):
     """Update the code of an existing function
     ---
@@ -1574,7 +1485,7 @@ def update_function_code(function):
     return jsonify(result or {})
 
 
-@app.route("%s/functions/<function>/code" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/code" % API_PATH_ROOT, methods=["GET"])
 def get_function_code(function):
     """Get the code of an existing function
     ---
@@ -1595,7 +1506,7 @@ def get_function_code(function):
     )
 
 
-@app.route("%s/functions/<function>/configuration" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/configuration" % API_PATH_ROOT, methods=["GET"])
 def get_function_configuration(function):
     """Get the configuration of an existing function
     ---
@@ -1611,7 +1522,7 @@ def get_function_configuration(function):
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>/configuration" % PATH_ROOT, methods=["PUT"])
+@app.route("%s/functions/<function>/configuration" % API_PATH_ROOT, methods=["PUT"])
 def update_function_configuration(function):
     """Update the configuration of an existing function
     ---
@@ -1697,7 +1608,7 @@ def generate_policy(sid, action, arn, sourcearn, principal):
     return policy
 
 
-@app.route("%s/functions/<function>/policy" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions/<function>/policy" % API_PATH_ROOT, methods=["POST"])
 def add_permission(function):
     arn = func_arn(function)
     qualifier = request.args.get("Qualifier")
@@ -1757,7 +1668,7 @@ def add_permission_policy_statement(resource_name, resource_arn, resource_arn_qu
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>/policy/<statement>" % PATH_ROOT, methods=["DELETE"])
+@app.route("%s/functions/<function>/policy/<statement>" % API_PATH_ROOT, methods=["DELETE"])
 def remove_permission(function, statement):
     qualifier = request.args.get("Qualifier")
     iam_client = aws_stack.connect_to_service("iam")
@@ -1773,7 +1684,7 @@ def remove_permission(function, statement):
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>/policy" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/policy" % API_PATH_ROOT, methods=["GET"])
 def get_policy(function):
     qualifier = request.args.get("Qualifier")
     policy = get_lambda_policy(function, qualifier)
@@ -1782,7 +1693,7 @@ def get_policy(function):
     return jsonify({"Policy": json.dumps(policy), "RevisionId": "test1234"})
 
 
-@app.route("%s/functions/<function>/invocations" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions/<function>/invocations" % API_PATH_ROOT, methods=["POST"])
 def invoke_function(function):
     """Invoke an existing function
     ---
@@ -1908,7 +1819,7 @@ def invoke_function(function):
     )
 
 
-@app.route("%s/event-source-mappings" % PATH_ROOT, methods=["GET"], strict_slashes=False)
+@app.route("%s/event-source-mappings" % API_PATH_ROOT, methods=["GET"], strict_slashes=False)
 def get_event_source_mappings():
     """List event source mappings
     ---
@@ -1929,7 +1840,7 @@ def get_event_source_mappings():
     return jsonify(response)
 
 
-@app.route("%s/event-source-mappings/<mapping_uuid>" % PATH_ROOT, methods=["GET"])
+@app.route("%s/event-source-mappings/<mapping_uuid>" % API_PATH_ROOT, methods=["GET"])
 def get_event_source_mapping(mapping_uuid):
     """Get an existing event source mapping
     ---
@@ -1947,7 +1858,7 @@ def get_event_source_mapping(mapping_uuid):
     return jsonify(mappings[0])
 
 
-@app.route("%s/event-source-mappings" % PATH_ROOT, methods=["POST"], strict_slashes=False)
+@app.route("%s/event-source-mappings" % API_PATH_ROOT, methods=["POST"], strict_slashes=False)
 def create_event_source_mapping():
     """Create new event source mapping
     ---
@@ -1965,7 +1876,7 @@ def create_event_source_mapping():
         return error_response(message, code=400, error_type=error_type)
 
 
-@app.route("%s/event-source-mappings/<mapping_uuid>" % PATH_ROOT, methods=["PUT"])
+@app.route("%s/event-source-mappings/<mapping_uuid>" % API_PATH_ROOT, methods=["PUT"])
 def update_event_source_mapping(mapping_uuid):
     """Update an existing event source mapping
     ---
@@ -1986,7 +1897,7 @@ def update_event_source_mapping(mapping_uuid):
         return error_response(message, code=400, error_type=error_type)
 
 
-@app.route("%s/event-source-mappings/<mapping_uuid>" % PATH_ROOT, methods=["DELETE"])
+@app.route("%s/event-source-mappings/<mapping_uuid>" % API_PATH_ROOT, methods=["DELETE"])
 def delete_event_source_mapping(mapping_uuid):
     """Delete an event source mapping
     ---
@@ -1999,7 +1910,7 @@ def delete_event_source_mapping(mapping_uuid):
     return jsonify(mapping)
 
 
-@app.route("%s/functions/<function>/versions" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions/<function>/versions" % API_PATH_ROOT, methods=["POST"])
 def publish_version(function):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -2008,7 +1919,7 @@ def publish_version(function):
     return jsonify(publish_new_function_version(arn))
 
 
-@app.route("%s/functions/<function>/versions" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/versions" % API_PATH_ROOT, methods=["GET"])
 def list_versions(function):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -2017,7 +1928,7 @@ def list_versions(function):
     return jsonify({"Versions": do_list_versions(arn)})
 
 
-@app.route("%s/functions/<function>/aliases" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions/<function>/aliases" % API_PATH_ROOT, methods=["POST"])
 def create_alias(function):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -2036,7 +1947,7 @@ def create_alias(function):
     return jsonify(do_update_alias(arn, alias, version, description))
 
 
-@app.route("%s/functions/<function>/aliases/<name>" % PATH_ROOT, methods=["PUT"])
+@app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["PUT"])
 def update_alias(function, name):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -2051,7 +1962,7 @@ def update_alias(function, name):
     return jsonify(do_update_alias(arn, name, version, description))
 
 
-@app.route("%s/functions/<function>/aliases/<name>" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["GET"])
 def get_alias(function, name):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -2062,7 +1973,7 @@ def get_alias(function, name):
     return jsonify(region.lambdas.get(arn).aliases.get(name))
 
 
-@app.route("%s/functions/<function>/aliases" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/aliases" % API_PATH_ROOT, methods=["GET"])
 def list_aliases(function):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -2073,7 +1984,7 @@ def list_aliases(function):
     )
 
 
-@app.route("%s/functions/<function>/aliases/<name>" % PATH_ROOT, methods=["DELETE"])
+@app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["DELETE"])
 def delete_alias(function, name):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -2089,7 +2000,7 @@ def delete_alias(function, name):
 @app.route("/<version>/functions/<function>/concurrency", methods=["GET", "PUT", "DELETE"])
 def function_concurrency(version, function):
     region = LambdaRegion.get()
-    # the version for put_concurrency != PATH_ROOT, at the time of this
+    # the version for put_concurrency != API_PATH_ROOT, at the time of this
     # writing it's: /2017-10-31 for this endpoint
     # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
     arn = func_arn(function)
