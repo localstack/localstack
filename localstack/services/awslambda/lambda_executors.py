@@ -540,8 +540,10 @@ class LambdaExecutorContainers(LambdaExecutor):
         # apply plugin patches
         self.apply_plugin_patches(inv_context)
 
-        if inv_context.docker_flags and config.LAMBDA_DOCKER_FLAGS:
-            inv_context.docker_flags = f"{config.LAMBDA_DOCKER_FLAGS} {inv_context.docker_flags}"
+        if config.LAMBDA_DOCKER_FLAGS:
+            inv_context.docker_flags = (
+                f"{config.LAMBDA_DOCKER_FLAGS} {inv_context.docker_flags or ''}".strip()
+            )
 
         event_stdin_bytes = stdin_str and to_bytes(stdin_str)
         error = None

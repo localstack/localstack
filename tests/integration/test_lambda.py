@@ -490,6 +490,34 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         result_data = json.loads(to_str(result_data))
         self.assertEqual(payload, result_data)
 
+        # clean up
+        lambda_client.delete_function(FunctionName=function_name)
+
+    def test_additional_docker_flags(self):
+        if not use_docker():
+            pytest.skip("not using docker executor")
+
+        flags_before = config.LAMBDA_DOCKER_FLAGS
+        env_value = short_uid()
+        config.LAMBDA_DOCKER_FLAGS = f"-e Hello={env_value}"
+        function_name = "flags-{}".format(short_uid())
+
+        try:
+            testutil.create_lambda_function(
+                handler_file=TEST_LAMBDA_ENV,
+                libs=TEST_LAMBDA_LIBS,
+                func_name=function_name,
+            )
+            lambda_client = aws_stack.connect_to_service("lambda")
+            result = lambda_client.invoke(FunctionName=function_name, Payload="{}")
+            self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+            result_data = result["Payload"].read()
+            result_data = json.loads(to_str(result_data))
+            self.assertEqual({"Hello": env_value}, result_data)
+        finally:
+            config.LAMBDA_DOCKER_FLAGS = flags_before
+
+        # clean up
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_add_lambda_multiple_permission(self):
