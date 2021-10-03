@@ -1450,12 +1450,6 @@ class Util:
         main_endpoint = get_main_endpoint_from_container()
         if not env_vars.get("LOCALSTACK_HOSTNAME"):
             env_vars["LOCALSTACK_HOSTNAME"] = main_endpoint
-        if not env_vars.get("AWS_ENDPOINT_URL"):
-            # Note that $AWS_ENDPOINT_URL is currently not (yet) supported by AWS, but we
-            #  can use it to ship patched Lambda runtimes that can interpret this config.
-            env_vars["AWS_ENDPOINT_URL"] = config.get_edge_url(
-                localstack_hostname=main_endpoint, protocol="http"
-            )
         return env_vars
 
 

@@ -218,7 +218,7 @@ EXTRA_CORS_ALLOWED_ORIGINS = os.environ.get("EXTRA_CORS_ALLOWED_ORIGINS", "").st
 DISABLE_EVENTS = is_env_true("DISABLE_EVENTS")
 DEBUG_ANALYTICS = is_env_true("DEBUG_ANALYTICS")
 
-# Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
+# whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
 # Adding Stepfunctions default port

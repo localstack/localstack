@@ -7,6 +7,7 @@ import signal
 import subprocess
 import sys
 import threading
+from typing import Dict
 
 from requests.models import Response
 
@@ -601,8 +602,16 @@ def start_dns_server(asynchronous=False):
             if not asynchronous:
                 sleep_forever()
             return result
+
+        env_vars = {}
+        for env_var in config.CONFIG_ENV_VARS:
+            if env_var.startswith("DNS_"):
+                value = os.environ.get(env_var, None)
+                if value is not None:
+                    env_vars[env_var] = value
+
         # note: running in a separate process breaks integration with Route53 (to be fixed for local dev mode!)
-        return run_process_as_sudo("dns", PORT_DNS, asynchronous=asynchronous)
+        return run_process_as_sudo("dns", PORT_DNS, asynchronous=asynchronous, env_vars=env_vars)
     except Exception:
         pass
 
@@ -638,7 +647,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
     return run_process_as_sudo("edge", port, asynchronous=asynchronous)
 
 
-def run_process_as_sudo(component, port, asynchronous=False):
+def run_process_as_sudo(component, port, asynchronous=False, env_vars=None):
     # make sure we can run sudo commands
     try:
         ensure_can_use_sudo()
@@ -646,26 +655,36 @@ def run_process_as_sudo(component, port, asynchronous=False):
         LOG.error("cannot start service on privileged port %s: %s", port, str(e))
         return
 
+    # prepare environment
+    env_vars = env_vars or {}
+    env_vars["PYTHONPATH"] = f".:{LOCALSTACK_ROOT_FOLDER}"
+    env_vars["EDGE_FORWARD_URL"] = config.get_edge_url()
+    env_vars["EDGE_BIND_HOST"] = config.EDGE_BIND_HOST
+    env_vars_str = env_vars_to_string(env_vars)
+
     # start the process as sudo
-    sudo_cmd = "sudo -n "
+    sudo_cmd = "sudo -n"
     python_cmd = sys.executable
-    edge_url = config.get_edge_url()
-    cmd = "%sPYTHONPATH=.:%s EDGE_FORWARD_URL=%s EDGE_BIND_HOST=%s %s %s %s %s" % (
+    cmd = [
         sudo_cmd,
-        LOCALSTACK_ROOT_FOLDER,
-        edge_url,
-        config.EDGE_BIND_HOST,
+        env_vars_str,
         python_cmd,
         __file__,
         component,
-        port,
-    )
+        str(port),
+    ]
+    shell_cmd = " ".join(cmd)
 
     def run_command(*_):
-        run(cmd, outfile=subprocess.PIPE, print_error=False)
+        run(shell_cmd, outfile=subprocess.PIPE, print_error=False, env_vars=env_vars)
 
+    LOG.debug("Running command as sudo: %s", shell_cmd)
     result = start_thread(run_command, quiet=True) if asynchronous else run_command()
     return result
+
+
+def env_vars_to_string(env_vars: Dict) -> str:
+    return " ".join(f"{k}='{v}'" for k, v in env_vars.items())
 
 
 if __name__ == "__main__":
