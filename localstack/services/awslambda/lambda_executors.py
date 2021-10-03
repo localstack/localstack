@@ -92,7 +92,7 @@ LambdaEvent = Union[Dict[str, Any], str, bytes]
 
 
 class InvocationException(Exception):
-    def __init__(self, message, log_output, result=None):
+    def __init__(self, message, log_output=None, result=None):
         super(InvocationException, self).__init__(message)
         self.log_output = log_output
         self.result = result

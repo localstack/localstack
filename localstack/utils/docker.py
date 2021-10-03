@@ -314,6 +314,7 @@ class ContainerClient(metaclass=ABCMeta):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> str:
         """Creates a container with the given image
 
@@ -342,6 +343,7 @@ class ContainerClient(metaclass=ABCMeta):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
         """Creates and runs a given docker container
 
@@ -748,6 +750,7 @@ class CmdDockerClient(ContainerClient):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -782,6 +785,8 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--network", network]
         if dns:
             cmd += ["--dns", dns]
+        if workdir:
+            cmd += ["--workdir", workdir]
         if additional_flags:
             cmd += shlex.split(additional_flags)
         cmd.append(image_name)
@@ -1270,6 +1275,7 @@ class SdkDockerClient(ContainerClient):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> str:
         LOG.debug(
             "Creating container with image %s, command '%s', volumes %s, env vars %s",
@@ -1291,6 +1297,8 @@ class SdkDockerClient(ContainerClient):
                 kwargs["dns"] = [dns]
             if ports:
                 kwargs["ports"] = ports.to_dict()
+            if workdir:
+                kwargs["working_dir"] = workdir
             mounts = None
             if mount_volumes:
                 mounts = Util.convert_mount_list_to_dict(mount_volumes)
@@ -1344,6 +1352,7 @@ class SdkDockerClient(ContainerClient):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -1365,6 +1374,7 @@ class SdkDockerClient(ContainerClient):
                 network=network,
                 dns=dns,
                 additional_flags=additional_flags,
+                workdir=workdir,
             )
             result = self.start_container(
                 container_name_or_id=container,

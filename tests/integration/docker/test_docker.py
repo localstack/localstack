@@ -7,7 +7,7 @@ from typing import NamedTuple
 import pytest
 
 from localstack import config
-from localstack.utils.common import safe_run, short_uid
+from localstack.utils.common import safe_run, short_uid, to_str
 from localstack.utils.docker import (
     ContainerClient,
     ContainerException,
@@ -799,3 +799,7 @@ class TestDockerClient:
             ip,
         )
         assert "127.0.0.1" != ip
+
+    def test_set_container_workdir(self, docker_client: ContainerClient):
+        result = docker_client.run_container("alpine", command=["pwd"], workdir="/tmp")
+        assert "/tmp" == to_str(result[0]).strip()
