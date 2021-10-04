@@ -331,7 +331,9 @@ class SQSTest(unittest.TestCase):
         time.sleep(2)
         messages_all_attributes = {}
         while not messages_all_attributes.get("Messages"):
-            messages_all_attributes = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
+            messages_all_attributes = self.client.receive_message(
+                QueueUrl=queue_url, MessageAttributeNames=["All"]
+            )
             time.sleep(2)
 
         self.assertEqual(messages_all_attributes.get("Messages")[0]["MessageAttributes"], attrs)
