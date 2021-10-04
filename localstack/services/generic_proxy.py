@@ -284,7 +284,7 @@ def modify_and_forward(
         and not is_cors_origin_allowed(headers)
     ):
         LOG.info(
-            "Blocked cors request from forbidden origin %s",
+            "Blocked CORS request from forbidden origin %s",
             headers.get("origin") or headers.get("referer"),
         )
         return cors_error_response()

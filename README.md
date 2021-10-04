@@ -212,6 +212,7 @@ with the `kinesis-mock` KINESIS_PROVIDER.
 
 Please be aware that the following configurations may have severe security implications!
 
+* `ENABLE_CONFIG_UPDATES`: Whether to enable dynamic configuration updates at runtime, see [here](#dynamically-updating-configuration-at-runtime) (default: 0).
 * `DISABLE_CORS_CHECKS`: Whether to disable all CSRF mitigations (default: 0).
 * `DISABLE_CUSTOM_CORS_S3`: Whether to disable CORS override by S3 (default: 0).
 * `DISABLE_CUSTOM_CORS_APIGATEWAY`: Whether to disable CORS override by apigateway (default: 0).
@@ -268,7 +269,7 @@ Each of the service APIs listed [above](https://github.com/localstack/localstack
 a backdoor API under the path `/?_config_` which allows to dynamically update configuration variables
 defined in [`config.py`](https://github.com/localstack/localstack/blob/master/localstack/config.py).
 
-You need to enable this endpoint by setting `ENABLE_CONFIG_UPDATES=1`.
+You need to enable this endpoint by setting `ENABLE_CONFIG_UPDATES=1` (the backdoor API is disabled by default, for security reasons).
 
 For example, to dynamically set `KINESIS_ERROR_PROBABILITY=1` at runtime, use the following command:
 ```
