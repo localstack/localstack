@@ -247,6 +247,9 @@ FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 # whether the in_docker check should always return true
 OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
 
+# whether to return mocked success responses for still unimplemented API methods
+MOCK_UNIMPLEMENTED = is_env_true("MOCK_UNIMPLEMENTED")
+
 
 def has_docker():
     try:

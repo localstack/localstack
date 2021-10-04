@@ -198,14 +198,14 @@ SERVICES=kinesis,lambda,sqs,dynamodb DEBUG=1 localstack start
 
 ### Service-Specific Configurations
 
-* `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
-  inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
-* `KINESIS_SHARD_LIMIT`: Integer value (default: `100`) or `Infinity` (to disable), causing the Kinesis API to start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
-* `KINESIS_LATENCY`: Integer value of milliseconds (default: `500`) or `0` (to disable), causing the Kinesis API to delay returning a response in order to mimick latency from a live AWS call.
-* `KINESIS_INITIALIZE_STREAMS`: A comma-delimited string of stream names, its corresponding shard count and an optional region to initialize during startup. If the region is not provided, the default region is used. For example: "my-first-stream:1,my-other-stream:2:us-west-2,my-last-stream:1" Only works
-with the `kinesis-mock` KINESIS_PROVIDER.
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
 * `DYNAMODB_HEAP_SIZE`: Sets the JAVA EE maximum memory size for dynamodb values are (integer)m for MB, (integer)G for GB default(256m), full table scans require more memory
+* `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
+  inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
+* `KINESIS_INITIALIZE_STREAMS`: A comma-delimited string of stream names, its corresponding shard count and an optional region to initialize during startup. If the region is not provided, the default region is used. For example: "my-first-stream:1,my-other-stream:2:us-west-2,my-last-stream:1" Only works
+with the `kinesis-mock` KINESIS_PROVIDER.
+* `KINESIS_LATENCY`: Integer value of milliseconds (default: `500`) or `0` (to disable), causing the Kinesis API to delay returning a response in order to mimick latency from a live AWS call.
+* `KINESIS_SHARD_LIMIT`: Integer value (default: `100`) or `Infinity` (to disable), causing the Kinesis API to start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
 * `STEPFUNCTIONS_LAMBDA_ENDPOINT`: URL to use as the Lambda service endpoint in Step Functions. By default this is the LocalStack Lambda endpoint. Use `default` to select the original AWS Lambda endpoint.
 
 ### Security Configurations
@@ -230,10 +230,11 @@ Some of the services can be configured to switch to a particular provider:
 
 ### Miscellaneous Configurations
 
-* `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
-* `IGNORE_ES_DOWNLOAD_ERRORS`: Whether to ignore errors (e.g., network/SSL) when downloading Elasticsearch plugins.
-* `OVERRIDE_IN_DOCKER`: Overrides the check whether LocalStack is executed within a docker container. If set to true, LocalStack assumes it runs in a docker container. Should not be set unless necessary.
 * `EDGE_FORWARD_URL`: Optional target URL to forward all edge requests to (e.g., for distributed deployments).
+* `IGNORE_ES_DOWNLOAD_ERRORS`: Whether to ignore errors (e.g., network/SSL) when downloading Elasticsearch plugins.
+* `MOCK_UNIMPLEMENTED`: Whether to return mocked success responses (instead of 501 errors) for currently unimplemented API methods.
+* `OVERRIDE_IN_DOCKER`: Overrides the check whether LocalStack is executed within a docker container. If set to true, LocalStack assumes it runs in a docker container. Should not be set unless necessary.
+* `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
 
 ### Debugging Configurations
 
@@ -243,8 +244,8 @@ The following environment configurations can be useful for debugging:
 * `WAIT_FOR_DEBUGGER`: Forces LocalStack to wait for a debugger to start the services
 
 The following environment configurations are *deprecated*:
-* `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.
 * `DEFAULT_REGION`: AWS region to use when talking to the API (needs to be activated via `USE_SINGLE_REGION=1`). Deprecated and inactive as of version 0.12.17 - LocalStack now has full multi-region support.
+* `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.
 * `USE_SINGLE_REGION`: Whether to use the legacy single-region mode, defined via `DEFAULT_REGION`.
 
 Additionally, the following *read-only* environment variables are available:

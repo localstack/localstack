@@ -5,7 +5,7 @@ import re
 import xml.etree.ElementTree as ET
 from binascii import crc32
 from struct import pack
-from typing import Optional
+from typing import Dict, Optional, Union
 from urllib.parse import parse_qs
 
 import xmltodict
@@ -193,21 +193,25 @@ def flask_error_response_xml(
 
 
 def requests_error_response(
-    req_headers,
-    message,
-    code=500,
-    error_type="InternalFailure",
-    service=None,
-    xmlns=None,
+    req_headers: Dict,
+    message: Union[str, bytes],
+    code: int = 500,
+    error_type: str = "InternalFailure",
+    service: str = None,
+    xmlns: str = None,
 ):
-    ctype = req_headers.get("Content-Type", "")
-    accept = req_headers.get("Accept", "")
-    is_json = "json" in ctype or "json" in accept
+    is_json = is_json_request(req_headers)
     if is_json:
         return requests_error_response_json(message=message, code=code, error_type=error_type)
     return requests_error_response_xml(
         message, code=code, code_string=error_type, service=service, xmlns=xmlns
     )
+
+
+def is_json_request(req_headers: Dict) -> bool:
+    ctype = req_headers.get("Content-Type", "")
+    accept = req_headers.get("Accept", "")
+    return "json" in ctype or "json" in accept
 
 
 def raise_exception_if_error_response(response):

@@ -7,7 +7,7 @@ import signal
 import subprocess
 import sys
 import threading
-from typing import Dict
+from typing import Dict, Optional
 
 from requests.models import Response
 
@@ -314,8 +314,8 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
 
     # https://docs.aws.amazon.com/general/latest/gr/sigv4-signed-request-examples.html
     try:
-        credential_scope = auth_header.split(",")[0].split()[1]
-        _, _, _, service, _ = credential_scope.split("/")
+        service = extract_service_name_from_auth_header(headers)
+        assert service
         result = service, get_service_port_for_account(service, headers)
     except Exception:
         pass
@@ -357,6 +357,16 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = "resource-groups", config.PORT_RESOURCE_GROUPS
 
     return result[0], result_before[1] or result[1], path, host
+
+
+def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
+    try:
+        auth_header = headers.get("authorization", "")
+        credential_scope = auth_header.split(",")[0].split()[1]
+        _, _, _, service, _ = credential_scope.split("/")
+        return service
+    except Exception:
+        return
 
 
 def is_s3_form_data(data_bytes):
