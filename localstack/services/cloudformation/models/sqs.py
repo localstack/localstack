@@ -6,6 +6,7 @@ from moto.sqs.models import Queue as MotoQueue
 
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
+    generate_default_name,
     params_list_to_dict,
     params_select_attributes,
 )
@@ -103,6 +104,14 @@ class SQSQueue(GenericBaseModel, MotoQueue):
         ]
         result["Arn"] = result["QueueArn"]
         return result
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("QueueName")
+        if not role_name:
+            resource["Properties"]["QueueName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @classmethod
     def get_deploy_templates(cls):

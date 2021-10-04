@@ -2,6 +2,7 @@ import json
 from urllib.parse import urlparse
 
 from localstack.services.cloudformation.deployment_utils import (
+    generate_default_name,
     lambda_keys_to_lower,
     params_list_to_dict,
 )
@@ -58,6 +59,14 @@ class GatewayRequestValidator(GenericBaseModel):
         return result[0] if result else None
 
     @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource["properties"].get("Name")
+        if not role_name:
+            resource["Properties"]["Name"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
+    @staticmethod
     def get_deploy_templates():
         return {
             "create": {
@@ -90,6 +99,14 @@ class GatewayRestAPI(GenericBaseModel):
         api_name = self.resolve_refs_recursively(stack_name, api_name, resources)
         result = list(filter(lambda api: api["name"] == api_name, apis))
         return result[0] if result else None
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("Name")
+        if not role_name:
+            resource["Properties"]["Name"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @classmethod
     def get_deploy_templates(cls):
@@ -398,11 +415,12 @@ class GatewayStage(GenericBaseModel):
 
     @staticmethod
     def get_deploy_templates():
-        def get_params(params, **kwargs):
-            result = keys_to_lower(params)
+        def get_params(resource_props, stack_name, resources, resource_id):
+            stage_name = resource_props.get("StageName", "default")
+            resources[resource_id]["Properties"]["StageName"] = stage_name
+            result = keys_to_lower(resource_props)
             param_names = [
                 "restApiId",
-                "stageName",
                 "deploymentId",
                 "description",
                 "cacheClusterEnabled",
@@ -415,9 +433,15 @@ class GatewayStage(GenericBaseModel):
             ]
             result = select_attributes(result, param_names)
             result["tags"] = {t["key"]: t["value"] for t in result.get("tags", [])}
+            result["stageName"] = stage_name
             return result
 
-        return {"create": {"function": "create_stage", "parameters": get_params}}
+        return {
+            "create": {
+                "function": "create_stage",
+                "parameters": get_params,
+            }
+        }
 
 
 class GatewayUsagePlan(GenericBaseModel):
@@ -431,6 +455,14 @@ class GatewayUsagePlan(GenericBaseModel):
         result = aws_stack.connect_to_service("apigateway").get_usage_plans().get("items", [])
         result = [r for r in result if r["name"] == plan_name]
         return (result or [None])[0]
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("UsagePlanName")
+        if not role_name:
+            resource["Properties"]["UsagePlanName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():
@@ -468,6 +500,14 @@ class GatewayApiKey(GenericBaseModel):
             if r.get("name") == key_name and cust_id in (None, r.get("customerId"))
         ]
         return (result or [None])[0]
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("Name")
+        if not role_name:
+            resource["Properties"]["Name"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():
@@ -603,6 +643,14 @@ class GatewayModel(GenericBaseModel):
             return models[0]
 
         return None
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("Name")
+        if not role_name:
+            resource["Properties"]["Name"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():

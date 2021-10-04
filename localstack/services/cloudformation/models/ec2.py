@@ -1,5 +1,6 @@
 from moto.ec2.utils import generate_route_id
 
+from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -236,6 +237,14 @@ class SecurityGroup(GenericBaseModel):
         if attribute in REF_ID_ATTRS:
             props = self.props
             return props.get("GroupId") or props.get("GroupName")
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("GroupName")
+        if not role_name:
+            resource["Properties"]["GroupName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():

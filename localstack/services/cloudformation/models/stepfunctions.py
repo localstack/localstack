@@ -1,7 +1,10 @@
 import re
 from typing import Dict
 
-from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_RESOURCE_NAME
+from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_RESOURCE_NAME,
+    generate_default_name,
+)
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -67,6 +70,14 @@ class SFNStateMachine(GenericBaseModel):
             "definition": props["DefinitionString"],
         }
         return client.update_state_machine(**kwargs)
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("StateMachineName")
+        if not role_name:
+            resource["Properties"]["StateMachineName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @classmethod
     def get_deploy_templates(cls):

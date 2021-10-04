@@ -1778,15 +1778,7 @@ class CloudFormationTest(unittest.TestCase):
 
         # 2 roles created successfully
         rs = iam_client.list_roles()
-        roles = [
-            role
-            for role in rs["Roles"]
-            if role["RoleName"]
-            in [
-                "cf-{}-Role".format(stack_name),
-                "cf-{}-StateMachineExecutionRole".format(stack_name),
-            ]
-        ]
+        roles = [role for role in rs["Roles"] if stack_name in role["RoleName"]]
 
         self.assertEqual(2, len(roles))
 

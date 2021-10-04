@@ -8,6 +8,7 @@ from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     PLACEHOLDER_RESOURCE_NAME,
     dump_json_params,
+    generate_default_name,
     param_defaults,
     remove_none_values,
     select_parameters,
@@ -29,6 +30,14 @@ class IAMManagedPolicy(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("ManagedPolicyName")
+        if not role_name:
+            resource["Properties"]["ManagedPolicyName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @classmethod
     def get_deploy_templates(cls):
@@ -165,6 +174,14 @@ class IAMRole(GenericBaseModel, MotoRole):
         return client.update_role(
             RoleName=props.get("RoleName"), Description=props.get("Description") or ""
         )
+
+    @staticmethod
+    def add_defaults(resource, stack_name):
+        role_name = resource.get("Properties", {}).get("RoleName")
+        if not role_name:
+            resource["Properties"]["RoleName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @classmethod
     def get_deploy_templates(cls):
@@ -345,6 +362,14 @@ class InstanceProfile(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get("InstanceProfileName")
+
+    @staticmethod
+    def add_defaults(resource, stack_name):
+        role_name = resource.get("Properties", {}).get("InstanceProfileName")
+        if not role_name:
+            resource["Properties"]["InstanceProfileName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():

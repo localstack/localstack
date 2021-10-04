@@ -2,6 +2,7 @@ import json
 
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
+    pre_create_default_name,
     select_parameters,
 )
 from localstack.services.cloudformation.service_models import (
@@ -99,7 +100,6 @@ class EventsRule(GenericBaseModel):
                 "EventBusName",
             ]
             result = select_parameters(*attrs)(params, **kwargs)
-            result["Name"] = result.get("Name") or PLACEHOLDER_RESOURCE_NAME
 
             def wrap_in_lists(o, **kwargs):
                 if isinstance(o, dict):
@@ -116,6 +116,7 @@ class EventsRule(GenericBaseModel):
 
         return {
             "create": [
+                {"function": pre_create_default_name("Name")},
                 {"function": "put_rule", "parameters": events_put_rule_params},
                 {
                     "function": "put_targets",

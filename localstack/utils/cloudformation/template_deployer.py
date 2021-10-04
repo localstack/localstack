@@ -31,12 +31,8 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import (
-    canonical_json,
     get_all_subclasses,
-    json_safe,
-    md5,
     prevent_stack_overflow,
-    short_uid,
     start_worker_thread,
     to_bytes,
     to_str,
@@ -718,7 +714,7 @@ def update_resource(resource_id, resources, stack_name):
         return result
 
 
-def get_resource_model_instance(resource_id, resources) -> GenericBaseModel:
+def get_resource_model_instance(resource_id: str, resources) -> Optional[GenericBaseModel]:
     """Obtain a typed resource entity instance representing the given stack resource."""
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
@@ -1215,117 +1211,10 @@ def add_default_resource_props(
     """Apply some fixes to resource props which otherwise cause deployments to fail"""
 
     res_type = resource["Type"]
-    props = resource["Properties"] = resource.get("Properties", {})
-    existing_resources = existing_resources or {}
-
-    def _generate_res_name():
-        return "%s-%s-%s" % (stack_name, resource_name or resource_id, short_uid())
-
-    # TODO: move logic below into resource classes!
-
-    if res_type == "AWS::Lambda::EventSourceMapping" and not props.get("StartingPosition"):
-        props["StartingPosition"] = "LATEST"
-
-    elif res_type == "AWS::Logs::LogGroup" and not props.get("LogGroupName") and resource_name:
-        props["LogGroupName"] = resource_name
-
-    elif res_type == "AWS::Lambda::Function" and not props.get("FunctionName"):
-        # FunctionName is up to 64 characters long
-        random_id_part = short_uid()
-        resource_id_part = resource_id[:24]
-        stack_name_part = stack_name[: 63 - 2 - (len(random_id_part) + len(resource_id_part))]
-        props["FunctionName"] = f"{stack_name_part}-{resource_id_part}-{random_id_part}"
-
-    elif res_type == "AWS::SNS::Topic" and not props.get("TopicName"):
-        props["TopicName"] = "topic-%s" % short_uid()
-
-    elif res_type == "AWS::SQS::Queue" and not props.get("QueueName"):
-        props["QueueName"] = "queue-%s" % short_uid()
-
-    elif res_type == "AWS::IAM::ManagedPolicy" and not resource.get("ManagedPolicyName"):
-        resource["ManagedPolicyName"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::RestApi" and not props.get("Name"):
-        props["Name"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::Stage" and not props.get("StageName"):
-        props["StageName"] = "default"
-
-    elif res_type == "AWS::ApiGateway::ApiKey" and not props.get("Name"):
-        props["Name"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::UsagePlan" and not props.get("UsagePlanName"):
-        props["UsagePlanName"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::Model" and not props.get("Name"):
-        props["Name"] = _generate_res_name()
-
-    elif res_type == "AWS::ApiGateway::RequestValidator" and not props.get("Name"):
-        props["Name"] = _generate_res_name()
-
-    elif res_type == "AWS::DynamoDB::Table":
-        update_dynamodb_index_resource(resource)
-        props["TableName"] = props.get("TableName") or _generate_res_name()
-
-    elif res_type == "AWS::CloudWatch::Alarm":
-        props["AlarmName"] = props.get("AlarmName") or _generate_res_name()
-
-    elif res_type == "AWS::SecretsManager::Secret":
-        props["Name"] = props.get("Name") or _generate_res_name()
-
-    elif res_type == "AWS::S3::Bucket" and not props.get("BucketName"):
-        existing_bucket = existing_resources.get(resource_id) or {}
-        bucket_name = (
-            existing_bucket.get("Properties", {}).get("BucketName") or _generate_res_name()
-        )
-        props["BucketName"] = s3_listener.normalize_bucket_name(bucket_name)
-
-    elif res_type == "AWS::StepFunctions::StateMachine" and not props.get("StateMachineName"):
-        props["StateMachineName"] = _generate_res_name()
-
-    elif res_type == "AWS::CloudFormation::Stack" and not props.get("StackName"):
-        props["StackName"] = _generate_res_name()
-
-    elif res_type == "AWS::EC2::SecurityGroup":
-        props["GroupName"] = props.get("GroupName") or _generate_res_name()
-
-    elif res_type == "AWS::Redshift::Cluster":
-        props["ClusterIdentifier"] = props.get("ClusterIdentifier") or _generate_res_name()
-
-    elif res_type == "AWS::IAM::InstanceProfile":
-        props["InstanceProfileName"] = props.get("InstanceProfileName") or _generate_res_name()
-
-    elif res_type == "AWS::Logs::LogGroup":
-        props["LogGroupName"] = props.get("LogGroupName") or _generate_res_name()
-
-    elif res_type == "AWS::KMS::Key":
-        tags = props["Tags"] = props.get("Tags", [])
-        existing = [t for t in tags if t["Key"] == "localstack-key-id"]
-        if not existing:
-            # append tags, to allow us to determine in service_models.py whether this key is already deployed
-            tags.append({"Key": "localstack-key-id", "Value": short_uid()})
-
-    elif res_type == "AWS::IAM::ManagedPolicy":
-        props["ManagedPolicyName"] = props.get("ManagedPolicyName") or _generate_res_name()
-
-    # generate default names for certain resource types
-    default_attrs = (("AWS::IAM::Role", "RoleName"), ("AWS::Events::Rule", "Name"))
-    for entry in default_attrs:
-        if res_type == entry[0] and not props.get(entry[1]):
-            if not resource_id:
-                resource_id = canonical_json(json_safe(props))
-                resource_id = md5(resource_id)
-            props[entry[1]] = "cf-%s-%s" % (stack_name, resource_id)
-
-
-def update_dynamodb_index_resource(resource):
-    if resource.get("Properties").get("BillingMode") == "PAY_PER_REQUEST":
-        for glob_index in resource.get("Properties", {}).get("GlobalSecondaryIndexes", []):
-            if not glob_index.get("ProvisionedThroughput"):
-                glob_index["ProvisionedThroughput"] = {
-                    "ReadCapacityUnits": 99,
-                    "WriteCapacityUnits": 99,
-                }
+    canonical_type = canonical_resource_type(res_type)
+    resource_class = RESOURCE_MODELS.get(canonical_type)
+    if resource_class is not None:
+        resource_class.add_defaults(resource, stack_name)
 
 
 # -----------------------
@@ -1702,7 +1591,7 @@ class TemplateDeployer(object):
         # run deployment in background loop, to avoid client network timeouts
         return start_worker_thread(_run)
 
-    def do_apply_changes_in_loop(self, changes, stack, stack_name):
+    def do_apply_changes_in_loop(self, changes, stack, stack_name: str):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
         changes_done = []
         max_iters = 30

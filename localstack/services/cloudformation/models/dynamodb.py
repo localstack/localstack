@@ -2,6 +2,7 @@ from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_AWS_
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 
 def get_ddb_provisioned_throughput(params, **kwargs):
@@ -18,17 +19,25 @@ def get_ddb_provisioned_throughput(params, **kwargs):
 
 def get_ddb_global_sec_indexes(params, **kwargs):
     args = params.get("GlobalSecondaryIndexes")
+    is_ondemand = params.get("BillingMode") == "PAY_PER_REQUEST"
     if args:
         for index in args:
-            provisoned_throughput = index["ProvisionedThroughput"]
-            if isinstance(provisoned_throughput["ReadCapacityUnits"], str):
-                provisoned_throughput["ReadCapacityUnits"] = int(
-                    provisoned_throughput["ReadCapacityUnits"]
-                )
-            if isinstance(provisoned_throughput["WriteCapacityUnits"], str):
-                provisoned_throughput["WriteCapacityUnits"] = int(
-                    provisoned_throughput["WriteCapacityUnits"]
-                )
+            provisioned_throughput = index.get("ProvisionedThroughput")
+            if is_ondemand and provisioned_throughput is None:
+                pass  # optional for API calls
+            elif provisioned_throughput is not None:
+                # convert types
+                if isinstance(provisioned_throughput["ReadCapacityUnits"], str):
+                    provisioned_throughput["ReadCapacityUnits"] = int(
+                        provisioned_throughput["ReadCapacityUnits"]
+                    )
+                if isinstance(provisioned_throughput["WriteCapacityUnits"], str):
+                    provisioned_throughput["WriteCapacityUnits"] = int(
+                        provisioned_throughput["WriteCapacityUnits"]
+                    )
+            else:
+                raise Exception("Can't specify ProvisionedThroughput with PAY_PER_REQUEST")
+
     return args
 
 
@@ -55,16 +64,27 @@ class DynamoDBTable(GenericBaseModel):
         table_name = self.resolve_refs_recursively(stack_name, table_name, resources)
         return aws_stack.connect_to_service("dynamodb").describe_table(TableName=table_name)
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
+        def _pre_create(resource_id, resources, resource_type, func, stack_name):
+            resource = resources[resource_id]
+            props = resource["Properties"]
+
+            def _generate_res_name():  # TODO: generalize
+                return "%s-%s-%s" % (stack_name, resource_id, short_uid())
+
+            props["TableName"] = props.get("TableName") or _generate_res_name()
+
         return {
             "create": [
+                {"function": _pre_create},
                 {
                     "function": "create_table",
                     "parameters": {
                         "TableName": "TableName",
                         "AttributeDefinitions": "AttributeDefinitions",
                         "KeySchema": "KeySchema",
+                        "BillingMode": "BillingMode",
                         "ProvisionedThroughput": get_ddb_provisioned_throughput,
                         "LocalSecondaryIndexes": "LocalSecondaryIndexes",
                         "GlobalSecondaryIndexes": get_ddb_global_sec_indexes,
