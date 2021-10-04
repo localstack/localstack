@@ -315,6 +315,27 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_send_message_retains_attributes(self):
+        queue_name = f"queue-{short_uid()}"
+
+        queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
+        attrs = {"attr1": {"StringValue": "val1", "DataType": "String"}}
+        self.client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="Samle Message",
+            MessageAttributes=attrs,
+        )
+
+        # receive message call shouldn't delete message attributes
+        self.client.receive_message(QueueUrl=queue_url, VisibilityTimeout=1)
+        time.sleep(2)
+        messages_all_attributes = {}
+        while not messages_all_attributes.get("Messages"):
+            messages_all_attributes = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
+            time.sleep(2)
+
+        self.assertEqual(messages_all_attributes.get("Messages")[0]["MessageAttributes"], attrs)
+
     def test_send_message_with_invalid_string_attributes(self):
         queue_name = "queue-%s" % short_uid()
 
