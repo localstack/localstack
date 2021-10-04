@@ -331,7 +331,6 @@ class SQSTest(unittest.TestCase):
         time.sleep(2)
         retry(lambda: self.check_msg_attributes(queue_url, attrs), retries=3, sleep=2.0)
 
-
     def test_send_message_with_invalid_string_attributes(self):
         queue_name = "queue-%s" % short_uid()
 
@@ -1100,5 +1099,7 @@ class SQSTest(unittest.TestCase):
         self.client.delete_queue(QueueUrl=queue_url)
 
     def check_msg_attributes(self, queue_url, attrs):
-        messages_all_attributes = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=["All"])
+        messages_all_attributes = self.client.receive_message(
+            QueueUrl=queue_url, MessageAttributeNames=["All"]
+        )
         self.assertEqual(messages_all_attributes.get("Messages")[0]["MessageAttributes"], attrs)
