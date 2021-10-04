@@ -1,5 +1,6 @@
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 
 class KMSKey(GenericBaseModel):
@@ -36,6 +37,16 @@ class KMSKey(GenericBaseModel):
         if attribute in REF_ID_ATTRS:
             return self.physical_resource_id
         return self.physical_resource_id and aws_stack.kms_key_arn(self.physical_resource_id)
+
+    # TODO: try to remove this workaround (ensures idempotency)
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        props = resource["Properties"] = resource.get("Properties", {})
+        tags = props["Tags"] = props.get("Tags", [])
+        existing = [t for t in tags if t["Key"] == "localstack-key-id"]
+        if not existing:
+            # append tags, to allow us to determine in fetch_state whether this key is already deployed
+            tags.append({"Key": "localstack-key-id", "Value": short_uid()})
 
     @staticmethod
     def get_deploy_templates():

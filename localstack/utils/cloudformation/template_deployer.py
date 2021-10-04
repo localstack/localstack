@@ -33,7 +33,6 @@ from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import (
     get_all_subclasses,
     prevent_stack_overflow,
-    short_uid,
     start_worker_thread,
     to_bytes,
     to_str,
@@ -1212,23 +1211,10 @@ def add_default_resource_props(
     """Apply some fixes to resource props which otherwise cause deployments to fail"""
 
     res_type = resource["Type"]
-    props = resource["Properties"] = resource.get("Properties", {})
-
     canonical_type = canonical_resource_type(res_type)
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class is not None:
         resource_class.add_defaults(resource, stack_name)
-
-    # TODO: move logic below into resource classes!
-    if res_type == "AWS::Logs::LogGroup" and not props.get("LogGroupName") and resource_name:
-        props["LogGroupName"] = resource_name
-
-    elif res_type == "AWS::KMS::Key":
-        tags = props["Tags"] = props.get("Tags", [])
-        existing = [t for t in tags if t["Key"] == "localstack-key-id"]
-        if not existing:
-            # append tags, to allow us to determine in service_models.py whether this key is already deployed
-            tags.append({"Key": "localstack-key-id", "Value": short_uid()})
 
 
 # -----------------------
