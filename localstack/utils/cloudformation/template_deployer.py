@@ -26,7 +26,6 @@ from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
-from localstack.services.s3 import s3_listener
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
@@ -779,43 +778,6 @@ def deploy_resource(resource_id, resources, stack_name):
 
 
 def delete_resource(resource_id, resources, stack_name):
-    res = resources[resource_id]
-    res_type = res.get("Type")
-
-    if res_type == "AWS::S3::Bucket":
-        s3_listener.remove_bucket_notification(res["PhysicalResourceId"])
-
-    if res_type == "AWS::EC2::VPC":
-        state = res[KEY_RESOURCE_STATE]
-        physical_resource_id = res["PhysicalResourceId"] or state.get("VpcId")
-        res["PhysicalResourceId"] = physical_resource_id
-
-        if state.get("VpcId"):
-            ec2_client = aws_stack.connect_to_service("ec2")
-            resp = ec2_client.describe_route_tables(
-                Filters=[
-                    {"Name": "vpc-id", "Values": [state.get("VpcId")]},
-                    {"Name": "association.main", "Values": ["false"]},
-                ]
-            )
-            for rt in resp["RouteTables"]:
-                ec2_client.delete_route_table(RouteTableId=rt["RouteTableId"])
-
-    if res_type == "AWS::EC2::Subnet":
-        state = res[KEY_RESOURCE_STATE]
-        physical_resource_id = res["PhysicalResourceId"] or state["SubnetId"]
-        res["PhysicalResourceId"] = physical_resource_id
-
-    if res_type == "AWS::EC2::RouteTable":
-        ec2_client = aws_stack.connect_to_service("ec2")
-        resp = ec2_client.describe_vpcs()
-        vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"]]
-
-        vpc_id = res.get("Properties", {}).get("VpcId")
-        if vpc_id not in vpcs:
-            # VPC already deleted before
-            return
-
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
 

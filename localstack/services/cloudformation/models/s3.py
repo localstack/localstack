@@ -125,6 +125,7 @@ class S3Bucket(GenericBaseModel, FakeBucket):
                 s3.delete_bucket_policy(Bucket=bucket_name)
             except Exception:
                 pass
+            s3_listener.remove_bucket_notification(resource["PhysicalResourceId"])
             # TODO: divergence from how AWS deals with bucket deletes (should throw an error)
             try:
                 delete_all_s3_objects(bucket_name)
