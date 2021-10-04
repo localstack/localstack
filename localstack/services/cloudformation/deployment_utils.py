@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Callable
 
 from localstack.constants import INSTALL_DIR_INFRA
 from localstack.utils import common
@@ -144,8 +145,10 @@ def generate_default_name(stack_name: str, logical_resource_id: str):
     return f"{stack_name_part}-{resource_id_part}-{random_id_part}"
 
 
-def pre_create_default_name(key: str):
-    def _pre_create_default_name(resource_id, resources, resource_type, func, stack_name):
+def pre_create_default_name(key: str) -> Callable[[str, dict, str, dict, str], None]:
+    def _pre_create_default_name(
+        resource_id: str, resources: dict, resource_type: str, func: dict, stack_name: str
+    ):
         resource = resources[resource_id]
         props = resource["Properties"]
         if not props.get(key):

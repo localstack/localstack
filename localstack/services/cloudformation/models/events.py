@@ -100,7 +100,6 @@ class EventsRule(GenericBaseModel):
                 "EventBusName",
             ]
             result = select_parameters(*attrs)(params, **kwargs)
-            # result["Name"] = result.get("Name") or PLACEHOLDER_RESOURCE_NAME
 
             def wrap_in_lists(o, **kwargs):
                 if isinstance(o, dict):
