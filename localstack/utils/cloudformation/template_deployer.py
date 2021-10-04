@@ -785,28 +785,6 @@ def delete_resource(resource_id, resources, stack_name):
     if res_type == "AWS::S3::Bucket":
         s3_listener.remove_bucket_notification(res["PhysicalResourceId"])
 
-    if res_type == "AWS::IAM::Role":
-        role_name = res.get("PhysicalResourceId") or res.get("Properties", {}).get("RoleName")
-        try:
-            iam_client = aws_stack.connect_to_service("iam")
-            rs = iam_client.list_role_policies(RoleName=role_name)
-            for policy in rs["PolicyNames"]:
-                iam_client.delete_role_policy(RoleName=role_name, PolicyName=policy)
-
-            rs = iam_client.list_instance_profiles_for_role(RoleName=role_name)
-            for instance_profile in rs["InstanceProfiles"]:
-                ip_name = instance_profile["InstanceProfileName"]
-                iam_client.remove_role_from_instance_profile(
-                    InstanceProfileName=ip_name, RoleName=role_name
-                )
-                # iam_client.delete_instance_profile(
-                #     InstanceProfileName=ip_name
-                # )
-
-        except Exception as e:
-            if "NoSuchEntity" not in str(e):
-                raise
-
     if res_type == "AWS::EC2::VPC":
         state = res[KEY_RESOURCE_STATE]
         physical_resource_id = res["PhysicalResourceId"] or state.get("VpcId")
