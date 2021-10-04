@@ -541,7 +541,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         """
         Preload services if EAGER_SERVICE_LOADING is true.
         """
-        if not config.is_env_not_false("EAGER_SERVICE_LOADING"):
+        if not config.EAGER_SERVICE_LOADING:
             # TODO: lazy loading should become the default beginning 0.13.0
             return
 

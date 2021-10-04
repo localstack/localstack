@@ -219,7 +219,7 @@ DISABLE_EVENTS = is_env_true("DISABLE_EVENTS")
 DEBUG_ANALYTICS = is_env_true("DEBUG_ANALYTICS")
 
 # whether to eagerly start services
-EAGER_SERVICE_START = is_env_not_false("EAGER_SERVICE_START")
+EAGER_SERVICE_LOADING = is_env_not_false("EAGER_SERVICE_LOADING")
 
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
