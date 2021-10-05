@@ -836,31 +836,6 @@ def execute_resource_action(resource_id, resources, stack_name, action_name):
     return (results or [None])[0]
 
 
-def fix_resource_props_for_sdk_deployment(resource_type, resource_props):
-    if resource_type == "Lambda::Function":
-        # Properties will be validated by botocore before sending request to AWS
-        # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
-        if "Environment" in resource_props:
-            environment_variables = resource_props["Environment"].get("Variables", {})
-            resource_props["Environment"]["Variables"] = {
-                k: str(v) for k, v in environment_variables.items()
-            }
-
-    if resource_type == "SQS::Queue":
-        # https://github.com/localstack/localstack/issues/3004
-        if "ReceiveMessageWaitTimeSeconds" in resource_props:
-            resource_props["ReceiveMessageWaitTimeSeconds"] = int(
-                resource_props["ReceiveMessageWaitTimeSeconds"]
-            )
-
-    if resource_type == "KMS::Key":
-        resource_props["KeyPolicy"] = json.dumps(resource_props.get("KeyPolicy", {}))
-        resource_props["Enabled"] = resource_props.get("Enabled", True)
-        resource_props["EnableKeyRotation"] = resource_props.get("EnableKeyRotation", False)
-        resource_props["Description"] = resource_props.get("Description", "")
-
-
 def configure_resource_via_sdk(
     resource_id, resources, resource_type, func_details, stack_name, action_name
 ):
@@ -877,9 +852,6 @@ def configure_resource_via_sdk(
     resource_props = resource["Properties"] = resource.get("Properties", {})
     resource_props = dict(resource_props)
     resource_state = resource.get(KEY_RESOURCE_STATE, {})
-
-    # Validate props for each resource type
-    fix_resource_props_for_sdk_deployment(resource_type, resource_props)
 
     if callable(params):
         params = params(
