@@ -1256,7 +1256,7 @@ class TestAPIGateway(unittest.TestCase):
             result = requests.get(url)
             content = json.loads(result._content)
             self.assertEqual(200, result.status_code)
-            self.assertRegexpMatches(
+            self.assertRegex(
                 content["headers"].get(HEADER_LOCALSTACK_REQUEST_URL),
                 "http://.*localhost.*/person/123",
             )

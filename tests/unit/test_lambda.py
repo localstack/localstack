@@ -64,7 +64,7 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             self._create_function("myFunction")
             result = json.loads(lambda_api.get_function("myFunction").get_data())
-            self.assertEquals(
+            self.assertEqual(
                 result["Configuration"]["FunctionArn"],
                 aws_stack.lambda_function_arn("myFunction"),
             )
@@ -74,12 +74,12 @@ class TestLambdaAPI(unittest.TestCase):
             self._create_function("myFunctions")
             self._create_function("myFunction")
             result = json.loads(lambda_api.get_function("myFunction").get_data())
-            self.assertEquals(
+            self.assertEqual(
                 result["Configuration"]["FunctionArn"],
                 aws_stack.lambda_function_arn("myFunction"),
             )
             result = json.loads(lambda_api.get_function("myFunctions").get_data())
-            self.assertEquals(
+            self.assertEqual(
                 result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
             )
 
@@ -90,13 +90,13 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(
                 lambda_api.get_function(aws_stack.lambda_function_arn("myFunction")).get_data()
             )
-            self.assertEquals(
+            self.assertEqual(
                 result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunction")
             )
             result = json.loads(
                 lambda_api.get_function(aws_stack.lambda_function_arn("myFunctions")).get_data()
             )
-            self.assertEquals(
+            self.assertEqual(
                 result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
             )
 
@@ -109,7 +109,7 @@ class TestLambdaAPI(unittest.TestCase):
                     f"{aws_stack.get_region()}:000000000000:function:myFunction"
                 ).get_data()
             )
-            self.assertEquals(
+            self.assertEqual(
                 result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunction")
             )
             result = json.loads(
@@ -117,7 +117,7 @@ class TestLambdaAPI(unittest.TestCase):
                     f"{aws_stack.get_region()}:000000000000:function:myFunctions"
                 ).get_data()
             )
-            self.assertEquals(
+            self.assertEqual(
                 result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
             )
 
