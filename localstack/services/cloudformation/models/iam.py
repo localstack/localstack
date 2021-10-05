@@ -228,22 +228,35 @@ class IAMRole(GenericBaseModel, MotoRole):
 
         def _pre_delete(resource_id, resources, resource_type, func, stack_name):
             """detach managed policies from role before deleting"""
-            iam = aws_stack.connect_to_service("iam")
+            iam_client = aws_stack.connect_to_service("iam")
             resource = resources[resource_id]
             props = resource["Properties"]
             role_name = props["RoleName"]
 
             # TODO: this should probably only remove the policies that are specified in the stack (verify with AWS)
             # detach managed policies
-            for policy in iam.list_attached_role_policies(RoleName=role_name).get(
+            for policy in iam_client.list_attached_role_policies(RoleName=role_name).get(
                 "AttachedPolicies", []
             ):
-                iam.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
+                iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
             # delete inline policies
-            for inline_policy_name in iam.list_role_policies(RoleName=role_name).get(
+            for inline_policy_name in iam_client.list_role_policies(RoleName=role_name).get(
                 "PolicyNames", []
             ):
-                iam.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
+                iam_client.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
+
+            # TODO: potentially remove this when stack resource deletion order is fixed (check AWS behavior first)
+            # cleanup instance profile
+            try:
+                rs = iam_client.list_instance_profiles_for_role(RoleName=role_name)
+                for instance_profile in rs["InstanceProfiles"]:
+                    ip_name = instance_profile["InstanceProfileName"]
+                    iam_client.remove_role_from_instance_profile(
+                        InstanceProfileName=ip_name, RoleName=role_name
+                    )
+            except Exception as e:
+                if "NoSuchEntity" not in str(e):
+                    raise
 
         return {
             "create": [
@@ -386,6 +399,21 @@ class InstanceProfile(GenericBaseModel):
                     RoleName=roles[0],
                 )
 
+        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+            iam_client = aws_stack.connect_to_service("iam")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            roles = props.get("Roles")
+            assert len(roles) == 1
+            try:
+                iam_client.remove_role_from_instance_profile(
+                    InstanceProfileName=props["InstanceProfileName"],
+                    RoleName=roles[0],
+                )
+            except Exception as e:
+                if "NoSuchEntity" not in str(e):
+                    raise
+
         return {
             "create": [
                 {
@@ -397,10 +425,13 @@ class InstanceProfile(GenericBaseModel):
                 },
                 {"function": _add_roles},
             ],
-            "delete": {
-                "function": "delete_instance_profile",
-                "parameters": {"InstanceProfileName": "InstanceProfileName"},
-            },
+            "delete": [
+                {"function": _pre_delete},
+                {
+                    "function": "delete_instance_profile",
+                    "parameters": {"InstanceProfileName": "InstanceProfileName"},
+                },
+            ],
         }
 
 

@@ -313,8 +313,22 @@ class EC2VPC(GenericBaseModel):
         resp = client.describe_vpcs(Filters=[{"Name": "cidr", "Values": [self.props["CidrBlock"]]}])
         return (resp["Vpcs"] or [None])[0]
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
+        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+            res = cls(resources[resource_id])
+            vpc_id = res.state.get("VpcId")
+            if vpc_id:
+                ec2_client = aws_stack.connect_to_service("ec2")
+                resp = ec2_client.describe_route_tables(
+                    Filters=[
+                        {"Name": "vpc-id", "Values": [vpc_id]},
+                        {"Name": "association.main", "Values": ["false"]},
+                    ]
+                )
+                for rt in resp["RouteTables"]:
+                    ec2_client.delete_route_table(RouteTableId=rt["RouteTableId"])
+
         return {
             "create": {
                 "function": "create_vpc",
@@ -324,10 +338,13 @@ class EC2VPC(GenericBaseModel):
                     # TODO: add TagSpecifications
                 },
             },
-            "delete": {
-                "function": "delete_vpc",
-                "parameters": {"VpcId": "PhysicalResourceId"},
-            },
+            "delete": [
+                {"function": _pre_delete},
+                {
+                    "function": "delete_vpc",
+                    "parameters": {"VpcId": "PhysicalResourceId"},
+                },
+            ],
         }
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
