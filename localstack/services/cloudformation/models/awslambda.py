@@ -100,6 +100,13 @@ class LambdaFunction(GenericBaseModel):
         def get_delete_params(params, **kwargs):
             return {"FunctionName": params.get("FunctionName")}
 
+        def get_environment_params(params, **kwargs):
+            # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
+            if "Environment" in params:
+                environment_variables = params["Environment"].get("Variables", {})
+                return {"Variables": {k: str(v) for k, v in environment_variables.items()}}
+
         return {
             "create": {
                 "function": "create_function",
@@ -110,7 +117,7 @@ class LambdaFunction(GenericBaseModel):
                     "Handler": "Handler",
                     "Code": get_lambda_code_param,
                     "Description": "Description",
-                    "Environment": "Environment",
+                    "Environment": get_environment_params,
                     "Timeout": "Timeout",
                     "MemorySize": "MemorySize",
                     "Layers": "Layers"
