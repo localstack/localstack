@@ -1,11 +1,7 @@
 from moto.ec2.utils import generate_route_id
 
 from localstack.services.cloudformation.deployment_utils import generate_default_name
-from localstack.services.cloudformation.service_models import (
-    KEY_RESOURCE_STATE,
-    REF_ID_ATTRS,
-    GenericBaseModel,
-)
+from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
 
 
@@ -317,21 +313,16 @@ class EC2VPC(GenericBaseModel):
         resp = client.describe_vpcs(Filters=[{"Name": "cidr", "Values": [self.props["CidrBlock"]]}])
         return (resp["Vpcs"] or [None])[0]
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
         def _pre_delete(resource_id, resources, resource_type, func, stack_name):
-            res = resources[resource_id]
-            state = res[
-                KEY_RESOURCE_STATE
-            ]  # TODO: there is probably a better way to get the state here
-            physical_resource_id = res["PhysicalResourceId"] or state.get("VpcId")
-            res["PhysicalResourceId"] = physical_resource_id
-
-            if state.get("VpcId"):
+            res = cls(resources[resource_id])
+            vpc_id = res.state.get("VpcId")
+            if vpc_id:
                 ec2_client = aws_stack.connect_to_service("ec2")
                 resp = ec2_client.describe_route_tables(
                     Filters=[
-                        {"Name": "vpc-id", "Values": [state.get("VpcId")]},
+                        {"Name": "vpc-id", "Values": [vpc_id]},
                         {"Name": "association.main", "Values": ["false"]},
                     ]
                 )
