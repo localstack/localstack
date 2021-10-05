@@ -1,7 +1,5 @@
 import json
 
-import mypy_boto3_kms
-
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
@@ -55,7 +53,7 @@ class KMSKey(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _create(resource_id, resources, resource_type, func, stack_name):
-            kms_client: mypy_boto3_kms.KMSClient = aws_stack.connect_to_service("kms")
+            kms_client = aws_stack.connect_to_service("kms")
             resource = cls(resources[resource_id])
             props = resource.props
             params = {}
