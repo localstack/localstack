@@ -39,6 +39,7 @@ def get_command(backend_port):
         "dynamodb",
         "ecs",
         "eks",
+        "events",
         "glue",
         "sagemaker",
         "sns",
@@ -49,6 +50,8 @@ def get_command(backend_port):
         flag = "--%s-endpoint" % service
         if service == "stepfunctions":
             flag = "--step-functions-endpoint"
+        elif service == "events":
+            flag = "--eventbridge-endpoint"
         elif service in ["athena", "eks"]:
             flag = "--step-functions-%s" % service
         endpoint = aws_stack.get_local_service_url(service)
