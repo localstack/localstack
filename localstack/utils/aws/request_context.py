@@ -11,6 +11,7 @@ from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.constants import APPLICATION_JSON, APPLICATION_XML, HEADER_CONTENT_TYPE
 from localstack.services.edge import extract_service_name_from_auth_header
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     is_json_request,
     requests_error_response,
@@ -118,7 +119,7 @@ def configure_region_for_current_request(region_name: str, service_name: str):
 
     headers = request_context.headers
     auth_header = headers.get("Authorization")
-    auth_header = auth_header or aws_stack.mock_aws_request_headers(service_name)
+    auth_header = auth_header or aws_stack.mock_aws_request_headers(service_name)["Authorization"]
     auth_header = auth_header.replace("/%s/" % aws_stack.get_region(), "/%s/" % region_name)
     try:
         headers["Authorization"] = auth_header
@@ -127,6 +128,14 @@ def configure_region_for_current_request(region_name: str, service_name: str):
             raise
         _context_to_update = get_proxy_request_for_thread() or request
         _context_to_update.headers = CaseInsensitiveDict({**headers, "Authorization": auth_header})
+
+
+def mock_request_for_region(region_name: str, service_name: str = "dummy") -> Request:
+    result = Request()
+    result.headers["Authorization"] = aws_stack.mock_aws_request_headers(
+        service_name, region_name=region_name
+    )["Authorization"]
+    return result
 
 
 def patch_request_handling():
