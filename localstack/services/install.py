@@ -77,12 +77,17 @@ URL_LOCALSTACK_FAT_JAR = (
 MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % INSTALL_DIR_INFRA
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
-SFN_PATCH_CLASS = (
+SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
+SFN_PATCH_CLASS2 = (
     "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
 )
-SFN_PATCH_CLASS_URL = "%s/raw/master/stepfunctions-local-patch/%s" % (
+SFN_PATCH_CLASS_URL1 = "%s/raw/master/stepfunctions-local-patch/%s" % (
     ARTIFACTS_REPO,
-    SFN_PATCH_CLASS,
+    SFN_PATCH_CLASS1,
+)
+SFN_PATCH_CLASS_URL2 = "%s/raw/master/stepfunctions-local-patch/%s" % (
+    ARTIFACTS_REPO,
+    SFN_PATCH_CLASS2,
 )
 
 # kinesis-mock version
@@ -331,15 +336,19 @@ def install_stepfunctions_local():
             file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
         rm_rf("%s/stepfunctionslocal" % INSTALL_DIR_INFRA)
     # apply patches
-    patch_class_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, SFN_PATCH_CLASS)
-    if not os.path.exists(patch_class_file):
-        download(SFN_PATCH_CLASS_URL, patch_class_file)
-        cmd = 'cd "%s"; zip %s %s' % (
-            INSTALL_DIR_STEPFUNCTIONS,
-            INSTALL_PATH_STEPFUNCTIONS_JAR,
-            SFN_PATCH_CLASS,
-        )
-        run(cmd)
+    for patch_class, patch_url in (
+        (SFN_PATCH_CLASS1, SFN_PATCH_CLASS_URL1),
+        (SFN_PATCH_CLASS2, SFN_PATCH_CLASS_URL2),
+    ):
+        patch_class_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, patch_class)
+        if not os.path.exists(patch_class_file):
+            download(patch_url, patch_class_file)
+            cmd = 'cd "%s"; zip %s %s' % (
+                INSTALL_DIR_STEPFUNCTIONS,
+                INSTALL_PATH_STEPFUNCTIONS_JAR,
+                patch_class,
+            )
+            run(cmd)
 
 
 def install_dynamodb_local():
