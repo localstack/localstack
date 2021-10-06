@@ -405,15 +405,15 @@ class TestStateMachine(unittest.TestCase):
         self.sfn_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
 
         # run state machine
+        events_before = len(TEST_EVENTS_CACHE)
         sm_arn = self.get_machine_arn(sm_name)
         result = self.sfn_client.start_execution(stateMachineArn=sm_arn)
         self.assertTrue(result.get("executionArn"))
-        events_before = len(TEST_EVENTS_CACHE)
 
         def check_invocations():
             # assert that the event is received
             self.assertEqual(events_before + 1, len(TEST_EVENTS_CACHE))
-            last_event = TEST_EVENTS_CACHE[0]
+            last_event = TEST_EVENTS_CACHE[-1]
             self.assertEqual(bus_name, last_event["EventBusName"])
             self.assertEqual("TestSource", last_event["Source"])
             self.assertEqual("TestMessage", last_event["DetailType"])
