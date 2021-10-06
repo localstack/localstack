@@ -30,7 +30,7 @@ from localstack.config import (
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
-from localstack.utils.common import Mock, generate_ssl_cert, json_safe, path_from_url
+from localstack.utils.common import Mock, generate_ssl_cert, json_safe, path_from_url, start_thread
 from localstack.utils.server import http2_server
 
 # set up logger
@@ -560,7 +560,7 @@ def install_predefined_cert_if_available():
         pass
 
 
-def serve_flask_app(app, port, host=None, cors=True):
+def serve_flask_app(app, port, host=None, cors=True, asynchronous=False):
     if cors:
         CORS(app)
     if not config.DEBUG:
@@ -582,5 +582,10 @@ def serve_flask_app(app, port, host=None, cors=True):
     except Exception:
         pass
 
-    app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
-    return app
+    def _run(*_):
+        app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
+        return app
+
+    if asynchronous:
+        return start_thread(_run)
+    return _run()
