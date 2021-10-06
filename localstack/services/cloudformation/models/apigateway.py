@@ -60,7 +60,7 @@ class GatewayRequestValidator(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        role_name = resource["properties"].get("Name")
+        role_name = resource["Properties"].get("Name")
         if not role_name:
             resource["Properties"]["Name"] = generate_default_name(
                 stack_name, resource["LogicalResourceId"]
