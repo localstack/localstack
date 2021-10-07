@@ -476,9 +476,6 @@ class TestS3(unittest.TestCase):
         response = s3_listener.get_replication(bucket_name)
         self.assertRegex(response._content, r"The bucket does not exist")
 
-        response = s3_listener.get_object_lock(bucket_name)
-        self.assertRegex(response._content, r"The bucket does not exist")
-
     def test_delete_bucket_lifecycle_configuration(self):
         bucket_name = "test-bucket-%s" % short_uid()
         client = self._get_test_client()
