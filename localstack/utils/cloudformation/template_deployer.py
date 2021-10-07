@@ -582,10 +582,20 @@ def resolve_refs_recursively(stack_name, value, resources):
                 stack_name, option1 if condition else option2, resources
             )
 
+        if stripped_fn_lower == "condition":
+            result = evaluate_condition(stack_name, value[keys_list[0]], resources)
+            return result
+
         if stripped_fn_lower == "not":
             condition = value[keys_list[0]][0]
             condition = resolve_refs_recursively(stack_name, condition, resources)
             return not condition
+
+        if stripped_fn_lower in ["and", "or"]:
+            conditions = value[keys_list[0]]
+            results = [resolve_refs_recursively(stack_name, cond, resources) for cond in conditions]
+            result = all(results) if stripped_fn_lower == "and" else any(results)
+            return result
 
         if stripped_fn_lower == "equals":
             operand1, operand2 = value[keys_list[0]]
@@ -647,8 +657,9 @@ def resolve_placeholders_in_string(result, stack_name=None, resources=None):
             return resolved
         if len(parts) == 1 and parts[0] in resources:
             resource_json = resources[parts[0]]
+            resource_type = get_resource_type(resource_json)
             result = extract_resource_attribute(
-                resource_json.get("Type"),
+                resource_type,
                 {},
                 "Ref",
                 resources=resources,
@@ -976,7 +987,7 @@ def determine_resource_physical_id(
     resource = resources.get(resource_id, {})
     if not resource:
         return
-    resource_type = resource.get("Type") or ""
+    resource_type = get_resource_type(resource)
     resource_type = re.sub("^AWS::", "", resource_type)
     resource_props = resource.get("Properties", {})
 
@@ -1535,7 +1546,7 @@ class TemplateDeployer(object):
                             resource_id, change, stack, new_resources
                         )
                         LOG.debug(
-                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s'
+                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s (should_deploy=%s)'
                             % (
                                 action,
                                 resource_id,
@@ -1543,6 +1554,7 @@ class TemplateDeployer(object):
                                 len(changes),
                                 res_change["ResourceType"],
                                 i + 1,
+                                should_deploy,
                             )
                         )
                         if not should_deploy:
