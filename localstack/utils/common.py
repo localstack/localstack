@@ -391,6 +391,42 @@ class CaptureOutput(object):
         return stream.getvalue() if hasattr(stream, "getvalue") else stream
 
 
+class ObjectIdHashComparator:
+    """Simple wrapper class that allows us to create a hashset using the object id(..) as the entries' hash value"""
+
+    def __init__(self, obj):
+        self.obj = obj
+        self._hash = id(obj)
+
+    def __hash__(self):
+        return self._hash
+
+    def __eq__(self, other):
+        # assumption here is that we're comparing only against ObjectIdHash instances!
+        return self.obj == other.obj
+
+
+class ArbitraryAccessObj:
+    """Dummy object that can be arbitrarily accessed - any attributes, as a callable, item assignment, ..."""
+
+    def __init__(self, name=None):
+        self.name = name
+
+    def __getattr__(self, name, *args, **kwargs):
+        return ArbitraryAccessObj(name)
+
+    def __call__(self, *args, **kwargs):
+        if self.name in ["items", "keys", "values"] and not args and not kwargs:
+            return []
+        return ArbitraryAccessObj()
+
+    def __getitem__(self, *args, **kwargs):
+        return ArbitraryAccessObj()
+
+    def __setitem__(self, *args, **kwargs):
+        return ArbitraryAccessObj()
+
+
 # ----------------
 # UTILITY METHODS
 # ----------------
