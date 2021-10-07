@@ -73,11 +73,6 @@ BUCKET_REPLICATIONS = s3_backend.BUCKET_REPLICATIONS = getattr(
     s3_backend, "BUCKET_REPLICATIONS", {}
 )
 
-# maps bucket name to object lock settings
-OBJECT_LOCK_CONFIGS = s3_backend.OBJECT_LOCK_CONFIGS = getattr(
-    s3_backend, "OBJECT_LOCK_CONFIGS", {}
-)
-
 # map to store the s3 expiry dates
 OBJECT_EXPIRY = s3_backend.OBJECT_EXPIRY = getattr(s3_backend, "OBJECT_EXPIRY", {})
 
@@ -803,27 +798,6 @@ def get_replication(bucket_name):
     return xml_response(body, status_code=status_code)
 
 
-def get_object_lock(bucket_name):
-    bucket_name = normalize_bucket_name(bucket_name)
-    exists, code, body = is_bucket_available(bucket_name)
-    if not exists:
-        return xml_response(body, status_code=code)
-
-    lock_config = OBJECT_LOCK_CONFIGS.get(bucket_name)
-    status_code = 200
-    if not lock_config:
-        lock_config = {
-            "Error": {
-                "Code": "ObjectLockConfigurationNotFoundError",
-                "Message": "Object Lock configuration does not exist for this bucket",
-                "BucketName": bucket_name,
-            }
-        }
-        status_code = 404
-    body = xmltodict.unparse(lock_config)
-    return xml_response(body, status_code=status_code)
-
-
 def set_lifecycle(bucket_name, lifecycle):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
@@ -855,18 +829,6 @@ def set_replication(bucket_name, replication):
     if isinstance(to_str(replication), six.string_types):
         replication = xmltodict.parse(replication)
     BUCKET_REPLICATIONS[bucket_name] = replication
-    return 200
-
-
-def set_object_lock(bucket_name, lock_config):
-    bucket_name = normalize_bucket_name(bucket_name)
-    exists, code, body = is_bucket_available(bucket_name)
-    if not exists:
-        return xml_response(body, status_code=code)
-
-    if isinstance(to_str(lock_config), six.string_types):
-        lock_config = xmltodict.parse(lock_config)
-    OBJECT_LOCK_CONFIGS[bucket_name] = lock_config
     return 200
 
 
@@ -1370,12 +1332,6 @@ class ProxyListenerS3(PersistingProxyListener):
                 return get_replication(bucket_name)
             if method == "PUT":
                 return set_replication(bucket_name, data)
-
-        if query == "object-lock" or "object-lock" in query_map:
-            if method == "GET":
-                return get_object_lock(bucket_name)
-            if method == "PUT":
-                return set_object_lock(bucket_name, data)
 
         if method == "DELETE" and validate_bucket_name(bucket_name):
             delete_lifecycle(bucket_name)
