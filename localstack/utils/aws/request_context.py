@@ -4,7 +4,6 @@ import threading
 from urllib.parse import urlparse
 
 from flask import request
-from moto.core import utils as moto_utils
 from requests.models import Request
 from requests.structures import CaseInsensitiveDict
 
@@ -138,9 +137,10 @@ def mock_request_for_region(region_name: str, service_name: str = "dummy") -> Re
 
 
 def patch_request_handling():
-    from localstack.services.edge import (
-        extract_service_name_from_auth_header,  # leave here to avoid import issues
-    )
+    # leave here to avoid import issues
+    from moto.core import utils as moto_utils
+
+    from localstack.services.edge import extract_service_name_from_auth_header
 
     # make sure we properly handle/propagate "not implemented" errors
     def convert_flask_to_httpretty_response_call(*args, **kwargs):

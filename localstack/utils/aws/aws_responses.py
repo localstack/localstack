@@ -289,7 +289,7 @@ def response_regex_replace(response, search, replace):
 
 def set_response_content(response, content, headers=None):
     if isinstance(content, dict):
-        content = json.dumps(content)
+        content = json.dumps(json_safe(content))
     elif isinstance(content, RequestsResponse):
         response.status_code = content.status_code
         content = content.content

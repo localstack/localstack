@@ -805,8 +805,8 @@ def get_events_target_attributes(target):
     return dict_utils.pick_attributes(target, EVENT_TARGET_PARAMETERS)
 
 
-def get_or_create_bucket(bucket_name):
-    s3_client = connect_to_service("s3")
+def get_or_create_bucket(bucket_name, s3_client=None):
+    s3_client = s3_client or connect_to_service("s3")
     try:
         return s3_client.head_bucket(Bucket=bucket_name)
     except Exception:

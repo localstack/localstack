@@ -18,7 +18,7 @@ localstack-ext>=0.12.16
 localstack-client>=1.24
 pyyaml>=5.1
 rich>=10.7.0
-requests>=2.20.0,<2.26
+requests>=2.20.0
 # TODO: "six" dependency still needed?
 six>=1.12.0
 stevedore>=3.4.0

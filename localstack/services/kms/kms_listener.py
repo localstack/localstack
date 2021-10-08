@@ -1,13 +1,19 @@
+import base64
 import json
 import logging
 import time
+from typing import Dict, List
 
+from cryptography.hazmat.primitives import serialization as crypto_serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from moto.kms.exceptions import ValidationException
+from moto.kms.models import kms_backends
 
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import long_uid, to_str
+from localstack.utils.aws.aws_responses import set_response_content
+from localstack.utils.common import long_uid, select_attributes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -43,6 +49,8 @@ NAME = "Name"
 CONSTRAINTS = "Constraints"
 ISSUING_ACCOUNT = "IssuingAccount"
 CREATION_DATE = "CreationDate"
+
+ATTR_KEY_PAIRS = "_key_pairs"
 
 
 def verify_key_exists(key_id):
@@ -185,31 +193,128 @@ def handle_list_retirable_grants(data):
     return {"Grants": in_limit, "Truncated": True, "NextMarker": marker_id}
 
 
+def handle_get_public_key(data, response):
+    key_pairs = _get_key_pairs()
+    result = key_pairs.get(data.get("KeyId", ""))
+    if not result:
+        return 404
+    attrs = [
+        "KeyId",
+        "PublicKey",
+        "KeySpec",
+        "KeyUsage",
+        "EncryptionAlgorithms",
+        "SigningAlgorithms",
+    ]
+    result = select_attributes(result, attrs)
+    set_response_content(response, result)
+    response.status_code = 200
+    return response
+
+
+def generate_data_key_pair(data, response):
+    result = _generate_data_key_pair(data)
+    set_response_content(response, result)
+    response.status_code = 200
+    return response
+
+
+def generate_data_key_pair_without_plaintext(data, response):
+    result = _generate_data_key_pair(data)
+    result.pop("PrivateKeyPlaintext", None)
+    set_response_content(response, result)
+    response.status_code = 200
+    return response
+
+
+def _generate_data_key_pair(data):
+    key_id = data.get("KeyId")
+    rsa_key_sizes = {
+        "RSA_2048": 2048,
+        "RSA_3072": 3072,
+        "RSA_4096": 4096,
+    }
+    key_spec = data["KeyPairSpec"]
+    key_size = rsa_key_sizes.get(key_spec)
+    if not key_size:
+        # TODO: support other crypto/keypair types!
+        LOG.warning("Unsupported KeyPairSpec specified to generate key pair: '%s'", key_spec)
+        key_size = 2048
+    key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
+    private_key = key.private_bytes(
+        crypto_serialization.Encoding.DER,
+        crypto_serialization.PrivateFormat.PKCS8,
+        crypto_serialization.NoEncryption(),
+    )
+    public_key = key.public_key().public_bytes(
+        crypto_serialization.Encoding.DER, crypto_serialization.PublicFormat.PKCS1
+    )
+    kms = aws_stack.connect_to_service("kms")
+    cipher_text = kms.encrypt(KeyId=key_id, Plaintext=private_key)["CiphertextBlob"]
+    result = {
+        "PrivateKeyCiphertextBlob": base64.b64encode(cipher_text),
+        "PrivateKeyPlaintext": base64.b64encode(private_key),
+        "PublicKey": base64.b64encode(public_key),
+        "KeyId": key_id,
+        "KeyPairSpec": data.get("KeyPairSpec"),
+    }
+    key_pairs = _get_key_pairs()
+    key_pairs[key_id] = result
+    return result
+
+
+def _get_key_pairs():
+    region_name = aws_stack.get_region()
+    backend = kms_backends.get(region_name)
+    key_pairs = getattr(backend, ATTR_KEY_PAIRS, {})
+    setattr(backend, ATTR_KEY_PAIRS, key_pairs)
+    return key_pairs
+
+
 class ProxyListenerKMS(ProxyListener):
     def forward_request(self, method, path, data, headers):
         action = headers.get("X-Amz-Target") or ""
+        action = action.split(".")[-1]
         if method == "POST" and path == "/":
             parsed_data = json.loads(to_str(data))
 
-            if action.endswith(".CreateKey"):
+            if action == "CreateKey":
                 descr = parsed_data.get("Description") or ""
                 event_publisher.fire_event(
                     EVENT_KMS_CREATE_KEY, {"k": event_publisher.get_hash(descr)}
                 )
-            elif action.endswith(".CreateGrant"):
+            elif action == "CreateGrant":
                 return handle_create_grant(parsed_data)
-            elif action.endswith(".ListGrants"):
+            elif action == "ListGrants":
                 return handle_list_grants(parsed_data)
-            elif action.endswith(".RevokeGrant"):
+            elif action == "RevokeGrant":
                 return handle_revoke_grant(parsed_data)
-            elif action.endswith(".RetireGrant"):
+            elif action == "RetireGrant":
                 return handle_retire_grant(parsed_data)
-            elif action.endswith(".ListRetirableGrants"):
+            elif action == "ListRetirableGrants":
                 return handle_list_retirable_grants(parsed_data)
         return True
 
+    def return_response(self, method, path, data, headers, response):
+        if method == "POST" and path == "/":
+            parsed_data = json.loads(to_str(data))
+            action = headers.get("X-Amz-Target") or ""
+            action = action.split(".")[-1]
+            if response.status_code == 501:
+                if action == "GetPublicKey":
+                    return handle_get_public_key(parsed_data, response)
+                if action == "GenerateDataKeyPair":
+                    return generate_data_key_pair(parsed_data, response)
+                if action == "GenerateDataKeyPairWithoutPlaintext":
+                    return generate_data_key_pair_without_plaintext(parsed_data, response)
+
 
 class KMSBackend(RegionBackend):
+    # maps grant ID to grant details
+    grants: Dict[str, Dict]
+    # maps pagination markers to result lists
+    markers: Dict[str, List]
+
     def __init__(self):
         self.grants = {}
         self.markers = {}
