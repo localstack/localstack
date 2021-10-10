@@ -1537,7 +1537,8 @@ class TestNodeJSRuntimes(LambdaTestBase):
             handler="lambda_handler.handler",
         )
 
-        body = '{"test_var": "test_string\' with some quotes"}'
+        test_string = "test_string' with some quotes"
+        body = '{"test_var": "%s"}' % test_string
         try:
             rs = self.lambda_client.invoke(
                 FunctionName=function_name,
@@ -1551,7 +1552,7 @@ class TestNodeJSRuntimes(LambdaTestBase):
 
             events = get_lambda_log_events(function_name)
             assert len(events) > 0
-            assert json.loads(body) == events[0]
+            assert test_string in str(events[0])
 
         finally:
             # clean up
