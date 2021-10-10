@@ -20,6 +20,7 @@ from localstack.services.events.events_listener import (
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import extract_jsonpath, short_uid, truncate
 
 LOG = logging.getLogger(__name__)
@@ -129,9 +130,7 @@ def process_events(event: Dict, targets: List[Dict]):
         arn = target["Arn"]
         changed_event = filter_event_with_target_input_path(target, event)
         try:
-            aws_stack.send_event_to_target(
-                arn, changed_event, aws_stack.get_events_target_attributes(target)
-            )
+            send_event_to_target(arn, changed_event, aws_stack.get_events_target_attributes(target))
         except Exception as e:
             LOG.info(f"Unable to send event notification {truncate(event)} to target {target}: {e}")
 

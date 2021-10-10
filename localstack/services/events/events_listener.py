@@ -9,6 +9,7 @@ from localstack.constants import ENV_INTERNAL_TEST_RUN, MOTO_ACCOUNT_ID, TEST_AW
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.message_forwarding import send_event_to_target
 from localstack.utils.common import (
     TMP_FILES,
     mkdir,
@@ -85,7 +86,7 @@ def get_scheduled_rule_func(data):
             event = json.loads(event_str)
             attr = aws_stack.get_events_target_attributes(target)
             try:
-                aws_stack.send_event_to_target(arn, event, target_attributes=attr)
+                send_event_to_target(arn, event, target_attributes=attr)
             except Exception as e:
                 LOG.info(
                     f"Unable to send event notification {truncate(event)} to target {target}: {e}"

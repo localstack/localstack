@@ -32,7 +32,6 @@ from localstack.utils.aws.dead_letter_queue import (
     lambda_error_to_dead_letter_queue,
     sqs_error_to_dead_letter_queue,
 )
-from localstack.utils.aws.lambda_destinations import lambda_result_to_destination
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 from localstack.utils.common import (
     TMP_FILES,
@@ -375,6 +374,9 @@ class LambdaExecutor(object):
         callback: Callable = None,
         lock_discriminator: str = None,
     ):
+        # note: leave here to avoid circular import issues
+        from localstack.utils.aws.message_forwarding import lambda_result_to_destination
+
         def do_execute(*args):
             @cloudwatched("lambda")
             def _run(func_arn=None):
