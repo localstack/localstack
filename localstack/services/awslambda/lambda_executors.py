@@ -1112,7 +1112,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
 class LambdaExecutorLocal(LambdaExecutor):
     def _execute_in_custom_runtime(
-        self, cmd: str, lambda_function: LambdaFunction = None
+        self, cmd: Union[str, List[str]], lambda_function: LambdaFunction = None
     ) -> InvocationResult:
         """
         Generic run function for executing lambdas in custom runtimes.
@@ -1313,15 +1313,17 @@ class LambdaExecutorLocal(LambdaExecutor):
         function = handler.split(".")[-1]
         event_json_string = "%s" % (json.dumps(json_safe(event)) if event else "{}")
         context_json_string = "%s" % (json.dumps(context.__dict__) if context else "{}")
-        cmd = (
-            "node -e 'require(\"%s\").%s(%s,%s).then(r => process.stdout.write(JSON.stringify(r)))'"
+        cmd = [
+            "node",
+            "-e",
+            'require("%s").%s(%s,%s).then(r => process.stdout.write(JSON.stringify(r)))'
             % (
                 main_file,
                 function,
                 event_json_string,
                 context_json_string,
-            )
-        )
+            ),
+        ]
         LOG.info(cmd)
         result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
         return result

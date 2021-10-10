@@ -1527,6 +1527,37 @@ class TestNodeJSRuntimes(LambdaTestBase):
             # clean up
             testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
 
+    def test_invoke_nodejs_lambda_with_payload_containing_quotes(self):
+        handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_handler.js")
+        function_name = "test_lambda_%s" % short_uid()
+        testutil.create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(handler_file, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_handler.handler",
+        )
+
+        test_string = "test_string' with some quotes"
+        body = '{"test_var": "%s"}' % test_string
+        try:
+            rs = self.lambda_client.invoke(
+                FunctionName=function_name,
+                Payload=body,
+            )
+            assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
+
+            payload = rs["Payload"].read()
+            response = json.loads(to_str(payload))
+            assert "response from localstack lambda" in response["body"]
+
+            events = get_lambda_log_events(function_name)
+            assert len(events) > 0
+            assert test_string in str(events[0])
+
+        finally:
+            # clean up
+            testutil.delete_lambda_function(function_name)
+
 
 class TestCustomRuntimes(LambdaTestBase):
     @classmethod
