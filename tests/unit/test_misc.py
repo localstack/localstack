@@ -13,7 +13,7 @@ from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.utils import async_utils, config_listener
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_FILES, download, json_safe, load_file, now_utc, parallelize
-from localstack.utils.docker import PortMappings
+from localstack.utils.docker_utils import PortMappings
 from localstack.utils.http_utils import create_chunked_data, parse_chunked_data
 
 

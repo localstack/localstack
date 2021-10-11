@@ -52,7 +52,7 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
-from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
+from localstack.utils.docker_utils import DOCKER_CLIENT, ContainerException, PortMappings
 from localstack.utils.run import FuncThread
 
 # constants

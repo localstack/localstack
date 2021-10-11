@@ -9,7 +9,7 @@ from localstack.utils import bootstrap
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.common import in_docker, short_uid, to_str
-from localstack.utils.docker import DOCKER_CLIENT
+from localstack.utils.docker_utils import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
 

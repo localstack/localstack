@@ -8,7 +8,7 @@ import pytest
 
 from localstack import config
 from localstack.utils.common import safe_run, short_uid, to_str
-from localstack.utils.docker import (
+from localstack.utils.docker_utils import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
