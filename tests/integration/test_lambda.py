@@ -10,7 +10,6 @@ from io import BytesIO
 
 import pytest
 import requests
-import six
 from botocore.exceptions import ClientError
 
 from localstack import config
@@ -448,7 +447,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertIn("Statement", resp)
         # fetch lambda policy
         policy = lambda_client.get_policy(FunctionName=function_name)["Policy"]
-        self.assertIsInstance(policy, six.string_types)
+        self.assertIsInstance(policy, str)
         policy = json.loads(to_str(policy))
         self.assertEqual(action, policy["Statement"][0]["Action"])
         self.assertEqual(sid, policy["Statement"][0]["Sid"])

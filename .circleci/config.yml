@@ -29,6 +29,7 @@ jobs:
             pip install -e ".[cli,runtime,test,dev]"
             python -m localstack.services.install libs
             python -m localstack.services.install testlibs
+            make entrypoints
             mkdir -p target/reports
             mkdir -p target/coverage
       - save_cache:
