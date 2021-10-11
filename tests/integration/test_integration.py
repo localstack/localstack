@@ -707,45 +707,50 @@ class IntegrationTest(unittest.TestCase):
         kinesis = aws_stack.connect_to_service("kinesis")
         s3 = aws_stack.connect_to_service("s3")
 
-        aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM1_NAME, delete=True)
-        aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM2_NAME, delete=True)
-        s3.create_bucket(Bucket=TEST_BUCKET_NAME)
+        try:
+            aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM1_NAME, delete=True)
+            aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM2_NAME, delete=True)
+            s3.create_bucket(Bucket=TEST_BUCKET_NAME)
 
-        # deploy test lambdas connected to Kinesis streams
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
-        )
-        testutil.create_lambda_function(
-            func_name=TEST_CHAIN_LAMBDA1_NAME,
-            zip_file=zip_file,
-            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME),
-        )
-        testutil.create_lambda_function(
-            func_name=TEST_CHAIN_LAMBDA2_NAME,
-            zip_file=zip_file,
-            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME),
-        )
+            # deploy test lambdas connected to Kinesis streams
+            zip_file = testutil.create_lambda_archive(
+                load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
+            )
+            testutil.create_lambda_function(
+                func_name=TEST_CHAIN_LAMBDA1_NAME,
+                zip_file=zip_file,
+                event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME),
+            )
+            testutil.create_lambda_function(
+                func_name=TEST_CHAIN_LAMBDA2_NAME,
+                zip_file=zip_file,
+                event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME),
+            )
 
-        # publish test record
-        test_data = {"test_data": "forward_chain_data_%s with 'quotes\\\"" % short_uid()}
-        data = clone(test_data)
-        data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = "kinesis:%s" % TEST_CHAIN_STREAM2_NAME
-        kinesis.put_record(
-            Data=to_bytes(json.dumps(data)),
-            PartitionKey="testId",
-            StreamName=TEST_CHAIN_STREAM1_NAME,
-        )
+            # publish test record
+            test_data = {"test_data": "forward_chain_data_%s with 'quotes\\\"" % short_uid()}
+            data = clone(test_data)
+            data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = (
+                "kinesis:%s" % TEST_CHAIN_STREAM2_NAME
+            )
+            LOGGER.debug("put record")
+            kinesis.put_record(
+                Data=to_bytes(json.dumps(data)),
+                PartitionKey="testId",
+                StreamName=TEST_CHAIN_STREAM1_NAME,
+            )
 
-        def check_results():
-            all_objects = testutil.list_all_s3_objects()
-            testutil.assert_objects(test_data, all_objects)
+            def check_results():
+                LOGGER.debug("check results")
+                all_objects = testutil.list_all_s3_objects()
+                testutil.assert_objects(test_data, all_objects)
 
-        # check results
-        retry(check_results, retries=5, sleep=3)
-
-        # clean up
-        kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
-        kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
+            # check results
+            retry(check_results, retries=5, sleep=3)
+        finally:
+            # clean up
+            kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
+            kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
 
     def test_sqs_batch_lambda_forward(self):
         sqs = aws_stack.connect_to_service("sqs")

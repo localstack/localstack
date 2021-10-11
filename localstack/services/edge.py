@@ -227,6 +227,7 @@ class ProxyListenerEdge(ProxyListener):
                     # yet. this switch here short-circuits these requests.
                     # FIXME: it's entirely possible that this is NOT a health check request, but something else that may
                     #  actually be broken because of this switch here (since the service is not up yet)
+                    LOG.warning("INTERNAL REQUEST TRIGGERED")
                     return
 
             self.service_manager.require(api)
