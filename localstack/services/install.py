@@ -51,7 +51,7 @@ from localstack.utils.common import (
     untar,
     unzip,
 )
-from localstack.utils.docker import DOCKER_CLIENT
+from localstack.utils.docker_utils import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
 

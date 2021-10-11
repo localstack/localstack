@@ -7,7 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from localstack import config
-from localstack.utils.docker import CmdDockerClient, DockerContainerStatus, PortMappings, Util
+from localstack.utils.docker_utils import CmdDockerClient, DockerContainerStatus, PortMappings, Util
 
 LOG = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class TestDockerClient(unittest.TestCase):
         """Return the string to be used for running Docker commands."""
         return config.DOCKER_CMD.split()
 
-    @patch("localstack.utils.docker.safe_run")
+    @patch("localstack.utils.docker_utils.safe_run")
     def test_list_containers(self, run_mock):
         test_container = {
             "id": "00000000a1",
@@ -36,7 +36,7 @@ class TestDockerClient(unittest.TestCase):
         self.assertIn("-a", call_arguments)
         self.assertIn("--format", call_arguments)
 
-    @patch("localstack.utils.docker.safe_run")
+    @patch("localstack.utils.docker_utils.safe_run")
     def test_container_status(self, run_mock):
         test_output = "Up 2 minutes - localstack_main"
         run_mock.return_value = test_output

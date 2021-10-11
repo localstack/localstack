@@ -14,7 +14,7 @@ import six
 
 from localstack import config, constants
 from localstack.constants import LS_LOG_TRACE_INTERNAL, TRACE_LOG_LEVELS
-from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
+from localstack.utils.docker_utils import DOCKER_CLIENT, ContainerException, PortMappings
 
 # set up logger
 from localstack.utils.run import run, to_str

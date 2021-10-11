@@ -142,7 +142,7 @@ def cmd_config_validate(file):
 @localstack.command(name="ssh", help="Obtain a shell in the running LocalStack container")
 def cmd_ssh():
     from localstack import config
-    from localstack.utils.docker import DOCKER_CLIENT
+    from localstack.utils.docker_utils import DOCKER_CLIENT
     from localstack.utils.run import run
 
     if not DOCKER_CLIENT.is_container_running(config.MAIN_CONTAINER_NAME):

@@ -65,7 +65,7 @@ from localstack.utils.common import (
     to_str,
     unzip,
 )
-from localstack.utils.docker import DOCKER_CLIENT
+from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.http_utils import canonicalize_headers, parse_chunked_data
 from localstack.utils.run import FuncThread
 

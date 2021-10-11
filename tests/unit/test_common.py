@@ -11,7 +11,7 @@ import yaml
 
 from localstack.utils import common
 from localstack.utils.bootstrap import extract_port_flags
-from localstack.utils.docker import PortMappings
+from localstack.utils.docker_utils import PortMappings
 
 
 class TestCommon(unittest.TestCase):
