@@ -1,5 +1,7 @@
 import json
 import logging
+import time
+import uuid
 from typing import Dict
 
 from localstack.services.awslambda.lambda_executors import InvocationException, InvocationResult
@@ -126,6 +128,16 @@ def send_event_to_target(
             PartitionKey=partition_key,
         )
 
+    elif ":logs:" in target_arn:
+        log_group_name = target_arn.split(":")[-1]
+        logs_client = connect_to_service("logs", region_name=region)
+        log_stream_name = str(uuid.uuid4())
+        logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
+        logs_client.put_log_events(
+            logGroupName=log_group_name,
+            logStreamName=log_stream_name,
+            logEvents=[{"timestamp": int(time.time() * 1000.0), "message": json.dumps(event)}],
+        )
     else:
         LOG.warning('Unsupported Events rule target ARN: "%s"' % target_arn)
 
