@@ -1768,7 +1768,10 @@ class TestJavaRuntimes(LambdaTestBase):
     def test_java_runtime(self):
         self.assertIsNotNone(self.test_java_jar)
 
-        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b"{}")
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA,
+            Payload=b'{"echo":"echo"}',
+        )
         result_data = result["Payload"].read()
 
         self.assertEqual(200, result["StatusCode"])
@@ -1851,7 +1854,12 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertEqual(202, result["StatusCode"])
 
     def test_kinesis_invocation(self):
-        payload = b'{"Records": [{"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"}}]}'
+        payload = (
+            b'{"Records": [{'
+            b'"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"},'
+            b'"eventID": "shardId-000000000001:12345678901234567890123456789012345678901234567890",'
+            b'"eventSourceARN": "arn:aws:kinesis:us-east-1:123456789012:stream/test"}]}'
+        )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JAVA_KINESIS, Payload=payload
         )
@@ -1861,10 +1869,16 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertEqual('"test "', to_str(result_data).strip())
 
     def test_kinesis_event(self):
+        payload = (
+            b'{"Records": [{'
+            b'"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"},'
+            b'"eventID": "shardId-000000000001:12345678901234567890123456789012345678901234567890",'
+            b'"eventSourceARN": "arn:aws:kinesis:us-east-1:123456789012:stream/test"}]}'
+        )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JAVA,
             InvocationType="Event",
-            Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}',
+            Payload=payload,
         )
         result_data = result["Payload"].read()
 
@@ -1872,7 +1886,10 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertEqual("", to_str(result_data).strip())
 
     def test_stream_handler(self):
-        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM, Payload=b"{}")
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM,
+            Payload=b'{"echo":"echo"}',
+        )
         result_data = result["Payload"].read()
 
         self.assertEqual(200, result["StatusCode"])
