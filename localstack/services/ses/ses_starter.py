@@ -160,6 +160,30 @@ def apply_patches():
 
     SESBackend.send_email = send_email_save_contents
 
+    backend_send_raw_email_orig = SESBackend.send_raw_email
+
+    def send_raw_email_save_contents(self, source, destinations, raw_data, region):
+        message = backend_send_raw_email_orig(self, source, destinations, raw_data, region)
+
+        ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, "ses")
+        mkdir(ses_dir)
+
+        with open(os.path.join(ses_dir, message.id + ".json"), "w") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "Source": source,
+                        "RawData": raw_data,
+                        "Destinations": destinations,
+                        "Region": region,
+                    }
+                )
+            )
+
+        return message
+
+    SESBackend.send_raw_email = send_raw_email_save_contents
+
     backend_send_templated_email_template_orig = SESBackend.send_templated_email
 
     def send_templated_email_save_contents(
