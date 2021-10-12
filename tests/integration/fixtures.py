@@ -315,6 +315,7 @@ def create_lambda_function(lambda_client: "LambdaClient"):
     lambda_arns = list()
 
     def _create_lambda_function(*args, **kwargs):
+        # TODO move create function logic here to use lambda_client fixture
         resp = testutil.create_lambda_function(*args, **kwargs)
         lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
         return resp

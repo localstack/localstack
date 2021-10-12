@@ -11,7 +11,7 @@ from typing import NamedTuple
 import requests
 from six import add_metaclass
 
-from localstack import constants
+from localstack import config, constants
 from localstack.config import DATA_DIR, is_env_not_false, is_env_true
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws import aws_stack
@@ -199,6 +199,14 @@ def restore_persisted_data(apis):
         for api in apis:
             replay(api)
     API_CALLS_RESTORED = True
+
+
+def is_persistence_enabled():
+    return bool(config.DATA_DIR)
+
+
+def is_persistence_restored():
+    return not is_persistence_enabled() or API_CALLS_RESTORED
 
 
 class StartupInfo(NamedTuple):

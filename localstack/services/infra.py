@@ -555,7 +555,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
             except Exception as e:
                 LOG.error("could not load service plugin %s: %s", api, e)
 
-        if config.DATA_DIR:
+        if persistence.is_persistence_enabled():
             if not config.is_env_true(constants.ENV_PRO_ACTIVATED):
                 LOG.warning(
                     "persistence mechanism of community services will be deprecated in 0.13.0"

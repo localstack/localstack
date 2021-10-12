@@ -703,55 +703,6 @@ class IntegrationTest(unittest.TestCase):
         # clean up
         testutil.delete_lambda_function(lambda_ddb_name)
 
-    def test_kinesis_lambda_forward_chain(self):
-        kinesis = aws_stack.connect_to_service("kinesis")
-        s3 = aws_stack.connect_to_service("s3")
-
-        try:
-            aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM1_NAME, delete=True)
-            aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM2_NAME, delete=True)
-            s3.create_bucket(Bucket=TEST_BUCKET_NAME)
-
-            # deploy test lambdas connected to Kinesis streams
-            zip_file = testutil.create_lambda_archive(
-                load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
-            )
-            testutil.create_lambda_function(
-                func_name=TEST_CHAIN_LAMBDA1_NAME,
-                zip_file=zip_file,
-                event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME),
-            )
-            testutil.create_lambda_function(
-                func_name=TEST_CHAIN_LAMBDA2_NAME,
-                zip_file=zip_file,
-                event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME),
-            )
-
-            # publish test record
-            test_data = {"test_data": "forward_chain_data_%s with 'quotes\\\"" % short_uid()}
-            data = clone(test_data)
-            data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = (
-                "kinesis:%s" % TEST_CHAIN_STREAM2_NAME
-            )
-            LOGGER.debug("put record")
-            kinesis.put_record(
-                Data=to_bytes(json.dumps(data)),
-                PartitionKey="testId",
-                StreamName=TEST_CHAIN_STREAM1_NAME,
-            )
-
-            def check_results():
-                LOGGER.debug("check results")
-                all_objects = testutil.list_all_s3_objects()
-                testutil.assert_objects(test_data, all_objects)
-
-            # check results
-            retry(check_results, retries=5, sleep=3)
-        finally:
-            # clean up
-            kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
-            kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
-
     def test_sqs_batch_lambda_forward(self):
         sqs = aws_stack.connect_to_service("sqs")
         lambda_api = aws_stack.connect_to_service("lambda")
@@ -836,6 +787,52 @@ class IntegrationTest(unittest.TestCase):
 
         # wait for up to 1 min for invocations to get triggered
         retry(check_invocation, retries=14, sleep=5)
+
+
+def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_function):
+
+    try:
+        aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM1_NAME, delete=True)
+        aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM2_NAME, delete=True)
+        s3_client.create_bucket(Bucket=TEST_BUCKET_NAME)
+
+        # deploy test lambdas connected to Kinesis streams
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS
+        )
+        create_lambda_function(
+            func_name=TEST_CHAIN_LAMBDA1_NAME,
+            zip_file=zip_file,
+            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME),
+        )
+        create_lambda_function(
+            func_name=TEST_CHAIN_LAMBDA2_NAME,
+            zip_file=zip_file,
+            event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME),
+        )
+
+        # publish test record
+        test_data = {"test_data": "forward_chain_data_%s with 'quotes\\\"" % short_uid()}
+        data = clone(test_data)
+        data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = "kinesis:%s" % TEST_CHAIN_STREAM2_NAME
+        LOGGER.debug("put record")
+        kinesis_client.put_record(
+            Data=to_bytes(json.dumps(data)),
+            PartitionKey="testId",
+            StreamName=TEST_CHAIN_STREAM1_NAME,
+        )
+
+        def check_results():
+            LOGGER.debug("check results")
+            all_objects = testutil.list_all_s3_objects()
+            testutil.assert_objects(test_data, all_objects)
+
+        # check results
+        retry(check_results, retries=5, sleep=3)
+    finally:
+        # clean up
+        kinesis_client.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
+        kinesis_client.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
 
 
 # ---------------
