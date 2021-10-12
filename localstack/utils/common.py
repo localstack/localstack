@@ -116,17 +116,21 @@ class ShellCommandThread(FuncThread):
 
     def __init__(
         self,
-        cmd,
-        params={},
-        outfile=None,
-        env_vars={},
-        stdin=False,
-        auto_restart=False,
-        quiet=True,
-        inherit_cwd=False,
-        inherit_env=True,
-        log_listener=None,
+        cmd: Union[str, List[str]],
+        params: Any = None,
+        outfile: Union[str, int] = None,
+        env_vars: Dict[str, str] = None,
+        stdin: bool = False,
+        auto_restart: bool = False,
+        quiet: bool = True,
+        inherit_cwd: bool = False,
+        inherit_env: bool = True,
+        log_listener: Callable = None,
+        stop_listener: Callable = None,
     ):
+        params = not_none_or(params, {})
+        env_vars = not_none_or(env_vars, {})
+        self.stopped = False
         self.cmd = cmd
         self.process = None
         self.outfile = outfile
@@ -134,8 +138,9 @@ class ShellCommandThread(FuncThread):
         self.env_vars = env_vars
         self.inherit_cwd = inherit_cwd
         self.inherit_env = inherit_env
-        self.log_listener = log_listener
         self.auto_restart = auto_restart
+        self.log_listener = log_listener
+        self.stop_listener = stop_listener
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
@@ -224,7 +229,7 @@ class ShellCommandThread(FuncThread):
         return not psutil.pid_exists(self.process.pid)
 
     def stop(self, quiet=False):
-        if getattr(self, "stopped", False):
+        if self.stopped:
             return
         if not self.process:
             LOG.warning("No process found for command '%s'" % self.cmd)
@@ -234,9 +239,14 @@ class ShellCommandThread(FuncThread):
         try:
             kill_process_tree(parent_pid)
             self.process = None
-        except Exception:
+        except Exception as e:
             if not quiet:
-                LOG.warning("Unable to kill process with pid %s" % parent_pid)
+                LOG.warning("Unable to kill process with pid %s: %s", parent_pid, e)
+        try:
+            self.stop_listener and self.stop_listener(self)
+        except Exception as e:
+            if not quiet:
+                LOG.warning("Unable to run stop handler for shell command thread %s: %s", self, e)
         self.stopped = True
 
 
@@ -1733,7 +1743,9 @@ def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
     return result
 
 
-def run(cmd: Union[str, List[str]], cache_duration_secs=0, **kwargs):
+def run(
+    cmd: Union[str, List[str]], cache_duration_secs=0, **kwargs
+) -> Union[str, subprocess.Popen]:
     # TODO: should be unified and replaced with safe_run(..) over time! (allowing only lists for cmd parameter)
     def run_cmd():
         return localstack.utils.run.run(cmd, **kwargs)
