@@ -219,14 +219,17 @@ def apply_request_parameter(integration, path_params):
     return uri
 
 
-def apply_template(integration, req_res_type, data, path_params={}, query_params={}, headers={}):
+def apply_template(
+    integration, req_res_type, data, path_params={}, query_params={}, headers={}, context={}
+):
     integration_type = integration.get("type") or integration.get("integrationType")
     if integration_type in ["HTTP", "AWS"]:
         # apply custom request template
-        template = integration.get("%sTemplates" % req_res_type, {}).get(APPLICATION_JSON)
+        content_type = APPLICATION_JSON  # TODO: make configurable!
+        template = integration.get("%sTemplates" % req_res_type, {}).get(content_type)
         if template:
-            context = {}
-            context["body"] = data
+            variables = {"context": context or {}}
+            input_ctx = {"body": data}
 
             def _params(name=None):
                 # See https://docs.aws.amazon.com/apigateway/latest/developerguide/
@@ -238,8 +241,8 @@ def apply_template(integration, req_res_type, data, path_params={}, query_params
                 combined.update(headers or {})
                 return combined if not name else combined.get(name)
 
-            context["params"] = _params
-            data = aws_stack.render_velocity_template(template, context)
+            input_ctx["params"] = _params
+            data = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
     return data
 
 
@@ -710,7 +713,7 @@ def invoke_rest_api_integration_backend(
         function = getattr(requests, method.lower())
         result = function(uri, data=data, headers=headers)
         # apply custom response template
-        data = apply_template(integration, "response", data)
+        result = apply_template(integration, "response", result)
         return result
 
     elif integration_type == "MOCK":

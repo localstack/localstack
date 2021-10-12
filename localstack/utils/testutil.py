@@ -9,7 +9,7 @@ import tempfile
 import time
 import zipfile
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import requests
 from six import iteritems
@@ -43,6 +43,7 @@ from localstack.utils.common import (
     short_uid,
     to_str,
 )
+from localstack.utils.run import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
@@ -389,13 +390,17 @@ def find_recursive(key, value, obj):
         return False
 
 
-def start_http_server(test_port=None, invocations=None):
+def start_http_server(
+    test_port: int = None, invocations: List = None, invocation_handler: Callable = None
+) -> Tuple[int, List, FuncThread]:
     # Note: leave imports here to avoid import errors (e.g., "flask") for CLI commands
     from localstack.services.generic_proxy import ProxyListener
     from localstack.services.infra import start_proxy
 
     class TestListener(ProxyListener):
         def forward_request(self, **kwargs):
+            if invocation_handler:
+                kwargs = invocation_handler(**kwargs)
             invocations.append(kwargs)
             return 200
 
