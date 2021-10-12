@@ -432,8 +432,13 @@ class ServicePluginManager(ServiceManager):
         )
         self._api_provider_specs = None
 
+    # TODO make the abstraction clearer
     def list_available(self) -> List[str]:
-        return list(self.api_provider_specs.keys())
+        return [
+            service
+            for service in self.api_provider_specs.keys()
+            if config.SERVICE_PROVIDER_CONFIG.is_configured(service)
+        ]
 
     def exists(self, name: str) -> bool:
         return name in self.api_provider_specs
@@ -471,10 +476,10 @@ class ServicePluginManager(ServiceManager):
         return super().get_service_container(name)
 
     @property
-    def api_provider_specs(self) -> Dict[str, List[PluginSpec]]:
+    def api_provider_specs(self) -> Dict[str, List[str]]:
         """
-        Returns all PluginSpecs within the service plugin namespace and parses their name according to the convention,
-        that is "<api>:<provider>". The result is a dictionary that maps api => List[PluginSpec (a provider)].
+        Returns all provider names within the service plugin namespace and parses their name according to the convention,
+        that is "<api>:<provider>". The result is a dictionary that maps api => List[str (name of a provider)].
         """
         if self._api_provider_specs is None:
             self._api_provider_specs = self._resolve_api_provider_specs()
@@ -487,11 +492,23 @@ class ServicePluginManager(ServiceManager):
             # no providers for this api
             return None
 
-        if len(providers) == 1:
-            provider = providers[0]
+        preferred_provider = config.SERVICE_PROVIDER_CONFIG.get_provider(name)
+        if preferred_provider in providers:
+            LOG.warning(
+                "more than one provider for %s exists: %s Using preferred one: %s",
+                name,
+                providers,
+                preferred_provider,
+            )
+            provider = preferred_provider
         else:
-            LOG.warning("more than one provider for %s exists: %s", name, providers)
-            provider = providers[0]  # TODO read preferred provider for API from settings/config
+            LOG.warning(
+                "Configured provider (%s) does not exist for service (%s). Available options are: %s",
+                preferred_provider,
+                name,
+                providers,
+            )
+            return None
 
         plugin_name = f"{name}:{provider}"
         service = self.plugin_manager.load(plugin_name)
@@ -499,7 +516,7 @@ class ServicePluginManager(ServiceManager):
         return service
 
     @log_duration(min_ms=0)
-    def _resolve_api_provider_specs(self) -> Dict[str, List[PluginSpec]]:
+    def _resolve_api_provider_specs(self) -> Dict[str, List[str]]:
         result = defaultdict(list)
 
         for spec in self.plugin_manager.list_plugin_specs():
@@ -510,13 +527,20 @@ class ServicePluginManager(ServiceManager):
 
         return result
 
+    def apis_with_provider(self, provider: str) -> List[str]:
+        apis = list()
+        for api, providers in self.api_provider_specs.items():
+            if provider in providers:
+                apis.append(api)
+        return apis
+
 
 def register_service(service):
     SERVICE_PLUGINS.add_service(service)
 
 
 # map of service plugins, mapping from service name to plugin details
-SERVICE_PLUGINS: ServiceManager = ServicePluginManager()
+SERVICE_PLUGINS: ServicePluginManager = ServicePluginManager()
 
 
 # -------------------------

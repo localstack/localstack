@@ -24,7 +24,7 @@ from localstack.services.generic_proxy import start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, wait_for_infra_shutdown
 from localstack.utils import analytics, common, config_listener, persistence
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws.request_context import patch_request_handling
+from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import (
     canonicalize_api_names,
     get_main_container_id,
@@ -531,7 +531,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
             register_signal_handlers()
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
-        patch_request_handling()
+        patch_moto_request_handling()
 
     @log_duration()
     def prepare_installation():

@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import time
 from os.path import expanduser
+from typing import Dict, List
 
 import six
 from boto3 import Session
@@ -600,6 +601,38 @@ def load_config_file(config_file=None):
         return {}
     return configs
 
+
+class ServiceProviderConfig:
+    _provider_config: Dict[str, str]
+    default_value: str
+
+    def __init__(self, default_value: str):
+        self._provider_config = dict()
+        self.default_value = default_value
+
+    def get_provider(self, service: str) -> str:
+        return self._provider_config.get(service, self.default_value)
+
+    def set_provider_if_not_exists(self, service: str, provider: str) -> None:
+        if service not in self._provider_config:
+            self._provider_config[service] = provider
+
+    def set_provider(self, service: str, provider: str):
+        self._provider_config[service] = provider
+
+    def bulk_set_provider_if_not_exists(self, services: List[str], provider: str):
+        for service in services:
+            self.set_provider_if_not_exists(service, provider)
+
+    def is_configured(self, service: str):
+        return service in self._provider_config
+
+
+SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
+
+for key, value in os.environ.items():
+    if key.startswith("PROVIDER_OVERRIDE_"):
+        SERVICE_PROVIDER_CONFIG.set_provider(key.lstrip("PROVIDER_OVERRIDE_").lower(), value)
 
 if LS_LOG in TRACE_LOG_LEVELS:
     load_end_time = time.time()
