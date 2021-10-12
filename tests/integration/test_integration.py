@@ -703,83 +703,6 @@ class IntegrationTest(unittest.TestCase):
         # clean up
         testutil.delete_lambda_function(lambda_ddb_name)
 
-    def test_sqs_batch_lambda_forward(self):
-        sqs = aws_stack.connect_to_service("sqs")
-        lambda_api = aws_stack.connect_to_service("lambda")
-
-        lambda_name_queue_batch = "lambda_queue_batch-%s" % short_uid()
-
-        # deploy test lambda connected to SQS queue
-        sqs_queue_info = testutil.create_sqs_queue(lambda_name_queue_batch)
-        queue_url = sqs_queue_info["QueueUrl"]
-        resp = testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=lambda_name_queue_batch,
-            event_source_arn=sqs_queue_info["QueueArn"],
-            libs=TEST_LAMBDA_LIBS,
-        )
-
-        event_source_id = resp["CreateEventSourceMappingResponse"]["UUID"]
-        lambda_api.update_event_source_mapping(UUID=event_source_id, BatchSize=5)
-
-        messages_to_send = [
-            {
-                "Id": "message{:02d}".format(i),
-                "MessageBody": "msgBody{:02d}".format(i),
-                "MessageAttributes": {
-                    "CustomAttribute": {
-                        "DataType": "String",
-                        "StringValue": "CustomAttributeValue{:02d}".format(i),
-                    }
-                },
-            }
-            for i in range(1, 12)
-        ]
-
-        # send 11 messages (which should get split into 3 batches)
-        sqs.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send[:10])
-        sqs.send_message(
-            QueueUrl=queue_url,
-            MessageBody=messages_to_send[10]["MessageBody"],
-            MessageAttributes=messages_to_send[10]["MessageAttributes"],
-        )
-
-        def wait_for_done():
-            attributes = sqs.get_queue_attributes(
-                QueueUrl=queue_url,
-                AttributeNames=[
-                    "ApproximateNumberOfMessages",
-                    "ApproximateNumberOfMessagesDelayed",
-                    "ApproximateNumberOfMessagesNotVisible",
-                ],
-            )["Attributes"]
-            msg_count = int(attributes.get("ApproximateNumberOfMessages"))
-            self.assertEqual(0, msg_count, "expecting queue to be empty")
-
-            delayed_count = int(attributes.get("ApproximateNumberOfMessagesDelayed"))
-            if delayed_count != 0:
-                LOGGER.warning(
-                    "SQS delayed message count (actual/expected): %s/%s" % (delayed_count, 0)
-                )
-
-            not_visible_count = int(attributes.get("ApproximateNumberOfMessagesNotVisible"))
-            if not_visible_count != 0:
-                LOGGER.warning(
-                    "SQS messages not visible (actual/expected): %s/%s" % (not_visible_count, 0)
-                )
-
-            self.assertEqual(0, delayed_count, "no messages waiting for retry")
-            self.assertEqual(0, delayed_count + not_visible_count, "no in flight messages")
-
-        # wait for the queue to drain (max 60s)
-        retry(wait_for_done, retries=12, sleep=5.0)
-
-        events = get_lambda_log_events(lambda_name_queue_batch, 10)
-        self.assertEqual(3, len(events), "expected 3 lambda invocations")
-
-        testutil.delete_lambda_function(lambda_name_queue_batch)
-        sqs.delete_queue(QueueUrl=queue_url)
-
     def test_scheduled_lambda(self):
         def check_invocation(*args):
             log_events = LambdaTestBase.get_lambda_logs(self.scheduled_lambda_name)
@@ -787,6 +710,81 @@ class IntegrationTest(unittest.TestCase):
 
         # wait for up to 1 min for invocations to get triggered
         retry(check_invocation, retries=14, sleep=5)
+
+
+def test_sqs_batch_lambda_forward(lambda_client, sqs_client, create_lambda_function):
+
+    lambda_name_queue_batch = "lambda_queue_batch-%s" % short_uid()
+
+    # deploy test lambda connected to SQS queue
+    sqs_queue_info = testutil.create_sqs_queue(lambda_name_queue_batch)
+    queue_url = sqs_queue_info["QueueUrl"]
+    resp = create_lambda_function(
+        handler_file=TEST_LAMBDA_PYTHON_ECHO,
+        func_name=lambda_name_queue_batch,
+        event_source_arn=sqs_queue_info["QueueArn"],
+        libs=TEST_LAMBDA_LIBS,
+    )
+
+    event_source_id = resp["CreateEventSourceMappingResponse"]["UUID"]
+    lambda_client.update_event_source_mapping(UUID=event_source_id, BatchSize=5)
+
+    messages_to_send = [
+        {
+            "Id": "message{:02d}".format(i),
+            "MessageBody": "msgBody{:02d}".format(i),
+            "MessageAttributes": {
+                "CustomAttribute": {
+                    "DataType": "String",
+                    "StringValue": "CustomAttributeValue{:02d}".format(i),
+                }
+            },
+        }
+        for i in range(1, 12)
+    ]
+
+    # send 11 messages (which should get split into 3 batches)
+    sqs_client.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send[:10])
+    sqs_client.send_message(
+        QueueUrl=queue_url,
+        MessageBody=messages_to_send[10]["MessageBody"],
+        MessageAttributes=messages_to_send[10]["MessageAttributes"],
+    )
+
+    def wait_for_done():
+        attributes = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url,
+            AttributeNames=[
+                "ApproximateNumberOfMessages",
+                "ApproximateNumberOfMessagesDelayed",
+                "ApproximateNumberOfMessagesNotVisible",
+            ],
+        )["Attributes"]
+        msg_count = int(attributes.get("ApproximateNumberOfMessages"))
+        assert 0 == msg_count, "expecting queue to be empty"
+
+        delayed_count = int(attributes.get("ApproximateNumberOfMessagesDelayed"))
+        if delayed_count != 0:
+            LOGGER.warning(
+                "SQS delayed message count (actual/expected): %s/%s" % (delayed_count, 0)
+            )
+
+        not_visible_count = int(attributes.get("ApproximateNumberOfMessagesNotVisible"))
+        if not_visible_count != 0:
+            LOGGER.warning(
+                "SQS messages not visible (actual/expected): %s/%s" % (not_visible_count, 0)
+            )
+
+        assert 0 == delayed_count, "no messages waiting for retry"
+        assert 0 == delayed_count + not_visible_count, "no in flight messages"
+
+    # wait for the queue to drain (max 60s)
+    retry(wait_for_done, retries=12, sleep=5.0)
+
+    events = get_lambda_log_events(lambda_name_queue_batch, 10)
+    assert 3 == len(events), "expected 3 lambda invocations"
+
+    sqs_client.delete_queue(QueueUrl=queue_url)
 
 
 def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_function):
