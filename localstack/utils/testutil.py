@@ -46,7 +46,7 @@ from localstack.utils.common import (
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
-LAMBDA_TIMEOUT_SEC = 8
+LAMBDA_TIMEOUT_SEC = 30
 LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"
 MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
