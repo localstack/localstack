@@ -630,7 +630,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
 
     if not port:
         port = config.EDGE_PORT
-    if config.EDGE_PORT_HTTP:
+    if config.EDGE_PORT_HTTP and config.EDGE_PORT_HTTP != port:
         do_start_edge(
             config.EDGE_BIND_HOST,
             config.EDGE_PORT_HTTP,
