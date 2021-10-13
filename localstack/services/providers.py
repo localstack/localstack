@@ -223,6 +223,7 @@ def stepfunctions():
         "stepfunctions",
         listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS,
         start=stepfunctions_starter.start_stepfunctions,
+        check=stepfunctions_starter.check_stepfunctions,
     )
 
 

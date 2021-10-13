@@ -6,6 +6,7 @@ from localstack.services import install
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
 from localstack.services.stepfunctions import stepfunctions_listener
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import wait_for_port_open
 
 LOG = logging.getLogger(__name__)
 
@@ -69,6 +70,25 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
     global PROCESS_THREAD
     PROCESS_THREAD = do_run(cmd, asynchronous)
     return PROCESS_THREAD
+
+
+def check_stepfunctions(expect_shutdown=False, print_error=False):
+    out = None
+    try:
+        # check Kinesis
+        wait_for_port_open(config.LOCAL_PORT_STEPFUNCTIONS)
+        endpoint_url = f"http://127.0.0.1:{config.LOCAL_PORT_STEPFUNCTIONS}"
+        out = aws_stack.connect_to_service(
+            service_name="stepfunctions", endpoint_url=endpoint_url
+        ).list_state_machines()
+    except Exception as e:
+        if print_error:
+            LOG.exception("Kinesis health check failed: %s", e)
+
+    if expect_shutdown:
+        assert out is None
+    else:
+        assert out and isinstance(out.get("stateMachines"), list)
 
 
 def restart_stepfunctions():
