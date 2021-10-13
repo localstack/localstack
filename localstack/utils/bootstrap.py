@@ -81,15 +81,15 @@ def log_duration(name=None, min_ms=500):
     def wrapper(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            from localstack.utils.common import now_utc
+            from time import perf_counter
 
-            start_time = now_utc(millis=True)
+            start_time = perf_counter()
             try:
                 return f(*args, **kwargs)
             finally:
-                end_time = now_utc(millis=True)
+                end_time = perf_counter()
                 func_name = name or f.__name__
-                duration = end_time - start_time
+                duration = (end_time - start_time) * 1000
                 if duration > min_ms:
                     LOG.info('Execution of "%s" took %.2fms', func_name, duration)
 

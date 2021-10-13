@@ -93,9 +93,9 @@ def iam():
 
 @aws_provider()
 def sts():
-    from localstack.services.sts import sts_starter
+    from localstack.services.sts import sts_listener, sts_starter
 
-    return Service("sts", start=sts_starter.start_sts)
+    return Service("sts", start=sts_starter.start_sts, listener=sts_listener.UPDATE_STS)
 
 
 @aws_provider()
