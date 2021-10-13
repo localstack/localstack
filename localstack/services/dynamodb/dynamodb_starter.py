@@ -30,7 +30,8 @@ def check_dynamodb(expect_shutdown=False, print_error=False):
         # wait for backend port to be opened
         wait_for_port_open(PORT_DYNAMODB_BACKEND, http_path="/", expect_success=False, sleep_time=1)
         # check DynamoDB
-        out = aws_stack.connect_to_service("dynamodb").list_tables()
+        endpoint_url = f"http://127.0.0.1:{PORT_DYNAMODB_BACKEND}"
+        out = aws_stack.connect_to_service("dynamodb", endpoint_url=endpoint_url).list_tables()
     except Exception as e:
         if print_error:
             LOGGER.error("DynamoDB health check failed: %s %s" % (e, traceback.format_exc()))

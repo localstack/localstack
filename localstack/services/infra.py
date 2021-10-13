@@ -45,6 +45,7 @@ from localstack.utils.common import (
     run,
     start_thread,
 )
+from localstack.utils.run import FuncThread
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
 
@@ -287,6 +288,15 @@ def do_run(
     return run(cmd, env_vars=env_vars)
 
 
+class MotoServerProperties:
+    moto_thread: FuncThread
+    service_port: int
+
+    def __init__(self, moto_thread: FuncThread, service_port: int):
+        self.moto_thread = moto_thread
+        self.service_port = service_port
+
+
 def start_proxy_for_service(
     service_name, port, backend_port, update_listener, quiet=False, params={}
 ):
@@ -338,7 +348,8 @@ def start_moto_server(
     if backend_port or config.FORWARD_EDGE_INMEM:
         start_proxy_for_service(key, port, backend_port, update_listener)
     if config.BUNDLE_API_PROCESSES:
-        return multiserver.start_api_server(key, backend_port or port)
+        server_port = backend_port or port
+        return MotoServerProperties(multiserver.start_api_server(key, server_port), server_port)
     return start_moto_server_separate(
         key, port, name=name, backend_port=backend_port, asynchronous=asynchronous
     )
@@ -348,13 +359,14 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
     moto_server_cmd = "%s/bin/moto_server" % LOCALSTACK_VENV_FOLDER
     if not os.path.exists(moto_server_cmd):
         moto_server_cmd = run("which moto_server").strip()
+    server_port = backend_port or port
     cmd = "VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s" % (
         moto_server_cmd,
         key,
-        backend_port or port,
+        server_port,
         constants.BIND_HOST,
     )
-    return do_run(cmd, asynchronous)
+    return MotoServerProperties(do_run(cmd, asynchronous), server_port)
 
 
 def start_local_api(name, port, api, method, asynchronous=False):

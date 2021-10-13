@@ -446,7 +446,7 @@ class ServicePluginManager(ServiceManager):
         ]
 
     def exists(self, name: str) -> bool:
-        return name in self.api_provider_specs
+        return name in self.list_available()
 
     def get_state(self, name: str) -> Optional[ServiceState]:
         if name in self._services:
