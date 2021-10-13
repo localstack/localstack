@@ -624,9 +624,6 @@ class ServiceProviderConfig:
         for service in services:
             self.set_provider_if_not_exists(service, provider)
 
-    def is_configured(self, service: str):
-        return service in self._provider_config
-
 
 SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 

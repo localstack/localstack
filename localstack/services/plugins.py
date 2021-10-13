@@ -432,12 +432,17 @@ class ServicePluginManager(ServiceManager):
         )
         self._api_provider_specs = None
 
-    # TODO make the abstraction clearer
+    # TODO make the abstraction clearer, to provide better information if service is available versus discoverable
+    # especially important when considering pro services
     def list_available(self) -> List[str]:
+        """
+        List all available services, which have an available, configured provider
+        :return: List of service names
+        """
         return [
             service
-            for service in self.api_provider_specs.keys()
-            if config.SERVICE_PROVIDER_CONFIG.is_configured(service)
+            for service, providers in self.api_provider_specs.items()
+            if config.SERVICE_PROVIDER_CONFIG.get_provider(service) in providers
         ]
 
     def exists(self, name: str) -> bool:
@@ -495,7 +500,7 @@ class ServicePluginManager(ServiceManager):
         preferred_provider = config.SERVICE_PROVIDER_CONFIG.get_provider(name)
         if preferred_provider in providers:
             LOG.warning(
-                "more than one provider for %s exists: %s Using preferred one: %s",
+                "Providers for %s: %s Using preferred one: %s",
                 name,
                 providers,
                 preferred_provider,
