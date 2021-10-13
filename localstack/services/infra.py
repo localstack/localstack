@@ -90,11 +90,6 @@ def start_sns(port=None, asynchronous=False, update_listener=None):
     )
 
 
-def start_sts(port=None, asynchronous=False):
-    port = port or config.PORT_STS
-    return start_moto_server("sts", port, name="STS", asynchronous=asynchronous)
-
-
 def start_firehose(port=None, asynchronous=False):
     from localstack.services.firehose import firehose_api
 
@@ -382,7 +377,6 @@ def start_local_api(name, port, api, method, asynchronous=False):
 
 
 def stop_infra():
-    from localstack.services.awslambda import lambda_api
 
     if common.INFRA_STOPPED:
         return
@@ -397,8 +391,8 @@ def stop_infra():
         common.cleanup(files=True, quiet=True)
         LOG.debug("[shutdown] Cleaning up resources ...")
         common.cleanup_resources()
-        LOG.debug("[shutdown] Cleaning up Lambda resources ...")
-        lambda_api.cleanup()
+        LOG.debug("[shutdown] Cleaning up services ...")
+        SERVICE_PLUGINS.stop_services()
 
         if config.FORCE_SHUTDOWN:
             LOG.debug("[shutdown] Force shutdown, not waiting for infrastructure to shut down")

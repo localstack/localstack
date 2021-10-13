@@ -119,9 +119,10 @@ def kms():
 
 @aws_provider(api="lambda")
 def awslambda():
+    from localstack.services.awslambda.lambda_api import stop_lambda
     from localstack.services.infra import start_lambda
 
-    return Service("lambda", start=start_lambda)
+    return Service("lambda", start=start_lambda, stop=stop_lambda)
 
 
 @aws_provider()

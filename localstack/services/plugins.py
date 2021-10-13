@@ -132,19 +132,24 @@ class ServiceStateException(ServiceException):
 
 
 class Service(object):
-    def __init__(self, name, start, check=None, listener=None, priority=0, active=False):
+    def __init__(self, name, start, check=None, listener=None, active=False, stop=None):
         self.plugin_name = name
         self.start_function = start
         self.listener = listener
         self.check_function = check
-        self.priority = priority
         self.default_active = active
+        self.stop_function = stop
 
     def start(self, asynchronous):
         kwargs = {"asynchronous": asynchronous}
         if self.listener:
             kwargs["update_listener"] = self.listener
         return self.start_function(**kwargs)
+
+    def stop(self):
+        if not self.stop_function:
+            return
+        return self.stop_function()
 
     def check(self, expect_shutdown=False, print_error=False):
         if not self.check_function:
@@ -220,7 +225,7 @@ class ServiceContainer:
     def stop(self):
         try:
             self.state = ServiceState.STOPPING
-            # TODO: actually stop the service
+            self.service.stop()
             self.state = ServiceState.STOPPED
         except Exception as e:
             self.state = ServiceState.ERROR
@@ -241,13 +246,6 @@ class ServiceManager:
         return container.service if container else None
 
     def add_service(self, service: Service) -> bool:
-        existing = self._services.get(service.name())
-        if existing:
-            if (
-                existing.service.priority > service.priority
-            ):  # FIXME: old concept that may not be needed anymore
-                return False
-
         state = ServiceState.AVAILABLE if service.is_enabled() else ServiceState.DISABLED
         self._services[service.name()] = ServiceContainer(service, state)
 
@@ -533,11 +531,30 @@ class ServicePluginManager(ServiceManager):
         return result
 
     def apis_with_provider(self, provider: str) -> List[str]:
+        """
+        Lists all apis where a given provider exists for.
+        :param provider: Name of the provider
+        :return: List of apis the given provider provides
+        """
         apis = list()
         for api, providers in self.api_provider_specs.items():
             if provider in providers:
                 apis.append(api)
         return apis
+
+    def stop_services(self, services: List[str] = None) -> None:
+        """
+        Stops services for this service manager, if they are currently active.
+        Will not stop services not already started or in and error state.
+
+        :param services: Service names to stop. If not provided, all services for this manager will be stopped.
+        """
+        if not services:
+            services = self.list_available()
+        for service_name in services:
+            if self.get_state(service_name) in [ServiceState.STARTING, ServiceState.RUNNING]:
+                service_container = self.get_service_container(service_name)
+                service_container.stop()
 
 
 def register_service(service):

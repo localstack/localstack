@@ -27,7 +27,7 @@ from localstack.services import plugins
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
 from localstack.services.infra import PROXY_LISTENERS
-from localstack.services.plugins import SERVICE_PLUGINS, ServiceState
+from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils import persistence
@@ -169,7 +169,7 @@ class ProxyListenerEdge(ProxyListener):
 
         is_internal_call = is_internal_call_context(headers)
 
-        self._require_service(api, is_internal_call)
+        self._require_service(api)
 
         lock_ctx = BOOTSTRAP_LOCK
         if persistence.is_persistence_restored() or is_internal_call:
@@ -215,21 +215,11 @@ class ProxyListenerEdge(ProxyListener):
             response.headers["Content-Length"] = str(len(response._content))
             response.headers["Content-Encoding"] = "gzip"
 
-    def _require_service(self, api, is_internal_call):
+    def _require_service(self, api):
         if not self.service_manager.exists(api):
             raise HTTPErrorResponse("no provider exists for service %s" % api, code=500)
 
         try:
-            if is_internal_call:
-                if self.service_manager.get_state(api) == ServiceState.STARTING:
-                    # internal calls have weaker requirements here, because service_manager.require initiates a
-                    # health check after starting the service, which would block because the service hasn't started
-                    # yet. this switch here short-circuits these requests.
-                    # FIXME: it's entirely possible that this is NOT a health check request, but something else that may
-                    #  actually be broken because of this switch here (since the service is not up yet)
-                    LOG.warning("INTERNAL REQUEST TRIGGERED")
-                    return
-
             self.service_manager.require(api)
         except Exception as e:
             raise HTTPErrorResponse("failed to get service for %s: %s" % (api, e), code=500)
