@@ -7,6 +7,7 @@ import sys
 import threading
 import time
 import traceback
+from typing import Dict, List, Union
 
 import boto3
 from moto import core as moto_core
@@ -19,10 +20,6 @@ from localstack.constants import (
     LOCALSTACK_VENV_FOLDER,
 )
 from localstack.services import generic_proxy, install
-from localstack.services.awslambda import lambda_api
-from localstack.services.cloudformation import cloudformation_api
-from localstack.services.dynamodbstreams import dynamodbstreams_api
-from localstack.services.firehose import firehose_api
 from localstack.services.generic_proxy import start_proxy_server
 from localstack.services.plugins import (
     SERVICE_PLUGINS,
@@ -34,12 +31,12 @@ from localstack.utils import analytics, common, config_listener, persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.bootstrap import (
     canonicalize_api_names,
+    get_main_container_id,
     in_ci,
     load_plugins,
     log_duration,
     setup_logging,
 )
-from localstack.utils.cli import print_version
 from localstack.utils.common import (
     TMP_THREADS,
     ShellCommandThread,
@@ -101,6 +98,8 @@ def start_sts(port=None, asynchronous=False):
 
 
 def start_firehose(port=None, asynchronous=False):
+    from localstack.services.firehose import firehose_api
+
     port = port or config.PORT_FIREHOSE
     return start_local_api(
         "Firehose",
@@ -112,6 +111,8 @@ def start_firehose(port=None, asynchronous=False):
 
 
 def start_dynamodbstreams(port=None, asynchronous=False):
+    from localstack.services.dynamodbstreams import dynamodbstreams_api
+
     port = port or config.PORT_DYNAMODBSTREAMS
     return start_local_api(
         "DynamoDB Streams",
@@ -123,6 +124,8 @@ def start_dynamodbstreams(port=None, asynchronous=False):
 
 
 def start_lambda(port=None, asynchronous=False):
+    from localstack.services.awslambda import lambda_api
+
     port = port or config.PORT_LAMBDA
     return start_local_api(
         "Lambda", port, api="lambda", method=lambda_api.serve, asynchronous=asynchronous
@@ -130,6 +133,8 @@ def start_lambda(port=None, asynchronous=False):
 
 
 def start_cloudformation(port=None, asynchronous=False):
+    from localstack.services.cloudformation import cloudformation_api
+
     port = port or config.PORT_CLOUDFORMATION
     return start_local_api(
         "CloudFormation",
@@ -266,7 +271,13 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
-def do_run(cmd, asynchronous, print_output=None, env_vars={}, auto_restart=False):
+def do_run(
+    cmd: Union[str, List],
+    asynchronous: bool,
+    print_output: bool = None,
+    env_vars: Dict[str, str] = {},
+    auto_restart=False,
+):
     sys.stdout.flush()
     if asynchronous:
         if config.DEBUG and print_output is None:
@@ -362,6 +373,8 @@ def start_local_api(name, port, api, method, asynchronous=False):
 
 
 def stop_infra():
+    from localstack.services.awslambda import lambda_api
+
     if common.INFRA_STOPPED:
         return
     common.INFRA_STOPPED = True
@@ -398,7 +411,7 @@ def check_aws_credentials():
     credentials = None
     # hardcode credentials here, to allow us to determine internal API calls made via boto3
     os.environ["AWS_ACCESS_KEY_ID"] = constants.INTERNAL_AWS_ACCESS_KEY_ID
-    os.environ["AWS_SECRET_ACCESS_KEY"] = constants.INTERNAL_AWS_ACCESS_KEY_ID
+    os.environ["AWS_SECRET_ACCESS_KEY"] = constants.INTERNAL_AWS_SECRET_ACCESS_KEY
     try:
         credentials = session.get_credentials()
     except Exception:
@@ -411,6 +424,25 @@ def check_aws_credentials():
 # -------------
 # MAIN STARTUP
 # -------------
+
+
+def print_runtime_information(in_docker=False):
+    # FIXME: this is legacy code from the old CLI, reconcile with new CLI and runtime output
+
+    print()
+    print("LocalStack version: %s" % constants.VERSION)
+    if in_docker:
+        id = get_main_container_id()
+        if id:
+            print("LocalStack Docker container id: %s" % id[:12])
+
+    if config.LOCALSTACK_BUILD_DATE:
+        print("LocalStack build date: %s" % config.LOCALSTACK_BUILD_DATE)
+
+    if config.LOCALSTACK_BUILD_GIT_HASH:
+        print("LocalStack build git hash: %s" % config.LOCALSTACK_BUILD_GIT_HASH)
+
+    print()
 
 
 def start_infra(asynchronous=False, apis=None):
@@ -439,7 +471,7 @@ def start_infra(asynchronous=False, apis=None):
                 "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR"
             )
 
-        print_version(is_in_docker)
+        print_runtime_information(is_in_docker)
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)

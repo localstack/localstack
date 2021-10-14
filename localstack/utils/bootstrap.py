@@ -3,7 +3,6 @@ import os
 import pkgutil
 import re
 import shlex
-import shutil
 import sys
 import threading
 import time
@@ -11,11 +10,11 @@ import warnings
 from datetime import datetime
 from functools import wraps
 
-import pip as pip_mod
 import six
 
 from localstack import config, constants
-from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
+from localstack.constants import LS_LOG_TRACE_INTERNAL, TRACE_LOG_LEVELS
+from localstack.utils.docker_utils import DOCKER_CLIENT, ContainerException, PortMappings
 
 # set up logger
 from localstack.utils.run import run, to_str
@@ -74,50 +73,6 @@ MAIN_CONTAINER_NAME_CACHED = None
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = "LS_SCRIPT_STARTING_DOCKER"
-
-
-def bootstrap_installation():
-    try:
-        from localstack.services import infra
-
-        assert infra
-    except Exception:
-        install_dependencies()
-
-
-def install_dependencies():
-    # determine requirements
-    root_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
-    reqs_file = os.path.join(root_folder, "requirements.txt")
-    reqs_copy_file = os.path.join(root_folder, "localstack", "requirements.copy.txt")
-    if not os.path.exists(reqs_copy_file):
-        shutil.copy(reqs_file, reqs_copy_file)
-    with open(reqs_copy_file) as f:
-        requirements = f.read()
-    install_requires = []
-    for line in re.split("\n", requirements):
-        if line and line[0] != "#":
-            if BASIC_LIB_MARKER not in line and IGNORED_LIB_MARKER not in line:
-                line = line.split(" #")[0].strip()
-                install_requires.append(line)
-    LOG.info(
-        "Lazily installing missing pip dependencies, this could take a while: %s"
-        % ", ".join(install_requires)
-    )
-    args = ["install"] + install_requires
-    return run_pip_main(args)
-
-
-def run_pip_main(args):
-    if hasattr(pip_mod, "main"):
-        return pip_mod.main(args)
-    import pip._internal
-
-    if hasattr(pip._internal, "main"):
-        return pip._internal.main(args)
-    import pip._internal.main
-
-    return pip._internal.main.main(args)
 
 
 def log_duration(name=None):
@@ -313,10 +268,9 @@ def setup_logging(log_level=None):
     # overriding the log level if LS_LOG has been set
     if config.LS_LOG:
         log_level = str(config.LS_LOG).upper()
-        log_level = (
-            "WARNING" if log_level == "WARN" else "DEBUG" if log_level == "TRACE" else log_level
-        )
-        log_level = getattr(logging, log_level)
+        if log_level.lower() in TRACE_LOG_LEVELS:
+            log_level = "DEBUG"
+        log_level = logging._nameToLevel[log_level]
         logging.getLogger("").setLevel(log_level)
         logging.getLogger("localstack").setLevel(log_level)
 
@@ -343,12 +297,16 @@ def setup_logging(log_level=None):
     logging.captureWarnings(True)
     logging.getLogger("asyncio").setLevel(logging.INFO)
     logging.getLogger("boto3").setLevel(logging.INFO)
-    logging.getLogger("s3transfer").setLevel(logging.INFO)
-    logging.getLogger("docker").setLevel(logging.WARNING)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("botocore").setLevel(logging.ERROR)
+    logging.getLogger("docker").setLevel(logging.WARNING)
     logging.getLogger("elasticsearch").setLevel(logging.ERROR)
+    logging.getLogger("moto").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("s3transfer").setLevel(logging.INFO)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    if config.LS_LOG != LS_LOG_TRACE_INTERNAL:
+        # disable werkzeug API logs, unless detailed internal trace logging is enabled
+        logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
 
 # --------------
@@ -407,14 +365,17 @@ def is_api_enabled(api):
 
 
 def start_infra_locally():
-    bootstrap_installation()
     from localstack.services import infra
 
     return infra.start_infra()
 
 
 def validate_localstack_config(name):
-    LOG.setLevel(logging.INFO)
+    # TODO: separate functionality from CLI output
+    #  (use exceptions to communicate errors, and return list of warnings)
+    from subprocess import CalledProcessError
+
+    from localstack.cli import console
 
     dirname = os.getcwd()
     compose_file_name = name if os.path.isabs(name) else os.path.join(dirname, name)
@@ -423,9 +384,10 @@ def validate_localstack_config(name):
     # validating docker-compose file
     cmd = ["docker-compose", "-f", compose_file_name, "config"]
     try:
-        run(cmd, shell=False)
-    except Exception as e:
-        LOG.warning("Looks like the docker-compose file is not valid: %s" % e)
+        run(cmd, shell=False, print_error=False)
+    except CalledProcessError as e:
+        msg = f"{e}\n{to_str(e.output)}".strip()
+        raise ValueError(msg)
 
     # validating docker-compose variable
     import yaml  # keep import here to avoid issues in test Lambdas
@@ -441,12 +403,12 @@ def validate_localstack_config(name):
             'No LocalStack service found in config (looking for image names containing "localstack")'
         )
     if len(ls_service_name) > 1:
-        LOG.warning("Multiple candidates found for LocalStack service: %s" % ls_service_name)
+        warns.append(f"Multiple candidates found for LocalStack service: {ls_service_name}")
     ls_service_name = ls_service_name[0]
     ls_service_details = services_config[ls_service_name]
     image_name = ls_service_details.get("image", "")
     if image_name.split(":")[0] not in constants.OFFICIAL_IMAGES:
-        LOG.info(
+        warns.append(
             'Using custom image "%s", we recommend using an official image: %s'
             % (image_name, constants.OFFICIAL_IMAGES)
         )
@@ -508,9 +470,8 @@ def validate_localstack_config(name):
 
     # print warning/info messages
     for warning in warns:
-        LOG.warning(warning)
-    if not warnings:
-        LOG.info("Done validating config file %s - no issues found" % compose_file_name)
+        console.print("[yellow]:warning:[/yellow]", warning)
+    if not warns:
         return True
     return False
 
@@ -544,6 +505,11 @@ def start_infra_in_docker():
 
     if DOCKER_CLIENT.is_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
+    if config.TMP_FOLDER != config.HOST_TMP_FOLDER and not config.LAMBDA_REMOTE_DOCKER:
+        print(
+            f"WARNING: The detected temp folder for localstack ({config.TMP_FOLDER}) is not equal to the "
+            f"HOST_TMP_FOLDER environment variable set ({config.HOST_TMP_FOLDER})."
+        )  # Logger is not initialized at this point, so the warning is displayed via print
 
     os.environ[ENV_SCRIPT_STARTING_DOCKER] = "1"
 

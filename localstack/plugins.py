@@ -33,6 +33,7 @@ def do_register_localstack_plugins():
         from localstack.services.acm import acm_starter
         from localstack.services.apigateway import apigateway_listener, apigateway_starter
         from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
+        from localstack.services.configservice import configservice_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
         from localstack.services.ec2 import ec2_listener, ec2_starter
         from localstack.services.es import es_starter
@@ -82,6 +83,8 @@ def do_register_localstack_plugins():
         )
 
         register_plugin(Plugin("cloudformation", start=start_cloudformation))
+
+        register_plugin(Plugin("config", start=configservice_starter.start_configservice))
 
         register_plugin(
             Plugin(

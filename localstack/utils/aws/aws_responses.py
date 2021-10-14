@@ -5,7 +5,8 @@ import re
 import xml.etree.ElementTree as ET
 from binascii import crc32
 from struct import pack
-from typing import Optional
+from typing import Dict, Optional, Union
+from urllib.parse import parse_qs
 
 import xmltodict
 from flask import Response as FlaskResponse
@@ -13,7 +14,12 @@ from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
 from localstack.config import DEFAULT_ENCODING
-from localstack.constants import MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
+from localstack.constants import (
+    APPLICATION_JSON,
+    HEADER_CONTENT_TYPE,
+    MOTO_ACCOUNT_ID,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     json_safe,
@@ -187,21 +193,25 @@ def flask_error_response_xml(
 
 
 def requests_error_response(
-    req_headers,
-    message,
-    code=500,
-    error_type="InternalFailure",
-    service=None,
-    xmlns=None,
+    req_headers: Dict,
+    message: Union[str, bytes],
+    code: int = 500,
+    error_type: str = "InternalFailure",
+    service: str = None,
+    xmlns: str = None,
 ):
-    ctype = req_headers.get("Content-Type", "")
-    accept = req_headers.get("Accept", "")
-    is_json = "json" in ctype or "json" in accept
+    is_json = is_json_request(req_headers)
     if is_json:
         return requests_error_response_json(message=message, code=code, error_type=error_type)
     return requests_error_response_xml(
         message, code=code, code_string=error_type, service=service, xmlns=xmlns
     )
+
+
+def is_json_request(req_headers: Dict) -> bool:
+    ctype = req_headers.get("Content-Type", "")
+    accept = req_headers.get("Accept", "")
+    return "json" in ctype or "json" in accept
 
 
 def raise_exception_if_error_response(response):
@@ -238,11 +248,15 @@ def get_response_payload(response, as_json=False):
 
 def requests_response(content, status_code=200, headers={}):
     resp = RequestsResponse()
-    content = json.dumps(content) if isinstance(content, dict) else content
+    headers = CaseInsensitiveDict(dict(headers or {}))
+    if isinstance(content, dict):
+        content = json.dumps(content)
+        if not headers.get(HEADER_CONTENT_TYPE):
+            headers[HEADER_CONTENT_TYPE] = APPLICATION_JSON
     resp._content = content
     resp.status_code = int(status_code)
     # Note: update headers (instead of assigning directly), to ensure we're using a case-insensitive dict
-    resp.headers.update(headers or {})
+    resp.headers.update(headers)
     return resp
 
 
@@ -275,7 +289,7 @@ def response_regex_replace(response, search, replace):
 
 def set_response_content(response, content, headers=None):
     if isinstance(content, dict):
-        content = json.dumps(content)
+        content = json.dumps(json_safe(content))
     elif isinstance(content, RequestsResponse):
         response.status_code = content.status_code
         content = content.content
@@ -321,6 +335,21 @@ def extract_url_encoded_param_list(req_data, pattern):
         if value is None:
             break
         result.append(value)
+    return result
+
+
+def parse_urlencoded_data(qs_data, top_level_attribute):
+    # TODO: potentially find a better way than calling moto here...
+    from moto.core.responses import BaseResponse
+
+    if qs_data and isinstance(qs_data, dict):
+        # make sure we're using the array form of query string dict here
+        qs_data = {k: v if isinstance(v, list) else [v] for k, v in qs_data.items()}
+    if isinstance(qs_data, (str, bytes)):
+        qs_data = parse_qs(qs_data)
+    response = BaseResponse()
+    response.querystring = qs_data
+    result = response._get_multi_param(top_level_attribute, skip_result_conversion=True)
     return result
 
 

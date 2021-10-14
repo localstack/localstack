@@ -1778,15 +1778,7 @@ class CloudFormationTest(unittest.TestCase):
 
         # 2 roles created successfully
         rs = iam_client.list_roles()
-        roles = [
-            role
-            for role in rs["Roles"]
-            if role["RoleName"]
-            in [
-                "cf-{}-Role".format(stack_name),
-                "cf-{}-StateMachineExecutionRole".format(stack_name),
-            ]
-        ]
+        roles = [role for role in rs["Roles"] if stack_name in role["RoleName"]]
 
         self.assertEqual(2, len(roles))
 
@@ -1984,6 +1976,12 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(metric_alarms) + 1, len(metric_alarms_after))
         self.assertEqual(len(composite_alarms) + 1, len(composite_alarms_after))
 
+        iam_client = aws_stack.connect_to_service("iam")
+        profiles = iam_client.list_instance_profiles().get("InstanceProfiles", [])
+        assert len(profiles) > 0
+        profile = profiles[0]
+        assert len(profile["Roles"]) > 0
+
         # clean up
         self.cleanup(stack_name)
 
@@ -2000,12 +1998,14 @@ class CloudFormationTest(unittest.TestCase):
             Parameters=[{"ParameterKey": "KeyName", "ParameterValue": "testkey"}],
         )
 
-        resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+        def get_instance_id():
+            resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+            instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
+            self.assertEqual(1, len(instances))
+            return instances[0]["PhysicalResourceId"]
 
-        instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
-        self.assertEqual(1, len(instances))
-
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
+        instance_id = get_instance_id()
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
 
@@ -2014,10 +2014,13 @@ class CloudFormationTest(unittest.TestCase):
             TemplateBody=template,
             Parameters=[{"ParameterKey": "InstanceType", "ParameterValue": "t2.medium"}],
         )
-        await_stack_completion(stack_name)
+        await_stack_completion(stack_name, statuses="UPDATE_COMPLETE")
 
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
-        self.assertEqual("t2.medium", resp["Reservations"][0]["Instances"][0]["InstanceType"])
+        instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+        reservations = resp["Reservations"]
+        self.assertEqual(1, len(reservations))
+        self.assertEqual("t2.medium", reservations[0]["Instances"][0]["InstanceType"])
 
         # clean up
         self.cleanup(stack_name)

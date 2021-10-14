@@ -25,12 +25,13 @@ from contextlib import closing
 from datetime import date, datetime, timezone
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Callable, List, Optional, Sized, Union
+from typing import Any, Callable, Dict, List, Optional, Sized, Type, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
 import requests
 import six
+from requests import Response
 
 import localstack.utils.run
 from localstack import config
@@ -115,17 +116,21 @@ class ShellCommandThread(FuncThread):
 
     def __init__(
         self,
-        cmd,
-        params={},
-        outfile=None,
-        env_vars={},
-        stdin=False,
-        auto_restart=False,
-        quiet=True,
-        inherit_cwd=False,
-        inherit_env=True,
-        log_listener=None,
+        cmd: Union[str, List[str]],
+        params: Any = None,
+        outfile: Union[str, int] = None,
+        env_vars: Dict[str, str] = None,
+        stdin: bool = False,
+        auto_restart: bool = False,
+        quiet: bool = True,
+        inherit_cwd: bool = False,
+        inherit_env: bool = True,
+        log_listener: Callable = None,
+        stop_listener: Callable = None,
     ):
+        params = not_none_or(params, {})
+        env_vars = not_none_or(env_vars, {})
+        self.stopped = False
         self.cmd = cmd
         self.process = None
         self.outfile = outfile
@@ -133,8 +138,9 @@ class ShellCommandThread(FuncThread):
         self.env_vars = env_vars
         self.inherit_cwd = inherit_cwd
         self.inherit_env = inherit_env
-        self.log_listener = log_listener
         self.auto_restart = auto_restart
+        self.log_listener = log_listener
+        self.stop_listener = stop_listener
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
@@ -223,7 +229,7 @@ class ShellCommandThread(FuncThread):
         return not psutil.pid_exists(self.process.pid)
 
     def stop(self, quiet=False):
-        if getattr(self, "stopped", False):
+        if self.stopped:
             return
         if not self.process:
             LOG.warning("No process found for command '%s'" % self.cmd)
@@ -233,9 +239,14 @@ class ShellCommandThread(FuncThread):
         try:
             kill_process_tree(parent_pid)
             self.process = None
-        except Exception:
+        except Exception as e:
             if not quiet:
-                LOG.warning("Unable to kill process with pid %s" % parent_pid)
+                LOG.warning("Unable to kill process with pid %s: %s", parent_pid, e)
+        try:
+            self.stop_listener and self.stop_listener(self)
+        except Exception as e:
+            if not quiet:
+                LOG.warning("Unable to run stop handler for shell command thread %s: %s", self, e)
         self.stopped = True
 
 
@@ -390,6 +401,42 @@ class CaptureOutput(object):
         return stream.getvalue() if hasattr(stream, "getvalue") else stream
 
 
+class ObjectIdHashComparator:
+    """Simple wrapper class that allows us to create a hashset using the object id(..) as the entries' hash value"""
+
+    def __init__(self, obj):
+        self.obj = obj
+        self._hash = id(obj)
+
+    def __hash__(self):
+        return self._hash
+
+    def __eq__(self, other):
+        # assumption here is that we're comparing only against ObjectIdHash instances!
+        return self.obj == other.obj
+
+
+class ArbitraryAccessObj:
+    """Dummy object that can be arbitrarily accessed - any attributes, as a callable, item assignment, ..."""
+
+    def __init__(self, name=None):
+        self.name = name
+
+    def __getattr__(self, name, *args, **kwargs):
+        return ArbitraryAccessObj(name)
+
+    def __call__(self, *args, **kwargs):
+        if self.name in ["items", "keys", "values"] and not args and not kwargs:
+            return []
+        return ArbitraryAccessObj()
+
+    def __getitem__(self, *args, **kwargs):
+        return ArbitraryAccessObj()
+
+    def __setitem__(self, *args, **kwargs):
+        return ArbitraryAccessObj()
+
+
 # ----------------
 # UTILITY METHODS
 # ----------------
@@ -489,39 +536,55 @@ def is_base64(s):
     return is_string(s) and re.match(regex, s)
 
 
-def md5(string):
+def md5(string: Union[str, bytes]) -> str:
     m = hashlib.md5()
     m.update(to_bytes(string))
     return m.hexdigest()
 
 
-def select_attributes(obj, attributes):
+def select_attributes(obj: Dict, attributes: List[str]) -> Dict:
     """Select a subset of attributes from the given dict (returns a copy)"""
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     return dict([(k, v) for k, v in obj.items() if k in attributes])
 
 
-def remove_attributes(obj, attributes):
+def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False) -> Dict:
     """Remove a set of attributes from the given dict (in-place)"""
+    if recursive:
+
+        def _remove(o, **kwargs):
+            if isinstance(o, dict):
+                remove_attributes(o, attributes)
+            return o
+
+        return recurse_object(obj, _remove)
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     for attr in attributes:
         obj.pop(attr, None)
     return obj
 
 
-def is_list_or_tuple(obj):
+def is_list_or_tuple(obj) -> bool:
     return isinstance(obj, (list, tuple))
 
 
-def in_docker():
+def ensure_list(obj: Any, wrap_none=False) -> List:
+    """Wrap the given object in a list, or return the object itself if it already is a list."""
+    if obj is None and not wrap_none:
+        return obj
+    return obj if isinstance(obj, list) else [obj]
+
+
+def in_docker() -> bool:
     return config.in_docker()
 
 
-def path_from_url(url):
+def path_from_url(url: str) -> str:
     return "/%s" % str(url).partition("://")[2].partition("/")[2] if "://" in url else url
 
 
-def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=["tcp"]):
+def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=None):
+    protocols = protocols or ["tcp"]
     port = port_or_url
     if is_number(port):
         port = int(port)
@@ -571,10 +634,38 @@ def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=["t
 def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sleep_time=0.5):
     """Ping the given network port until it becomes available (for a given number of retries).
     If 'http_path' is set, make a GET request to this path and assert a non-error response."""
+    return wait_for_port_status(
+        port,
+        http_path=http_path,
+        expect_success=expect_success,
+        retries=retries,
+        sleep_time=sleep_time,
+    )
+
+
+def wait_for_port_closed(port, http_path=None, expect_success=True, retries=10, sleep_time=0.5):
+    return wait_for_port_status(
+        port,
+        http_path=http_path,
+        expect_success=expect_success,
+        retries=retries,
+        sleep_time=sleep_time,
+        expect_closed=True,
+    )
+
+
+def wait_for_port_status(
+    port, http_path=None, expect_success=True, retries=10, sleep_time=0.5, expect_closed=False
+):
+    """Ping the given network port until it becomes (un)available (for a given number of retries)."""
 
     def check():
-        if not is_port_open(port, http_path=http_path, expect_success=expect_success):
-            raise Exception("Port %s (path: %s) was not open" % (port, http_path))
+        status = is_port_open(port, http_path=http_path, expect_success=expect_success)
+        if bool(status) != (not expect_closed):
+            raise Exception(
+                "Port %s (path: %s) was not %s"
+                % (port, http_path, "closed" if expect_closed else "open")
+            )
 
     return retry(check, sleep=sleep_time, retries=retries)
 
@@ -672,6 +763,7 @@ def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
     raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)
+    retries = int(retries)
     for i in range(0, retries + 1):
         try:
             return function(**kwargs)
@@ -839,7 +931,7 @@ def chown_r(path, user):
             os.chown(os.path.join(root, filename), uid, gid)
 
 
-def chmod_r(path, mode):
+def chmod_r(path: str, mode: int):
     """Recursive chmod"""
     if not os.path.exists(path):
         return
@@ -851,7 +943,7 @@ def chmod_r(path, mode):
             os.chmod(os.path.join(root, filename), mode)
 
 
-def rm_rf(path):
+def rm_rf(path: str):
     """
     Recursively removes a file or directory
     """
@@ -876,7 +968,7 @@ def rm_rf(path):
         shutil.rmtree(path)
 
 
-def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kwargs):
+def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kwargs):
     """Recursively copies file/directory"""
     # attention: this patch is not threadsafe
     copystat_orig = shutil.copystat
@@ -925,7 +1017,13 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
         shutil.copystat = copystat_orig
 
 
-def disk_usage(path):
+def disk_usage(path: str):
+    if not os.path.exists(path):
+        return 0
+
+    if os.path.isfile(path):
+        return os.path.getsize(path)
+
     total_size = 0
     for dirpath, dirnames, filenames in os.walk(path):
         for f in filenames:
@@ -937,9 +1035,11 @@ def disk_usage(path):
 
 
 def format_bytes(count, default="n/a"):
-    if not is_number(count) or count < 0:
+    if not is_number(count):
         return default
     cnt = float(count)
+    if cnt < 0:
+        return default
     units = ("B", "KB", "MB", "GB", "TB")
     for unit in units:
         if cnt < 1000 or unit == units[-1]:
@@ -949,7 +1049,7 @@ def format_bytes(count, default="n/a"):
     return count
 
 
-def download(url, path, verify_ssl=True):
+def download(url: str, path: str, verify_ssl=True):
     """Downloads file at url to the given path"""
     # make sure we're creating a new session here to
     # enable parallel file downloads during installation!
@@ -996,7 +1096,7 @@ def download(url, path, verify_ssl=True):
         s.close()
 
 
-def parse_request_data(method, path, data=None, headers={}):
+def parse_request_data(method, path, data=None, headers=None):
     """Extract request data either from query string (for GET) or request body (for POST)."""
     result = {}
     headers = headers or {}
@@ -1065,6 +1165,7 @@ def is_alpine():
     return CACHE["_is_alpine_"]
 
 
+# TODO: rename to "get_os()"
 def get_arch():
     if is_mac_os():
         return "osx"
@@ -1074,7 +1175,7 @@ def get_arch():
         return "linux"
     if is_windows():
         return "windows"
-    raise Exception("Unable to determine system architecture")
+    raise Exception("Unable to determine local operating system")
 
 
 def is_command_available(cmd):
@@ -1221,13 +1322,13 @@ def replace_in_file(search, replace, file_path):
         save_file(file_path, content_new)
 
 
-def to_str(obj, encoding=DEFAULT_ENCODING, errors="strict"):
+def to_str(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> str:
     """If ``obj`` is an instance of ``binary_type``, return
     ``obj.decode(encoding, errors)``, otherwise return ``obj``"""
     return obj.decode(encoding, errors) if isinstance(obj, six.binary_type) else obj
 
 
-def to_bytes(obj, encoding=DEFAULT_ENCODING, errors="strict"):
+def to_bytes(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> bytes:
     """If ``obj`` is an instance of ``text_type``, return
     ``obj.encode(encoding, errors)``, otherwise return ``obj``"""
     return obj.encode(encoding, errors) if isinstance(obj, six.text_type) else obj
@@ -1262,9 +1363,14 @@ def last_index_of(array, value):
     return result
 
 
-def is_sub_dict(child_dict, parent_dict):
+def is_sub_dict(child_dict: Dict, parent_dict: Dict) -> bool:
     """Returns whether the first dict is a sub-dict (subset) of the second dict."""
     return all(parent_dict.get(key) == val for key, val in child_dict.items())
+
+
+def not_none_or(value: Any, alternative: Any) -> Any:
+    """Return 'value' if it is not None, or 'alternative' otherwise."""
+    return value if value is not None else alternative
 
 
 def cleanup(files=True, env=ENV_DEV, quiet=True):
@@ -1478,8 +1584,6 @@ def generate_ssl_cert(
         return cert_file_name, key_file_name
 
     if target_file and not overwrite and os.path.exists(target_file):
-        key_file_name = ""
-        cert_file_name = ""
         try:
             cert_file_name, key_file_name = store_cert_key_files(target_file)
         except Exception as e:
@@ -1572,13 +1676,14 @@ def generate_ssl_cert(
     return file_content
 
 
-def run_safe(_python_lambda, *args, **kwargs):
+def run_safe(_python_lambda, *args, _default=None, **kwargs):
     print_error = kwargs.get("print_error", False)
     try:
         return _python_lambda(*args, **kwargs)
     except Exception as e:
         if print_error:
             LOG.warning("Unable to execute function: %s" % e)
+        return _default
 
 
 def run_cmd_safe(**kwargs):
@@ -1638,7 +1743,10 @@ def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
     return result
 
 
-def run(cmd, cache_duration_secs=0, **kwargs):
+def run(
+    cmd: Union[str, List[str]], cache_duration_secs=0, **kwargs
+) -> Union[str, subprocess.Popen]:
+    # TODO: should be unified and replaced with safe_run(..) over time! (allowing only lists for cmd parameter)
     def run_cmd():
         return localstack.utils.run.run(cmd, **kwargs)
 
@@ -1692,7 +1800,9 @@ class safe_requests(six.with_metaclass(_RequestsSafe)):
     pass
 
 
-def make_http_request(url, data=None, headers=None, method="GET"):
+def make_http_request(
+    url: str, data: Union[bytes, str] = None, headers: Dict[str, str] = None, method: str = "GET"
+) -> Response:
     return requests.request(
         url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
     )
@@ -1728,7 +1838,8 @@ def truncate(data, max_length=100):
     return ("%s..." % data[:max_length]) if len(data) > max_length else data
 
 
-def get_all_subclasses(clazz):
+# this requires that all subclasses have been imported before(!)
+def get_all_subclasses(clazz: Type):
     """Recursively get all subclasses of the given class."""
     result = set()
     subs = clazz.__subclasses__()

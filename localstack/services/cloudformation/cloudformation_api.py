@@ -38,38 +38,6 @@ LOG = logging.getLogger(__name__)
 XMLNS_CF = "http://cloudformation.amazonaws.com/doc/2010-05-15/"
 
 
-class CloudFormationRegion(RegionBackend):
-    def __init__(self):
-        # maps stack ID to stack details
-        self.stacks = {}
-        # maps stack set ID to stack set details
-        self.stack_sets = {}
-
-    @property
-    def exports(self):
-        exports = []
-        output_keys = {}
-        for stack_id, stack in self.stacks.items():
-            for output in stack.outputs:
-                export_name = output.get("ExportName")
-                if not export_name:
-                    continue
-                if export_name in output_keys:
-                    # TODO: raise exception on stack creation in case of duplicate exports
-                    LOG.warning(
-                        "Found duplicate export name %s in stacks: %s %s"
-                        % (export_name, output_keys[export_name], stack.stack_id)
-                    )
-                entry = {
-                    "ExportingStackId": stack.stack_id,
-                    "Name": export_name,
-                    "Value": output["OutputValue"],
-                }
-                exports.append(entry)
-                output_keys[export_name] = stack.stack_id
-        return exports
-
-
 class StackSet(object):
     """A stack set contains multiple stack instances."""
 
@@ -118,7 +86,7 @@ class Stack(object):
         self.metadata["StackStatus"] = "CREATE_IN_PROGRESS"
         self.metadata["CreationTime"] = self.metadata.get("CreationTime") or timestamp_millis()
         # maps resource id to resource state
-        self.resource_states = {}
+        self._resource_states = {}
         # maps resource id to moto resource class instance (TODO: remove in the future)
         self.moto_resource_statuses = {}
         # list of stack events
@@ -166,7 +134,7 @@ class Stack(object):
         )
         self.add_stack_event(self.stack_name, self.stack_id, status)
 
-    def add_stack_event(self, resource_id, physical_res_id, status):
+    def add_stack_event(self, resource_id: str, physical_res_id: str, status: str):
         event = {
             "EventId": long_uid(),
             "Timestamp": timestamp_millis(),
@@ -179,9 +147,23 @@ class Stack(object):
         }
         self.events.insert(0, event)
 
-    def set_resource_status(self, resource_id, status, physical_res_id=None):
-        resource = self.resources[resource_id]
-        state = self.resource_states[resource_id] = self.resource_states.get(resource_id) or {}
+    def set_resource_status(self, resource_id: str, status: str, physical_res_id: str = None):
+        """Update the deployment status of the given resource ID and publish a corresponding stack event."""
+        self._set_resource_status_details(resource_id, physical_res_id=physical_res_id)
+        state = self.resource_states.setdefault(resource_id, {})
+        state["PreviousResourceStatus"] = state.get("ResourceStatus")
+        state["ResourceStatus"] = status
+        state["LastUpdatedTimestamp"] = timestamp_millis()
+        self.add_stack_event(resource_id, physical_res_id, status)
+
+    def _set_resource_status_details(self, resource_id: str, physical_res_id: str = None):
+        """Helper function to ensure that the status details for the given resource ID are up-to-date."""
+        resource = self.resources.get(resource_id)
+        if resource is None:
+            # make sure we delete the states for any non-existing/deleted resources
+            self._resource_states.pop(resource_id, None)
+            return
+        state = self._resource_states.setdefault(resource_id, {})
         attr_defaults = (
             ("LogicalResourceId", resource_id),
             ("PhysicalResourceId", physical_res_id),
@@ -189,17 +171,20 @@ class Stack(object):
         for res in [resource, state]:
             for attr, default in attr_defaults:
                 res[attr] = res.get(attr) or default
-        state["PreviousResourceStatus"] = state.get("ResourceStatus")
-        state["ResourceStatus"] = status
         state["StackName"] = state.get("StackName") or self.stack_name
         state["StackId"] = state.get("StackId") or self.stack_id
         state["ResourceType"] = state.get("ResourceType") or self.resources[resource_id].get("Type")
-        state["LastUpdatedTimestamp"] = timestamp_millis()
-        self.add_stack_event(resource_id, physical_res_id, status)
+        return state
 
-    def resource_status(self, resource_id):
+    def resource_status(self, resource_id: str):
         result = self._lookup(self.resource_states, resource_id)
         return result
+
+    @property
+    def resource_states(self):
+        for resource_id in list(self._resource_states.keys()):
+            self._set_resource_status_details(resource_id)
+        return self._resource_states
 
     @property
     def stack_name(self):
@@ -429,6 +414,38 @@ class StackChangeSet(Stack):
     def changes(self):
         result = self.metadata["Changes"] = self.metadata.get("Changes", [])
         return result
+
+
+class CloudFormationRegion(RegionBackend):
+    def __init__(self):
+        # maps stack ID to stack details
+        self.stacks: Dict[str, Stack] = {}
+        # maps stack set ID to stack set details
+        self.stack_sets: Dict[str, StackSet] = {}
+
+    @property
+    def exports(self):
+        exports = []
+        output_keys = {}
+        for stack_id, stack in self.stacks.items():
+            for output in stack.outputs:
+                export_name = output.get("ExportName")
+                if not export_name:
+                    continue
+                if export_name in output_keys:
+                    # TODO: raise exception on stack creation in case of duplicate exports
+                    LOG.warning(
+                        "Found duplicate export name %s in stacks: %s %s"
+                        % (export_name, output_keys[export_name], stack.stack_id)
+                    )
+                entry = {
+                    "ExportingStackId": stack.stack_id,
+                    "Name": export_name,
+                    "Value": output["OutputValue"],
+                }
+                exports.append(entry)
+                output_keys[export_name] = stack.stack_id
+        return exports
 
 
 # --------------
@@ -662,8 +679,8 @@ def describe_stack_resources(req_params):
     if not stack:
         return stack_not_found_error(stack_name)
     statuses = [
-        stack.resource_status(res_id)
-        for res_id, _ in stack.resource_states.items()
+        res_status
+        for res_id, res_status in stack.resource_states.items()
         if resource_id in [res_id, None]
     ]
     return {"StackResources": statuses}
@@ -1033,7 +1050,7 @@ def clone_stack_params(stack_params):
         return stack_params
 
 
-def find_stack(stack_name: str) -> Optional[str]:
+def find_stack(stack_name: str) -> Optional[Stack]:
     state = CloudFormationRegion.get()
     return (
         [s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None]

@@ -25,8 +25,8 @@ jobs:
             which python
             realpath $(which python)
             pip install --upgrade pip
-            pip install wheel setuptools pytest
-            pip install -r requirements.txt
+            pip install wheel setuptools
+            pip install -e ".[cli,runtime,test,dev]"
             python -m localstack.services.install libs
             python -m localstack.services.install testlibs
             mkdir -p target/reports

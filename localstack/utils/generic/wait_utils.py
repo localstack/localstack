@@ -24,5 +24,5 @@ def wait_until(
         if strategy == "linear":
             next_wait = (wait / _retries) * (_retries + 1)
         elif strategy == "exponential":
-            next_wait = wait ** 2
+            next_wait = wait * 2
         wait_until(fn, next_wait, max_retries, strategy, _retries + 1, _max_wait)

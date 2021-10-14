@@ -132,7 +132,8 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     recurse_object(variables, apply)
 
     # prepare and render template
-    context_var = {"requestId": short_uid()}
+    context_var = variables.get("context") or {}
+    context_var.setdefault("requestId", short_uid())
     t = airspeed.Template(template)
     var_map = {
         "input": VelocityInput(context),

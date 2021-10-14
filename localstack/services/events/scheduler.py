@@ -26,7 +26,7 @@ class Job(object):
     def should_run_now(self):
         schedule = CronTab(self.schedule)
         delay_secs = schedule.next()
-        return delay_secs < 60
+        return delay_secs is not None and delay_secs < 60
 
     def do_run(self):
         FuncThread(self.job_func).start()

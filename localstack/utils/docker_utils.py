@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import os
+import re
 import shlex
 import socket
 import subprocess
@@ -60,6 +61,13 @@ class NoSuchImage(ContainerException):
         message = message or f"Docker image {image_name} not found"
         super().__init__(message, stdout, stderr)
         self.image_name = image_name
+
+
+class NoSuchNetwork(ContainerException):
+    def __init__(self, network_name: str, message=None, stdout=None, stderr=None) -> None:
+        message = message or f"Docker network {network_name} not found"
+        super().__init__(message, stdout, stderr)
+        self.network_name = network_name
 
 
 class PortMappings(object):
@@ -246,6 +254,14 @@ class ContainerClient(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
+    def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
+        """Get detailed attributes of an network.
+
+        :return: Dict containing docker attributes as returned by the daemon
+        """
+        pass
+
     def get_container_name(self, container_id: str) -> str:
         """Get the name of a container by a given identifier"""
         return self.inspect_container(container_id)["Name"].lstrip("/")
@@ -256,7 +272,10 @@ class ContainerClient(metaclass=ABCMeta):
 
     @abstractmethod
     def get_container_ip(self, container_name_or_id: str) -> str:
-        """Get the IP address of a given container"""
+        """Get the IP address of a given container
+
+        If container has multiple networks, it will return the IP of the first
+        """
         pass
 
     def get_image_cmd(self, docker_image: str) -> str:
@@ -295,6 +314,7 @@ class ContainerClient(metaclass=ABCMeta):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> str:
         """Creates a container with the given image
 
@@ -323,6 +343,7 @@ class ContainerClient(metaclass=ABCMeta):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
         """Creates and runs a given docker container
 
@@ -573,6 +594,12 @@ class CmdDockerClient(ContainerClient):
         except NoSuchObject as e:
             raise NoSuchImage(image_name=e.object_id)
 
+    def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
+        try:
+            return self._inspect_object(network_name)
+        except NoSuchObject as e:
+            raise NoSuchNetwork(network_name=e.object_id)
+
     def get_container_ip(self, container_name_or_id: str) -> str:
         cmd = self._docker_cmd()
         cmd += [
@@ -723,6 +750,7 @@ class CmdDockerClient(ContainerClient):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> Tuple[List[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
@@ -757,6 +785,8 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--network", network]
         if dns:
             cmd += ["--dns", dns]
+        if workdir:
+            cmd += ["--workdir", workdir]
         if additional_flags:
             cmd += shlex.split(additional_flags)
         cmd.append(image_name)
@@ -840,6 +870,109 @@ class Util:
                 else:
                     LOG.debug("File to copy empty, ignoring...")
 
+    @staticmethod
+    def parse_additional_flags(
+        additional_flags: str,
+        env_vars: Dict[str, str] = None,
+        ports: PortMappings = None,
+        mounts: List[Tuple[str, str]] = None,
+        network: Optional[str] = None,
+    ) -> Tuple[
+        Dict[str, str], PortMappings, List[Tuple[str, str]], Optional[Dict[str, str]], Optional[str]
+    ]:
+        """Parses environment, volume and port flags passed as string
+        :param additional_flags: String which contains the flag definitions
+        :param env_vars: Dict with env vars. Will be modified in place.
+        :param ports: PortMapping object. Will be modified in place.
+        :param mounts: List of mount tuples (host_path, container_path). Will be modified in place.
+        :param network: Existing network name (optional). Warning will be printed if network is overwritten in flags.
+        :return: A tuple containing the env_vars, ports, mount, extra_hosts and network objects. Will return new objects
+                if respective parameters were None and additional flags contained a flag for that object, the same which
+                are passed otherwise.
+        """
+        cur_state = None
+        extra_hosts = None
+        # TODO Use argparse to simplify this logic
+        for flag in shlex.split(additional_flags):
+            if not cur_state:
+                if flag in ["-v", "--volume"]:
+                    cur_state = "volume"
+                elif flag in ["-p", "--publish"]:
+                    cur_state = "port"
+                elif flag in ["-e", "--env"]:
+                    cur_state = "env"
+                elif flag == "--add-host":
+                    cur_state = "add-host"
+                elif flag == "--network":
+                    cur_state = "set-network"
+                else:
+                    raise NotImplementedError(
+                        f"Flag {flag} is currently not supported by this Docker client."
+                    )
+            else:
+                if cur_state == "volume":
+                    mounts = mounts if mounts is not None else []
+                    match = re.match(
+                        r"(?P<host>[\w\s\\\/:\-.]+?):(?P<container>[\w\s\/\-.]+)(?::(?P<arg>ro|rw|z|Z))?",
+                        flag,
+                    )
+                    if not match:
+                        LOG.warning("Unable to parse volume mount Docker flags: %s", flag)
+                        continue
+                    host_path = match.group("host")
+                    container_path = match.group("container")
+                    rw_args = match.group("arg")
+                    if rw_args:
+                        LOG.info("Volume options like :ro or :rw are currently ignored.")
+                    mounts.append((host_path, container_path))
+                elif cur_state == "port":
+                    port_split = flag.split(":")
+                    protocol = "tcp"
+                    if len(port_split) == 2:
+                        host_port, container_port = port_split
+                    elif len(port_split) == 3:
+                        LOG.warning(
+                            "Host part of port mappings are ignored currently in additional flags"
+                        )
+                        _, host_port, container_port = port_split
+                    else:
+                        raise ValueError("Invalid port string provided: %s", flag)
+                    if "/" in container_port:
+                        container_port, protocol = container_port.split("/")
+                    ports = ports if ports is not None else PortMappings()
+                    ports.add(int(host_port), int(container_port), protocol)
+                elif cur_state == "env":
+                    lhs, _, rhs = flag.partition("=")
+                    env_vars = env_vars if env_vars is not None else {}
+                    env_vars[lhs] = rhs
+                elif cur_state == "add-host":
+                    extra_hosts = extra_hosts if extra_hosts is not None else {}
+                    hosts_split = flag.split(":")
+                    extra_hosts[hosts_split[0]] = hosts_split[1]
+                elif cur_state == "set-network":
+                    if network:
+                        LOG.warning(
+                            "Overwriting Docker container network '%s' with new value '%s'",
+                            network,
+                            flag,
+                        )
+                    network = flag
+
+                cur_state = None
+        return env_vars, ports, mounts, extra_hosts, network
+
+    @staticmethod
+    def convert_mount_list_to_dict(
+        mount_volumes: List[Tuple[str, str]]
+    ) -> Dict[str, Dict[str, str]]:
+        """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
+        return dict(
+            map(
+                lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
+                mount_volumes,
+            )
+        )
+
 
 class SdkDockerClient(ContainerClient):
     """Class for managing docker using the python docker sdk"""
@@ -874,62 +1007,6 @@ class SdkDockerClient(ContainerClient):
             else:
                 raise ContainerException("Invalid frame type when reading from socket")
         return stdout, stderr
-
-    def _parse_additional_flags(
-        self,
-        additional_flags: str,
-        env_vars: Dict[str, str],
-        ports: PortMappings,
-        mounts: List[Tuple[str, str]],
-    ) -> Tuple[Dict[str, str], PortMappings, List[Tuple[str, str]]]:
-        """Parses environment, volume and port flags passed as string
-        :param additional_flags: String which contains the flag definitions
-        :param env_vars: Dict with env vars. Will be modified in place.
-        :param ports: PortMapping object. Will be modified in place.
-        :param mounts: List of mount tuples. Will be modified in place.
-        :return: A tuple containing the env_vars, ports and mount objects. Will return new objects if respective
-                parameters were None and additional flags contained a flag for that object, the same which are passed
-                otherwise.
-        """
-        cur_state = None
-        for flag in shlex.split(additional_flags):
-            if not cur_state:
-                if flag in ["-v", "--volume"]:
-                    cur_state = "volume"
-                elif flag in ["-p", "--publish"]:
-                    cur_state = "port"
-                elif flag in ["-e", "--env"]:
-                    cur_state = "env"
-                else:
-                    raise NotImplementedError(
-                        "Flag %s is currently not supported by this docker client."
-                    )
-            else:
-                if cur_state == "volume":
-                    mounts = mounts if mounts is not None else []
-                    mounts.append(tuple(flag.split(":")))
-                elif cur_state == "port":
-                    port_split = flag.split(":")
-                    protocol = "tcp"
-                    if len(port_split) == 2:
-                        host_port, container_port = port_split
-                    elif len(port_split) == 3:
-                        LOG.warning(
-                            "Host part of port mappings are ignored currently in additional flags"
-                        )
-                        _, host_port, container_port = port_split
-                    else:
-                        raise ValueError("Invalid port string provided: %s", flag)
-                    if "/" in container_port:
-                        container_port, protocol = container_port.split("/")
-                    ports = ports if ports is not None else PortMappings()
-                    ports.add(int(host_port), int(container_port), protocol)
-                elif cur_state == "env":
-                    env_split = flag.split("=")
-                    env_vars = env_vars if env_vars is not None else {}
-                    env_vars[env_split[0]] = env_split[1]
-                cur_state = None
-        return env_vars, ports, mounts
 
     def _container_path_info(self, container: Container, container_path: str):
         """
@@ -1107,8 +1184,20 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             raise ContainerException()
 
+    def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
+        try:
+            return self.client().networks.get(network_name).attrs
+        except NotFound:
+            raise NoSuchNetwork(network_name)
+        except APIError:
+            raise ContainerException()
+
     def get_container_ip(self, container_name_or_id: str) -> str:
-        return self.inspect_container(container_name_or_id)["NetworkSettings"]["IPAddress"]
+        networks = self.inspect_container(container_name_or_id)["NetworkSettings"]["Networks"]
+        network_names = list(networks)
+        if len(network_names) > 1:
+            LOG.info("Container has more than one assigned network. Picking the first one...")
+        return networks[network_names[0]]["IPAddress"]
 
     def has_docker(self) -> bool:
         try:
@@ -1186,11 +1275,19 @@ class SdkDockerClient(ContainerClient):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> str:
-        LOG.debug("Creating container with image: %s", image_name)
+        LOG.debug(
+            "Creating container with image %s, command '%s', volumes %s, env vars %s",
+            image_name,
+            command,
+            mount_volumes,
+            env_vars,
+        )
+        extra_hosts = None
         if additional_flags:
-            env_vars, ports, mount_volumes = self._parse_additional_flags(
-                additional_flags, env_vars, ports, mount_volumes
+            env_vars, ports, mount_volumes, extra_hosts, network = Util.parse_additional_flags(
+                additional_flags, env_vars, ports, mount_volumes, network
             )
         try:
             kwargs = {}
@@ -1200,14 +1297,11 @@ class SdkDockerClient(ContainerClient):
                 kwargs["dns"] = [dns]
             if ports:
                 kwargs["ports"] = ports.to_dict()
+            if workdir:
+                kwargs["working_dir"] = workdir
             mounts = None
             if mount_volumes:
-                mounts = dict(
-                    map(
-                        lambda paths: (str(paths[0]), {"bind": paths[1], "mode": "rw"}),
-                        mount_volumes,
-                    )
-                )
+                mounts = Util.convert_mount_list_to_dict(mount_volumes)
 
             def create_container():
                 return self.client().containers.create(
@@ -1223,6 +1317,7 @@ class SdkDockerClient(ContainerClient):
                     user=user,
                     network=network,
                     volumes=mounts,
+                    extra_hosts=extra_hosts,
                     **kwargs,
                 )
 
@@ -1257,6 +1352,7 @@ class SdkDockerClient(ContainerClient):
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
@@ -1278,6 +1374,7 @@ class SdkDockerClient(ContainerClient):
                 network=network,
                 dns=dns,
                 additional_flags=additional_flags,
+                workdir=workdir,
             )
             result = self.start_container(
                 container_name_or_id=container,
@@ -1300,7 +1397,7 @@ class SdkDockerClient(ContainerClient):
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
-        LOG.debug("Executing in container: %s", container_name_or_id)
+        LOG.debug("Executing command in container %s: %s", container_name_or_id, command)
         try:
             container: Container = self.client().containers.get(container_name_or_id)
             result = container.exec_run(
@@ -1327,6 +1424,8 @@ class SdkDockerClient(ContainerClient):
                     except socket.timeout:
                         pass
             else:
+                if detach:
+                    return b"", b""
                 return_code = result[0]
                 if isinstance(result[1], bytes):
                     stdout = result[1]

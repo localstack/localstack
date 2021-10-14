@@ -5,18 +5,28 @@ import re
 import time
 
 from localstack import config
-from localstack.constants import MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
+from localstack.constants import ENV_INTERNAL_TEST_RUN, MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import TMP_FILES, mkdir, replace_response_content, save_file, to_str
+from localstack.utils.aws.message_forwarding import send_event_to_target
+from localstack.utils.common import (
+    TMP_FILES,
+    mkdir,
+    replace_response_content,
+    save_file,
+    to_str,
+    truncate,
+)
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
 
-EVENTS_TMP_DIR = os.path.join(config.TMP_FOLDER, "cw_events")
-
+EVENTS_TMP_DIR = "cw_events"
 DEFAULT_EVENT_BUS_NAME = "default"
+
+# list of events used to run assertions during integration testing (not exposed to the user)
+TEST_EVENTS_CACHE = []
 
 
 class EventsBackend(RegionBackend):
@@ -41,9 +51,10 @@ def fix_date_format(response):
 
 
 def _create_and_register_temp_dir():
-    if EVENTS_TMP_DIR not in TMP_FILES:
-        mkdir(EVENTS_TMP_DIR)
-        TMP_FILES.append(EVENTS_TMP_DIR)
+    tmp_dir = _get_events_tmp_dir()
+    if tmp_dir not in TMP_FILES:
+        mkdir(tmp_dir)
+        TMP_FILES.append(tmp_dir)
 
 
 def _dump_events_to_files(events_with_added_uuid):
@@ -53,6 +64,10 @@ def _dump_events_to_files(events_with_added_uuid):
             os.path.join(EVENTS_TMP_DIR, "%s_%s" % (current_time_millis, event["uuid"])),
             json.dumps(event["event"]),
         )
+
+
+def _get_events_tmp_dir():
+    return os.path.join(config.TMP_FOLDER, EVENTS_TMP_DIR)
 
 
 def get_scheduled_rule_func(data):
@@ -67,9 +82,15 @@ def get_scheduled_rule_func(data):
             )
         for target in targets:
             arn = target.get("Arn")
-            event = json.loads(target.get("Input") or "{}")
+            event_str = target.get("Input") or "{}"
+            event = json.loads(event_str)
             attr = aws_stack.get_events_target_attributes(target)
-            aws_stack.send_event_to_target(arn, event, target_attributes=attr)
+            try:
+                send_event_to_target(arn, event, target_attributes=attr)
+            except Exception as e:
+                LOG.info(
+                    f"Unable to send event notification {truncate(event)} to target {target}: {e}"
+                )
 
     return func
 
@@ -133,18 +154,23 @@ class ProxyListenerEvents(ProxyListener):
         if method == "OPTIONS":
             return 200
 
-        action = headers.get("X-Amz-Target")
         if method == "POST" and path == "/":
+            action = headers.get("X-Amz-Target", "").split(".")[-1]
             parsed_data = json.loads(to_str(data))
 
-            if action == "AWSEvents.PutRule":
+            if action == "PutRule":
                 return handle_put_rule(parsed_data)
 
-            elif action == "AWSEvents.DeleteRule":
+            elif action == "DeleteRule":
                 handle_delete_rule(rule_name=parsed_data.get("Name", None))
 
-            elif action == "AWSEvents.DisableRule":
+            elif action == "DisableRule":
                 handle_disable_rule(rule_name=parsed_data.get("Name", None))
+
+            elif action == "PutEvents":
+                # keep track of events for local integration testing
+                if os.environ.get(ENV_INTERNAL_TEST_RUN):
+                    TEST_EVENTS_CACHE.extend(parsed_data.get("Entries", []))
 
         return True
 

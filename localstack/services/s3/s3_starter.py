@@ -202,7 +202,7 @@ def apply_patches():
     )
 
     # patch DeleteObjectTagging
-    def s3_key_response_delete(self, bucket_name, query, key_name, *args, **kwargs):
+    def s3_key_response_delete(self, headers, bucket_name, query, key_name, *args, **kwargs):
         # Fixes https://github.com/localstack/localstack/issues/1083
         if query.get("tagging"):
             self._set_action("KEY", "DELETE", query)
@@ -211,7 +211,7 @@ def apply_patches():
             key.tags = {}
             self.backend.tagger.delete_all_tags_for_resource(key.arn)
             return 204, {}, ""
-        result = s3_key_response_delete_orig(bucket_name, query, key_name, *args, **kwargs)
+        result = s3_key_response_delete_orig(headers, bucket_name, query, key_name, *args, **kwargs)
         return result
 
     s3_key_response_delete_orig = s3_responses.S3ResponseInstance._key_response_delete
