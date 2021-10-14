@@ -1,6 +1,5 @@
 import base64
 import json
-import re
 import logging
 import os
 from datetime import date, datetime
@@ -137,30 +136,33 @@ def apply_patches():
 
     email_responses.get_identity_verification_attributes = get_identity_verification_attributes
 
-    def serialize_email(source, destinations, region, subject=None, body=None, raw_data=None):
-        email_fields = locals().items()
-        fields_with_values = filter(lambda key_value: key_value[1] is not None, email_fields)
+    def get_email_log_object(source, region, destinations, subject=None, body=None, raw_data=None):
+        email = {
+            "Source": source,
+            "Region": region,
+            "Destinations": destinations
+        }
 
-        to_upper = lambda match: match.group(2).upper()
-        to_pascal_case_keys = lambda key_value: (re.sub(r'(^|_)(\w)', to_upper, key_value[0]), key_value[1])
+        if subject != None: email["Subject"] = subject
+        if body != None: email["Body"] = body
+        if raw_data != None: email["RawData"] = raw_data
 
-        mail = dict(map(to_pascal_case_keys, fields_with_values))
+        return email
 
-        return json.dumps(mail)
-
-    def log_email_to_data_dir(id, source, destinations, region, subject=None, body=None, raw_data=None):
+    def log_email_to_data_dir(id, email):
         ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, "ses")
         mkdir(ses_dir)
 
         with open(os.path.join(ses_dir, id + ".json"), "w") as f:
-            f.write(serialize_email(source, destinations, region, subject, body, raw_data))
+            f.write(json.dumps(email))
 
     backend_send_email_orig = SESBackend.send_email
 
     def send_email_save_contents(self, source, subject, body, destinations, region):
         message = backend_send_email_orig(self, source, subject, body, destinations, region)
 
-        log_email_to_data_dir(message.id, source, destinations, region, subject, body)
+        log_email = get_email_log_object(source, region, destinations, subject, body)
+        log_email_to_data_dir(message.id, log_email)
 
         return message
 
@@ -171,7 +173,8 @@ def apply_patches():
     def send_raw_email_save_contents(self, source, destinations, raw_data, region):
         message = backend_send_raw_email_orig(self, source, destinations, raw_data, region)
 
-        log_email_to_data_dir(message.id, source, destinations, region, raw_data=raw_data)
+        log_email = get_email_log_object(source, region, destinations, raw_data=raw_data)
+        log_email_to_data_dir(message.id, log_email)
 
         return message
 
