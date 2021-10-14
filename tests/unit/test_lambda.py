@@ -17,6 +17,48 @@ TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN = (
     "arn:aws:secretsmanager:us-east-1:000000000000:secret:mysecret-kUBhE"
 )
 
+class TestLambdaDockerImageAmz(unittest.TestCase):
+    ## test all supported runtimes
+    """
+    "dotnetcore": "aws-lambda-dotnet",
+            "nodejs": "aws-lambda-nodejs",
+            "ruby": "aws-lambda-ruby",
+            "java": "aws-lambda-java",
+            "go": "aws-lambda-go",
+            "provided": "aws-lambda-provided"
+    """
+    def test_dotnet(self):
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("dotnetcore2.1")), "amazon/aws-lambda-dotnet:2.1")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("dotnetcore3.1")), "amazon/aws-lambda-dotnet:3.1")
+
+    def test_java(self):
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("java8")), "amazon/aws-lambda-java:8")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("java8.al2")), "amazon/aws-lambda-java:8.al2")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("java11")), "amazon/aws-lambda-java:11")
+    
+    def test_go(self):
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("go1.x")), "amazon/aws-lambda-go:1")
+
+    def test_nodejs(self):
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("nodejs10.x")), "amazon/aws-lambda-nodejs:10")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("nodejs12.x")), "amazon/aws-lambda-nodejs:12")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("nodejs14.x")), "amazon/aws-lambda-nodejs:14")
+
+    def test_ruby(self):
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("ruby2.5")), "amazon/aws-lambda-ruby:2.5")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("ruby2.7")), "amazon/aws-lambda-ruby:2.7")
+
+    def test_python(self):
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("python2.7")), "amazon/aws-lambda-python:2.7")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("python3.6")), "amazon/aws-lambda-python:3.6")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("python3.7")), "amazon/aws-lambda-python:3.7")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("python3.8")), "amazon/aws-lambda-python:3.8")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("python3.9")), "amazon/aws-lambda-python:3.9")
+
+    def test_custom(self):
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("provided")), "amazon/aws-lambda-provided:alami")
+        self.assertEqual(":".join(lambda_executors.Util.get_amzn_docker_img("provided.al2")), "amazon/aws-lambda-provided:al2")
+        
 
 class TestLambdaAPI(unittest.TestCase):
     CODE_SIZE = 50

@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import traceback
+import re
 from multiprocessing import Process, Queue
 from typing import Dict, Tuple, Union
 
@@ -1044,12 +1045,50 @@ class Util:
             temp = "/" + temp
         temp = "%s%s" % (config.WINDOWS_DOCKER_MOUNT_PREFIX, temp)
         return temp
+        
+    @classmethod
+    def get_amzn_docker_img(cls, runtime: str):
+        repositories = {
+            "dotnetcore": "aws-lambda-dotnet",
+            "nodejs": "aws-lambda-nodejs",
+            "python": "aws-lambda-python",
+            "ruby": "aws-lambda-ruby",
+            "java": "aws-lambda-java",
+            "go": "aws-lambda-go",
+            "provided": "aws-lambda-provided"
+        }
+        if runtime.startswith("provided"):
+            split_version = runtime.split(".")
+            if len(split_version) == 2:
+                version = split_version[1]
+            else:
+                version = "alami"
+            return [f'amazon/{repositories["provided"]}', version]
+        digit_match = re.search(r"\d", runtime)
+        if not digit_match:
+            raise Exception(f"No version number found for runtime {runtime}")
+        digit_index = digit_match.start()
+        base_runtime = runtime[:digit_index]
+        runtime_version = runtime[digit_index:]
+        if base_runtime not in repositories.keys():
+            raise Exception(f"base runtime {base_runtime} from {runtime} not recognized!")
+        image_name = f"amazon/{repositories[base_runtime]}"
+        if base_runtime in ["nodejs", "go"]:
+            print(base_runtime, runtime_version)
+            [major, _minor] = runtime_version.split(".")
+            return [image_name, major]
+        return [image_name, runtime_version]
 
     @classmethod
     def docker_image_for_lambda(cls, func_details):
         runtime = func_details.runtime or ""
         docker_tag = runtime
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
+        if config.LAMBDA_CONTAINER_REGISTRY == "amazon":
+            from_amz = Util.get_amzn_docker_img()
+            if from_amz is not None:
+                [docker_image, docker_tag] = from_amz
+                return "%s:%s" % (docker_image, docker_tag)
         # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
         #  See https://github.com/lambci/docker-lambda/pull/218
         lambdas_to_add_prefix = [
