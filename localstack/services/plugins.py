@@ -497,12 +497,6 @@ class ServicePluginManager(ServiceManager):
 
         preferred_provider = config.SERVICE_PROVIDER_CONFIG.get_provider(name)
         if preferred_provider in providers:
-            LOG.warning(
-                "Providers for %s: %s Using preferred one: %s",
-                name,
-                providers,
-                preferred_provider,
-            )
             provider = preferred_provider
         else:
             LOG.warning(
