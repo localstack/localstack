@@ -137,15 +137,14 @@ def apply_patches():
     email_responses.get_identity_verification_attributes = get_identity_verification_attributes
 
     def get_email_log_object(source, region, destinations, subject=None, body=None, raw_data=None):
-        email = {
-            "Source": source,
-            "Region": region,
-            "Destinations": destinations
-        }
+        email = {"Source": source, "Region": region, "Destinations": destinations}
 
-        if subject != None: email["Subject"] = subject
-        if body != None: email["Body"] = body
-        if raw_data != None: email["RawData"] = raw_data
+        if subject is not None:
+            email["Subject"] = subject
+        if body is not None:
+            email["Body"] = body
+        if raw_data is not None:
+            email["RawData"] = raw_data
 
         return email
 
