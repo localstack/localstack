@@ -1,18 +1,24 @@
 Resources:
-  logGroup68A52FBE:
+  TestBusF2C65FE8:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: {{ event_bus_name }}
+  TestLogGroup4EEF7AD4:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: {{ log_group_name }}
       RetentionInDays: 731
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-  myrule48A3298E:
+  TestRule98A50909:
     Type: AWS::Events::Rule
     Properties:
-      Name: {{ event_rule_name }}
+      EventBusName:
+        Ref: TestBusF2C65FE8
       EventPattern:
         version:
           - "0"
+      Name: {{ event_rule_name }}
       State: ENABLED
       Targets:
         - Arn:
@@ -25,9 +31,9 @@ Resources:
                 - ":"
                 - Ref: AWS::AccountId
                 - ":log-group:"
-                - Ref: logGroup68A52FBE
+                - Ref: TestLogGroup4EEF7AD4
           Id: Target0
-  LogEventResourcePolicy:
+  TestLogEventResourcePolicy:
     Type: AWS::Logs::ResourcePolicy
     Properties:
       PolicyDocument:
@@ -35,7 +41,7 @@ Resources:
           - ""
           - - '{"Statement":[{"Action":"*","Effect":"Allow","Principal":{"AWS":"*"},"Resource":"'
             - Fn::GetAtt:
-                - logGroup68A52FBE
+                - TestLogGroup4EEF7AD4
                 - Arn
             - '"}],"Version":"2012-10-17"}'
-      PolicyName: allowlogfromeventPolicy
+      PolicyName: {{ resource_policy_name }}

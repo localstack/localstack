@@ -152,9 +152,14 @@ def test_event_rule_to_logs(
     event_rule_name = f"event-rule-{short_uid()}"
     log_group_name = f"log-group-{short_uid()}"
     message_token = f"test-message-{short_uid()}"
+    event_bus_name = f"bus-{short_uid()}"
+    resource_policy_name = f"policy-{short_uid()}"
 
     template_rendered = jinja2.Template(load_template_raw("events_loggroup.yaml")).render(
-        event_rule_name=event_rule_name, log_group_name=log_group_name
+        event_rule_name=event_rule_name,
+        log_group_name=log_group_name,
+        event_bus_name=event_bus_name,
+        resource_policy_name=resource_policy_name,
     )
 
     response = cfn_client.create_change_set(
