@@ -35,6 +35,7 @@ def filter_event_with_target_input_path(target: Dict, event: Dict) -> Dict:
     return event
 
 
+# TODO: unclear shared responsibility for filtering with filter_event_with_content_base_parameter
 def handle_prefix_filtering(event_pattern, value):
 
     for element in event_pattern:
@@ -69,6 +70,7 @@ def handle_numeric_conditions(conditions: List[Any], value: float):
     return True
 
 
+# TODO: refactor/simplify
 def filter_event_based_on_event_format(self, rule, event: Dict[str, Any]):
     def filter_event(event_pattern_filter: Dict[str, Any], event: Dict[str, Any]):
         for key, value in event_pattern_filter.items():
@@ -237,7 +239,10 @@ def apply_patches():
             # process event
             process_events(formatted_event, targets)
 
-        content = {"Entries": list(map(lambda event: {"EventId": event["uuid"]}, events))}
+        content = {
+            "FailedEntryCount": 0,  # TODO: dynamically set proper value when refactoring
+            "Entries": list(map(lambda event: {"EventId": event["uuid"]}, events)),
+        }
 
         self.response_headers.update(
             {"Content-Type": APPLICATION_AMZ_JSON_1_1, "x-amzn-RequestId": short_uid()}
@@ -299,7 +304,7 @@ def filter_event_with_content_base_parameter(pattern_value, event_value):
             element_key = list(element.keys())[0]
             element_value = element.get(element_key)
             if element_key.lower() == "prefix":
-                if re.match(r"^{}".format(element_value), event_value):
+                if isinstance(event_value, str) and event_value.startswith(element_value):
                     return True
             elif element_key.lower() == "exists":
                 if element_value and event_value:

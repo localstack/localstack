@@ -109,10 +109,15 @@ class EventsRule(GenericBaseModel):
             ]
             result = select_parameters(*attrs)(params, **kwargs)
 
+            # TODO: remove this when refactoring events (prefix etc. was excluded here already to avoid most of the wrong behavior)
             def wrap_in_lists(o, **kwargs):
                 if isinstance(o, dict):
                     for k, v in o.items():
-                        if not isinstance(v, (dict, list)):
+                        if not isinstance(v, (dict, list)) and k not in [
+                            "prefix",
+                            "cidr",
+                            "exists",
+                        ]:
                             o[k] = [v]
                 return o
 
