@@ -11,6 +11,7 @@ from moto.dynamodb import models as dynamodb_models
 from moto.dynamodb2 import models as dynamodb2_models
 from moto.kinesis import models as kinesis_models
 
+from localstack import config
 from localstack.services.cloudformation import service_models
 from localstack.utils.aws import aws_stack
 
@@ -106,3 +107,17 @@ def update_physical_resource_id(resource):
 
     else:
         LOG.warning("Unable to determine physical_resource_id for resource %s" % type(resource))
+
+
+def start_cloudformation(port=None, asynchronous=False):
+    from localstack.services.cloudformation import cloudformation_api
+    from localstack.services.infra import start_local_api
+
+    port = port or config.PORT_CLOUDFORMATION
+    return start_local_api(
+        "CloudFormation",
+        port,
+        api="cloudformation",
+        method=cloudformation_api.serve,
+        asynchronous=asynchronous,
+    )

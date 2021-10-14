@@ -2336,14 +2336,6 @@ def serve(port):
     generic_proxy.serve_flask_app(app=app, port=port)
 
 
-def stop_lambda() -> None:
-    """
-    Stops / cleans up the Lambda Executor
-    """
-    # TODO actually stop flask server
-    cleanup()
-
-
 # Config listener
 def on_config_change(config_key: str, config_newvalue: str) -> None:
     global LAMBDA_EXECUTOR

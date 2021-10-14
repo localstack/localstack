@@ -73,82 +73,6 @@ SHUTDOWN_INFRA = threading.Event()
 # Start config update backdoor
 config_listener.start_listener()
 
-
-# -----------------
-# API ENTRY POINTS
-# -----------------
-
-
-def start_sns(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_SNS
-    return start_moto_server(
-        "sns",
-        port,
-        name="SNS",
-        asynchronous=asynchronous,
-        update_listener=update_listener,
-    )
-
-
-def start_firehose(port=None, asynchronous=False):
-    from localstack.services.firehose import firehose_api
-
-    port = port or config.PORT_FIREHOSE
-    return start_local_api(
-        "Firehose",
-        port,
-        api="firehose",
-        method=firehose_api.serve,
-        asynchronous=asynchronous,
-    )
-
-
-def start_dynamodbstreams(port=None, asynchronous=False):
-    from localstack.services.dynamodbstreams import dynamodbstreams_api
-
-    port = port or config.PORT_DYNAMODBSTREAMS
-    return start_local_api(
-        "DynamoDB Streams",
-        port,
-        api="dynamodbstreams",
-        method=dynamodbstreams_api.serve,
-        asynchronous=asynchronous,
-    )
-
-
-def start_lambda(port=None, asynchronous=False):
-    from localstack.services.awslambda import lambda_api
-
-    port = port or config.PORT_LAMBDA
-    return start_local_api(
-        "Lambda", port, api="lambda", method=lambda_api.serve, asynchronous=asynchronous
-    )
-
-
-def start_cloudformation(port=None, asynchronous=False):
-    from localstack.services.cloudformation import cloudformation_api
-
-    port = port or config.PORT_CLOUDFORMATION
-    return start_local_api(
-        "CloudFormation",
-        port,
-        api="cloudformation",
-        method=cloudformation_api.serve,
-        asynchronous=asynchronous,
-    )
-
-
-def start_ssm(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_SSM
-    return start_moto_server(
-        "ssm",
-        port,
-        name="SSM",
-        asynchronous=asynchronous,
-        update_listener=update_listener,
-    )
-
-
 # ---------------
 # HELPER METHODS
 # ---------------
@@ -270,13 +194,20 @@ def do_run(
     print_output: bool = None,
     env_vars: Dict[str, str] = {},
     auto_restart=False,
+    strip_color: bool = False,
 ):
     sys.stdout.flush()
     if asynchronous:
         if config.DEBUG and print_output is None:
             print_output = True
         outfile = subprocess.PIPE if print_output else None
-        t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars, auto_restart=auto_restart)
+        t = ShellCommandThread(
+            cmd,
+            outfile=outfile,
+            env_vars=env_vars,
+            auto_restart=auto_restart,
+            strip_color=strip_color,
+        )
         t.start()
         TMP_THREADS.append(t)
         return t
@@ -387,12 +318,12 @@ def stop_infra():
 
     try:
         generic_proxy.QUIET = True
+        LOG.debug("[shutdown] Cleaning up services ...")
+        SERVICE_PLUGINS.stop_services()
         LOG.debug("[shutdown] Cleaning up files ...")
         common.cleanup(files=True, quiet=True)
         LOG.debug("[shutdown] Cleaning up resources ...")
         common.cleanup_resources()
-        LOG.debug("[shutdown] Cleaning up services ...")
-        SERVICE_PLUGINS.stop_services()
 
         if config.FORCE_SHUTDOWN:
             LOG.debug("[shutdown] Force shutdown, not waiting for infrastructure to shut down")

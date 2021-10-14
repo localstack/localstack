@@ -21,9 +21,9 @@ def apigateway():
 
 @aws_provider()
 def cloudformation():
-    from localstack.services.infra import start_cloudformation
+    from localstack.services.cloudformation import cloudformation_starter
 
-    return Service("cloudformation", start=start_cloudformation)
+    return Service("cloudformation", start=cloudformation_starter.start_cloudformation)
 
 
 @aws_provider(api="config")
@@ -58,9 +58,9 @@ def dynamodb():
 
 @aws_provider()
 def dynamodbstreams():
-    from localstack.services.infra import start_dynamodbstreams
+    from localstack.services.dynamodbstreams import dynamodbstreams_starter
 
-    return Service("dynamodbstreams", start=start_dynamodbstreams)
+    return Service("dynamodbstreams", start=dynamodbstreams_starter.start_dynamodbstreams)
 
 
 @aws_provider()
@@ -79,9 +79,9 @@ def es():
 
 @aws_provider()
 def firehose():
-    from localstack.services.infra import start_firehose
+    from localstack.services.firehose import firehose_starter
 
-    return Service("firehose", start=start_firehose)
+    return Service("firehose", start=firehose_starter.start_firehose)
 
 
 @aws_provider()
@@ -119,10 +119,9 @@ def kms():
 
 @aws_provider(api="lambda")
 def awslambda():
-    from localstack.services.awslambda.lambda_api import stop_lambda
-    from localstack.services.infra import start_lambda
+    from localstack.services.awslambda import lambda_starter
 
-    return Service("lambda", start=start_lambda, stop=stop_lambda)
+    return Service("lambda", start=lambda_starter.start_lambda, stop=lambda_starter.stop_lambda)
 
 
 @aws_provider()
@@ -180,10 +179,9 @@ def ses():
 
 @aws_provider()
 def sns():
-    from localstack.services.infra import start_sns
-    from localstack.services.sns import sns_listener
+    from localstack.services.sns import sns_listener, sns_starter
 
-    return Service("sns", listener=sns_listener.UPDATE_SNS, start=start_sns)
+    return Service("sns", listener=sns_listener.UPDATE_SNS, start=sns_starter.start_sns)
 
 
 @aws_provider()
@@ -200,10 +198,9 @@ def sqs():
 
 @aws_provider()
 def ssm():
-    from localstack.services.infra import start_ssm
-    from localstack.services.ssm import ssm_listener
+    from localstack.services.ssm import ssm_listener, ssm_starter
 
-    return Service("ssm", listener=ssm_listener.UPDATE_SSM, start=start_ssm)
+    return Service("ssm", listener=ssm_listener.UPDATE_SSM, start=ssm_starter.start_ssm)
 
 
 @aws_provider()

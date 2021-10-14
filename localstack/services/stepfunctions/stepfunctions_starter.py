@@ -68,7 +68,7 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
     log_startup_message("StepFunctions")
     start_proxy_for_service("stepfunctions", port, backend_port, update_listener)
     global PROCESS_THREAD
-    PROCESS_THREAD = do_run(cmd, asynchronous)
+    PROCESS_THREAD = do_run(cmd, asynchronous, strip_color=True)
     return PROCESS_THREAD
 
 
