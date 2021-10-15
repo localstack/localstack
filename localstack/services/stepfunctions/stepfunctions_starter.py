@@ -81,9 +81,9 @@ def check_stepfunctions(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(
             service_name="stepfunctions", endpoint_url=endpoint_url
         ).list_state_machines()
-    except Exception as e:
+    except Exception:
         if print_error:
-            LOG.exception("Kinesis health check failed: %s", e)
+            LOG.exception("Stepfunctions health check failed")
 
     if expect_shutdown:
         assert out is None

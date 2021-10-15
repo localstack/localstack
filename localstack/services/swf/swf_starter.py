@@ -1,5 +1,4 @@
 import logging
-import traceback
 
 from localstack import config
 from localstack.services.infra import start_moto_server
@@ -21,9 +20,9 @@ def check_swf(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(
             service_name="swf", endpoint_url=endpoint_url
         ).list_domains(registrationStatus="REGISTERED")
-    except Exception as e:
+    except Exception:
         if print_error:
-            LOG.error("SWF health check failed: %s %s" % (e, traceback.format_exc()))
+            LOG.exception("SWF health check failed")
     if expect_shutdown:
         assert out is None
     else:

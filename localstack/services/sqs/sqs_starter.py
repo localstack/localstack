@@ -1,6 +1,5 @@
 import logging
 import os
-import traceback
 import types
 from html import escape
 
@@ -47,9 +46,9 @@ def check_sqs(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(
             service_name="sqs", endpoint_url=endpoint_url
         ).list_queues()
-    except Exception as e:
+    except Exception:
         if print_error:
-            LOG.warning("SQS health check failed: %s %s" % (e, traceback.format_exc()))
+            LOG.exception("SQS health check failed")
     if expect_shutdown:
         assert out is None
     else:

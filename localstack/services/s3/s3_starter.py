@@ -1,6 +1,5 @@
 import logging
 import os
-import traceback
 import types
 from urllib.parse import urlparse
 
@@ -42,9 +41,9 @@ def check_s3(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(
             service_name="s3", endpoint_url=endpoint_url
         ).list_buckets()
-    except Exception as e:
+    except Exception:
         if print_error:
-            LOG.error("S3 health check failed: %s %s" % (e, traceback.format_exc()))
+            LOG.exception("S3 health check failed")
     if expect_shutdown:
         assert out is None
     else:

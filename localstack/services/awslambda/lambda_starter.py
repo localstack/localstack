@@ -1,5 +1,4 @@
 import logging
-import traceback
 
 from localstack import config
 
@@ -41,9 +40,9 @@ def check_lambda(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(
             service_name="lambda", endpoint_url=endpoint_url
         ).list_functions()
-    except Exception as e:
+    except Exception:
         if print_error:
-            LOG.error("Lambda health check failed: %s %s" % (e, traceback.format_exc()))
+            LOG.exception("Lambda health check failed")
     if expect_shutdown:
         assert out is None
     else:

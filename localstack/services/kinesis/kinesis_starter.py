@@ -188,9 +188,9 @@ def check_kinesis(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(
             service_name="kinesis", endpoint_url=endpoint_url
         ).list_streams()
-    except Exception as e:
+    except Exception:
         if print_error:
-            LOGGER.exception("Kinesis health check failed: %s", e)
+            LOGGER.exception("Kinesis health check failed")
 
     if expect_shutdown:
         assert out is None or kinesis_stopped.is_set()
