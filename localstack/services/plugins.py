@@ -173,7 +173,6 @@ class ServiceState(Enum):
     DISABLED = "disabled"
     STARTING = "starting"
     RUNNING = "running"
-    # UPDATING = "updating"
     STOPPING = "stopping"
     STOPPED = "stopped"
     ERROR = "error"
@@ -235,7 +234,7 @@ class ServiceContainer:
 class ServiceManager:
     def __init__(self) -> None:
         super().__init__()
-        self._services = dict()  # TODO: protect using RW lock
+        self._services = dict()
         self._journals = dict()
 
     def get_service_container(self, name: str) -> Optional[ServiceContainer]:
@@ -295,7 +294,6 @@ class ServiceManager:
                 raise container.errors[-1]
 
             if container.state == ServiceState.AVAILABLE:
-                # container
                 if container.start():
                     record_service_health(name, "running")  # FIXME
                     return container.service
@@ -421,6 +419,8 @@ class ServicePluginErrorCollector(PluginLifecycleListener):
 class ServicePluginManager(ServiceManager):
     plugin_manager: PluginManager[ServicePlugin]
     plugin_errors: ServicePluginErrorCollector
+    lock_dict_lock: threading.RLock
+    lock_dict: Dict[str, threading.RLock]
 
     def __init__(self, plugin_manager: PluginManager[ServicePlugin] = None) -> None:
         super().__init__()
@@ -429,6 +429,8 @@ class ServicePluginManager(ServiceManager):
             PLUGIN_NAMESPACE, listener=self.plugin_errors
         )
         self._api_provider_specs = None
+        self.lock_dict_lock = threading.RLock()
+        self.lock_dict = defaultdict(threading.RLock)
 
     # TODO make the abstraction clearer, to provide better information if service is available versus discoverable
     # especially important when considering pro services
@@ -475,7 +477,7 @@ class ServicePluginManager(ServiceManager):
         if not plugin or not plugin.service:
             return None
 
-        super().add_service(plugin.service)
+        self.add_service(plugin.service)
         return super().get_service_container(name)
 
     @property
@@ -536,19 +538,25 @@ class ServicePluginManager(ServiceManager):
                 apis.append(api)
         return apis
 
-    def stop_services(self, services: List[str] = None) -> None:
+    def stop_services(self, services: List[str] = None):
         """
         Stops services for this service manager, if they are currently active.
         Will not stop services not already started or in and error state.
 
         :param services: Service names to stop. If not provided, all services for this manager will be stopped.
         """
-        if not services:
-            services = self.list_available()
         for service_name in services:
             if self.get_state(service_name) in [ServiceState.STARTING, ServiceState.RUNNING]:
                 service_container = self.get_service_container(service_name)
                 service_container.stop()
+
+    def stop_all_services(self) -> None:
+        """
+        Stops all services for this service manager, if they are currently active.
+        Will not stop services not already started or in and error state.
+        """
+        services = self.list_available()
+        self.stop_services(services)
 
 
 def register_service(service):

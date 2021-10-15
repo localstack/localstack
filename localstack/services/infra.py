@@ -18,10 +18,9 @@ from localstack.constants import (
     LOCALSTACK_INFRA_PROCESS,
     LOCALSTACK_VENV_FOLDER,
 )
-from localstack.plugin import PluginDisabled
 from localstack.services import generic_proxy, install
 from localstack.services.generic_proxy import start_proxy_server
-from localstack.services.plugins import SERVICE_PLUGINS, wait_for_infra_shutdown
+from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import analytics, common, config_listener, persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.request_context import patch_moto_request_handling
@@ -319,7 +318,7 @@ def stop_infra():
     try:
         generic_proxy.QUIET = True
         LOG.debug("[shutdown] Cleaning up services ...")
-        SERVICE_PLUGINS.stop_services()
+        SERVICE_PLUGINS.stop_all_services()
         LOG.debug("[shutdown] Cleaning up files ...")
         common.cleanup(files=True, quiet=True)
         LOG.debug("[shutdown] Cleaning up resources ...")
@@ -489,15 +488,15 @@ def do_start_infra(asynchronous, apis, is_in_docker):
             try:
                 SERVICE_PLUGINS.require(api)
                 apis.append(api)
-            except PluginDisabled as e:
+            except ServiceDisabled as e:
                 LOG.debug("%s", e)
-            except Exception as e:
-                LOG.error("could not load service plugin %s: %s", api, e)
+            except Exception:
+                LOG.exception("could not load service plugin %s", api)
 
         if persistence.is_persistence_enabled():
             if not config.is_env_true(constants.ENV_PRO_ACTIVATED):
                 LOG.warning(
-                    "persistence mechanism of community services will be deprecated in 0.13.0"
+                    "Persistence mechanism for community services (based on API calls record&replay) will be deprecated in 0.13.0"
                 )
 
             persistence.restore_persisted_data(apis)
@@ -510,7 +509,9 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         t = start_thread(start_edge, quiet=True)
 
         # TODO: properly encapsulate starting/stopping of edge server in a class
-        if not poll_condition(lambda: is_port_open(config.get_edge_url()), timeout=5, interval=0.1):
+        if not poll_condition(
+            lambda: is_port_open(config.get_edge_port_http()), timeout=5, interval=0.1
+        ):
             raise TimeoutError(
                 f"gave up waiting for edge server on {config.EDGE_BIND_HOST}:{config.EDGE_PORT}"
             )

@@ -172,7 +172,7 @@ class ProxyListenerEdge(ProxyListener):
         self._require_service(api)
 
         lock_ctx = BOOTSTRAP_LOCK
-        if persistence.is_persistence_restored() or is_internal_call:
+        if is_internal_call or persistence.is_persistence_restored():
             lock_ctx = empty_context_manager()
 
         with lock_ctx:

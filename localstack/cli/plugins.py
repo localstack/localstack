@@ -71,53 +71,5 @@ def cache():
     pprint(data.get("groups"))
 
 
-#
-# @cli.command()
-# def generate():
-#     from localstack.plugins import do_register_localstack_plugins
-#     from localstack.services.plugins import SERVICE_PLUGINS
-#     from localstack.utils.common import first_char_to_upper
-#
-#     do_register_localstack_plugins()
-#
-#     template = """@aws_provider()
-# def {name}():
-#     from localstack.services.{name} import {imports}
-#
-#     return Service({name}, {args})
-#
-# """
-#
-#     for name, service in SERVICE_PLUGINS.services.items():
-#         # print(name, service.start, service.check, service.listener)
-#
-#         class_prefix = first_char_to_upper(name)
-#
-#         imports = []
-#         args = []
-#
-#         if service.listener:
-#             imports.append(f"{name}_listener")
-#             args.append(f"listener={name}_listener.UPDATE_{name.upper()}")
-#
-#         if service.start_function:
-#             imports.append(f"{name}_starter")
-#             args.append(f"start={name}_starter.{service.start_function.__name__}")
-#
-#         if service.check_function:
-#             args.append(f"check={name}_starter.{service.check_function.__name__}")
-#
-#         d = f"localstack/services/{name}"
-#         if not os.path.isdir(d):
-#             print(f"# TODO: {name}")
-#             continue
-#
-#         code = template.format(
-#             name=name, class_prefix=class_prefix, imports=",".join(imports), args=",".join(args)
-#         )
-#
-#         print(code)
-
-
 if __name__ == "__main__":
     cli()
