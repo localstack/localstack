@@ -561,10 +561,6 @@ class ServicePluginManager(ServiceManager):
         self.stop_services(services)
 
 
-def register_service(service):
-    SERVICE_PLUGINS.add_service(service)
-
-
 # map of service plugins, mapping from service name to plugin details
 SERVICE_PLUGINS: ServicePluginManager = ServicePluginManager()
 
