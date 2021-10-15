@@ -22,17 +22,6 @@ LOG = logging.getLogger(__name__)
 # namespace for AWS provider plugins
 PLUGIN_NAMESPACE = "localstack.aws.provider"
 
-# TODO: Define interfaces for ServiceLifecycle, SchemaValidation, SecurityEnforcement, etc.
-#       to achieve composable ServicePlugins.
-#  Ultimately, the plugin metamodel will allow to easily add new ServicePlugins that consist of:
-#     - optional initializer (e.g., download dependencies, apply patches)
-#     - service lifecycle (start, stop, pause)
-#     - health check
-#     - state manager for persistent state (potentially composite)
-#     - request/schema validator (future work)
-#     - security interceptor (future work)
-#     ...
-
 
 # ---------------------------
 # STATE SERIALIZER INTERFACE
