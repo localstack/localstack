@@ -270,7 +270,7 @@ class ServiceManager:
     def get_states(self) -> Dict[str, ServiceState]:
         return {name: self.get_state(name) for name in self.list_available()}
 
-    @log_duration(min_ms=0)
+    @log_duration()
     def require(self, name: str) -> Service:
         """
         High level function that always returns a running service, or raises an error. If the service is in a state
@@ -503,7 +503,7 @@ class ServicePluginManager(ServiceManager):
                 self._api_provider_specs = self._resolve_api_provider_specs()
             return self._api_provider_specs
 
-    @log_duration(min_ms=0)
+    @log_duration()
     def _load_service_plugin(self, name: str) -> Optional[ServicePlugin]:
         providers = self.api_provider_specs.get(name)
         if not providers:
@@ -527,7 +527,7 @@ class ServicePluginManager(ServiceManager):
 
         return service
 
-    @log_duration(min_ms=0)
+    @log_duration()
     def _resolve_api_provider_specs(self) -> Dict[str, List[str]]:
         result = defaultdict(list)
 
