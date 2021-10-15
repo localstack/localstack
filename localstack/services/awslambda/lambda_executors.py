@@ -1392,6 +1392,7 @@ class Util:
         
     @classmethod
     def get_amzn_docker_img(cls, runtime: str):
+        # the amazon-provided docker image repo is structured differently from lambdaci, so we need a separate function to determine the image name
         repositories = {
             "dotnetcore": "aws-lambda-dotnet",
             "nodejs": "aws-lambda-nodejs",
