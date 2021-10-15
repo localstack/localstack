@@ -2,12 +2,14 @@ import io
 import json
 import logging
 import os
+import queue
 import re
 import shlex
 import socket
 import subprocess
 import tarfile
 import tempfile
+import threading
 from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
@@ -20,7 +22,15 @@ from docker.models.containers import Container
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
 from localstack import config
-from localstack.utils.common import TMP_FILES, rm_rf, safe_run, save_file, short_uid, to_bytes
+from localstack.utils.common import (
+    TMP_FILES,
+    rm_rf,
+    safe_run,
+    save_file,
+    short_uid,
+    start_worker_thread,
+    to_bytes,
+)
 from localstack.utils.run import to_str
 
 LOG = logging.getLogger(__name__)
@@ -1227,7 +1237,33 @@ class SdkDockerClient(ContainerClient):
                     params["stdin"] = 1
                 sock = container.attach_socket(params=params)
                 sock = sock._sock if hasattr(sock, "_sock") else sock
+                result_queue = queue.Queue()
+                thread_started = threading.Event()
+                start_waiting = threading.Event()
+
+                # Note: We need to be careful about potential race conditions here - .wait() should happen right
+                #   after .start(). Hence starting a thread and asynchronously waiting for the container exit code
+                def wait_for_result(*_):
+                    _exit_code = -1
+                    try:
+                        thread_started.set()
+                        start_waiting.wait()
+                        _exit_code = container.wait()["StatusCode"]
+                    except APIError as e:
+                        _exit_code = 1
+                        raise ContainerException(str(e))
+                    finally:
+                        result_queue.put(_exit_code)
+
+                # start listener thread
+                start_worker_thread(wait_for_result)
+                thread_started.wait()
+                # start container
                 container.start()
+                # start awaiting container result
+                start_waiting.set()
+
+                # handle container input/output
                 with sock:
                     try:
                         if stdin:
@@ -1238,16 +1274,15 @@ class SdkDockerClient(ContainerClient):
                         LOG.debug(
                             f"Socket timeout when talking to the I/O streams of Docker container '{container_name_or_id}'"
                         )
-                try:
-                    exit_code = container.wait()["StatusCode"]
-                    if exit_code:
-                        raise ContainerException(
-                            "Docker container returned with exit code %s" % exit_code,
-                            stdout=stdout,
-                            stderr=stderr,
-                        )
-                except APIError:
-                    pass
+
+                # get container exit code
+                exit_code = result_queue.get()
+                if exit_code:
+                    raise ContainerException(
+                        "Docker container returned with exit code %s" % exit_code,
+                        stdout=stdout,
+                        stderr=stderr,
+                    )
             else:
                 container.start()
             return stdout, stderr
