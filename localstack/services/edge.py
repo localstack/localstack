@@ -402,10 +402,6 @@ def serve_health_endpoint(method, path, data):
     if method == "GET":
         reload = "reload" in path
         return plugins.get_services_health(reload=reload)
-    if method == "PUT":
-        data = json.loads(to_str(data or "{}"))
-        plugins.set_services_health(data)
-        return {"status": "OK"}
     if method == "POST":
         data = json.loads(to_str(data or "{}"))
         # backdoor API to support restarting the instance

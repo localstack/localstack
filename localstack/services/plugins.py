@@ -1,15 +1,12 @@
 import abc
 import functools
-import json
 import logging
 import threading
-import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Tuple
 
-import requests
 from readerwriterlock import rwlock
 from requests.models import Request
 
@@ -17,7 +14,7 @@ from localstack import config
 from localstack.config import ServiceProviderConfig
 from localstack.plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 from localstack.utils.bootstrap import canonicalize_api_names, log_duration
-from localstack.utils.common import clone, poll_condition
+from localstack.utils.common import poll_condition
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -35,9 +32,6 @@ PLUGIN_NAMESPACE = "localstack.aws.provider"
 #     - request/schema validator (future work)
 #     - security interceptor (future work)
 #     ...
-
-# maps service names to health status
-STATUSES: Dict[str, Dict] = {}
 
 
 # ---------------------------
@@ -206,20 +200,22 @@ class ServiceContainer:
         try:
             self.state = ServiceState.STARTING
             self.service.start(asynchronous=True)
+        except Exception as e:
+            self.state = ServiceState.ERROR
+            self.errors.append(e)
+            LOG.error("error while starting service %s: %s", self.service.name(), e)
+            return False
+        return self.check()
+
+    def check(self) -> bool:
+        try:
             self.service.check(print_error=True)
             self.state = ServiceState.RUNNING
             return True
         except Exception as e:
             self.state = ServiceState.ERROR
             self.errors.append(e)
-            LOG.error("error while starting service %s: %s", self.service.name(), e)
-            return False
-
-    def check(self) -> bool:
-        try:
-            self.service.check(print_error=True)
-            return True
-        except Exception:
+            LOG.error("error while checking service %s: %s", self.service.name(), e)
             return False
 
     def stop(self):
@@ -260,6 +256,13 @@ class ServiceManager:
     def is_running(self, name: str) -> bool:
         return self.get_state(name) == ServiceState.RUNNING
 
+    def check(self, name: str) -> bool:
+        if self.get_state(name) in [ServiceState.RUNNING, ServiceState.ERROR]:
+            return self.get_service_container(name).check()
+
+    def check_all(self):
+        return any([self.check(service_name) for service_name in self.list_available()])
+
     def get_state(self, name: str) -> Optional[ServiceState]:
         container = self.get_service_container(name)
         return container.state if container else None
@@ -296,7 +299,6 @@ class ServiceManager:
 
             if container.state == ServiceState.AVAILABLE:
                 if container.start():
-                    record_service_health(name, "running")  # FIXME
                     return container.service
                 else:
                     raise container.errors[-1]
@@ -585,57 +587,19 @@ SERVICE_PLUGINS: ServicePluginManager = ServicePluginManager()
 
 def get_services_health(reload=False):
     if reload:
-        reload_services_health()
+        SERVICE_PLUGINS.check_all()
 
-    result = clone(dict(STATUSES))
-    result["services"] = {
-        service: state.value for service, state in SERVICE_PLUGINS.get_states().items()
+    result = {
+        "services": {
+            service: state.value for service, state in SERVICE_PLUGINS.get_states().items()
+        }
     }
     return result
-
-
-def set_services_health(data):
-    status = STATUSES["services"] = STATUSES.get("services", {})
-    for key, value in dict(data).items():
-        parent, _, child = key.partition(":")
-        if child:
-            STATUSES[parent] = STATUSES.get(parent, {})
-            STATUSES[parent][child] = value
-            data.pop(key)
-    status.update(data or {})
-    return get_services_health()
 
 
 # -----------------------------
 # INFRASTRUCTURE HEALTH CHECKS
 # -----------------------------
-
-
-def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=[]):
-    try:
-        apis = apis or canonicalize_api_names()
-        print_error = retries <= 0
-
-        # loop through plugins and check service status
-        for name, plugin in SERVICE_PLUGINS.items():
-            if name in apis:
-                check_service_health(
-                    api=name, print_error=print_error, expect_shutdown=expect_shutdown
-                )
-
-        for additional in additional_checks:
-            additional(expect_shutdown=expect_shutdown)
-    except Exception as e:
-        if retries <= 0:
-            LOG.exception("Error checking state of local environment (after some retries)")
-            raise e
-        time.sleep(3)
-        check_infra(
-            retries - 1,
-            expect_shutdown=expect_shutdown,
-            apis=apis,
-            additional_checks=additional_checks,
-        )
 
 
 def wait_for_infra_shutdown(apis=None):
@@ -652,29 +616,11 @@ def wait_for_infra_shutdown(apis=None):
         executor.map(check, names)
 
 
-def check_service_health(api, print_error=False, expect_shutdown=False):
-    try:
-        plugin = SERVICE_PLUGINS.get(api)
-        plugin.check(expect_shutdown=expect_shutdown, print_error=print_error)
-        record_service_health(api, "running")
-    except Exception as e:
+def check_service_health(api, expect_shutdown=False):
+    status = SERVICE_PLUGINS.check(api)
+    if not status:
         if not expect_shutdown:
-            LOG.warning('Service "%s" not yet available, retrying...' % api)
+            LOG.warning('Service "%s" not yet available, retrying...', api)
         else:
-            LOG.warning('Service "%s" still shutting down, retrying...' % api)
-        raise e
-
-
-def reload_services_health():
-    check_infra(retries=0)
-
-
-def record_service_health(api, status):
-    # TODO: consider making in-memory calls here, to optimize performance
-    data = {api: status}
-    health_url = "%s/health" % config.get_edge_url()
-    try:
-        requests.put(health_url, data=json.dumps(data), verify=False)
-    except Exception:
-        # ignore for now, if the service is not running
-        pass
+            LOG.warning('Service "%s" still shutting down, retrying...', api)
+        raise Exception("Service check failed for api: %s" % api)

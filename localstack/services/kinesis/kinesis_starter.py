@@ -66,7 +66,7 @@ def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronou
             def _return_listener(*_):
                 try:
                     ret_code = PROCESS_THREAD.result_future.result()
-                    if ret_code != 0:
+                    if ret_code not in [0, None]:
                         LOGGER.error("kinesis terminated with return code %s", ret_code)
                 finally:
                     kinesis_stopped.set()
