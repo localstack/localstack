@@ -5,8 +5,6 @@ import unittest
 import uuid
 from datetime import datetime
 
-import mypy_boto3_events
-
 from localstack import config
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.events.events_listener import EVENTS_TMP_DIR
@@ -582,7 +580,7 @@ class EventsTest(unittest.TestCase):
         proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
         wait_for_port_open(local_port)
 
-        events_client: mypy_boto3_events.EventBridgeClient = aws_stack.connect_to_service("events")
+        events_client = aws_stack.connect_to_service("events")
         connection_arn = events_client.create_connection(
             Name="TestConnection",
             AuthorizationType="BASIC",
