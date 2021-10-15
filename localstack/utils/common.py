@@ -903,18 +903,18 @@ def obj_to_xml(obj) -> str:
     return str(obj)
 
 
-def now(millis: bool = False, tz: Optional[tzinfo] = None) -> float:
+def now(millis: bool = False, tz: Optional[tzinfo] = None) -> int:
     return mktime(datetime.now(tz=tz), millis=millis)
 
 
-def now_utc(millis: bool = False) -> float:
+def now_utc(millis: bool = False) -> int:
     return now(millis, timezone.utc)
 
 
-def mktime(ts: datetime, millis: bool = False) -> float:
+def mktime(ts: datetime, millis: bool = False) -> int:
     if millis:
-        return ts.timestamp() * 1000
-    return ts.timestamp()
+        return int(ts.timestamp() * 1000)
+    return int(ts.timestamp())
 
 
 def mkdir(folder):
