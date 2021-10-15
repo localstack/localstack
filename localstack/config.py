@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import time
 from os.path import expanduser
-from typing import Dict, List
+from typing import Dict, List, Mapping
 
 import six
 from boto3 import Session
@@ -602,7 +602,7 @@ def load_config_file(config_file=None):
     return configs
 
 
-class ServiceProviderConfig:
+class ServiceProviderConfig(Mapping[str, str]):
     _provider_config: Dict[str, str]
     default_value: str
 
@@ -623,6 +623,18 @@ class ServiceProviderConfig:
     def bulk_set_provider_if_not_exists(self, services: List[str], provider: str):
         for service in services:
             self.set_provider_if_not_exists(service, provider)
+
+    def __getitem__(self, item):
+        return self.get_provider(item)
+
+    def __setitem__(self, key, value):
+        self.set_provider(key, value)
+
+    def __len__(self):
+        return len(self._provider_config)
+
+    def __iter__(self):
+        return self._provider_config.__iter__()
 
 
 SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
