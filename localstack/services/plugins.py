@@ -618,7 +618,7 @@ def wait_for_infra_shutdown(apis=None):
 
 def check_service_health(api, expect_shutdown=False):
     status = SERVICE_PLUGINS.check(api)
-    if not status:
+    if status == expect_shutdown:
         if not expect_shutdown:
             LOG.warning('Service "%s" not yet available, retrying...', api)
         else:
