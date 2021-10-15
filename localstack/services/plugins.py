@@ -235,7 +235,7 @@ class ServiceManager:
     def __init__(self) -> None:
         super().__init__()
         self._services = dict()
-        self._journals = dict()
+        self._mutex = threading.RLock()
 
     def get_service_container(self, name: str) -> Optional[ServiceContainer]:
         return self._services.get(name)
@@ -477,7 +477,10 @@ class ServicePluginManager(ServiceManager):
         if not plugin or not plugin.service:
             return None
 
-        self.add_service(plugin.service)
+        with self._mutex:
+            if plugin.service not in self._services:
+                super().add_service(plugin.service)
+
         return super().get_service_container(name)
 
     @property
@@ -486,9 +489,13 @@ class ServicePluginManager(ServiceManager):
         Returns all provider names within the service plugin namespace and parses their name according to the convention,
         that is "<api>:<provider>". The result is a dictionary that maps api => List[str (name of a provider)].
         """
-        if self._api_provider_specs is None:
-            self._api_provider_specs = self._resolve_api_provider_specs()
-        return self._api_provider_specs
+        if self._api_provider_specs is not None:
+            return self._api_provider_specs
+
+        with self._mutex:
+            if self._api_provider_specs is None:
+                self._api_provider_specs = self._resolve_api_provider_specs()
+            return self._api_provider_specs
 
     @log_duration(min_ms=0)
     def _load_service_plugin(self, name: str) -> Optional[ServicePlugin]:
