@@ -1,4 +1,9 @@
+import logging
+import traceback
+
 from localstack import config
+
+LOG = logging.getLogger(__name__)
 
 
 def start_lambda(port=None, asynchronous=False):
@@ -19,3 +24,27 @@ def stop_lambda() -> None:
     """
     # TODO actually stop flask server
     cleanup()
+
+
+def check_lambda(expect_shutdown=False, print_error=False):
+    out = None
+    try:
+        from localstack.services.infra import PROXY_LISTENERS
+        from localstack.utils.aws import aws_stack
+        from localstack.utils.common import wait_for_port_open
+
+        # wait for port to be opened
+        port = PROXY_LISTENERS.get("lambda")[1]
+        wait_for_port_open(port)  # TODO get lambda port in a cleaner way
+
+        endpoint_url = f"http://127.0.0.1:{port}"
+        out = aws_stack.connect_to_service(
+            service_name="lambda", endpoint_url=endpoint_url
+        ).list_functions()
+    except Exception as e:
+        if print_error:
+            LOG.error("Lambda health check failed: %s %s" % (e, traceback.format_exc()))
+    if expect_shutdown:
+        assert out is None
+    else:
+        assert out and isinstance(out.get("Functions"), list)
