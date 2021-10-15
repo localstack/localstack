@@ -181,20 +181,22 @@ def test_event_rule_to_logs(
             == "CREATE_COMPLETE"
         )
 
-        log_groups = logs_client.describe_log_groups()["logGroups"]
+        log_groups = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)["logGroups"]
         log_group_names = [lg["logGroupName"] for lg in log_groups]
         assert log_group_name in log_group_names
 
-        events_client.put_events(
+        resp = events_client.put_events(
             Entries=[
                 {
                     "Source": "unittest",
                     "Resources": [],
                     "DetailType": "ls-detail-type",
                     "Detail": json.dumps({"messagetoken": message_token}),
+                    "EventBusName": event_bus_name,
                 }
             ]
         )
+        assert len(resp["Entries"]) == 1
         wait_until(
             lambda: len(logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"])
             > 0,
