@@ -14,6 +14,7 @@ from readerwriterlock import rwlock
 from requests.models import Request
 
 from localstack import config
+from localstack.config import ServiceProviderConfig
 from localstack.plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 from localstack.utils.bootstrap import canonicalize_api_names, log_duration
 from localstack.utils.common import clone, poll_condition
@@ -422,15 +423,18 @@ class ServicePluginManager(ServiceManager):
     lock_dict_lock: threading.RLock
     lock_dict: Dict[str, threading.RLock]
 
-    def __init__(self, plugin_manager: PluginManager[ServicePlugin] = None) -> None:
+    def __init__(
+        self,
+        plugin_manager: PluginManager[ServicePlugin] = None,
+        provider_config: ServiceProviderConfig = None,
+    ) -> None:
         super().__init__()
         self.plugin_errors = ServicePluginErrorCollector()
         self.plugin_manager = plugin_manager or PluginManager(
             PLUGIN_NAMESPACE, listener=self.plugin_errors
         )
         self._api_provider_specs = None
-        self.lock_dict_lock = threading.RLock()
-        self.lock_dict = defaultdict(threading.RLock)
+        self.provider_config = provider_config or config.SERVICE_PROVIDER_CONFIG
 
     # TODO make the abstraction clearer, to provide better information if service is available versus discoverable
     # especially important when considering pro services
@@ -442,7 +446,7 @@ class ServicePluginManager(ServiceManager):
         return [
             service
             for service, providers in self.api_provider_specs.items()
-            if config.SERVICE_PROVIDER_CONFIG.get_provider(service) in providers
+            if self.provider_config.get_provider(service) in providers
         ]
 
     def exists(self, name: str) -> bool:
@@ -504,7 +508,7 @@ class ServicePluginManager(ServiceManager):
             # no providers for this api
             return None
 
-        preferred_provider = config.SERVICE_PROVIDER_CONFIG.get_provider(name)
+        preferred_provider = self.provider_config.get_provider(name)
         if preferred_provider in providers:
             provider = preferred_provider
         else:
