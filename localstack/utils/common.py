@@ -22,7 +22,7 @@ import time
 import uuid
 import zipfile
 from contextlib import closing
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, tzinfo
 from multiprocessing.dummy import Pool
 from queue import Queue
 from typing import Any, Callable, Dict, List, Optional, Sized, Type, Union
@@ -903,15 +903,15 @@ def obj_to_xml(obj) -> str:
     return str(obj)
 
 
-def now(millis=False, tz=None):
+def now(millis: bool = False, tz: Optional[tzinfo] = None) -> float:
     return mktime(datetime.now(tz=tz), millis=millis)
 
 
-def now_utc(millis=False):
+def now_utc(millis: bool = False) -> float:
     return now(millis, timezone.utc)
 
 
-def mktime(ts, millis=False):
+def mktime(ts: datetime, millis: bool = False) -> float:
     if millis:
         return ts.timestamp() * 1000
     return ts.timestamp()

@@ -1,13 +1,12 @@
 import json
 import logging
-import time
 import uuid
 from typing import Dict
 
 from localstack.services.awslambda.lambda_executors import InvocationException, InvocationResult
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_stack import connect_to_service, firehose_name, get_sqs_queue_url
-from localstack.utils.common import long_uid
+from localstack.utils.common import long_uid, now_utc
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import timestamp_millis, to_bytes
 from localstack.utils.generic import dict_utils
@@ -136,7 +135,7 @@ def send_event_to_target(
         logs_client.put_log_events(
             logGroupName=log_group_name,
             logStreamName=log_stream_name,
-            logEvents=[{"timestamp": int(time.time() * 1000.0), "message": json.dumps(event)}],
+            logEvents=[{"timestamp": now_utc(millis=True), "message": json.dumps(event)}],
         )
     else:
         LOG.warning('Unsupported Events rule target ARN: "%s"' % target_arn)
