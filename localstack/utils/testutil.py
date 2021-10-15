@@ -556,9 +556,11 @@ def get_lambda_log_events(
 
         logs = aws_stack.connect_to_service("logs")
         log_group_name = get_lambda_log_group_name(function_name)
-        rs = logs.filter_log_events(logGroupName=log_group_name)
-
-        return rs["events"]
+        return list_all_resources(
+            lambda kwargs: logs.filter_log_events(logGroupName=log_group_name, **kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="events",
+        )
 
     try:
         events = get_log_events(function_name, delay_time)
