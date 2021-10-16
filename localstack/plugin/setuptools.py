@@ -110,7 +110,7 @@ def _is_local_build_context():
 
     # it's unfortunately not really distinguishable whether or not a user calls `python setup.py develop` in the
     # project, or calls `pip install -e ..` to install the project from somewhere else.
-    if sys.argv[1] in ["egg_info", "develop"]:
+    if len(sys.argv) > 1 and sys.argv[1] in ["egg_info", "develop"]:
         return True
 
     return False
