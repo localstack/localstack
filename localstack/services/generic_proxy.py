@@ -39,23 +39,27 @@ LOG = logging.getLogger(__name__)
 # path for test certificate
 SERVER_CERT_PEM_FILE = "server.test.pem"
 
-# CORS constants
+# CORS constants below
 CORS_ALLOWED_HEADERS = [
     "authorization",
-    "content-type",
+    "cache-control",
     "content-length",
     "content-md5",
-    "cache-control",
+    "content-type",
+    "etag",
+    "location",
+    "x-amz-acl",
     "x-amz-content-sha256",
     "x-amz-date",
+    "x-amz-request-id",
     "x-amz-security-token",
-    "x-amz-user-agent",
-    "x-amz-target",
-    "x-amz-acl",
-    "x-amz-version-id",
-    "x-localstack-target",
     "x-amz-tagging",
-    # For AWS SDK v3
+    "x-amz-target",
+    "x-amz-user-agent",
+    "x-amz-version-id",
+    "x-amzn-requestid",
+    "x-localstack-target",
+    # for AWS SDK v3
     "amz-sdk-invocation-id",
     "amz-sdk-request",
 ]
@@ -64,7 +68,10 @@ if EXTRA_CORS_ALLOWED_HEADERS:
 
 CORS_ALLOWED_METHODS = ("HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS", "PATCH")
 
-CORS_EXPOSE_HEADERS = ("x-amz-version-id",)
+CORS_EXPOSE_HEADERS = (
+    "etag",
+    "x-amz-version-id",
+)
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(","))
 
