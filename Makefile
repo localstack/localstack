@@ -49,9 +49,11 @@ init:                     ## Initialize the infrastructure, make sure all libs a
 init-testlibs:
 	$(VENV_RUN); python -m localstack.services.install testlibs
 
-publish:           ## Publish the library to the central PyPi repository
-	# build and upload archive
-	($(VENV_RUN) && python setup.py sdist; twine upload dist/*.tar.gz)
+dist:					  ## Build source and built (wheel) distributions of the current version
+	$(VENV_RUN); pip install --upgrade twine; python setup.py sdist bdist_wheel
+
+publish: clean-dist dist  ## Publish the library to the central PyPi repository
+	$(VENV_RUN); twine upload dist/*
 
 coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
@@ -203,6 +205,10 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
+clean-dist:		## Clean up python distribution directories
+	rm -rf dist/
+	rm -rf *.egg-info
+
 vagrant-start:
 	@vagrant up || EXIT_CODE=$$? ;\
  	if [ "$EXIT_CODE" != "0" ]; then\
@@ -226,4 +232,4 @@ install-venv: venv
 infra:             # legacy command used in the supervisord file to
 	($(VENV_RUN); exec bin/localstack start --host --no-banner)
 
-.PHONY: usage compile clean install-basic install-runtime install-test install-dev infra run-dev test test-coverage install-venv-docker lint lint-modified format format-modified venv
+.PHONY: usage compile clean dist clean-dist install-basic install-runtime install-test install-dev infra run-dev test test-coverage install-venv-docker lint lint-modified format format-modified venv
