@@ -46,6 +46,7 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
+from localstack.utils.server import http2_server
 
 TEST_BUCKET_NAME_WITH_POLICY = "test-bucket-policy-1"
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = "test_queue_for_bucket_notification_1"
@@ -325,7 +326,7 @@ class TestS3(unittest.TestCase):
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(bucket_name, [key_by_path])
 
-    def test_s3_get_response_default_content_type(self):
+    def test_s3_get_response_default_content_type_and_headers(self):
         # When no content type is provided by a PUT request
         # 'binary/octet-stream' should be used
         # src: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
@@ -337,13 +338,25 @@ class TestS3(unittest.TestCase):
         # put object
         object_key = "key-by-hostname"
         client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
-        url = client.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket_name, "Key": object_key}
-        )
 
         # get object and assert headers
-        response = requests.get(url, verify=False)
-        self.assertEqual("binary/octet-stream", response.headers["content-type"])
+        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
+        try:
+            for case_sensitive_headers in [True, False]:
+                url = client.generate_presigned_url(
+                    "get_object", Params={"Bucket": bucket_name, "Key": object_key}
+                )
+                http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
+                response = requests.get(url, verify=False)
+                self.assertEqual("binary/octet-stream", response.headers["content-type"])
+
+                # expect that Etag is contained
+                header_names = list(response.headers.keys())
+                expected_etag = "ETag" if case_sensitive_headers else "etag"
+                self.assertIn(expected_etag, header_names)
+        finally:
+            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
+
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
