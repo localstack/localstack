@@ -40,8 +40,8 @@ install-dev: venv         ## Install developer requirements into venv
 install:                  ## Install full dependencies into venv, and download third-party services
 	(make install-dev && make entrypoints && make init-testlibs) || exit 1
 
-entrypoints:              ## Run setup.py install to build entry points
-	$(VENV_RUN); python setup.py develop
+entrypoints:              ## Run setup.py develop to build entry points
+	$(VENV_RUN); rm -f localstack.egg-info/entry_points.txt; python setup.py develop
 
 init:                     ## Initialize the infrastructure, make sure all libs are downloaded
 	$(VENV_RUN); python -m localstack.services.install libs
