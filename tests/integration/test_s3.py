@@ -340,13 +340,13 @@ class TestS3(unittest.TestCase):
         client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
 
         # get object and assert headers
-        case_sensitive_before = http2_server.USE_CASE_SENSITIVE_HEADERS
+        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
         try:
             for case_sensitive_headers in [True, False]:
                 url = client.generate_presigned_url(
                     "get_object", Params={"Bucket": bucket_name, "Key": object_key}
                 )
-                http2_server.USE_CASE_SENSITIVE_HEADERS = case_sensitive_headers
+                http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
                 response = requests.get(url, verify=False)
                 self.assertEqual("binary/octet-stream", response.headers["content-type"])
 
@@ -355,7 +355,7 @@ class TestS3(unittest.TestCase):
                 expected_etag = "ETag" if case_sensitive_headers else "etag"
                 self.assertIn(expected_etag, header_names)
         finally:
-            http2_server.USE_CASE_SENSITIVE_HEADERS = case_sensitive_before
+            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
