@@ -8,7 +8,6 @@ import yaml
 from requests.models import Response
 
 from localstack import config
-from localstack.services import infra
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.utils import async_utils, config_listener
 from localstack.utils.aws import aws_stack
@@ -72,11 +71,6 @@ class TestMisc(unittest.TestCase):
         self.assertEqual("-p 123-124:123-124", map.to_str())
         map.add([234, 237], [345, 348])
         self.assertEqual("-p 123-124:123-124 -p 234-237:345-348", map.to_str())
-
-    def test_get_service_status(self):
-        env = infra.get_services_status()
-        self.assertNotEqual(env, None)
-        self.assertGreater(len(env), 0)
 
     def test_update_config_variable(self):
         config_listener.update_config_variable("foo", "bar")

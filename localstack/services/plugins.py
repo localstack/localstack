@@ -13,7 +13,7 @@ from requests.models import Request
 from localstack import config
 from localstack.config import ServiceProviderConfig
 from localstack.plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
-from localstack.utils.bootstrap import canonicalize_api_names, log_duration
+from localstack.utils.bootstrap import get_enabled_apis, is_api_enabled, log_duration
 from localstack.utils.common import poll_condition
 
 # set up logger
@@ -143,12 +143,11 @@ class Service(object):
     def name(self):
         return self.plugin_name
 
-    def is_enabled(self, api_names=None):
+    def is_enabled(self):
         if self.default_active:
             return True
-        if api_names is None:
-            api_names = canonicalize_api_names()
-        return self.name() in api_names
+
+        return is_api_enabled(self.name())
 
 
 class ServiceState(Enum):
@@ -160,10 +159,6 @@ class ServiceState(Enum):
     STOPPING = "stopping"
     STOPPED = "stopped"
     ERROR = "error"
-
-
-class Journal:
-    name: str
 
 
 class ServiceContainer:
@@ -411,8 +406,6 @@ class ServicePluginErrorCollector(PluginLifecycleListener):
 class ServicePluginManager(ServiceManager):
     plugin_manager: PluginManager[ServicePlugin]
     plugin_errors: ServicePluginErrorCollector
-    lock_dict_lock: threading.RLock
-    lock_dict: Dict[str, threading.RLock]
 
     def __init__(
         self,
@@ -587,8 +580,8 @@ def get_services_health(reload=False):
 # -----------------------------
 
 
-def wait_for_infra_shutdown(apis=None):
-    apis = apis or canonicalize_api_names()
+def wait_for_infra_shutdown():
+    apis = get_enabled_apis()
 
     names = [name for name, plugin in SERVICE_PLUGINS.items() if name in apis]
 

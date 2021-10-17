@@ -480,7 +480,7 @@ for partition in VALID_PARTITIONS:
         VALID_REGIONS.add(region)
 
 
-def parse_service_ports():
+def parse_service_ports() -> Dict[str, int]:
     """Parses the environment variable $SERVICES with a comma-separated list of services
     and (optional) ports they should run on: 'service1:port1,service2,service3:port3'"""
     service_ports = os.environ.get("SERVICES", "").strip()

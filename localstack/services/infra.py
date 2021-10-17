@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 import signal
 import subprocess
 import sys
@@ -12,12 +11,7 @@ import boto3
 from moto import core as moto_core
 
 from localstack import config, constants
-from localstack.constants import (
-    DEFAULT_SERVICE_PORTS,
-    ENV_DEV,
-    LOCALSTACK_INFRA_PROCESS,
-    LOCALSTACK_VENV_FOLDER,
-)
+from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
 from localstack.services import generic_proxy, install
 from localstack.services.generic_proxy import start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
@@ -72,6 +66,7 @@ SHUTDOWN_INFRA = threading.Event()
 # Start config update backdoor
 config_listener.start_listener()
 
+
 # ---------------
 # HELPER METHODS
 # ---------------
@@ -120,48 +115,6 @@ def patch_instance_tracker_meta():
         return instance
 
     moto_core.models.BaseModel.__new__ = new_basemodel
-
-
-def set_service_status(data):
-    command = data.get("command")
-    service = data.get("service")
-    service_ports = config.parse_service_ports()
-    if command == "start":
-        existing = service_ports.get(service)
-        port = DEFAULT_SERVICE_PORTS.get(service)
-        if existing:
-            status = get_service_status(service, port)
-            if status == "running":
-                return
-        key_upper = service.upper().replace("-", "_")
-        port_variable = "PORT_%s" % key_upper
-        service_list = os.environ.get("SERVICES", "").strip()
-        services = [e for e in re.split(r"[\s,]+", service_list) if e]
-        contained = [s for s in services if s.startswith(service)]
-        if not contained:
-            services.append(service)
-        config_listener.update_config_variable(port_variable, port)
-        new_service_list = ",".join(services)
-        os.environ["SERVICES"] = new_service_list
-        # TODO: expensive operation - check if we need to do this here for each service, should be optimized!
-        config.populate_configs()
-        LOG.info("Starting service %s on port %s" % (service, port))
-        SERVICE_PLUGINS[service].start(asynchronous=True)
-    return {}
-
-
-def get_services_status():
-    result = {}
-    for service, port in config.parse_service_ports().items():
-        status = get_service_status(service, port)
-        result[service] = {"port": port, "status": status}
-    return result
-
-
-def get_service_status(service, port=None):
-    port = port or config.parse_service_ports().get(service)
-    status = "disabled" if (port or 0) <= 0 else "running" if is_port_open(port) else "stopped"
-    return status
 
 
 def get_multiserver_or_free_service_port():
@@ -307,7 +260,6 @@ def start_local_api(name, port, api, method, asynchronous=False):
 
 
 def stop_infra():
-
     if common.INFRA_STOPPED:
         return
     common.INFRA_STOPPED = True
