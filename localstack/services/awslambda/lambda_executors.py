@@ -26,6 +26,7 @@ from localstack.services.awslambda.lambda_utils import (
     store_lambda_logs,
 )
 from localstack.services.install import GO_LAMBDA_RUNTIME, INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.dead_letter_queue import (
@@ -942,7 +943,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         """
         with self.docker_container_lock:
             LOG.debug("Getting all lambda containers names.")
-            list_result = DOCKER_CLIENT.list_containers(filter="name=localstack_lambda_*")
+            list_result = DOCKER_CLIENT.list_containers(
+                filter=f"name={self.get_container_prefix()}*"
+            )
             container_names = list(map(lambda container: container["name"], list_result))
 
             return container_names
@@ -1021,13 +1024,20 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.idle_container_destroyer()
         threading.Timer(60.0, self.start_idle_container_destroyer_interval).start()
 
+    def get_container_prefix(self) -> str:
+        """
+        Returns the prefix of all docker-reuse lambda containers for this LocalStack instance
+        :return: Lambda container name prefix
+        """
+        return f"{bootstrap.get_main_container_name()}_lambda_"
+
     def get_container_name(self, func_arn):
         """
         Given a function ARN, returns a valid docker container name.
         :param func_arn: The ARN of the lambda function.
         :return: A docker compatible name for the arn.
         """
-        return "localstack_lambda_" + re.sub(r"[^a-zA-Z0-9_.-]", "_", func_arn)
+        return self.get_container_prefix() + re.sub(r"[^a-zA-Z0-9_.-]", "_", func_arn)
 
 
 class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
