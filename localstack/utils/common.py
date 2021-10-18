@@ -564,6 +564,19 @@ def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False)
     return obj
 
 
+def rename_attributes(
+    obj: Dict, old_to_new_attributes: Dict[str, str], in_place: bool = False
+) -> Dict:
+    """Rename a set of attributes in the given dict object. Second parameter is a dict that maps old to
+    new attribute names. Default is to return a copy, but can also pass in_place=True."""
+    if not in_place:
+        obj = dict(obj)
+    for old_name, new_name in old_to_new_attributes.items():
+        if old_name in obj:
+            obj[new_name] = obj.pop(old_name)
+    return obj
+
+
 def is_list_or_tuple(obj) -> bool:
     return isinstance(obj, (list, tuple))
 

@@ -1,23 +1,31 @@
 import json
+import re
 
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 
-TEMPLATE_GENERATE_SECRET = """
+SECRET_NAME = "/dev/db/pass"
+TEMPLATE_GENERATE_SECRET = (
+    """
 AWSTemplateFormatVersion: '2010-09-09'
 Resources:
   Secret:
     Type: 'AWS::SecretsManager::Secret'
     Properties:
       Description: Aurora Password
-      Name: /dev/db/pass
+      Name: %s
       GenerateSecretString:
         SecretStringTemplate: !Sub '{"username": "${Username}"}'
         GenerateStringKey: "password"
         PasswordLength: 30
         IncludeSpace: false
         ExcludePunctuation: true
+Outputs:
+  SecretARN:
+    Value: !Ref Secret
 """
+    % SECRET_NAME
+)
 
 
 def test_cfn_secretsmanager_gen_secret(
@@ -45,5 +53,11 @@ def test_cfn_secretsmanager_gen_secret(
         secret = json.loads(secret)
         assert "password" in secret
         assert len(secret["password"]) == 30
+
+        # assert that the Ref properly returns the secret ARN
+        result = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]
+        assert len(result["Outputs"]) == 1
+        assert result["Outputs"][0]["OutputKey"] == "SecretARN"
+        assert re.match(r".*%s-[a-zA-Z0-9]+" % SECRET_NAME, result["Outputs"][0]["OutputValue"])
     finally:
         cleanup_stacks([stack_id])

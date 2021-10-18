@@ -136,29 +136,48 @@ def apply_patches():
 
     email_responses.get_identity_verification_attributes = get_identity_verification_attributes
 
+    def get_email_log_object(source, region, destinations, subject=None, body=None, raw_data=None):
+        email = {"Source": source, "Region": region, "Destinations": destinations}
+
+        if subject is not None:
+            email["Subject"] = subject
+        if body is not None:
+            email["Body"] = body
+        if raw_data is not None:
+            email["RawData"] = raw_data
+
+        return email
+
+    def log_email_to_data_dir(id, email):
+        ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, "ses")
+        mkdir(ses_dir)
+
+        with open(os.path.join(ses_dir, id + ".json"), "w") as f:
+            f.write(json.dumps(email))
+
     backend_send_email_orig = SESBackend.send_email
 
     def send_email_save_contents(self, source, subject, body, destinations, region):
         message = backend_send_email_orig(self, source, subject, body, destinations, region)
 
-        ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, "ses")
-        mkdir(ses_dir)
+        log_email = get_email_log_object(source, region, destinations, subject, body)
+        log_email_to_data_dir(message.id, log_email)
 
-        with open(os.path.join(ses_dir, message.id + ".json"), "w") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "Source": source,
-                        "Subject": subject,
-                        "Body": body,
-                        "Destinations": destinations,
-                        "Region": region,
-                    }
-                )
-            )
         return message
 
     SESBackend.send_email = send_email_save_contents
+
+    backend_send_raw_email_orig = SESBackend.send_raw_email
+
+    def send_raw_email_save_contents(self, source, destinations, raw_data, region):
+        message = backend_send_raw_email_orig(self, source, destinations, raw_data, region)
+
+        log_email = get_email_log_object(source, region, destinations, raw_data=raw_data)
+        log_email_to_data_dir(message.id, log_email)
+
+        return message
+
+    SESBackend.send_raw_email = send_raw_email_save_contents
 
     backend_send_templated_email_template_orig = SESBackend.send_templated_email
 

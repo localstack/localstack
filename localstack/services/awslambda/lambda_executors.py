@@ -12,6 +12,7 @@ import time
 import traceback
 import re
 import uuid
+import re
 from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -1390,6 +1391,40 @@ class Util:
         temp = "%s%s" % (config.WINDOWS_DOCKER_MOUNT_PREFIX, temp)
         return temp
         
+    @classmethod
+    def get_amzn_docker_img(cls, runtime: str):
+        # the amazon-provided docker image repo is structured differently from lambdaci, so we need a separate function to determine the image name
+        repositories = {
+            "dotnetcore": "aws-lambda-dotnet",
+            "nodejs": "aws-lambda-nodejs",
+            "python": "aws-lambda-python",
+            "ruby": "aws-lambda-ruby",
+            "java": "aws-lambda-java",
+            "go": "aws-lambda-go",
+            "provided": "aws-lambda-provided"
+        }
+        if runtime.startswith("provided"):
+            split_version = runtime.split(".")
+            if len(split_version) == 2:
+                version = split_version[1]
+            else:
+                version = "alami"
+            return [f'amazon/{repositories["provided"]}', version]
+        digit_match = re.search(r"\d", runtime)
+        if not digit_match:
+            raise Exception(f"No version number found for runtime {runtime}")
+        digit_index = digit_match.start()
+        base_runtime = runtime[:digit_index]
+        runtime_version = runtime[digit_index:]
+        if base_runtime not in repositories.keys():
+            raise Exception(f"base runtime {base_runtime} from {runtime} not recognized!")
+        image_name = f"amazon/{repositories[base_runtime]}"
+        if base_runtime in ["nodejs", "go"]:
+            print(base_runtime, runtime_version)
+            [major, _minor] = runtime_version.split(".")
+            return [image_name, major]
+        return [image_name, runtime_version]
+
     @classmethod
     def get_amzn_docker_img(cls, runtime: str):
         # the amazon-provided docker image repo is structured differently from lambdaci, so we need a separate function to determine the image name

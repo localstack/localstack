@@ -580,12 +580,19 @@ class EventsTest(unittest.TestCase):
         proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
         wait_for_port_open(local_port)
 
+        events_client = aws_stack.connect_to_service("events")
+        connection_arn = events_client.create_connection(
+            Name="TestConnection",
+            AuthorizationType="BASIC",
+            AuthParameters={"BasicAuthParameters": {"Username": "user", "Password": "pw"}},
+        )["ConnectionArn"]
+
         # create api destination
         dest_name = "d-%s" % short_uid()
         url = "http://localhost:%s" % local_port
         result = self.events_client.create_api_destination(
             Name=dest_name,
-            ConnectionArn="c1",
+            ConnectionArn=connection_arn,
             InvocationEndpoint=url,
             HttpMethod="POST",
         )

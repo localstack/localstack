@@ -22,7 +22,7 @@ class SecretsManagerSecret(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute, **kwargs):
         props = self.props
-        result = props.get("Arn") or aws_stack.secretsmanager_secret_arn(props["Name"])
+        result = props.get("ARN") or aws_stack.secretsmanager_secret_arn(props["Name"])
         return result
 
     def get_cfn_attribute(self, attribute_name):
