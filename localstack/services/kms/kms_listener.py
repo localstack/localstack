@@ -271,6 +271,18 @@ def _get_key_pairs():
     return key_pairs
 
 
+def set_key_managed(key_id) -> None:
+    """
+    Sets a KMS key to AWS managed
+    :param key_id: ID of the KMS key
+    """
+    region_name = aws_stack.get_region()
+    backend = kms_backends.get(region_name)
+    key_data = backend.keys.get(key_id)
+    if key_data:
+        key_data.key_manager = "AWS"
+
+
 class ProxyListenerKMS(ProxyListener):
     def forward_request(self, method, path, data, headers):
         action = headers.get("X-Amz-Target") or ""
