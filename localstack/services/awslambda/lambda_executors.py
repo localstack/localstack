@@ -10,9 +10,7 @@ import sys
 import threading
 import time
 import traceback
-import re
 import uuid
-import re
 from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -1390,7 +1388,7 @@ class Util:
             temp = "/" + temp
         temp = "%s%s" % (config.WINDOWS_DOCKER_MOUNT_PREFIX, temp)
         return temp
-        
+
     @classmethod
     def get_amzn_docker_img(cls, runtime: str):
         # the amazon-provided docker image repo is structured differently from lambdaci, so we need a separate function to determine the image name
@@ -1401,7 +1399,7 @@ class Util:
             "ruby": "aws-lambda-ruby",
             "java": "aws-lambda-java",
             "go": "aws-lambda-go",
-            "provided": "aws-lambda-provided"
+            "provided": "aws-lambda-provided",
         }
         if runtime.startswith("provided"):
             split_version = runtime.split(".")
@@ -1435,7 +1433,7 @@ class Util:
             "ruby": "aws-lambda-ruby",
             "java": "aws-lambda-java",
             "go": "aws-lambda-go",
-            "provided": "aws-lambda-provided"
+            "provided": "aws-lambda-provided",
         }
         if runtime.startswith("provided"):
             split_version = runtime.split(".")
