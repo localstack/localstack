@@ -3,10 +3,10 @@ import os
 import re
 from collections import defaultdict
 
+from plugin.setuptools import load_entry_points
 from setuptools import find_packages, setup
 
 import localstack
-from localstack.plugin.setuptools import load_entry_points
 
 
 def parse_requirements(lines):
