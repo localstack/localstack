@@ -23,6 +23,9 @@ RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ss
 RUN pip install awscli awscli-local requests --upgrade
 RUN apk add iputils
 
+# upgrade python build tools
+RUN pip install --upgrade pip wheel setuptools localstack-plugin-loader
+
 # add configuration and source files
 ADD Makefile setup.py requirements.txt ./
 ADD localstack/ localstack/

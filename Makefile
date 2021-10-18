@@ -21,6 +21,7 @@ usage:                 ## Show this help
 
 venv:                  ## Create a new (empty) virtual environment
 	(test -e $(VENV_DIR) || ((test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && virtualenv $(VENV_OPTS) $(VENV_DIR)))
+	$(VENV_RUN); $(PIP_CMD) install localstack-plugin-loader
 
 freeze:                   ## Run pip freeze -l in the virtual environment
 	@$(VENV_RUN); pip freeze -l
