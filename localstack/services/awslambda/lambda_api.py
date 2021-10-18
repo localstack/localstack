@@ -1301,6 +1301,31 @@ def not_found_error(ref=None, msg=None):
     return error_response(msg, 404, error_type="ResourceNotFoundException")
 
 
+def delete_lambda_function(function_name: str) -> Dict[None, None]:
+    arn = func_arn(function_name)
+    region = LambdaRegion.get()
+    # Stop/remove any containers that this arn uses.
+    LAMBDA_EXECUTOR.cleanup(arn)
+
+    try:
+        region.lambdas.pop(arn)
+    except KeyError:
+        return not_found_error(func_arn(function_name))
+
+    event_publisher.fire_event(
+        event_publisher.EVENT_LAMBDA_DELETE_FUNC,
+        payload={"n": event_publisher.get_hash(function_name)},
+    )
+    i = 0
+    while i < len(region.event_source_mappings):
+        mapping = region.event_source_mappings[i]
+        if mapping["FunctionArn"] == arn:
+            del region.event_source_mappings[i]
+            i -= 1
+        i += 1
+    return {}
+
+
 # ------------
 # API METHODS
 # ------------
@@ -1433,29 +1458,8 @@ def delete_function(function):
         - name: 'request'
           in: body
     """
-    region = LambdaRegion.get()
-    arn = func_arn(function)
 
-    # Stop/remove any containers that this arn uses.
-    LAMBDA_EXECUTOR.cleanup(arn)
-
-    try:
-        region.lambdas.pop(arn)
-    except KeyError:
-        return not_found_error(func_arn(function))
-
-    event_publisher.fire_event(
-        event_publisher.EVENT_LAMBDA_DELETE_FUNC,
-        payload={"n": event_publisher.get_hash(function)},
-    )
-    i = 0
-    while i < len(region.event_source_mappings):
-        mapping = region.event_source_mappings[i]
-        if mapping["FunctionArn"] == arn:
-            del region.event_source_mappings[i]
-            i -= 1
-        i += 1
-    result = {}
+    result = delete_lambda_function(function)
     return jsonify(result)
 
 
