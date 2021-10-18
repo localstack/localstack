@@ -1,11 +1,9 @@
 import logging
 import os
-import re
 import signal
 import subprocess
 import sys
 import threading
-import time
 import traceback
 from typing import Dict, List, Union
 
@@ -13,22 +11,13 @@ import boto3
 from moto import core as moto_core
 
 from localstack import config, constants
-from localstack.constants import (
-    DEFAULT_SERVICE_PORTS,
-    ENV_DEV,
-    LOCALSTACK_INFRA_PROCESS,
-    LOCALSTACK_VENV_FOLDER,
-)
+from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
 from localstack.services import generic_proxy, install
 from localstack.services.generic_proxy import start_proxy_server
-from localstack.services.plugins import (
-    SERVICE_PLUGINS,
-    check_infra,
-    record_service_health,
-    wait_for_infra_shutdown,
-)
+from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import analytics, common, config_listener, persistence
 from localstack.utils.analytics import event_publisher
+from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import (
     canonicalize_api_names,
     get_main_container_id,
@@ -45,9 +34,11 @@ from localstack.utils.common import (
     in_docker,
     is_linux,
     is_port_open,
+    poll_condition,
     run,
     start_thread,
 )
+from localstack.utils.run import FuncThread
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
 
@@ -72,88 +63,8 @@ INFRA_READY = threading.Event()
 # event flag indicating that the infrastructure has been shut down
 SHUTDOWN_INFRA = threading.Event()
 
-
 # Start config update backdoor
 config_listener.start_listener()
-
-# -----------------
-# API ENTRY POINTS
-# -----------------
-
-
-def start_sns(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_SNS
-    return start_moto_server(
-        "sns",
-        port,
-        name="SNS",
-        asynchronous=asynchronous,
-        update_listener=update_listener,
-    )
-
-
-def start_sts(port=None, asynchronous=False):
-    port = port or config.PORT_STS
-    return start_moto_server("sts", port, name="STS", asynchronous=asynchronous)
-
-
-def start_firehose(port=None, asynchronous=False):
-    from localstack.services.firehose import firehose_api
-
-    port = port or config.PORT_FIREHOSE
-    return start_local_api(
-        "Firehose",
-        port,
-        api="firehose",
-        method=firehose_api.serve,
-        asynchronous=asynchronous,
-    )
-
-
-def start_dynamodbstreams(port=None, asynchronous=False):
-    from localstack.services.dynamodbstreams import dynamodbstreams_api
-
-    port = port or config.PORT_DYNAMODBSTREAMS
-    return start_local_api(
-        "DynamoDB Streams",
-        port,
-        api="dynamodbstreams",
-        method=dynamodbstreams_api.serve,
-        asynchronous=asynchronous,
-    )
-
-
-def start_lambda(port=None, asynchronous=False):
-    from localstack.services.awslambda import lambda_api
-
-    port = port or config.PORT_LAMBDA
-    return start_local_api(
-        "Lambda", port, api="lambda", method=lambda_api.serve, asynchronous=asynchronous
-    )
-
-
-def start_cloudformation(port=None, asynchronous=False):
-    from localstack.services.cloudformation import cloudformation_api
-
-    port = port or config.PORT_CLOUDFORMATION
-    return start_local_api(
-        "CloudFormation",
-        port,
-        api="cloudformation",
-        method=cloudformation_api.serve,
-        asynchronous=asynchronous,
-    )
-
-
-def start_ssm(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_SSM
-    return start_moto_server(
-        "ssm",
-        port,
-        name="SSM",
-        asynchronous=asynchronous,
-        update_listener=update_listener,
-    )
 
 
 # ---------------
@@ -206,48 +117,6 @@ def patch_instance_tracker_meta():
     moto_core.models.BaseModel.__new__ = new_basemodel
 
 
-def set_service_status(data):
-    command = data.get("command")
-    service = data.get("service")
-    service_ports = config.parse_service_ports()
-    if command == "start":
-        existing = service_ports.get(service)
-        port = DEFAULT_SERVICE_PORTS.get(service)
-        if existing:
-            status = get_service_status(service, port)
-            if status == "running":
-                return
-        key_upper = service.upper().replace("-", "_")
-        port_variable = "PORT_%s" % key_upper
-        service_list = os.environ.get("SERVICES", "").strip()
-        services = [e for e in re.split(r"[\s,]+", service_list) if e]
-        contained = [s for s in services if s.startswith(service)]
-        if not contained:
-            services.append(service)
-        config_listener.update_config_variable(port_variable, port)
-        new_service_list = ",".join(services)
-        os.environ["SERVICES"] = new_service_list
-        # TODO: expensive operation - check if we need to do this here for each service, should be optimized!
-        config.populate_configs()
-        LOG.info("Starting service %s on port %s" % (service, port))
-        SERVICE_PLUGINS[service].start(asynchronous=True)
-    return {}
-
-
-def get_services_status():
-    result = {}
-    for service, port in config.parse_service_ports().items():
-        status = get_service_status(service, port)
-        result[service] = {"port": port, "status": status}
-    return result
-
-
-def get_service_status(service, port=None):
-    port = port or config.parse_service_ports().get(service)
-    status = "disabled" if (port or 0) <= 0 else "running" if is_port_open(port) else "stopped"
-    return status
-
-
 def get_multiserver_or_free_service_port():
     if config.FORWARD_EDGE_INMEM:
         return multiserver.get_moto_server_port()
@@ -277,17 +146,33 @@ def do_run(
     print_output: bool = None,
     env_vars: Dict[str, str] = {},
     auto_restart=False,
+    strip_color: bool = False,
 ):
     sys.stdout.flush()
     if asynchronous:
         if config.DEBUG and print_output is None:
             print_output = True
         outfile = subprocess.PIPE if print_output else None
-        t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars, auto_restart=auto_restart)
+        t = ShellCommandThread(
+            cmd,
+            outfile=outfile,
+            env_vars=env_vars,
+            auto_restart=auto_restart,
+            strip_color=strip_color,
+        )
         t.start()
         TMP_THREADS.append(t)
         return t
     return run(cmd, env_vars=env_vars)
+
+
+class MotoServerProperties:
+    moto_thread: FuncThread
+    service_port: int
+
+    def __init__(self, moto_thread: FuncThread, service_port: int):
+        self.moto_thread = moto_thread
+        self.service_port = service_port
 
 
 def start_proxy_for_service(
@@ -341,7 +226,8 @@ def start_moto_server(
     if backend_port or config.FORWARD_EDGE_INMEM:
         start_proxy_for_service(key, port, backend_port, update_listener)
     if config.BUNDLE_API_PROCESSES:
-        return multiserver.start_api_server(key, backend_port or port)
+        server_port = backend_port or port
+        return MotoServerProperties(multiserver.start_api_server(key, server_port), server_port)
     return start_moto_server_separate(
         key, port, name=name, backend_port=backend_port, asynchronous=asynchronous
     )
@@ -351,13 +237,14 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
     moto_server_cmd = "%s/bin/moto_server" % LOCALSTACK_VENV_FOLDER
     if not os.path.exists(moto_server_cmd):
         moto_server_cmd = run("which moto_server").strip()
+    server_port = backend_port or port
     cmd = "VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s" % (
         moto_server_cmd,
         key,
-        backend_port or port,
+        server_port,
         constants.BIND_HOST,
     )
-    return do_run(cmd, asynchronous)
+    return MotoServerProperties(do_run(cmd, asynchronous), server_port)
 
 
 def start_local_api(name, port, api, method, asynchronous=False):
@@ -373,8 +260,6 @@ def start_local_api(name, port, api, method, asynchronous=False):
 
 
 def stop_infra():
-    from localstack.services.awslambda import lambda_api
-
     if common.INFRA_STOPPED:
         return
     common.INFRA_STOPPED = True
@@ -384,12 +269,12 @@ def stop_infra():
 
     try:
         generic_proxy.QUIET = True
+        LOG.debug("[shutdown] Cleaning up services ...")
+        SERVICE_PLUGINS.stop_all_services()
         LOG.debug("[shutdown] Cleaning up files ...")
         common.cleanup(files=True, quiet=True)
         LOG.debug("[shutdown] Cleaning up resources ...")
         common.cleanup_resources()
-        LOG.debug("[shutdown] Cleaning up Lambda resources ...")
-        lambda_api.cleanup()
 
         if config.FORCE_SHUTDOWN:
             LOG.debug("[shutdown] Force shutdown, not waiting for infrastructure to shut down")
@@ -403,7 +288,7 @@ def stop_infra():
 
 
 def log_startup_message(service):
-    print("Starting mock %s service on %s ..." % (service, edge_ports_info()))
+    LOG.info("Starting mock %s service on %s ...", service, edge_ports_info())
 
 
 def check_aws_credentials():
@@ -502,9 +387,6 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
-    # import to avoid cyclic dependency
-    from localstack.services.edge import BOOTSTRAP_LOCK
-
     event_publisher.fire_event(
         event_publisher.EVENT_START_INFRA,
         {"d": is_in_docker and 1 or 0, "c": in_ci() and 1 or 0},
@@ -537,6 +419,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
             register_signal_handlers()
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
+        patch_moto_request_handling()
 
     @log_duration()
     def prepare_installation():
@@ -544,39 +427,56 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         install.install_components(apis)
 
     @log_duration()
-    def start_api_services():
+    def preload_services():
+        """
+        Preload services if EAGER_SERVICE_LOADING is true.
+        """
+        if not config.EAGER_SERVICE_LOADING:
+            # TODO: lazy loading should become the default beginning 0.13.0
+            return
 
-        # Some services take a bit to come up
-        sleep_time = 5
-        # start services
-        thread = None
+        apis = list()
+        for api in SERVICE_PLUGINS.list_available():
+            try:
+                SERVICE_PLUGINS.require(api)
+                apis.append(api)
+            except ServiceDisabled as e:
+                LOG.debug("%s", e)
+            except Exception:
+                LOG.exception("could not load service plugin %s", api)
 
-        # loop through plugins and start each service
-        for name, plugin in SERVICE_PLUGINS.items():
-            if plugin.is_enabled(api_names=apis):
-                record_service_health(name, "starting")
-                t1 = plugin.start(asynchronous=True)
-                thread = thread or t1
+        if persistence.is_persistence_enabled():
+            if not config.is_env_true(constants.ENV_PRO_ACTIVATED):
+                LOG.warning(
+                    "Persistence mechanism for community services (based on API calls record&replay) will be deprecated in 0.13.0"
+                )
 
-        time.sleep(sleep_time)
-        # ensure that all infra components are up and running
-        check_infra(apis=apis)
-        # restore persisted data
-        record_service_health(
-            "features:persistence", "initializing" if config.DATA_DIR else "disabled"
-        )
-        persistence.restore_persisted_data(apis=apis)
-        if config.DATA_DIR:
-            record_service_health("features:persistence", "initialized")
-        return thread
+            persistence.restore_persisted_data(apis)
+
+    @log_duration()
+    def start_runtime_components():
+        from localstack.services.edge import start_edge
+
+        # TODO: we want a composable LocalStack runtime (edge proxy, service manager, dns, ...)
+        t = start_thread(start_edge, quiet=True)
+
+        # TODO: properly encapsulate starting/stopping of edge server in a class
+        if not poll_condition(
+            lambda: is_port_open(config.get_edge_port_http()), timeout=5, interval=0.1
+        ):
+            raise TimeoutError(
+                f"gave up waiting for edge server on {config.EDGE_BIND_HOST}:{config.EDGE_PORT}"
+            )
+
+        return t
 
     prepare_environment()
     prepare_installation()
-    with BOOTSTRAP_LOCK:
-        thread = start_api_services()
+    thread = start_runtime_components()
+    preload_services()
 
-        if config.DATA_DIR:
-            persistence.save_startup_info()
+    if config.DATA_DIR:
+        persistence.save_startup_info()
 
     print(READY_MARKER_OUTPUT)
     sys.stdout.flush()

@@ -27,6 +27,7 @@ from localstack.services import plugins
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
 from localstack.services.infra import PROXY_LISTENERS
+from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils import persistence
@@ -72,6 +73,10 @@ API_UNKNOWN = "_unknown_"
 
 
 class ProxyListenerEdge(ProxyListener):
+    def __init__(self, service_manager=None) -> None:
+        super().__init__()
+        self.service_manager = service_manager or SERVICE_PLUGINS
+
     def forward_request(self, method, path, data, headers):
 
         if config.EDGE_FORWARD_URL:
@@ -162,8 +167,12 @@ class ProxyListenerEdge(ProxyListener):
             headers.set("Content-Encoding", IDENTITY_ENCODING)
             data = gzip.decompress(data)
 
+        is_internal_call = is_internal_call_context(headers)
+
+        self._require_service(api)
+
         lock_ctx = BOOTSTRAP_LOCK
-        if persistence.API_CALLS_RESTORED or is_internal_call_context(headers):
+        if is_internal_call or persistence.is_persistence_restored():
             lock_ctx = empty_context_manager()
 
         with lock_ctx:
@@ -205,6 +214,15 @@ class ProxyListenerEdge(ProxyListener):
             response._content = gzip.compress(to_bytes(response._content))
             response.headers["Content-Length"] = str(len(response._content))
             response.headers["Content-Encoding"] = "gzip"
+
+    def _require_service(self, api):
+        if not self.service_manager.exists(api):
+            raise HTTPErrorResponse("no provider exists for service %s" % api, code=500)
+
+        try:
+            self.service_manager.require(api)
+        except Exception as e:
+            raise HTTPErrorResponse("failed to get service for %s: %s" % (api, e), code=500)
 
 
 def do_forward_request(api, method, path, data, headers, port=None):
@@ -384,10 +402,6 @@ def serve_health_endpoint(method, path, data):
     if method == "GET":
         reload = "reload" in path
         return plugins.get_services_health(reload=reload)
-    if method == "PUT":
-        data = json.loads(to_str(data or "{}"))
-        plugins.set_services_health(data)
-        return {"status": "OK"}
     if method == "POST":
         data = json.loads(to_str(data or "{}"))
         # backdoor API to support restarting the instance

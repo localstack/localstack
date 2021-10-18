@@ -3,8 +3,7 @@ import logging
 import os
 
 import click
-
-from localstack.plugin import Plugin
+from plugin import Plugin, PluginManager
 
 LOG = logging.getLogger(__name__)
 
@@ -32,8 +31,6 @@ class LocalstackCliPlugin(Plugin):
 
 
 def load_cli_plugins(cli):
-    from localstack.plugin.manager import PluginManager
-
     if os.environ.get("DEBUG_PLUGINS", "0").lower() in ("true", "1"):
         # importing localstack.config is still quite expensive...
         logging.basicConfig(level=logging.DEBUG)

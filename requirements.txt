@@ -14,11 +14,12 @@ dataclasses; python_version < '3.7'
 #dnspython==1.16.0
 #docopt>=0.6.2
 docker==5.0.0
-localstack-ext>=0.12.16
 localstack-client>=1.24
+localstack-ext>=0.12.16
+localstack-plugin-loader>=0.1.0
 pyyaml>=5.1
 rich>=10.7.0
-requests>=2.20.0
+requests>=2.20.0,<2.26
 # TODO: "six" dependency still needed?
 six>=1.12.0
 stevedore>=3.4.0

@@ -6,6 +6,7 @@ import boto3
 import botocore.config
 import pytest
 
+from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.common import is_alpine, short_uid
@@ -307,6 +308,22 @@ def is_change_set_finished(cfn_client):
         return _inner
 
     return _is_change_set_finished
+
+
+@pytest.fixture
+def create_lambda_function(lambda_client: "LambdaClient"):
+    lambda_arns = list()
+
+    def _create_lambda_function(*args, **kwargs):
+        # TODO move create function logic here to use lambda_client fixture
+        resp = testutil.create_lambda_function(*args, **kwargs)
+        lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
+        return resp
+
+    yield _create_lambda_function
+
+    for arn in lambda_arns:
+        lambda_client.delete_function(FunctionName=arn)
 
 
 only_in_alpine = pytest.mark.skipif(

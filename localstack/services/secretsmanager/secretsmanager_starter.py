@@ -12,9 +12,12 @@ from moto.secretsmanager.responses import SecretsManagerResponse
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import wait_for_port_open
 
 # maps key names to ARNs
 SECRET_ARN_STORAGE = {}
+
+PORT_SECRETS_MANAGER_BACKEND = None
 
 
 def apply_patches():
@@ -116,7 +119,7 @@ def apply_patches():
 
 def start_secretsmanager(port=None, asynchronous=None, backend_port=None, update_listener=None):
     apply_patches()
-    return start_moto_server(
+    result = start_moto_server(
         key="secretsmanager",
         name="Secrets Manager",
         port=port,
@@ -124,6 +127,9 @@ def start_secretsmanager(port=None, asynchronous=None, backend_port=None, update
         asynchronous=asynchronous,
         update_listener=update_listener,
     )
+    global PORT_SECRETS_MANAGER_BACKEND
+    PORT_SECRETS_MANAGER_BACKEND = result.service_port
+    return result
 
 
 def check_secretsmanager(expect_shutdown=False, print_error=False):
@@ -131,7 +137,11 @@ def check_secretsmanager(expect_shutdown=False, print_error=False):
 
     # noinspection PyBroadException
     try:
-        out = aws_stack.connect_to_service(service_name="secretsmanager").list_secrets()
+        wait_for_port_open(PORT_SECRETS_MANAGER_BACKEND, http_path="/", expect_success=False)
+        endpoint_url = f"http://127.0.0.1:{PORT_SECRETS_MANAGER_BACKEND}"
+        out = aws_stack.connect_to_service(
+            service_name="secretsmanager", endpoint_url=endpoint_url
+        ).list_secrets()
     except Exception:
         if print_error:
             logger = logging.getLogger(__name__)

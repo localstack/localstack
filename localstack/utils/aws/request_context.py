@@ -141,7 +141,7 @@ def mock_request_for_region(region_name: str, service_name: str = "dummy") -> Re
     return result
 
 
-def patch_request_handling():
+def patch_moto_request_handling():
     # leave here to avoid import issues
     from moto.core import utils as moto_utils
 

@@ -8,7 +8,14 @@ from localstack.services import install
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
 from localstack.services.kinesis import kinesis_listener
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import chmod_r, get_free_tcp_port, mkdir, replace_in_file, start_thread
+from localstack.utils.common import (
+    chmod_r,
+    get_free_tcp_port,
+    mkdir,
+    replace_in_file,
+    start_thread,
+    wait_for_port_open,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +24,8 @@ kinesis_stopped = threading.Event()
 
 # todo: will be replaced with plugin mechanism
 PROCESS_THREAD = None
+
+PORT_KINESIS_BACKEND = None
 
 
 def apply_patches_kinesalite():
@@ -30,6 +39,7 @@ def apply_patches_kinesalite():
 
 
 def start_kinesis(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_KINESIS
     if config.KINESIS_PROVIDER == "kinesis-mock":
         return start_kinesis_mock(
             port=port, asynchronous=asynchronous, update_listener=update_listener
@@ -56,7 +66,7 @@ def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronou
             def _return_listener(*_):
                 try:
                     ret_code = PROCESS_THREAD.result_future.result()
-                    if ret_code != 0:
+                    if ret_code not in [0, None]:
                         LOGGER.error("kinesis terminated with return code %s", ret_code)
                 finally:
                     kinesis_stopped.set()
@@ -71,8 +81,9 @@ def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronou
 def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     kinesis_mock_bin = install.install_kinesis_mock()
 
-    port = port or config.PORT_KINESIS
     backend_port = get_free_tcp_port()
+    global PORT_KINESIS_BACKEND
+    PORT_KINESIS_BACKEND = backend_port
     kinesis_data_dir_param = ""
     if config.DATA_DIR:
         kinesis_data_dir = "%s/kinesis" % config.DATA_DIR
@@ -134,8 +145,9 @@ def start_kinesalite(port=None, asynchronous=False, update_listener=None):
     install.install_kinesalite()
     apply_patches_kinesalite()
     # start up process
-    port = port or config.PORT_KINESIS
     backend_port = get_free_tcp_port()
+    global PORT_KINESIS_BACKEND
+    PORT_KINESIS_BACKEND = backend_port
     latency = config.KINESIS_LATENCY
     kinesis_data_dir_param = ""
     if config.DATA_DIR:
@@ -171,10 +183,14 @@ def check_kinesis(expect_shutdown=False, print_error=False):
     out = None
     try:
         # check Kinesis
-        out = aws_stack.connect_to_service(service_name="kinesis").list_streams()
-    except Exception as e:
+        wait_for_port_open(PORT_KINESIS_BACKEND, http_path="/", expect_success=False, sleep_time=1)
+        endpoint_url = f"http://127.0.0.1:{PORT_KINESIS_BACKEND}"
+        out = aws_stack.connect_to_service(
+            service_name="kinesis", endpoint_url=endpoint_url
+        ).list_streams()
+    except Exception:
         if print_error:
-            LOGGER.exception("Kinesis health check failed: %s", e)
+            LOGGER.exception("Kinesis health check failed")
 
     if expect_shutdown:
         assert out is None or kinesis_stopped.is_set()

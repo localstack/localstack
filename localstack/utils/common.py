@@ -127,6 +127,7 @@ class ShellCommandThread(FuncThread):
         inherit_env: bool = True,
         log_listener: Callable = None,
         stop_listener: Callable = None,
+        strip_color: bool = False,
     ):
         params = not_none_or(params, {})
         env_vars = not_none_or(env_vars, {})
@@ -141,6 +142,7 @@ class ShellCommandThread(FuncThread):
         self.auto_restart = auto_restart
         self.log_listener = log_listener
         self.stop_listener = stop_listener
+        self.strip_color = strip_color
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
@@ -161,6 +163,9 @@ class ShellCommandThread(FuncThread):
     def do_run_cmd(self):
         def convert_line(line):
             line = to_str(line or "")
+            if self.strip_color:
+                # strip color codes
+                line = re.sub(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))", "", line)
             return "%s\r\n" % line.strip()
 
         def filter_line(line):
@@ -442,7 +447,7 @@ class ArbitraryAccessObj:
 # ----------------
 
 
-def start_thread(method, *args, **kwargs):
+def start_thread(method, *args, **kwargs) -> FuncThread:
     """Start the given method in a background thread, and add the thread to the TMP_THREADS shutdown hook"""
     _shutdown_hook = kwargs.pop("_shutdown_hook", True)
     thread = FuncThread(method, *args, **kwargs)

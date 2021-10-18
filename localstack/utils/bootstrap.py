@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import pkgutil
@@ -9,10 +10,12 @@ import time
 import warnings
 from datetime import datetime
 from functools import wraps
+from typing import Iterable, List, Set
 
 import six
 
 from localstack import config, constants
+from localstack.config import parse_service_ports
 from localstack.constants import LS_LOG_TRACE_INTERNAL, TRACE_LOG_LEVELS
 from localstack.utils.docker_utils import DOCKER_CLIENT, ContainerException, PortMappings
 
@@ -75,22 +78,22 @@ MAIN_CONTAINER_NAME_CACHED = None
 ENV_SCRIPT_STARTING_DOCKER = "LS_SCRIPT_STARTING_DOCKER"
 
 
-def log_duration(name=None):
+def log_duration(name=None, min_ms=500):
     """Function decorator to log the duration of function invocations."""
 
     def wrapper(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            from localstack.utils.common import now_utc
+            from time import perf_counter
 
-            start_time = now_utc(millis=True)
+            start_time = perf_counter()
             try:
                 return f(*args, **kwargs)
             finally:
-                end_time = now_utc(millis=True)
+                end_time = perf_counter()
                 func_name = name or f.__name__
-                duration = end_time - start_time
-                if duration > 500:
+                duration = (end_time - start_time) * 1000
+                if duration > min_ms:
                     LOG.info('Execution of "%s" took %.2fms', func_name, duration)
 
         return wrapped
@@ -314,39 +317,65 @@ def setup_logging(log_level=None):
 # --------------
 
 
-def canonicalize_api_names(apis=None):
-    """Finalize the list of API names by
+def resolve_apis(services: Iterable[str]) -> Set[str]:
+    """
+    Resolves recursively for the given collection of services (e.g., ["serverless", "cognito"]) the list of actual
+    API services that need to be included (e.g., {'dynamodb', 'cloudformation', 'logs', 'kinesis', 'sts',
+    'cognito-identity', 's3', 'dynamodbstreams', 'apigateway', 'cloudwatch', 'lambda', 'cognito-idp', 'iam'}).
+
+    More specifically, it does this by:
     (1) resolving and adding dependencies (e.g., "dynamodbstreams" requires "kinesis"),
     (2) resolving and adding composites (e.g., "serverless" describes an ensemble
             including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
-    (3) removing duplicates from the list."""
+    (3) removing duplicates from the list.
 
-    # TODO: cache the result, as the code below is a relatively expensive operation!
+    :param services: a collection of services that can include composites (e.g., "serverless").
+    :returns a set of canonical service names
+    """
+    stack = list()
+    result = set()
 
-    apis = apis or list(config.SERVICE_PORTS.keys())
+    # perform a graph search
+    stack.extend(services)
+    while stack:
+        service = stack.pop()
 
-    def contains(apis, api):
-        for a in apis:
-            if a == api:
-                return True
+        if service in result:
+            continue
 
-    # TODO: enable recursive lookup - e.g., having service "amplify" depend (via API_DEPENDENCIES)
-    #  on composite "serverless", which should add services "s3", "apigateway", etc...
+        # resolve composites (like "serverless"), but do not add it to the list of results
+        if service in API_COMPOSITES:
+            stack.extend(API_COMPOSITES[service])
+            continue
 
-    # resolve composites
-    for comp, deps in API_COMPOSITES.items():
-        if contains(apis, comp):
-            apis.extend(deps)
-            config.SERVICE_PORTS.pop(comp)
+        result.add(service)
 
-    # resolve dependencies
-    for i, api in enumerate(apis):
-        for dep in API_DEPENDENCIES.get(api, []):
-            if not contains(apis, dep):
-                apis.append(dep)
+        # add dependencies to stack
+        if service in API_DEPENDENCIES:
+            stack.extend(API_DEPENDENCIES[service])
 
-    # remove duplicates and composite names
-    apis = list(set([a for a in apis if a not in API_COMPOSITES.keys()]))
+    return result
+
+
+@functools.lru_cache()
+def get_enabled_apis() -> Set[str]:
+    """
+    Returns the list of APIs that are enabled through the SERVICES variable. If the SERVICES variable is empty,
+    then it will return all available services. Meta-services like "serverless" or "cognito", and dependencies are
+    resolved.
+
+    The result is cached, so it's safe to call. Clear the cache with get_enabled_apis.cache_clear().
+    """
+    return resolve_apis(parse_service_ports().keys())
+
+
+def canonicalize_api_names(apis: Iterable[str] = None) -> List[str]:
+    """
+    Finalize the list of API names and SERVICE_PORT configurations by first resolving the real services from the
+    enabled services, and then populating the configuration appropriately.
+
+    """
+    apis = resolve_apis(apis or config.SERVICE_PORTS.keys())
 
     # make sure we have port mappings for each API
     for api in apis:
@@ -354,14 +383,20 @@ def canonicalize_api_names(apis=None):
             config.SERVICE_PORTS[api] = config.DEFAULT_SERVICE_PORTS.get(api)
     config.populate_configs(config.SERVICE_PORTS)
 
-    return apis
+    return list(apis)
 
 
-def is_api_enabled(api):
-    apis = canonicalize_api_names()
-    for a in apis:
-        if a == api or a.startswith("%s:" % api):
+def is_api_enabled(api: str) -> bool:
+    apis = get_enabled_apis()
+
+    if api in apis:
+        return True
+
+    for enabled_api in apis:
+        if api.startswith("%s:" % enabled_api):
             return True
+
+    return False
 
 
 def start_infra_locally():

@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import time
 from os.path import expanduser
+from typing import Dict, List, Mapping
 
 import six
 from boto3 import Session
@@ -218,7 +219,10 @@ EXTRA_CORS_ALLOWED_ORIGINS = os.environ.get("EXTRA_CORS_ALLOWED_ORIGINS", "").st
 DISABLE_EVENTS = is_env_true("DISABLE_EVENTS")
 DEBUG_ANALYTICS = is_env_true("DEBUG_ANALYTICS")
 
-# whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
+# whether to eagerly start services
+EAGER_SERVICE_LOADING = is_env_not_false("EAGER_SERVICE_LOADING")
+
+# Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
 # Adding Stepfunctions default port
@@ -476,7 +480,7 @@ for partition in VALID_PARTITIONS:
         VALID_REGIONS.add(region)
 
 
-def parse_service_ports():
+def parse_service_ports() -> Dict[str, int]:
     """Parses the environment variable $SERVICES with a comma-separated list of services
     and (optional) ports they should run on: 'service1:port1,service2,service3:port3'"""
     service_ports = os.environ.get("SERVICES", "").strip()
@@ -597,6 +601,47 @@ def load_config_file(config_file=None):
         return {}
     return configs
 
+
+class ServiceProviderConfig(Mapping[str, str]):
+    _provider_config: Dict[str, str]
+    default_value: str
+
+    def __init__(self, default_value: str):
+        self._provider_config = dict()
+        self.default_value = default_value
+
+    def get_provider(self, service: str) -> str:
+        return self._provider_config.get(service, self.default_value)
+
+    def set_provider_if_not_exists(self, service: str, provider: str) -> None:
+        if service not in self._provider_config:
+            self._provider_config[service] = provider
+
+    def set_provider(self, service: str, provider: str):
+        self._provider_config[service] = provider
+
+    def bulk_set_provider_if_not_exists(self, services: List[str], provider: str):
+        for service in services:
+            self.set_provider_if_not_exists(service, provider)
+
+    def __getitem__(self, item):
+        return self.get_provider(item)
+
+    def __setitem__(self, key, value):
+        self.set_provider(key, value)
+
+    def __len__(self):
+        return len(self._provider_config)
+
+    def __iter__(self):
+        return self._provider_config.__iter__()
+
+
+SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
+
+for key, value in os.environ.items():
+    if key.startswith("PROVIDER_OVERRIDE_"):
+        SERVICE_PROVIDER_CONFIG.set_provider(key.lstrip("PROVIDER_OVERRIDE_").lower(), value)
 
 if LS_LOG in TRACE_LOG_LEVELS:
     load_end_time = time.time()
