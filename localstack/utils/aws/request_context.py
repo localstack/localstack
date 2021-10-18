@@ -35,12 +35,17 @@ def get_proxy_request_for_thread():
 
 def get_flask_request_for_thread():
     try:
-        return Request(
-            url=request.path,
-            data=request.data,
-            headers=CaseInsensitiveDict(request.headers),
-            method=request.method,
-        )
+        # Append/cache a converted request (requests.Request) to the the thread-local Flask request.
+        #  We use this request object as the invocation context, which may be modified in other places,
+        #  e.g., when manually configuring the region in the request context of an incoming API call.
+        if not hasattr(request, "_converted_request"):
+            request._converted_request = Request(
+                url=request.path,
+                data=request.data,
+                headers=CaseInsensitiveDict(request.headers),
+                method=request.method,
+            )
+        return request._converted_request
     except Exception as e:
         # swallow error: "Working outside of request context."
         if "Working outside" in str(e):

@@ -31,6 +31,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     TMP_FILES,
     chmod_r,
+    ensure_list,
     get_free_tcp_port,
     is_alpine,
     is_port_open,
@@ -446,7 +447,7 @@ def all_s3_object_keys(bucket):
 def map_all_s3_objects(to_json=True, buckets=None):
     s3_client = aws_stack.connect_to_resource("s3")
     result = {}
-    buckets = buckets if not buckets or isinstance(buckets, list) else [buckets]
+    buckets = ensure_list(buckets)
     buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
     for bucket in buckets:
         for key in bucket.objects.all():
