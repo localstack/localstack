@@ -749,9 +749,9 @@ class TestLambdaAPI(unittest.TestCase):
     def test_get_container_name(self):
         executor = lambda_executors.EXECUTOR_CONTAINERS_REUSE
         name = executor.get_container_name(aws_stack.lambda_function_arn("my_function_name"))
-        self.assertEqual(
+        self.assertIn(
+            f"_lambda_arn_aws_lambda_{aws_stack.get_region()}_{TEST_AWS_ACCOUNT_ID}_function_my_function_name",
             name,
-            f"localstack_lambda_arn_aws_lambda_{aws_stack.get_region()}_{TEST_AWS_ACCOUNT_ID}_function_my_function_name",
         )
 
     def test_concurrency(self):
