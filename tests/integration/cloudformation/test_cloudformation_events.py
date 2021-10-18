@@ -85,3 +85,54 @@ def test_eventbus_policies(
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])
+
+
+def test_eventbus_policy_statement(
+    cfn_client,
+    events_client,
+    cleanup_stacks,
+    cleanup_changesets,
+    is_change_set_created_and_available,
+    is_stack_created,
+):
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+    event_bus_name = f"event-bus-{short_uid()}"
+    statement_id = f"statement-{short_uid()}"
+    template_rendered = jinja2.Template(
+        load_template_raw("eventbridge_policy_statement.yaml")
+    ).render(event_bus_name=event_bus_name, statement_id=statement_id)
+
+    response = cfn_client.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=template_rendered,
+        ChangeSetType="CREATE",
+    )
+
+    change_set_id = response["Id"]
+    stack_id = response["StackId"]
+
+    try:
+        wait_until(is_change_set_created_and_available(change_set_id))
+        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        wait_until(is_stack_created(stack_id))
+        assert (
+            cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["StackStatus"]
+            == "CREATE_COMPLETE"
+        )
+
+        describe_response = events_client.describe_event_bus(Name=event_bus_name)
+        policy = json.loads(describe_response["Policy"])
+        assert policy["Version"] == "2012-10-17"
+        assert len(policy["Statement"]) == 1
+        statement = policy["Statement"][0]
+        assert statement["Sid"] == statement_id
+        assert statement["Action"] == "events:PutEvents"
+        assert statement["Principal"] == "*"
+        assert statement["Effect"] == "Allow"
+        assert event_bus_name in statement["Resource"]
+
+    finally:
+        cleanup_changesets([change_set_id])
+        cleanup_stacks([stack_id])

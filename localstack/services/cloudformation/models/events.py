@@ -148,41 +148,46 @@ class EventBusPolicy(GenericBaseModel):
 
             resource["PhysicalResourceId"] = f"EventBusPolicy-{short_uid()}"
 
-            event_bus_name = props.get("EventBusName")
-            policy = props.get("Statement")  # either this field  is set or all other fields
-            statement_id = props.get("StatementId")
-            if policy is not None:
-                events.put_permission(EventBusName=event_bus_name, Policy=json.dumps(policy))
+            statement_id = props["StatementId"]  # required
+            event_bus_name = props.get("EventBusName")  # optional
+            statement = props.get(
+                "Statement"
+            )  # either this field  is set or all other fields (Action, Principal, etc.)
+
+            optional_event_bus_name = {"EventBusName": event_bus_name} if event_bus_name else {}
+
+            if statement is not None:
+                policy = {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": statement_id,
+                            **statement,
+                        }
+                    ],
+                }
+                events.put_permission(Policy=json.dumps(policy), **optional_event_bus_name)
             else:
                 condition = props.get("Condition")
-                if condition is not None:
-                    events.put_permission(
-                        EventBusName=event_bus_name,
-                        StatementId=statement_id,
-                        Action=props["Action"],
-                        Principal=props["Principal"],
-                        Condition=condition,
-                    )
-                else:
-                    # note: setting condition to None here is *NOT* equivalent to not specifying it and will throw
-                    events.put_permission(
-                        EventBusName=event_bus_name,
-                        StatementId=statement_id,
-                        Action=props["Action"],
-                        Principal=props["Principal"],
-                    )
+                optional_condition = {"Condition": condition} if condition else {}
+                events.put_permission(
+                    StatementId=statement_id,
+                    Action=props["Action"],
+                    Principal=props["Principal"],
+                    **optional_event_bus_name,
+                    **optional_condition,
+                )
 
         def _delete(resource_id, resources, resource_type, func, stack_name):
             events = aws_stack.connect_to_service("events")
             resource = resources[resource_id]
             props = resource["Properties"]
+            statement_id = props["StatementId"]
             event_bus_name = props.get("EventBusName")
-            statement_id = props.get("StatementId")
+            optional_event_bus_name = {"EventBusName": event_bus_name} if event_bus_name else {}
             try:
                 events.remove_permission(
-                    EventBusName=event_bus_name,
-                    StatementId=statement_id,
-                    RemoveAllPermissions=False,
+                    StatementId=statement_id, RemoveAllPermissions=False, **optional_event_bus_name
                 )
             except Exception as err:
                 if err.response["Error"]["Code"] == "ResourceNotFoundException":
