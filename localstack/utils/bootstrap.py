@@ -577,7 +577,8 @@ def start_infra_in_docker():
     if service_ports.get("edge") == 0:
         service_ports.pop("edge")
     for port in service_ports.values():
-        port_mappings.add(port)
+        if port:
+            port_mappings.add(port)
 
     env_vars = {}
     for env_var in config.CONFIG_ENV_VARS:
