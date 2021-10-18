@@ -7,12 +7,12 @@ from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Tuple
 
+from plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 from readerwriterlock import rwlock
 from requests.models import Request
 
 from localstack import config
 from localstack.config import ServiceProviderConfig
-from localstack.plugin import Plugin, PluginLifecycleListener, PluginManager, PluginSpec
 from localstack.utils.bootstrap import get_enabled_apis, is_api_enabled, log_duration
 from localstack.utils.common import poll_condition
 

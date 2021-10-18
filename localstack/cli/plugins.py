@@ -2,13 +2,12 @@ import os
 import time
 
 import click
+from plugin import PluginManager
+from plugin.entrypoint import find_plugins, spec_to_entry_point
 from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
-
-from localstack.plugin import PluginManager
-from localstack.plugin.entrypoint import find_plugins, spec_to_entry_point
 
 console = Console()
 
