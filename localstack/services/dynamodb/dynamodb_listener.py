@@ -54,7 +54,7 @@ WRITE_THROTTLED_ACTIONS = [
 ]
 THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 
-MANAGED_AWS_KEY = None
+MANAGED_KMS_KEYS = {}
 
 
 class DynamoDBRegion(RegionBackend):
@@ -787,9 +787,8 @@ class ProxyListenerDynamoDB(ProxyListener):
 
 
 def get_sse_kms_managed_key():
-    global MANAGED_AWS_KEY
-    if MANAGED_AWS_KEY:
-        return MANAGED_AWS_KEY
+    if MANAGED_KMS_KEYS.get(aws_stack.get_region()):
+        return MANAGED_KMS_KEYS[aws_stack.get_region()]
     kms_client = aws_stack.connect_to_service("kms")
     key_data = kms_client.create_key(Description="Default key that protects DynamoDB data")
     key_id = key_data["KeyMetadata"]["KeyId"]
@@ -797,7 +796,7 @@ def get_sse_kms_managed_key():
     from localstack.services.kms import kms_listener
 
     kms_listener.set_key_managed(key_id)
-    MANAGED_AWS_KEY = key_id
+    MANAGED_KMS_KEYS[aws_stack.get_region()] = key_id
     return key_id
 
 
