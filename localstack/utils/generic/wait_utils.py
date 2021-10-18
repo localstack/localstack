@@ -9,10 +9,11 @@ def wait_until(
     wait: float = 1.0,
     max_retries: int = 10,
     strategy: Literal["exponential", "static", "linear"] = "exponential",
-    _retries: int = 0,
+    _retries: int = 1,
     _max_wait: float = 240,
 ) -> None:
     """waits until a given condition is true, rechecking it periodically"""
+    assert _retries > 0
     if max_retries < _retries:
         return
     completed = fn()

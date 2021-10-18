@@ -22,7 +22,7 @@ import time
 import uuid
 import zipfile
 from contextlib import closing
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, tzinfo
 from multiprocessing.dummy import Pool
 from queue import Queue
 from typing import Any, Callable, Dict, List, Optional, Sized, Type, Union
@@ -750,7 +750,7 @@ def to_unique_items_list(inputs, comparator=None):
     return result
 
 
-def timestamp(time=None, format=TIMESTAMP_FORMAT):
+def timestamp(time=None, format: str = TIMESTAMP_FORMAT) -> str:
     if not time:
         time = datetime.utcnow()
     if isinstance(time, six.integer_types + (float,)):
@@ -758,13 +758,13 @@ def timestamp(time=None, format=TIMESTAMP_FORMAT):
     return time.strftime(format)
 
 
-def timestamp_millis(time=None):
+def timestamp_millis(time=None) -> str:
     microsecond_time = timestamp(time=time, format=TIMESTAMP_FORMAT_MICROS)
     # truncating microseconds to milliseconds, while leaving the "Z" indicator
     return microsecond_time[:-4] + microsecond_time[-1]
 
 
-def epoch_timestamp():
+def epoch_timestamp() -> float:
     return time.time()
 
 
@@ -888,11 +888,11 @@ def snake_to_camel_case(string, capitalize_first=True):
     return "".join(components)
 
 
-def base64_to_hex(b64_string):
+def base64_to_hex(b64_string: str) -> bytes:
     return binascii.hexlify(base64.b64decode(b64_string))
 
 
-def obj_to_xml(obj):
+def obj_to_xml(obj) -> str:
     """Return an XML representation of the given object (dict, list, or primitive).
     Does NOT add a common root element if the given obj is a list.
     Does NOT work for nested dict structures."""
@@ -903,18 +903,18 @@ def obj_to_xml(obj):
     return str(obj)
 
 
-def now(millis=False, tz=None):
+def now(millis: bool = False, tz: Optional[tzinfo] = None) -> int:
     return mktime(datetime.now(tz=tz), millis=millis)
 
 
-def now_utc(millis=False):
+def now_utc(millis: bool = False) -> int:
     return now(millis, timezone.utc)
 
 
-def mktime(ts, millis=False):
+def mktime(ts: datetime, millis: bool = False) -> int:
     if millis:
-        return ts.timestamp() * 1000
-    return ts.timestamp()
+        return int(ts.timestamp() * 1000)
+    return int(ts.timestamp())
 
 
 def mkdir(folder):

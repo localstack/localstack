@@ -2,7 +2,7 @@ import json
 
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
-    pre_create_default_name,
+    generate_default_name,
     select_parameters,
 )
 from localstack.services.cloudformation.service_models import (
@@ -88,6 +88,14 @@ class EventsRule(GenericBaseModel):
         result = aws_stack.connect_to_service("events").describe_rule(Name=rule_name) or {}
         return result if result.get("Name") else None
 
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("Name")
+        if not role_name:
+            resource["Properties"]["Name"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
     @classmethod
     def get_deploy_templates(cls):
         def events_put_rule_params(params, **kwargs):
@@ -101,10 +109,15 @@ class EventsRule(GenericBaseModel):
             ]
             result = select_parameters(*attrs)(params, **kwargs)
 
+            # TODO: remove this when refactoring events (prefix etc. was excluded here already to avoid most of the wrong behavior)
             def wrap_in_lists(o, **kwargs):
                 if isinstance(o, dict):
                     for k, v in o.items():
-                        if not isinstance(v, (dict, list)):
+                        if not isinstance(v, (dict, list)) and k not in [
+                            "prefix",
+                            "cidr",
+                            "exists",
+                        ]:
                             o[k] = [v]
                 return o
 
@@ -116,7 +129,6 @@ class EventsRule(GenericBaseModel):
 
         return {
             "create": [
-                {"function": pre_create_default_name("Name")},
                 {"function": "put_rule", "parameters": events_put_rule_params},
                 {
                     "function": "put_targets",

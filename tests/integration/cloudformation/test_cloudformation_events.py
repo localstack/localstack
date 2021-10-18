@@ -136,3 +136,82 @@ def test_eventbus_policy_statement(
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])
+
+
+def test_event_rule_to_logs(
+    cfn_client,
+    events_client,
+    logs_client,
+    cleanup_stacks,
+    cleanup_changesets,
+    is_change_set_created_and_available,
+    is_stack_created,
+):
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+    event_rule_name = f"event-rule-{short_uid()}"
+    log_group_name = f"log-group-{short_uid()}"
+    message_token = f"test-message-{short_uid()}"
+    event_bus_name = f"bus-{short_uid()}"
+    resource_policy_name = f"policy-{short_uid()}"
+
+    template_rendered = jinja2.Template(load_template_raw("events_loggroup.yaml")).render(
+        event_rule_name=event_rule_name,
+        log_group_name=log_group_name,
+        event_bus_name=event_bus_name,
+        resource_policy_name=resource_policy_name,
+    )
+
+    response = cfn_client.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=template_rendered,
+        ChangeSetType="CREATE",
+    )
+
+    change_set_id = response["Id"]
+    stack_id = response["StackId"]
+
+    try:
+        wait_until(is_change_set_created_and_available(change_set_id))
+        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        wait_until(is_stack_created(stack_id))
+        assert (
+            cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["StackStatus"]
+            == "CREATE_COMPLETE"
+        )
+
+        log_groups = logs_client.describe_log_groups(logGroupNamePrefix=log_group_name)["logGroups"]
+        log_group_names = [lg["logGroupName"] for lg in log_groups]
+        assert log_group_name in log_group_names
+
+        resp = events_client.put_events(
+            Entries=[
+                {
+                    "Source": "unittest",
+                    "Resources": [],
+                    "DetailType": "ls-detail-type",
+                    "Detail": json.dumps({"messagetoken": message_token}),
+                    "EventBusName": event_bus_name,
+                }
+            ]
+        )
+        assert len(resp["Entries"]) == 1
+        wait_until(
+            lambda: len(logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"])
+            > 0,
+            1.0,
+            5,
+            "linear",
+        )
+        log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+        assert len(log_streams) == 1
+
+        log_events = logs_client.get_log_events(
+            logGroupName=log_group_name, logStreamName=log_streams[0]["logStreamName"]
+        )
+        assert message_token in log_events["events"][0]["message"]
+
+    finally:
+        cleanup_changesets([change_set_id])
+        cleanup_stacks([stack_id])
