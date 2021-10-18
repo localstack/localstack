@@ -1134,7 +1134,7 @@ def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2, regio
 
 
 def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None, region_name=None):
-    statuses = statuses or ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
+    statuses = statuses or ["CREATE_COMPLETE", "UPDATE_COMPLETE", "DELETE_COMPLETE"]
     return await_stack_status(
         stack_name, statuses, retries=retries, sleep=sleep, region_name=region_name
     )
