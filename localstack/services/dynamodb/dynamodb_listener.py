@@ -54,6 +54,8 @@ WRITE_THROTTLED_ACTIONS = [
 ]
 THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 
+MANAGED_KMS_KEYS = {}
+
 
 class DynamoDBRegion(RegionBackend):
     # maps global table names to configurations
@@ -784,14 +786,33 @@ class ProxyListenerDynamoDB(ProxyListener):
             return default
 
 
+def get_sse_kms_managed_key():
+    if MANAGED_KMS_KEYS.get(aws_stack.get_region()):
+        return MANAGED_KMS_KEYS[aws_stack.get_region()]
+    kms_client = aws_stack.connect_to_service("kms")
+    key_data = kms_client.create_key(Description="Default key that protects DynamoDB data")
+    key_id = key_data["KeyMetadata"]["KeyId"]
+    # not really happy with this import here
+    from localstack.services.kms import kms_listener
+
+    kms_listener.set_key_managed(key_id)
+    MANAGED_KMS_KEYS[aws_stack.get_region()] = key_id
+    return key_id
+
+
 def get_sse_description(data):
-    return {
-        "Status": "ENABLED" if data["Enabled"] else "UPDATING",
-        "SSEType": data["SSEType"] if data["Enabled"] else None,
-        "KMSMasterKeyArn": aws_stack.kms_key_arn(data["KMSMasterKeyId"])
-        if data["Enabled"]
-        else None,
-    }
+    if data.get("Enabled"):
+        kms_master_key_id = data.get("KMSMasterKeyId")
+        if not kms_master_key_id:
+            # this is of course not the actual key for dynamodb, just a better, since existing, mock
+            kms_master_key_id = get_sse_kms_managed_key()
+        kms_master_key_id = aws_stack.kms_key_arn(kms_master_key_id)
+        return {
+            "Status": "ENABLED",
+            "SSEType": "KMS",  # no other value is allowed here
+            "KMSMasterKeyArn": kms_master_key_id,
+        }
+    return {}
 
 
 def handle_special_request(method, path, data, headers):
