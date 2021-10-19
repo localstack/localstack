@@ -4,6 +4,7 @@ IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_NAME_FULL ?= localstack/localstack-full
 IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
 DOCKER_SQUASH ?= --squash
+VENV_BIN ?= python3 -m venv
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
 TEST_PATH ?= .
@@ -11,17 +12,22 @@ PYTEST_LOGLEVEL ?= warning
 MAIN_CONTAINER_NAME ?= localstack_main
 
 ifeq ($(OS), Windows_NT)
-	VENV_RUN = . $(VENV_DIR)/Scripts/activate
+	VENV_ACTIVATE = $(VENV_DIR)/Scripts/activate
 else
-	VENV_RUN = . $(VENV_DIR)/bin/activate
+	VENV_ACTIVATE = $(VENV_DIR)/bin/activate
 endif
 
-usage:                 ## Show this help
+VENV_RUN = . $(VENV_ACTIVATE)
+
+usage:                    ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-20s %s\n", $$1, $$2 }'
 
-venv:                  ## Create a new (empty) virtual environment
-	(test -e $(VENV_DIR) || ((test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && virtualenv $(VENV_OPTS) $(VENV_DIR)))
-	$(VENV_RUN); $(PIP_CMD) install localstack-plugin-loader
+$(VENV_ACTIVATE): setup.py requirements.txt
+	test -d $(VENV_DIR) || $(VENV_BIN) $(VENV_DIR)
+	$(VENV_RUN); $(PIP_CMD) install --upgrade pip setuptools wheel localstack-plugin-loader
+	touch $(VENV_ACTIVATE)
+
+venv: $(VENV_ACTIVATE)    ## Create a new (empty) virtual environment
 
 freeze:                   ## Run pip freeze -l in the virtual environment
 	@$(VENV_RUN); pip freeze -l
@@ -57,7 +63,7 @@ publish: clean-dist dist  ## Publish the library to the central PyPi repository
 	$(VENV_RUN); twine upload dist/*
 
 coveralls:         ## Publish coveralls metrics
-	($(VENV_RUN); coveralls)
+	$(VENV_RUN); coveralls
 
 start:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
@@ -222,13 +228,6 @@ vagrant-stop:
 	vagrant halt
 
 # deprecated commands
-
-setup-venv: venv
-	@echo "this command is deprecated, use: make venv"
-
-install-venv: venv
-	@echo "this command is deprecated, use: make install-dev"
-	test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt)
 
 infra:             # legacy command used in the supervisord file to
 	($(VENV_RUN); exec bin/localstack start --host --no-banner)
