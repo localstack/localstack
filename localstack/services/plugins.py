@@ -420,6 +420,9 @@ class ServicePluginManager(ServiceManager):
         self._api_provider_specs = None
         self.provider_config = provider_config or config.SERVICE_PROVIDER_CONFIG
 
+    def get_active_provider(self, service: str) -> str:
+        return self.provider_config.get_provider(service)
+
     # TODO make the abstraction clearer, to provide better information if service is available versus discoverable
     # especially important when considering pro services
     def list_available(self) -> List[str]:
@@ -430,7 +433,7 @@ class ServicePluginManager(ServiceManager):
         return [
             service
             for service, providers in self.api_provider_specs.items()
-            if self.provider_config.get_provider(service) in providers
+            if self.get_active_provider(service) in providers
         ]
 
     def exists(self, name: str) -> bool:
@@ -446,7 +449,8 @@ class ServicePluginManager(ServiceManager):
             return None
 
         # if a PluginSpec exists, then we can get the container and check whether there was an error loading the plugin
-        if self.plugin_errors.has_errors(name):
+        provider = self.get_active_provider(name)
+        if self.plugin_errors.has_errors(name, provider):
             return ServiceState.ERROR
 
         return ServiceState.AVAILABLE
@@ -492,7 +496,7 @@ class ServicePluginManager(ServiceManager):
             # no providers for this api
             return None
 
-        preferred_provider = self.provider_config.get_provider(name)
+        preferred_provider = self.get_active_provider(name)
         if preferred_provider in providers:
             provider = preferred_provider
         else:
@@ -505,9 +509,10 @@ class ServicePluginManager(ServiceManager):
             return None
 
         plugin_name = f"{name}:{provider}"
-        service = self.plugin_manager.load(plugin_name)
+        plugin = self.plugin_manager.load(plugin_name)
+        plugin.name = plugin_name
 
-        return service
+        return plugin
 
     @log_duration()
     def _resolve_api_provider_specs(self) -> Dict[str, List[str]]:
