@@ -6,7 +6,7 @@ IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s
 DOCKER_SQUASH ?= --squash
 VENV_BIN ?= python3 -m venv
 VENV_DIR ?= .venv
-PIP_CMD ?= pip
+PIP_CMD ?= pip3
 TEST_PATH ?= .
 PYTEST_LOGLEVEL ?= warning
 MAIN_CONTAINER_NAME ?= localstack_main
@@ -68,6 +68,16 @@ coveralls:         ## Publish coveralls metrics
 start:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
 
+docker-image-stats:
+	docker image inspect $(IMAGE_NAME) --format='{{.Size}}'
+	docker history $(IMAGE_NAME)
+
+docker-save-image:
+	docker save $(IMAGE_NAME) -o target/localstack-docker-image-$(PLATFORM).tar
+
+docker-save-image-light:
+	docker save $(IMAGE_NAME) -o target/localstack-docker-image-light-$(PLATFORM).tar
+
 docker-build:      ## Build Docker image
 	# prepare
 	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
@@ -77,25 +87,66 @@ docker-build:      ## Build Docker image
 	  --build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") -t $(IMAGE_NAME) \
 	  --add-host="localhost.localdomain:127.0.0.1" $(DOCKER_BUILD_FLAGS) .
 
-docker-squash:
-	# squash entire image
-	which docker-squash || $(PIP_CMD) install docker-squash; \
-		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG)
+docker-build-linux-amd64-light:      ## Build Light Docker image
+	# prepare
+	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
+	# start build
+	# --add-host: Fix for Centos host OS
+	DOCKER_BUILDKIT=1 docker buildx build --load --pull --platform linux/amd64 --progress=plain --target light \
+		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
+		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
+		--add-host="localhost.localdomain:127.0.0.1" \
+		-t $(IMAGE_NAME_LIGHT) $(DOCKER_BUILD_FLAGS) .
 
-docker-build-base:
-	docker build $(DOCKER_SQUASH) -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
-	docker tag $(IMAGE_NAME_BASE) $(IMAGE_NAME_BASE):$(IMAGE_TAG)
-	docker tag $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):latest
+docker-build-linux-arm64-light:      ## Build Light Docker image
+	# prepare
+	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
+	# start build
+	# --add-host: Fix for Centos host OS
+	DOCKER_BUILDKIT=1 docker buildx build --load --pull --platform linux/arm64 --progress=plain --target light \
+		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
+		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
+		--add-host="localhost.localdomain:127.0.0.1" \
+		-t $(IMAGE_NAME_LIGHT) $(DOCKER_BUILD_FLAGS) .
 
-docker-build-base-ci:
-	DOCKER_SQUASH= make docker-build-base
-	IMAGE_NAME=$(IMAGE_NAME_BASE) IMAGE_TAG=latest make docker-squash
-	docker info | grep Username || docker login -u "$$DOCKER_USERNAME" -p "$$DOCKER_PASSWORD"
-	docker push $(IMAGE_NAME_BASE):latest
+docker-build-linux-arm64:
+	# prepare
+	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
+	# start build
+	# --add-host: Fix for Centos host OS
+	DOCKER_BUILDKIT=1 docker buildx build --load --pull --platform linux/arm64 --progress=plain --target full \
+		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
+		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
+		--add-host="localhost.localdomain:127.0.0.1" \
+		-t $(IMAGE_NAME) $(DOCKER_BUILD_FLAGS) .
+
+docker-build-linux-amd64:
+	# prepare
+	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
+	# start build
+	# --add-host: Fix for Centos host OS
+	DOCKER_BUILDKIT=1 docker buildx build --load --pull --platform linux/amd64 --progress=plain --target full \
+		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
+		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
+		--add-host="localhost.localdomain:127.0.0.1" \
+		-t $(IMAGE_NAME) $(DOCKER_BUILD_FLAGS) .
+
 
 docker-push:       ## Push Docker image to registry
-	make docker-squash
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
+
+docker-push-multi-platform:
+	# prepare
+	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
+	# start build
+	# --add-host: Fix for Centos host OS
+	export DOCKER_BUILDKIT=1
+	docker buildx create tls-context --platform linux/amd64,linux/arm64 --use
+	docker buildx build --pull --push --platform linux/amd64,linux/arm64 --progress=plain \
+		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
+		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
+		--add-host="localhost.localdomain:127.0.0.1" \
+		-t $(IMAGE_NAME):$(IMAGE_TAG) $(DOCKER_BUILD_FLAGS) .
 
 docker-push-master: ## Push Docker image to registry IF we are currently on the master branch
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
@@ -107,19 +158,40 @@ docker-push-master: ## Push Docker image to registry IF we are currently on the 
 		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
 		echo "This is a fork and not the main repo.") || \
 	( \
-		which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-		IMAGE_TAG=latest make docker-squash && make docker-build-light && \
-			docker tag $(IMAGE_NAME):latest $(IMAGE_NAME_FULL):latest && \
-			docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME):latest && \
+			docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):latest-$(PLATFORM) \
+			docker tag $(IMAGE_NAME):latest $(IMAGE_NAME_FULL):latest-$(PLATFORM) && \
+			docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
-			(docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG) && \
-				docker tag $(IMAGE_NAME_FULL):latest $(IMAGE_NAME_FULL):$(IMAGE_TAG) && \
-				docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG) && \
-				docker push $(IMAGE_NAME_FULL):$(IMAGE_TAG))) && \
-		docker push $(IMAGE_NAME):latest && docker push $(IMAGE_NAME_FULL):latest && docker push $(IMAGE_NAME_LIGHT):latest \
+			(docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME_FULL):latest $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker push $(IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker push $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM))) && \
+		docker push $(IMAGE_NAME):latest-$(PLATFORM) && \
+	  docker push $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) && \
+	  docker push $(IMAGE_NAME_FULL):latest-$(PLATFORM) \
 	)
+
+
+docker-create-manifests:
+	docker manifest create $(IMAGE_NAME):$(IMAGE_TAG) --ammend $(IMAGE_NAME):$(IMAGE_TAG)-amd64 --ammend $(IMAGE_NAME):$(IMAGE_TAG)-arm64
+	docker manifest push $(IMAGE_NAME):$(IMAGE_TAG)
+	docker manifest create $(IMAGE_NAME):latest --ammend $(IMAGE_NAME):latest-amd64 --ammend $(IMAGE_NAME):latest-arm64
+	docker manifest push $(IMAGE_NAME):latest
+
+docker-create-manifests-light:
+	docker manifest create $(IMAGE_NAME_LIGHT):$(IMAGE_TAG) --ammend $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-amd64 --ammend $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-arm64
+	docker manifest push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)
+	docker manifest create $(IMAGE_NAME_LIGHT):latest --ammend $(IMAGE_NAME_LIGHT):latest-amd64 --ammend $(IMAGE_NAME_LIGHT):latest-arm64
+	docker manifest push $(IMAGE_NAME_LIGHT):latest
+
+docker-run-tests:
+	docker run --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ \
+	    localstack/localstack \
+	    bash -c "make install-test && make init-testlibs && pip uninstall -y argparse dataclasses && DEBUG=1 LAMBDA_EXECUTOR=local PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' make test-coverage"
 
 docker-run:        ## Run Docker image locally
 	($(VENV_RUN); bin/localstack start)
@@ -130,12 +202,6 @@ docker-mount-run:
 
 docker-build-lambdas:
 	docker build -t localstack/lambda-js:nodejs14.x -f bin/lambda/Dockerfile.nodejs14x .
-
-docker-build-light:
-	@img_name=$(IMAGE_NAME_LIGHT); \
-		docker build -t $$img_name -f bin/Dockerfile.light .; \
-		IMAGE_NAME=$$img_name IMAGE_TAG=latest make docker-squash; \
-		docker tag $$img_name:latest $$img_name:$(IMAGE_TAG)
 
 docker-cp-coverage:
 	@echo 'Extracting .coverage file from Docker image'; \
@@ -233,7 +299,6 @@ vagrant-stop:
 	vagrant halt
 
 # deprecated commands
-
 infra:             # legacy command used in the supervisord file to
 	($(VENV_RUN); exec bin/localstack start --host --no-banner)
 
