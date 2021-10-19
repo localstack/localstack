@@ -12,7 +12,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import load_file, retry, short_uid, to_str
-from localstack.utils.testutil import create_zip_file
+from localstack.utils.testutil import create_zip_file, list_all_resources
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -599,28 +599,26 @@ def expected_change_set_status():
     return "CREATE_COMPLETE"
 
 
-def create_and_await_stack(**kwargs):
+def create_and_await_stack(stack_name , **kwargs):
     cloudformation = aws_stack.connect_to_service("cloudformation")
-    response = cloudformation.create_stack(**kwargs)
+    response = cloudformation.create_stack(StackName=stack_name, **kwargs)
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-    result = await_stack_completion(kwargs["StackName"])
+    result = await_stack_completion(stack_name)
     return result
 
 
-def update_and_await_stack(**kwargs):
+def update_and_await_stack(stack_name, **kwargs):
     cloudformation = aws_stack.connect_to_service("cloudformation")
-    response = cloudformation.update_stack(**kwargs)
+    response = cloudformation.update_stack(StackName=stack_name, **kwargs)
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-    result = await_stack_completion(kwargs["StackName"])
-    return result
+    return await_stack_completion(stack_name)
 
 
-def delete_and_await_stack(**kwargs):
+def delete_and_await_stack(stack_name, **kwargs):
     cloudformation = aws_stack.connect_to_service("cloudformation")
-    response = cloudformation.delete_stack(**kwargs)
+    response = cloudformation.delete_stack(StackName=stack_name, **kwargs)
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-    result = await_stack_completion(kwargs["StackName"])
-    return result
+    return await_stack_completion(stack_name)
 
 
 class CloudFormationTest(unittest.TestCase):
@@ -2313,14 +2311,22 @@ class CloudFormationTest(unittest.TestCase):
         ] = lambda_function_name
 
         # Create stack and wait for 'CREATE_COMPLETE' status of the stack
-        rs = create_and_await_stack(StackName=stack_name, TemplateBody=json.dumps(template))
+        rs = create_and_await_stack(stack_name, TemplateBody=json.dumps(template))
 
         # Checking required values for Lambda function and IAM Role
         self.assertIn("StackId", rs)
         self.assertIn(stack_name, rs["StackId"])
 
-        list_functions = lambda_client.list_functions().get("Functions", [])
-        list_roles = iam.list_roles().get("Roles", [])
+        list_functions = list_all_resources(
+            lambda kwargs: lambda_client.list_functions(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Functions",
+        )
+        list_roles = list_all_resources(
+            lambda kwargs: iam.list_roles(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Roles",
+        )
 
         new_function = [
             function
@@ -2335,35 +2341,44 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(1, len(new_role))
 
         # Generate new names for lambda and IAM Role
-        lambda_role_name = "lambda-role-%s" % short_uid()
-        lambda_function_name = "lambda-function-%s" % short_uid()
+        lambda_role_name_new = "lambda-role-%s" % short_uid()
+        lambda_function_name_new = "lambda-function-%s" % short_uid()
 
-        template["Resources"]["LambdaExecutionRole"]["Properties"]["RoleName"] = lambda_role_name
+        template["Resources"]["LambdaExecutionRole"]["Properties"]["RoleName"] = lambda_role_name_new
         template["Resources"]["LambdaFunction1"]["Properties"][
             "FunctionName"
-        ] = lambda_function_name
+        ] = lambda_function_name_new
 
         # Update stack and wait for 'UPDATE_COMPLETE' status of the stack
-        rs = update_and_await_stack(StackName=stack_name, TemplateBody=json.dumps(template))
+        rs = update_and_await_stack(stack_name, TemplateBody=json.dumps(template))
 
         # Checking new required values for Lambda function and IAM Role
         self.assertIn("StackId", rs)
         self.assertIn(stack_name, rs["StackId"])
 
-        list_functions = lambda_client.list_functions().get("Functions", [])
-        list_roles = iam.list_roles().get("Roles", [])
+        list_functions = list_all_resources(
+            lambda kwargs: lambda_client.list_functions(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Functions",
+        )
+
+        list_roles = list_all_resources(
+            lambda kwargs: iam.list_roles(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Roles",
+        )
 
         new_function = [
             function
             for function in list_functions
-            if function.get("FunctionName") == lambda_function_name
+            if function.get("FunctionName") == lambda_function_name_new
         ]
-        new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name]
+        new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name_new]
 
         self.assertEqual(1, len(new_function))
-        self.assertIn(lambda_role_name, new_function[0].get("Role"))
+        self.assertIn(lambda_role_name_new, new_function[0].get("Role"))
 
         self.assertEqual(1, len(new_role))
 
         # Delete the stack and wait for the status 'DELETE_COMPLETE' of the stack
-        delete_and_await_stack(StackName=stack_name)
+        delete_and_await_stack(stack_name)
