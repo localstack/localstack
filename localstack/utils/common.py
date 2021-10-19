@@ -1740,7 +1740,7 @@ def run_for_max_seconds(max_secs, _function, *args, **kwargs):
         time.sleep(0.5)
 
 
-def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
+def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: float):
     if cache_duration_secs <= 0:
         return run_cmd()
 
@@ -1750,7 +1750,7 @@ def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
     if os.path.isfile(cache_file):
         # check file age
         mod_time = os.path.getmtime(cache_file)
-        time_now = now()
+        time_now = time.time()
         if mod_time > (time_now - cache_duration_secs):
             with open(cache_file) as fd:
                 return fd.read()
