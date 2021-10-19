@@ -599,11 +599,11 @@ def expected_change_set_status():
     return "CREATE_COMPLETE"
 
 
-def create_and_await_stack(stack_name, **kwargs):
+def create_and_await_stack(**kwargs):
     cloudformation = aws_stack.connect_to_service("cloudformation")
-    response = cloudformation.create_stack(StackName=stack_name, **kwargs)
+    response = cloudformation.create_stack(**kwargs)
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-    result = await_stack_completion(stack_name)
+    result = await_stack_completion(kwargs["StackName"])
     return result
 
 
@@ -2311,7 +2311,7 @@ class CloudFormationTest(unittest.TestCase):
         ] = lambda_function_name
 
         # Create stack and wait for 'CREATE_COMPLETE' status of the stack
-        rs = create_and_await_stack(stack_name, TemplateBody=json.dumps(template))
+        rs = create_and_await_stack(StackName=stack_name, TemplateBody=json.dumps(template))
 
         # Checking required values for Lambda function and IAM Role
         self.assertIn("StackId", rs)
