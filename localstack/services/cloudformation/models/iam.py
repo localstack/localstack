@@ -170,7 +170,7 @@ class IAMRole(GenericBaseModel, MotoRole):
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
-        # _states contains old state of the resource
+        # _states contains the old state of the resource
         _states = new_resource.get("_state_", None)
         client = aws_stack.connect_to_service("iam")
         if _states:
