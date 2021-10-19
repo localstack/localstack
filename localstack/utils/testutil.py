@@ -34,6 +34,7 @@ from localstack.utils.common import (
     ensure_list,
     get_free_tcp_port,
     is_alpine,
+    is_empty_dir,
     is_port_open,
     load_file,
     mkdir,
@@ -164,6 +165,18 @@ def create_zip_file(file_path, zip_file=None, get_content=False):
     if not full_zip_file:
         zip_file_name = "archive.zip"
         full_zip_file = os.path.join(tmp_dir, zip_file_name)
+
+    # special case where target folder is empty -> create empty zip file
+    if is_empty_dir(base_dir):
+        # see https://stackoverflow.com/questions/25195495/how-to-create-an-empty-zip-file#25195628
+        content = (
+            b"PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        )
+        if get_content:
+            return content
+        save_file(full_zip_file, content)
+        return full_zip_file
+
     # create zip file
     if is_alpine():
         create_zip_file_cli(file_path, base_dir, zip_file=full_zip_file)

@@ -922,7 +922,18 @@ def mkdir(folder):
         os.makedirs(folder, exist_ok=True)
 
 
-def ensure_readable(file_path, default_perms=None):
+def is_empty_dir(directory: str, ignore_hidden: bool = False) -> bool:
+    """Return whether the given directory contains any entries (files/folders), including hidden
+    entries whose name starts with a dot (.), unless ignore_hidden=True is passed."""
+    if not os.path.isdir(directory):
+        raise Exception(f"Path is not a directory: {directory}")
+    entries = os.listdir(directory)
+    if ignore_hidden:
+        entries = [e for e in entries if not e.startswith(".")]
+    return not bool(entries)
+
+
+def ensure_readable(file_path: str, default_perms: int = None):
     if default_perms is None:
         default_perms = 0o644
     try:
