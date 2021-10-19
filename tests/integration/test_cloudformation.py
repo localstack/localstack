@@ -599,7 +599,7 @@ def expected_change_set_status():
     return "CREATE_COMPLETE"
 
 
-def create_and_await_stack(stack_name , **kwargs):
+def create_and_await_stack(stack_name, **kwargs):
     cloudformation = aws_stack.connect_to_service("cloudformation")
     response = cloudformation.create_stack(StackName=stack_name, **kwargs)
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -2344,7 +2344,9 @@ class CloudFormationTest(unittest.TestCase):
         lambda_role_name_new = "lambda-role-%s" % short_uid()
         lambda_function_name_new = "lambda-function-%s" % short_uid()
 
-        template["Resources"]["LambdaExecutionRole"]["Properties"]["RoleName"] = lambda_role_name_new
+        template["Resources"]["LambdaExecutionRole"]["Properties"][
+            "RoleName"
+        ] = lambda_role_name_new
         template["Resources"]["LambdaFunction1"]["Properties"][
             "FunctionName"
         ] = lambda_function_name_new
