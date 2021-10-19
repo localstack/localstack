@@ -170,7 +170,35 @@ class IAMRole(GenericBaseModel, MotoRole):
 
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
+        # _states contains the old state of the resource
+        _states = new_resource.get("_state_", None)
         client = aws_stack.connect_to_service("iam")
+        if _states:
+            if props.get("RoleName") != _states.get("RoleName") or (
+                "AssumeRolePolicyDocument" in props
+                and props.get("AssumeRolePolicyDocument")
+                != _states.get("AssumeRolePolicyDocument", "")
+            ):
+                dummy_resources = {
+                    new_resource.get("LogicalResourceId"): {
+                        "Properties": {
+                            "RoleName": _states.get("RoleName"),
+                        },
+                    }
+                }
+                self._pre_delete(
+                    new_resource.get("LogicalResourceId"), dummy_resources, None, None, None
+                )
+                client.delete_role(RoleName=_states.get("RoleName"))
+                role = client.create_role(
+                    RoleName=props.get("RoleName"),
+                    AssumeRolePolicyDocument=str(props.get("AssumeRolePolicyDocument")),
+                )
+                self._post_create(
+                    new_resource.get("LogicalResourceId"), resources, None, None, None
+                )
+                return role
+
         return client.update_role(
             RoleName=props.get("RoleName"), Description=props.get("Description") or ""
         )
@@ -183,80 +211,83 @@ class IAMRole(GenericBaseModel, MotoRole):
                 stack_name, resource["LogicalResourceId"]
             )
 
+    @staticmethod
+    def _post_create(resource_id, resources, resource_type, func, stack_name):
+        """attaches managed policies from the template to the role"""
+        iam = aws_stack.connect_to_service("iam")
+        resource = resources[resource_id]
+        props = resource["Properties"]
+        role_name = props["RoleName"]
+
+        # attach managed policies
+        policy_arns = props.get("ManagedPolicyArns", [])
+        for arn in policy_arns:
+            iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
+
+        # add inline policies
+        inline_policies = props.get("Policies", [])
+        for policy in inline_policies:
+            assert not isinstance(
+                policy, list
+            )  # remove if this doesn't make any problems for a while
+            if policy == PLACEHOLDER_AWS_NO_VALUE:
+                continue
+            if not isinstance(policy, dict):
+                LOG.info(
+                    'Invalid format of policy for IAM role "%s": %s'
+                    % (props.get("RoleName"), policy)
+                )
+                continue
+            pol_name = policy.get("PolicyName")
+            doc = dict(policy["PolicyDocument"])
+            doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
+            statements = ensure_list(doc["Statement"])
+            for statement in statements:
+                if isinstance(statement.get("Resource"), list):
+                    # filter out empty resource strings
+                    statement["Resource"] = [r for r in statement["Resource"] if r]
+            doc = json.dumps(doc)
+            iam.put_role_policy(
+                RoleName=props["RoleName"],
+                PolicyName=pol_name,
+                PolicyDocument=doc,
+            )
+
+    @staticmethod
+    def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+        """detach managed policies from role before deleting"""
+        iam_client = aws_stack.connect_to_service("iam")
+        resource = resources[resource_id]
+        props = resource["Properties"]
+        role_name = props["RoleName"]
+
+        # TODO: this should probably only remove the policies that are specified in the stack (verify with AWS)
+        # detach managed policies
+        for policy in iam_client.list_attached_role_policies(RoleName=role_name).get(
+            "AttachedPolicies", []
+        ):
+            iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
+        # delete inline policies
+        for inline_policy_name in iam_client.list_role_policies(RoleName=role_name).get(
+            "PolicyNames", []
+        ):
+            iam_client.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
+
+        # TODO: potentially remove this when stack resource deletion order is fixed (check AWS behavior first)
+        # cleanup instance profile
+        try:
+            rs = iam_client.list_instance_profiles_for_role(RoleName=role_name)
+            for instance_profile in rs["InstanceProfiles"]:
+                ip_name = instance_profile["InstanceProfileName"]
+                iam_client.remove_role_from_instance_profile(
+                    InstanceProfileName=ip_name, RoleName=role_name
+                )
+        except Exception as e:
+            if "NoSuchEntity" not in str(e):
+                raise
+
     @classmethod
     def get_deploy_templates(cls):
-        def _post_create(resource_id, resources, resource_type, func, stack_name):
-            """attaches managed policies from the template to the role"""
-            iam = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
-            props = resource["Properties"]
-            role_name = props["RoleName"]
-
-            # attach managed policies
-            policy_arns = props.get("ManagedPolicyArns", [])
-            for arn in policy_arns:
-                iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
-
-            # add inline policies
-            inline_policies = props.get("Policies", [])
-            for policy in inline_policies:
-                assert not isinstance(
-                    policy, list
-                )  # remove if this doesn't make any problems for a while
-                if policy == PLACEHOLDER_AWS_NO_VALUE:
-                    continue
-                if not isinstance(policy, dict):
-                    LOG.info(
-                        'Invalid format of policy for IAM role "%s": %s'
-                        % (props.get("RoleName"), policy)
-                    )
-                    continue
-                pol_name = policy.get("PolicyName")
-                doc = dict(policy["PolicyDocument"])
-                doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
-                statements = ensure_list(doc["Statement"])
-                for statement in statements:
-                    if isinstance(statement.get("Resource"), list):
-                        # filter out empty resource strings
-                        statement["Resource"] = [r for r in statement["Resource"] if r]
-                doc = json.dumps(doc)
-                iam.put_role_policy(
-                    RoleName=props["RoleName"],
-                    PolicyName=pol_name,
-                    PolicyDocument=doc,
-                )
-
-        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
-            """detach managed policies from role before deleting"""
-            iam_client = aws_stack.connect_to_service("iam")
-            resource = resources[resource_id]
-            props = resource["Properties"]
-            role_name = props["RoleName"]
-
-            # TODO: this should probably only remove the policies that are specified in the stack (verify with AWS)
-            # detach managed policies
-            for policy in iam_client.list_attached_role_policies(RoleName=role_name).get(
-                "AttachedPolicies", []
-            ):
-                iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["PolicyArn"])
-            # delete inline policies
-            for inline_policy_name in iam_client.list_role_policies(RoleName=role_name).get(
-                "PolicyNames", []
-            ):
-                iam_client.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
-
-            # TODO: potentially remove this when stack resource deletion order is fixed (check AWS behavior first)
-            # cleanup instance profile
-            try:
-                rs = iam_client.list_instance_profiles_for_role(RoleName=role_name)
-                for instance_profile in rs["InstanceProfiles"]:
-                    ip_name = instance_profile["InstanceProfileName"]
-                    iam_client.remove_role_from_instance_profile(
-                        InstanceProfileName=ip_name, RoleName=role_name
-                    )
-            except Exception as e:
-                if "NoSuchEntity" not in str(e):
-                    raise
 
         return {
             "create": [
@@ -278,10 +309,10 @@ class IAMRole(GenericBaseModel, MotoRole):
                         {"RoleName": PLACEHOLDER_RESOURCE_NAME},
                     ),
                 },
-                {"function": _post_create},
+                {"function": IAMRole._post_create},
             ],
             "delete": [
-                {"function": _pre_delete},
+                {"function": IAMRole._pre_delete},
                 {"function": "delete_role", "parameters": {"RoleName": "RoleName"}},
             ],
         }
