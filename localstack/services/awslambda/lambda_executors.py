@@ -1245,7 +1245,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         for stream in (c.stdout(), c.stderr()):
             if stream:
                 log_output += ("\n" if log_output else "") + stream
-        if isinstance(result, InvocationResult):
+        if isinstance(result, InvocationResult) and result.log_output:
             log_output += "\n" + result.log_output
         log_output += "\nEND RequestId: %s" % request_id
         log_output += "\nREPORT RequestId: %s Duration: %s ms" % (
