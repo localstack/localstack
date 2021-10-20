@@ -14,13 +14,15 @@ from requests.models import Request
 from localstack import config
 from localstack.config import ServiceProviderConfig
 from localstack.utils.bootstrap import get_enabled_apis, is_api_enabled, log_duration
-from localstack.utils.common import poll_condition
+from localstack.utils.common import poll_condition, wait_for_port_status
 
 # set up logger
 LOG = logging.getLogger(__name__)
 
 # namespace for AWS provider plugins
 PLUGIN_NAMESPACE = "localstack.aws.provider"
+
+_default = object()  # sentinel object indicating a default value
 
 
 # ---------------------------
@@ -116,11 +118,11 @@ class ServiceStateException(ServiceException):
 
 
 class Service(object):
-    def __init__(self, name, start, check=None, listener=None, active=False, stop=None):
+    def __init__(self, name, start, check=_default, listener=None, active=False, stop=None):
         self.plugin_name = name
         self.start_function = start
         self.listener = listener
-        self.check_function = check
+        self.check_function = check if check is not _default else local_api_checker(name)
         self.default_active = active
         self.stop_function = stop
 
@@ -607,3 +609,32 @@ def check_service_health(api, expect_shutdown=False):
         else:
             LOG.warning('Service "%s" still shutting down, retrying...', api)
         raise Exception("Service check failed for api: %s" % api)
+
+
+def local_api_checker(service: str) -> Callable:
+    """
+    Creates a health check method for the given service that works under the assumption that the real backend service
+    ports are locatable through the PROXY_LISTENER global.
+    """
+    from localstack.services.infra import PROXY_LISTENERS
+
+    if config.EAGER_SERVICE_LOADING:
+        # most services don't have a real health check, and if they would, that would dramatically increase the
+        # startup time, since health checks are done sequentially at startup. however, the health checks are needed
+        # for the lazy-loading cold start.
+        return lambda *args, **kwargs: None
+
+    def _check(expect_shutdown=False, print_error=False):
+        try:
+            if service not in PROXY_LISTENERS:
+                LOG.debug("cannot find backend port for service %s", service)
+                return
+            port = PROXY_LISTENERS[service][1]
+
+            LOG.debug("checking service health %s:%d", service, port)
+            wait_for_port_status(port, expect_success=not expect_shutdown)
+        except Exception:
+            if print_error:
+                LOG.exception("service health check %s:%d failed", service, port)
+
+    return _check
