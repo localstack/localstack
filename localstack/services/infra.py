@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -304,6 +305,30 @@ def check_aws_credentials():
     session = boto3.Session()
     credentials = session.get_credentials()
     assert credentials
+
+
+def terminate_all_processes_in_docker():
+    if not in_docker():
+        # make sure we only run this inside docker!
+        return
+    print("INFO: Received command to restart all processes ...")
+    cmd = (
+        'ps aux | grep -v supervisor | grep -v docker-entrypoint.sh | grep -v "make infra" | '
+        "grep -v localstack_infra.log | awk '{print $1}' | grep -v PID"
+    )
+    pids = run(cmd).strip()
+    pids = re.split(r"\s+", pids)
+    pids = [int(pid) for pid in pids]
+    this_pid = os.getpid()
+    for pid in pids:
+        if pid != this_pid:
+            try:
+                # kill spawned process
+                os.kill(pid, signal.SIGKILL)
+            except Exception:
+                pass
+    # kill the process itself
+    sys.exit(0)
 
 
 # -------------

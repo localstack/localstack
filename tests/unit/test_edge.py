@@ -1,8 +1,10 @@
 import unittest
+from unittest import mock
 
 from werkzeug.datastructures import Headers
 
-from localstack.services.edge import get_auth_string, is_s3_form_data
+from localstack.services.edge import HealthResource, get_auth_string, is_s3_form_data
+from localstack.services.plugins import ServiceManager, ServiceState
 
 
 class EdgeServiceTest(unittest.TestCase):
@@ -101,3 +103,27 @@ class EdgeServiceTest(unittest.TestCase):
             headers_with_auth.get("authorization"),
             get_auth_string("POST", "/", Headers(), body_with_auth),
         )
+
+
+class TestHealthResource:
+    def test_put_and_get(self):
+        service_manager = ServiceManager()
+        service_manager.get_states = mock.MagicMock(return_value={"foo": ServiceState.AVAILABLE})
+
+        resource = HealthResource(service_manager)
+
+        resource.put(
+            "/", b'{"features:initScripts": "initialized","features:persistence": "disabled"}'
+        )
+
+        state = resource.get("/", None)
+
+        assert state == {
+            "features": {
+                "initScripts": "initialized",
+                "persistence": "disabled",
+            },
+            "services": {
+                "foo": "available",
+            },
+        }

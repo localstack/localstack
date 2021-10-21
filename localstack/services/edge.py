@@ -3,10 +3,10 @@ import json
 import logging
 import os
 import re
-import signal
 import subprocess
 import sys
 import threading
+from collections import defaultdict
 from typing import Dict, Optional
 
 from requests.models import Response
@@ -23,10 +23,9 @@ from localstack.constants import (
     PATH_USER_REQUEST,
 )
 from localstack.dashboard import infra as dashboard_infra
-from localstack.services import plugins
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
-from localstack.services.infra import PROXY_LISTENERS
+from localstack.services.infra import PROXY_LISTENERS, terminate_all_processes_in_docker
 from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
@@ -42,9 +41,9 @@ from localstack.utils.common import (
     TMP_THREADS,
     empty_context_manager,
     get_service_protocol,
-    in_docker,
     is_port_open,
     is_root,
+    merge_recursive,
     parse_request_data,
     run,
 )
@@ -76,6 +75,7 @@ class ProxyListenerEdge(ProxyListener):
     def __init__(self, service_manager=None) -> None:
         super().__init__()
         self.service_manager = service_manager or SERVICE_PLUGINS
+        self.health = HealthResource(self.service_manager)
 
     def forward_request(self, method, path, data, headers):
 
@@ -85,7 +85,7 @@ class ProxyListenerEdge(ProxyListener):
             )
 
         if path.split("?")[0] == "/health":
-            return serve_health_endpoint(method, path, data)
+            return self.health.handle(method, path, data)
         if method == "POST" and path == "/graph":
             return serve_resource_graph(data)
 
@@ -398,40 +398,69 @@ def is_s3_form_data(data_bytes):
     return False
 
 
-def serve_health_endpoint(method, path, data):
-    if method == "GET":
-        reload = "reload" in path
-        return plugins.get_services_health(reload=reload)
-    if method == "POST":
+class HealthResource:
+    """
+    Resource for the LocalStack /health endpoint. It provides access to the service states and other components of
+    localstack. We support arbitrary data to be put into the health state to support things like the
+    run_startup_scripts function in docker-entrypoint.sh which sets the status of the init scripts feature.
+    """
+
+    def __init__(self, service_manager) -> None:
+        super().__init__()
+        self.service_manager = service_manager
+        self.state = dict()
+
+    def handle(self, method, path, data) -> Optional[Dict]:
+        LOG.info("%s %s (%s)", method, path, data)
+
+        if method == "GET":
+            return self.get(path, data)
+        if method == "POST":
+            return self.post(path, data)
+        if method == "PUT":
+            return self.put(path, data)
+
+        return {}
+
+    def post(self, _, data):
         data = json.loads(to_str(data or "{}"))
         # backdoor API to support restarting the instance
         if data.get("action") in ["kill", "restart"]:
             terminate_all_processes_in_docker()
-    return {}
 
+    def get(self, path, _):
+        reload = "reload" in path
 
-def terminate_all_processes_in_docker():
-    if not in_docker():
-        # make sure we only run this inside docker!
-        return
-    print("INFO: Received command to restart all processes ...")
-    cmd = (
-        'ps aux | grep -v supervisor | grep -v docker-entrypoint.sh | grep -v "make infra" | '
-        "grep -v localstack_infra.log | awk '{print $1}' | grep -v PID"
-    )
-    pids = run(cmd).strip()
-    pids = re.split(r"\s+", pids)
-    pids = [int(pid) for pid in pids]
-    this_pid = os.getpid()
-    for pid in pids:
-        if pid != this_pid:
-            try:
-                # kill spawned process
-                os.kill(pid, signal.SIGKILL)
-            except Exception:
-                pass
-    # kill the process itself
-    sys.exit(0)
+        # get service state
+        if reload:
+            self.service_manager.check_all()
+        services = {
+            service: state.value for service, state in self.service_manager.get_states().items()
+        }
+
+        # build state dict from internal state and merge into it the service states
+        result = dict(self.state)
+        result = merge_recursive({"services": services}, result)
+        return result
+
+    def put(self, _, data):
+        data = json.loads(to_str(data or "{}"))
+
+        # keys like "features:initScripts" should be interpreted as ['features']['initScripts']
+        state = defaultdict(dict)
+        for k, v in data.items():
+            if ":" in k:
+                path = k.split(":")
+            else:
+                path = [k]
+
+            d = state
+            for p in path[:-1]:
+                d = state[p]
+            d[path[-1]] = v
+
+        self.state = merge_recursive(state, self.state)
+        return {"status": "OK"}
 
 
 def serve_resource_graph(data):
@@ -641,7 +670,6 @@ def start_dns_server(asynchronous=False):
 
 
 def start_edge(port=None, use_ssl=True, asynchronous=False):
-
     if not port:
         port = config.EDGE_PORT
     if config.EDGE_PORT_HTTP and config.EDGE_PORT_HTTP != port:
