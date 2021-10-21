@@ -54,14 +54,27 @@ def get_flask_request_for_thread():
 
 
 def extract_region_from_auth_header(headers):
-    # TODO: use method from aws_stack directly (leaving import here for now, to avoid circular dependency)
-    from localstack.utils.aws import aws_stack
-
     auth = headers.get("Authorization") or ""
     region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
     if region == auth:
         return None
-    region = region or aws_stack.get_local_region()
+    return region
+
+
+def extract_region_from_headers(headers):
+    region = headers.get(MARKER_APIGW_REQUEST_REGION)
+    # Fix region lookup for certain requests, e.g., API gateway invocations
+    #  that do not contain region details in the Authorization header.
+
+    if region:
+        return region
+
+    region = extract_region_from_auth_header(headers)
+
+    if not region:
+        # fall back to local region
+        region = aws_stack.get_local_region()
+
     return region
 
 
@@ -94,13 +107,8 @@ def get_region_from_request_context():
     request_context = get_request_context()
     if not request_context:
         return
-    region = extract_region_from_auth_header(request_context.headers)
 
-    # Fix region lookup for certain requests, e.g., API gateway invocations
-    #  that do not contain region details in the Authorization header.
-    region = request_context.headers.get(MARKER_APIGW_REQUEST_REGION) or region
-
-    return region
+    return extract_region_from_headers(request_context.headers)
 
 
 def configure_region_for_current_request(region_name: str, service_name: str):
