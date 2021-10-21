@@ -565,23 +565,6 @@ class ServicePluginManager(ServiceManager):
 SERVICE_PLUGINS: ServicePluginManager = ServicePluginManager()
 
 
-# -------------------------
-# HEALTH CHECK API METHODS
-# -------------------------
-
-
-def get_services_health(reload=False):
-    if reload:
-        SERVICE_PLUGINS.check_all()
-
-    result = {
-        "services": {
-            service: state.value for service, state in SERVICE_PLUGINS.get_states().items()
-        }
-    }
-    return result
-
-
 # -----------------------------
 # INFRASTRUCTURE HEALTH CHECKS
 # -----------------------------

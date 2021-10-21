@@ -56,6 +56,7 @@ function run_startup_scripts {
     sleep 7
   done
 
+  curl -XPUT -s -d '{"features:initScripts":"initializing"}' "http://localhost:$EDGE_PORT/health" > /dev/null
   for f in $INIT_SCRIPTS_PATH/*; do
     case "$f" in
       *.sh)     echo "$0: running $f"; . "$f" ;;
@@ -63,6 +64,7 @@ function run_startup_scripts {
     esac
     echo
   done
+  curl -XPUT -s -d '{"features:initScripts":"initialized"}' "http://localhost:$EDGE_PORT/health" > /dev/null
 }
 
 run_startup_scripts &
