@@ -98,7 +98,10 @@ class PortMappings(object):
         mapped = mapped or port
         if isinstance(port, list):
             for i in range(port[1] - port[0] + 1):
-                self.add(port[0] + i, mapped[0] + i)
+                if isinstance(mapped, list):
+                    self.add(port[0] + i, mapped[0] + i)
+                else:
+                    self.add(port[0] + i, mapped)
             return
         if port is None or int(port) <= 0:
             raise Exception("Unable to add mapping for invalid port: %s" % port)
@@ -122,6 +125,8 @@ class PortMappings(object):
             protocol = "/%s" % k[2] if k[2] != "tcp" else ""
             if k[0] == k[1] and v[0] == v[1]:
                 return "-p %s%s:%s%s" % (bind_address, k[0], v[0], protocol)
+            if k[0] != k[1] and v[0] == v[1]:
+                return "-p %s%s-%s:%s%s" % (bind_address, k[0], k[1], v[0], protocol)
             return "-p %s%s-%s:%s-%s%s" % (bind_address, k[0], k[1], v[0], v[1], protocol)
 
         return " ".join([entry(k, v) for k, v in self.mappings.items()])
@@ -142,6 +147,15 @@ class PortMappings(object):
 
         def entry(k, v):
             protocol = "/%s" % k[2]
+            if k[0] != k[1] and v[0] == v[1]:
+                container_port = v[0]
+                host_ports = list(range(k[0], k[1] + 1))
+                return [
+                    (
+                        f"{container_port}{protocol}",
+                        (bind_address, host_ports) if bind_address else host_ports,
+                    )
+                ]
             return [
                 (
                     f"{container_port}{protocol}",
@@ -947,10 +961,17 @@ class Util:
                         _, host_port, container_port = port_split
                     else:
                         raise ValueError("Invalid port string provided: %s", flag)
+                    host_port_split = host_port.split("-")
+                    if len(host_port_split) == 2:
+                        host_port = [int(host_port_split[0]), int(host_port_split[1])]
+                    elif len(host_port_split) == 1:
+                        host_port = int(host_port)
+                    else:
+                        raise ValueError("Invalid port string provided: %s", flag)
                     if "/" in container_port:
                         container_port, protocol = container_port.split("/")
                     ports = ports if ports is not None else PortMappings()
-                    ports.add(int(host_port), int(container_port), protocol)
+                    ports.add(host_port, int(container_port), protocol)
                 elif cur_state == "env":
                     lhs, _, rhs = flag.partition("=")
                     env_vars = env_vars if env_vars is not None else {}
