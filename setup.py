@@ -1,12 +1,9 @@
 #!/usr/bin/env python
-import os
 import re
 from collections import defaultdict
 
 from plugin.setuptools import load_entry_points
 from setuptools import find_packages, setup
-
-import localstack
 
 
 def parse_requirements(lines):
@@ -30,9 +27,6 @@ def parse_requirements(lines):
     return requirements
 
 
-# determine version
-version = localstack.__version__
-
 # define package data
 package_data = {
     "": ["Makefile", "*.md"],
@@ -47,14 +41,6 @@ package_data = {
         "utils/kinesis/java/cloud/localstack/*.*",
     ],
 }
-
-# load README.md as long description
-if os.path.isfile("README.md"):
-    with open("README.md", "r") as fh:
-        long_description = fh.read()
-else:
-    # may happen in foreign build environments (like Docker)
-    long_description = ""
 
 # determine requirements
 with open("requirements.txt") as f:
@@ -72,14 +58,6 @@ extras_require["full"] = extras_require["cli"] + extras_require["runtime"]  # de
 
 if __name__ == "__main__":
     setup(
-        name="localstack",
-        version=version,
-        description="LocalStack - A fully functional local Cloud stack",
-        long_description=long_description,
-        long_description_content_type="text/markdown",
-        author="Waldemar Hummer",
-        author_email="waldemar.hummer@gmail.com",
-        url="https://github.com/localstack/localstack",
         scripts=["bin/localstack", "bin/localstack.bat"],
         packages=find_packages(exclude=("tests", "tests.*")),
         package_data=package_data,
@@ -87,16 +65,4 @@ if __name__ == "__main__":
         extras_require=extras_require,
         entry_points=load_entry_points(exclude=("tests", "tests.*")),
         test_suite="tests",
-        license="Apache License 2.0",
-        zip_safe=False,
-        classifiers=[
-            "Programming Language :: Python :: 3.6",
-            "Programming Language :: Python :: 3.7",
-            "Programming Language :: Python :: 3.8",
-            "Programming Language :: Python :: 3.9",
-            "License :: OSI Approved :: Apache Software License",
-            "Topic :: Internet",
-            "Topic :: Software Development :: Testing",
-            "Topic :: System :: Emulators",
-        ],
     )
