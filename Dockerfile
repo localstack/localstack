@@ -27,7 +27,7 @@ RUN apk add iputils
 RUN pip install --upgrade pip wheel setuptools localstack-plugin-loader
 
 # add configuration and source files
-ADD Makefile setup.py requirements.txt ./
+ADD Makefile setup.cfg setup.py requirements.txt pyproject.toml ./
 ADD localstack/ localstack/
 ADD bin/localstack bin/localstack
 # necessary for running pip install -e
@@ -45,6 +45,9 @@ RUN make freeze > requirements-test.txt
 RUN make init-testlibs
 ADD localstack/infra/stepfunctions localstack/infra/stepfunctions
 RUN make init
+
+# build plugin enrypoints for localstack
+RUN make entrypoints
 
 # install supervisor config file and entrypoint script
 ADD bin/supervisord.conf /etc/supervisord.conf
@@ -90,8 +93,6 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-# add configuration files
-ADD pyproject.toml ./
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
 RUN pip uninstall -y argparse dataclasses
 RUN LAMBDA_EXECUTOR=local \
