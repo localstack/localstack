@@ -1741,7 +1741,7 @@ class TestJavaRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JAVA_STREAM,
             zip_file=cls.test_java_jar,
             runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.sample.LambdaStreamHandler",
+            handler="cloud.localstack.awssdkv1.sample.LambdaStreamHandler",
         )
 
         # deploy lambda - Java with serializable input object
@@ -1749,7 +1749,7 @@ class TestJavaRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
             zip_file=cls.test_java_zip,
             runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.sample.SerializedInputLambdaHandler",
+            handler="cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
         )
 
         # deploy lambda - Java with Kinesis input object
@@ -1757,7 +1757,7 @@ class TestJavaRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JAVA_KINESIS,
             zip_file=cls.test_java_zip,
             runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.sample.KinesisLambdaHandler",
+            handler="cloud.localstack.awssdkv1.sample.KinesisLambdaHandler",
         )
 
     @classmethod

@@ -1165,7 +1165,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         )
 
         # store log output - TODO get live logs from `process` above?
-        store_lambda_logs(lambda_function, log_output)
+        # store_lambda_logs(lambda_function, log_output)
 
         if return_code != 0:
             raise InvocationException(
