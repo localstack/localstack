@@ -46,6 +46,9 @@ RUN make init-testlibs
 ADD localstack/infra/stepfunctions localstack/infra/stepfunctions
 RUN make init
 
+# build plugin enrypoints for localstack
+RUN make entrypoints
+
 # install supervisor config file and entrypoint script
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
