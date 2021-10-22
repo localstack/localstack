@@ -82,7 +82,16 @@ TEST_LAMBDA_JAVA = os.path.join(
     LOCALSTACK_ROOT_FOLDER, "localstack", "infra", "localstack-utils-tests.jar"
 )
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
-    THIS_FOLDER, "lambdas", "java", "lambda-function-with-lib-0.0.1.jar"
+    THIS_FOLDER, "lambdas", "java", "lambda_echo", "lambda-function-with-lib-0.0.1.jar"
+)
+TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
+    THIS_FOLDER,
+    "lambdas",
+    "java",
+    "lambda_multiple_handlers",
+    "build",
+    "distributions",
+    "lambda-function-with-multiple-handlers.zip",
 )
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "lambdas", "lambda_environment.py")
 TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE1 = os.path.join(
@@ -1732,7 +1741,7 @@ class TestJavaRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JAVA_STREAM,
             zip_file=cls.test_java_jar,
             runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.sample.LambdaStreamHandler",
+            handler="cloud.localstack.awssdkv1.sample.LambdaStreamHandler",
         )
 
         # deploy lambda - Java with serializable input object
@@ -1740,7 +1749,7 @@ class TestJavaRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
             zip_file=cls.test_java_zip,
             runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.sample.SerializedInputLambdaHandler",
+            handler="cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
         )
 
         # deploy lambda - Java with Kinesis input object
@@ -1748,7 +1757,7 @@ class TestJavaRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JAVA_KINESIS,
             zip_file=cls.test_java_zip,
             runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.sample.KinesisLambdaHandler",
+            handler="cloud.localstack.awssdkv1.sample.KinesisLambdaHandler",
         )
 
     @classmethod
@@ -1804,6 +1813,7 @@ class TestJavaRuntimes(LambdaTestBase):
                 THIS_FOLDER,
                 "lambdas",
                 "java",
+                "lambda_echo",
                 "build",
                 "distributions",
                 "lambda-function-built-by-gradle.zip",
@@ -1946,6 +1956,44 @@ class TestJavaRuntimes(LambdaTestBase):
         sns_client.delete_topic(TopicArn=topic_arn)
         s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": key}]})
         s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_java_custom_handler_method_specification(lambda_client, create_lambda_function):
+    java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
+    expected = ['.*"echo": "echo".*']
+
+    function_name_custom_handler = "lambda_custom_handler_%s" % short_uid()
+    create_lambda_function(
+        func_name=function_name_custom_handler,
+        zip_file=java_handler_multiple_handlers,
+        runtime=LAMBDA_RUNTIME_JAVA11,
+        handler="cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom",
+    )
+
+    result = lambda_client.invoke(
+        FunctionName=function_name_custom_handler, Payload=b'{"echo":"echo"}'
+    )
+    result_data = result["Payload"].read()
+
+    assert 200 == result["StatusCode"]
+    assert "CUSTOM" == to_str(result_data).strip('"\n ')
+    _check_lambda_logs(function_name_custom_handler, expected_lines=expected)
+
+    function_name_interface = "lambda_interface_%s" % short_uid()
+    create_lambda_function(
+        func_name=function_name_interface,
+        zip_file=java_handler_multiple_handlers,
+        runtime=LAMBDA_RUNTIME_JAVA11,
+        handler="cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom",
+    )
+
+    result = lambda_client.invoke(FunctionName=function_name_interface, Payload=b'{"echo":"echo"}')
+    result_data = result["Payload"].read()
+
+    assert 200 == result["StatusCode"]
+    assert "INTERFACE" == to_str(result_data).strip('"\n ')
+
+    _check_lambda_logs(function_name_interface, expected_lines=expected)
 
 
 class TestDockerBehaviour(LambdaTestBase):

@@ -1165,7 +1165,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         )
 
         # store log output - TODO get live logs from `process` above?
-        store_lambda_logs(lambda_function, log_output)
+        # store_lambda_logs(lambda_function, log_output)
 
         if return_code != 0:
             raise InvocationException(
@@ -1245,6 +1245,8 @@ class LambdaExecutorLocal(LambdaExecutor):
         for stream in (c.stdout(), c.stderr()):
             if stream:
                 log_output += ("\n" if log_output else "") + stream
+        if isinstance(result, InvocationResult) and result.log_output:
+            log_output += "\n" + result.log_output
         log_output += "\nEND RequestId: %s" % request_id
         log_output += "\nREPORT RequestId: %s Duration: %s ms" % (
             request_id,
