@@ -24,7 +24,8 @@ jobs:
             source .venv/bin/activate
             which python
             realpath $(which python)
-            pip install --upgrade pip
+            # Note: pinning pip version for now, as pip-21.3.1 raises 'ModuleNotFoundError' in setup.py
+            pip install pip==21.3
             pip install wheel setuptools
             pip install -e ".[cli,runtime,test,dev]"
             python -m localstack.services.install libs
