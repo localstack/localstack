@@ -274,11 +274,10 @@ class EventSourceListenerSQS(EventSourceListener):
 
                 unprocessed_messages = {}
 
-                sqs_client = aws_stack.connect_to_service(
-                    "sqs",
-                )
                 for source in sources:
                     queue_arn = source["EventSourceArn"]
+                    region_name = queue_arn.split(":")[3]
+                    sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
                     batch_size = max(min(source.get("BatchSize", 1), 10), 1)
 
                     try:
@@ -330,7 +329,8 @@ class EventSourceListenerSQS(EventSourceListener):
                 # We'll pick them up and retry next time they become available on the queue.
                 return
 
-            sqs_client = aws_stack.connect_to_service("sqs")
+            region_name = queue_arn.split(":")[3]
+            sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
             entries = [
                 {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
             ]
@@ -697,12 +697,12 @@ def process_kinesis_records(records, stream_name):
 
 
 def get_event_sources(func_name=None, source_arn=None):
-    region = LambdaRegion.get()
     result = []
-    for m in region.event_source_mappings:
-        if not func_name or (m["FunctionArn"] in [func_name, func_arn(func_name)]):
-            if _arn_match(mapped=m.get("EventSourceArn"), searched=source_arn):
-                result.append(m)
+    for region, details in LambdaRegion.regions().items():
+        for m in details.event_source_mappings:
+            if not func_name or (m["FunctionArn"] in [func_name, func_arn(func_name)]):
+                if _arn_match(mapped=m.get("EventSourceArn"), searched=source_arn):
+                    result.append(m)
     return result
 
 
