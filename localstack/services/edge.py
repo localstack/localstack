@@ -411,8 +411,6 @@ class HealthResource:
         self.state = dict()
 
     def handle(self, method, path, data) -> Optional[Dict]:
-        LOG.info("%s %s (%s)", method, path, data)
-
         if method == "GET":
             return self.get(path, data)
         if method == "POST":
