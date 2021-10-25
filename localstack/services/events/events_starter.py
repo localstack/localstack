@@ -4,6 +4,7 @@ import json
 import logging
 import re
 import uuid
+from typing import Any, Dict, List
 
 from moto.events.models import Rule as rule_model
 from moto.events.responses import EventsHandler as events_handler
@@ -19,20 +20,22 @@ from localstack.services.events.events_listener import (
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import extract_jsonpath, short_uid
+from localstack.utils.aws.message_forwarding import send_event_to_target
+from localstack.utils.common import extract_jsonpath, short_uid, truncate
 
 LOG = logging.getLogger(__name__)
 
 CONTENT_BASE_FILTER_KEYWORDS = ["prefix", "anything-but", "numeric", "cidr", "exists"]
 
 
-def filter_event_with_target_input_path(target, event):
+def filter_event_with_target_input_path(target: Dict, event: Dict) -> Dict:
     input_path = target.get("InputPath")
     if input_path:
         event = extract_jsonpath(event, input_path)
     return event
 
 
+# TODO: unclear shared responsibility for filtering with filter_event_with_content_base_parameter
 def handle_prefix_filtering(event_pattern, value):
 
     for element in event_pattern:
@@ -54,7 +57,7 @@ def handle_prefix_filtering(event_pattern, value):
     return False
 
 
-def handle_numeric_conditions(conditions, value):
+def handle_numeric_conditions(conditions: List[Any], value: float):
     for i in range(0, len(conditions), 2):
         if conditions[i] == "<" and not (value < conditions[i + 1]):
             return False
@@ -67,8 +70,9 @@ def handle_numeric_conditions(conditions, value):
     return True
 
 
-def filter_event_based_on_event_format(self, rule, event):
-    def filter_event(event_pattern_filter, event):
+# TODO: refactor/simplify
+def filter_event_based_on_event_format(self, rule, event: Dict[str, Any]):
+    def filter_event(event_pattern_filter: Dict[str, Any], event: Dict[str, Any]):
         for key, value in event_pattern_filter.items():
             event_value = event.get(key.lower())
             if event_value is None:
@@ -123,13 +127,14 @@ def filter_event_based_on_event_format(self, rule, event):
     return True
 
 
-def process_events(event, targets):
+def process_events(event: Dict, targets: List[Dict]):
     for target in targets:
         arn = target["Arn"]
         changed_event = filter_event_with_target_input_path(target, event)
-        aws_stack.send_event_to_target(
-            arn, changed_event, aws_stack.get_events_target_attributes(target)
-        )
+        try:
+            send_event_to_target(arn, changed_event, aws_stack.get_events_target_attributes(target))
+        except Exception as e:
+            LOG.info(f"Unable to send event notification {truncate(event)} to target {target}: {e}")
 
 
 def apply_patches():
@@ -234,7 +239,10 @@ def apply_patches():
             # process event
             process_events(formatted_event, targets)
 
-        content = {"Entries": list(map(lambda event: {"EventId": event["uuid"]}, events))}
+        content = {
+            "FailedEntryCount": 0,  # TODO: dynamically set proper value when refactoring
+            "Entries": list(map(lambda event: {"EventId": event["uuid"]}, events)),
+        }
 
         self.response_headers.update(
             {"Content-Type": APPLICATION_AMZ_JSON_1_1, "x-amzn-RequestId": short_uid()}
@@ -296,7 +304,7 @@ def filter_event_with_content_base_parameter(pattern_value, event_value):
             element_key = list(element.keys())[0]
             element_value = element.get(element_key)
             if element_key.lower() == "prefix":
-                if re.match(r"^{}".format(element_value), event_value):
+                if isinstance(event_value, str) and event_value.startswith(element_value):
                     return True
             elif element_key.lower() == "exists":
                 if element_value and event_value:

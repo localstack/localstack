@@ -28,7 +28,7 @@ LOCALHOST_IP = "127.0.0.1"
 LOCALHOST_HOSTNAME = "localhost.localstack.cloud"
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = "0.2.14"
+LOCALSTACK_MAVEN_VERSION = "0.2.16"
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
@@ -72,6 +72,7 @@ ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 
 # content types
+HEADER_CONTENT_TYPE = "Content-Type"
 APPLICATION_AMZ_JSON_1_0 = "application/x-amz-json-1.0"
 APPLICATION_AMZ_JSON_1_1 = "application/x-amz-json-1.1"
 APPLICATION_AMZ_CBOR_1_1 = "application/x-amz-cbor-1.1"
@@ -84,19 +85,21 @@ APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded"
 # strings to indicate truthy/falsy values
 TRUE_STRINGS = ("1", "true", "True")
 FALSE_STRINGS = ("0", "false", "False")
-LOG_LEVELS = ("trace", "debug", "info", "warn", "error", "warning")
+# strings with valid log levels for LS_LOG
+LOG_LEVELS = ("trace-internal", "trace", "debug", "info", "warn", "error", "warning")
 
 # Lambda defaults
 LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
 
 # installation constants
 ELASTICSEARCH_URLS = {
+    "7.10.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-x86_64.tar.gz",
     "7.7.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.7.0-linux-x86_64.tar.gz",
     "7.4.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.4.0-linux-x86_64.tar.gz",
     "7.1.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.1.0-linux-x86_64.tar.gz",
     "6.7.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.zip",
 }
-ELASTICSEARCH_DEFAULT_VERSION = "7.7.0"
+ELASTICSEARCH_DEFAULT_VERSION = "7.10.0"
 # See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
 ELASTICSEARCH_PLUGIN_LIST = [
     "analysis-icu",
@@ -162,6 +165,11 @@ TEST_AWS_SECRET_ACCESS_KEY = "test"
 # credentials being used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = "__internal_call__"
 INTERNAL_AWS_SECRET_ACCESS_KEY = "__internal_call__"
+
+# trace log levels (excluding/including internal API calls), configurable via $LS_LOG
+LS_LOG_TRACE = "trace"
+LS_LOG_TRACE_INTERNAL = "trace-internal"
+TRACE_LOG_LEVELS = [LS_LOG_TRACE, LS_LOG_TRACE_INTERNAL]
 
 # list of official docker images
 OFFICIAL_IMAGES = [

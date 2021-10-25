@@ -7,12 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from localstack import config
-from localstack.utils.docker import (
-    CmdDockerClient,
-    DockerContainerStatus,
-    PortMappings,
-    SdkDockerClient,
-)
+from localstack.utils.docker_utils import CmdDockerClient, DockerContainerStatus, PortMappings, Util
 
 LOG = logging.getLogger(__name__)
 
@@ -22,7 +17,7 @@ class TestDockerClient(unittest.TestCase):
         """Return the string to be used for running Docker commands."""
         return config.DOCKER_CMD.split()
 
-    @patch("localstack.utils.docker.safe_run")
+    @patch("localstack.utils.docker_utils.safe_run")
     def test_list_containers(self, run_mock):
         test_container = {
             "id": "00000000a1",
@@ -41,7 +36,7 @@ class TestDockerClient(unittest.TestCase):
         self.assertIn("-a", call_arguments)
         self.assertIn("--format", call_arguments)
 
-    @patch("localstack.utils.docker.safe_run")
+    @patch("localstack.utils.docker_utils.safe_run")
     def test_container_status(self, run_mock):
         test_output = "Up 2 minutes - localstack_main"
         run_mock.return_value = test_output
@@ -59,7 +54,7 @@ class TestDockerClient(unittest.TestCase):
 def test_argument_parsing():
     test_port_string = "-p 80:8080/udp"
     test_port_string_with_host = "-p 127.0.0.1:6000:7000/tcp"
-    test_env_string = "-e TEST_ENV_VAR=test_string"
+    test_env_string = "-e TEST_ENV_VAR=test_string=123"
     test_mount_string = "-v /var/test:/opt/test"
     argument_string = (
         f"{test_port_string} {test_env_string} {test_mount_string} {test_port_string_with_host}"
@@ -67,17 +62,49 @@ def test_argument_parsing():
     env_vars = {}
     ports = PortMappings()
     mounts = []
-    docker_client = SdkDockerClient()
-    docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
-    assert env_vars == {"TEST_ENV_VAR": "test_string"}
+    Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
+    assert env_vars == {"TEST_ENV_VAR": "test_string=123"}
     assert ports.to_str() == "-p 80:8080/udp -p 6000:7000"
     assert mounts == [("/var/test", "/opt/test")]
+    argument_string = (
+        "--add-host host.docker.internal:host-gateway --add-host arbitrary.host:127.0.0.1"
+    )
+    _, _, _, extra_hosts, _ = Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
+    assert {"host.docker.internal": "host-gateway", "arbitrary.host": "127.0.0.1"} == extra_hosts
+
     with pytest.raises(NotImplementedError):
         argument_string = "--somerandomargument"
-        docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
+        Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
     with pytest.raises(ValueError):
         argument_string = "--publish 80:80:80:80"
-        docker_client._parse_additional_flags(argument_string, env_vars, ports, mounts)
+        Util.parse_additional_flags(argument_string, env_vars, ports, mounts)
+
+    # Test windows paths
+    argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task"'
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
+    argument_string = r'-v "C:\Users\SomeUser\SomePath:/var/task:ro"'
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"C:\Users\SomeUser\SomePath", "/var/task")]
+    argument_string = r'-v "C:\Users\Some User\Some Path:/var/task:ro"'
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"C:\Users\Some User\Some Path", "/var/task")]
+    argument_string = r'-v "/var/test:/var/task:ro"'
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
+    assert mounts == [("/var/test", "/var/task")]
+
+    # Test file paths
+    argument_string = r'-v "/tmp/test.jar:/tmp/foo bar/test.jar"'
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"/tmp/test.jar", "/tmp/foo bar/test.jar")]
+    argument_string = r'-v "/tmp/test-foo_bar.jar:/tmp/test-foo_bar2.jar"'
+    _, _, mounts, _, _ = Util.parse_additional_flags(argument_string)
+    assert mounts == [(r"/tmp/test-foo_bar.jar", "/tmp/test-foo_bar2.jar")]
+
+    # Test file paths
+    argument_string = r'-v "/tmp/test.jar:/tmp/foo bar/test.jar" --network mynet123'
+    _, _, _, _, network = Util.parse_additional_flags(argument_string)
+    assert network == "mynet123"
 
 
 def list_in(a, b):

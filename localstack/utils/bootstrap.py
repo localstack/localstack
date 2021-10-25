@@ -1,21 +1,23 @@
+import functools
 import logging
 import os
 import pkgutil
 import re
 import shlex
-import shutil
 import sys
 import threading
 import time
 import warnings
 from datetime import datetime
 from functools import wraps
+from typing import Iterable, List, Set
 
-import pip as pip_mod
 import six
 
 from localstack import config, constants
-from localstack.utils.docker import DOCKER_CLIENT, ContainerException, PortMappings
+from localstack.config import parse_service_ports
+from localstack.constants import LS_LOG_TRACE_INTERNAL, TRACE_LOG_LEVELS
+from localstack.utils.docker_utils import DOCKER_CLIENT, ContainerException, PortMappings
 
 # set up logger
 from localstack.utils.run import run, to_str
@@ -76,66 +78,22 @@ MAIN_CONTAINER_NAME_CACHED = None
 ENV_SCRIPT_STARTING_DOCKER = "LS_SCRIPT_STARTING_DOCKER"
 
 
-def bootstrap_installation():
-    try:
-        from localstack.services import infra
-
-        assert infra
-    except Exception:
-        install_dependencies()
-
-
-def install_dependencies():
-    # determine requirements
-    root_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
-    reqs_file = os.path.join(root_folder, "requirements.txt")
-    reqs_copy_file = os.path.join(root_folder, "localstack", "requirements.copy.txt")
-    if not os.path.exists(reqs_copy_file):
-        shutil.copy(reqs_file, reqs_copy_file)
-    with open(reqs_copy_file) as f:
-        requirements = f.read()
-    install_requires = []
-    for line in re.split("\n", requirements):
-        if line and line[0] != "#":
-            if BASIC_LIB_MARKER not in line and IGNORED_LIB_MARKER not in line:
-                line = line.split(" #")[0].strip()
-                install_requires.append(line)
-    LOG.info(
-        "Lazily installing missing pip dependencies, this could take a while: %s"
-        % ", ".join(install_requires)
-    )
-    args = ["install"] + install_requires
-    return run_pip_main(args)
-
-
-def run_pip_main(args):
-    if hasattr(pip_mod, "main"):
-        return pip_mod.main(args)
-    import pip._internal
-
-    if hasattr(pip._internal, "main"):
-        return pip._internal.main(args)
-    import pip._internal.main
-
-    return pip._internal.main.main(args)
-
-
-def log_duration(name=None):
+def log_duration(name=None, min_ms=500):
     """Function decorator to log the duration of function invocations."""
 
     def wrapper(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            from localstack.utils.common import now_utc
+            from time import perf_counter
 
-            start_time = now_utc(millis=True)
+            start_time = perf_counter()
             try:
                 return f(*args, **kwargs)
             finally:
-                end_time = now_utc(millis=True)
+                end_time = perf_counter()
                 func_name = name or f.__name__
-                duration = end_time - start_time
-                if duration > 500:
+                duration = (end_time - start_time) * 1000
+                if duration > min_ms:
                     LOG.info('Execution of "%s" took %.2fms', func_name, duration)
 
         return wrapped
@@ -313,7 +271,7 @@ def setup_logging(log_level=None):
     # overriding the log level if LS_LOG has been set
     if config.LS_LOG:
         log_level = str(config.LS_LOG).upper()
-        if log_level == "TRACE":
+        if log_level.lower() in TRACE_LOG_LEVELS:
             log_level = "DEBUG"
         log_level = logging._nameToLevel[log_level]
         logging.getLogger("").setLevel(log_level)
@@ -342,12 +300,16 @@ def setup_logging(log_level=None):
     logging.captureWarnings(True)
     logging.getLogger("asyncio").setLevel(logging.INFO)
     logging.getLogger("boto3").setLevel(logging.INFO)
-    logging.getLogger("s3transfer").setLevel(logging.INFO)
-    logging.getLogger("docker").setLevel(logging.WARNING)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("botocore").setLevel(logging.ERROR)
+    logging.getLogger("docker").setLevel(logging.WARNING)
     logging.getLogger("elasticsearch").setLevel(logging.ERROR)
+    logging.getLogger("moto").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("s3transfer").setLevel(logging.INFO)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    if config.LS_LOG != LS_LOG_TRACE_INTERNAL:
+        # disable werkzeug API logs, unless detailed internal trace logging is enabled
+        logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
 
 # --------------
@@ -355,39 +317,65 @@ def setup_logging(log_level=None):
 # --------------
 
 
-def canonicalize_api_names(apis=None):
-    """Finalize the list of API names by
+def resolve_apis(services: Iterable[str]) -> Set[str]:
+    """
+    Resolves recursively for the given collection of services (e.g., ["serverless", "cognito"]) the list of actual
+    API services that need to be included (e.g., {'dynamodb', 'cloudformation', 'logs', 'kinesis', 'sts',
+    'cognito-identity', 's3', 'dynamodbstreams', 'apigateway', 'cloudwatch', 'lambda', 'cognito-idp', 'iam'}).
+
+    More specifically, it does this by:
     (1) resolving and adding dependencies (e.g., "dynamodbstreams" requires "kinesis"),
     (2) resolving and adding composites (e.g., "serverless" describes an ensemble
             including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
-    (3) removing duplicates from the list."""
+    (3) removing duplicates from the list.
 
-    # TODO: cache the result, as the code below is a relatively expensive operation!
+    :param services: a collection of services that can include composites (e.g., "serverless").
+    :returns a set of canonical service names
+    """
+    stack = list()
+    result = set()
 
-    apis = apis or list(config.SERVICE_PORTS.keys())
+    # perform a graph search
+    stack.extend(services)
+    while stack:
+        service = stack.pop()
 
-    def contains(apis, api):
-        for a in apis:
-            if a == api:
-                return True
+        if service in result:
+            continue
 
-    # TODO: enable recursive lookup - e.g., having service "amplify" depend (via API_DEPENDENCIES)
-    #  on composite "serverless", which should add services "s3", "apigateway", etc...
+        # resolve composites (like "serverless"), but do not add it to the list of results
+        if service in API_COMPOSITES:
+            stack.extend(API_COMPOSITES[service])
+            continue
 
-    # resolve composites
-    for comp, deps in API_COMPOSITES.items():
-        if contains(apis, comp):
-            apis.extend(deps)
-            config.SERVICE_PORTS.pop(comp)
+        result.add(service)
 
-    # resolve dependencies
-    for i, api in enumerate(apis):
-        for dep in API_DEPENDENCIES.get(api, []):
-            if not contains(apis, dep):
-                apis.append(dep)
+        # add dependencies to stack
+        if service in API_DEPENDENCIES:
+            stack.extend(API_DEPENDENCIES[service])
 
-    # remove duplicates and composite names
-    apis = list(set([a for a in apis if a not in API_COMPOSITES.keys()]))
+    return result
+
+
+@functools.lru_cache()
+def get_enabled_apis() -> Set[str]:
+    """
+    Returns the list of APIs that are enabled through the SERVICES variable. If the SERVICES variable is empty,
+    then it will return all available services. Meta-services like "serverless" or "cognito", and dependencies are
+    resolved.
+
+    The result is cached, so it's safe to call. Clear the cache with get_enabled_apis.cache_clear().
+    """
+    return resolve_apis(parse_service_ports().keys())
+
+
+def canonicalize_api_names(apis: Iterable[str] = None) -> List[str]:
+    """
+    Finalize the list of API names and SERVICE_PORT configurations by first resolving the real services from the
+    enabled services, and then populating the configuration appropriately.
+
+    """
+    apis = resolve_apis(apis or config.SERVICE_PORTS.keys())
 
     # make sure we have port mappings for each API
     for api in apis:
@@ -395,18 +383,23 @@ def canonicalize_api_names(apis=None):
             config.SERVICE_PORTS[api] = config.DEFAULT_SERVICE_PORTS.get(api)
     config.populate_configs(config.SERVICE_PORTS)
 
-    return apis
+    return list(apis)
 
 
-def is_api_enabled(api):
-    apis = canonicalize_api_names()
-    for a in apis:
-        if a == api or a.startswith("%s:" % api):
+def is_api_enabled(api: str) -> bool:
+    apis = get_enabled_apis()
+
+    if api in apis:
+        return True
+
+    for enabled_api in apis:
+        if api.startswith("%s:" % enabled_api):
             return True
+
+    return False
 
 
 def start_infra_locally():
-    bootstrap_installation()
     from localstack.services import infra
 
     return infra.start_infra()
@@ -547,6 +540,11 @@ def start_infra_in_docker():
 
     if DOCKER_CLIENT.is_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
+    if config.TMP_FOLDER != config.HOST_TMP_FOLDER and not config.LAMBDA_REMOTE_DOCKER:
+        print(
+            f"WARNING: The detected temp folder for localstack ({config.TMP_FOLDER}) is not equal to the "
+            f"HOST_TMP_FOLDER environment variable set ({config.HOST_TMP_FOLDER})."
+        )  # Logger is not initialized at this point, so the warning is displayed via print
 
     os.environ[ENV_SCRIPT_STARTING_DOCKER] = "1"
 
@@ -579,7 +577,8 @@ def start_infra_in_docker():
     if service_ports.get("edge") == 0:
         service_ports.pop("edge")
     for port in service_ports.values():
-        port_mappings.add(port)
+        if port:
+            port_mappings.add(port)
 
     env_vars = {}
     for env_var in config.CONFIG_ENV_VARS:

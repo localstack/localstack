@@ -7,8 +7,10 @@ import unittest
 
 import mock
 
-from localstack.constants import LAMBDA_TEST_ROLE
-from localstack.services.awslambda import lambda_api, lambda_executors
+from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
+from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
+from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.common import isoformat_milliseconds, mkdir, new_tmp_dir, save_file
 
@@ -56,6 +58,67 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(
                 self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn("non_existent_function_name"),
                 result["message"],
+            )
+
+    def test_get_function_single_function_returns_correect_function(self):
+        with self.app.test_request_context():
+            self._create_function("myFunction")
+            result = json.loads(lambda_api.get_function("myFunction").get_data())
+            self.assertEqual(
+                result["Configuration"]["FunctionArn"],
+                aws_stack.lambda_function_arn("myFunction"),
+            )
+
+    def test_get_function_two_functions_with_similar_names_match_by_name(self):
+        with self.app.test_request_context():
+            self._create_function("myFunctions")
+            self._create_function("myFunction")
+            result = json.loads(lambda_api.get_function("myFunction").get_data())
+            self.assertEqual(
+                result["Configuration"]["FunctionArn"],
+                aws_stack.lambda_function_arn("myFunction"),
+            )
+            result = json.loads(lambda_api.get_function("myFunctions").get_data())
+            self.assertEqual(
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
+            )
+
+    def test_get_function_two_functions_with_similar_names_match_by_arn(self):
+        with self.app.test_request_context():
+            self._create_function("myFunctions")
+            self._create_function("myFunction")
+            result = json.loads(
+                lambda_api.get_function(aws_stack.lambda_function_arn("myFunction")).get_data()
+            )
+            self.assertEqual(
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunction")
+            )
+            result = json.loads(
+                lambda_api.get_function(aws_stack.lambda_function_arn("myFunctions")).get_data()
+            )
+            self.assertEqual(
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
+            )
+
+    def test_get_function_two_functions_with_similar_names_match_by_partial_arn(self):
+        with self.app.test_request_context():
+            self._create_function("myFunctions")
+            self._create_function("myFunction")
+            result = json.loads(
+                lambda_api.get_function(
+                    f"{aws_stack.get_region()}:000000000000:function:myFunction"
+                ).get_data()
+            )
+            self.assertEqual(
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunction")
+            )
+            result = json.loads(
+                lambda_api.get_function(
+                    f"{aws_stack.get_region()}:000000000000:function:myFunctions"
+                ).get_data()
+            )
+            self.assertEqual(
+                result["Configuration"]["FunctionArn"], aws_stack.lambda_function_arn("myFunctions")
             )
 
     def test_get_event_source_mapping(self):
@@ -231,7 +294,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_create_event_source_mapping(self):
         self.client.post(
-            "{0}/event-source-mappings/".format(lambda_api.PATH_ROOT),
+            "{0}/event-source-mappings/".format(API_PATH_ROOT),
             data=json.dumps(
                 {
                     "FunctionName": "test-lambda-function",
@@ -240,7 +303,7 @@ class TestLambdaAPI(unittest.TestCase):
             ),
         )
 
-        listResponse = self.client.get("{0}/event-source-mappings/".format(lambda_api.PATH_ROOT))
+        listResponse = self.client.get("{0}/event-source-mappings/".format(API_PATH_ROOT))
         listResult = json.loads(listResponse.get_data())
 
         eventSourceMappings = listResult.get("EventSourceMappings")
@@ -250,7 +313,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_create_event_source_mapping_self_managed_event_source(self):
         self.client.post(
-            "{0}/event-source-mappings/".format(lambda_api.PATH_ROOT),
+            "{0}/event-source-mappings/".format(API_PATH_ROOT),
             data=json.dumps(
                 {
                     "FunctionName": "test-lambda-function",
@@ -267,7 +330,7 @@ class TestLambdaAPI(unittest.TestCase):
                 }
             ),
         )
-        listResponse = self.client.get("{0}/event-source-mappings/".format(lambda_api.PATH_ROOT))
+        listResponse = self.client.get("{0}/event-source-mappings/".format(API_PATH_ROOT))
         listResult = json.loads(listResponse.get_data())
 
         eventSourceMappings = listResult.get("EventSourceMappings")
@@ -277,7 +340,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_create_disabled_event_source_mapping(self):
         createResponse = self.client.post(
-            "{0}/event-source-mappings/".format(lambda_api.PATH_ROOT),
+            "{0}/event-source-mappings/".format(API_PATH_ROOT),
             data=json.dumps(
                 {
                     "FunctionName": "test-lambda-function",
@@ -291,7 +354,7 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual("Disabled", createResult["State"])
 
         getResponse = self.client.get(
-            "{0}/event-source-mappings/{1}".format(lambda_api.PATH_ROOT, createResult.get("UUID"))
+            "{0}/event-source-mappings/{1}".format(API_PATH_ROOT, createResult.get("UUID"))
         )
         getResult = json.loads(getResponse.get_data())
 
@@ -299,7 +362,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_update_event_source_mapping(self):
         createResponse = self.client.post(
-            "{0}/event-source-mappings/".format(lambda_api.PATH_ROOT),
+            "{0}/event-source-mappings/".format(API_PATH_ROOT),
             data=json.dumps(
                 {
                     "FunctionName": "test-lambda-function",
@@ -311,7 +374,7 @@ class TestLambdaAPI(unittest.TestCase):
         createResult = json.loads(createResponse.get_data())
 
         putResponse = self.client.put(
-            "{0}/event-source-mappings/{1}".format(lambda_api.PATH_ROOT, createResult.get("UUID")),
+            "{0}/event-source-mappings/{1}".format(API_PATH_ROOT, createResult.get("UUID")),
             data=json.dumps({"Enabled": "false"}),
         )
         putResult = json.loads(putResponse.get_data())
@@ -319,7 +382,7 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual("Disabled", putResult["State"])
 
         getResponse = self.client.get(
-            "{0}/event-source-mappings/{1}".format(lambda_api.PATH_ROOT, createResult.get("UUID"))
+            "{0}/event-source-mappings/{1}".format(API_PATH_ROOT, createResult.get("UUID"))
         )
         getResult = json.loads(getResponse.get_data())
 
@@ -327,7 +390,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_update_event_source_mapping_self_managed_event_source(self):
         createResponse = self.client.post(
-            "{0}/event-source-mappings/".format(lambda_api.PATH_ROOT),
+            "{0}/event-source-mappings/".format(API_PATH_ROOT),
             data=json.dumps(
                 {
                     "FunctionName": "test-lambda-function",
@@ -348,7 +411,7 @@ class TestLambdaAPI(unittest.TestCase):
         createResult = json.loads(createResponse.get_data())
 
         putResponse = self.client.put(
-            "{0}/event-source-mappings/{1}".format(lambda_api.PATH_ROOT, createResult.get("UUID")),
+            "{0}/event-source-mappings/{1}".format(API_PATH_ROOT, createResult.get("UUID")),
             data=json.dumps({"Enabled": "false"}),
         )
         putResult = json.loads(putResponse.get_data())
@@ -356,7 +419,7 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual("Disabled", putResult["State"])
 
         getResponse = self.client.get(
-            "{0}/event-source-mappings/{1}".format(lambda_api.PATH_ROOT, createResult.get("UUID"))
+            "{0}/event-source-mappings/{1}".format(API_PATH_ROOT, createResult.get("UUID"))
         )
         getResult = json.loads(getResponse.get_data())
 
@@ -487,12 +550,10 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_create_alias(self):
         self._create_function(self.FUNCTION_NAME)
-        self.client.post(
-            "{0}/functions/{1}/versions".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME)
-        )
+        self.client.post("{0}/functions/{1}/versions".format(API_PATH_ROOT, self.FUNCTION_NAME))
 
         response = self.client.post(
-            "{0}/functions/{1}/aliases".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME),
+            "{0}/functions/{1}/aliases".format(API_PATH_ROOT, self.FUNCTION_NAME),
             data=json.dumps({"Name": self.ALIAS_NAME, "FunctionVersion": "1", "Description": ""}),
         )
         result = json.loads(response.get_data())
@@ -519,17 +580,15 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_create_alias_returns_error_if_already_exists(self):
         self._create_function(self.FUNCTION_NAME)
-        self.client.post(
-            "{0}/functions/{1}/versions".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME)
-        )
+        self.client.post("{0}/functions/{1}/versions".format(API_PATH_ROOT, self.FUNCTION_NAME))
         data = json.dumps({"Name": self.ALIAS_NAME, "FunctionVersion": "1", "Description": ""})
         self.client.post(
-            "{0}/functions/{1}/aliases".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME),
+            "{0}/functions/{1}/aliases".format(API_PATH_ROOT, self.FUNCTION_NAME),
             data=data,
         )
 
         response = self.client.post(
-            "{0}/functions/{1}/aliases".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME),
+            "{0}/functions/{1}/aliases".format(API_PATH_ROOT, self.FUNCTION_NAME),
             data=data,
         )
         result = json.loads(response.get_data())
@@ -540,17 +599,15 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_update_alias(self):
         self._create_function(self.FUNCTION_NAME)
+        self.client.post("{0}/functions/{1}/versions".format(API_PATH_ROOT, self.FUNCTION_NAME))
         self.client.post(
-            "{0}/functions/{1}/versions".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME)
-        )
-        self.client.post(
-            "{0}/functions/{1}/aliases".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME),
+            "{0}/functions/{1}/aliases".format(API_PATH_ROOT, self.FUNCTION_NAME),
             data=json.dumps({"Name": self.ALIAS_NAME, "FunctionVersion": "1", "Description": ""}),
         )
 
         response = self.client.put(
             "{0}/functions/{1}/aliases/{2}".format(
-                lambda_api.PATH_ROOT, self.FUNCTION_NAME, self.ALIAS_NAME
+                API_PATH_ROOT, self.FUNCTION_NAME, self.ALIAS_NAME
             ),
             data=json.dumps({"FunctionVersion": "$LATEST", "Description": "Test-Description"}),
         )
@@ -590,17 +647,15 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_get_alias(self):
         self._create_function(self.FUNCTION_NAME)
+        self.client.post("{0}/functions/{1}/versions".format(API_PATH_ROOT, self.FUNCTION_NAME))
         self.client.post(
-            "{0}/functions/{1}/versions".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME)
-        )
-        self.client.post(
-            "{0}/functions/{1}/aliases".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME),
+            "{0}/functions/{1}/aliases".format(API_PATH_ROOT, self.FUNCTION_NAME),
             data=json.dumps({"Name": self.ALIAS_NAME, "FunctionVersion": "1", "Description": ""}),
         )
 
         response = self.client.get(
             "{0}/functions/{1}/aliases/{2}".format(
-                lambda_api.PATH_ROOT, self.FUNCTION_NAME, self.ALIAS_NAME
+                API_PATH_ROOT, self.FUNCTION_NAME, self.ALIAS_NAME
             )
         )
         result = json.loads(response.get_data())
@@ -639,16 +694,14 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_list_aliases(self):
         self._create_function(self.FUNCTION_NAME)
-        self.client.post(
-            "{0}/functions/{1}/versions".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME)
-        )
+        self.client.post("{0}/functions/{1}/versions".format(API_PATH_ROOT, self.FUNCTION_NAME))
 
         self.client.post(
-            "{0}/functions/{1}/aliases".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME),
+            "{0}/functions/{1}/aliases".format(API_PATH_ROOT, self.FUNCTION_NAME),
             data=json.dumps({"Name": self.ALIAS2_NAME, "FunctionVersion": "$LATEST"}),
         )
         self.client.post(
-            "{0}/functions/{1}/aliases".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME),
+            "{0}/functions/{1}/aliases".format(API_PATH_ROOT, self.FUNCTION_NAME),
             data=json.dumps(
                 {
                     "Name": self.ALIAS_NAME,
@@ -659,7 +712,7 @@ class TestLambdaAPI(unittest.TestCase):
         )
 
         response = self.client.get(
-            "{0}/functions/{1}/aliases".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME)
+            "{0}/functions/{1}/aliases".format(API_PATH_ROOT, self.FUNCTION_NAME)
         )
         result = json.loads(response.get_data())
         for alias in result["Aliases"]:
@@ -695,19 +748,17 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_get_container_name(self):
         executor = lambda_executors.EXECUTOR_CONTAINERS_REUSE
-        name = executor.get_container_name(
-            "arn:aws:lambda:us-east-1:00000000:function:my_function_name"
-        )
-        self.assertEqual(
+        name = executor.get_container_name(aws_stack.lambda_function_arn("my_function_name"))
+        self.assertIn(
+            f"_lambda_arn_aws_lambda_{aws_stack.get_region()}_{TEST_AWS_ACCOUNT_ID}_function_my_function_name",
             name,
-            "localstack_lambda_arn_aws_lambda_us-east-1_00000000_function_my_function_name",
         )
 
     def test_concurrency(self):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME)
             # note: PutFunctionConcurrency is mounted at: /2017-10-31
-            # NOT lambda_api.PATH_ROOT
+            # NOT API_PATH_ROOT
             # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
             concurrency_data = {"ReservedConcurrentExecutions": 10}
             response = self.client.put(
@@ -732,7 +783,7 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME)
             # note: PutFunctionConcurrency is mounted at: /2017-10-31
-            # NOT lambda_api.PATH_ROOT
+            # NOT API_PATH_ROOT
             # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
             concurrency_data = {"ReservedConcurrentExecutions": 10}
             self.client.put(
@@ -741,7 +792,7 @@ class TestLambdaAPI(unittest.TestCase):
             )
 
             response = self.client.get(
-                "{0}/functions/{1}".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME)
+                "{0}/functions/{1}".format(API_PATH_ROOT, self.FUNCTION_NAME)
             )
 
             result = json.loads(response.get_data())
@@ -752,7 +803,7 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME, self.TAGS)
             arn = lambda_api.func_arn(self.FUNCTION_NAME)
-            response = self.client.get("{0}/tags/{1}".format(lambda_api.PATH_ROOT, arn))
+            response = self.client.get("{0}/tags/{1}".format(API_PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue("Tags" in result)
             self.assertDictEqual(self.TAGS, result["Tags"])
@@ -761,16 +812,16 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME)
             arn = lambda_api.func_arn(self.FUNCTION_NAME)
-            response = self.client.get("{0}/tags/{1}".format(lambda_api.PATH_ROOT, arn))
+            response = self.client.get("{0}/tags/{1}".format(API_PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue("Tags" in result)
             self.assertDictEqual({}, result["Tags"])
 
             self.client.post(
-                "{0}/tags/{1}".format(lambda_api.PATH_ROOT, arn),
+                "{0}/tags/{1}".format(API_PATH_ROOT, arn),
                 data=json.dumps({"Tags": self.TAGS}),
             )
-            response = self.client.get("{0}/tags/{1}".format(lambda_api.PATH_ROOT, arn))
+            response = self.client.get("{0}/tags/{1}".format(API_PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue("Tags" in result)
             self.assertDictEqual(self.TAGS, result["Tags"])
@@ -779,7 +830,7 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             arn = lambda_api.func_arn("non-existent-function")
             response = self.client.post(
-                "{0}/tags/{1}".format(lambda_api.PATH_ROOT, arn),
+                "{0}/tags/{1}".format(API_PATH_ROOT, arn),
                 data=json.dumps({"Tags": self.TAGS}),
             )
             result = json.loads(response.get_data())
@@ -790,16 +841,16 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME, tags=self.TAGS)
             arn = lambda_api.func_arn(self.FUNCTION_NAME)
-            response = self.client.get("{0}/tags/{1}".format(lambda_api.PATH_ROOT, arn))
+            response = self.client.get("{0}/tags/{1}".format(API_PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue("Tags" in result)
             self.assertDictEqual(self.TAGS, result["Tags"])
 
             self.client.delete(
-                "{0}/tags/{1}".format(lambda_api.PATH_ROOT, arn),
+                "{0}/tags/{1}".format(API_PATH_ROOT, arn),
                 query_string={"tagKeys": "env"},
             )
-            response = self.client.get("{0}/tags/{1}".format(lambda_api.PATH_ROOT, arn))
+            response = self.client.get("{0}/tags/{1}".format(API_PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue("Tags" in result)
             self.assertDictEqual({"hello": "world"}, result["Tags"])
@@ -810,7 +861,7 @@ class TestLambdaAPI(unittest.TestCase):
         updated_config = {"Description": "lambda_description"}
         response = json.loads(
             self.client.put(
-                "{0}/functions/{1}/configuration".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME),
+                "{0}/functions/{1}/configuration".format(API_PATH_ROOT, self.FUNCTION_NAME),
                 json=updated_config,
             ).get_data()
         )
@@ -828,7 +879,7 @@ class TestLambdaAPI(unittest.TestCase):
 
         get_response = json.loads(
             self.client.get(
-                "{0}/functions/{1}/configuration".format(lambda_api.PATH_ROOT, self.FUNCTION_NAME)
+                "{0}/functions/{1}/configuration".format(API_PATH_ROOT, self.FUNCTION_NAME)
             ).get_data()
         )
         self.assertDictEqual(response, get_response)
@@ -924,14 +975,14 @@ class TestLambdaAPI(unittest.TestCase):
     def test_get_java_lib_folder_classpath_archive_is_None(self):
         self.assertRaises(TypeError, lambda_executors.Util.get_java_classpath, None)
 
-    @mock.patch("localstack.services.awslambda.lambda_executors.store_cloudwatch_logs")
+    @mock.patch("localstack.services.awslambda.lambda_utils.store_cloudwatch_logs")
     def test_executor_store_logs_can_handle_milliseconds(self, mock_store_cloudwatch_logs):
         mock_details = mock.Mock()
         t_sec = time.time()  # plain old epoch secs
         t_ms = time.time() * 1000  # epoch ms as a long-int like AWS
 
-        # pass t_ms millisecs to _store_logs
-        lambda_executors._store_logs(mock_details, "mock log output", t_ms)
+        # pass t_ms millisecs to store_cloudwatch_logs
+        lambda_utils.store_lambda_logs(mock_details, "mock log output", t_ms)
 
         # expect the computed log-stream-name to having a prefix matching the date derived from t_sec
         today = datetime.datetime.utcfromtimestamp(t_sec).strftime("%Y/%m/%d")

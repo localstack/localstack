@@ -1,3 +1,4 @@
+from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -17,6 +18,14 @@ class RedshiftCluster(GenericBaseModel):
         )
         result = client.describe_clusters(ClusterIdentifier=cluster_id)["Clusters"]
         return (result or [None])[0]
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("ClusterIdentifier")
+        if not role_name:
+            resource["Properties"]["ClusterIdentifier"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @staticmethod
     def get_deploy_templates():

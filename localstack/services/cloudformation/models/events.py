@@ -2,6 +2,7 @@ import json
 
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
+    generate_default_name,
     select_parameters,
 )
 from localstack.services.cloudformation.service_models import (
@@ -11,6 +12,7 @@ from localstack.services.cloudformation.service_models import (
 )
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 
 class EventConnection(GenericBaseModel):
@@ -86,6 +88,14 @@ class EventsRule(GenericBaseModel):
         result = aws_stack.connect_to_service("events").describe_rule(Name=rule_name) or {}
         return result if result.get("Name") else None
 
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("Name")
+        if not role_name:
+            resource["Properties"]["Name"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
     @classmethod
     def get_deploy_templates(cls):
         def events_put_rule_params(params, **kwargs):
@@ -98,12 +108,16 @@ class EventsRule(GenericBaseModel):
                 "EventBusName",
             ]
             result = select_parameters(*attrs)(params, **kwargs)
-            result["Name"] = result.get("Name") or PLACEHOLDER_RESOURCE_NAME
 
+            # TODO: remove this when refactoring events (prefix etc. was excluded here already to avoid most of the wrong behavior)
             def wrap_in_lists(o, **kwargs):
                 if isinstance(o, dict):
                     for k, v in o.items():
-                        if not isinstance(v, (dict, list)):
+                        if not isinstance(v, (dict, list)) and k not in [
+                            "prefix",
+                            "cidr",
+                            "exists",
+                        ]:
                             o[k] = [v]
                 return o
 
@@ -130,3 +144,73 @@ class EventsRule(GenericBaseModel):
                 "parameters": {"Name": "PhysicalResourceId"},
             },
         }
+
+
+class EventBusPolicy(GenericBaseModel):
+    @classmethod
+    def cloudformation_type(cls):
+        return "AWS::Events::EventBusPolicy"
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, resource_type, func, stack_name):
+            events = aws_stack.connect_to_service("events")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+
+            resource["PhysicalResourceId"] = f"EventBusPolicy-{short_uid()}"
+
+            statement_id = props["StatementId"]  # required
+            event_bus_name = props.get("EventBusName")  # optional
+            statement = props.get(
+                "Statement"
+            )  # either this field  is set or all other fields (Action, Principal, etc.)
+
+            optional_event_bus_name = {"EventBusName": event_bus_name} if event_bus_name else {}
+
+            if statement is not None:
+                policy = {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": statement_id,
+                            **statement,
+                        }
+                    ],
+                }
+                events.put_permission(Policy=json.dumps(policy), **optional_event_bus_name)
+            else:
+                condition = props.get("Condition")
+                optional_condition = {"Condition": condition} if condition else {}
+                events.put_permission(
+                    StatementId=statement_id,
+                    Action=props["Action"],
+                    Principal=props["Principal"],
+                    **optional_event_bus_name,
+                    **optional_condition,
+                )
+
+        def _delete(resource_id, resources, resource_type, func, stack_name):
+            events = aws_stack.connect_to_service("events")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            statement_id = props["StatementId"]
+            event_bus_name = props.get("EventBusName")
+            optional_event_bus_name = {"EventBusName": event_bus_name} if event_bus_name else {}
+            try:
+                events.remove_permission(
+                    StatementId=statement_id, RemoveAllPermissions=False, **optional_event_bus_name
+                )
+            except Exception as err:
+                if err.response["Error"]["Code"] == "ResourceNotFoundException":
+                    pass  # expected behavior ("parent" resource event bus already deleted)
+                else:
+                    raise err
+
+        return {
+            "create": {"function": _create},
+            "delete": {"function": _delete},
+        }
+
+
+# TODO: AWS::Events::Archive

@@ -580,12 +580,19 @@ class EventsTest(unittest.TestCase):
         proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
         wait_for_port_open(local_port)
 
+        events_client = aws_stack.connect_to_service("events")
+        connection_arn = events_client.create_connection(
+            Name="TestConnection",
+            AuthorizationType="BASIC",
+            AuthParameters={"BasicAuthParameters": {"Username": "user", "Password": "pw"}},
+        )["ConnectionArn"]
+
         # create api destination
         dest_name = "d-%s" % short_uid()
         url = "http://localhost:%s" % local_port
         result = self.events_client.create_api_destination(
             Name=dest_name,
-            ConnectionArn="c1",
+            ConnectionArn=connection_arn,
             InvocationEndpoint=url,
             HttpMethod="POST",
         )
@@ -763,20 +770,23 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(0, put_response["FailedEntryCount"])
         self.assertEqual([], put_response["FailedEntries"])
 
-        def put_events(events_client):
-            events_client.put_events(
-                Entries=[
-                    {
-                        "EventBusName": bus_name,
-                        "Source": TEST_EVENT_PATTERN["Source"][0],
-                        "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
-                        "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
-                    }
-                ]
-            )
+        def check_stream_status():
+            _stream = kinesis_client.describe_stream(StreamName=stream_name)
+            assert _stream["StreamDescription"]["StreamStatus"] == "ACTIVE"
 
-        # Stream may be still creating
-        retry(put_events, retries=5, sleep=10, events_client=self.events_client)
+        # wait until stream becomes available
+        retry(check_stream_status, retries=7, sleep=0.8)
+
+        self.events_client.put_events(
+            Entries=[
+                {
+                    "EventBusName": bus_name,
+                    "Source": TEST_EVENT_PATTERN["Source"][0],
+                    "DetailType": TEST_EVENT_PATTERN["detail-type"][0],
+                    "Detail": json.dumps(TEST_EVENT_PATTERN["Detail"][0]),
+                }
+            ]
+        )
 
         stream = kinesis_client.describe_stream(StreamName=stream_name)
         shard_id = stream["StreamDescription"]["Shards"][0]["ShardId"]

@@ -5,15 +5,17 @@ import os
 import platform
 import re
 import shutil
+import stat
 import sys
 import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 import requests
 
 from localstack import config
-from localstack.config import KINESIS_PROVIDER, is_env_true
+from localstack.config import is_env_true
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
@@ -31,11 +33,6 @@ from localstack.constants import (
     STS_JAR_URL,
 )
 from localstack.utils import bootstrap
-from localstack.utils.docker import DOCKER_CLIENT
-
-if __name__ == "__main__":
-    bootstrap.bootstrap_installation()
-# noqa: E402
 from localstack.utils.common import (
     chmod_r,
     download,
@@ -54,6 +51,7 @@ from localstack.utils.common import (
     untar,
     unzip,
 )
+from localstack.utils.docker_utils import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
 
@@ -79,20 +77,26 @@ URL_LOCALSTACK_FAT_JAR = (
 MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % INSTALL_DIR_INFRA
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
-SFN_PATCH_CLASS = (
+SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
+SFN_PATCH_CLASS2 = (
     "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
 )
-SFN_PATCH_CLASS_URL = "%s/raw/master/stepfunctions-local-patch/%s" % (
+SFN_PATCH_CLASS_URL1 = "%s/raw/master/stepfunctions-local-patch/%s" % (
     ARTIFACTS_REPO,
-    SFN_PATCH_CLASS,
+    SFN_PATCH_CLASS1,
+)
+SFN_PATCH_CLASS_URL2 = "%s/raw/master/stepfunctions-local-patch/%s" % (
+    ARTIFACTS_REPO,
+    SFN_PATCH_CLASS2,
 )
 
 # kinesis-mock version
-KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.1.9"
+KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.0"
 KINESIS_MOCK_RELEASE_URL = (
     "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
 )
 
+# debugpy module
 DEBUGPY_MODULE = "debugpy"
 DEBUGPY_DEPENDENCIES = ["gcc", "python3-dev", "musl-dev"]
 
@@ -101,6 +105,27 @@ JAVAC_TARGET_VERSION = "1.8"
 
 # SQS backend implementation provider - either "moto" or "elasticmq"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
+
+# GO Lambda runtime
+GO_RUNTIME_DOWNLOAD_URL = (
+    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/runtime.zip"
+)
+GO_INSTALL_FOLDER = config.TMP_FOLDER + "/runtime"
+GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + "/aws-lambda-mock"
+GO_LAMBDA_MOCKSERVER = GO_INSTALL_FOLDER + "/mockserver"
+GO_ZIP_NAME = "runtime.zip"
+
+
+GLIBC_KEY_URL = "https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub"
+GLIBC_KEY = "/etc/apk/keys/sgerrand.rsa.pub"
+GLIBC_VERSION = "2.32-r0"
+GLIBC_FILE = "glibc-%s.apk" % GLIBC_VERSION
+GLIBC_URL = "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/%s/%s" % (
+    GLIBC_VERSION,
+    GLIBC_FILE,
+)
+GLIBC_PATH = config.TMP_FOLDER + "/" + GLIBC_FILE
+CA_CERTIFICATES = "ca-certificates"
 
 
 def get_elasticsearch_install_version(version=None):
@@ -151,7 +176,7 @@ def install_elasticsearch(version=None):
             plugin_binary = os.path.join(install_dir, "bin", "elasticsearch-plugin")
             plugin_dir = os.path.join(install_dir, "plugins", plugin)
             if not os.path.exists(plugin_dir):
-                LOG.info("Installing Elasticsearch plugin %s" % (plugin))
+                LOG.info("Installing Elasticsearch plugin %s" % plugin)
 
                 def try_install():
                     safe_run([plugin_binary, "install", "-b", plugin])
@@ -203,12 +228,12 @@ def install_elasticmq():
 
 
 def install_kinesis():
-    if KINESIS_PROVIDER == "kinesalite":
+    if config.KINESIS_PROVIDER == "kinesalite":
         return install_kinesalite()
-    elif KINESIS_PROVIDER == "kinesis-mock":
+    elif config.KINESIS_PROVIDER == "kinesis-mock":
         return install_kinesis_mock()
     else:
-        raise ValueError("unknown kinesis provider %s" % KINESIS_PROVIDER)
+        raise ValueError("unknown kinesis provider %s" % config.KINESIS_PROVIDER)
 
 
 def install_kinesalite():
@@ -311,15 +336,19 @@ def install_stepfunctions_local():
             file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
         rm_rf("%s/stepfunctionslocal" % INSTALL_DIR_INFRA)
     # apply patches
-    patch_class_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, SFN_PATCH_CLASS)
-    if not os.path.exists(patch_class_file):
-        download(SFN_PATCH_CLASS_URL, patch_class_file)
-        cmd = 'cd "%s"; zip %s %s' % (
-            INSTALL_DIR_STEPFUNCTIONS,
-            INSTALL_PATH_STEPFUNCTIONS_JAR,
-            SFN_PATCH_CLASS,
-        )
-        run(cmd)
+    for patch_class, patch_url in (
+        (SFN_PATCH_CLASS1, SFN_PATCH_CLASS_URL1),
+        (SFN_PATCH_CLASS2, SFN_PATCH_CLASS_URL2),
+    ):
+        patch_class_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, patch_class)
+        if not os.path.exists(patch_class_file):
+            download(patch_url, patch_class_file)
+            cmd = 'cd "%s"; zip %s %s' % (
+                INSTALL_DIR_STEPFUNCTIONS,
+                INSTALL_PATH_STEPFUNCTIONS_JAR,
+                patch_class,
+            )
+            run(cmd)
 
 
 def install_dynamodb_local():
@@ -376,6 +405,48 @@ def install_lambda_java_libs():
     if not os.path.exists(INSTALL_PATH_LOCALSTACK_FAT_JAR):
         log_install_msg("LocalStack Java libraries", verbatim=True)
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
+
+
+def install_go_lambda_runtime():
+    install_glibc_for_alpine()
+
+    if not os.path.isfile(GO_LAMBDA_RUNTIME):
+        log_install_msg("Installing golang runtime")
+        file_location = os.path.join(config.TMP_FOLDER, GO_ZIP_NAME)
+        download(GO_RUNTIME_DOWNLOAD_URL, file_location)
+
+        if not zipfile.is_zipfile(file_location):
+            raise ValueError("Downloaded file is not zip ")
+
+        zipfile.ZipFile(file_location).extractall(config.TMP_FOLDER)
+        st = os.stat(GO_LAMBDA_RUNTIME)
+        os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+        st = os.stat(GO_LAMBDA_MOCKSERVER)
+        os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def install_glibc_for_alpine():
+    try:
+        run("apk info glibc")
+        return
+    except Exception:
+        pass
+
+    log_install_msg("Installing glibc")
+    try:
+        try:
+            run("apk add %s" % CA_CERTIFICATES)
+        except Exception:
+            raise Exception("ca-certificates not installed")
+
+        download(GLIBC_KEY_URL, GLIBC_KEY)
+        download(GLIBC_URL, GLIBC_PATH)
+
+        run("apk add %s" % GLIBC_PATH)
+
+    except Exception as e:
+        log_install_msg("glibc installation failed: " + str(e))
 
 
 def install_cloudformation_libs():
@@ -442,7 +513,7 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
     mkdir(target_dir)
 
     tmp_archive = tmp_archive or new_tmp_file()
-    if not os.path.exists(tmp_archive):
+    if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
         # create temporary placeholder file, to avoid duplicate parallel downloads
         save_file(tmp_archive, "")
         for i in range(retries + 1):

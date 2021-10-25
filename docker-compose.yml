@@ -8,8 +8,10 @@ services:
       default:
         ipv4_address: 10.0.1.8
     ports:
-      - "127.0.0.1:53:53"
-      - "127.0.0.1:53:53/udp"
+      - "127.0.0.1:53:53"                # only required for Pro
+      - "127.0.0.1:53:53/udp"            # only required for Pro
+      - "127.0.0.1:443:443"              # only required for Pro
+      - "127.0.0.1:4510-4530:4510-4530"  # only required for Pro
       - "127.0.0.1:4566:4566"
       - "127.0.0.1:4571:4571"
       - "127.0.0.1:${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
@@ -19,13 +21,13 @@ services:
       - DATA_DIR=${DATA_DIR- }
       - PORT_WEB_UI=${PORT_WEB_UI- }
       - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
-      - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY- }
-      - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
+      - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY- }  # only required for Pro
+      - HOST_TMP_FOLDER=${TMPDIR:-/tmp/}localstack
       - DOCKER_HOST=unix:///var/run/docker.sock
       - HOST_TMP_FOLDER=${TMPDIR}
       - DEFAULT_REGION=us-west-2
     volumes:
-      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
 networks:
   default:

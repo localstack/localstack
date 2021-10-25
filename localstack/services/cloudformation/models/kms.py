@@ -1,5 +1,8 @@
+import json
+
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 
 class KMSKey(GenericBaseModel):
@@ -25,7 +28,7 @@ class KMSKey(GenericBaseModel):
                 ):
                     physical_res_id = key["KeyId"]
                     # TODO should this be removed from here? It seems that somewhere along the execution
-                    # chain the 'PhysicalResourceId' gets overwritten with None, hence setting it here
+                    #  chain the 'PhysicalResourceId' gets overwritten with None, hence setting it here
                     self.resource_json["PhysicalResourceId"] = physical_res_id
                     break
         if not physical_res_id:
@@ -37,19 +40,57 @@ class KMSKey(GenericBaseModel):
             return self.physical_resource_id
         return self.physical_resource_id and aws_stack.kms_key_arn(self.physical_resource_id)
 
+    # TODO: try to remove this workaround (ensures idempotency)
     @staticmethod
-    def get_deploy_templates():
-        def create_params(params, **kwargs):
-            return {
-                "Policy": params.get("KeyPolicy"),
-                "Tags": [
+    def add_defaults(resource, stack_name: str):
+        props = resource["Properties"] = resource.get("Properties", {})
+        tags = props["Tags"] = props.get("Tags", [])
+        existing = [t for t in tags if t["Key"] == "localstack-key-id"]
+        if not existing:
+            # append tags, to allow us to determine in fetch_state whether this key is already deployed
+            tags.append({"Key": "localstack-key-id", "Value": short_uid()})
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, resource_type, func, stack_name):
+            kms_client = aws_stack.connect_to_service("kms")
+            resource = cls(resources[resource_id])
+            props = resource.props
+            params = {}
+            if props.get("KeyPolicy"):
+                params["Policy"] = json.dumps(props["KeyPolicy"])
+
+            if props.get("Tags"):
+                params["Tags"] = [
                     {"TagKey": tag["Key"], "TagValue": tag["Value"]}
-                    for tag in params.get("Tags", [])
-                ],
-            }
+                    for tag in props.get("Tags", [])
+                ]
+
+            if props.get("Description"):
+                params["Description"] = props["Description"]
+
+            if props.get("KeySpec"):
+                params["KeySpec"] = props["KeySpec"]
+
+            new_key = kms_client.create_key(**params)
+            key_id = new_key["KeyMetadata"]["KeyId"]
+            resource.resource_json["PhysicalResourceId"] = key_id
+
+            # key is created but some fields map to separate api calls
+            if props.get("EnableKeyRotation", False):
+                kms_client.enable_key_rotation(KeyId=key_id)
+            else:
+                kms_client.disable_key_rotation(KeyId=key_id)
+
+            if props.get("Enabled", True):
+                kms_client.enable_key(KeyId=key_id)
+            else:
+                kms_client.disable_key(KeyId=key_id)
 
         return {
-            "create": {"function": "create_key", "parameters": create_params},
+            "create": [
+                {"function": _create},
+            ],
             "delete": {
                 # TODO Key needs to be deleted in KMS backend
                 "function": "schedule_key_deletion",

@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime
 from io import BytesIO
 from threading import BoundedSemaphore
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
@@ -23,15 +23,19 @@ from six.moves.urllib.parse import urlparse
 from localstack import config
 from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_executors
+from localstack.services.awslambda.lambda_executors import LambdaContext
 from localstack.services.awslambda.lambda_utils import (
+    API_PATH_ROOT,
     DOTNET_LAMBDA_RUNTIMES,
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_DEFAULT_STARTING_POSITION,
     get_handler_file_from_name,
+    get_lambda_runtime,
     multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
+from localstack.services.install import install_go_lambda_runtime
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
@@ -40,6 +44,7 @@ from localstack.utils.common import (
     empty_context_manager,
     ensure_readable,
     first_char_to_lower,
+    get_all_subclasses,
     is_zip_file,
     isoformat_milliseconds,
     json_safe,
@@ -50,18 +55,17 @@ from localstack.utils.common import (
     parse_request_data,
     run,
     run_for_max_seconds,
-    run_safe,
     safe_requests,
     save_file,
     short_uid,
+    start_worker_thread,
     synchronized,
-    timestamp,
     timestamp_millis,
     to_bytes,
     to_str,
     unzip,
 )
-from localstack.utils.docker import DOCKER_CLIENT
+from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.http_utils import canonicalize_headers, parse_chunked_data
 from localstack.utils.run import FuncThread
 
@@ -72,7 +76,6 @@ LOG = logging.getLogger(__name__)
 LAMBDA_POLICY_NAME_PATTERN = "lambda_policy_%s"
 # constants
 APP_NAME = "lambda_api"
-PATH_ROOT = "/2015-03-31"
 ARCHIVE_FILE_PATTERN = "%s/lambda.handler.*.jar" % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = "%s/lambda_script_*.py" % config.TMP_FOLDER
 LAMBDA_ZIP_FILE_NAME = "original_lambda_archive.zip"
@@ -118,10 +121,6 @@ POSSIBLE_JSON_TYPES = (str, bytes)
 JSON_START_TYPES = tuple(set(JSON_START_CHAR_MAP.keys()) - set(POSSIBLE_JSON_TYPES))
 JSON_START_CHARS = tuple(set(functools.reduce(lambda x, y: x + y, JSON_START_CHAR_MAP.values())))
 
-# SQS listener thread settings
-SQS_LISTENER_THREAD = {}
-SQS_POLL_INTERVAL_SEC = 1
-
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(
     config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR
@@ -160,25 +159,223 @@ class ClientError(Exception):
         return error_response(self.msg, self.code)
 
 
-class LambdaContext(object):
-    DEFAULT_MEMORY_LIMIT = 1536
+class EventSourceListener:
+    INSTANCES: Dict[str, "EventSourceListener"] = {}
 
-    def __init__(self, func_details, qualifier=None, context=None):
-        self.function_name = func_details.name()
-        self.function_version = func_details.get_qualifier_version(qualifier)
-        self.client_context = context.get("client_context")
-        self.invoked_function_arn = func_details.arn()
-        if qualifier:
-            self.invoked_function_arn += ":" + qualifier
-        self.cognito_identity = context.get("identity")
-        self.aws_request_id = str(uuid.uuid4())
-        self.memory_limit_in_mb = func_details.memory_size or self.DEFAULT_MEMORY_LIMIT
-        self.log_group_name = "/aws/lambda/%s" % self.function_name
-        self.log_stream_name = "%s/[1]%s" % (timestamp(format="%Y/%m/%d"), short_uid())
+    @classmethod
+    def get(cls, source_type):
+        # TODO: potentially to be replaced with new plugin loading mechanism...
+        if not cls.INSTANCES:
+            for clazz in get_all_subclasses(EventSourceListener):
+                cls.INSTANCES[clazz.source_type()] = clazz()
+        return cls.INSTANCES.get(source_type)
 
-    def get_remaining_time_in_millis(self):
-        # TODO implement!
-        return 1000 * 60
+    @staticmethod
+    def source_type() -> str:
+        """Type discriminator - to be implemented by subclasses."""
+        raise NotImplementedError
+
+    def start(self):
+        """Start listener in the background (for polling mode) - to be implemented by subclasses."""
+        pass
+
+    def process_event(self, event: Any):
+        """Process the given event (for reactive mode)"""
+        pass
+
+    @staticmethod
+    def start_listeners(event_source_mapping: Dict):
+        source_arn = event_source_mapping.get("EventSourceArn") or ""
+        parts = source_arn.split(":")
+        service_type = parts[2] if len(parts) > 2 else ""
+        if not service_type:
+            self_managed_endpoints = event_source_mapping.get("SelfManagedEventSource", {}).get(
+                "Endpoints", {}
+            )
+            if self_managed_endpoints.get("KAFKA_BOOTSTRAP_SERVERS"):
+                service_type = "kafka"
+        instance = EventSourceListener.get(service_type)
+        if instance:
+            instance.start()
+
+    @staticmethod
+    def process_event_via_listener(service_type: str, event: Any):
+        """Process event for the given service type (for reactive mode)"""
+        instance = EventSourceListener.get(service_type)
+        if not instance:
+            return
+
+        def _process(*args):
+            instance.process_event(event)
+
+        # start processing in background
+        start_worker_thread(_process)
+
+
+class EventSourceListenerSQS(EventSourceListener):
+    # SQS listener thread settings
+    SQS_LISTENER_THREAD: Dict = {}
+    SQS_POLL_INTERVAL_SEC: float = 1
+    # Whether to use polling via SQS API (or, alternatively, reactive mode with SQS updates received directly in-memory)
+    # Advantage of polling is that we can delete messages directly from the queue (via 'ReceiptHandle') after processing
+    USE_POLLING = True
+
+    @staticmethod
+    def source_type():
+        return "sqs"
+
+    def start(self):
+        if not self.USE_POLLING:
+            return
+        if self.SQS_LISTENER_THREAD:
+            return
+
+        LOG.debug("Starting SQS message polling thread for Lambda API")
+        self.SQS_LISTENER_THREAD["_thread_"] = thread = FuncThread(self._listener_loop)
+        thread.start()
+
+    def get_matching_event_sources(self) -> List[Dict]:
+        return get_event_sources(source_arn=r".*:sqs:.*")
+
+    def process_event(self, event: Any):
+        if self.USE_POLLING:
+            return
+        # feed message into the first listening lambda (message should only get processed once)
+        queue_url = event["QueueUrl"]
+        try:
+            queue_name = queue_url.rpartition("/")[2]
+            queue_arn = aws_stack.sqs_queue_arn(queue_name)
+            sources = get_event_sources(source_arn=queue_arn)
+            arns = [s.get("FunctionArn") for s in sources]
+            source = (sources or [None])[0]
+            if not source:
+                return False
+
+            LOG.debug(
+                "Found %s source mappings for event from SQS queue %s: %s"
+                % (len(arns), queue_arn, arns)
+            )
+            # TODO: support message BatchSize here, same as for polling mode below
+            messages = event["Messages"]
+            self._process_messages_for_event_source(source, messages)
+        except Exception:
+            LOG.exception(f"Unable to run Lambda function on SQS messages from queue {queue_url}")
+
+    def _listener_loop(self, *args):
+        while True:
+            try:
+                sources = self.get_matching_event_sources()
+                if not sources:
+                    # Temporarily disable polling if no event sources are configured
+                    # anymore. The loop will get restarted next time a message
+                    # arrives and if an event source is configured.
+                    self.SQS_LISTENER_THREAD.pop("_thread_")
+                    return
+
+                unprocessed_messages = {}
+
+                for source in sources:
+                    queue_arn = source["EventSourceArn"]
+                    region_name = queue_arn.split(":")[3]
+                    sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
+                    batch_size = max(min(source.get("BatchSize", 1), 10), 1)
+
+                    try:
+                        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+                        messages = unprocessed_messages.pop(queue_arn, None)
+                        if not messages:
+                            result = sqs_client.receive_message(
+                                QueueUrl=queue_url,
+                                AttributeNames=["All"],
+                                MessageAttributeNames=["All"],
+                                MaxNumberOfMessages=batch_size,
+                            )
+                            messages = result.get("Messages")
+                            if not messages:
+                                continue
+
+                        res = self._process_messages_for_event_source(source, messages)
+                        if not res:
+                            unprocessed_messages[queue_arn] = messages
+
+                    except Exception as e:
+                        LOG.debug("Unable to poll SQS messages for queue %s: %s" % (queue_arn, e))
+
+            except Exception:
+                pass
+            finally:
+                time.sleep(self.SQS_POLL_INTERVAL_SEC)
+
+    def _process_messages_for_event_source(self, source, messages):
+        lambda_arn = source["FunctionArn"]
+        queue_arn = source["EventSourceArn"]
+        region_name = queue_arn.split(":")[3]
+        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+        LOG.debug("Sending event from event source %s to Lambda %s" % (queue_arn, lambda_arn))
+        res = self._send_event_to_lambda(
+            queue_arn,
+            queue_url,
+            lambda_arn,
+            messages,
+            region=region_name,
+        )
+        return res
+
+    def _send_event_to_lambda(self, queue_arn, queue_url, lambda_arn, messages, region):
+        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
+            if error and not dlq_sent:
+                # Skip deleting messages from the queue in case of processing errors AND if
+                # the message has not yet been sent to a dead letter queue (DLQ).
+                # We'll pick them up and retry next time they become available on the queue.
+                return
+
+            region_name = queue_arn.split(":")[3]
+            sqs_client = aws_stack.connect_to_service("sqs", region_name=region_name)
+            entries = [
+                {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
+            ]
+            try:
+                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+            except Exception as e:
+                LOG.info(
+                    "Unable to delete Lambda events from SQS queue "
+                    + "(please check SQS visibility timeout settings): %s - %s" % (entries, e)
+                )
+
+        records = []
+        for msg in messages:
+            message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
+            records.append(
+                {
+                    "body": msg.get("Body", "MessageBody"),
+                    "receiptHandle": msg.get("ReceiptHandle"),
+                    "md5OfBody": msg.get("MD5OfBody") or msg.get("MD5OfMessageBody"),
+                    "eventSourceARN": queue_arn,
+                    "eventSource": lambda_executors.EVENT_SOURCE_SQS,
+                    "awsRegion": region,
+                    "messageId": msg["MessageId"],
+                    "attributes": msg.get("Attributes", {}),
+                    "messageAttributes": message_attrs,
+                    "md5OfMessageAttributes": msg.get("MD5OfMessageAttributes"),
+                    "sqs": True,
+                }
+            )
+
+        event = {"Records": records}
+
+        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
+        res = run_lambda(
+            func_arn=lambda_arn,
+            event=event,
+            context={},
+            asynchronous=True,
+            callback=delete_messages,
+        )
+        if isinstance(res, lambda_executors.InvocationResult):
+            status_code = getattr(res.result, "status_code", 0)
+            if status_code >= 400:
+                return False
+        return True
 
 
 def cleanup():
@@ -223,14 +420,6 @@ def check_batch_size_range(source_arn, batch_size=None):
     return batch_size
 
 
-def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
-    region = LambdaRegion.get()
-    arn = func_arn(lambda_name)
-    lambda_details = region.lambdas[arn]
-    lambda_details.versions.get(VERSION_LATEST)["Function"] = lambda_handler
-    lambda_details.cwd = lambda_cwd or lambda_details.cwd
-
-
 def build_mapping_obj(data) -> Dict:
     mapping = {}
     function_name = data["FunctionName"]
@@ -243,10 +432,10 @@ def build_mapping_obj(data) -> Dict:
     mapping["LastModified"] = format_timestamp_for_event_source_mapping()
     mapping["State"] = "Enabled" if enabled in [True, None] else "Disabled"
     mapping["ParallelizationFactor"] = data.get("ParallelizationFactor") or 1
+    mapping["Topics"] = data.get("Topics") or []
     if "SelfManagedEventSource" in data:
         source_arn = data["SourceAccessConfigurations"][0]["URI"]
         mapping["SelfManagedEventSource"] = data["SelfManagedEventSource"]
-        mapping["Topics"] = data["Topics"]
         mapping["SourceAccessConfigurations"] = data["SourceAccessConfigurations"]
     else:
         source_arn = data["EventSourceArn"]
@@ -271,6 +460,7 @@ def add_event_source(data):
     region = LambdaRegion.get()
     mapping = build_mapping_obj(data)
     region.event_source_mappings.append(mapping)
+    EventSourceListener.start_listeners(mapping)
     return mapping
 
 
@@ -426,7 +616,7 @@ def process_sns_notification(
     event = {
         "Records": [
             {
-                "EventSource": "localstack:sns",
+                "EventSource": "aws:sns",
                 "EventVersion": "1.0",
                 "EventSubscriptionArn": subscription_arn,
                 "Sns": {
@@ -506,156 +696,13 @@ def process_kinesis_records(records, stream_name):
         )
 
 
-def start_lambda_sqs_listener():
-    if SQS_LISTENER_THREAD:
-        return
-
-    def send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region):
-        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
-            if error and not dlq_sent:
-                # Skip deleting messages from the queue in case of processing errors AND if
-                # the message has not yet been sent to a dead letter queue (DLQ).
-                # We'll pick them up and retry next time they become available on the queue.
-                return
-
-            sqs_client = aws_stack.connect_to_service("sqs")
-            entries = [
-                {"Id": r["receiptHandle"], "ReceiptHandle": r["receiptHandle"]} for r in records
-            ]
-            try:
-                sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
-            except Exception as e:
-                LOG.info(
-                    "Unable to delete Lambda events from SQS queue "
-                    + "(please check SQS visibility timeout settings): %s - %s" % (entries, e)
-                )
-
-        records = []
-        for msg in messages:
-            message_attrs = message_attributes_to_lower(msg.get("MessageAttributes"))
-            records.append(
-                {
-                    "body": msg["Body"],
-                    "receiptHandle": msg["ReceiptHandle"],
-                    "md5OfBody": msg["MD5OfBody"],
-                    "eventSourceARN": queue_arn,
-                    "eventSource": lambda_executors.EVENT_SOURCE_SQS,
-                    "awsRegion": region,
-                    "messageId": msg["MessageId"],
-                    "attributes": msg.get("Attributes", {}),
-                    "messageAttributes": message_attrs,
-                    "md5OfMessageAttributes": msg.get("MD5OfMessageAttributes"),
-                    "sqs": True,
-                }
-            )
-
-        event = {"Records": records}
-
-        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
-        res = run_lambda(
-            func_arn=lambda_arn,
-            event=event,
-            context={},
-            asynchronous=True,
-            callback=delete_messages,
-        )
-        if (
-            isinstance(res, lambda_executors.InvocationResult)
-            and getattr(res.result, "status_code", 0) >= 400
-        ):
-            return False
-        return True
-
-    def listener_loop(*args):
-        while True:
-            try:
-                sources = get_event_sources(source_arn=r".*:sqs:.*")
-                if not sources:
-                    # Temporarily disable polling if no event sources are configured
-                    # anymore. The loop will get restarted next time a message
-                    # arrives and if an event source is configured.
-                    SQS_LISTENER_THREAD.pop("_thread_")
-                    return
-
-                unprocessed_messages = {}
-
-                sqs_client = aws_stack.connect_to_service("sqs")
-                for source in sources:
-                    queue_arn = source["EventSourceArn"]
-                    lambda_arn = source["FunctionArn"]
-                    batch_size = max(min(source.get("BatchSize", 1), 10), 1)
-
-                    try:
-                        region_name = queue_arn.split(":")[3]
-                        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-                        messages = unprocessed_messages.pop(queue_arn, None)
-                        if not messages:
-                            result = sqs_client.receive_message(
-                                QueueUrl=queue_url,
-                                MessageAttributeNames=["All"],
-                                MaxNumberOfMessages=batch_size,
-                            )
-                            messages = result.get("Messages")
-                            if not messages:
-                                continue
-
-                        LOG.debug(
-                            "Sending event from event source %s to Lambda %s"
-                            % (queue_arn, lambda_arn)
-                        )
-                        res = send_event_to_lambda(
-                            queue_arn,
-                            queue_url,
-                            lambda_arn,
-                            messages,
-                            region=region_name,
-                        )
-                        if not res:
-                            unprocessed_messages[queue_arn] = messages
-
-                    except Exception as e:
-                        LOG.debug("Unable to poll SQS messages for queue %s: %s" % (queue_arn, e))
-
-            except Exception:
-                pass
-            finally:
-                time.sleep(SQS_POLL_INTERVAL_SEC)
-
-    LOG.debug("Starting SQS message polling thread for Lambda API")
-    SQS_LISTENER_THREAD["_thread_"] = FuncThread(listener_loop)
-    SQS_LISTENER_THREAD["_thread_"].start()
-
-
-def process_sqs_message(queue_name, region_name=None):
-    # feed message into the first listening lambda (message should only get processed once)
-    try:
-        region_name = region_name or aws_stack.get_region()
-        queue_arn = aws_stack.sqs_queue_arn(queue_name, region_name=region_name)
-        sources = get_event_sources(source_arn=queue_arn)
-        arns = [s.get("FunctionArn") for s in sources]
-        source = (sources or [None])[0]
-        if not source:
-            return False
-
-        LOG.debug(
-            "Found %s source mappings for event from SQS queue %s: %s"
-            % (len(arns), queue_arn, arns)
-        )
-        start_lambda_sqs_listener()
-        return True
-    except Exception as e:
-        LOG.warning(
-            "Unable to run Lambda function on SQS messages: %s %s" % (e, traceback.format_exc())
-        )
-
-
 def get_event_sources(func_name=None, source_arn=None):
-    region = LambdaRegion.get()
     result = []
-    for m in region.event_source_mappings:
-        if not func_name or (m["FunctionArn"] in [func_name, func_arn(func_name)]):
-            if _arn_match(mapped=m.get("EventSourceArn"), searched=source_arn):
-                result.append(m)
+    for region, details in LambdaRegion.regions().items():
+        for m in details.event_source_mappings:
+            if not func_name or (m["FunctionArn"] in [func_name, func_arn(func_name)]):
+                if _arn_match(mapped=m.get("EventSourceArn"), searched=source_arn):
+                    result.append(m)
     return result
 
 
@@ -686,9 +733,9 @@ def get_function_version(arn, version):
 
 def publish_new_function_version(arn):
     region = LambdaRegion.get()
-    func_details = region.lambdas.get(arn)
-    versions = func_details.versions
-    max_version_number = func_details.max_version()
+    lambda_function = region.lambdas.get(arn)
+    versions = lambda_function.versions
+    max_version_number = lambda_function.max_version()
     next_version_number = max_version_number + 1
     latest_hash = versions.get(VERSION_LATEST).get("CodeSha256")
     max_version = versions.get(str(max_version_number))
@@ -746,22 +793,16 @@ def run_lambda(
         sys.stderr = stream
     try:
         func_arn = aws_stack.fix_arn(func_arn)
-        func_details = region.lambdas.get(func_arn)
-        if not func_details:
+        lambda_function = region.lambdas.get(func_arn)
+        if not lambda_function:
             LOG.debug("Unable to find details for Lambda %s in region %s" % (func_arn, region_name))
             result = not_found_error(msg="The resource specified in the request does not exist.")
             return lambda_executors.InvocationResult(result)
 
-        # forward invocation to external endpoint, if configured
-        invocation_type = "Event" if asynchronous else "RequestResponse"
-        invoke_result = forward_to_external_url(func_details, event, context, invocation_type)
-        if invoke_result is not None:
-            return invoke_result
-
-        context = LambdaContext(func_details, version, context)
+        context = LambdaContext(lambda_function, version, context)
         result = LAMBDA_EXECUTOR.execute(
             func_arn,
-            func_details,
+            lambda_function,
             event,
             context=context,
             version=version,
@@ -887,7 +928,7 @@ def get_zip_bytes(function_code):
     return zip_file_content
 
 
-def get_java_handler(zip_file_content, main_file, func_details=None):
+def get_java_handler(zip_file_content, main_file, lambda_function=None):
     """Creates a Java handler from an uploaded ZIP or JAR.
 
     :type zip_file_content: bytes
@@ -903,7 +944,7 @@ def get_java_handler(zip_file_content, main_file, func_details=None):
 
         def execute(event, context):
             result = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
-                event, context, main_file=main_file, func_details=func_details
+                event, context, main_file=main_file, lambda_function=lambda_function
             )
             return result
 
@@ -960,18 +1001,21 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     return tmp_dir
 
 
-def set_function_code(code, lambda_name, lambda_cwd=None):
+def set_function_code(lambda_function: LambdaFunction):
     def _set_and_configure():
-        lambda_handler = do_set_function_code(code, lambda_name, lambda_cwd=lambda_cwd)
-        add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
+        lambda_handler = do_set_function_code(lambda_function)
+        lambda_function.versions.get(VERSION_LATEST)["Function"] = lambda_handler
+        # initialize function code via plugins
+        for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
+            plugin.init_function_code(lambda_function)
 
     # unzipping can take some time - limit the execution time to avoid client/network timeout issues
-    run_for_max_seconds(25, _set_and_configure)
-    return {"FunctionName": lambda_name}
+    run_for_max_seconds(config.LAMBDA_CODE_EXTRACT_TIME, _set_and_configure)
+    return {"FunctionName": lambda_function.name()}
 
 
-def do_set_function_code(code, lambda_name, lambda_cwd=None):
-    def generic_handler(event, context):
+def do_set_function_code(lambda_function: LambdaFunction):
+    def generic_handler(*_):
         raise ClientError(
             (
                 'Unable to find executor for Lambda function "%s". Note that '
@@ -981,15 +1025,16 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
         )
 
     region = LambdaRegion.get()
-    arn = func_arn(lambda_name)
+    lambda_name = lambda_function.name()
+    arn = lambda_function.arn()
     lambda_details = region.lambdas[arn]
-    runtime = lambda_details.runtime
+    runtime = get_lambda_runtime(lambda_details)
     lambda_environment = lambda_details.envvars
     handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
-    code_passed = code
-    code = code or lambda_details.code
-    is_local_mount = code.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    code_passed = lambda_function.code
+    is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
     zip_file_content = None
+    lambda_cwd = lambda_function.cwd
 
     LAMBDA_EXECUTOR.cleanup(arn)
 
@@ -1004,11 +1049,14 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
     if not lambda_cwd:
         return
 
-    # get local lambda working directory
+    # get local lambda code archive path
     tmp_file = os.path.join(lambda_cwd, LAMBDA_ZIP_FILE_NAME)
 
     if not zip_file_content:
         zip_file_content = load_file(tmp_file, mode="rb")
+    else:
+        # override lambda archive with fresh code if we got an update
+        save_file(tmp_file, zip_file_content)
 
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
@@ -1018,7 +1066,13 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
         # The Lambda executors for Docker subclass LambdaExecutorContainers, which
         # runs Lambda in Docker by passing all *.jar files in the function working
         # directory as part of the classpath. Obtain a Java handler function below.
-        lambda_handler = get_java_handler(zip_file_content, tmp_file, func_details=lambda_details)
+        try:
+            lambda_handler = get_java_handler(
+                zip_file_content, tmp_file, lambda_function=lambda_details
+            )
+        except Exception as e:
+            # this can happen, e.g., for Lambda code mounted via __local__ -> ignore
+            LOG.debug("Unable to determine Lambda Java handler: %s", e)
 
     if not is_local_mount:
         # Lambda code must be uploaded in Zip format
@@ -1070,18 +1124,30 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
                     lambda_env=lambda_environment,
                 )
             except Exception as e:
-                raise ClientError("Unable to get handler function from lambda code.", e)
+                raise ClientError("Unable to get handler function from lambda code: %s" % e)
 
         if runtime.startswith("node") and not use_docker():
             ensure_readable(main_file)
 
             def execute(event, context):
                 result = lambda_executors.EXECUTOR_LOCAL.execute_javascript_lambda(
-                    event, context, main_file=main_file, func_details=lambda_details
+                    event, context, main_file=main_file, lambda_function=lambda_function
                 )
                 return result
 
             lambda_handler = execute
+
+        if runtime.startswith("go1") and not use_docker():
+            install_go_lambda_runtime()
+            ensure_readable(main_file)
+
+            def execute_go(event, context):
+                result = lambda_executors.EXECUTOR_LOCAL.execute_go_lambda(
+                    event, context, main_file=main_file, lambda_function=lambda_function
+                )
+                return result
+
+            lambda_handler = execute_go
 
     return lambda_handler
 
@@ -1101,81 +1167,54 @@ def do_list_functions():
 
         func_name = f_arn.split(":function:")[-1]
         arn = func_arn(func_name)
-        func_details = region.lambdas.get(arn)
-        if not func_details:
+        lambda_function = region.lambdas.get(arn)
+        if not lambda_function:
             # this can happen if we're accessing Lambdas from a different region (ARN mismatch)
             continue
 
-        details = format_func_details(func_details)
+        details = format_func_details(lambda_function)
         details["Tags"] = func.tags
 
         funcs.append(details)
     return funcs
 
 
-def format_func_details(func_details, version=None, always_add_version=False):
+def format_func_details(
+    lambda_function: LambdaFunction, version: str = None, always_add_version=False
+) -> Dict[str, Any]:
     version = version or VERSION_LATEST
-    func_version = func_details.get_version(version)
+    func_version = lambda_function.get_version(version)
     result = {
         "CodeSha256": func_version.get("CodeSha256"),
-        "Role": func_details.role,
-        "KMSKeyArn": func_details.kms_key_arn,
+        "Role": lambda_function.role,
+        "KMSKeyArn": lambda_function.kms_key_arn,
         "Version": version,
-        "VpcConfig": func_details.vpc_config,
-        "FunctionArn": func_details.arn(),
-        "FunctionName": func_details.name(),
+        "VpcConfig": lambda_function.vpc_config,
+        "FunctionArn": lambda_function.arn(),
+        "FunctionName": lambda_function.name(),
         "CodeSize": func_version.get("CodeSize"),
-        "Handler": func_details.handler,
-        "Runtime": func_details.runtime,
-        "Timeout": func_details.timeout,
-        "Description": func_details.description,
-        "MemorySize": func_details.memory_size,
-        "LastModified": format_timestamp(func_details.last_modified),
-        "TracingConfig": func_details.tracing_config or {"Mode": "PassThrough"},
+        "Handler": lambda_function.handler,
+        "Runtime": lambda_function.runtime,
+        "Timeout": lambda_function.timeout,
+        "Description": lambda_function.description,
+        "MemorySize": lambda_function.memory_size,
+        "LastModified": format_timestamp(lambda_function.last_modified),
+        "TracingConfig": lambda_function.tracing_config or {"Mode": "PassThrough"},
         "RevisionId": func_version.get("RevisionId"),
         "State": "Active",
         "LastUpdateStatus": "Successful",
-        "PackageType": func_details.package_type,
-        "ImageConfig": getattr(func_details, "image_config", None),
+        "PackageType": lambda_function.package_type,
+        "ImageConfig": getattr(lambda_function, "image_config", None),
     }
-    if func_details.dead_letter_config:
-        result["DeadLetterConfig"] = func_details.dead_letter_config
+    if lambda_function.dead_letter_config:
+        result["DeadLetterConfig"] = lambda_function.dead_letter_config
 
-    if func_details.envvars:
-        result["Environment"] = {"Variables": func_details.envvars}
+    if lambda_function.envvars:
+        result["Environment"] = {"Variables": lambda_function.envvars}
     if (always_add_version or version != VERSION_LATEST) and len(
         result["FunctionArn"].split(":")
     ) <= 7:
         result["FunctionArn"] += ":%s" % version
-    return result
-
-
-def forward_to_external_url(func_details, event, context, invocation_type):
-    """If LAMBDA_FORWARD_URL is configured, forward the invocation of this Lambda to the configured URL."""
-    if not config.LAMBDA_FORWARD_URL:
-        return
-    func_name = func_details.name()
-    url = "%s%s/functions/%s/invocations" % (
-        config.LAMBDA_FORWARD_URL,
-        PATH_ROOT,
-        func_name,
-    )
-    headers = aws_stack.mock_aws_request_headers("lambda")
-    headers["X-Amz-Invocation-Type"] = invocation_type
-    headers["X-Amz-Log-Type"] = "Tail"
-    client_context = context.get("client_context")
-    if client_context:
-        headers["X-Amz-Client-Context"] = client_context
-    data = json.dumps(event) if isinstance(event, dict) else str(event)
-    LOG.debug("Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s" % config.LAMBDA_FORWARD_URL)
-    result = safe_requests.post(url, data, headers=headers)
-    content = run_safe(lambda: to_str(result.content)) or result.content
-    LOG.debug(
-        "Received result from external Lambda endpoint (status %s): %s"
-        % (result.status_code, content)
-    )
-    result = aws_responses.requests_to_flask_response(result)
-    result = lambda_executors.InvocationResult(result)
     return result
 
 
@@ -1262,6 +1301,31 @@ def not_found_error(ref=None, msg=None):
     return error_response(msg, 404, error_type="ResourceNotFoundException")
 
 
+def delete_lambda_function(function_name: str) -> Dict[None, None]:
+    arn = func_arn(function_name)
+    region = LambdaRegion.get()
+    # Stop/remove any containers that this arn uses.
+    LAMBDA_EXECUTOR.cleanup(arn)
+
+    try:
+        region.lambdas.pop(arn)
+    except KeyError:
+        return not_found_error(func_arn(function_name))
+
+    event_publisher.fire_event(
+        event_publisher.EVENT_LAMBDA_DELETE_FUNC,
+        payload={"n": event_publisher.get_hash(function_name)},
+    )
+    i = 0
+    while i < len(region.event_source_mappings):
+        mapping = region.event_source_mappings[i]
+        if mapping["FunctionArn"] == arn:
+            del region.event_source_mappings[i]
+            i -= 1
+        i += 1
+    return {}
+
+
 # ------------
 # API METHODS
 # ------------
@@ -1275,7 +1339,7 @@ def before_request():
         request.environ["wsgi.input_terminated"] = True
 
 
-@app.route("%s/functions" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions" % API_PATH_ROOT, methods=["POST"])
 def create_function():
     """Create new function
     ---
@@ -1307,37 +1371,37 @@ def create_function():
                 409,
                 error_type="ResourceConflictException",
             )
-        region.lambdas[arn] = func_details = LambdaFunction(arn)
-        func_details.versions = {VERSION_LATEST: {"RevisionId": str(uuid.uuid4())}}
-        func_details.vpc_config = data.get("VpcConfig", {})
-        func_details.last_modified = datetime.utcnow()
-        func_details.description = data.get("Description", "")
-        func_details.handler = data.get("Handler")
-        func_details.runtime = data.get("Runtime")
-        func_details.envvars = data.get("Environment", {}).get("Variables", {})
-        func_details.tags = data.get("Tags", {})
-        func_details.timeout = data.get("Timeout", LAMBDA_DEFAULT_TIMEOUT)
-        func_details.role = data["Role"]
-        func_details.kms_key_arn = data.get("KMSKeyArn")
+        region.lambdas[arn] = lambda_function = LambdaFunction(arn)
+        lambda_function.versions = {VERSION_LATEST: {"RevisionId": str(uuid.uuid4())}}
+        lambda_function.vpc_config = data.get("VpcConfig", {})
+        lambda_function.last_modified = datetime.utcnow()
+        lambda_function.description = data.get("Description", "")
+        lambda_function.handler = data.get("Handler")
+        lambda_function.runtime = data.get("Runtime")
+        lambda_function.envvars = data.get("Environment", {}).get("Variables", {})
+        lambda_function.tags = data.get("Tags", {})
+        lambda_function.timeout = data.get("Timeout", LAMBDA_DEFAULT_TIMEOUT)
+        lambda_function.role = data["Role"]
+        lambda_function.kms_key_arn = data.get("KMSKeyArn")
         # Oddity in Lambda API (discovered when testing against Terraform test suite)
         # See https://github.com/hashicorp/terraform-provider-aws/issues/6366
-        if not func_details.envvars:
-            func_details.kms_key_arn = None
-        func_details.memory_size = data.get("MemorySize")
-        func_details.code_signing_config_arn = data.get("CodeSigningConfigArn")
-        func_details.code = data["Code"]
-        func_details.package_type = data.get("PackageType") or "Zip"
-        func_details.image_config = data.get("ImageConfig", {})
-        func_details.tracing_config = data.get("TracingConfig", {})
-        func_details.set_dead_letter_config(data)
-        result = set_function_code(func_details.code, lambda_name)
+        if not lambda_function.envvars:
+            lambda_function.kms_key_arn = None
+        lambda_function.memory_size = data.get("MemorySize")
+        lambda_function.code_signing_config_arn = data.get("CodeSigningConfigArn")
+        lambda_function.code = data["Code"]
+        lambda_function.package_type = data.get("PackageType") or "Zip"
+        lambda_function.image_config = data.get("ImageConfig", {})
+        lambda_function.tracing_config = data.get("TracingConfig", {})
+        lambda_function.set_dead_letter_config(data)
+        result = set_function_code(lambda_function)
         if isinstance(result, Response):
             del region.lambdas[arn]
             return result
         # remove content from code attribute, if present
-        func_details.code.pop("ZipFile", None)
+        lambda_function.code.pop("ZipFile", None)
         # prepare result
-        result.update(format_func_details(func_details))
+        result.update(format_func_details(lambda_function))
         if data.get("Publish"):
             result["Version"] = publish_new_function_version(arn)["Version"]
         return jsonify(result or {})
@@ -1348,7 +1412,7 @@ def create_function():
         return error_response("Unknown error: %s %s" % (e, traceback.format_exc()))
 
 
-@app.route("%s/functions/<function>" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>" % API_PATH_ROOT, methods=["GET"])
 def get_function(function):
     """Get details for a single function
     ---
@@ -1361,15 +1425,17 @@ def get_function(function):
     """
     region = LambdaRegion.get()
     funcs = do_list_functions()
+    arn_regex = r".*%s($|:.+)" % function
+    is_arn = ":" in function
     for func in funcs:
-        if function == func["FunctionName"]:
-            return lookup_function(func, region, request.url)
-        elif function in func["FunctionArn"]:
+        if function == func["FunctionName"] or (
+            is_arn and re.match(arn_regex, func["FunctionArn"])
+        ):
             return lookup_function(func, region, request.url)
     return not_found_error(func_arn(function))
 
 
-@app.route("%s/functions/" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/" % API_PATH_ROOT, methods=["GET"])
 def list_functions():
     """List functions
     ---
@@ -1383,7 +1449,7 @@ def list_functions():
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>" % PATH_ROOT, methods=["DELETE"])
+@app.route("%s/functions/<function>" % API_PATH_ROOT, methods=["DELETE"])
 def delete_function(function):
     """Delete an existing function
     ---
@@ -1392,33 +1458,12 @@ def delete_function(function):
         - name: 'request'
           in: body
     """
-    region = LambdaRegion.get()
-    arn = func_arn(function)
 
-    # Stop/remove any containers that this arn uses.
-    LAMBDA_EXECUTOR.cleanup(arn)
-
-    try:
-        region.lambdas.pop(arn)
-    except KeyError:
-        return not_found_error(func_arn(function))
-
-    event_publisher.fire_event(
-        event_publisher.EVENT_LAMBDA_DELETE_FUNC,
-        payload={"n": event_publisher.get_hash(function)},
-    )
-    i = 0
-    while i < len(region.event_source_mappings):
-        mapping = region.event_source_mappings[i]
-        if mapping["FunctionArn"] == arn:
-            del region.event_source_mappings[i]
-            i -= 1
-        i += 1
-    result = {}
+    result = delete_lambda_function(function)
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>/code" % PATH_ROOT, methods=["PUT"])
+@app.route("%s/functions/<function>/code" % API_PATH_ROOT, methods=["PUT"])
 def update_function_code(function):
     """Update the code of an existing function
     ---
@@ -1429,21 +1474,22 @@ def update_function_code(function):
     """
     region = LambdaRegion.get()
     arn = func_arn(function)
-    if arn not in region.lambdas:
+    lambda_function = region.lambdas.get(arn)
+    if not lambda_function:
         return not_found_error("Function not found: %s" % arn)
     data = json.loads(to_str(request.data))
-    result = set_function_code(data, function)
+    lambda_function.code = data
+    result = set_function_code(lambda_function)
     if isinstance(result, Response):
         return result
-    func_details = region.lambdas.get(arn)
-    func_details.last_modified = datetime.utcnow()
-    result.update(format_func_details(func_details))
+    lambda_function.last_modified = datetime.utcnow()
+    result.update(format_func_details(lambda_function))
     if data.get("Publish"):
         result["Version"] = publish_new_function_version(arn)["Version"]
     return jsonify(result or {})
 
 
-@app.route("%s/functions/<function>/code" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/code" % API_PATH_ROOT, methods=["GET"])
 def get_function_code(function):
     """Get the code of an existing function
     ---
@@ -1452,10 +1498,10 @@ def get_function_code(function):
     """
     region = LambdaRegion.get()
     arn = func_arn(function)
-    func_details = region.lambdas.get(arn)
-    if not func_details:
+    lambda_function = region.lambdas.get(arn)
+    if not lambda_function:
         return not_found_error(arn)
-    lambda_cwd = func_details.cwd
+    lambda_cwd = lambda_function.cwd
     tmp_file = "%s/%s" % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
     return Response(
         load_file(tmp_file, mode="rb"),
@@ -1464,7 +1510,7 @@ def get_function_code(function):
     )
 
 
-@app.route("%s/functions/<function>/configuration" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/configuration" % API_PATH_ROOT, methods=["GET"])
 def get_function_configuration(function):
     """Get the configuration of an existing function
     ---
@@ -1480,7 +1526,7 @@ def get_function_configuration(function):
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>/configuration" % PATH_ROOT, methods=["PUT"])
+@app.route("%s/functions/<function>/configuration" % API_PATH_ROOT, methods=["PUT"])
 def update_function_configuration(function):
     """Update the configuration of an existing function
     ---
@@ -1524,8 +1570,12 @@ def update_function_configuration(function):
         lambda_details.tracing_config = data["TracingConfig"]
     lambda_details.last_modified = datetime.utcnow()
     result = data
-    func_details = region.lambdas.get(arn)
-    result.update(format_func_details(func_details))
+    lambda_function = region.lambdas.get(arn)
+    result.update(format_func_details(lambda_function))
+
+    # initialize plugins
+    for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
+        plugin.init_function_configuration(lambda_function)
 
     return jsonify(result)
 
@@ -1562,7 +1612,7 @@ def generate_policy(sid, action, arn, sourcearn, principal):
     return policy
 
 
-@app.route("%s/functions/<function>/policy" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions/<function>/policy" % API_PATH_ROOT, methods=["POST"])
 def add_permission(function):
     arn = func_arn(function)
     qualifier = request.args.get("Qualifier")
@@ -1622,7 +1672,7 @@ def add_permission_policy_statement(resource_name, resource_arn, resource_arn_qu
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>/policy/<statement>" % PATH_ROOT, methods=["DELETE"])
+@app.route("%s/functions/<function>/policy/<statement>" % API_PATH_ROOT, methods=["DELETE"])
 def remove_permission(function, statement):
     qualifier = request.args.get("Qualifier")
     iam_client = aws_stack.connect_to_service("iam")
@@ -1638,7 +1688,7 @@ def remove_permission(function, statement):
     return jsonify(result)
 
 
-@app.route("%s/functions/<function>/policy" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/policy" % API_PATH_ROOT, methods=["GET"])
 def get_policy(function):
     qualifier = request.args.get("Qualifier")
     policy = get_lambda_policy(function, qualifier)
@@ -1647,7 +1697,7 @@ def get_policy(function):
     return jsonify({"Policy": json.dumps(policy), "RevisionId": "test1234"})
 
 
-@app.route("%s/functions/<function>/invocations" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions/<function>/invocations" % API_PATH_ROOT, methods=["POST"])
 def invoke_function(function):
     """Invoke an existing function
     ---
@@ -1659,14 +1709,14 @@ def invoke_function(function):
     # function here can either be an arn or a function name
     arn = func_arn(function)
 
-    # arn can also contain a qualifier, extract it from there if so
+    # ARN can also contain a qualifier, extract it from there if so
     m = re.match("(arn:aws:lambda:.*:.*:function:[a-zA-Z0-9-_]+)(:.*)?", arn)
     if m and m.group(2):
         qualifier = m.group(2)[1:]
         arn = m.group(1)
     else:
         qualifier = request.args.get("Qualifier")
-    data = request.get_data()
+    data = request.get_data() or ""
     if data:
         try:
             data = to_str(data)
@@ -1773,7 +1823,7 @@ def invoke_function(function):
     )
 
 
-@app.route("%s/event-source-mappings" % PATH_ROOT, methods=["GET"], strict_slashes=False)
+@app.route("%s/event-source-mappings" % API_PATH_ROOT, methods=["GET"], strict_slashes=False)
 def get_event_source_mappings():
     """List event source mappings
     ---
@@ -1794,7 +1844,7 @@ def get_event_source_mappings():
     return jsonify(response)
 
 
-@app.route("%s/event-source-mappings/<mapping_uuid>" % PATH_ROOT, methods=["GET"])
+@app.route("%s/event-source-mappings/<mapping_uuid>" % API_PATH_ROOT, methods=["GET"])
 def get_event_source_mapping(mapping_uuid):
     """Get an existing event source mapping
     ---
@@ -1812,7 +1862,7 @@ def get_event_source_mapping(mapping_uuid):
     return jsonify(mappings[0])
 
 
-@app.route("%s/event-source-mappings" % PATH_ROOT, methods=["POST"], strict_slashes=False)
+@app.route("%s/event-source-mappings" % API_PATH_ROOT, methods=["POST"], strict_slashes=False)
 def create_event_source_mapping():
     """Create new event source mapping
     ---
@@ -1830,7 +1880,7 @@ def create_event_source_mapping():
         return error_response(message, code=400, error_type=error_type)
 
 
-@app.route("%s/event-source-mappings/<mapping_uuid>" % PATH_ROOT, methods=["PUT"])
+@app.route("%s/event-source-mappings/<mapping_uuid>" % API_PATH_ROOT, methods=["PUT"])
 def update_event_source_mapping(mapping_uuid):
     """Update an existing event source mapping
     ---
@@ -1851,7 +1901,7 @@ def update_event_source_mapping(mapping_uuid):
         return error_response(message, code=400, error_type=error_type)
 
 
-@app.route("%s/event-source-mappings/<mapping_uuid>" % PATH_ROOT, methods=["DELETE"])
+@app.route("%s/event-source-mappings/<mapping_uuid>" % API_PATH_ROOT, methods=["DELETE"])
 def delete_event_source_mapping(mapping_uuid):
     """Delete an event source mapping
     ---
@@ -1864,7 +1914,7 @@ def delete_event_source_mapping(mapping_uuid):
     return jsonify(mapping)
 
 
-@app.route("%s/functions/<function>/versions" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions/<function>/versions" % API_PATH_ROOT, methods=["POST"])
 def publish_version(function):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -1873,7 +1923,7 @@ def publish_version(function):
     return jsonify(publish_new_function_version(arn))
 
 
-@app.route("%s/functions/<function>/versions" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/versions" % API_PATH_ROOT, methods=["GET"])
 def list_versions(function):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -1882,7 +1932,7 @@ def list_versions(function):
     return jsonify({"Versions": do_list_versions(arn)})
 
 
-@app.route("%s/functions/<function>/aliases" % PATH_ROOT, methods=["POST"])
+@app.route("%s/functions/<function>/aliases" % API_PATH_ROOT, methods=["POST"])
 def create_alias(function):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -1901,7 +1951,7 @@ def create_alias(function):
     return jsonify(do_update_alias(arn, alias, version, description))
 
 
-@app.route("%s/functions/<function>/aliases/<name>" % PATH_ROOT, methods=["PUT"])
+@app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["PUT"])
 def update_alias(function, name):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -1916,7 +1966,7 @@ def update_alias(function, name):
     return jsonify(do_update_alias(arn, name, version, description))
 
 
-@app.route("%s/functions/<function>/aliases/<name>" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["GET"])
 def get_alias(function, name):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -1927,7 +1977,7 @@ def get_alias(function, name):
     return jsonify(region.lambdas.get(arn).aliases.get(name))
 
 
-@app.route("%s/functions/<function>/aliases" % PATH_ROOT, methods=["GET"])
+@app.route("%s/functions/<function>/aliases" % API_PATH_ROOT, methods=["GET"])
 def list_aliases(function):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -1938,7 +1988,7 @@ def list_aliases(function):
     )
 
 
-@app.route("%s/functions/<function>/aliases/<name>" % PATH_ROOT, methods=["DELETE"])
+@app.route("%s/functions/<function>/aliases/<name>" % API_PATH_ROOT, methods=["DELETE"])
 def delete_alias(function, name):
     region = LambdaRegion.get()
     arn = func_arn(function)
@@ -1954,7 +2004,7 @@ def delete_alias(function, name):
 @app.route("/<version>/functions/<function>/concurrency", methods=["GET", "PUT", "DELETE"])
 def function_concurrency(version, function):
     region = LambdaRegion.get()
-    # the version for put_concurrency != PATH_ROOT, at the time of this
+    # the version for put_concurrency != API_PATH_ROOT, at the time of this
     # writing it's: /2017-10-31 for this endpoint
     # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
     arn = func_arn(function)
@@ -1975,10 +2025,10 @@ def function_concurrency(version, function):
 @app.route("/<version>/tags/<arn>", methods=["GET"])
 def list_tags(version, arn):
     region = LambdaRegion.get()
-    func_details = region.lambdas.get(arn)
-    if not func_details:
+    lambda_function = region.lambdas.get(arn)
+    if not lambda_function:
         return not_found_error(arn)
-    result = {"Tags": func_details.tags}
+    result = {"Tags": lambda_function.tags}
     return jsonify(result)
 
 
@@ -1988,11 +2038,11 @@ def tag_resource(version, arn):
     data = json.loads(request.data)
     tags = data.get("Tags", {})
     if tags:
-        func_details = region.lambdas.get(arn)
-        if not func_details:
+        lambda_function = region.lambdas.get(arn)
+        if not lambda_function:
             return not_found_error(arn)
-        if func_details:
-            func_details.tags.update(tags)
+        if lambda_function:
+            lambda_function.tags.update(tags)
     return jsonify({})
 
 
@@ -2000,11 +2050,11 @@ def tag_resource(version, arn):
 def untag_resource(version, arn):
     region = LambdaRegion.get()
     tag_keys = request.args.getlist("tagKeys")
-    func_details = region.lambdas.get(arn)
-    if not func_details:
+    lambda_function = region.lambdas.get(arn)
+    if not lambda_function:
         return not_found_error(arn)
     for tag_key in tag_keys:
-        func_details.tags.pop(tag_key, None)
+        lambda_function.tags.pop(tag_key, None)
     return jsonify({})
 
 
@@ -2281,7 +2331,7 @@ def serve(port):
     LAMBDA_EXECUTOR.startup()
 
     # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
-    import localstack.plugin.thundra  # noqa
+    import localstack.contrib.thundra  # noqa
 
     generic_proxy.serve_flask_app(app=app, port=port)
 

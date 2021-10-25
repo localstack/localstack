@@ -3,6 +3,7 @@ import os
 import unittest
 
 from localstack.services.awslambda import lambda_api
+from localstack.services.events.events_listener import TEST_EVENTS_CACHE
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, load_file, retry, short_uid
@@ -136,6 +137,26 @@ STATE_MACHINE_INTRINSIC_FUNCS = {
             "Resource": "__tbd__",
             "ResultSelector": {"payload.$": "$"},
             "ResultPath": "$.result_value",
+            "End": True,
+        },
+    },
+}
+STATE_MACHINE_EVENTS = {
+    "StartAt": "step1",
+    "States": {
+        "step1": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::events:putEvents",
+            "Parameters": {
+                "Entries": [
+                    {
+                        "DetailType": "TestMessage",
+                        "Source": "TestSource",
+                        "EventBusName": "__tbd__",
+                        "Detail": {"Message": "Hello from Step Functions!"},
+                    }
+                ]
+            },
             "End": True,
         },
     },
@@ -345,9 +366,7 @@ class TestStateMachine(unittest.TestCase):
             definition["States"]["state3"]["Resource"] = lambda_arn_2
         definition = json.dumps(definition)
         sm_name = "intrinsic-%s" % short_uid()
-        result = self.sfn_client.create_state_machine(
-            name=sm_name, definition=definition, roleArn=role_arn
-        )
+        self.sfn_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
 
         # run state machine
         sm_arn = self.get_machine_arn(sm_name)
@@ -368,6 +387,50 @@ class TestStateMachine(unittest.TestCase):
 
         # clean up
         self.cleanup(sm_arn, state_machines_before)
+
+    def test_events_state_machine(self):
+        events = aws_stack.connect_to_service("events")
+        state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
+
+        # create event bus
+        bus_name = f"bus-{short_uid()}"
+        events.create_event_bus(Name=bus_name)
+
+        # create state machine
+        definition = clone(STATE_MACHINE_EVENTS)
+        definition["States"]["step1"]["Parameters"]["Entries"][0]["EventBusName"] = bus_name
+        definition = json.dumps(definition)
+        sm_name = "events-%s" % short_uid()
+        role_arn = aws_stack.role_arn("sfn_role")
+        self.sfn_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
+
+        # run state machine
+        events_before = len(TEST_EVENTS_CACHE)
+        sm_arn = self.get_machine_arn(sm_name)
+        result = self.sfn_client.start_execution(stateMachineArn=sm_arn)
+        self.assertTrue(result.get("executionArn"))
+
+        def check_invocations():
+            # assert that the event is received
+            self.assertEqual(events_before + 1, len(TEST_EVENTS_CACHE))
+            last_event = TEST_EVENTS_CACHE[-1]
+            self.assertEqual(bus_name, last_event["EventBusName"])
+            self.assertEqual("TestSource", last_event["Source"])
+            self.assertEqual("TestMessage", last_event["DetailType"])
+            self.assertEqual(
+                {"Message": "Hello from Step Functions!"}, json.loads(last_event["Detail"])
+            )
+
+        # assert that the event bus has received an event from the SM execution
+        retry(check_invocations, sleep=1, retries=10)
+
+        # clean up
+        self.cleanup(sm_arn, state_machines_before)
+        events.delete_event_bus(Name=bus_name)
+
+    # -----------------
+    # HELPER FUNCTIONS
+    # -----------------
 
     def get_machine_arn(self, sm_name):
         state_machines = self.sfn_client.list_state_machines()["stateMachines"]

@@ -1,3 +1,4 @@
+from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -17,6 +18,14 @@ class CloudFormationStack(GenericBaseModel):
         result = client.describe_stacks(StackName=child_stack_name)
         result = (result.get("Stacks") or [None])[0]
         return result
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("StackName")
+        if not role_name:
+            resource["Properties"]["StackName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
 
     @classmethod
     def get_deploy_templates(cls):

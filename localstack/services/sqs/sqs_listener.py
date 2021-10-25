@@ -1,15 +1,16 @@
 import json
 import re
+from typing import Dict
 
 import xmltodict
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 from moto.sqs.utils import parse_message_attributes
-from requests.models import Request
+from requests.models import Request, Response
 from six.moves.urllib.parse import urlencode
 
 from localstack import config, constants
 from localstack.config import SQS_PORT_EXTERNAL
-from localstack.services.awslambda import lambda_api
+from localstack.services.awslambda.lambda_api import EventSourceListener
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sns import sns_listener
 from localstack.utils.analytics import event_publisher
@@ -17,10 +18,12 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
     calculate_crc32,
     make_requests_error,
+    parse_urlencoded_data,
     requests_response,
 )
 from localstack.utils.common import (
     clone,
+    ensure_list,
     get_service_protocol,
     parse_request_data,
     path_from_url,
@@ -202,10 +205,37 @@ def _list_dead_letter_source_queues(queues, queue_url):
     return format_list_dl_source_queues_response(dead_letter_source_queues)
 
 
-def _process_sent_message(path, req_data, headers):
-    queue_name = _queue_url(path, req_data, headers).rpartition("/")[2]
+def _process_sent_message(path: str, req_data: Dict[str, str], headers: Dict, response: Response):
+    """Extract one or multiple messages sent via SendMessage/SendMessageBatch from the given
+    request/response data and forward them to the Lambda EventSourceListener for further processing"""
 
-    lambda_api.process_sqs_message(queue_name)
+    queue_url = _queue_url(path, req_data, headers)
+    action = req_data.get("Action")
+
+    # extract data from XML response - assume data is wrapped in 2 parent elements
+    response_data = xmltodict.parse(response.content)
+
+    messages = []
+    if action == "SendMessage":
+        response_data = response_data["SendMessageResponse"]["SendMessageResult"]
+        message = clone(req_data)
+        message.update(response_data)
+        messages.append(message)
+    elif action == "SendMessageBatch":
+        response_data = response_data["SendMessageBatchResponse"]["SendMessageBatchResult"]
+        messages = parse_urlencoded_data(req_data, "SendMessageBatchRequestEntry")
+        # Note: only forwarding messages from 'Successful', not from 'Failed' list
+        entries = response_data.get("SendMessageBatchResultEntry") or []
+        entries = ensure_list(entries)
+        for successful in entries:
+            msg = [m for m in messages if m["Id"] == successful["Id"]][0]
+            msg.update(successful)
+
+    event = {
+        "QueueUrl": queue_url,
+        "Messages": messages,
+    }
+    EventSourceListener.process_event_via_listener("sqs", event)
 
 
 def format_list_dl_source_queues_response(queues):
@@ -290,7 +320,7 @@ class ProxyListenerSQS(PersistingProxyListener):
                         )
 
             elif action == "SetQueueAttributes":
-                # TODO remove this function if we stop using ElasticMQ entirely
+                # TODO remove this function if we stop using ElasticMQ
                 queue_url = _queue_url(path, req_data, headers)
                 if SQS_BACKEND_IMPL == "elasticmq":
                     forward_attrs = _set_queue_attributes(queue_url, req_data)
@@ -300,7 +330,11 @@ class ProxyListenerSQS(PersistingProxyListener):
                             method, path, headers, req_data, forward_attrs
                         )
 
+            elif action == "TagQueue":
+                req_data = self.fix_missing_tag_values(req_data)
+
             elif action == "CreateQueue":
+                req_data = self.fix_missing_tag_values(req_data)
                 changed_attrs = _fix_dlq_arn_in_attributes(req_data)
                 if changed_attrs:
                     return _get_attributes_forward_request(
@@ -401,9 +435,8 @@ class ProxyListenerSQS(PersistingProxyListener):
             )
 
             if action == "CreateQueue":
-                queue_url = re.match(r".*<QueueUrl>(.*)</QueueUrl>", content_str, re.DOTALL).group(
-                    1
-                )
+                regex = r".*<QueueUrl>(.*)</QueueUrl>"
+                queue_url = re.match(regex, content_str, re.DOTALL).group(1)
                 if SQS_BACKEND_IMPL == "elasticmq":
                     _set_queue_attributes(queue_url, req_data)
 
@@ -412,9 +445,9 @@ class ProxyListenerSQS(PersistingProxyListener):
                 msg = "There should be at least one SendMessageBatchRequestEntry in the request."
                 return make_requests_error(code=404, code_string="EmptyBatchRequest", message=msg)
 
-        # instruct listeners to fetch new SQS message
+        # instruct listeners to process new SQS message
         if action in ("SendMessage", "SendMessageBatch"):
-            _process_sent_message(path, req_data, headers)
+            _process_sent_message(path, req_data, headers, response)
 
         if content_str_original != content_str:
             # if changes have been made, return patched response
@@ -456,6 +489,21 @@ class ProxyListenerSQS(PersistingProxyListener):
         message_attr_hash = moto_message.attribute_md5
 
         return message_attr_hash
+
+    # Fixes tags with empty strings as value
+    def fix_missing_tag_values(self, req_data):
+        keys_matched = []
+        for k, v in req_data.items():
+            match = re.match(r"^Tag\.(\d+)\.Key", k)
+            if match:
+                index = match.group(1)
+                tag_val = "Tag.{}.Value".format(index)
+                if tag_val not in req_data.keys():
+                    keys_matched.append(tag_val)
+        if keys_matched:
+            for tag_val in keys_matched:
+                req_data[tag_val] = ""
+        return req_data
 
 
 # instantiate listener

@@ -4,6 +4,7 @@ import os
 import re
 import socket
 import time
+from typing import Dict
 
 import boto3
 import botocore
@@ -34,9 +35,8 @@ from localstack.utils.common import (
     make_http_request,
     retry,
     run_safe,
+    to_str,
 )
-from localstack.utils.common import safe_requests as requests
-from localstack.utils.common import to_bytes, to_str
 from localstack.utils.generic import dict_utils
 
 # AWS environment variable names
@@ -457,11 +457,11 @@ def sqs_queue_url_for_arn(queue_arn):
 
 
 # TODO: remove and merge with sqs_queue_url_for_arn(..) above!!
-def get_sqs_queue_url(queue_arn):
+def get_sqs_queue_url(queue_arn: str) -> str:
     return sqs_queue_url_for_arn(queue_arn)
 
 
-def extract_region_from_auth_header(headers, use_default=True):
+def extract_region_from_auth_header(headers: Dict[str, str], use_default=True) -> str:
     auth = headers.get("Authorization") or ""
     region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
     if region == auth:
@@ -471,12 +471,20 @@ def extract_region_from_auth_header(headers, use_default=True):
     return region
 
 
-def extract_region_from_arn(arn):
+def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> str:
+    auth = headers.get("Authorization") or ""
+    access_id = re.sub(r".*Credential=([^/]+)/[^/]+/[^/]+/.*", r"\1", auth)
+    if access_id == auth:
+        access_id = None
+    return access_id
+
+
+def extract_region_from_arn(arn: str) -> str:
     parts = arn.split(":")
     return parts[3] if len(parts) > 1 else None
 
 
-def extract_service_from_arn(arn):
+def extract_service_from_arn(arn: str) -> str:
     parts = arn.split(":")
     return parts[2] if len(parts) > 1 else None
 
@@ -586,7 +594,17 @@ def lambda_function_or_layer_arn(
     if re.match(pattern, entity_name):
         return entity_name
     if ":" in entity_name:
-        raise Exception('Lambda %s name should not contain a colon ":": %s' % (type, entity_name))
+        client = connect_to_service("lambda")
+        entity_name, _, alias = entity_name.rpartition(":")
+        try:
+            alias_response = client.get_alias(FunctionName=entity_name, Name=alias)
+            version = alias_response["FunctionVersion"]
+
+        except Exception as e:
+            msg = "Alias %s of %s not found" % (alias, entity_name)
+            LOG.info(f"{msg}: {e}")
+            raise Exception(msg)
+
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
     pattern = re.sub(r"\([^\|]+\|.+\)", type, pattern)
@@ -602,6 +620,9 @@ def lambda_function_name(name_or_arn):
     parts = name_or_arn.split(":")
     # name is index #6 in pattern: arn:aws:lambda:.*:.*:function:.*
     return parts[6]
+
+
+# TODO: extract ARN utils into separate file!
 
 
 def state_machine_arn(name, account_id=None, region_name=None):
@@ -674,117 +695,12 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
     return pattern % (region_name, account_id, name)
 
 
-def send_event_to_target(target_arn, event, target_attributes=None, asynchronous=True):
-    region = target_arn.split(":")[3]
-
-    if ":lambda:" in target_arn:
-        from localstack.services.awslambda import lambda_api
-
-        lambda_api.run_lambda(
-            func_arn=target_arn, event=event, context={}, asynchronous=asynchronous
-        )
-
-    elif ":sns:" in target_arn:
-        sns_client = connect_to_service("sns", region_name=region)
-        sns_client.publish(TopicArn=target_arn, Message=json.dumps(event))
-
-    elif ":sqs:" in target_arn:
-        sqs_client = connect_to_service("sqs", region_name=region)
-        queue_url = get_sqs_queue_url(target_arn)
-        msg_group_id = dict_utils.get_safe(target_attributes, "$.SqsParameters.MessageGroupId")
-        kwargs = {"MessageGroupId": msg_group_id} if msg_group_id else {}
-        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
-
-    elif ":states:" in target_arn:
-        stepfunctions_client = connect_to_service("stepfunctions", region_name=region)
-        stepfunctions_client.start_execution(stateMachineArn=target_arn, input=json.dumps(event))
-
-    elif ":firehose:" in target_arn:
-        delivery_stream_name = firehose_name(target_arn)
-        firehose_client = connect_to_service("firehose", region_name=region)
-        firehose_client.put_record(
-            DeliveryStreamName=delivery_stream_name,
-            Record={"Data": to_bytes(json.dumps(event))},
-        )
-
-    elif ":events:" in target_arn:
-        events_client = connect_to_service("events", region_name=region)
-        if ":api-destination/" in target_arn or ":destination/" in target_arn:
-            # API destination support
-            # see https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html
-            api_destination_name = target_arn.split(":")[-1].split("/")[
-                1
-            ]  # ...:api-destination/{name}/{uuid}
-            destination = events_client.describe_api_destination(Name=api_destination_name)
-            method = destination.get("HttpMethod", "GET")
-            endpoint = destination.get("InvocationEndpoint")
-            state = destination.get("ApiDestinationState") or "ACTIVE"
-            LOG.debug(
-                'Calling EventBridge API destination (state "%s"): %s %s'
-                % (state, method, endpoint)
-            )
-            # TODO: support connection/auth (BASIC AUTH, API KEY, OAUTH)
-            # connection_arn = destination.get("ConnectionArn")
-            headers = {
-                # default headers AWS sends with every api destination call
-                "User-Agent": "Amazon/EventBridge/ApiDestinations",
-                "Content-Type": "application/json; charset=utf-8",
-                "Range": "bytes=0-1048575",
-                "Accept-Encoding": "gzip,deflate",
-                "Connection": "close",
-            }
-            # TODO: consider option to disable the actual network call to avoid unintended side effects
-            # TODO: InvocationRateLimitPerSecond (needs some form of thread-safety, scoped to the api destination)
-            result = requests.request(
-                method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
-            )
-            if result.status_code >= 400:
-                LOG.debug(
-                    "Received code %s forwarding events: %s %s"
-                    % (result.status_code, method, endpoint)
-                )
-                if result.status_code == 429 or 500 <= result.status_code <= 600:
-                    pass  # TODO: retry logic (only retry on 429 and 5xx response status)
-        else:
-            eventbus_name = target_arn.split(":")[-1].split("/")[-1]
-            events_client.put_events(
-                Entries=[
-                    {
-                        "EventBusName": eventbus_name,
-                        "Source": event.get("source"),
-                        "DetailType": event.get("detail-type"),
-                        "Detail": event.get("detail"),
-                    }
-                ]
-            )
-
-    elif ":kinesis:" in target_arn:
-        partition_key_path = dict_utils.get_safe(
-            target_attributes,
-            "$.KinesisParameters.PartitionKeyPath",
-            default_value="$.id",
-        )
-
-        stream_name = target_arn.split("/")[-1]
-        partition_key = dict_utils.get_safe(event, partition_key_path, event["id"])
-        kinesis_client = connect_to_service("kinesis", region_name=region)
-
-        kinesis_client.put_record(
-            StreamName=stream_name,
-            Data=to_bytes(json.dumps(event)),
-            PartitionKey=partition_key,
-        )
-
-    else:
-        LOG.warning('Unsupported Events rule target ARN: "%s"' % target_arn)
-
-
 def get_events_target_attributes(target):
     return dict_utils.pick_attributes(target, EVENT_TARGET_PARAMETERS)
 
 
-def get_or_create_bucket(bucket_name):
-    s3_client = connect_to_service("s3")
+def get_or_create_bucket(bucket_name, s3_client=None):
+    s3_client = s3_client or connect_to_service("s3")
     try:
         return s3_client.head_bucket(Bucket=bucket_name)
     except Exception:
@@ -837,14 +753,14 @@ def kinesis_stream_name(kinesis_arn):
     return kinesis_arn.split(":stream/")[-1]
 
 
-def mock_aws_request_headers(service="dynamodb", region_name=None):
+def mock_aws_request_headers(service="dynamodb", region_name=None, access_key=None):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == "kinesis":
         ctype = APPLICATION_AMZ_JSON_1_1
     elif service in ["sns", "sqs"]:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
 
-    access_key = get_boto3_credentials().access_key
+    access_key = access_key or get_boto3_credentials().access_key
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,
@@ -1218,7 +1134,7 @@ def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2, regio
 
 
 def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None, region_name=None):
-    statuses = statuses or ["CREATE_COMPLETE", "UPDATE_COMPLETE"]
+    statuses = statuses or ["CREATE_COMPLETE", "UPDATE_COMPLETE", "DELETE_COMPLETE"]
     return await_stack_status(
         stack_name, statuses, retries=retries, sleep=sleep, region_name=region_name
     )

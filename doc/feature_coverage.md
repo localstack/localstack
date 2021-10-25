@@ -435,6 +435,7 @@ In the coverage tables below, the features are marked with their respective avai
   <tr><td colspan=4><b>Lambda</b></td></tr>
   <tr><td>Aliases</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Code Signing Configs</td><td>⭐⭐</td><td></td><td></td></tr>
+  <tr><td>Custom Images (Pro)</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Event Invoke Configs</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Event Source Mappings</td><td>⭐⭐⭐⭐</td><td></td><td></td></tr>
   <tr><td>Function Concurrencies</td><td>⭐⭐⭐</td><td></td><td></td></tr>
@@ -658,7 +659,7 @@ In the coverage tables below, the features are marked with their respective avai
 
 ## API Persistence Coverage (Pro)
 
-The list below summarizes the APIs for which persistence has been implemented and tested in the Pro version (list may not be exhaustive/complete). More details following soon.
+The list below summarizes the APIs for which persistence has been implemented and (ideally) tested in the Pro version (list may not be exhaustive/complete). More details following soon.
 
 - Amplify
 - Athena
@@ -674,3 +675,18 @@ The list below summarizes the APIs for which persistence has been implemented an
 - Secrets Manager
 - SNS
 - SQS
+- Route53
+- RDS
+- Appconfig
+- Appsync
+- Lambda
+- CloudFormation
+- CloudFront
+- CodeCommit
+- Cost Explorer
+- Glue
+- IoT
+- Lake Formation
+- Serverless Repo
+- SES
+- STS

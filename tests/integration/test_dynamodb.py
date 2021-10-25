@@ -14,7 +14,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.aws.aws_stack import get_environment
-from localstack.utils.common import json_safe, retry, short_uid
+from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 PARTITION_KEY = "id"
@@ -788,6 +788,7 @@ class TestDynamoDB(unittest.TestCase):
             sleep=1,
             function_name=function_name,
             expected_length=1,
+            regex_filter=r"Records",
         )
 
         self.assertEqual(1, len(events))
@@ -824,6 +825,58 @@ class TestDynamoDB(unittest.TestCase):
         )
 
         self.assertEqual({}, result.get("UnprocessedItems"))
+
+    def test_dynamodb_create_table_with_sse_specification(self):
+        dynamodb = aws_stack.connect_to_service("dynamodb")
+        table_name = "ddb-table-%s" % short_uid()
+
+        kms_master_key_id = long_uid()
+        sse_specification = {"Enabled": True, "SSEType": "KMS", "KMSMasterKeyId": kms_master_key_id}
+        kms_master_key_arn = aws_stack.kms_key_arn(kms_master_key_id)
+
+        result = dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            SSESpecification=sse_specification,
+            Tags=TEST_DDB_TAGS,
+        )
+
+        self.assertTrue(result["TableDescription"]["SSEDescription"])
+        self.assertEqual("ENABLED", result["TableDescription"]["SSEDescription"]["Status"])
+        self.assertEqual(
+            kms_master_key_arn,
+            result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"],
+        )
+
+        delete_table(table_name)
+
+    def test_dynamodb_create_table_with_partial_sse_specification(self):
+        dynamodb = aws_stack.connect_to_service("dynamodb")
+        table_name = "ddb-table-%s" % short_uid()
+
+        sse_specification = {"Enabled": True}
+
+        result = dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            SSESpecification=sse_specification,
+            Tags=TEST_DDB_TAGS,
+        )
+
+        self.assertTrue(result["TableDescription"]["SSEDescription"])
+        self.assertEqual("ENABLED", result["TableDescription"]["SSEDescription"]["Status"])
+        self.assertEqual("KMS", result["TableDescription"]["SSEDescription"]["SSEType"])
+        self.assertIn("KMSMasterKeyArn", result["TableDescription"]["SSEDescription"])
+        kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
+        kms_client = aws_stack.connect_to_service("kms")
+        result = kms_client.describe_key(KeyId=kms_master_key_arn)
+        self.assertEqual("AWS", result["KeyMetadata"]["KeyManager"])
+
+        delete_table(table_name)
 
 
 def delete_table(name):

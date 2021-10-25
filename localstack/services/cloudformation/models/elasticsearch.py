@@ -1,5 +1,12 @@
+from localstack.services.cloudformation.deployment_utils import select_parameters
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
+
+
+def es_add_tags_params(params, **kwargs):
+    es_arn = aws_stack.es_domain_arn(params.get("DomainName"))
+    tags = params.get("Tags", [])
+    return {"ARN": es_arn, "TagList": tags}
 
 
 class ElasticsearchDomain(GenericBaseModel):
@@ -22,3 +29,32 @@ class ElasticsearchDomain(GenericBaseModel):
 
     def _domain_name(self):
         return self.props.get("DomainName") or self.resource_id
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": [
+                {
+                    "function": "create_elasticsearch_domain",
+                    "parameters": select_parameters(
+                        "AccessPolicies",
+                        "AdvancedOptions",
+                        "CognitoOptions",
+                        "DomainName",
+                        "EBSOptions",
+                        "ElasticsearchClusterConfig",
+                        "ElasticsearchVersion",
+                        "EncryptionAtRestOptions",
+                        "LogPublishingOptions",
+                        "NodeToNodeEncryptionOptions",
+                        "SnapshotOptions",
+                        "VPCOptions",
+                    ),
+                },
+                {"function": "add_tags", "parameters": es_add_tags_params},
+            ],
+            "delete": {
+                "function": "delete_elasticsearch_domain",
+                "parameters": {"DomainName": "DomainName"},
+            },
+        }

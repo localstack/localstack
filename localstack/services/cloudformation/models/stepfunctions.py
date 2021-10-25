@@ -1,3 +1,10 @@
+import re
+from typing import Dict
+
+from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_RESOURCE_NAME,
+    generate_default_name,
+)
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -14,6 +21,19 @@ class SFNActivity(GenericBaseModel):
         client = aws_stack.connect_to_service("stepfunctions")
         result = client.describe_activity(activityArn=activity_arn)
         return result
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_activity",
+                "parameters": {"name": ["Name", PLACEHOLDER_RESOURCE_NAME], "tags": "Tags"},
+            },
+            "delete": {
+                "function": "delete_activity",
+                "parameters": {"activityArn": "PhysicalResourceId"},
+            },
+        }
 
 
 class SFNStateMachine(GenericBaseModel):
@@ -50,3 +70,52 @@ class SFNStateMachine(GenericBaseModel):
             "definition": props["DefinitionString"],
         }
         return client.update_state_machine(**kwargs)
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("StateMachineName")
+        if not role_name:
+            resource["Properties"]["StateMachineName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create_params(params, **kwargs):
+            def _get_definition(params):
+                definition_str = params.get("DefinitionString")
+                substitutions = params.get("DefinitionSubstitutions")
+                if substitutions is not None:
+                    definition_str = _apply_substitutions(definition_str, substitutions)
+                return definition_str
+
+            return {
+                "name": params.get("StateMachineName", PLACEHOLDER_RESOURCE_NAME),
+                "definition": _get_definition(params),
+                "roleArn": params.get("RoleArn"),
+                "type": params.get("StateMachineTyp", None),
+            }
+
+        return {
+            "create": {
+                "function": "create_state_machine",
+                "parameters": _create_params,
+            },
+            "delete": {
+                "function": "delete_state_machine",
+                "parameters": {"stateMachineArn": "PhysicalResourceId"},
+            },
+        }
+
+
+def _apply_substitutions(definition: str, substitutions: Dict[str, str]) -> str:
+    substitution_regex = re.compile("\\${[a-zA-Z0-9_]+}")  # might be a bit too strict in some cases
+    tokens = substitution_regex.findall(definition)
+    result = definition
+    for token in tokens:
+        raw_token = token[2:-1]  # strip ${ and }
+        if raw_token not in substitutions.keys():
+            raise
+        result = result.replace(token, substitutions[raw_token])
+
+    return result

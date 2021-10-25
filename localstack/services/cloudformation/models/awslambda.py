@@ -3,10 +3,11 @@ import os
 from localstack.services.awslambda.lambda_api import LAMBDA_POLICY_NAME_PATTERN
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
+    generate_default_name,
     get_cfn_response_mod_file,
     select_parameters,
 )
-from localstack.services.cloudformation.service_models import LOG, GenericBaseModel
+from localstack.services.cloudformation.service_models import LOG, REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import cp_r, is_base64, mkdir, new_tmp_dir, rm_rf, save_file, short_uid
 from localstack.utils.testutil import create_zip_file
@@ -60,6 +61,14 @@ class LambdaFunction(GenericBaseModel):
         return client.update_function_configuration(**update_props)
 
     @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("FunctionName")
+        if not role_name:
+            resource["Properties"]["FunctionName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
+    @staticmethod
     def get_deploy_templates():
         def get_lambda_code_param(params, **kwargs):
             code = params.get("Code", {})
@@ -91,6 +100,13 @@ class LambdaFunction(GenericBaseModel):
         def get_delete_params(params, **kwargs):
             return {"FunctionName": params.get("FunctionName")}
 
+        def get_environment_params(params, **kwargs):
+            # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
+            if "Environment" in params:
+                environment_variables = params["Environment"].get("Variables", {})
+                return {"Variables": {k: str(v) for k, v in environment_variables.items()}}
+
         return {
             "create": {
                 "function": "create_function",
@@ -101,7 +117,7 @@ class LambdaFunction(GenericBaseModel):
                     "Handler": "Handler",
                     "Code": get_lambda_code_param,
                     "Description": "Description",
-                    "Environment": "Environment",
+                    "Environment": get_environment_params,
                     "Timeout": "Timeout",
                     "MemorySize": "MemorySize",
                     "Layers": "Layers"
@@ -130,6 +146,15 @@ class LambdaFunctionVersion(GenericBaseModel):
         )
         return ([v for v in versions["Versions"] if v["Version"] == func_version] or [None])[0]
 
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "publish_version",
+                "parameters": select_parameters("FunctionName", "CodeSha256", "Description"),
+            }
+        }
+
 
 class LambdaEventSourceMapping(GenericBaseModel):
     @staticmethod
@@ -138,28 +163,39 @@ class LambdaEventSourceMapping(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         props = self.props
-        resource_id = props["FunctionName"] or self.resource_id
         source_arn = props.get("EventSourceArn")
-        resource_id = self.resolve_refs_recursively(stack_name, resource_id, resources)
+        self_managed_src = props.get("SelfManagedEventSource")
+        function_name = self.resolve_refs_recursively(stack_name, props["FunctionName"], resources)
         source_arn = self.resolve_refs_recursively(stack_name, source_arn, resources)
-        if not resource_id or not source_arn:
+        if not function_name or (not source_arn and not self_managed_src):
             raise Exception("ResourceNotFound")
-        mappings = aws_stack.connect_to_service("lambda").list_event_source_mappings(
-            FunctionName=resource_id, EventSourceArn=source_arn
-        )
-        mapping = list(
-            filter(
-                lambda m: m["EventSourceArn"] == source_arn
-                and m["FunctionArn"] == aws_stack.lambda_function_arn(resource_id),
-                mappings["EventSourceMappings"],
+
+        def _matches(m):
+            return m["FunctionArn"] == lambda_arn and (
+                m.get("EventSourceArn") == source_arn
+                or m.get("SelfManagedEventSource") == self_managed_src
             )
-        )
+
+        client = aws_stack.connect_to_service("lambda")
+        lambda_arn = aws_stack.lambda_function_arn(function_name)
+        kwargs = {"EventSourceArn": source_arn} if source_arn else {}
+        mappings = client.list_event_source_mappings(FunctionName=function_name, **kwargs)
+        mapping = list(filter(lambda m: _matches(m), mappings["EventSourceMappings"]))
         if not mapping:
             raise Exception("ResourceNotFound")
         return mapping[0]
 
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name in REF_ID_ATTRS:
+            return self.props.get("UUID")
+        return super(LambdaEventSourceMapping, self).get_cfn_attribute(attribute_name)
+
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get("UUID")
+
+    @staticmethod
+    def get_deploy_templates():
+        return {"create": {"function": "create_event_source_mapping"}}
 
 
 class LambdaPermission(GenericBaseModel):
@@ -236,6 +272,7 @@ class LambdaEventInvokeConfig(GenericBaseModel):
             props.get("Qualifier"),
         )
 
+    @staticmethod
     def get_deploy_templates():
         return {
             "create": {"function": "put_function_event_invoke_config"},

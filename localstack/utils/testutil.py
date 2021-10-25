@@ -1,13 +1,15 @@
 import glob
 import importlib
+import io
 import json
 import os
+import re
 import shutil
 import tempfile
 import time
 import zipfile
 from contextlib import contextmanager
-from typing import Dict
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import requests
 from six import iteritems
@@ -29,20 +31,27 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     TMP_FILES,
     chmod_r,
+    ensure_list,
     get_free_tcp_port,
     is_alpine,
+    is_empty_dir,
     is_port_open,
     load_file,
     mkdir,
     poll_condition,
+    rm_rf,
     run,
     save_file,
+    short_uid,
     to_str,
 )
+from localstack.utils.run import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
-LAMBDA_TIMEOUT_SEC = 8
+LAMBDA_TIMEOUT_SEC = 30
+LAMBDA_ASSETS_BUCKET_NAME = "ls-test-lambda-assets-bucket"
+MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 
 def is_local_test_mode():
@@ -64,48 +73,63 @@ def rm_dir(dir):
     shutil.rmtree(dir)
 
 
-def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file_name=None):
+def create_lambda_archive(
+    script: str,
+    get_content: bool = False,
+    libs: List[str] = [],
+    runtime: str = None,
+    file_name: str = None,
+    exclude_func: Callable[[str], bool] = None,
+):
     """Utility method to create a Lambda function archive"""
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
-    tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
-    TMP_FILES.append(tmp_dir)
-    file_name = file_name or get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
-    script_file = os.path.join(tmp_dir, file_name)
-    if os.path.sep in script_file:
-        mkdir(os.path.dirname(script_file))
-        # create __init__.py files along the path to allow Python imports
-        path = file_name.split(os.path.sep)
-        for i in range(1, len(path)):
-            save_file(os.path.join(tmp_dir, *(path[:i] + ["__init__.py"])), "")
-    save_file(script_file, script)
-    chmod_r(script_file, 0o777)
-    # copy libs
-    for lib in libs:
-        paths = [lib, "%s.py" % lib]
-        try:
-            module = importlib.import_module(lib)
-            paths.append(module.__file__)
-        except Exception:
-            pass
-        target_dir = tmp_dir
-        root_folder = os.path.join(LOCALSTACK_VENV_FOLDER, "lib/python*/site-packages")
-        if lib == "localstack":
-            paths = ["localstack/*.py", "localstack/utils"]
-            root_folder = LOCALSTACK_ROOT_FOLDER
-            target_dir = os.path.join(tmp_dir, lib)
-            mkdir(target_dir)
-        for path in paths:
-            file_to_copy = path if path.startswith("/") else os.path.join(root_folder, path)
-            for file_path in glob.glob(file_to_copy):
-                name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
-                if os.path.isdir(file_path):
-                    copy_dir(file_path, name)
-                else:
-                    shutil.copyfile(file_path, name)
 
-    # create zip file
-    result = create_zip_file(tmp_dir, get_content=get_content)
-    return result
+    with tempfile.TemporaryDirectory(prefix=ARCHIVE_DIR_PREFIX) as tmp_dir:
+        file_name = file_name or get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
+        script_file = os.path.join(tmp_dir, file_name)
+        if os.path.sep in script_file:
+            mkdir(os.path.dirname(script_file))
+            # create __init__.py files along the path to allow Python imports
+            path = file_name.split(os.path.sep)
+            for i in range(1, len(path)):
+                save_file(os.path.join(tmp_dir, *(path[:i] + ["__init__.py"])), "")
+        save_file(script_file, script)
+        chmod_r(script_file, 0o777)
+        # copy libs
+        for lib in libs:
+            paths = [lib, "%s.py" % lib]
+            try:
+                module = importlib.import_module(lib)
+                paths.append(module.__file__)
+            except Exception:
+                pass
+            target_dir = tmp_dir
+            root_folder = os.path.join(LOCALSTACK_VENV_FOLDER, "lib/python*/site-packages")
+            if lib == "localstack":
+                paths = ["localstack/*.py", "localstack/utils"]
+                root_folder = LOCALSTACK_ROOT_FOLDER
+                target_dir = os.path.join(tmp_dir, lib)
+                mkdir(target_dir)
+            for path in paths:
+                file_to_copy = path if path.startswith("/") else os.path.join(root_folder, path)
+                for file_path in glob.glob(file_to_copy):
+                    name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
+                    if os.path.isdir(file_path):
+                        copy_dir(file_path, name)
+                    else:
+                        shutil.copyfile(file_path, name)
+
+        if exclude_func:
+            for dirpath, folders, files in os.walk(tmp_dir):
+                for name in list(folders) + list(files):
+                    full_name = os.path.join(dirpath, name)
+                    relative = os.path.relpath(full_name, start=tmp_dir)
+                    if exclude_func(relative):
+                        rm_rf(full_name)
+
+        # create zip file
+        result = create_zip_file(tmp_dir, get_content=get_content)
+        return result
 
 
 def delete_lambda_function(name):
@@ -125,7 +149,7 @@ def create_zip_file_python(source_path, base_dir, zip_file):
         for root, dirs, files in os.walk(base_dir):
             for name in files:
                 full_name = os.path.join(root, name)
-                relative = root[len(base_dir) :].lstrip(os.path.sep)
+                relative = os.path.relpath(root, start=base_dir)
                 dest = os.path.join(relative, name)
                 zip_file.write(full_name, dest)
 
@@ -141,6 +165,18 @@ def create_zip_file(file_path, zip_file=None, get_content=False):
     if not full_zip_file:
         zip_file_name = "archive.zip"
         full_zip_file = os.path.join(tmp_dir, zip_file_name)
+
+    # special case where target folder is empty -> create empty zip file
+    if is_empty_dir(base_dir):
+        # see https://stackoverflow.com/questions/25195495/how-to-create-an-empty-zip-file#25195628
+        content = (
+            b"PK\x05\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+        )
+        if get_content:
+            return content
+        save_file(full_zip_file, content)
+        return full_zip_file
+
     # create zip file
     if is_alpine():
         create_zip_file_cli(file_path, base_dir, zip_file=full_zip_file)
@@ -198,6 +234,16 @@ def create_lambda_function(
         except Exception:
             pass
 
+    lambda_code = {"ZipFile": zip_file}
+    if len(zip_file) > MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE:
+        s3 = aws_stack.connect_to_service("s3")
+        aws_stack.get_or_create_bucket(LAMBDA_ASSETS_BUCKET_NAME)
+        asset_key = f"{short_uid()}.zip"
+        s3.upload_fileobj(
+            Fileobj=io.BytesIO(zip_file), Bucket=LAMBDA_ASSETS_BUCKET_NAME, Key=asset_key
+        )
+        lambda_code = {"S3Bucket": LAMBDA_ASSETS_BUCKET_NAME, "S3Key": asset_key}
+
     # create function
     additional_kwargs = kwargs
     kwargs = {
@@ -205,7 +251,7 @@ def create_lambda_function(
         "Runtime": runtime,
         "Handler": handler,
         "Role": LAMBDA_TEST_ROLE,
-        "Code": {"ZipFile": zip_file},
+        "Code": lambda_code,
         "Timeout": LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
         "Tags": tags,
@@ -358,13 +404,17 @@ def find_recursive(key, value, obj):
         return False
 
 
-def start_http_server(test_port=None, invocations=None):
+def start_http_server(
+    test_port: int = None, invocations: List = None, invocation_handler: Callable = None
+) -> Tuple[int, List, FuncThread]:
     # Note: leave imports here to avoid import errors (e.g., "flask") for CLI commands
     from localstack.services.generic_proxy import ProxyListener
     from localstack.services.infra import start_proxy
 
     class TestListener(ProxyListener):
         def forward_request(self, **kwargs):
+            if invocation_handler:
+                kwargs = invocation_handler(**kwargs)
             invocations.append(kwargs)
             return 200
 
@@ -410,7 +460,7 @@ def all_s3_object_keys(bucket):
 def map_all_s3_objects(to_json=True, buckets=None):
     s3_client = aws_stack.connect_to_resource("s3")
     result = {}
-    buckets = buckets if not buckets or isinstance(buckets, list) else [buckets]
+    buckets = ensure_list(buckets)
     buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
     for bucket in buckets:
         for key in bucket.objects.all():
@@ -492,27 +542,39 @@ def get_lambda_log_group_name(function_name):
     return "/aws/lambda/{}".format(function_name)
 
 
-def check_expected_lambda_log_events_length(expected_length, function_name):
-    events = get_lambda_log_events(function_name)
+def check_expected_lambda_log_events_length(expected_length, function_name, regex_filter=None):
+    events = get_lambda_log_events(function_name, regex_filter=regex_filter)
     events = [line for line in events if line not in ["\x1b[0m", "\\x1b[0m"]]
     if len(events) != expected_length:
         print(
             "Invalid # of Lambda %s log events: %s / %s: %s"
-            % (function_name, len(events), expected_length, events)
+            % (
+                function_name,
+                len(events),
+                expected_length,
+                [
+                    event if len(event) < 1000 else f"{event[:1000]}... (truncated)"
+                    for event in events
+                ],
+            )
         )
     assert len(events) == expected_length
     return events
 
 
-def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY):
+def get_lambda_log_events(
+    function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY, regex_filter: Optional[str] = None
+):
     def get_log_events(function_name, delay_time):
         time.sleep(delay_time)
 
         logs = aws_stack.connect_to_service("logs")
         log_group_name = get_lambda_log_group_name(function_name)
-        rs = logs.filter_log_events(logGroupName=log_group_name)
-
-        return rs["events"]
+        return list_all_resources(
+            lambda kwargs: logs.filter_log_events(logGroupName=log_group_name, **kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="events",
+        )
 
     try:
         events = get_log_events(function_name, delay_time)
@@ -529,6 +591,8 @@ def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY
             or "START" in raw_message
             or "END" in raw_message
             or "REPORT" in raw_message
+            or regex_filter
+            and not re.search(regex_filter, raw_message)
         ):
             continue
         if raw_message in ["\x1b[0m", "\\x1b[0m"]:
@@ -576,3 +640,57 @@ def json_response(data, code=200, headers: Dict = None) -> requests.Response:
     if headers:
         r.headers.update(headers)
     return r
+
+
+def list_all_resources(
+    page_function: Callable[[dict], Any],
+    last_token_attr_name: str,
+    list_attr_name: str,
+    next_token_attr_name: Optional[str] = None,
+) -> list:
+    """
+    List all available resources by loading all available pages using `page_function`.
+
+    :type page_function: Callable
+    :param page_function: callable function or lambda that accepts kwargs with next token
+                          and returns the next results page
+
+    :type last_token_attr_name: str
+    :param last_token_attr_name: where to look for the last evaluated token
+
+    :type list_attr_name: str
+    :param list_attr_name: where to look for the list of items
+
+    :type next_token_attr_name: Optional[str]
+    :param next_token_attr_name: name of kwarg with the next token, default is the same as `last_token_attr_name`
+
+    Example usage:
+
+        all_log_groups = list_all_resources(
+            lambda kwargs: logs.describe_log_groups(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="logGroups"
+        )
+
+        all_records = list_all_resources(
+            lambda kwargs: dynamodb.scan(**{**kwargs, **dynamodb_kwargs}),
+            last_token_attr_name="LastEvaluatedKey",
+            next_token_attr_name="ExclusiveStartKey",
+            list_attr_name="Items"
+        )
+    """
+
+    if next_token_attr_name is None:
+        next_token_attr_name = last_token_attr_name
+
+    result = None
+    collected_items = []
+    last_evaluated_token = None
+
+    while not result or last_evaluated_token:
+        kwargs = {next_token_attr_name: last_evaluated_token} if last_evaluated_token else {}
+        result = page_function(kwargs)
+        last_evaluated_token = result.get(last_token_attr_name)
+        collected_items += result.get(list_attr_name, [])
+
+    return collected_items

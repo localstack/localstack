@@ -6,6 +6,7 @@ import logging
 import time
 import traceback
 import uuid
+from typing import Dict
 
 import requests
 from boto3.dynamodb.types import TypeDeserializer
@@ -14,6 +15,7 @@ from six import iteritems
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
+from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses
 from localstack.utils.aws.aws_stack import (
@@ -32,22 +34,29 @@ ACTION_HEADER_PREFIX = "Firehose_20150804"
 # logger
 LOG = logging.getLogger(__name__)
 
-# maps stream names to details
-DELIVERY_STREAMS = {}
-
 # dynamodb deserializer
 deser = TypeDeserializer()
 
 
+class FirehoseBackend(RegionBackend):
+    # maps stream names to details
+    delivery_streams: Dict[str, Dict]
+
+    def __init__(self):
+        self.delivery_streams = {}
+
+
 def get_delivery_stream_names():
+    region = FirehoseBackend.get()
     names = []
-    for name, stream in iteritems(DELIVERY_STREAMS):
+    for name, stream in iteritems(region.delivery_streams):
         names.append(stream["DeliveryStreamName"])
     return names
 
 
 def get_delivery_stream_tags(stream_name, exclusive_start_tag_key=None, limit=50):
-    stream = DELIVERY_STREAMS[stream_name]
+    region = FirehoseBackend.get()
+    stream = region.delivery_streams[stream_name]
     response = {}
     start_i = -1
     if exclusive_start_tag_key is not None:
@@ -193,6 +202,7 @@ def create_stream(
     tags=None,
     region_name=None,
 ):
+    region = FirehoseBackend.get()
     tags = tags or {}
     stream = {
         "DeliveryStreamType": delivery_stream_type,
@@ -206,7 +216,7 @@ def create_stream(
         "Destinations": [],
         "Tags": tags,
     }
-    DELIVERY_STREAMS[stream_name] = stream
+    region.delivery_streams[stream_name] = stream
     if elasticsearch_destination:
         update_destination(
             stream_name=stream_name,
@@ -248,7 +258,8 @@ def create_stream(
 
 
 def delete_stream(stream_name):
-    stream = DELIVERY_STREAMS.pop(stream_name, {})
+    region = FirehoseBackend.get()
+    stream = region.delivery_streams.pop(stream_name, {})
     if not stream:
         return error_not_found(stream_name)
 
@@ -262,7 +273,8 @@ def delete_stream(stream_name):
 
 
 def get_stream(stream_name: str, format_s3_dest: bool = False):
-    result = DELIVERY_STREAMS.get(stream_name)
+    region = FirehoseBackend.get()
+    result = region.delivery_streams.get(stream_name)
     if result and format_s3_dest:
         extended_attrs = [
             "ProcessingConfiguration",

@@ -9,7 +9,7 @@ from datetime import datetime
 from io import BytesIO
 
 import pytest
-import six
+import requests
 from botocore.exceptions import ClientError
 
 from localstack import config
@@ -25,6 +25,7 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_DOTNETCORE31,
+    LAMBDA_RUNTIME_GOLANG,
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_NODEJS14X,
@@ -64,6 +65,7 @@ from localstack.utils.testutil import (
     get_lambda_log_events,
 )
 
+from .fixtures import only_in_alpine
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -71,6 +73,7 @@ TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.py
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "lambdas", "lambda_python3.py")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.js")
+TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "lambdas", "golang", "handler.zip")
 TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.rb")
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore2", "dotnetcore2.zip")
 TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore31", "dotnetcore31.zip")
@@ -79,7 +82,16 @@ TEST_LAMBDA_JAVA = os.path.join(
     LOCALSTACK_ROOT_FOLDER, "localstack", "infra", "localstack-utils-tests.jar"
 )
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
-    THIS_FOLDER, "lambdas", "java", "lambda-function-with-lib-0.0.1.jar"
+    THIS_FOLDER, "lambdas", "java", "lambda_echo", "lambda-function-with-lib-0.0.1.jar"
+)
+TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
+    THIS_FOLDER,
+    "lambdas",
+    "java",
+    "lambda_multiple_handlers",
+    "build",
+    "distributions",
+    "lambda-function-with-multiple-handlers.zip",
 )
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "lambdas", "lambda_environment.py")
 TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE1 = os.path.join(
@@ -93,6 +105,7 @@ TEST_LAMBDA_NAME_PY = "test_lambda_py"
 TEST_LAMBDA_NAME_PY3 = "test_lambda_py3"
 TEST_LAMBDA_NAME_JS = "test_lambda_js"
 TEST_LAMBDA_NAME_RUBY = "test_lambda_ruby"
+TEST_LAMBDA_NAME_GOLANG = "test_lambda_GOLANG"
 TEST_LAMBDA_NAME_DOTNETCORE2 = "test_lambda_dotnetcore2"
 TEST_LAMBDA_NAME_DOTNETCORE31 = "test_lambda_dotnetcore31"
 TEST_LAMBDA_NAME_CUSTOM_RUNTIME = "test_lambda_custom_runtime"
@@ -113,6 +126,10 @@ TEST_SNS_TOPIC_NAME = "sns-topic-1"
 TEST_STAGE_NAME = "testing"
 
 MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
+
+TEST_GOLANG_LAMBDA_URL = (
+    "https://github.com/localstack/awslamba-go-runtime/releases/download/v0.2/example-lambda.zip"
+)
 
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
@@ -194,10 +211,23 @@ def _assess_lambda_destination_invocation(condition, payload, test):
         msg = json.loads(msg)
         test.assertEqual(condition, msg["requestContext"]["condition"])
 
-    retry(receive_message, retries=5, sleep=2)
+    retry(receive_message, retries=10, sleep=3)
     # clean up
     sqs_client.delete_queue(QueueUrl=queue_url)
     lambda_client.delete_function(FunctionName=lambda_name)
+
+
+def _check_lambda_logs(func_name, expected_lines=None):
+    if not expected_lines:
+        expected_lines = []
+    log_events = LambdaTestBase.get_lambda_logs(func_name)
+    log_messages = [e["message"] for e in log_events]
+    for line in expected_lines:
+        if ".*" in line:
+            found = [re.match(line, m) for m in log_messages]
+            if any(found):
+                continue
+        assert line in log_messages
 
 
 class LambdaTestBase(unittest.TestCase):
@@ -243,6 +273,7 @@ class LambdaTestBase(unittest.TestCase):
 
         client.delete_function(FunctionName=func_name)
 
+    # TODO remove once refactoring to pytest is complete
     def check_lambda_logs(self, func_name, expected_lines=[]):
         log_events = LambdaTestBase.get_lambda_logs(func_name)
         log_messages = [e["message"] for e in log_events]
@@ -439,7 +470,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertIn("Statement", resp)
         # fetch lambda policy
         policy = lambda_client.get_policy(FunctionName=function_name)["Policy"]
-        self.assertIsInstance(policy, six.string_types)
+        self.assertIsInstance(policy, str)
         policy = json.loads(to_str(policy))
         self.assertEqual(action, policy["Statement"][0]["Action"])
         self.assertEqual(sid, policy["Statement"][0]["Sid"])
@@ -481,6 +512,34 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         result_data = json.loads(to_str(result_data))
         self.assertEqual(payload, result_data)
 
+        # clean up
+        lambda_client.delete_function(FunctionName=function_name)
+
+    def test_additional_docker_flags(self):
+        if not use_docker():
+            pytest.skip("not using docker executor")
+
+        flags_before = config.LAMBDA_DOCKER_FLAGS
+        env_value = short_uid()
+        config.LAMBDA_DOCKER_FLAGS = f"-e Hello={env_value}"
+        function_name = "flags-{}".format(short_uid())
+
+        try:
+            testutil.create_lambda_function(
+                handler_file=TEST_LAMBDA_ENV,
+                libs=TEST_LAMBDA_LIBS,
+                func_name=function_name,
+            )
+            lambda_client = aws_stack.connect_to_service("lambda")
+            result = lambda_client.invoke(FunctionName=function_name, Payload="{}")
+            self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+            result_data = result["Payload"].read()
+            result_data = json.loads(to_str(result_data))
+            self.assertEqual({"Hello": env_value}, result_data)
+        finally:
+            config.LAMBDA_DOCKER_FLAGS = flags_before
+
+        # clean up
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_add_lambda_multiple_permission(self):
@@ -1008,6 +1067,7 @@ class TestPythonRuntimes(LambdaTestBase):
             Publish=True,
             Handler="handler.handler",
             Code={"S3Bucket": bucket_name, "S3Key": bucket_key},
+            Timeout=10,
         )
         self.assertIn("Version", response)
 
@@ -1101,6 +1161,7 @@ class TestPythonRuntimes(LambdaTestBase):
             Handler="handler.handler",
             Role="r1",
             Code={"S3Bucket": bucket_name, "S3Key": bucket_key},
+            Timeout=10,
         )
 
         # invoke lambda function
@@ -1143,12 +1204,12 @@ class TestPythonRuntimes(LambdaTestBase):
             get_content=True,
             libs=TEST_LAMBDA_LIBS,
             runtime=LAMBDA_RUNTIME_PYTHON36,
-            file_name="abc/def/main.py",
+            file_name="localstack_package/def/main.py",
         )
         testutil.create_lambda_function(
             func_name=func_name,
             zip_file=zip_file,
-            handler="abc.def.main.handler",
+            handler="localstack_package.def.main.handler",
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
@@ -1229,6 +1290,7 @@ class TestPythonRuntimes(LambdaTestBase):
             sleep=1,
             function_name=function_name,
             expected_length=1,
+            regex_filter="Records.*Sns",
         )
         notification = events[0]["Records"][0]["Sns"]
 
@@ -1416,16 +1478,12 @@ class TestPythonRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_PYTHON)
 
 
-class TestNodeJSRuntimes(LambdaTestBase):
-    @classmethod
-    def setUpClass(cls):
-        cls.lambda_client = aws_stack.connect_to_service("lambda")
-
-    def test_nodejs_lambda_running_in_docker(self):
+class TestNodeJSRuntimes:
+    def test_nodejs_lambda_running_in_docker(self, lambda_client, create_lambda_function):
         if not use_docker():
             pytest.skip("not using docker executor")
 
-        testutil.create_lambda_function(
+        create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
             handler_file=TEST_LAMBDA_NODEJS,
             handler="lambda_integration.handler",
@@ -1437,55 +1495,71 @@ class TestNodeJSRuntimes(LambdaTestBase):
             "env": {"fizz": "buzz"},
         }
 
-        result = self.lambda_client.invoke(
+        result = lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JS,
             Payload=b"{}",
             ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))),
         )
 
         result_data = result["Payload"].read()
-        self.assertEqual(200, result["StatusCode"])
-        self.assertEqual(
-            "bar",
-            json.loads(json.loads(result_data)["context"]["clientContext"])
-            .get("custom")
-            .get("foo"),
-        )
+        assert 200 == result["StatusCode"]
+        assert "bar" == json.loads(json.loads(result_data)["context"]["clientContext"]).get(
+            "custom"
+        ).get("foo")
 
         # assert that logs are present
         expected = [".*Node.js Lambda handler executing."]
-        self.check_lambda_logs(TEST_LAMBDA_NAME_JS, expected_lines=expected)
+        _check_lambda_logs(TEST_LAMBDA_NAME_JS, expected_lines=expected)
 
-        # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
-
-    def test_invoke_nodejs_lambda(self):
+    def test_invoke_nodejs_lambda(self, lambda_client, create_lambda_function):
         handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_handler.js")
-        testutil.create_lambda_function(
+        create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
             zip_file=testutil.create_zip_file(handler_file, get_content=True),
             runtime=LAMBDA_RUNTIME_NODEJS14X,
             handler="lambda_handler.handler",
         )
 
-        try:
-            rs = self.lambda_client.invoke(
-                FunctionName=TEST_LAMBDA_NAME_JS,
-                Payload=json.dumps({"event_type": "test_lambda"}),
-            )
-            self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
+        rs = lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JS,
+            Payload=json.dumps({"event_type": "test_lambda"}),
+        )
+        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
 
-            payload = rs["Payload"].read()
-            response = json.loads(to_str(payload))
-            self.assertIn("response from localstack lambda", response["body"])
+        payload = rs["Payload"].read()
+        response = json.loads(to_str(payload))
+        assert "response from localstack lambda" in response["body"]
 
-            if use_docker():
-                # FIXME: this does currently not work with local execution mode
-                events = get_lambda_log_events(TEST_LAMBDA_NAME_JS)
-                self.assertGreater(len(events), 0)
-        finally:
-            # clean up
-            testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
+        events = get_lambda_log_events(TEST_LAMBDA_NAME_JS)
+        assert len(events) > 0
+
+    def test_invoke_nodejs_lambda_with_payload_containing_quotes(
+        self, lambda_client, create_lambda_function
+    ):
+        handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_handler.js")
+        function_name = "test_lambda_%s" % short_uid()
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=testutil.create_zip_file(handler_file, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+            handler="lambda_handler.handler",
+        )
+
+        test_string = "test_string' with some quotes"
+        body = '{"test_var": "%s"}' % test_string
+        rs = lambda_client.invoke(
+            FunctionName=function_name,
+            Payload=body,
+        )
+        assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
+
+        payload = rs["Payload"].read()
+        response = json.loads(to_str(payload))
+        assert "response from localstack lambda" in response["body"]
+
+        events = get_lambda_log_events(function_name)
+        assert len(events) > 0
+        assert test_string in str(events[0])
 
 
 class TestCustomRuntimes(LambdaTestBase):
@@ -1505,14 +1579,19 @@ class TestCustomRuntimes(LambdaTestBase):
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
-            Payload=b'{"text":"bar with \'quotes\\""}',
+            Payload=b'{"text": "bar with \'quotes\\""}',
         )
         result_data = result["Payload"].read()
 
         self.assertEqual(200, result["StatusCode"])
-        self.assertEqual(
-            """Echoing request: '{"text": "bar with \'quotes\\""}'""",
-            to_str(result_data).strip(),
+        result_data = to_str(result_data).strip()
+        # jsonify in pro (re-)formats the event json so we allow both versions here
+        self.assertIn(
+            result_data,
+            (
+                """Echoing request: '{"text": "bar with \'quotes\\""}'""",
+                """Echoing request: '{"text":"bar with \'quotes\\""}'""",
+            ),
         )
 
         # assert that logs are present
@@ -1591,6 +1670,42 @@ class TestRubyRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_RUBY)
 
 
+class TestGolangRuntimes(LambdaTestBase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service("lambda")
+
+    @only_in_alpine
+    def test_golang_lambda_running_locally(self):
+        if use_docker():
+            return
+
+        # TODO: bundle in repo
+        response = requests.get(TEST_GOLANG_LAMBDA_URL, allow_redirects=True)
+        if not response.ok:
+            response.raise_for_status()
+
+        open(TEST_LAMBDA_GOLANG_ZIP, "wb").write(response.content)
+
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_GOLANG,
+            zip_file=load_file(TEST_LAMBDA_GOLANG_ZIP, mode="rb"),
+            handler="handler",
+            runtime=LAMBDA_RUNTIME_GOLANG,
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=json.dumps({"name": "Test"})
+        )
+        result_data = result["Payload"].read()
+        self.maxDiff = None
+        self.assertEqual(200, result["StatusCode"])
+        self.assertEqual('"Hello Test!"', to_str(result_data).strip())
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_GOLANG)
+        os.remove(TEST_LAMBDA_GOLANG_ZIP)
+
+
 class TestJavaRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
@@ -1626,7 +1741,7 @@ class TestJavaRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JAVA_STREAM,
             zip_file=cls.test_java_jar,
             runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.sample.LambdaStreamHandler",
+            handler="cloud.localstack.awssdkv1.sample.LambdaStreamHandler",
         )
 
         # deploy lambda - Java with serializable input object
@@ -1634,7 +1749,7 @@ class TestJavaRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
             zip_file=cls.test_java_zip,
             runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.sample.SerializedInputLambdaHandler",
+            handler="cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
         )
 
         # deploy lambda - Java with Kinesis input object
@@ -1642,7 +1757,7 @@ class TestJavaRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JAVA_KINESIS,
             zip_file=cls.test_java_zip,
             runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.sample.KinesisLambdaHandler",
+            handler="cloud.localstack.awssdkv1.sample.KinesisLambdaHandler",
         )
 
     @classmethod
@@ -1656,7 +1771,10 @@ class TestJavaRuntimes(LambdaTestBase):
     def test_java_runtime(self):
         self.assertIsNotNone(self.test_java_jar)
 
-        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b"{}")
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA,
+            Payload=b'{"echo":"echo"}',
+        )
         result_data = result["Payload"].read()
 
         self.assertEqual(200, result["StatusCode"])
@@ -1695,6 +1813,7 @@ class TestJavaRuntimes(LambdaTestBase):
                 THIS_FOLDER,
                 "lambdas",
                 "java",
+                "lambda_echo",
                 "build",
                 "distributions",
                 "lambda-function-built-by-gradle.zip",
@@ -1739,7 +1858,12 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertEqual(202, result["StatusCode"])
 
     def test_kinesis_invocation(self):
-        payload = b'{"Records": [{"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"}}]}'
+        payload = (
+            b'{"Records": [{'
+            b'"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"},'
+            b'"eventID": "shardId-000000000001:12345678901234567890123456789012345678901234567890",'
+            b'"eventSourceARN": "arn:aws:kinesis:us-east-1:123456789012:stream/test"}]}'
+        )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JAVA_KINESIS, Payload=payload
         )
@@ -1749,10 +1873,16 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertEqual('"test "', to_str(result_data).strip())
 
     def test_kinesis_event(self):
+        payload = (
+            b'{"Records": [{'
+            b'"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"},'
+            b'"eventID": "shardId-000000000001:12345678901234567890123456789012345678901234567890",'
+            b'"eventSourceARN": "arn:aws:kinesis:us-east-1:123456789012:stream/test"}]}'
+        )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JAVA,
             InvocationType="Event",
-            Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}',
+            Payload=payload,
         )
         result_data = result["Payload"].read()
 
@@ -1760,7 +1890,10 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertEqual("", to_str(result_data).strip())
 
     def test_stream_handler(self):
-        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM, Payload=b"{}")
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM,
+            Payload=b'{"echo":"echo"}',
+        )
         result_data = result["Payload"].read()
 
         self.assertEqual(200, result["StatusCode"])
@@ -1804,7 +1937,7 @@ class TestJavaRuntimes(LambdaTestBase):
             Endpoint=aws_stack.lambda_function_arn(function_name),
         )
 
-        events_before = run_safe(get_lambda_log_events, function_name) or []
+        events_before = run_safe(get_lambda_log_events, function_name, regex_filter="Records") or []
 
         s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
         time.sleep(2)
@@ -1816,6 +1949,7 @@ class TestJavaRuntimes(LambdaTestBase):
             sleep=1,
             expected_length=len(events_before) + 1,
             function_name=function_name,
+            regex_filter="Records",
         )
 
         # clean up
@@ -1824,10 +1958,81 @@ class TestJavaRuntimes(LambdaTestBase):
         s3_client.delete_bucket(Bucket=bucket_name)
 
 
+def test_java_custom_handler_method_specification(lambda_client, create_lambda_function):
+    java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
+    expected = ['.*"echo": "echo".*']
+
+    function_name_custom_handler = "lambda_custom_handler_%s" % short_uid()
+    create_lambda_function(
+        func_name=function_name_custom_handler,
+        zip_file=java_handler_multiple_handlers,
+        runtime=LAMBDA_RUNTIME_JAVA11,
+        handler="cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom",
+    )
+
+    result = lambda_client.invoke(
+        FunctionName=function_name_custom_handler, Payload=b'{"echo":"echo"}'
+    )
+    result_data = result["Payload"].read()
+
+    assert 200 == result["StatusCode"]
+    assert "CUSTOM" == to_str(result_data).strip('"\n ')
+    _check_lambda_logs(function_name_custom_handler, expected_lines=expected)
+
+    function_name_interface = "lambda_interface_%s" % short_uid()
+    create_lambda_function(
+        func_name=function_name_interface,
+        zip_file=java_handler_multiple_handlers,
+        runtime=LAMBDA_RUNTIME_JAVA11,
+        handler="cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom",
+    )
+
+    result = lambda_client.invoke(FunctionName=function_name_interface, Payload=b'{"echo":"echo"}')
+    result_data = result["Payload"].read()
+
+    assert 200 == result["StatusCode"]
+    assert "INTERFACE" == to_str(result_data).strip('"\n ')
+
+    _check_lambda_logs(function_name_interface, expected_lines=expected)
+
+
 class TestDockerBehaviour(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service("lambda")
+        cls.s3_client = aws_stack.connect_to_service("s3")
+
+    def test_code_updated_on_redeployment(self):
+        lambda_api.LAMBDA_EXECUTOR.cleanup()
+
+        func_name = "test_code_updated_on_redeployment"
+
+        # deploy function for the first time
+        testutil.create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_ENV,
+            libs=TEST_LAMBDA_LIBS,
+            envvars={"Hello": "World"},
+        )
+
+        # test first invocation
+        result = self.lambda_client.invoke(FunctionName=func_name, Payload=b"{}")
+        payload = json.loads(to_str(result["Payload"].read()))
+
+        assert payload["Hello"] == "World"
+
+        # replacement code
+        updated_handler = "handler = lambda event, context: {'Hello': 'Elon Musk'}"
+        updated_handler = testutil.create_lambda_archive(
+            updated_handler, libs=TEST_LAMBDA_LIBS, get_content=True
+        )
+        self.lambda_client.update_function_code(FunctionName=func_name, ZipFile=updated_handler)
+
+        # second invocation should exec updated lambda code
+        result = self.lambda_client.invoke(FunctionName=func_name, Payload=b"{}")
+        payload = json.loads(to_str(result["Payload"].read()))
+
+        assert payload["Hello"] == "Elon Musk"
 
     def test_prime_and_destroy_containers(self):
         # run these tests only for the "reuse containers" Lambda executor
@@ -1996,7 +2201,7 @@ def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     )
 
     def get_events():
-        events = get_lambda_log_events(function_name)
+        events = get_lambda_log_events(function_name, regex_filter=r"event.*Records")
         assert len(events) == 2
         return events
 

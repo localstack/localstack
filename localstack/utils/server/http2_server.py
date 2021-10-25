@@ -12,7 +12,11 @@ from hypercorn.asyncio import serve, tcp_server
 from hypercorn.config import Config
 from hypercorn.events import Closed
 from hypercorn.protocol import http_stream
-from quart import Quart, make_response, request
+from quart import Quart
+from quart import app as quart_app
+from quart import asgi as quart_asgi
+from quart import make_response, request
+from quart import utils as quart_utils
 from quart.app import _cancel_all_tasks
 
 from localstack import config
@@ -24,6 +28,9 @@ from localstack.utils.run import FuncThread
 LOG = logging.getLogger(__name__)
 
 HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"]
+
+# flag to avoid lowercasing all header names (e.g., some AWS S3 SDKs depend on "ETag" response header)
+RETURN_CASE_SENSITIVE_HEADERS = True
 
 # cache of SSL contexts (indexed by cert file names)
 SSL_CONTEXTS = {}
@@ -86,6 +93,28 @@ def apply_patches():
 
     create_ssl_context_orig = Config.create_ssl_context
     Config.create_ssl_context = create_ssl_context
+
+    # apply patch for case-sensitive header names (e.g., some AWS S3 SDKs depend on "ETag" case-sensitive header)
+
+    def _encode_headers(headers):
+        if RETURN_CASE_SENSITIVE_HEADERS:
+            return [(key.encode(), value.encode()) for key, value in headers.items()]
+        return [(key.lower().encode(), value.encode()) for key, value in headers.items()]
+
+    quart_asgi._encode_headers = quart_asgi.encode_headers = _encode_headers
+    quart_app.encode_headers = quart_utils.encode_headers = _encode_headers
+
+    def build_and_validate_headers(headers):
+        validated_headers = []
+        for name, value in headers:
+            if name[0] == b":"[0]:
+                raise ValueError("Pseudo headers are not valid")
+            header_name = bytes(name) if RETURN_CASE_SENSITIVE_HEADERS else bytes(name).lower()
+            validated_headers.append((header_name.strip(), bytes(value).strip()))
+        return validated_headers
+
+    hypercorn_utils.build_and_validate_headers = build_and_validate_headers
+    http_stream.build_and_validate_headers = build_and_validate_headers
 
     # avoid "h11._util.LocalProtocolError: Too little data for declared Content-Length" for certain status codes
 

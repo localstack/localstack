@@ -138,6 +138,12 @@ def extract_bucket_and_key_name(headers, path):
     return extract_bucket_name(headers, path), extract_key_name(headers, path)
 
 
+def normalize_bucket_name(bucket_name):
+    bucket_name = bucket_name or ""
+    bucket_name = bucket_name.lower()
+    return bucket_name
+
+
 def validate_bucket_name(bucket_name):
     """
     Validate s3 bucket name based on the documentation

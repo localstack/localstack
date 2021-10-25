@@ -68,23 +68,34 @@ class TestRoute53(unittest.TestCase):
     def test_reusable_delegation_sets(self):
         client = aws_stack.connect_to_service("route53")
 
-        sets_before = client.list_reusable_delegation_sets()["DelegationSets"]
+        sets_before = client.list_reusable_delegation_sets().get("DelegationSets", [])
 
-        call_ref = "c-%s" % short_uid()
-        result = client.create_reusable_delegation_set(CallerReference=call_ref)["DelegationSet"]
-        set_id = result["Id"]
+        call_ref_1 = "c-%s" % short_uid()
+        result_1 = client.create_reusable_delegation_set(CallerReference=call_ref_1)[
+            "DelegationSet"
+        ]
+        set_id_1 = result_1["Id"]
 
-        result = client.get_reusable_delegation_set(Id=set_id)
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertEqual(set_id, result["DelegationSet"]["Id"])
+        call_ref_2 = "c-%s" % short_uid()
+        result_2 = client.create_reusable_delegation_set(CallerReference=call_ref_2)[
+            "DelegationSet"
+        ]
+        set_id_2 = result_2["Id"]
 
-        result = client.list_reusable_delegation_sets()
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertEqual(len(sets_before) + 1, len(result["DelegationSets"]))
+        result_1 = client.get_reusable_delegation_set(Id=set_id_1)
+        self.assertEqual(200, result_1["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(set_id_1, result_1["DelegationSet"]["Id"])
 
-        result = client.delete_reusable_delegation_set(Id=set_id)
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+        result_1 = client.list_reusable_delegation_sets()
+        self.assertEqual(200, result_1["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(len(sets_before) + 2, len(result_1["DelegationSets"]))
+
+        result_1 = client.delete_reusable_delegation_set(Id=set_id_1)
+        self.assertEqual(200, result_1["ResponseMetadata"]["HTTPStatusCode"])
+
+        result_2 = client.delete_reusable_delegation_set(Id=set_id_2)
+        self.assertEqual(200, result_2["ResponseMetadata"]["HTTPStatusCode"])
 
         with self.assertRaises(Exception) as ctx:
-            client.get_reusable_delegation_set(Id=set_id)
-        self.assertIn("404", str(ctx.exception))
+            client.get_reusable_delegation_set(Id=set_id_1)
+        self.assertEqual(404, ctx.exception.response["ResponseMetadata"]["HTTPStatusCode"])

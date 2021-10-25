@@ -1,12 +1,30 @@
-# (1) Lines annotated with "#extended-lib" are excluded
-# from the dependencies when we build the pip package
+# dependencies are grouped into blocks that define in which extra they belong to. for example, all requirements below
+#  the line `# extra=runtime`, can be installed with `pip install -e ".[runtime]"`
+#
+# install:  dependencies that are required for the cli (via pip install localstack)
+# runtime:  required to actually run localstack on the host
+# test:     for running tests and coverage analysis
+# dev:      for developing localstack
 
-# (2) Lines annotated with "#basic-lib" are included in the basic
-# version of the pip package (i.e., for "pip install localstack").
+# extra=install
+boto3>=1.14.33
+click>=7.0
+# dataclasses needed for python3.6 compat
+dataclasses; python_version < '3.7'
+#dnspython==1.16.0
+#docopt>=0.6.2
+docker==5.0.0
+localstack-client>=1.24
+localstack-ext>=0.12.19
+localstack-plugin-loader>=0.1.0
+pyyaml>=5.1
+rich>=10.7.0
+requests>=2.20.0,<2.26
+# TODO: "six" dependency still needed?
+six>=1.12.0
+stevedore>=3.4.0
 
-# (3) The remaining dependencies (those without markers) are only included in
-# the "full" version of the pip package (i.e., "pip install localstack[full]").
-
+# extra=runtime
 airspeed>=0.5.14
 # Use our "ext" version until this bug is fixed: https://github.com/awslabs/amazon-kinesis-client-python/issues/99
 amazon_kclpy-ext==1.5.1
@@ -14,58 +32,49 @@ amazon_kclpy-ext==1.5.1
 aws-sam-translator>=1.15.1
 awscli>=1.14.18
 boto>=2.49.0
-boto3>=1.14.33                 #basic-lib
 botocore>=1.12.13
-black==21.6b0                  #extended-lib
 cachetools>=3.1.1,<4.0.0
 cbor2>=5.2.0
-click>=7.0                     #basic-lib
-# coverage version should be synced with bin/Dockerfile.base
-coverage[toml]>=5.5
-coveralls==3.1.0
 crontab>=0.22.6
 # pin version to avoid Rust build issues: https://github.com/pyca/cryptography/issues/5771
 cryptography<3.4
-Cython                         #extended-lib
-# dataclasses needed for python3.6 compat
-dataclasses; python_version < '3.7' #basic-lib
-dnspython==1.16.0              #basic-lib
-docopt>=0.6.2                  #basic-lib
-docker>=3.7.2                  #basic-lib
 elasticsearch>=7.0.0,<8.0.0
-flake8>=3.6.0                  #extended-lib
-flake8-black>=0.2.1            #extended-lib
-flake8-isort>=4.0.0            #extended-lib
-flake8-quotes>=0.11.0          #extended-lib
-# enables flake8 configuration through pyproject.toml
-pyproject-flake8               #extended-lib
 flask>=1.0.2
 flask-cors>=3.0.3,<3.1.0
 flask_swagger==0.2.12
-forbiddenfruit==0.1.3
-isort==5.9.1                   #extended-lib
-jsondiff>=1.2.0
+#forbiddenfruit==0.1.3
+#jsondiff>=1.2.0
 jsonpatch>=1.24,<2.0
 jsonpath-rw>=1.4.0,<2.0.0
-localstack-ext[full]>=0.12.16
-localstack-ext>=0.12.16        #basic-lib
-localstack-client>=1.20        #basic-lib
+localstack-ext[full]>=0.12.19
 moto-ext[all]>=2.0.3.23
-pre-commit==2.13.0             #extended-lib
+pproxy>=2.7.0
 psutil>=5.4.8,<6.0.0
-pympler>=0.6
+#pympler>=0.6
 pyopenssl==17.5.0
+Quart>=0.6.15
+readerwriterlock>=1.0.7
+requests-aws4auth==0.9
+#sasl>=0.2.1
+xmltodict>=0.11.0
+
+# extra=test
+# these requirements are used for testing, also during docker build
 pytest==6.2.4
 pytest-httpserver>=1.0.1
 pytest-rerunfailures==10.0
-pyyaml>=5.1                    #basic-lib
-Quart>=0.6.15
-rich>=10.7.0                   #basic-lib
-readerwriterlock>=1.0.7
-requests>=2.20.0,<2.26         #basic-lib
-requests-aws4auth==0.9
-sasl>=0.2.1
-# TODO: "six" dependency still needed?
-six>=1.12.0                    #basic-lib
-stevedore>=3.4.0               #basic-lib
-xmltodict>=0.11.0
+# coverage version should be synced with bin/Dockerfile.base
+coverage[toml]>=5.5
+
+# extra=dev
+black==21.6b0
+coveralls==3.1.0
+Cython
+flake8>=3.6.0
+flake8-black>=0.2.1
+flake8-isort>=4.0.0
+flake8-quotes>=0.11.0
+# enables flake8 configuration through pyproject.toml
+pre-commit==2.13.0
+pyproject-flake8
+isort==5.9.1

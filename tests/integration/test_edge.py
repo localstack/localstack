@@ -15,14 +15,15 @@ from localstack.utils.common import get_free_tcp_port, get_service_protocol, sho
 
 class TestEdgeAPI(unittest.TestCase):
     def test_invoke_apis_via_edge(self):
-        edge_port = config.EDGE_PORT_HTTP or config.EDGE_PORT
-        edge_url = "%s://localhost:%s" % (get_service_protocol(), edge_port)
+        edge_url = config.get_edge_url()
 
         if is_api_enabled("s3"):
             self._invoke_s3_via_edge(edge_url)
             self._invoke_s3_via_edge_multipart_form(edge_url)
         if is_api_enabled("kinesis"):
             self._invoke_kinesis_via_edge(edge_url)
+        if is_api_enabled("dynamodbstreams"):
+            self._invoke_dynamodb_via_edge_go_sdk(edge_url)
         if is_api_enabled("dynamodbstreams"):
             self._invoke_dynamodbstreams_via_edge(edge_url)
         if is_api_enabled("firehose"):
@@ -49,6 +50,30 @@ class TestEdgeAPI(unittest.TestCase):
         client = aws_stack.connect_to_service("stepfunctions", endpoint_url=edge_url)
         result = client.list_state_machines()
         self.assertIn("stateMachines", result)
+
+    def _invoke_dynamodb_via_edge_go_sdk(self, edge_url):
+        client = aws_stack.connect_to_service("dynamodb")
+        table_name = f"t-{short_uid()}"
+        aws_stack.create_dynamodb_table(table_name, "id")
+
+        # emulate a request sent from the AWS Go SDK v2
+        headers = {
+            "Host": "awsmock:4566",
+            "User-Agent": "aws-sdk-go-v2/1.9.0 os/linux lang/go/1.16.7 md/GOOS/linux md/GOARCH/amd64 api/dynamodb/1.5.0",
+            "Accept-Encoding": "identity",
+            "Amz-Sdk-Invocation-Id": "af832536-dbc7-436e-9d6d-60840a0ff203",
+            "Amz-Sdk-Request": "attempt=1; max=3",
+            "Content-Type": "application/x-amz-json-1.0",
+            "X-Amz-Target": "DynamoDB_20120810.DescribeTable",
+        }
+        data = json.dumps({"TableName": table_name})
+        response = requests.post(edge_url, data=data, headers=headers)
+        self.assertEqual(200, response.status_code)
+        content = json.loads(to_str(response.content))
+        assert content.get("Table")
+
+        # clean up
+        client.delete_table(TableName=table_name)
 
     def _invoke_s3_via_edge(self, edge_url):
         client = aws_stack.connect_to_service("s3", endpoint_url=edge_url)
@@ -128,7 +153,7 @@ class TestEdgeAPI(unittest.TestCase):
         proxy.stop()
 
     def test_invoke_sns_sqs_integration_using_edge_port(self):
-        edge_port = config.EDGE_PORT_HTTP or config.EDGE_PORT
+        edge_port = config.get_edge_port_http()
         region_original = os.environ.get("DEFAULT_REGION")
         os.environ["DEFAULT_REGION"] = "us-southeast-2"
         edge_url = "%s://localhost:%s" % (get_service_protocol(), edge_port)

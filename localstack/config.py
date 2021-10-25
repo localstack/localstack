@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import time
 from os.path import expanduser
+from typing import Dict, List, Mapping
 
 import six
 from boto3 import Session
@@ -23,6 +24,7 @@ from localstack.constants import (
     LOCALHOST,
     LOCALHOST_IP,
     LOG_LEVELS,
+    TRACE_LOG_LEVELS,
     TRUE_STRINGS,
 )
 
@@ -150,7 +152,7 @@ HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
 
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
-DEBUG = is_env_true("DEBUG") or LS_LOG == "trace"
+DEBUG = is_env_true("DEBUG") or LS_LOG in TRACE_LOG_LEVELS
 
 # whether to enable debugpy
 DEVELOP = is_env_true("DEVELOP")
@@ -217,6 +219,9 @@ EXTRA_CORS_ALLOWED_ORIGINS = os.environ.get("EXTRA_CORS_ALLOWED_ORIGINS", "").st
 DISABLE_EVENTS = is_env_true("DISABLE_EVENTS")
 DEBUG_ANALYTICS = is_env_true("DEBUG_ANALYTICS")
 
+# whether to eagerly start services
+EAGER_SERVICE_LOADING = is_env_not_false("EAGER_SERVICE_LOADING")
+
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
@@ -245,6 +250,9 @@ FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 
 # whether the in_docker check should always return true
 OVERRIDE_IN_DOCKER = is_env_true("OVERRIDE_IN_DOCKER")
+
+# whether to return mocked success responses for still unimplemented API methods
+MOCK_UNIMPLEMENTED = is_env_true("MOCK_UNIMPLEMENTED")
 
 
 def has_docker():
@@ -275,6 +283,10 @@ LAMBDA_FALLBACK_URL = os.environ.get("LAMBDA_FALLBACK_URL", "").strip()
 # Forward URL used to forward any Lambda invocations to an external
 # endpoint (can use useful for advanced test setups)
 LAMBDA_FORWARD_URL = os.environ.get("LAMBDA_FORWARD_URL", "").strip()
+# Time in seconds to wait at max while extracting Lambda code.
+# By default it is 25 seconds for limiting the execution time
+# to avoid client/network timeout issues
+LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 
 # A comma-delimited string of stream names and its corresponding shard count to
 # initialize during startup.
@@ -334,8 +346,19 @@ CONFIG_ENV_VARS = [
     "KINESIS_INITIALIZE_STREAMS",
     "TF_COMPAT_MODE",
     "LAMBDA_DOCKER_FLAGS",
+    "LAMBDA_FORWARD_URL",
+    "LAMBDA_CODE_EXTRACT_TIME",
     "THUNDRA_APIKEY",
     "THUNDRA_AGENT_JAVA_VERSION",
+    "THUNDRA_AGENT_NODE_VERSION",
+    "THUNDRA_AGENT_PYTHON_VERSION",
+    "DISABLE_CORS_CHECKS",
+    "DISABLE_CUSTOM_CORS_S3",
+    "DISABLE_CUSTOM_CORS_APIGATEWAY",
+    "EXTRA_CORS_ALLOWED_HEADERS",
+    "EXTRA_CORS_EXPOSE_HEADERS",
+    "EXTRA_CORS_ALLOWED_ORIGINS",
+    "ENABLE_CONFIG_UPDATES",
 ]
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
@@ -450,10 +473,14 @@ else:
 CLI_COMMANDS = {}
 
 # set of valid regions
-VALID_REGIONS = set(Session().get_available_regions("sns"))
+VALID_PARTITIONS = set(Session().get_available_partitions())
+VALID_REGIONS = set()
+for partition in VALID_PARTITIONS:
+    for region in Session().get_available_regions("sns", partition):
+        VALID_REGIONS.add(region)
 
 
-def parse_service_ports():
+def parse_service_ports() -> Dict[str, int]:
     """Parses the environment variable $SERVICES with a comma-separated list of services
     and (optional) ports they should run on: 'service1:port1,service2,service3:port3'"""
     service_ports = os.environ.get("SERVICES", "").strip()
@@ -526,7 +553,7 @@ def service_port(service_key):
             #  the edge service, as that would require too many route mappings. In the future, we
             #  should integrate them with the port range for external services (4510-4530)
             return SERVICE_PORTS.get(service_key, 0)
-        return EDGE_PORT_HTTP or EDGE_PORT
+        return get_edge_port_http()
     return SERVICE_PORTS.get(service_key, 0)
 
 
@@ -539,9 +566,15 @@ def external_service_url(service_key, host=None):
     return "%s://%s:%s" % (get_protocol(), host, service_port(service_key))
 
 
-def get_edge_url():
-    port = EDGE_PORT_HTTP or EDGE_PORT
-    return "%s://%s:%s" % (get_protocol(), LOCALSTACK_HOSTNAME, port)
+def get_edge_port_http():
+    return EDGE_PORT_HTTP or EDGE_PORT
+
+
+def get_edge_url(localstack_hostname=None, protocol=None):
+    port = get_edge_port_http()
+    protocol = protocol or get_protocol()
+    localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
+    return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
 
 # initialize config values
@@ -569,7 +602,48 @@ def load_config_file(config_file=None):
     return configs
 
 
-if LS_LOG == "trace":
+class ServiceProviderConfig(Mapping[str, str]):
+    _provider_config: Dict[str, str]
+    default_value: str
+
+    def __init__(self, default_value: str):
+        self._provider_config = dict()
+        self.default_value = default_value
+
+    def get_provider(self, service: str) -> str:
+        return self._provider_config.get(service, self.default_value)
+
+    def set_provider_if_not_exists(self, service: str, provider: str) -> None:
+        if service not in self._provider_config:
+            self._provider_config[service] = provider
+
+    def set_provider(self, service: str, provider: str):
+        self._provider_config[service] = provider
+
+    def bulk_set_provider_if_not_exists(self, services: List[str], provider: str):
+        for service in services:
+            self.set_provider_if_not_exists(service, provider)
+
+    def __getitem__(self, item):
+        return self.get_provider(item)
+
+    def __setitem__(self, key, value):
+        self.set_provider(key, value)
+
+    def __len__(self):
+        return len(self._provider_config)
+
+    def __iter__(self):
+        return self._provider_config.__iter__()
+
+
+SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
+
+for key, value in os.environ.items():
+    if key.startswith("PROVIDER_OVERRIDE_"):
+        SERVICE_PROVIDER_CONFIG.set_provider(key.lstrip("PROVIDER_OVERRIDE_").lower(), value)
+
+if LS_LOG in TRACE_LOG_LEVELS:
     load_end_time = time.time()
     LOG = logging.getLogger(__name__)
     LOG.debug(

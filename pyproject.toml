@@ -1,4 +1,7 @@
 # LocalStack project configuration
+[build-system]
+requires = ['setuptools', 'wheel', 'localstack-plugin-loader']
+build-backend = "setuptools.build_meta"
 
 [tool.black]
 line_length = 100

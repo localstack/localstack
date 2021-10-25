@@ -22,7 +22,6 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 
 from localstack import config, constants
-from localstack.services.cloudformation.models.s3 import S3Bucket
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
     ALLOWED_HEADER_OVERRIDES,
@@ -34,6 +33,7 @@ from localstack.services.s3.s3_utils import (
     get_forwarded_for_host,
     is_expired,
     is_static_website,
+    normalize_bucket_name,
     uses_host_addressing,
     validate_bucket_name,
 )
@@ -45,6 +45,7 @@ from localstack.utils.common import (
     get_service_protocol,
     is_base64,
     md5,
+    not_none_or,
     short_uid,
     timestamp_millis,
     to_bytes,
@@ -70,11 +71,6 @@ BUCKET_LIFECYCLE = s3_backend.BUCKET_LIFECYCLE = getattr(s3_backend, "BUCKET_LIF
 # maps bucket name to replication settings
 BUCKET_REPLICATIONS = s3_backend.BUCKET_REPLICATIONS = getattr(
     s3_backend, "BUCKET_REPLICATIONS", {}
-)
-
-# maps bucket name to object lock settings
-OBJECT_LOCK_CONFIGS = s3_backend.OBJECT_LOCK_CONFIGS = getattr(
-    s3_backend, "OBJECT_LOCK_CONFIGS", {}
 )
 
 # map to store the s3 expiry dates
@@ -225,7 +221,9 @@ def send_notifications(method, bucket_name, object_path, version_id, headers):
             }[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
-            if action == "ObjectCreated" and method == "POST":
+            if action == "ObjectCreated" and method == "PUT" and "x-amz-copy-source" in headers:
+                api_method = "Copy"
+            elif action == "ObjectCreated" and method == "POST":
                 api_method = "CompleteMultipartUpload"
             else:
                 api_method = {"PUT": "Put", "POST": "Post", "DELETE": "Delete"}[method]
@@ -800,27 +798,6 @@ def get_replication(bucket_name):
     return xml_response(body, status_code=status_code)
 
 
-def get_object_lock(bucket_name):
-    bucket_name = normalize_bucket_name(bucket_name)
-    exists, code, body = is_bucket_available(bucket_name)
-    if not exists:
-        return xml_response(body, status_code=code)
-
-    lock_config = OBJECT_LOCK_CONFIGS.get(bucket_name)
-    status_code = 200
-    if not lock_config:
-        lock_config = {
-            "Error": {
-                "Code": "ObjectLockConfigurationNotFoundError",
-                "Message": "Object Lock configuration does not exist for this bucket",
-                "BucketName": bucket_name,
-            }
-        }
-        status_code = 404
-    body = xmltodict.unparse(lock_config)
-    return xml_response(body, status_code=status_code)
-
-
 def set_lifecycle(bucket_name, lifecycle):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
@@ -852,18 +829,6 @@ def set_replication(bucket_name, replication):
     if isinstance(to_str(replication), six.string_types):
         replication = xmltodict.parse(replication)
     BUCKET_REPLICATIONS[bucket_name] = replication
-    return 200
-
-
-def set_object_lock(bucket_name, lock_config):
-    bucket_name = normalize_bucket_name(bucket_name)
-    exists, code, body = is_bucket_available(bucket_name)
-    if not exists:
-        return xml_response(body, status_code=code)
-
-    if isinstance(to_str(lock_config), six.string_types):
-        lock_config = xmltodict.parse(lock_config)
-    OBJECT_LOCK_CONFIGS[bucket_name] = lock_config
     return 200
 
 
@@ -1030,11 +995,6 @@ def is_object_specific_request(path, headers):
     return parts > (1 if bucket_in_domain else 2)
 
 
-# TODO: remove dependency on cloudformation resource class here (extract as utility fn)
-def normalize_bucket_name(bucket_name):
-    return S3Bucket.normalize_bucket_name(bucket_name)
-
-
 def empty_response():
     response = Response()
     response.status_code = 200
@@ -1145,10 +1105,6 @@ def handle_put_bucket_notification(bucket, data):
 def remove_bucket_notification(bucket):
     if bucket in S3_NOTIFICATIONS:
         del S3_NOTIFICATIONS[bucket]
-
-
-def not_none_or(value, alternative):
-    return value if value is not None else alternative
 
 
 class ProxyListenerS3(PersistingProxyListener):
@@ -1376,12 +1332,6 @@ class ProxyListenerS3(PersistingProxyListener):
                 return get_replication(bucket_name)
             if method == "PUT":
                 return set_replication(bucket_name, data)
-
-        if query == "object-lock" or "object-lock" in query_map:
-            if method == "GET":
-                return get_object_lock(bucket_name)
-            if method == "PUT":
-                return set_object_lock(bucket_name, data)
 
         if method == "DELETE" and validate_bucket_name(bucket_name):
             delete_lifecycle(bucket_name)

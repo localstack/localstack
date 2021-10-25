@@ -4,10 +4,17 @@ import re
 from moto.s3.models import FakeBucket
 
 from localstack.constants import AWS_REGION_US_EAST_1, S3_VIRTUAL_HOSTNAME
-from localstack.services.cloudformation.deployment_utils import PLACEHOLDER_RESOURCE_NAME
+from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_RESOURCE_NAME,
+    dump_json_params,
+    generate_default_name,
+)
 from localstack.services.cloudformation.service_models import GenericBaseModel
+from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.aws import aws_stack
+from localstack.utils.cloudformation.cfn_utils import rename_params
 from localstack.utils.common import canonical_json, md5
+from localstack.utils.testutil import delete_all_s3_objects
 
 
 class S3BucketPolicy(GenericBaseModel):
@@ -24,20 +31,38 @@ class S3BucketPolicy(GenericBaseModel):
         bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
         return aws_stack.connect_to_service("s3").get_bucket_policy(Bucket=bucket_name)
 
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "put_bucket_policy",
+                "parameters": rename_params(
+                    dump_json_params(None, "PolicyDocument"), {"PolicyDocument": "Policy"}
+                ),
+            },
+            "delete": {"function": "delete_bucket_policy", "parameters": {"Bucket": "Bucket"}},
+        }
 
+
+# TODO: moto dependency
 class S3Bucket(GenericBaseModel, FakeBucket):
     def get_resource_name(self):
         return self.normalize_bucket_name(self.props.get("BucketName"))
 
     @staticmethod
     def normalize_bucket_name(bucket_name):
-        bucket_name = bucket_name or ""
-        # AWS automatically converts upper to lower case chars in bucket names
-        bucket_name = bucket_name.lower()
-        return bucket_name
+        return s3_utils.normalize_bucket_name(bucket_name)
 
     @staticmethod
-    def get_deploy_templates():
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("BucketName")
+        if not role_name:
+            resource["Properties"]["BucketName"] = s3_listener.normalize_bucket_name(
+                generate_default_name(stack_name, resource["LogicalResourceId"])
+            )
+
+    @classmethod
+    def get_deploy_templates(cls):
         def convert_acl_cf_to_s3(acl):
             """Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read')"""
             return re.sub("(?<!^)(?=[A-Z])", "-", acl).lower()
@@ -91,6 +116,32 @@ class S3Bucket(GenericBaseModel, FakeBucket):
                 return None
             return {"LocationConstraint": region}
 
+        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+            s3 = aws_stack.connect_to_service("s3")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            try:
+                s3.delete_bucket_policy(Bucket=bucket_name)
+            except Exception:
+                pass
+            s3_listener.remove_bucket_notification(resource["PhysicalResourceId"])
+            # TODO: divergence from how AWS deals with bucket deletes (should throw an error)
+            try:
+                delete_all_s3_objects(bucket_name)
+            except Exception as e:
+                if "NoSuchBucket" not in str(e):
+                    raise
+
+        def _add_bucket_tags(resource_id, resources, resource_type, func, stack_name):
+            s3 = aws_stack.connect_to_service("s3")
+            resource = resources[resource_id]
+            props = resource["Properties"]
+            bucket_name = props.get("BucketName")
+            tags = props.get("Tags", [])
+            if len(tags) > 0:
+                s3.put_bucket_tagging(Bucket=bucket_name, Tagging={"TagSet": tags})
+
         result = {
             "create": [
                 {
@@ -107,8 +158,12 @@ class S3Bucket(GenericBaseModel, FakeBucket):
                     "function": "put_bucket_notification_configuration",
                     "parameters": s3_bucket_notification_config,
                 },
+                {"function": _add_bucket_tags},
             ],
-            "delete": [{"function": "delete_bucket", "parameters": {"Bucket": "BucketName"}}],
+            "delete": [
+                {"function": _pre_delete},
+                {"function": "delete_bucket", "parameters": {"Bucket": "BucketName"}},
+            ],
         }
         return result
 

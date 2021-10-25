@@ -2,6 +2,7 @@ import json
 import logging
 import subprocess
 import sys
+import threading
 
 import requests
 from flask_cors import CORS
@@ -39,6 +40,9 @@ API_PATH_SERVERS = "/servers"
 
 # whether to start the multiserver in a separate process
 RUN_SERVER_IN_PROCESS = False
+
+# lock for server startup and port lookup
+STARTUP_MUTEX = threading.RLock()
 
 
 def patch_moto_server():
@@ -125,37 +129,42 @@ def start_api_server(api, port, server_port=None):
 
 
 def start_server_process(port):
-    if "__server__" in API_SERVERS:
-        return API_SERVERS["__server__"]["thread"]
-    port = port or get_multi_server_port()
-    API_SERVERS["__server__"] = config = {"port": port}
-    LOG.info("Starting multi API server process on port %s" % port)
-    if RUN_SERVER_IN_PROCESS:
-        cmd = '"%s" "%s" %s' % (sys.executable, __file__, port)
-        env_vars = {"PYTHONPATH": ".:%s" % constants.LOCALSTACK_ROOT_FOLDER}
-        thread = ShellCommandThread(
-            cmd, outfile=subprocess.PIPE, env_vars=env_vars, inherit_cwd=True
-        )
-        thread.start()
-    else:
-        thread = start_server(port, asynchronous=True)
+    with STARTUP_MUTEX:
+        if "__server__" in API_SERVERS:
+            return API_SERVERS["__server__"]["thread"]
 
-    TMP_THREADS.append(thread)
-    config["thread"] = thread
-    wait_for_port_open(port, retries=20, sleep_time=1)
-    return thread
+        port = port or get_multi_server_port()
+        config = {"port": port}
+        LOG.info("Starting multi API server process on port %s" % port)
+        if RUN_SERVER_IN_PROCESS:
+            cmd = '"%s" "%s" %s' % (sys.executable, __file__, port)
+            env_vars = {"PYTHONPATH": ".:%s" % constants.LOCALSTACK_ROOT_FOLDER}
+            thread = ShellCommandThread(
+                cmd, outfile=subprocess.PIPE, env_vars=env_vars, inherit_cwd=True
+            )
+            thread.start()
+        else:
+            thread = start_server(port, asynchronous=True)
+
+        TMP_THREADS.append(thread)
+        config["thread"] = thread
+        wait_for_port_open(port, retries=20, sleep_time=1)
+        API_SERVERS["__server__"] = config
+        return thread
 
 
 def get_multi_server_port():
-    global MULTI_SERVER_PORT
-    MULTI_SERVER_PORT = MULTI_SERVER_PORT or get_free_tcp_port()
-    return MULTI_SERVER_PORT
+    with STARTUP_MUTEX:
+        global MULTI_SERVER_PORT
+        MULTI_SERVER_PORT = MULTI_SERVER_PORT or get_free_tcp_port()
+        return MULTI_SERVER_PORT
 
 
 def get_moto_server_port():
-    global MOTO_SERVER_PORT
-    MOTO_SERVER_PORT = MOTO_SERVER_PORT or get_free_tcp_port()
-    return MOTO_SERVER_PORT
+    with STARTUP_MUTEX:
+        global MOTO_SERVER_PORT
+        MOTO_SERVER_PORT = MOTO_SERVER_PORT or get_free_tcp_port()
+        return MOTO_SERVER_PORT
 
 
 def main():

@@ -18,7 +18,15 @@ from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.common import clone, json_safe, select_attributes, short_uid, to_bytes, to_str
+from localstack.utils.common import (
+    clone,
+    json_safe,
+    long_uid,
+    select_attributes,
+    short_uid,
+    to_bytes,
+    to_str,
+)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -45,6 +53,8 @@ WRITE_THROTTLED_ACTIONS = [
     "TransactWriteItems",
 ]
 THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
+
+MANAGED_KMS_KEYS = {}
 
 
 class DynamoDBRegion(RegionBackend):
@@ -110,6 +120,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             return error_response_throughput()
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
+        table_def = None
         if "TableName" in data:
             table_def = DynamoDBRegion.get().table_definitions.get(data["TableName"]) or {}
 
@@ -461,23 +472,40 @@ class ProxyListenerDynamoDB(ProxyListener):
                     record["dynamodb"]["StreamViewType"] = stream_spec["StreamViewType"]
 
         elif action == "CreateTable":
-            if "StreamSpecification" in data:
-                if response.status_code == 200:
-                    content = json.loads(to_str(response._content))
+            if response.status_code == 200:
+
+                table_definitions = (
+                    DynamoDBRegion.get().table_definitions.get(data["TableName"]) or {}
+                )
+                if "TableId" not in table_definitions:
+                    table_definitions["TableId"] = long_uid()
+
+                if "SSESpecification" in table_definitions:
+                    sse_specification = table_definitions.pop("SSESpecification")
+                    table_definitions["SSEDescription"] = get_sse_description(sse_specification)
+
+                content = json.loads(to_str(response.content))
+                if table_definitions:
+                    table_content = content.get("Table", {})
+                    table_content.update(table_definitions)
+                    content["TableDescription"].update(table_content)
+                    update_response_content(response, content)
+
+                if "StreamSpecification" in data:
                     create_dynamodb_stream(
                         data, content["TableDescription"].get("LatestStreamLabel")
                     )
+
+                if data.get("Tags"):
+                    table_arn = content["TableDescription"]["TableArn"]
+                    DynamoDBRegion.TABLE_TAGS[table_arn] = {
+                        tag["Key"]: tag["Value"] for tag in data["Tags"]
+                    }
 
             event_publisher.fire_event(
                 event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
                 payload={"n": event_publisher.get_hash(table_name)},
             )
-
-            if data.get("Tags") and response.status_code == 200:
-                table_arn = json.loads(response._content)["TableDescription"]["TableArn"]
-                DynamoDBRegion.TABLE_TAGS[table_arn] = {
-                    tag["Key"]: tag["Value"] for tag in data["Tags"]
-                }
 
             return
 
@@ -533,10 +561,20 @@ class ProxyListenerDynamoDB(ProxyListener):
         elif action == "DescribeTable":
             table_name = data.get("TableName")
             table_props = DynamoDBRegion.get().table_properties.get(table_name)
+
             if table_props:
                 content = json.loads(to_str(response.content))
                 content.get("Table", {}).update(table_props)
                 update_response_content(response, content)
+
+            # Update only TableId and SSEDescription if present
+            table_definitions = DynamoDBRegion.get().table_definitions.get(table_name)
+            if table_definitions:
+                for key in ["TableId", "SSEDescription"]:
+                    if table_definitions.get(key):
+                        content = json.loads(to_str(response.content))
+                        content.get("Table", {})[key] = table_definitions[key]
+                        update_response_content(response, content)
 
         elif action == "TagResource":
             table_arn = data["ResourceArn"]
@@ -746,6 +784,35 @@ class ProxyListenerDynamoDB(ProxyListener):
             return getattr(ProxyListenerDynamoDB.thread_local, name)
         except AttributeError:
             return default
+
+
+def get_sse_kms_managed_key():
+    if MANAGED_KMS_KEYS.get(aws_stack.get_region()):
+        return MANAGED_KMS_KEYS[aws_stack.get_region()]
+    kms_client = aws_stack.connect_to_service("kms")
+    key_data = kms_client.create_key(Description="Default key that protects DynamoDB data")
+    key_id = key_data["KeyMetadata"]["KeyId"]
+    # not really happy with this import here
+    from localstack.services.kms import kms_listener
+
+    kms_listener.set_key_managed(key_id)
+    MANAGED_KMS_KEYS[aws_stack.get_region()] = key_id
+    return key_id
+
+
+def get_sse_description(data):
+    if data.get("Enabled"):
+        kms_master_key_id = data.get("KMSMasterKeyId")
+        if not kms_master_key_id:
+            # this is of course not the actual key for dynamodb, just a better, since existing, mock
+            kms_master_key_id = get_sse_kms_managed_key()
+        kms_master_key_id = aws_stack.kms_key_arn(kms_master_key_id)
+        return {
+            "Status": "ENABLED",
+            "SSEType": "KMS",  # no other value is allowed here
+            "KMSMasterKeyArn": kms_master_key_id,
+        }
+    return {}
 
 
 def handle_special_request(method, path, data, headers):

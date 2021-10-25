@@ -22,15 +22,16 @@ import time
 import uuid
 import zipfile
 from contextlib import closing
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, tzinfo
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Callable, List, Optional, Sized, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Sized, Type, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
 import requests
 import six
+from requests import Response
 
 import localstack.utils.run
 from localstack import config
@@ -115,17 +116,22 @@ class ShellCommandThread(FuncThread):
 
     def __init__(
         self,
-        cmd,
-        params={},
-        outfile=None,
-        env_vars={},
-        stdin=False,
-        auto_restart=False,
-        quiet=True,
-        inherit_cwd=False,
-        inherit_env=True,
-        log_listener=None,
+        cmd: Union[str, List[str]],
+        params: Any = None,
+        outfile: Union[str, int] = None,
+        env_vars: Dict[str, str] = None,
+        stdin: bool = False,
+        auto_restart: bool = False,
+        quiet: bool = True,
+        inherit_cwd: bool = False,
+        inherit_env: bool = True,
+        log_listener: Callable = None,
+        stop_listener: Callable = None,
+        strip_color: bool = False,
     ):
+        params = not_none_or(params, {})
+        env_vars = not_none_or(env_vars, {})
+        self.stopped = False
         self.cmd = cmd
         self.process = None
         self.outfile = outfile
@@ -133,8 +139,10 @@ class ShellCommandThread(FuncThread):
         self.env_vars = env_vars
         self.inherit_cwd = inherit_cwd
         self.inherit_env = inherit_env
-        self.log_listener = log_listener
         self.auto_restart = auto_restart
+        self.log_listener = log_listener
+        self.stop_listener = stop_listener
+        self.strip_color = strip_color
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
@@ -155,6 +163,9 @@ class ShellCommandThread(FuncThread):
     def do_run_cmd(self):
         def convert_line(line):
             line = to_str(line or "")
+            if self.strip_color:
+                # strip color codes
+                line = re.sub(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))", "", line)
             return "%s\r\n" % line.strip()
 
         def filter_line(line):
@@ -223,7 +234,7 @@ class ShellCommandThread(FuncThread):
         return not psutil.pid_exists(self.process.pid)
 
     def stop(self, quiet=False):
-        if getattr(self, "stopped", False):
+        if self.stopped:
             return
         if not self.process:
             LOG.warning("No process found for command '%s'" % self.cmd)
@@ -233,9 +244,14 @@ class ShellCommandThread(FuncThread):
         try:
             kill_process_tree(parent_pid)
             self.process = None
-        except Exception:
+        except Exception as e:
             if not quiet:
-                LOG.warning("Unable to kill process with pid %s" % parent_pid)
+                LOG.warning("Unable to kill process with pid %s: %s", parent_pid, e)
+        try:
+            self.stop_listener and self.stop_listener(self)
+        except Exception as e:
+            if not quiet:
+                LOG.warning("Unable to run stop handler for shell command thread %s: %s", self, e)
         self.stopped = True
 
 
@@ -390,12 +406,48 @@ class CaptureOutput(object):
         return stream.getvalue() if hasattr(stream, "getvalue") else stream
 
 
+class ObjectIdHashComparator:
+    """Simple wrapper class that allows us to create a hashset using the object id(..) as the entries' hash value"""
+
+    def __init__(self, obj):
+        self.obj = obj
+        self._hash = id(obj)
+
+    def __hash__(self):
+        return self._hash
+
+    def __eq__(self, other):
+        # assumption here is that we're comparing only against ObjectIdHash instances!
+        return self.obj == other.obj
+
+
+class ArbitraryAccessObj:
+    """Dummy object that can be arbitrarily accessed - any attributes, as a callable, item assignment, ..."""
+
+    def __init__(self, name=None):
+        self.name = name
+
+    def __getattr__(self, name, *args, **kwargs):
+        return ArbitraryAccessObj(name)
+
+    def __call__(self, *args, **kwargs):
+        if self.name in ["items", "keys", "values"] and not args and not kwargs:
+            return []
+        return ArbitraryAccessObj()
+
+    def __getitem__(self, *args, **kwargs):
+        return ArbitraryAccessObj()
+
+    def __setitem__(self, *args, **kwargs):
+        return ArbitraryAccessObj()
+
+
 # ----------------
 # UTILITY METHODS
 # ----------------
 
 
-def start_thread(method, *args, **kwargs):
+def start_thread(method, *args, **kwargs) -> FuncThread:
     """Start the given method in a background thread, and add the thread to the TMP_THREADS shutdown hook"""
     _shutdown_hook = kwargs.pop("_shutdown_hook", True)
     thread = FuncThread(method, *args, **kwargs)
@@ -489,39 +541,68 @@ def is_base64(s):
     return is_string(s) and re.match(regex, s)
 
 
-def md5(string):
+def md5(string: Union[str, bytes]) -> str:
     m = hashlib.md5()
     m.update(to_bytes(string))
     return m.hexdigest()
 
 
-def select_attributes(obj, attributes):
+def select_attributes(obj: Dict, attributes: List[str]) -> Dict:
     """Select a subset of attributes from the given dict (returns a copy)"""
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     return dict([(k, v) for k, v in obj.items() if k in attributes])
 
 
-def remove_attributes(obj, attributes):
+def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False) -> Dict:
     """Remove a set of attributes from the given dict (in-place)"""
+    if recursive:
+
+        def _remove(o, **kwargs):
+            if isinstance(o, dict):
+                remove_attributes(o, attributes)
+            return o
+
+        return recurse_object(obj, _remove)
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     for attr in attributes:
         obj.pop(attr, None)
     return obj
 
 
-def is_list_or_tuple(obj):
+def rename_attributes(
+    obj: Dict, old_to_new_attributes: Dict[str, str], in_place: bool = False
+) -> Dict:
+    """Rename a set of attributes in the given dict object. Second parameter is a dict that maps old to
+    new attribute names. Default is to return a copy, but can also pass in_place=True."""
+    if not in_place:
+        obj = dict(obj)
+    for old_name, new_name in old_to_new_attributes.items():
+        if old_name in obj:
+            obj[new_name] = obj.pop(old_name)
+    return obj
+
+
+def is_list_or_tuple(obj) -> bool:
     return isinstance(obj, (list, tuple))
 
 
-def in_docker():
+def ensure_list(obj: Any, wrap_none=False) -> List:
+    """Wrap the given object in a list, or return the object itself if it already is a list."""
+    if obj is None and not wrap_none:
+        return obj
+    return obj if isinstance(obj, list) else [obj]
+
+
+def in_docker() -> bool:
     return config.in_docker()
 
 
-def path_from_url(url):
+def path_from_url(url: str) -> str:
     return "/%s" % str(url).partition("://")[2].partition("/")[2] if "://" in url else url
 
 
-def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=["tcp"]):
+def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=None):
+    protocols = protocols or ["tcp"]
     port = port_or_url
     if is_number(port):
         port = int(port)
@@ -571,10 +652,38 @@ def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=["t
 def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sleep_time=0.5):
     """Ping the given network port until it becomes available (for a given number of retries).
     If 'http_path' is set, make a GET request to this path and assert a non-error response."""
+    return wait_for_port_status(
+        port,
+        http_path=http_path,
+        expect_success=expect_success,
+        retries=retries,
+        sleep_time=sleep_time,
+    )
+
+
+def wait_for_port_closed(port, http_path=None, expect_success=True, retries=10, sleep_time=0.5):
+    return wait_for_port_status(
+        port,
+        http_path=http_path,
+        expect_success=expect_success,
+        retries=retries,
+        sleep_time=sleep_time,
+        expect_closed=True,
+    )
+
+
+def wait_for_port_status(
+    port, http_path=None, expect_success=True, retries=10, sleep_time=0.5, expect_closed=False
+):
+    """Ping the given network port until it becomes (un)available (for a given number of retries)."""
 
     def check():
-        if not is_port_open(port, http_path=http_path, expect_success=expect_success):
-            raise Exception("Port %s (path: %s) was not open" % (port, http_path))
+        status = is_port_open(port, http_path=http_path, expect_success=expect_success)
+        if bool(status) != (not expect_closed):
+            raise Exception(
+                "Port %s (path: %s) was not %s"
+                % (port, http_path, "closed" if expect_closed else "open")
+            )
 
     return retry(check, sleep=sleep_time, retries=retries)
 
@@ -641,7 +750,7 @@ def to_unique_items_list(inputs, comparator=None):
     return result
 
 
-def timestamp(time=None, format=TIMESTAMP_FORMAT):
+def timestamp(time=None, format: str = TIMESTAMP_FORMAT) -> str:
     if not time:
         time = datetime.utcnow()
     if isinstance(time, six.integer_types + (float,)):
@@ -649,13 +758,13 @@ def timestamp(time=None, format=TIMESTAMP_FORMAT):
     return time.strftime(format)
 
 
-def timestamp_millis(time=None):
+def timestamp_millis(time=None) -> str:
     microsecond_time = timestamp(time=time, format=TIMESTAMP_FORMAT_MICROS)
     # truncating microseconds to milliseconds, while leaving the "Z" indicator
     return microsecond_time[:-4] + microsecond_time[-1]
 
 
-def epoch_timestamp():
+def epoch_timestamp() -> float:
     return time.time()
 
 
@@ -672,6 +781,7 @@ def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
     raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)
+    retries = int(retries)
     for i in range(0, retries + 1):
         try:
             return function(**kwargs)
@@ -778,11 +888,11 @@ def snake_to_camel_case(string, capitalize_first=True):
     return "".join(components)
 
 
-def base64_to_hex(b64_string):
+def base64_to_hex(b64_string: str) -> bytes:
     return binascii.hexlify(base64.b64decode(b64_string))
 
 
-def obj_to_xml(obj):
+def obj_to_xml(obj) -> str:
     """Return an XML representation of the given object (dict, list, or primitive).
     Does NOT add a common root element if the given obj is a list.
     Does NOT work for nested dict structures."""
@@ -793,18 +903,18 @@ def obj_to_xml(obj):
     return str(obj)
 
 
-def now(millis=False, tz=None):
+def now(millis: bool = False, tz: Optional[tzinfo] = None) -> int:
     return mktime(datetime.now(tz=tz), millis=millis)
 
 
-def now_utc(millis=False):
+def now_utc(millis: bool = False) -> int:
     return now(millis, timezone.utc)
 
 
-def mktime(ts, millis=False):
+def mktime(ts: datetime, millis: bool = False) -> int:
     if millis:
-        return ts.timestamp() * 1000
-    return ts.timestamp()
+        return int(ts.timestamp() * 1000)
+    return int(ts.timestamp())
 
 
 def mkdir(folder):
@@ -812,7 +922,18 @@ def mkdir(folder):
         os.makedirs(folder, exist_ok=True)
 
 
-def ensure_readable(file_path, default_perms=None):
+def is_empty_dir(directory: str, ignore_hidden: bool = False) -> bool:
+    """Return whether the given directory contains any entries (files/folders), including hidden
+    entries whose name starts with a dot (.), unless ignore_hidden=True is passed."""
+    if not os.path.isdir(directory):
+        raise Exception(f"Path is not a directory: {directory}")
+    entries = os.listdir(directory)
+    if ignore_hidden:
+        entries = [e for e in entries if not e.startswith(".")]
+    return not bool(entries)
+
+
+def ensure_readable(file_path: str, default_perms: int = None):
     if default_perms is None:
         default_perms = 0o644
     try:
@@ -839,7 +960,7 @@ def chown_r(path, user):
             os.chown(os.path.join(root, filename), uid, gid)
 
 
-def chmod_r(path, mode):
+def chmod_r(path: str, mode: int):
     """Recursive chmod"""
     if not os.path.exists(path):
         return
@@ -851,7 +972,7 @@ def chmod_r(path, mode):
             os.chmod(os.path.join(root, filename), mode)
 
 
-def rm_rf(path):
+def rm_rf(path: str):
     """
     Recursively removes a file or directory
     """
@@ -876,7 +997,7 @@ def rm_rf(path):
         shutil.rmtree(path)
 
 
-def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kwargs):
+def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kwargs):
     """Recursively copies file/directory"""
     # attention: this patch is not threadsafe
     copystat_orig = shutil.copystat
@@ -925,7 +1046,7 @@ def cp_r(src, dst, rm_dest_on_conflict=False, ignore_copystat_errors=False, **kw
         shutil.copystat = copystat_orig
 
 
-def disk_usage(path):
+def disk_usage(path: str):
     if not os.path.exists(path):
         return 0
 
@@ -957,7 +1078,7 @@ def format_bytes(count, default="n/a"):
     return count
 
 
-def download(url, path, verify_ssl=True):
+def download(url: str, path: str, verify_ssl=True):
     """Downloads file at url to the given path"""
     # make sure we're creating a new session here to
     # enable parallel file downloads during installation!
@@ -1004,7 +1125,7 @@ def download(url, path, verify_ssl=True):
         s.close()
 
 
-def parse_request_data(method, path, data=None, headers={}):
+def parse_request_data(method, path, data=None, headers=None):
     """Extract request data either from query string (for GET) or request body (for POST)."""
     result = {}
     headers = headers or {}
@@ -1073,6 +1194,7 @@ def is_alpine():
     return CACHE["_is_alpine_"]
 
 
+# TODO: rename to "get_os()"
 def get_arch():
     if is_mac_os():
         return "osx"
@@ -1082,7 +1204,7 @@ def get_arch():
         return "linux"
     if is_windows():
         return "windows"
-    raise Exception("Unable to determine system architecture")
+    raise Exception("Unable to determine local operating system")
 
 
 def is_command_available(cmd):
@@ -1229,13 +1351,13 @@ def replace_in_file(search, replace, file_path):
         save_file(file_path, content_new)
 
 
-def to_str(obj, encoding=DEFAULT_ENCODING, errors="strict"):
+def to_str(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> str:
     """If ``obj`` is an instance of ``binary_type``, return
     ``obj.decode(encoding, errors)``, otherwise return ``obj``"""
     return obj.decode(encoding, errors) if isinstance(obj, six.binary_type) else obj
 
 
-def to_bytes(obj, encoding=DEFAULT_ENCODING, errors="strict"):
+def to_bytes(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> bytes:
     """If ``obj`` is an instance of ``text_type``, return
     ``obj.encode(encoding, errors)``, otherwise return ``obj``"""
     return obj.encode(encoding, errors) if isinstance(obj, six.text_type) else obj
@@ -1270,9 +1392,14 @@ def last_index_of(array, value):
     return result
 
 
-def is_sub_dict(child_dict, parent_dict):
+def is_sub_dict(child_dict: Dict, parent_dict: Dict) -> bool:
     """Returns whether the first dict is a sub-dict (subset) of the second dict."""
     return all(parent_dict.get(key) == val for key, val in child_dict.items())
+
+
+def not_none_or(value: Any, alternative: Any) -> Any:
+    """Return 'value' if it is not None, or 'alternative' otherwise."""
+    return value if value is not None else alternative
 
 
 def cleanup(files=True, env=ENV_DEV, quiet=True):
@@ -1486,8 +1613,6 @@ def generate_ssl_cert(
         return cert_file_name, key_file_name
 
     if target_file and not overwrite and os.path.exists(target_file):
-        key_file_name = ""
-        cert_file_name = ""
         try:
             cert_file_name, key_file_name = store_cert_key_files(target_file)
         except Exception as e:
@@ -1580,13 +1705,14 @@ def generate_ssl_cert(
     return file_content
 
 
-def run_safe(_python_lambda, *args, **kwargs):
+def run_safe(_python_lambda, *args, _default=None, **kwargs):
     print_error = kwargs.get("print_error", False)
     try:
         return _python_lambda(*args, **kwargs)
     except Exception as e:
         if print_error:
             LOG.warning("Unable to execute function: %s" % e)
+        return _default
 
 
 def run_cmd_safe(**kwargs):
@@ -1625,7 +1751,7 @@ def run_for_max_seconds(max_secs, _function, *args, **kwargs):
         time.sleep(0.5)
 
 
-def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
+def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: float):
     if cache_duration_secs <= 0:
         return run_cmd()
 
@@ -1635,7 +1761,7 @@ def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
     if os.path.isfile(cache_file):
         # check file age
         mod_time = os.path.getmtime(cache_file)
-        time_now = now()
+        time_now = time.time()
         if mod_time > (time_now - cache_duration_secs):
             with open(cache_file) as fd:
                 return fd.read()
@@ -1646,7 +1772,10 @@ def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: int):
     return result
 
 
-def run(cmd, cache_duration_secs=0, **kwargs):
+def run(
+    cmd: Union[str, List[str]], cache_duration_secs=0, **kwargs
+) -> Union[str, subprocess.Popen]:
+    # TODO: should be unified and replaced with safe_run(..) over time! (allowing only lists for cmd parameter)
     def run_cmd():
         return localstack.utils.run.run(cmd, **kwargs)
 
@@ -1700,7 +1829,9 @@ class safe_requests(six.with_metaclass(_RequestsSafe)):
     pass
 
 
-def make_http_request(url, data=None, headers=None, method="GET"):
+def make_http_request(
+    url: str, data: Union[bytes, str] = None, headers: Dict[str, str] = None, method: str = "GET"
+) -> Response:
     return requests.request(
         url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
     )

@@ -11,13 +11,10 @@ from typing import Dict, Optional
 from flask import Flask, jsonify, make_response, request
 
 from localstack import config, constants
-from localstack.constants import (
-    ELASTICSEARCH_DEFAULT_VERSION,
-    ELASTICSEARCH_URLS,
-    TEST_AWS_ACCOUNT_ID,
-)
+from localstack.constants import ELASTICSEARCH_URLS, TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.services.es.cluster import ProxiedElasticsearchCluster
+from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
@@ -31,10 +28,6 @@ API_PREFIX = "/2015-01-01"
 
 DEFAULT_ES_VERSION = "7.7"
 
-# storage for domain resources. access should be protected with the _domain_mutex
-ES_DOMAINS: Dict[str, Dict] = {}
-_domain_mutex = threading.Lock()
-
 DEFAULT_ES_CLUSTER_CONFIG = {
     "InstanceType": "m3.medium.elasticsearch",
     "InstanceCount": 1,
@@ -44,7 +37,8 @@ DEFAULT_ES_CLUSTER_CONFIG = {
     "DedicatedMasterCount": 1,
 }
 
-TAGS = TaggingService()
+# timeout in seconds when giving up on waiting for the cluster to start
+CLUSTER_STARTUP_TIMEOUT = 600
 
 # ideally, each domain gets its own cluster. to save resources, we currently re-use the same
 # cluster instance. this also means we lie to the client about the the elasticsearch domain
@@ -52,16 +46,29 @@ TAGS = TaggingService()
 # with that version. subsequent calls will believe they created a cluster with the version
 # they specified.
 _cluster: Optional[ProxiedElasticsearchCluster] = None
-ES_CLUSTERS: Dict[str, ProxiedElasticsearchCluster] = dict()
 
-# timeout in seconds when giving up on waiting for the cluster to start
-CLUSTER_STARTUP_TIMEOUT = 120
+# mutex for modifying domains
+_domain_mutex = threading.Lock()
 
 app = Flask(APP_NAME)
 app.url_map.strict_slashes = False
 
 
+class ElasticsearchServiceBackend(RegionBackend):
+    # maps cluster names to cluster details
+    es_clusters: Dict[str, ProxiedElasticsearchCluster]
+    # storage for domain resources (access should be protected with the _domain_mutex)
+    es_domains: Dict[str, Dict]
+    # static tagging service instance
+    TAGS = TaggingService()
+
+    def __init__(self):
+        self.es_clusters = {}
+        self.es_domains = {}
+
+
 def _run_cluster_startup_monitor(cluster):
+    region = ElasticsearchServiceBackend.get()
     LOG.debug("running cluster startup monitor for cluster %s", cluster)
     # wait until the cluster is started, or the timeout is reached
     status = poll_condition(cluster.is_up, timeout=CLUSTER_STARTUP_TIMEOUT, interval=5)
@@ -69,12 +76,12 @@ def _run_cluster_startup_monitor(cluster):
     LOG.debug("cluster state polling returned! status = %s", status)
 
     with _domain_mutex:
-        LOG.debug("iterating over cluster domains %s", ES_CLUSTERS.keys())
-        for domain, domain_cluster in ES_CLUSTERS.items():
+        LOG.debug("iterating over cluster domains %s", region.es_clusters.keys())
+        for domain, domain_cluster in region.es_clusters.items():
             LOG.debug("checking cluster for domain %s", domain)
             if cluster is domain_cluster:
-                if domain in ES_DOMAINS:
-                    ES_DOMAINS[domain]["Created"] = status
+                if domain in region.es_domains:
+                    region.es_domains[domain]["Created"] = status
 
 
 def _create_cluster(domain_name, data):
@@ -83,11 +90,12 @@ def _create_cluster(domain_name, data):
     domain being created. NOT thread safe, needs to be called around _domain_mutex.
     """
     global _cluster
+    region = ElasticsearchServiceBackend.get()
 
     if _cluster:
         # see comment on _cluster
         LOG.info("elasticsearch cluster already created, using existing one for %s", domain_name)
-        ES_CLUSTERS[domain_name] = _cluster
+        region.es_clusters[domain_name] = _cluster
         data["Created"] = _cluster.is_up()
         return
 
@@ -98,7 +106,7 @@ def _create_cluster(domain_name, data):
     )
     LOG.info("starting %s on %s:%s", type(_cluster), _cluster.host, _cluster.port)
     _cluster.start()
-    ES_CLUSTERS[domain_name] = _cluster
+    region.es_clusters[domain_name] = _cluster
 
     # run a background thread that will update all domains that use this cluster to set
     # data['Created'] = <status> once it is started, or the CLUSTER_STARTUP_TIMEOUT is reached
@@ -110,11 +118,14 @@ def _create_cluster(domain_name, data):
 
 def _cleanup_cluster(domain_name):
     global _cluster
-    cluster = ES_CLUSTERS.pop(domain_name)
+    region = ElasticsearchServiceBackend.get()
+    cluster = region.es_clusters.pop(domain_name)
 
-    LOG.debug("cleanup cluster for domain %s, %d domains remaining", domain_name, len(ES_CLUSTERS))
+    LOG.debug(
+        "cleanup cluster for domain %s, %d domains remaining", domain_name, len(region.es_clusters)
+    )
 
-    if not ES_CLUSTERS:
+    if not region.es_clusters:
         # because cluster is currently always mapped to _cluster, we only shut it down if no other
         # domains are using it
         LOG.info("shutting down elasticsearch cluster after domain %s cleanup", domain_name)
@@ -148,7 +159,8 @@ def get_domain_config_status():
 
 
 def get_domain_config(domain_name):
-    status = ES_DOMAINS.get(domain_name) or {}
+    region = ElasticsearchServiceBackend.get()
+    status = region.es_domains.get(domain_name) or {}
     cluster_cfg = status.get("ElasticsearchClusterConfig") or {}
     default_cfg = DEFAULT_ES_CLUSTER_CONFIG
     config_status = get_domain_config_status()
@@ -239,7 +251,8 @@ def get_domain_config(domain_name):
 
 
 def get_domain_status(domain_name, deleted=False):
-    status = ES_DOMAINS.get(domain_name) or {}
+    region = ElasticsearchServiceBackend.get()
+    status = region.es_domains.get(domain_name) or {}
     cluster_cfg = status.get("ElasticsearchClusterConfig") or {}
     default_cfg = DEFAULT_ES_CLUSTER_CONFIG
     endpoint = "%s://%s:%s" % (
@@ -285,37 +298,26 @@ def get_domain_status(domain_name, deleted=False):
     }
 
 
-def get_install_version_for_api_version(version):
-    result = ELASTICSEARCH_DEFAULT_VERSION
-    if version.startswith("6."):
-        result = "6.7.0"
-    elif version == "7.4":
-        result = "7.4.0"
-    elif version == "7.7":
-        result = "7.7.0"
-    if not result.startswith(result):
-        LOG.warning("Elasticsearch version %s not yet supported, defaulting to %s", version, result)
-    return result
-
-
 @app.route("%s/domain" % API_PREFIX, methods=["GET"])
 def list_domain_names():
-    result = {"DomainNames": [{"DomainName": name} for name in ES_DOMAINS.keys()]}
+    region = ElasticsearchServiceBackend.get()
+    result = {"DomainNames": [{"DomainName": name} for name in region.es_domains.keys()]}
     return jsonify(result)
 
 
 @app.route("%s/es/domain" % API_PREFIX, methods=["POST"])
 def create_domain():
+    region = ElasticsearchServiceBackend.get()
     data = json.loads(to_str(request.data))
     domain_name = data["DomainName"]
 
     with _domain_mutex:
-        if domain_name in ES_DOMAINS:
+        if domain_name in region.es_domains:
             # domain already created
             return error_response(error_type="ResourceAlreadyExistsException")
 
         # "create" domain data
-        ES_DOMAINS[domain_name] = data
+        region.es_domains[domain_name] = data
 
         # lazy-init the cluster, and set the data["Created"] flag
         _create_cluster(domain_name, data)
@@ -335,8 +337,9 @@ def create_domain():
 
 @app.route("%s/es/domain/<domain_name>" % API_PREFIX, methods=["GET"])
 def describe_domain(domain_name):
+    region = ElasticsearchServiceBackend.get()
     with _domain_mutex:
-        if domain_name not in ES_DOMAINS:
+        if domain_name not in region.es_domains:
             return error_response(error_type="ResourceNotFoundException")
 
         result = get_domain_status(domain_name)
@@ -345,12 +348,13 @@ def describe_domain(domain_name):
 
 @app.route("%s/es/domain-info" % API_PREFIX, methods=["POST"])
 def describe_domains():
+    region = ElasticsearchServiceBackend.get()
     data = json.loads(to_str(request.data))
     result = []
     domain_names = data.get("DomainNames", [])
 
     with _domain_mutex:
-        for domain_name in ES_DOMAINS:
+        for domain_name in region.es_domains:
             if domain_name in domain_names:
                 status = get_domain_status(domain_name)
                 status = status.get("DomainStatus") or status
@@ -370,12 +374,13 @@ def domain_config(domain_name):
 
 @app.route("%s/es/domain/<domain_name>" % API_PREFIX, methods=["DELETE"])
 def delete_domain(domain_name):
+    region = ElasticsearchServiceBackend.get()
     with _domain_mutex:
-        if domain_name not in ES_DOMAINS:
+        if domain_name not in region.es_domains:
             return error_response(error_type="ResourceNotFoundException")
 
         result = get_domain_status(domain_name, deleted=True)
-        del ES_DOMAINS[domain_name]
+        del region.es_domains[domain_name]
         _cleanup_cluster(domain_name)
 
     # record event
@@ -412,10 +417,10 @@ def add_list_tags():
     if request.method == "POST":
         data = json.loads(to_str(request.data) or "{}")
         arn = data.get("ARN")
-        TAGS.tag_resource(arn, data.get("TagList", []))
+        ElasticsearchServiceBackend.TAGS.tag_resource(arn, data.get("TagList", []))
     if request.method == "GET" and request.args.get("arn"):
         arn = request.args.get("arn")
-        tags = TAGS.list_tags_for_resource(arn)
+        tags = ElasticsearchServiceBackend.TAGS.list_tags_for_resource(arn)
         response = {"TagList": tags.get("Tags")}
         return jsonify(response)
 

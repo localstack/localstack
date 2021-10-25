@@ -1,6 +1,5 @@
 import logging
 import os
-import traceback
 import types
 from html import escape
 
@@ -41,13 +40,15 @@ def check_sqs(expect_shutdown=False, print_error=False):
     out = None
     try:
         # wait for port to be opened
-        if PORT_SQS_BACKEND:
-            wait_for_port_open(PORT_SQS_BACKEND)
+        wait_for_port_open(PORT_SQS_BACKEND)
         # check SQS
-        out = aws_stack.connect_to_service(service_name="sqs").list_queues()
-    except Exception as e:
+        endpoint_url = f"http://127.0.0.1:{PORT_SQS_BACKEND}"
+        out = aws_stack.connect_to_service(
+            service_name="sqs", endpoint_url=endpoint_url
+        ).list_queues()
+    except Exception:
         if print_error:
-            LOG.warning("SQS health check failed: %s %s" % (e, traceback.format_exc()))
+            LOG.exception("SQS health check failed")
     if expect_shutdown:
         assert out is None
     else:
@@ -138,13 +139,16 @@ def patch_moto():
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_SQS
     patch_moto()
-    return start_moto_server(
+    result = start_moto_server(
         "sqs",
         port,
         name="SQS",
         asynchronous=asynchronous,
         update_listener=update_listener,
     )
+    global PORT_SQS_BACKEND
+    PORT_SQS_BACKEND = result.service_port
+    return result
 
 
 def start_sqs_elasticmq(port=None, asynchronous=False, update_listener=None):

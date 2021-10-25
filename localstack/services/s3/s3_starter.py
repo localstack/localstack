@@ -1,6 +1,5 @@
 import logging
 import os
-import traceback
 import types
 from urllib.parse import urlparse
 
@@ -38,10 +37,13 @@ def check_s3(expect_shutdown=False, print_error=False):
         # wait for port to be opened
         wait_for_port_open(s3_listener.PORT_S3_BACKEND)
         # check S3
-        out = aws_stack.connect_to_service(service_name="s3").list_buckets()
-    except Exception as e:
+        endpoint_url = f"http://127.0.0.1:{s3_listener.PORT_S3_BACKEND}"
+        out = aws_stack.connect_to_service(
+            service_name="s3", endpoint_url=endpoint_url
+        ).list_buckets()
+    except Exception:
         if print_error:
-            LOG.error("S3 health check failed: %s %s" % (e, traceback.format_exc()))
+            LOG.exception("S3 health check failed")
     if expect_shutdown:
         assert out is None
     else:
@@ -202,7 +204,7 @@ def apply_patches():
     )
 
     # patch DeleteObjectTagging
-    def s3_key_response_delete(self, bucket_name, query, key_name, *args, **kwargs):
+    def s3_key_response_delete(self, headers, bucket_name, query, key_name, *args, **kwargs):
         # Fixes https://github.com/localstack/localstack/issues/1083
         if query.get("tagging"):
             self._set_action("KEY", "DELETE", query)
@@ -211,7 +213,7 @@ def apply_patches():
             key.tags = {}
             self.backend.tagger.delete_all_tags_for_resource(key.arn)
             return 204, {}, ""
-        result = s3_key_response_delete_orig(bucket_name, query, key_name, *args, **kwargs)
+        result = s3_key_response_delete_orig(headers, bucket_name, query, key_name, *args, **kwargs)
         return result
 
     s3_key_response_delete_orig = s3_responses.S3ResponseInstance._key_response_delete

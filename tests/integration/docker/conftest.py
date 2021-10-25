@@ -1,7 +1,7 @@
 import pytest
 
 from localstack.config import is_env_not_false
-from localstack.utils.docker import DOCKER_CLIENT, CmdDockerClient, SdkDockerClient
+from localstack.utils.docker_utils import DOCKER_CLIENT, CmdDockerClient, SdkDockerClient
 
 
 def _check_skip():

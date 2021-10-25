@@ -12,7 +12,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import load_file, retry, short_uid, to_str
-from localstack.utils.testutil import create_zip_file
+from localstack.utils.testutil import create_zip_file, list_all_resources
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -605,6 +605,20 @@ def create_and_await_stack(**kwargs):
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
     result = await_stack_completion(kwargs["StackName"])
     return result
+
+
+def update_and_await_stack(stack_name, **kwargs):
+    cloudformation = aws_stack.connect_to_service("cloudformation")
+    response = cloudformation.update_stack(StackName=stack_name, **kwargs)
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    return await_stack_completion(stack_name)
+
+
+def delete_and_await_stack(stack_name, **kwargs):
+    cloudformation = aws_stack.connect_to_service("cloudformation")
+    response = cloudformation.delete_stack(StackName=stack_name, **kwargs)
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    return await_stack_completion(stack_name)
 
 
 class CloudFormationTest(unittest.TestCase):
@@ -1778,15 +1792,7 @@ class CloudFormationTest(unittest.TestCase):
 
         # 2 roles created successfully
         rs = iam_client.list_roles()
-        roles = [
-            role
-            for role in rs["Roles"]
-            if role["RoleName"]
-            in [
-                "cf-{}-Role".format(stack_name),
-                "cf-{}-StateMachineExecutionRole".format(stack_name),
-            ]
-        ]
+        roles = [role for role in rs["Roles"] if stack_name in role["RoleName"]]
 
         self.assertEqual(2, len(roles))
 
@@ -1984,6 +1990,12 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(metric_alarms) + 1, len(metric_alarms_after))
         self.assertEqual(len(composite_alarms) + 1, len(composite_alarms_after))
 
+        iam_client = aws_stack.connect_to_service("iam")
+        profiles = iam_client.list_instance_profiles().get("InstanceProfiles", [])
+        assert len(profiles) > 0
+        profile = profiles[0]
+        assert len(profile["Roles"]) > 0
+
         # clean up
         self.cleanup(stack_name)
 
@@ -2000,12 +2012,14 @@ class CloudFormationTest(unittest.TestCase):
             Parameters=[{"ParameterKey": "KeyName", "ParameterValue": "testkey"}],
         )
 
-        resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+        def get_instance_id():
+            resources = cfn.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+            instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
+            self.assertEqual(1, len(instances))
+            return instances[0]["PhysicalResourceId"]
 
-        instances = [res for res in resources if res["ResourceType"] == "AWS::EC2::Instance"]
-        self.assertEqual(1, len(instances))
-
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
+        instance_id = get_instance_id()
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
         self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
         self.assertEqual("t2.nano", resp["Reservations"][0]["Instances"][0]["InstanceType"])
 
@@ -2014,10 +2028,13 @@ class CloudFormationTest(unittest.TestCase):
             TemplateBody=template,
             Parameters=[{"ParameterKey": "InstanceType", "ParameterValue": "t2.medium"}],
         )
-        await_stack_completion(stack_name)
+        await_stack_completion(stack_name, statuses="UPDATE_COMPLETE")
 
-        resp = ec2_client.describe_instances(InstanceIds=[instances[0]["PhysicalResourceId"]])
-        self.assertEqual("t2.medium", resp["Reservations"][0]["Instances"][0]["InstanceType"])
+        instance_id = get_instance_id()  # get ID of updated instance (may have changed!)
+        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+        reservations = resp["Reservations"]
+        self.assertEqual(1, len(reservations))
+        self.assertEqual("t2.medium", reservations[0]["Instances"][0]["InstanceType"])
 
         # clean up
         self.cleanup(stack_name)
@@ -2276,3 +2293,94 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual("EventTable", response.get("TableName"))
         self.assertEqual(1, len(response.get("KinesisDataStreamDestinations")))
         self.assertIn("StreamArn", response.get("KinesisDataStreamDestinations")[0])
+
+    def test_updating_stack_with_iam_role(self):
+        lambda_client = aws_stack.connect_to_service("lambda")
+        iam = aws_stack.connect_to_service("iam")
+
+        # Initialization
+        stack_name = "stack-%s" % short_uid()
+        lambda_role_name = "lambda-role-%s" % short_uid()
+        lambda_function_name = "lambda-function-%s" % short_uid()
+
+        template = json.loads(load_file(TEST_TEMPLATE_7))
+
+        template["Resources"]["LambdaExecutionRole"]["Properties"]["RoleName"] = lambda_role_name
+        template["Resources"]["LambdaFunction1"]["Properties"][
+            "FunctionName"
+        ] = lambda_function_name
+
+        # Create stack and wait for 'CREATE_COMPLETE' status of the stack
+        rs = create_and_await_stack(StackName=stack_name, TemplateBody=json.dumps(template))
+
+        # Checking required values for Lambda function and IAM Role
+        self.assertIn("StackId", rs)
+        self.assertIn(stack_name, rs["StackId"])
+
+        list_functions = list_all_resources(
+            lambda kwargs: lambda_client.list_functions(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Functions",
+        )
+        list_roles = list_all_resources(
+            lambda kwargs: iam.list_roles(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Roles",
+        )
+
+        new_function = [
+            function
+            for function in list_functions
+            if function.get("FunctionName") == lambda_function_name
+        ]
+        new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name]
+
+        self.assertEqual(1, len(new_function))
+        self.assertIn(lambda_role_name, new_function[0].get("Role"))
+
+        self.assertEqual(1, len(new_role))
+
+        # Generate new names for lambda and IAM Role
+        lambda_role_name_new = "lambda-role-%s" % short_uid()
+        lambda_function_name_new = "lambda-function-%s" % short_uid()
+
+        template["Resources"]["LambdaExecutionRole"]["Properties"][
+            "RoleName"
+        ] = lambda_role_name_new
+        template["Resources"]["LambdaFunction1"]["Properties"][
+            "FunctionName"
+        ] = lambda_function_name_new
+
+        # Update stack and wait for 'UPDATE_COMPLETE' status of the stack
+        rs = update_and_await_stack(stack_name, TemplateBody=json.dumps(template))
+
+        # Checking new required values for Lambda function and IAM Role
+        self.assertIn("StackId", rs)
+        self.assertIn(stack_name, rs["StackId"])
+
+        list_functions = list_all_resources(
+            lambda kwargs: lambda_client.list_functions(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Functions",
+        )
+
+        list_roles = list_all_resources(
+            lambda kwargs: iam.list_roles(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="Roles",
+        )
+
+        new_function = [
+            function
+            for function in list_functions
+            if function.get("FunctionName") == lambda_function_name_new
+        ]
+        new_role = [role for role in list_roles if role.get("RoleName") == lambda_role_name_new]
+
+        self.assertEqual(1, len(new_function))
+        self.assertIn(lambda_role_name_new, new_function[0].get("Role"))
+
+        self.assertEqual(1, len(new_role))
+
+        # Delete the stack and wait for the status 'DELETE_COMPLETE' of the stack
+        delete_and_await_stack(stack_name)

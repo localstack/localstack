@@ -1,5 +1,6 @@
 from moto.ec2.utils import generate_route_id
 
+from localstack.services.cloudformation.deployment_utils import generate_default_name
 from localstack.services.cloudformation.service_models import REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
 
@@ -238,6 +239,14 @@ class SecurityGroup(GenericBaseModel):
             return props.get("GroupId") or props.get("GroupName")
 
     @staticmethod
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("GroupName")
+        if not role_name:
+            resource["Properties"]["GroupName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
+    @staticmethod
     def get_deploy_templates():
         return {
             "create": {
@@ -304,8 +313,22 @@ class EC2VPC(GenericBaseModel):
         resp = client.describe_vpcs(Filters=[{"Name": "cidr", "Values": [self.props["CidrBlock"]]}])
         return (resp["Vpcs"] or [None])[0]
 
-    @staticmethod
-    def get_deploy_templates():
+    @classmethod
+    def get_deploy_templates(cls):
+        def _pre_delete(resource_id, resources, resource_type, func, stack_name):
+            res = cls(resources[resource_id])
+            vpc_id = res.state.get("VpcId")
+            if vpc_id:
+                ec2_client = aws_stack.connect_to_service("ec2")
+                resp = ec2_client.describe_route_tables(
+                    Filters=[
+                        {"Name": "vpc-id", "Values": [vpc_id]},
+                        {"Name": "association.main", "Values": ["false"]},
+                    ]
+                )
+                for rt in resp["RouteTables"]:
+                    ec2_client.delete_route_table(RouteTableId=rt["RouteTableId"])
+
         return {
             "create": {
                 "function": "create_vpc",
@@ -315,10 +338,13 @@ class EC2VPC(GenericBaseModel):
                     # TODO: add TagSpecifications
                 },
             },
-            "delete": {
-                "function": "delete_vpc",
-                "parameters": {"VpcId": "PhysicalResourceId"},
-            },
+            "delete": [
+                {"function": _pre_delete},
+                {
+                    "function": "delete_vpc",
+                    "parameters": {"VpcId": "PhysicalResourceId"},
+                },
+            ],
         }
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
@@ -373,27 +399,31 @@ class EC2Instance(GenericBaseModel):
         return "AWS::EC2::Instance"
 
     def fetch_state(self, stack_name, resources):
-        instance_id = self.physical_resource_id
+        instance_id = self.get_physical_resource_id()
         if not instance_id:
-            return None
-        client = aws_stack.connect_to_service("ec2")
-        resp = client.describe_instances(InstanceIds=[instance_id])
-        return resp["Reservations"][0]["Instances"][0]
+            return
+        return self._get_state()
 
     def update_resource(self, new_resource, stack_name, resources):
-        instance_id = new_resource["PhysicalResourceId"]
+        instance_id = self.get_physical_resource_id()
         props = new_resource["Properties"]
         groups = props.get("SecurityGroups", props.get("SecurityGroupIds"))
 
         client = aws_stack.connect_to_service("ec2")
         client.modify_instance_attribute(
-            Attribute="instanceType",
             Groups=groups,
             InstanceId=instance_id,
             InstanceType={"Value": props["InstanceType"]},
         )
+        return self._get_state(client)
+
+    def _get_state(self, client=None):
+        instance_id = self.get_physical_resource_id()
+        client = client or aws_stack.connect_to_service("ec2")
         resp = client.describe_instances(InstanceIds=[instance_id])
-        return resp["Reservations"][0]["Instances"][0]
+        reservation = (resp.get("Reservations") or [{}])[0]
+        result = (reservation.get("Instances") or [None])[0]
+        return result
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.physical_resource_id or self.props.get("InstanceId")

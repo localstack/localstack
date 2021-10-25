@@ -6,6 +6,7 @@ import re
 import socket
 import ssl
 from asyncio.selector_events import BaseSelectorEventLoop
+from typing import Dict
 
 import requests
 from flask_cors import CORS
@@ -29,7 +30,7 @@ from localstack.config import (
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
-from localstack.utils.common import Mock, generate_ssl_cert, json_safe, path_from_url
+from localstack.utils.common import Mock, generate_ssl_cert, json_safe, path_from_url, start_thread
 from localstack.utils.server import http2_server
 
 # set up logger
@@ -38,23 +39,27 @@ LOG = logging.getLogger(__name__)
 # path for test certificate
 SERVER_CERT_PEM_FILE = "server.test.pem"
 
-# CORS constants
+# CORS constants below
 CORS_ALLOWED_HEADERS = [
     "authorization",
-    "content-type",
+    "cache-control",
     "content-length",
     "content-md5",
-    "cache-control",
+    "content-type",
+    "etag",
+    "location",
+    "x-amz-acl",
     "x-amz-content-sha256",
     "x-amz-date",
+    "x-amz-request-id",
     "x-amz-security-token",
-    "x-amz-user-agent",
-    "x-amz-target",
-    "x-amz-acl",
-    "x-amz-version-id",
-    "x-localstack-target",
     "x-amz-tagging",
-    # For AWS SDK v3
+    "x-amz-target",
+    "x-amz-user-agent",
+    "x-amz-version-id",
+    "x-amzn-requestid",
+    "x-localstack-target",
+    # for AWS SDK v3
     "amz-sdk-invocation-id",
     "amz-sdk-request",
 ]
@@ -63,7 +68,10 @@ if EXTRA_CORS_ALLOWED_HEADERS:
 
 CORS_ALLOWED_METHODS = ("HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS", "PATCH")
 
-CORS_EXPOSE_HEADERS = ("x-amz-version-id",)
+CORS_EXPOSE_HEADERS = (
+    "etag",
+    "x-amz-version-id",
+)
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(","))
 
@@ -140,6 +148,8 @@ class ProxyListener(object):
 class RegionBackend(object):
     """Base class for region-specific backends for the different APIs."""
 
+    REGIONS: Dict[str, "RegionBackend"]
+
     @classmethod
     def get(cls, region=None):
         regions = cls.regions()
@@ -148,7 +158,7 @@ class RegionBackend(object):
         return regions[region]
 
     @classmethod
-    def regions(cls):
+    def regions(cls) -> Dict[str, "RegionBackend"]:
         if not hasattr(cls, "REGIONS"):
             # maps region name to region backend instance
             cls.REGIONS = {}
@@ -157,6 +167,13 @@ class RegionBackend(object):
     @classmethod
     def get_current_request_region(cls):
         return aws_stack.get_region()
+
+    @classmethod
+    def reset(cls):
+        """Reset the (in-memory) state of this service region backend."""
+        # for now, simply reset the regions and discard all existing region instances
+        cls.REGIONS = {}
+        return cls.regions()
 
 
 # ---------------------
@@ -216,16 +233,23 @@ def cors_error_response():
     return response
 
 
+def _is_in_allowed_origins(allowed_origins, origin):
+    for allowed_origin in allowed_origins:
+        if allowed_origin == "*" or origin == allowed_origin:
+            return True
+    return False
+
+
 def is_cors_origin_allowed(headers, allowed_origins=None):
     """Returns true if origin is allowed to perform cors requests, false otherwise"""
     allowed_origins = ALLOWED_CORS_ORIGINS if allowed_origins is None else allowed_origins
     origin = headers.get("origin")
     referer = headers.get("referer")
     if origin:
-        return origin in allowed_origins
+        return _is_in_allowed_origins(allowed_origins, origin)
     elif referer:
         referer_uri = "{uri.scheme}://{uri.netloc}".format(uri=urlparse(referer))
-        return referer_uri in allowed_origins
+        return _is_in_allowed_origins(allowed_origins, referer_uri)
     # If both headers are not set, let it through (awscli etc. do not send these headers)
     return True
 
@@ -267,7 +291,7 @@ def modify_and_forward(
         and not is_cors_origin_allowed(headers)
     ):
         LOG.info(
-            "Blocked cors request from forbidden origin %s",
+            "Blocked CORS request from forbidden origin %s",
             headers.get("origin") or headers.get("referer"),
         )
         return cors_error_response()
@@ -525,6 +549,7 @@ def start_proxy_server(
 
     ssl_creds = (None, None)
     if use_ssl:
+        install_predefined_cert_if_available()
         _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
         ssl_creds = (cert_file_name, key_file_name)
 
@@ -533,7 +558,16 @@ def start_proxy_server(
     )
 
 
-def serve_flask_app(app, port, host=None, cors=True):
+def install_predefined_cert_if_available():
+    try:
+        from localstack_ext.bootstrap import install
+
+        install.setup_ssl_cert()
+    except Exception:
+        pass
+
+
+def serve_flask_app(app, port, host=None, cors=True, asynchronous=False):
     if cors:
         CORS(app)
     if not config.DEBUG:
@@ -555,5 +589,10 @@ def serve_flask_app(app, port, host=None, cors=True):
     except Exception:
         pass
 
-    app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
-    return app
+    def _run(*_):
+        app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
+        return app
+
+    if asynchronous:
+        return start_thread(_run)
+    return _run()

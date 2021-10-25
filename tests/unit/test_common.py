@@ -1,8 +1,11 @@
+import io
 import itertools
+import os
 import socket
 import threading
 import time
 import unittest
+import zipfile
 from datetime import date, datetime
 
 import pytest
@@ -11,7 +14,9 @@ import yaml
 
 from localstack.utils import common
 from localstack.utils.bootstrap import extract_port_flags
-from localstack.utils.docker import PortMappings
+from localstack.utils.common import is_empty_dir, mkdir, new_tmp_dir, rm_rf, save_file
+from localstack.utils.docker_utils import PortMappings
+from localstack.utils.testutil import create_zip_file
 
 
 class TestCommon(unittest.TestCase):
@@ -494,3 +499,36 @@ class TestCommonFileOperations:
         assert (target / "d1" / "f2.txt").is_file()
         assert (target / "d1" / "d2" / "f3.txt").is_file()
         assert (target / "d1" / "d2" / "f3.txt").read_text() == "f3"
+
+    def test_is_dir_empty(self):
+        tmp_dir = new_tmp_dir()
+        assert is_empty_dir(tmp_dir)
+
+        def _check(fname, is_dir):
+            test_entry = os.path.join(tmp_dir, fname)
+            mkdir(test_entry) if is_dir else save_file(test_entry, "test content")
+            assert not is_empty_dir(tmp_dir)
+            assert is_empty_dir(tmp_dir, ignore_hidden=True) == (fname == ".hidden")
+            rm_rf(test_entry)
+            assert is_empty_dir(tmp_dir)
+
+        for name in ["regular", ".hidden"]:
+            for is_dir in [True, False]:
+                _check(name, is_dir)
+
+    def test_create_archive(self):
+        # create archive from empty directory
+        tmp_dir = new_tmp_dir()
+        content = create_zip_file(tmp_dir, get_content=True)
+        zip_obj = zipfile.ZipFile(io.BytesIO(content))
+        assert zip_obj.infolist() == []
+        rm_rf(tmp_dir)
+
+        # create archive from non-empty directory
+        tmp_dir = new_tmp_dir()
+        save_file(os.path.join(tmp_dir, "testfile"), "content 123")
+        content = create_zip_file(tmp_dir, get_content=True)
+        zip_obj = zipfile.ZipFile(io.BytesIO(content))
+        assert len(zip_obj.infolist()) == 1
+        assert zip_obj.infolist()[0].filename == "testfile"
+        rm_rf(tmp_dir)

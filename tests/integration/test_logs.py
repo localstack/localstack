@@ -23,12 +23,21 @@ class CloudWatchLogsTest(unittest.TestCase):
         group = "g-%s" % short_uid()
         stream = "s-%s" % short_uid()
 
-        groups_before = len(self.logs_client.describe_log_groups()["logGroups"])
+        groups_before = testutil.list_all_resources(
+            lambda kwargs: self.logs_client.describe_log_groups(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="logGroups",
+        )
 
         self.create_log_group_and_stream(group, stream)
 
-        groups_after = len(self.logs_client.describe_log_groups()["logGroups"])
-        self.assertEqual(groups_before + 1, groups_after)
+        groups_after = testutil.list_all_resources(
+            lambda kwargs: self.logs_client.describe_log_groups(**kwargs),
+            last_token_attr_name="nextToken",
+            list_attr_name="logGroups",
+        )
+
+        self.assertEqual(len(groups_before) + 1, len(groups_after))
 
         # send message with non-ASCII (multi-byte) chars
         body_msg = "🙀 - 参よ - 日本語"
@@ -217,7 +226,7 @@ class CloudWatchLogsTest(unittest.TestCase):
 
         # clean up
         self.cleanup(log_group, log_stream)
-        response = kinesis_client.delete_stream(StreamName=kinesis, EnforceConsumerDeletion=True)
+        kinesis_client.delete_stream(StreamName=kinesis, EnforceConsumerDeletion=True)
 
     def test_metric_filters(self):
         log_group = "g-%s" % short_uid()

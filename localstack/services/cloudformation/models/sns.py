@@ -1,8 +1,18 @@
 import json
 
+from localstack.services.cloudformation.deployment_utils import (
+    generate_default_name,
+    is_none_or_empty_value,
+)
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import canonicalize_bool_to_str
+
+
+def retrieve_topic_arn(sns_client, topic_name):
+    topics = sns_client.list_topics()["Topics"]
+    topic_arns = [t["TopicArn"] for t in topics if t["TopicArn"].endswith(":%s" % topic_name)]
+    return topic_arns[0]
 
 
 class SNSTopic(GenericBaseModel):
@@ -25,7 +35,15 @@ class SNSTopic(GenericBaseModel):
         return result[0] if result else None
 
     @staticmethod
-    def get_deploy_templates():
+    def add_defaults(resource, stack_name: str):
+        role_name = resource.get("Properties", {}).get("TopicName")
+        if not role_name:
+            resource["Properties"]["TopicName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
+    @classmethod
+    def get_deploy_templates(cls):
         def _create_params(params, *args, **kwargs):
             attributes = {}
             dedup = params.get("ContentBasedDeduplication")
@@ -46,15 +64,32 @@ class SNSTopic(GenericBaseModel):
             return result
 
         def _topic_arn(params, resources, resource_id, **kwargs):
-            resource = SNSTopic(resources[resource_id])
+            resource = cls(resources[resource_id])
             return resource.physical_resource_id or resource.get_physical_resource_id()
 
+        def _add_topics(resource_id, resources, resource_type, func, stack_name):
+            sns = aws_stack.connect_to_service("sns")
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            subscriptions = props.get("Subscription", [])
+            for subscription in subscriptions:
+                if is_none_or_empty_value(subscription):
+                    continue
+                endpoint = subscription["Endpoint"]
+                topic_arn = retrieve_topic_arn(sns, props["TopicName"])
+                sns.subscribe(
+                    TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
+                )
+
         return {
-            # TODO: add second creation function to add topic subscriptions
-            "create": {
-                "function": "create_topic",
-                "parameters": _create_params,
-            },
+            "create": [
+                {
+                    "function": "create_topic",
+                    "parameters": _create_params,
+                },
+                {"function": _add_topics},
+            ],
             "delete": {
                 "function": "delete_topic",
                 "parameters": {"TopicArn": _topic_arn},

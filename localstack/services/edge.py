@@ -3,10 +3,11 @@ import json
 import logging
 import os
 import re
-import signal
 import subprocess
 import sys
 import threading
+from collections import defaultdict
+from typing import Dict, Optional
 
 from requests.models import Response
 
@@ -14,16 +15,18 @@ from localstack import config
 from localstack.constants import (
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
+    INTERNAL_AWS_ACCESS_KEY_ID,
     LOCALHOST,
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
+    LS_LOG_TRACE_INTERNAL,
     PATH_USER_REQUEST,
 )
 from localstack.dashboard import infra as dashboard_infra
-from localstack.services import plugins
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
-from localstack.services.infra import PROXY_LISTENERS
+from localstack.services.infra import PROXY_LISTENERS, terminate_all_processes_in_docker
+from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils import persistence
@@ -33,13 +36,14 @@ from localstack.utils.aws.aws_stack import (
     is_internal_call_context,
     set_default_region_in_headers,
 )
+from localstack.utils.aws.request_routing import extract_version_and_action, matches_service_action
 from localstack.utils.common import (
     TMP_THREADS,
     empty_context_manager,
     get_service_protocol,
-    in_docker,
     is_port_open,
     is_root,
+    merge_recursive,
     parse_request_data,
     run,
 )
@@ -68,6 +72,11 @@ API_UNKNOWN = "_unknown_"
 
 
 class ProxyListenerEdge(ProxyListener):
+    def __init__(self, service_manager=None) -> None:
+        super().__init__()
+        self.service_manager = service_manager or SERVICE_PLUGINS
+        self.health = HealthResource(self.service_manager)
+
     def forward_request(self, method, path, data, headers):
 
         if config.EDGE_FORWARD_URL:
@@ -76,7 +85,7 @@ class ProxyListenerEdge(ProxyListener):
             )
 
         if path.split("?")[0] == "/health":
-            return serve_health_endpoint(method, path, data)
+            return self.health.handle(method, path, data)
         if method == "POST" and path == "/graph":
             return serve_resource_graph(data)
 
@@ -96,13 +105,6 @@ class ProxyListenerEdge(ProxyListener):
         # extract API details
         api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
 
-        if api and config.LS_LOG:
-            # print request trace for debugging, if enabled
-            LOG.debug(
-                'IN(%s): "%s %s" - headers: %s - data: %s'
-                % (api, method, path, dict(headers), data)
-            )
-
         set_default_region_in_headers(headers)
 
         if port and int(port) < 0:
@@ -114,11 +116,19 @@ class ProxyListenerEdge(ProxyListener):
                 port,
             )
 
+        should_log_trace = is_trace_logging_enabled(headers)
+        if api and should_log_trace:
+            # print request trace for debugging, if enabled
+            LOG.debug(
+                'IN(%s): "%s %s" - headers: %s - data: %s'
+                % (api, method, path, dict(headers), data)
+            )
+
         if not port:
             if method == "OPTIONS":
-                if api and config.LS_LOG:
+                if api and should_log_trace:
                     # print request trace for debugging, if enabled
-                    LOG.debug('OUT(%s): "%s %s" - status: %s' % (api, method, path, 200))
+                    LOG.debug('IN(%s): "%s %s" - status: %s' % (api, method, path, 200))
                 return 200
 
             if api in ["", None, API_UNKNOWN]:
@@ -157,17 +167,35 @@ class ProxyListenerEdge(ProxyListener):
             headers.set("Content-Encoding", IDENTITY_ENCODING)
             data = gzip.decompress(data)
 
+        is_internal_call = is_internal_call_context(headers)
+
+        self._require_service(api)
+
         lock_ctx = BOOTSTRAP_LOCK
-        if persistence.API_CALLS_RESTORED or is_internal_call_context(headers):
+        if is_internal_call or persistence.is_persistence_restored():
             lock_ctx = empty_context_manager()
 
         with lock_ctx:
-            return do_forward_request(api, method, path, data, headers, port=port)
+            result = do_forward_request(api, method, path, data, headers, port=port)
+            if should_log_trace and result not in [None, False, True]:
+                result_status_code = getattr(result, "status_code", result)
+                result_headers = getattr(result, "headers", {})
+                result_content = getattr(result, "content", "")
+                LOG.debug(
+                    'OUT(%s): "%s %s" - status: %s - response headers: %s - response: %s',
+                    api,
+                    method,
+                    path,
+                    result_status_code,
+                    dict(result_headers or {}),
+                    result_content,
+                )
+            return result
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
         api = headers.get(HEADER_TARGET_API) or ""
 
-        if config.LS_LOG:
+        if is_trace_logging_enabled(headers):
             # print response trace for debugging, if enabled
             if api and api != API_UNKNOWN:
                 LOG.debug(
@@ -186,6 +214,15 @@ class ProxyListenerEdge(ProxyListener):
             response._content = gzip.compress(to_bytes(response._content))
             response.headers["Content-Length"] = str(len(response._content))
             response.headers["Content-Encoding"] = "gzip"
+
+    def _require_service(self, api):
+        if not self.service_manager.exists(api):
+            raise HTTPErrorResponse("no provider exists for service %s" % api, code=500)
+
+        try:
+            self.service_manager.require(api)
+        except Exception as e:
+            raise HTTPErrorResponse("failed to get service for %s: %s" % (api, e), code=500)
 
 
 def do_forward_request(api, method, path, data, headers, port=None):
@@ -288,15 +325,15 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
     host = headers.get("host", "")
     auth_header = headers.get("authorization", "")
 
-    if not auth_header and "." not in host:
+    if not auth_header and not target and "." not in host:
         return result[0], result[1], path, host
 
     path = path or "/"
 
     # https://docs.aws.amazon.com/general/latest/gr/sigv4-signed-request-examples.html
     try:
-        credential_scope = auth_header.split(",")[0].split()[1]
-        _, _, _, service, _ = credential_scope.split("/")
+        service = extract_service_name_from_auth_header(headers)
+        assert service
         result = service, get_service_port_for_account(service, headers)
     except Exception:
         pass
@@ -340,6 +377,16 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
     return result[0], result_before[1] or result[1], path, host
 
 
+def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
+    try:
+        auth_header = headers.get("authorization", "")
+        credential_scope = auth_header.split(",")[0].split()[1]
+        _, _, _, service, _ = credential_scope.split("/")
+        return service
+    except Exception:
+        return
+
+
 def is_s3_form_data(data_bytes):
     if to_bytes("key=") in data_bytes:
         return True
@@ -351,44 +398,67 @@ def is_s3_form_data(data_bytes):
     return False
 
 
-def serve_health_endpoint(method, path, data):
-    if method == "GET":
-        reload = "reload" in path
-        return plugins.get_services_health(reload=reload)
-    if method == "PUT":
-        data = json.loads(to_str(data or "{}"))
-        plugins.set_services_health(data)
-        return {"status": "OK"}
-    if method == "POST":
+class HealthResource:
+    """
+    Resource for the LocalStack /health endpoint. It provides access to the service states and other components of
+    localstack. We support arbitrary data to be put into the health state to support things like the
+    run_startup_scripts function in docker-entrypoint.sh which sets the status of the init scripts feature.
+    """
+
+    def __init__(self, service_manager) -> None:
+        super().__init__()
+        self.service_manager = service_manager
+        self.state = dict()
+
+    def handle(self, method, path, data) -> Optional[Dict]:
+        if method == "GET":
+            return self.get(path, data)
+        if method == "POST":
+            return self.post(path, data)
+        if method == "PUT":
+            return self.put(path, data)
+
+        return {}
+
+    def post(self, _, data):
         data = json.loads(to_str(data or "{}"))
         # backdoor API to support restarting the instance
         if data.get("action") in ["kill", "restart"]:
             terminate_all_processes_in_docker()
-    return {}
 
+    def get(self, path, _):
+        reload = "reload" in path
 
-def terminate_all_processes_in_docker():
-    if not in_docker():
-        # make sure we only run this inside docker!
-        return
-    print("INFO: Received command to restart all processes ...")
-    cmd = (
-        'ps aux | grep -v supervisor | grep -v docker-entrypoint.sh | grep -v "make infra" | '
-        "grep -v localstack_infra.log | awk '{print $1}' | grep -v PID"
-    )
-    pids = run(cmd).strip()
-    pids = re.split(r"\s+", pids)
-    pids = [int(pid) for pid in pids]
-    this_pid = os.getpid()
-    for pid in pids:
-        if pid != this_pid:
-            try:
-                # kill spawned process
-                os.kill(pid, signal.SIGKILL)
-            except Exception:
-                pass
-    # kill the process itself
-    sys.exit(0)
+        # get service state
+        if reload:
+            self.service_manager.check_all()
+        services = {
+            service: state.value for service, state in self.service_manager.get_states().items()
+        }
+
+        # build state dict from internal state and merge into it the service states
+        result = dict(self.state)
+        result = merge_recursive({"services": services}, result)
+        return result
+
+    def put(self, _, data):
+        data = json.loads(to_str(data or "{}"))
+
+        # keys like "features:initScripts" should be interpreted as ['features']['initScripts']
+        state = defaultdict(dict)
+        for k, v in data.items():
+            if ":" in k:
+                path = k.split(":")
+            else:
+                path = [k]
+
+            d = state
+            for p in path[:-1]:
+                d = state[p]
+            d[path[-1]] = v
+
+        self.state = merge_recursive(state, self.state)
+        return {"status": "OK"}
 
 
 def serve_resource_graph(data):
@@ -426,6 +496,10 @@ def get_api_from_custom_rules(method, path, data, headers):
         return "apigateway", config.PORT_APIGATEWAY
 
     data_bytes = to_bytes(data or "")
+    version, action = extract_version_and_action(path, data_bytes)
+
+    def _in_path_or_payload(search_str):
+        return to_str(search_str) in path or to_bytes(search_str) in data_bytes
 
     if path == "/" and b"QueueName=" in data_bytes:
         return "sqs", config.PORT_SQS
@@ -436,13 +510,10 @@ def get_api_from_custom_rules(method, path, data, headers):
     if path.startswith("/2015-03-31/functions/"):
         return "lambda", config.PORT_LAMBDA
 
-    if (
-        b"Action=AssumeRoleWithWebIdentity" in data_bytes
-        or "Action=AssumeRoleWithWebIdentity" in path
-    ):
+    if _in_path_or_payload("Action=AssumeRoleWithWebIdentity"):
         return "sts", config.PORT_STS
 
-    if b"Action=AssumeRoleWithSAML" in data_bytes or "Action=AssumeRoleWithSAML" in path:
+    if _in_path_or_payload("Action=AssumeRoleWithSAML"):
         return "sts", config.PORT_STS
 
     # CloudWatch backdoor API to retrieve raw metrics
@@ -450,10 +521,14 @@ def get_api_from_custom_rules(method, path, data, headers):
         return "cloudwatch", config.PORT_CLOUDWATCH
 
     # SQS queue requests
-    if ("QueueUrl=" in path and "Action=" in path) or (
-        b"QueueUrl=" in data_bytes and b"Action=" in data_bytes
-    ):
+    if _in_path_or_payload("QueueUrl=") and _in_path_or_payload("Action="):
         return "sqs", config.PORT_SQS
+    if matches_service_action("sqs", action, version=version):
+        return "sqs", config.PORT_SQS
+
+    # SNS topic requests
+    if matches_service_action("sns", action, version=version):
+        return "sns", config.PORT_SNS
 
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip("/")
@@ -511,6 +586,15 @@ def get_service_port_for_account(service, headers):
 PROXY_LISTENER_EDGE = ProxyListenerEdge()
 
 
+def is_trace_logging_enabled(headers):
+    if not config.LS_LOG:
+        return False
+    if config.LS_LOG == LS_LOG_TRACE_INTERNAL:
+        return True
+    auth_header = headers.get("Authorization") or ""
+    return INTERNAL_AWS_ACCESS_KEY_ID not in auth_header
+
+
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
     start_dns_server(asynchronous=True)
 
@@ -555,7 +639,11 @@ def start_component(component: str, port=None, use_ssl=True, asynchronous=False)
 def start_dns_server(asynchronous=False):
     try:
         # start local DNS server, if present
+        from localstack_ext import config as config_ext
         from localstack_ext.services import dns_server
+
+        if config_ext.DNS_ADDRESS in config.FALSE_STRINGS:
+            return
 
         if is_port_open(PORT_DNS):
             return
@@ -565,17 +653,24 @@ def start_dns_server(asynchronous=False):
             if not asynchronous:
                 sleep_forever()
             return result
+
+        env_vars = {}
+        for env_var in config.CONFIG_ENV_VARS:
+            if env_var.startswith("DNS_"):
+                value = os.environ.get(env_var, None)
+                if value is not None:
+                    env_vars[env_var] = value
+
         # note: running in a separate process breaks integration with Route53 (to be fixed for local dev mode!)
-        return run_process_as_sudo("dns", PORT_DNS, asynchronous=asynchronous)
+        return run_process_as_sudo("dns", PORT_DNS, asynchronous=asynchronous, env_vars=env_vars)
     except Exception:
         pass
 
 
 def start_edge(port=None, use_ssl=True, asynchronous=False):
-
     if not port:
         port = config.EDGE_PORT
-    if config.EDGE_PORT_HTTP:
+    if config.EDGE_PORT_HTTP and config.EDGE_PORT_HTTP != port:
         do_start_edge(
             config.EDGE_BIND_HOST,
             config.EDGE_PORT_HTTP,
@@ -602,7 +697,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
     return run_process_as_sudo("edge", port, asynchronous=asynchronous)
 
 
-def run_process_as_sudo(component, port, asynchronous=False):
+def run_process_as_sudo(component, port, asynchronous=False, env_vars=None):
     # make sure we can run sudo commands
     try:
         ensure_can_use_sudo()
@@ -610,25 +705,36 @@ def run_process_as_sudo(component, port, asynchronous=False):
         LOG.error("cannot start service on privileged port %s: %s", port, str(e))
         return
 
+    # prepare environment
+    env_vars = env_vars or {}
+    env_vars["PYTHONPATH"] = f".:{LOCALSTACK_ROOT_FOLDER}"
+    env_vars["EDGE_FORWARD_URL"] = config.get_edge_url()
+    env_vars["EDGE_BIND_HOST"] = config.EDGE_BIND_HOST
+    env_vars_str = env_vars_to_string(env_vars)
+
     # start the process as sudo
-    sudo_cmd = "sudo -n "
+    sudo_cmd = "sudo -n"
     python_cmd = sys.executable
-    edge_url = config.get_edge_url()
-    cmd = "%sPYTHONPATH=.:%s EDGE_FORWARD_URL=%s %s %s %s %s" % (
+    cmd = [
         sudo_cmd,
-        LOCALSTACK_ROOT_FOLDER,
-        edge_url,
+        env_vars_str,
         python_cmd,
         __file__,
         component,
-        port,
-    )
+        str(port),
+    ]
+    shell_cmd = " ".join(cmd)
 
     def run_command(*_):
-        run(cmd, outfile=subprocess.PIPE, print_error=False)
+        run(shell_cmd, outfile=subprocess.PIPE, print_error=False, env_vars=env_vars)
 
+    LOG.debug("Running command as sudo: %s", shell_cmd)
     result = start_thread(run_command, quiet=True) if asynchronous else run_command()
     return result
+
+
+def env_vars_to_string(env_vars: Dict) -> str:
+    return " ".join(f"{k}='{v}'" for k, v in env_vars.items())
 
 
 if __name__ == "__main__":

@@ -46,6 +46,7 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
+from localstack.utils.server import http2_server
 
 TEST_BUCKET_NAME_WITH_POLICY = "test-bucket-policy-1"
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = "test_queue_for_bucket_notification_1"
@@ -325,7 +326,7 @@ class TestS3(unittest.TestCase):
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(bucket_name, [key_by_path])
 
-    def test_s3_get_response_default_content_type(self):
+    def test_s3_get_response_default_content_type_and_headers(self):
         # When no content type is provided by a PUT request
         # 'binary/octet-stream' should be used
         # src: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
@@ -337,13 +338,25 @@ class TestS3(unittest.TestCase):
         # put object
         object_key = "key-by-hostname"
         client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
-        url = client.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket_name, "Key": object_key}
-        )
 
         # get object and assert headers
-        response = requests.get(url, verify=False)
-        self.assertEqual("binary/octet-stream", response.headers["content-type"])
+        case_sensitive_before = http2_server.RETURN_CASE_SENSITIVE_HEADERS
+        try:
+            for case_sensitive_headers in [True, False]:
+                url = client.generate_presigned_url(
+                    "get_object", Params={"Bucket": bucket_name, "Key": object_key}
+                )
+                http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_headers
+                response = requests.get(url, verify=False)
+                self.assertEqual("binary/octet-stream", response.headers["content-type"])
+
+                # expect that Etag is contained
+                header_names = list(response.headers.keys())
+                expected_etag = "ETag" if case_sensitive_headers else "etag"
+                self.assertIn(expected_etag, header_names)
+        finally:
+            http2_server.RETURN_CASE_SENSITIVE_HEADERS = case_sensitive_before
+
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -474,9 +487,6 @@ class TestS3(unittest.TestCase):
         self.assertRegex(returned_empty_lifecycle._content, r"The bucket does not exist")
 
         response = s3_listener.get_replication(bucket_name)
-        self.assertRegex(response._content, r"The bucket does not exist")
-
-        response = s3_listener.get_object_lock(bucket_name)
         self.assertRegex(response._content, r"The bucket does not exist")
 
     def test_delete_bucket_lifecycle_configuration(self):
@@ -1407,17 +1417,14 @@ class TestS3(unittest.TestCase):
             CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
         )
 
-        with self.assertRaises(ClientError) as error:
-            self.s3_client.create_bucket(
-                Bucket=bucket_name,
-                CreateBucketConfiguration={"LocationConstraint": "us-west-1"},
-            )
-        self.assertIn("BucketAlreadyExists", str(error.exception))
+        for loc_constraint in ["us-west-1", "us-east-1"]:
+            with self.assertRaises(ClientError) as error:
+                self.s3_client.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={"LocationConstraint": loc_constraint},
+                )
+            self.assertIn("BucketAlreadyOwnedByYou", str(error.exception))
 
-        self.s3_client.create_bucket(
-            Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": "us-east-1"},
-        )
         self.s3_client.delete_bucket(Bucket=bucket_name)
         bucket_name = "bucket-%s" % short_uid()
         response = self.s3_client.create_bucket(
@@ -1746,6 +1753,31 @@ class TestS3(unittest.TestCase):
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": key}]})
 
+    def test_s3_notification_copy_event(self):
+        bucket_name = "notif-event-%s" % short_uid()
+        src_key = "key-src-%s" % short_uid()
+        queue_url, queue_attributes = self._create_test_queue()
+        self._create_test_notification_bucket(
+            queue_attributes, bucket_name=bucket_name, event_name="ObjectCreated:Copy"
+        )
+
+        self.s3_client.put_object(Bucket=bucket_name, Key=src_key, Body="something")
+
+        self.assertEqual("0", self._get_test_queue_message_count(queue_url))
+
+        dest_key = "key-dest-%s" % short_uid()
+        self.s3_client.copy_object(
+            Bucket=bucket_name,
+            CopySource={"Bucket": bucket_name, "Key": src_key},
+            Key=dest_key,
+        )
+
+        self.assertEqual("1", self._get_test_queue_message_count(queue_url))
+
+        # clean up
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+        self._delete_bucket(bucket_name, [src_key, dest_key])
+
     def add_xray_header(self, request, **kwargs):
         request.headers[
             "X-Amzn-Trace-Id"
@@ -1866,7 +1898,7 @@ class TestS3(unittest.TestCase):
 
         OBJECT_KEY = "temp 1.txt"
         OBJECT_DATA = "this should be found in when you download {}.".format(OBJECT_KEY)
-        BUCKET = "test"
+        BUCKET = f"test-{short_uid()}"
         EXPIRES = 4
 
         def make_v2_url_invalid(url):
@@ -2631,15 +2663,18 @@ class TestS3(unittest.TestCase):
         )
         return queue_url, queue_attributes
 
-    def _create_test_notification_bucket(self, queue_attributes, bucket_name):
+    def _create_test_notification_bucket(
+        self, queue_attributes, bucket_name, event_name="ObjectCreated:*"
+    ):
         self.s3_client.create_bucket(Bucket=bucket_name)
+        event_name = "s3:%s" % event_name
         self.s3_client.put_bucket_notification_configuration(
             Bucket=bucket_name,
             NotificationConfiguration={
                 "QueueConfigurations": [
                     {
                         "QueueArn": queue_attributes["Attributes"]["QueueArn"],
-                        "Events": ["s3:ObjectCreated:*"],
+                        "Events": [event_name],
                     }
                 ]
             },

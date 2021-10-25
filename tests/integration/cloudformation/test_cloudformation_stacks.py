@@ -1,4 +1,5 @@
 import jinja2
+import yaml
 
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
@@ -37,6 +38,47 @@ def test_create_stack_with_ssm_parameters(
     finally:
         cleanup_stacks([stack_id])
         # TODO: cleanup parameter
+
+
+def test_list_stack_resources_for_removed_resource(
+    cfn_client, is_stack_created, is_change_set_finished
+):
+    event_bus_name = f"bus-{short_uid()}"
+    template = jinja2.Template(load_template_raw("eventbridge_policy.yaml")).render(
+        event_bus_name=event_bus_name
+    )
+
+    stack_name = f"stack-{short_uid()}"
+
+    response = cfn_client.create_stack(StackName=stack_name, TemplateBody=template)
+    stack_id = response["StackId"]
+    assert stack_id
+    wait_until(is_stack_created(stack_id))
+
+    # get list of stack resources
+    resources = cfn_client.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+    resources_before = len(resources)
+    assert resources_before == 3
+    statuses = set([res["ResourceStatus"] for res in resources])
+    assert statuses == {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
+
+    # remove one resource from the template, then update stack (via change set)
+    template_dict = yaml.load(template)
+    template_dict["Resources"].pop("eventPolicy2")
+    template2 = yaml.dump(template_dict)
+
+    response = cfn_client.create_change_set(
+        StackName=stack_name, ChangeSetName="cs1", TemplateBody=template2
+    )
+    change_set_id = response["Id"]
+    cfn_client.execute_change_set(ChangeSetName=change_set_id)
+    wait_until(is_change_set_finished(change_set_id))
+
+    # get list of stack resources, again - make sure that deleted resource is not contained in result
+    resources = cfn_client.list_stack_resources(StackName=stack_name)["StackResourceSummaries"]
+    assert len(resources) == resources_before - 1
+    statuses = set([res["ResourceStatus"] for res in resources])
+    assert statuses == {"CREATE_COMPLETE", "UPDATE_COMPLETE"}
 
 
 # TODO: more tests

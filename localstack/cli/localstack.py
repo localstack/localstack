@@ -87,22 +87,26 @@ def cmd_status_services():
 @localstack.command(name="start", help="Start LocalStack")
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container (default)")
 @click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
-def cmd_start(docker: bool, host: bool):
+@click.option("--no-banner", is_flag=True, help="Disable LocalStack banner", default=False)
+def cmd_start(docker: bool, host: bool, no_banner: bool):
     if docker and host:
         raise click.ClickException("Please specify either --docker or --host")
 
-    print_banner()
-    print_version()
-    console.line()
+    if not no_banner:
+        print_banner()
+        print_version()
+        console.line()
 
     from localstack.utils import bootstrap
 
-    if host:
-        console.log("starting LocalStack in host mode :laptop_computer:")
-    else:
-        console.log("starting LocalStack in Docker mode :whale:")
+    if not no_banner:
+        if host:
+            console.log("starting LocalStack in host mode :laptop_computer:")
+        else:
+            console.log("starting LocalStack in Docker mode :whale:")
 
-    console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
+        console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
+
     if host:
         bootstrap.start_infra_locally()
     else:
@@ -138,7 +142,7 @@ def cmd_config_validate(file):
 @localstack.command(name="ssh", help="Obtain a shell in the running LocalStack container")
 def cmd_ssh():
     from localstack import config
-    from localstack.utils.docker import DOCKER_CLIENT
+    from localstack.utils.docker_utils import DOCKER_CLIENT
     from localstack.utils.run import run
 
     if not DOCKER_CLIENT.is_container_running(config.MAIN_CONTAINER_NAME):
@@ -150,6 +154,23 @@ def cmd_ssh():
         process.wait()
     except KeyboardInterrupt:
         pass
+
+
+# legacy support
+@localstack.group(
+    name="infra",
+    help="Manipulate LocalStack infrastructure (legacy)",
+)
+def infra():
+    pass
+
+
+@infra.command("start")
+@click.pass_context
+@click.option("--docker", is_flag=True, help="Start LocalStack in a docker container (default)")
+@click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
+def cmd_infra_start(ctx, *args, **kwargs):
+    ctx.invoke(cmd_start, *args, **kwargs)
 
 
 def print_docker_status():
@@ -194,6 +215,13 @@ def print_docker_status():
 def print_service_table(services: Dict[str, str]):
     from rich.table import Table
 
+    status_display = {
+        "running": "[green]:heavy_check_mark:[/green] running",
+        "starting": ":hourglass_flowing_sand: starting",
+        "available": "[grey]:heavy_check_mark:[/grey] available",
+        "error": "[red]:heavy_multiplication_x:[/red] error",
+    }
+
     table = Table()
     table.add_column("Service")
     table.add_column("Status")
@@ -202,10 +230,8 @@ def print_service_table(services: Dict[str, str]):
     services.sort(key=lambda item: item[0])
 
     for service, status in services:
-        if status == "running":
-            status = "[green]:heavy_check_mark:[/green] running"
-        elif status == "starting":
-            status = ":hourglass_flowing_sand: starting"
+        if status in status_display:
+            status = status_display[status]
 
         table.add_row(service, status)
 
