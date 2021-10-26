@@ -961,6 +961,7 @@ class EventsTest(unittest.TestCase):
         sqs = aws_stack.connect_to_service("sqs")
         ssm = aws_stack.connect_to_service("ssm")
         rule_name = "rule-{}".format(short_uid())
+        target_id = "target-{}".format(short_uid())
 
         # create queue
         queue_name = "queue-{}".format(short_uid())
@@ -989,7 +990,7 @@ class EventsTest(unittest.TestCase):
         self.events_client.put_targets(
             Rule=rule_name,
             EventBusName=TEST_EVENT_BUS_NAME,
-            Targets=[{"Id": "ssm_lambda", "Arn": queue_arn, "InputPath": "$.detail"}],
+            Targets=[{"Id": target_id, "Arn": queue_arn, "InputPath": "$.detail"}],
         )
 
         # change SSM param to trigger event
@@ -1003,6 +1004,9 @@ class EventsTest(unittest.TestCase):
 
         # assert that message has been received
         retry(assert_message, retries=7, sleep=0.3)
+
+        # clean up
+        self.cleanup(rule_name=rule_name, target_ids=target_id)
 
     def test_put_event_with_content_base_rule_in_pattern(self):
         queue_name = "queue-{}".format(short_uid())
@@ -1099,7 +1103,7 @@ class EventsTest(unittest.TestCase):
         # clean up
         self.cleanup(TEST_EVENT_BUS_NAME, rule_name, target_id, queue_url=queue_url)
 
-    def cleanup(self, bus_name, rule_name=None, target_ids=None, queue_url=None):
+    def cleanup(self, bus_name=None, rule_name=None, target_ids=None, queue_url=None):
         kwargs = {"EventBusName": bus_name} if bus_name else {}
         if target_ids:
             target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
