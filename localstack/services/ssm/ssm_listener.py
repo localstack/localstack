@@ -9,13 +9,22 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 from localstack.utils.persistence import PersistingProxyListener
 
+# logger
+LOG = logging.getLogger(__name__)
+
 ACTION_PUT_PARAM = "AmazonSSM.PutParameter"
 ACTION_GET_PARAM = "AmazonSSM.GetParameter"
 ACTION_GET_PARAMS = "AmazonSSM.GetParameters"
+ACTION_DELETE_PARAM = "AmazonSSM.DeleteParameter"
 ACTION_GET_PARAMS_BY_PATH = "AmazonSSM.GetParametersByPath"
+ACTION_LABEL_PARAM_VERSION = "AmazonSSM.LabelParameterVersion"
 
-# logger
-LOG = logging.getLogger(__name__)
+# maps SSM target header names to operation names used in EventBridge event notifications
+EVENT_BRIDGE_OPERATIONS = {
+    ACTION_PUT_PARAM: "Create",
+    ACTION_DELETE_PARAM: "Delete",
+    ACTION_LABEL_PARAM_VERSION: "LabelParameterVersion",
+}
 
 
 def normalize_name(param_name):
@@ -131,6 +140,24 @@ def get_params_by_path_with_labels(
     return result
 
 
+def notify_event_subscribers(data, target_header):
+    # publish an EventBridge event to notify subscribers of changes
+    events = aws_stack.connect_to_service("events")
+    operation = EVENT_BRIDGE_OPERATIONS.get(target_header)
+    if not operation:
+        LOG.warning(
+            "Unexpected target header '%s' when sending EventBridge notification from SSM",
+            target_header,
+        )
+    detail = {"name": data["Name"], "operation": operation}
+    event = {
+        "Source": "aws.ssm",
+        "Detail": json.dumps(detail),
+        "DetailType": "Parameter Store Change",
+    }
+    events.put_events(Entries=[event])
+
+
 class ProxyListenerSSM(PersistingProxyListener):
     def api_name(self):
         return "ssm"
@@ -178,6 +205,10 @@ class ProxyListenerSSM(PersistingProxyListener):
                         labels_to_filter=labels,
                         recursive=recursive,
                     )
+            # send event notifications
+            if target in EVENT_BRIDGE_OPERATIONS:
+                notify_event_subscribers(data, target)
+            # forward request
             data = json.dumps(data)
             if data != data_orig:
                 return Request(data=data, headers=headers, method=method)

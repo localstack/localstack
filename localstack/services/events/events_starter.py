@@ -173,38 +173,6 @@ def apply_patches():
 
         return events_handler_delete_rule_orig(self)
 
-    # 2101 Events put-targets does not respond
-    def events_handler_put_targets(self):
-        event_rules = EventsBackend.get().event_rules
-
-        def is_rule_present(rule_name):
-            for rule in event_rules.get(event_bus, []):
-                if rule == rule_name:
-                    return True
-            return False
-
-        rule_name = self._get_param("Rule")
-        targets = self._get_param("Targets")
-        event_bus = self._get_param("EventBusName") or DEFAULT_EVENT_BUS_NAME
-
-        if not rule_name:
-            return self.error("ValidationException", "Parameter Rule is required.")
-
-        if not targets:
-            return self.error("ValidationException", "Parameter Targets is required.")
-
-        if not self.events_backend.put_targets(rule_name, event_bus, targets):
-            if not is_rule_present(rule_name):
-                return self.error(
-                    "ResourceNotFoundException",
-                    "Rule " + rule_name + " does not exist.",
-                )
-
-        return (
-            json.dumps({"FailedEntryCount": 0, "FailedEntries": []}),
-            self.response_headers,
-        )
-
     def events_handler_put_events(self):
         entries = self._get_param("Entries")
         events = list(map(lambda event: {"event": event, "uuid": str(uuid.uuid4())}, entries))
