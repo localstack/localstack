@@ -1,5 +1,6 @@
+import boto3
+
 from localstack.services.motoserver import MotoServer, get_moto_server
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_free_tcp_port
 
 
@@ -19,7 +20,14 @@ def test_moto_server():
     assert server.is_running()
 
     # test http calls are possible
-    sns = aws_stack.connect_to_service("sns", endpoint_url=server.url, cache=False)
+    sns = boto3.client(
+        "sns",
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
+        aws_session_token="test",
+        region_name="us-east-1",
+        endpoint_url=server.url,
+    )
     data = sns.list_topics()
     assert "Topics" in data
     assert len(data["Topics"]) == 0
