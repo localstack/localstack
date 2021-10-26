@@ -1425,6 +1425,9 @@ class Util:
         if runtime == "nodejs14.x":
             # TODO temporary fix until lambci image for nodejs14.x becomes available
             docker_image = "localstack/lambda-js"
+        if runtime == "python3.9":
+            # TODO temporary fix until we support AWS images via https://github.com/localstack/localstack/pull/4734
+            docker_image = "mlupin/docker-lambda"
         return "%s:%s" % (docker_image, docker_tag)
 
     @classmethod
