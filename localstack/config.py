@@ -585,9 +585,6 @@ if DEBUG:
     logging.getLogger("").setLevel(logging.DEBUG)
     logging.getLogger("localstack").setLevel(logging.DEBUG)
 
-# whether to bundle multiple APIs into a single process, where possible
-BUNDLE_API_PROCESSES = True
-
 
 def load_config_file(config_file=None):
     from localstack.utils.common import get_or_create_file, to_str

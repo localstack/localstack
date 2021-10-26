@@ -63,6 +63,8 @@ def _build_elasticsearch_run_command(es_bin: str, settings: CommandSettings) -> 
 
 
 class ElasticsearchCluster:
+    # TODO: inherit from localstack.utils.serving.Server
+
     def __init__(self, port=9200, host="localhost", version=None) -> None:
         super().__init__()
         self._port = port
@@ -242,6 +244,8 @@ class ProxiedElasticsearchCluster:
     """
     Starts an ElasticsearchCluster behind a localstack service proxy. The ElasticsearchCluster
     backend will be assigned a random port.
+
+    TODO: inherit from localstack.utils.serving.Server
     """
 
     def __init__(self, port=9200, host="localhost", version=None) -> None:
