@@ -5,7 +5,7 @@ This is a guide to use your own custom ES endpoint, please note this is not a ho
 
 ## Why is this useful?
 
-Localstack downloads elasticserach asynchronously the first time you run the `aws es create-elasticsearch-domain`, so you will get the response from localstack first and then (after download/install) you will have your elasticsearch cluster running locally. 
+Localstack downloads elasticsearch asynchronously the first time you run the `aws es create-elasticsearch-domain`, so you will get the response from localstack first and then (after download/install) you will have your elasticsearch cluster running locally. 
 
 In order to mitigate this you can run your own elasticsearch cluster locally and point localstack to it, so you can customize your setup and reduce waiting times.
 
