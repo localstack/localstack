@@ -145,6 +145,12 @@ def generate_default_name(stack_name: str, logical_resource_id: str):
     return f"{stack_name_part}-{resource_id_part}-{random_id_part}"
 
 
+def generate_default_name_without_stack(logical_resource_id: str):
+    random_id_part = short_uid()
+    resource_id_part = logical_resource_id[: 63 - 1 - len(random_id_part)]
+    return f"{resource_id_part}-{random_id_part}"
+
+
 def pre_create_default_name(key: str) -> Callable[[str, dict, str, dict, str], None]:
     def _pre_create_default_name(
         resource_id: str, resources: dict, resource_type: str, func: dict, stack_name: str
