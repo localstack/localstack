@@ -16,7 +16,7 @@ class MotoServer(Server):
     def __init__(self, port: int, host: str = "localhost") -> None:
         super().__init__(port, host)
         self.server = make_server(
-            self.host, self.port, DomainDispatcherApplication(create_backend_app)
+            self.host, self.port, app=DomainDispatcherApplication(create_backend_app), threaded=True
         )
 
     def do_run(self):

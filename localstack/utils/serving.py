@@ -74,7 +74,7 @@ class Server(abc.ABC):
         Checks whether the thread holding the server is running. The server may be running but not healthy (
         is_running == True, is_up == False).
 
-        :returns: True if the
+        :returns: true if the server thread is running
         """
         if not self._started.is_set():
             return False
@@ -144,7 +144,7 @@ class Server(abc.ABC):
         :params: the time in seconds to wait. If None then wait indefinitely.
         :raises TimeoutError: If the server didn't shut down before the given timeout.
         """
-        if not self._started:
+        if not self._started.is_set():
             raise RuntimeError("cannot join server before it is started")
 
         if not self._started.wait(timeout):
