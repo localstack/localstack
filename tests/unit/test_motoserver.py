@@ -9,6 +9,7 @@ def test_get_moto_server_returns_singleton():
 
 
 def test_moto_server():
+    # despite being a new instance, it actually shares state with the singleton (because moto runs in-memory)
     server = MotoServer(get_free_tcp_port())
 
     # test startup lifecycle
@@ -30,7 +31,6 @@ def test_moto_server():
     )
     data = sns.list_topics()
     assert "Topics" in data
-    assert len(data["Topics"]) == 0
 
     # test shutdown lifecycle
     server.shutdown()
