@@ -13,7 +13,7 @@ from moto import core as moto_core
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
-from localstack.services import generic_proxy, install
+from localstack.services import generic_proxy, install, motoserver
 from localstack.services.generic_proxy import start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import analytics, common, config_listener, persistence
@@ -215,23 +215,25 @@ def start_proxy(port, backend_url=None, update_listener=None, quiet=False, param
 
 def start_moto_server(
     key, port, name=None, backend_port=None, asynchronous=False, update_listener=None
-):
+) -> MotoServerProperties:
+    # TODO: refactor this method! the name and parameters suggest that a server is started, but it actually only adds
+    #  a proxy listener around the already started motoserver singleton.
+    # TODO: remove asynchronous parameter (from all calls to this function)
+    # TODO: re-think backend_port parameter (still needed since determined by motoserver singleton?)
+
     if not name:
         name = key
     log_startup_message(name)
     if not backend_port:
         if config.FORWARD_EDGE_INMEM:
-            backend_port = multiserver.get_moto_server_port()
+            backend_port = motoserver.get_moto_server().port
         elif config.USE_SSL or update_listener:
             backend_port = get_free_tcp_port()
     if backend_port or config.FORWARD_EDGE_INMEM:
         start_proxy_for_service(key, port, backend_port, update_listener)
-    if config.BUNDLE_API_PROCESSES:
-        server_port = backend_port or port
-        return MotoServerProperties(multiserver.start_api_server(key, server_port), server_port)
-    return start_moto_server_separate(
-        key, port, name=name, backend_port=backend_port, asynchronous=asynchronous
-    )
+
+    server = motoserver.get_moto_server()
+    return MotoServerProperties(server._thread, server.port)
 
 
 def start_moto_server_separate(key, port, name=None, backend_port=None, asynchronous=False):
