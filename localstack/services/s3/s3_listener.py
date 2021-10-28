@@ -46,6 +46,7 @@ from localstack.utils.common import (
     is_base64,
     md5,
     not_none_or,
+    region_from_arn,
     short_uid,
     timestamp_millis,
     to_bytes,
@@ -223,6 +224,12 @@ def send_notifications(method, bucket_name, object_path, version_id, headers):
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
             if action == "ObjectCreated" and method == "PUT" and "x-amz-copy-source" in headers:
                 api_method = "Copy"
+            elif (
+                action == "ObjectCreated"
+                and method == "POST"
+                and "form-data" in headers.get("Content-Type", "")
+            ):
+                api_method = "Post"
             elif action == "ObjectCreated" and method == "POST":
                 api_method = "CompleteMultipartUpload"
             else:
@@ -274,7 +281,8 @@ def send_notification_for_subscriber(
     message = json.dumps(message)
 
     if notif.get("Queue"):
-        sqs_client = aws_stack.connect_to_service("sqs")
+        region = region_from_arn(notif["Queue"])
+        sqs_client = aws_stack.connect_to_service("sqs", region_name=region)
         try:
             queue_url = aws_stack.sqs_queue_url_for_arn(notif["Queue"])
             sqs_client.send_message(
@@ -288,7 +296,8 @@ def send_notification_for_subscriber(
                 % (bucket_name, notif["Queue"], e)
             )
     if notif.get("Topic"):
-        sns_client = aws_stack.connect_to_service("sns")
+        region = region_from_arn(notif["Topic"])
+        sns_client = aws_stack.connect_to_service("sns", region_name=region)
         try:
             sns_client.publish(
                 TopicArn=notif["Topic"],
@@ -304,8 +313,11 @@ def send_notification_for_subscriber(
     lambda_function_config = notif.get("CloudFunction") or notif.get("LambdaFunction")
     if lambda_function_config:
         # make sure we don't run into a socket timeout
+        region = region_from_arn(lambda_function_config)
         connection_config = botocore.config.Config(read_timeout=300)
-        lambda_client = aws_stack.connect_to_service("lambda", config=connection_config)
+        lambda_client = aws_stack.connect_to_service(
+            "lambda", config=connection_config, region_name=region
+        )
         try:
             lambda_client.invoke(
                 FunctionName=lambda_function_config,

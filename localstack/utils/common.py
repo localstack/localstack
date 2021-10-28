@@ -1921,6 +1921,11 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
     )
 
 
+def region_from_arn(arn_string):
+    result = re.search(r"arn:aws:\w+:([\w-]+):\d+", arn_string)
+    return result.groups(0)[0] if result else ""
+
+
 def canonicalize_bool_to_str(val: bool) -> str:
     return "true" if str(val).lower() == "true" else "false"
 
