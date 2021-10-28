@@ -52,6 +52,7 @@ class LambdaFunction(GenericBaseModel):
                     'Updating code for Lambda "%s" from location: %s'
                     % (props["FunctionName"], code)
                 )
+            code = self.get_deploy_templates()["create"]["parameters"].get("Code")(props)
             client.update_function_code(FunctionName=props["FunctionName"], **code)
         if "Environment" in update_props:
             environment_variables = update_props["Environment"].get("Variables", {})
