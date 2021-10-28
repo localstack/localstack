@@ -9,7 +9,17 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import LOG, REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import cp_r, is_base64, mkdir, new_tmp_dir, rm_rf, save_file, short_uid
+from localstack.utils.common import (
+    cp_r,
+    is_base64,
+    is_zip_file,
+    mkdir,
+    new_tmp_dir,
+    rm_rf,
+    save_file,
+    short_uid,
+    to_bytes,
+)
 from localstack.utils.testutil import create_zip_file
 
 
@@ -74,7 +84,7 @@ class LambdaFunction(GenericBaseModel):
         def get_lambda_code_param(params, **kwargs):
             code = params.get("Code", {})
             zip_file = code.get("ZipFile")
-            if zip_file and not is_base64(zip_file):
+            if zip_file and not is_base64(zip_file) and not is_zip_file(to_bytes(zip_file)):
                 tmp_dir = new_tmp_dir()
                 handler_file = get_handler_file_from_name(
                     params["Handler"], runtime=params["Runtime"]
