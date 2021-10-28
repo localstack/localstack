@@ -1,27 +1,257 @@
 version: 2.1
 
+#orbs:
+#  slack: circleci/slack@4.4.2
+
 jobs:
-  build-test-push:
+  install:
     machine:
       image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
     steps:
       - checkout
+      - restore_cache:
+          key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
+          name: Install prerequisites
           command: |
             sudo apt-get update
-            sudo apt install -y python3.8 libsasl2-dev
-          name: Install prerequisites
+            sudo apt-get install -y libsasl2-dev python3.8-venv python3.8-dev
       - run:
-          command: virtualenv --python=`which python3.8` .venv; make ci-build-prepare
           name: Setup environment
+          environment:
+            VENV_BIN: "/usr/bin/python3.8 -m venv"
+          command: |
+            make install
+            mkdir -p target/reports
+            mkdir -p target/coverage
+      - save_cache:
+          key: python-requirements-{{ checksum "requirements.txt" }}
+          paths:
+            - "~/.cache/pip"
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo
+
+  preflight:
+    docker:
+      - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
-          command: . /opt/circleci/.nvm/nvm.sh; make ci-build-test
-          name: Run integration tests
+          name: Linting
+          command: make lint
       - run:
-          command: make ci-build-push
-          name: Build and push Docker image
+          name: Unit tests
+          command: |
+            source .venv/bin/activate
+            pytest tests/unit --junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests
+      - store_test_results:
+          path: target/reports/
+
+  itest-lambda-docker:
+    machine:
+      image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Pull lambda runtimes
+          command: |
+            sudo useradd localstack -s /bin/bash
+            docker pull -q lambci/lambda:20191117-nodejs8.10
+            docker pull -q lambci/lambda:20191117-ruby2.5
+            docker pull -q lambci/lambda:20210129-ruby2.7
+            docker pull -q lambci/lambda:20191117-python3.6
+            docker pull -q lambci/lambda:20191117-dotnetcore2.0
+            docker pull -q lambci/lambda:dotnetcore3.1
+            docker pull -q lambci/lambda:20191117-provided
+            docker pull -q lambci/lambda:java8
+            docker pull -q lambci/lambda:python3.8
+      - run:
+          name: Test docker client
+          environment:
+            DEBUG: 1
+            TEST_PATH: "tests/integration/docker"
+            TEST_SKIP_LOCALSTACK_START: 1
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/docker-client.xml -o junit_suite_name='docker-client'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Test docker lambda executor
+          environment:
+            DEBUG: 1
+            LAMBDA_EXECUTOR: "docker"
+            USE_SSL: 1
+            TEST_ERROR_INJECTION: 1
+            TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Test docker-reuse lambda executor
+          environment:
+            DEBUG: 1
+            LAMBDA_EXECUTOR: "docker-reuse"
+            TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage
+      - store_test_results:
+          path: target/reports/
+
+  itest-elasticmq:
+    machine:
+      image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Test elasticmq SQS provider
+          environment:
+            DEBUG: 1
+            SQS_PROVIDER: "elasticmq"
+            TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
+            PYTEST_ARGS: "--junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage
+      - store_test_results:
+          path: target/reports/
+
+  docker-build:
+    machine:
+      image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Initialize build environment
+          command: make init
+      - run:
+          name: Build localstack docker image
+          command: make docker-build
+      - run:
+          name: Extract build reports
+          command: |
+            if [[ "$(docker image ls -q localstack/localstack 2> /dev/null)" != "" ]]; then
+              cid=$(docker create localstack/localstack)
+            else
+              cid=$(docker ps -aq | head -n1)
+            fi
+
+            [[ "$cid" != "" ]] || { echo "could not create build container"; exit 1; }
+
+            docker cp ${cid}:/opt/code/localstack/target/test-report.xml target/reports || true
+            docker cp ${cid}:/opt/code/localstack/.coverage ./target/coverage/.coverage.docker_build || true
+          when: always
+      - run:
+          name: Save docker image
+          command: |
+            test "$CIRCLE_BRANCH" = "master" \
+              && docker save localstack/localstack:latest -o target/localstack-docker-image.tar || true
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo
+      - store_test_results:
+          path: target/reports/
+
+  report:
+    docker:
+      - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Collect coverage
+          command: |
+            source .venv/bin/activate
+            cd target/coverage
+            ls -la
+            coverage combine
+            mv .coverage ../../
+      - run:
+          name: Report coverage statistics
+          command: |
+            source .venv/bin/activate
+            coverage report || true
+            coverage html || true
+            coveralls || true
+#      - slack/notify:
+#          event: pass
+#          template: basic_success_1
+      - store_artifacts:
+          path: htmlcov/
+
+  docker-push:
+    machine:
+      image: ubuntu-2004:202101-01
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          command: docker load -i target/localstack-docker-image.tar
+      - run:
+          name: Run pre-release smoke tests
+          command: make ci-pro-smoke-tests
+      - run:
+          name: Push docker image
+          command: make docker-push-master
+
 
 workflows:
   main:
     jobs:
-      - build-test-push
+      - install
+      - preflight:
+          requires:
+            - install
+      - itest-lambda-docker:
+          requires:
+            - preflight
+      - itest-elasticmq:
+          requires:
+            - preflight
+      - docker-build:
+          requires:
+            - preflight
+      - report:
+          requires:
+            - itest-lambda-docker
+            - itest-elasticmq
+            - docker-build
+      - docker-push:
+          filters:
+            branches:
+              only: master
+          requires:
+            - itest-lambda-docker
+            - itest-elasticmq
+            - docker-build

@@ -1,0 +1,8 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  topic123:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: sns-topic-simple
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete

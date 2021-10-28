@@ -1,0 +1,9 @@
+Resources:
+  myb3B4550BC:
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+Outputs:
+  BucketNameOutput:
+    Value:
+      Ref: myb3B4550BC

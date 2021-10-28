@@ -2,4 +2,4 @@ import json
 
 
 def processKinesis(event, *args):
-    print('!processKinesis', json.dumps(event))
+    print("!processKinesis", json.dumps(event))

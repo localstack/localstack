@@ -42,6 +42,8 @@ provider:
           Action:
             - 'sns:Subscribe'
           Resource: '*'
+  eventBridge:
+    useCloudFormation: true
 
 resources:
   Resources:
@@ -120,6 +122,10 @@ resources:
         QueueName: "${self:service}-${opt:stage}-CreateBackupQueue"
 
 functions:
+  tests:
+    handler: "handler.tests"
+    maximumEventAge: 7200
+    maximumRetryAttempts: 2
   test:
     handler: "handler.test"
     maximumEventAge: 7200
@@ -138,6 +144,13 @@ functions:
           path: /test/v1
           method: get
           integration: lambda-proxy
+
+      - eventBridge:
+          eventBus: customBus
+          pattern:
+            source:
+            - "customSource"
+
   dynamodbStreamHandler:
     handler: handler.processItem
     events:
@@ -175,7 +188,7 @@ functions:
           startingPosition: LATEST
           enabled: true
   queueHandler:
-    handler: src/sqs.create
+    handler: handler.createQueue
     description: "To handle create new login"
     events:
       - sqs:
@@ -184,7 +197,7 @@ functions:
               - CreateQueue
               - Arn
   router:
-    handler: src/http.router
+    handler: handler.createHttpRouter
     description: 'primary REST related handlers for this service'
     events:
     - http:

@@ -7,7 +7,7 @@ def test_infra_graph_generation():
         return
 
     graph = infra.get_graph()
-    assert 'nodes' in graph
-    assert 'edges' in graph
+    assert "nodes" in graph
+    assert "edges" in graph
 
     # TODO add more tests/assertions

@@ -1,0 +1,26 @@
+Resources:
+  TestKey4CACAF33:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Statement:
+          - Action: kms:*
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - ":iam::"
+                    - Ref: AWS::AccountId
+                    - :root
+            Resource: "*"
+        Version: "2012-10-17"
+      Enabled: false
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+Outputs:
+  KeyIdOutput:
+    Value:
+      Ref: TestKey4CACAF33

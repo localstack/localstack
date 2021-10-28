@@ -13,6 +13,9 @@ ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 ENV LOCALSTACK_HOSTNAME=localhost
 
+# Set edge bind host so localstack can be reached by other containers
+ENV EDGE_BIND_HOST=0.0.0.0
+
 # add trusted CA certificates to the cert store
 RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ssl/certs/ca-certificates.crt
 
@@ -20,43 +23,43 @@ RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ss
 RUN pip install awscli awscli-local requests --upgrade
 RUN apk add iputils
 
-# add files required to install virtualenv dependencies
-ADD Makefile requirements.txt ./
-RUN make install-venv
+# upgrade python build tools
+RUN pip install --upgrade pip wheel setuptools localstack-plugin-loader
 
-# add files required to run "make init"
-RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
-  touch localstack/__init__.py localstack/utils/__init__.py localstack/services/__init__.py localstack/utils/kinesis/__init__.py
-ADD localstack/constants.py localstack/config.py localstack/
-ADD localstack/services/install.py localstack/services/
-ADD localstack/services/cloudformation/deployment_utils.py localstack/services/cloudformation/deployment_utils.py
-ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/
-ADD localstack/utils/aws/ localstack/utils/aws/
-ADD localstack/utils/kinesis/ localstack/utils/kinesis/
-ADD localstack/utils/analytics/ localstack/utils/analytics/
-ADD localstack/package.json localstack/package.json
-ADD localstack/services/__init__.py localstack/services/install.py localstack/services/
+# add configuration and source files
+ADD Makefile setup.cfg setup.py requirements.txt pyproject.toml ./
+ADD localstack/ localstack/
+ADD bin/localstack bin/localstack
+# necessary for running pip install -e
+ADD bin/localstack.bat bin/localstack.bat
+
+# install dependencies to run the localstack runtime and save which ones were installed
+RUN make install-runtime
+RUN make freeze > requirements-runtime.txt
+
+# install dependencies run localstack tests
+RUN make install-test
+RUN make freeze > requirements-test.txt
 
 # initialize installation (downloads remaining dependencies)
 RUN make init-testlibs
 ADD localstack/infra/stepfunctions localstack/infra/stepfunctions
 RUN make init
 
-# (re-)install web dashboard dependencies (already installed in base image)
-ADD localstack/dashboard/web localstack/dashboard/web
-RUN make install-web
+# build plugin enrypoints for localstack
+RUN make entrypoints
 
 # install supervisor config file and entrypoint script
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
-# expose edge service, ElasticSearch & web dashboard ports
-EXPOSE 4566 4571 8080
+# expose edge service, ElasticSearch & debugpy ports
+EXPOSE 4566 4571 5678
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# expose default environment (required for aws-cli to work)
+# expose default environment
 ENV MAVEN_CONFIG=/opt/code/localstack \
     USER=localstack \
     PYTHONUNBUFFERED=1
@@ -66,12 +69,11 @@ RUN apk del --purge mvn || true
 RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
 RUN rm -rf /usr/share/maven .venv/lib/python3.*/site-packages/cfnlint
 RUN rm -rf /tmp/* /root/.cache /opt/yarn-* /root/.npm/*cache; mkdir -p /tmp/localstack
-RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
-ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages
+RUN if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
 
-# add rest of the code
-ADD localstack/ localstack/
-ADD bin/localstack bin/localstack
+# set up PYTHONPATH (after global pip packages are removed above), accommodating different install paths
+ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages:/opt/code/localstack/.venv/lib/python3.7/site-packages
+RUN which awslocal
 
 # fix some permissions and create local user
 RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
@@ -89,14 +91,21 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     chown -R localstack:localstack . /tmp/localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
-# Fix for Centos host OS
-RUN echo "127.0.0.1 localhost.localdomain" >> /etc/hosts
-
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN LAMBDA_EXECUTOR=local make test
+# fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
+RUN pip uninstall -y argparse dataclasses
+RUN LAMBDA_EXECUTOR=local \
+    PYTEST_LOGLEVEL=info \
+    PYTEST_ARGS='--junitxml=target/test-report.xml' \
+    make test-coverage
+
+# clean up tests (created earlier via make freeze)
+RUN (. .venv/bin/activate; comm -3 requirements-runtime.txt requirements-test.txt | cut -d'=' -f1 | xargs pip uninstall -y )
+RUN rm -rf tests/ requirements-*.txt
 
 # clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
     rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform /root/.serverless; \
+    rm -rf .pytest_cache/; \
     mkdir /root/.serverless; chmod -R 777 /root/.serverless
