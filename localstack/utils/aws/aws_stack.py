@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import socket
+import threading
 import time
 from typing import Dict
 
@@ -74,6 +75,9 @@ EVENT_TARGET_PARAMETERS = ["$.SqsParameters", "$.KinesisParameters"]
 
 # cached value used to determine the DNS status of the S3 hostname (whether it can be resolved properly)
 CACHE_S3_HOSTNAME_DNS_STATUS = None
+
+# mutex used when creating boto clients (which isn't thread safe: https://github.com/boto/boto3/issues/801)
+BOTO_CLIENT_CREATE_LOCK = threading.RLock()
 
 
 class Environment(object):
@@ -291,15 +295,23 @@ def connect_to_service(
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
+    # determine context and create cache key
     region_name = region_name or get_region()
     env = get_environment(env, region_name=region_name)
     region = env.region if env.region != REGION_LOCAL else region_name
     key_elements = [service_name, client, env, region, endpoint_url, config, kwargs]
     cache_key = "/".join([str(k) for k in key_elements])
-    if not cache or cache_key not in BOTO_CLIENTS_CACHE:
-        # Cache clients, as this is a relatively expensive operation
-        my_session = get_boto3_session(cache=cache)
-        method = my_session.client if client else my_session.resource
+
+    # check cache first (most calls will be served from cache)
+    if cache and cache_key in BOTO_CLIENTS_CACHE:
+        return BOTO_CLIENTS_CACHE[cache_key]
+
+    with BOTO_CLIENT_CREATE_LOCK:
+        # check cache again within lock context to avoid race conditions
+        if cache and cache_key in BOTO_CLIENTS_CACHE:
+            return BOTO_CLIENTS_CACHE[cache_key]
+
+        # determine endpoint_url if it is not set explicitly
         if not endpoint_url:
             if is_local_env(env):
                 endpoint_url = get_local_service_url(service_name)
@@ -308,15 +320,22 @@ def connect_to_service(
             backend_url = os.environ.get(backend_env_name, "").strip()
             if backend_url:
                 endpoint_url = backend_url
-        boto_config = config or botocore.client.Config()
+
         # configure S3 path/host style addressing
         if service_name == "s3":
             if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
                 endpoint_url = endpoint_url.replace("://localhost", "://%s" % get_s3_hostname())
+
+        # create boto client or resource from potentially cached session
+        boto_session = get_boto3_session(cache=cache)
+        boto_config = config or botocore.client.Config()
+        boto_factory = boto_session.client if client else boto_session.resource
+
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         boto_config.max_pool_connections = MAX_POOL_CONNECTIONS
-        result = method(
+
+        new_client = boto_factory(
             service_name,
             region_name=region,
             endpoint_url=endpoint_url,
@@ -324,11 +343,11 @@ def connect_to_service(
             config=boto_config,
             **kwargs,
         )
-        if not cache:
-            return result
-        BOTO_CLIENTS_CACHE[cache_key] = result
 
-    return BOTO_CLIENTS_CACHE[cache_key]
+        if cache:
+            BOTO_CLIENTS_CACHE[cache_key] = new_client
+
+        return new_client
 
 
 def get_s3_hostname():
