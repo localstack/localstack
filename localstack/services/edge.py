@@ -69,6 +69,9 @@ GZIP_ENCODING = "GZIP"
 IDENTITY_ENCODING = "IDENTITY"
 S3 = "s3"
 API_UNKNOWN = "_unknown_"
+# APIs for which no gzip encoding should be applied when returning the response
+HEADER_SKIP_RESPONSE_ZIPPING = "_skip_response_gzipping_"
+SKIP_GZIP_APIS = [S3]
 
 
 class ProxyListenerEdge(ProxyListener):
@@ -163,7 +166,7 @@ class ProxyListenerEdge(ProxyListener):
             data = json.dumps(data)
 
         encoding_type = headers.get("Content-Encoding") or ""
-        if encoding_type.upper() == GZIP_ENCODING.upper() and api not in [S3]:
+        if encoding_type.upper() == GZIP_ENCODING.upper() and api not in SKIP_GZIP_APIS:
             headers.set("Content-Encoding", IDENTITY_ENCODING)
             data = gzip.decompress(data)
 
@@ -208,9 +211,13 @@ class ProxyListenerEdge(ProxyListener):
                     response.content,
                 )
 
-        # Fix Go SDK issue
-        # https://github.com/localstack/localstack/issues/3833
-        if headers.get("Accept-Encoding") == "gzip" and response._content and api not in [S3]:
+        if (
+            response._content
+            and headers.get("Accept-Encoding") == "gzip"
+            and api not in SKIP_GZIP_APIS
+            and not response.headers.pop(HEADER_SKIP_RESPONSE_ZIPPING, None)
+        ):
+            # services may decide to set HEADER_SKIP_RESPONSE_ZIPPING in the response, to skip result transformations
             response._content = gzip.compress(to_bytes(response._content))
             response.headers["Content-Length"] = str(len(response._content))
             response.headers["Content-Encoding"] = "gzip"

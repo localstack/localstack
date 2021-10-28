@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Union
 from localstack import config
 from localstack.utils import bootstrap
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.common import in_docker, short_uid, to_str
 from localstack.utils.docker_utils import DOCKER_CLIENT
 
@@ -121,6 +120,9 @@ def is_python_runtime(lambda_details):
 def store_lambda_logs(
     lambda_function: LambdaFunction, log_output: str, invocation_time=None, container_id=None
 ):
+    # leave here to avoid import issues from CLI
+    from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
+
     log_group_name = "/aws/lambda/%s" % lambda_function.name()
     container_id = container_id or short_uid()
     invocation_time = invocation_time or int(time.time() * 1000)
