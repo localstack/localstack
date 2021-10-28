@@ -190,10 +190,10 @@ def append_cors_headers(request_headers=None, response=None):
     # a single headers object
     if isinstance(response, LambdaResponse):
         for key in response.multi_value_headers.keys():
-            headers[key] = ",".join(
-                response.multi_value_headers[key]
-                + ([] if key not in response.headers else [response.headers[key]])
+            additional_headers = (
+                [] if response.headers.get(key) is None else [str(response.headers[key])]
             )
+            headers[key] = ",".join(response.multi_value_headers[key] + additional_headers)
         response.multi_value_headers = {}
 
     if ACL_ORIGIN not in headers:
