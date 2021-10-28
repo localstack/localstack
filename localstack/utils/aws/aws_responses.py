@@ -227,8 +227,11 @@ def raise_exception_if_error_response(response):
     raise Exception("Received error response (code %s): %s" % (response.status_code, content))
 
 
-def is_response_obj(result):
-    return isinstance(result, (RequestsResponse, FlaskResponse))
+def is_response_obj(result, include_lambda_response=False):
+    types = (RequestsResponse, FlaskResponse)
+    if include_lambda_response:
+        types += (LambdaResponse,)
+    return isinstance(result, types)
 
 
 def get_response_payload(response, as_json=False):

@@ -609,6 +609,7 @@ def invoke_rest_api_integration_backend(
                 response, response_templates, content_type=APPLICATION_JSON
             )
             return response
+
         elif "s3:path/" in uri and method == "GET":
             s3 = aws_stack.connect_to_service("s3")
             uri_match = re.match(TARGET_REGEX_S3_URI, uri)

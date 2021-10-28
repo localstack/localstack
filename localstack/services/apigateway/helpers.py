@@ -48,29 +48,38 @@ API_REGIONS = {}
 
 
 class APIGatewayRegion(RegionBackend):
+    # TODO: introduce a RestAPI class to encapsulate the variables below
+    # maps (API id) -> [authorizers]
+    authorizers: Dict[str, List[Dict]]
+    # maps (API id) -> [validators]
+    validators: Dict[str, List[Dict]]
+    # maps (API id) -> [documentation_parts]
+    documentation_parts: Dict[str, List[Dict]]
+    # maps (API id) -> [gateway_responses]
+    gateway_responses: Dict[str, List[Dict]]
+    # account details
+    account: Dict[str, Any]
+    # maps (domain_name) -> [path_mappings]
+    base_path_mappings: Dict[str, List[Dict]]
+    # maps ID to VPC link details
+    vpc_links: Dict[str, Dict]
+    # maps cert ID to client certificate details
+    client_certificates: Dict[str, Dict]
+
     def __init__(self):
-        # TODO: introduce a RestAPI class to encapsulate the variables below
-        # maps (API id) -> [authorizers]
-        self.authorizers: Dict[str, List[Dict]] = {}
-        # maps (API id) -> [validators]
-        self.validators: Dict[str, List[Dict]] = {}
-        # maps (API id) -> [documentation_parts]
-        self.documentation_parts: Dict[str, List[Dict]] = {}
-        # maps (API id) -> [gateway_responses]
-        self.gateway_responses: Dict[str, List[Dict]] = {}
-        # account details
-        self.account: Dict[str, Any] = {
+        self.authorizers = {}
+        self.validators = {}
+        self.documentation_parts = {}
+        self.gateway_responses = {}
+        self.account = {
             "cloudwatchRoleArn": aws_stack.role_arn("api-gw-cw-role"),
             "throttleSettings": {"burstLimit": 1000, "rateLimit": 500},
             "features": ["UsagePlans"],
             "apiKeyVersion": "1",
         }
-        # maps (domain_name) -> [path_mappings]
-        self.base_path_mappings: Dict[str, List[Dict]] = {}
-        # maps ID to VPC link details
-        self.vpc_links: Dict[str, Dict] = {}
-        # maps cert ID to client certificate details
-        self.client_certificates: Dict[str, Dict] = {}
+        self.base_path_mappings = {}
+        self.vpc_links = {}
+        self.client_certificates = {}
 
 
 def make_json_response(message):
