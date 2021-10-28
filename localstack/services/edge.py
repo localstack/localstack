@@ -457,7 +457,7 @@ class HealthResource:
                 d = state[p]
             d[path[-1]] = v
 
-        self.state = merge_recursive(state, self.state)
+        self.state = merge_recursive(state, self.state, overwrite=True)
         return {"status": "OK"}
 
 
