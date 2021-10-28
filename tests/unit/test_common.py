@@ -12,6 +12,7 @@ import pytest
 import pytz
 import yaml
 
+from localstack import config
 from localstack.utils import common
 from localstack.utils.bootstrap import extract_port_flags
 from localstack.utils.common import is_empty_dir, mkdir, new_tmp_dir, rm_rf, save_file
@@ -366,6 +367,22 @@ class TestCommon(unittest.TestCase):
         self.assertTrue(started.wait(timeout=2))
         common.cleanup_threads_and_processes()
         self.assertTrue(done.wait(timeout=2))
+
+    def test_proxy_map(self):
+        old_http_proxy = config.OUTBOUND_HTTP_PROXY
+        old_https_proxy = config.OUTBOUND_HTTPS_PROXY
+        config.OUTBOUND_HTTP_PROXY = "http://localhost"
+        config.OUTBOUND_HTTPS_PROXY = "https://localhost"
+        assert {
+            "http": config.OUTBOUND_HTTP_PROXY,
+            "https": config.OUTBOUND_HTTPS_PROXY,
+        } == common.get_proxies()
+        config.OUTBOUND_HTTP_PROXY = ""
+        assert {"https": config.OUTBOUND_HTTPS_PROXY} == common.get_proxies()
+        config.OUTBOUND_HTTPS_PROXY = ""
+        assert {} == common.get_proxies()
+        config.OUTBOUND_HTTP_PROXY = old_http_proxy
+        config.OUTBOUND_HTTPS_PROXY = old_https_proxy
 
 
 class TestCommandLine(unittest.TestCase):

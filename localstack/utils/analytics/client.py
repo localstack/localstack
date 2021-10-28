@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import requests
 
 from localstack import config, constants
-from localstack.utils.common import now
+from localstack.utils.common import get_proxies, now
 
 from .events import Event, EventMetadata
 from .metadata import ClientMetadata, get_session_id
@@ -45,7 +45,10 @@ class AnalyticsClient:
         )
 
         response = requests.post(
-            self.endpoint_session, headers=self._create_headers(), json=request.asdict()
+            self.endpoint_session,
+            headers=self._create_headers(),
+            json=request.asdict(),
+            proxies=get_proxies(),
         )
 
         if not response.ok:
@@ -77,7 +80,9 @@ class AnalyticsClient:
             LOG.debug("posting to %s events %s", endpoint, docs)
 
         # FIXME: fault tolerance/timeouts
-        response = requests.post(endpoint, json={"events": docs}, headers=headers)
+        response = requests.post(
+            endpoint, json={"events": docs}, headers=headers, proxies=get_proxies()
+        )
 
         if self.debug:
             LOG.debug("response from %s was: %s %s", endpoint, response.status_code, response.text)

@@ -293,6 +293,12 @@ LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
 
+# Equivalent to HTTP_PROXY, but only applicable for external connections
+OUTBOUND_HTTP_PROXY = os.environ.get("OUTBOUND_HTTP_PROXY", "")
+
+# Equivalent to HTTPS_PROXY, but only applicable for external connections
+OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
+
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
@@ -359,6 +365,9 @@ CONFIG_ENV_VARS = [
     "EXTRA_CORS_EXPOSE_HEADERS",
     "EXTRA_CORS_ALLOWED_ORIGINS",
     "ENABLE_CONFIG_UPDATES",
+    "LOCALSTACK_HTTP_PROXY",
+    "LOCALSTACK_HTTPS_PROXY",
+    "REQUESTS_CA_BUNDLE",
 ]
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):

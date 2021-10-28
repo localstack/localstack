@@ -1078,11 +1078,23 @@ def format_bytes(count, default="n/a"):
     return count
 
 
+def get_proxies() -> Dict[str, str]:
+    proxy_map = {}
+    if config.OUTBOUND_HTTP_PROXY:
+        proxy_map["http"] = config.OUTBOUND_HTTP_PROXY
+    if config.OUTBOUND_HTTPS_PROXY:
+        proxy_map["https"] = config.OUTBOUND_HTTPS_PROXY
+    return proxy_map
+
+
 def download(url: str, path: str, verify_ssl=True):
     """Downloads file at url to the given path"""
     # make sure we're creating a new session here to
     # enable parallel file downloads during installation!
     s = requests.Session()
+    proxies = get_proxies()
+    if proxies:
+        s.proxies.update(proxies)
     # Use REQUESTS_CA_BUNDLE path. If it doesn't exist, use the method provided settings.
     # Note that a value that is not False, will result to True and will get the bundle file.
     r = s.get(url, stream=True, verify=os.getenv("REQUESTS_CA_BUNDLE", verify_ssl))
