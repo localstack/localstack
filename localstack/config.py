@@ -294,10 +294,10 @@ LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
 
 # Equivalent to HTTP_PROXY, but only applicable for external connections
-LOCALSTACK_HTTP_PROXY = os.environ.get("LOCALSTACK_HTTP_PROXY", "")
+OUTBOUND_HTTP_PROXY = os.environ.get("OUTBOUND_HTTP_PROXY", "")
 
 # Equivalent to HTTPS_PROXY, but only applicable for external connections
-LOCALSTACK_HTTPS_PROXY = os.environ.get("LOCALSTACK_HTTPS_PROXY", "")
+OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!

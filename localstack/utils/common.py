@@ -1080,10 +1080,10 @@ def format_bytes(count, default="n/a"):
 
 def get_proxies() -> Dict[str, str]:
     proxy_map = {}
-    if config.LOCALSTACK_HTTP_PROXY:
-        proxy_map["http"] = config.LOCALSTACK_HTTP_PROXY
-    if config.LOCALSTACK_HTTPS_PROXY:
-        proxy_map["https"] = config.LOCALSTACK_HTTPS_PROXY
+    if config.OUTBOUND_HTTP_PROXY:
+        proxy_map["http"] = config.OUTBOUND_HTTP_PROXY
+    if config.OUTBOUND_HTTPS_PROXY:
+        proxy_map["https"] = config.OUTBOUND_HTTPS_PROXY
     return proxy_map
 
 

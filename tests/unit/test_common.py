@@ -369,20 +369,20 @@ class TestCommon(unittest.TestCase):
         self.assertTrue(done.wait(timeout=2))
 
     def test_proxy_map(self):
-        old_http_proxy = config.LOCALSTACK_HTTP_PROXY
-        old_https_proxy = config.LOCALSTACK_HTTPS_PROXY
-        config.LOCALSTACK_HTTP_PROXY = "http://localhost"
-        config.LOCALSTACK_HTTPS_PROXY = "https://localhost"
+        old_http_proxy = config.OUTBOUND_HTTP_PROXY
+        old_https_proxy = config.OUTBOUND_HTTPS_PROXY
+        config.OUTBOUND_HTTP_PROXY = "http://localhost"
+        config.OUTBOUND_HTTPS_PROXY = "https://localhost"
         assert {
-            "http": config.LOCALSTACK_HTTP_PROXY,
-            "https": config.LOCALSTACK_HTTPS_PROXY,
+            "http": config.OUTBOUND_HTTP_PROXY,
+            "https": config.OUTBOUND_HTTPS_PROXY,
         } == common.get_proxies()
-        config.LOCALSTACK_HTTP_PROXY = ""
-        assert {"https": config.LOCALSTACK_HTTPS_PROXY} == common.get_proxies()
-        config.LOCALSTACK_HTTPS_PROXY = ""
+        config.OUTBOUND_HTTP_PROXY = ""
+        assert {"https": config.OUTBOUND_HTTPS_PROXY} == common.get_proxies()
+        config.OUTBOUND_HTTPS_PROXY = ""
         assert {} == common.get_proxies()
-        config.LOCALSTACK_HTTP_PROXY = old_http_proxy
-        config.LOCALSTACK_HTTPS_PROXY = old_https_proxy
+        config.OUTBOUND_HTTP_PROXY = old_http_proxy
+        config.OUTBOUND_HTTPS_PROXY = old_https_proxy
 
 
 class TestCommandLine(unittest.TestCase):
