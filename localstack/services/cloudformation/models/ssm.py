@@ -5,6 +5,7 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 
 class SSMParameter(GenericBaseModel):
@@ -19,6 +20,12 @@ class SSMParameter(GenericBaseModel):
         param_name = self.props.get("Name") or self.resource_id
         param_name = self.resolve_refs_recursively(stack_name, param_name, resources)
         return aws_stack.connect_to_service("ssm").get_parameter(Name=param_name)["Parameter"]
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        name = resource.get("Properties", {}).get("Name")
+        if not name:
+            resource["Properties"]["Name"] = f"CFN-{resource['LogicalResourceId']}-{short_uid()}"
 
     @staticmethod
     def get_deploy_templates():
