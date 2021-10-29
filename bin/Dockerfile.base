@@ -95,7 +95,7 @@ RUN mkdir -p /opt/code/localstack/localstack/infra && \
       curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
       (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip) && \
     curl -L -o /tmp/localstack.es.tar.gz \
-        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.7.0-linux-x86_64.tar.gz && \
+        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-x86_64.tar.gz && \
     curl -L -o /tmp/elasticmq-server.jar \
         https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar && \
     (cd localstack/infra/ && tar -xf /tmp/localstack.es.tar.gz && \
