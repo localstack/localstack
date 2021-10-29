@@ -26,6 +26,16 @@ def is_keyword(name: str) -> bool:
     return name in keyword.kwlist
 
 
+def is_bad_param_name(name: str) -> bool:
+    if name == "context":
+        return True
+
+    if is_keyword(name):
+        return True
+
+    return False
+
+
 def to_valid_python_name(spec_name: str) -> str:
     sanitized = re.sub(r"[^0-9a-zA-Z_]+", "_", spec_name)
 
@@ -280,8 +290,14 @@ def generate_service_api(output, service: ServiceModel, doc=True):
                 param_shapes[xform_name(m)] = m_shape
                 parameters[xform_name(m)] = f"{m_shape.name} = None"
 
-        param_list = ", ".join([f"{k}: {v}" for k, v in parameters.items()])
-        output.write(f'    @handler("{operation.name}")\n')
+        if any(map(is_bad_param_name, parameters.keys())):
+            # if we cannot render the parameter name, don't expand the parameters in the handler
+            param_list = f"request: {input_shape.name}" if input_shape else ""
+            output.write(f'    @handler("{operation.name}", expand=False)\n')
+        else:
+            param_list = ", ".join([f"{k}: {v}" for k, v in parameters.items()])
+            output.write(f'    @handler("{operation.name}")\n')
+
         output.write(
             f"    def {fn_name}(self, context: RequestContext, {param_list}) -> {output_shape}:\n"
         )

@@ -4,7 +4,7 @@ from click.testing import CliRunner
 from localstack.aws.scaffold import generate
 
 
-@pytest.mark.parametrize("service", ["apigateway", "cloudformation", "sqs"])
+@pytest.mark.parametrize("service", ["apigateway", "autoscaling", "cloudformation", "sqs"])
 def test_generated_code_compiles(service):
     runner = CliRunner()
     result = runner.invoke(generate, [service, "--no-doc", "--print"])
