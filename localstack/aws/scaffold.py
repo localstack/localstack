@@ -98,7 +98,7 @@ class ShapeNode:
 
         return []
 
-    def _print_structure_declaration(self, output, doc=True):
+    def _print_structure_declaration(self, output, doc=True, quote_types=False):
         if self.is_exception:
             self._print_as_class(output, "ServiceException", doc)
             return
@@ -112,10 +112,12 @@ class ShapeNode:
         else:
             base = "TypedDict, total=False"
 
-        self._print_as_class(output, base, doc)
+        self._print_as_class(output, base, doc, quote_types)
 
-    def _print_as_class(self, output, base: str, doc=True):
+    def _print_as_class(self, output, base: str, doc=True, quote_types=False):
         output.write(f"class {self.shape.name}({base}):\n")
+
+        q = '"' if quote_types else ""
 
         if doc:
             self.print_shape_doc(output, self.shape)
@@ -125,18 +127,19 @@ class ShapeNode:
 
         for k, v in self.shape.members.items():
             if k in self.shape.required_members:
-                output.write(f"    {k}: {v.name}\n")
+                output.write(f"    {k}: {q}{v.name}{q}\n")
             else:
-                output.write(f"    {k}: Optional[{v.name}]\n")
+                output.write(f"    {k}: Optional[{q}{v.name}{q}]\n")
 
-    def _print_as_typed_dict(self, output, doc=True):
+    def _print_as_typed_dict(self, output, doc=True, quote_types=False):
         name = self.shape.name
+        q = '"' if quote_types else ""
         output.write('%s = TypedDict("%s", total=False, fields={\n' % (name, name))
         for k, v in self.shape.members.items():
             if k in self.shape.required_members:
-                output.write(f'    "{k}": {v.name},\n')
+                output.write(f'    "{k}": {q}{v.name}{q},\n')
             else:
-                output.write(f'    "{k}": Optional[{v.name}],\n')
+                output.write(f'    "{k}": Optional[{q}{v.name}{q}],\n')
         output.write("})")
 
     def print_shape_doc(self, output, shape):
@@ -150,15 +153,17 @@ class ShapeNode:
             output.write(f"{doc.strip()}\n")
             output.write('    """\n')
 
-    def print_declaration(self, output, doc=True):
+    def print_declaration(self, output, doc=True, quote_types=False):
         shape = self.shape
 
+        q = '"' if quote_types else ""
+
         if isinstance(shape, StructureShape):
-            self._print_structure_declaration(output, doc)
+            self._print_structure_declaration(output, doc, quote_types)
         elif isinstance(shape, ListShape):
-            output.write(f"{shape.name} = List[{shape.member.name}]")
+            output.write(f"{shape.name} = List[{q}{shape.member.name}{q}]")
         elif isinstance(shape, MapShape):
-            output.write(f"{shape.name} = Dict[{shape.key.name}, {shape.value.name}]")
+            output.write(f"{shape.name} = Dict[{q}{shape.key.name}{q}, {q}{shape.value.name}{q}]")
         elif isinstance(shape, StringShape):
             if shape.enum:
                 output.write(f"class {shape.name}(str):\n")
@@ -232,6 +237,7 @@ def generate_service_types(output, service: ServiceModel, doc=True):
     # output.write("]\n")
 
     printed: Set[str] = set()
+    visited: Set[str] = set()
     stack: List[str] = list(nodes.keys())
 
     stack = sorted(stack, key=lambda name: nodes[name].get_order())
@@ -248,10 +254,14 @@ def generate_service_types(output, service: ServiceModel, doc=True):
         if not dependencies:
             node.print_declaration(output, doc=doc)
             printed.add(name)
+        elif name in visited:
+            # break out of circular dependencies
+            node.print_declaration(output, doc=doc, quote_types=True)
+            printed.add(name)
         else:
             stack.append(name)
             stack.extend(dependencies)
-            # TODO: circular dependencies (do they exist?)
+            visited.add(name)
 
 
 def generate_service_api(output, service: ServiceModel, doc=True):
