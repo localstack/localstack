@@ -1,6 +1,7 @@
 import io
 import keyword
 import os
+import re
 from typing import Dict, List, Set
 
 import click
@@ -21,10 +22,17 @@ from localstack.aws.spec import load_service
 from localstack.utils.common import camel_to_snake_case, mkdir, snake_to_camel_case
 
 
-def to_valid_python_name(spec_name: str) -> str:
-    sanitized = spec_name.replace("-", "_")
+def is_keyword(name: str) -> bool:
+    return name in keyword.kwlist
 
-    if sanitized in keyword.kwlist:
+
+def to_valid_python_name(spec_name: str) -> str:
+    sanitized = re.sub(r"[^0-9a-zA-Z_]+", "_", spec_name)
+
+    if sanitized[0].isnumeric():
+        sanitized = "i_" + sanitized
+
+    if is_keyword(sanitized):
         sanitized += "_"
 
     return sanitized
@@ -80,78 +88,95 @@ class ShapeNode:
 
         return []
 
-    def print_declaration(self, output, doc=True):
-        code = ""
+    def _print_structure_declaration(self, output, doc=True):
+        if self.is_exception:
+            self._print_as_class(output, "ServiceException", doc)
+            return
 
+        if any(map(is_keyword, self.shape.members.keys())):
+            self._print_as_typed_dict(output)
+            return
+
+        if self.is_request:
+            base = "ServiceRequest"
+        else:
+            base = "TypedDict, total=False"
+
+        self._print_as_class(output, base, doc)
+
+    def _print_as_class(self, output, base: str, doc=True):
+        output.write(f"class {self.shape.name}({base}):\n")
+
+        if doc:
+            self.print_shape_doc(output, self.shape)
+
+        if not self.shape.members:
+            output.write("    pass\n")
+
+        for k, v in self.shape.members.items():
+            if k in self.shape.required_members:
+                output.write(f"    {k}: {v.name}\n")
+            else:
+                output.write(f"    {k}: Optional[{v.name}]\n")
+
+    def _print_as_typed_dict(self, output, doc=True):
+        name = self.shape.name
+        output.write('%s = TypedDict("%s", total=False, fields={\n' % (name, name))
+        for k, v in self.shape.members.items():
+            if k in self.shape.required_members:
+                output.write(f'    "{k}": {v.name},\n')
+            else:
+                output.write(f'    "{k}": Optional[{v.name}],\n')
+        output.write("})")
+
+    def print_shape_doc(self, output, shape):
+        html = shape.documentation
+        import pypandoc
+
+        doc = pypandoc.convert_text(html, "rst", format="html")
+        rst = doc.strip()
+        if rst:
+            output.write('    """')
+            output.write(f"{doc.strip()}\n")
+            output.write('    """\n')
+
+    def print_declaration(self, output, doc=True):
         shape = self.shape
 
         if isinstance(shape, StructureShape):
-            base = "TypedDict, total=False"
-            members = ""
-
-            if self.is_exception:
-                base = "ServiceException"
-            if self.is_request:
-                base = "ServiceRequest"
-
-            if not shape.members:
-                members = "    pass"
-
-            for k, v in shape.members.items():
-                if k in shape.required_members:
-                    members += f"    {k}: {v.name}\n"
-                else:
-                    members += f"    {k}: Optional[{v.name}]\n"
-
-            code = f"class {shape.name}({base}):\n"
-
-            if doc:
-                html = shape.documentation
-                import pypandoc
-
-                doc = pypandoc.convert_text(html, "rst", format="html")
-                rst = doc.strip()
-                if rst:
-                    code += '    """'
-                    code += f"{doc.strip()}\n"
-                    code += '    """\n'
-
-            code += f"{members}\n"
-
+            self._print_structure_declaration(output, doc)
         elif isinstance(shape, ListShape):
-            code = f"{shape.name} = List[{shape.member.name}]\n"
+            output.write(f"{shape.name} = List[{shape.member.name}]")
         elif isinstance(shape, MapShape):
-            code = f"{shape.name} = Dict[{shape.key.name}, {shape.value.name}]"
+            output.write(f"{shape.name} = Dict[{shape.key.name}, {shape.value.name}]")
         elif isinstance(shape, StringShape):
             if shape.enum:
-                code += f"class {shape.name}(str):\n"
+                output.write(f"class {shape.name}(str):\n")
                 for value in shape.enum:
                     name = to_valid_python_name(value)
-                    code += f'    {name} = "{value}"\n'
-                code += "\n"
+                    output.write(f'    {name} = "{value}"\n')
             else:
-                code = f"{shape.name} = str"
+                output.write(f"{shape.name} = str")
         elif shape.type_name == "string":
-            code = f"{shape.name} = str"
+            output.write(f"{shape.name} = str")
         elif shape.type_name == "integer":
-            code = f"{shape.name} = int"
+            output.write(f"{shape.name} = int")
         elif shape.type_name == "long":
-            code = f"{shape.name} = int"
+            output.write(f"{shape.name} = int")
         elif shape.type_name == "double":
-            code = f"{shape.name} = float"
+            output.write(f"{shape.name} = float")
         elif shape.type_name == "float":
-            code = f"{shape.name} = float"
+            output.write(f"{shape.name} = float")
         elif shape.type_name == "boolean":
-            code = f"{shape.name} = bool"
+            output.write(f"{shape.name} = bool")
         elif shape.type_name == "blob":
-            code = f"{shape.name} = bytes"  # FIXME check what type blob really is
+            output.write(f"{shape.name} = bytes")  # FIXME check what type blob really is
         elif shape.type_name == "timestamp":
-            code = f"{shape.name} = str"  # FIXME
+            output.write(f"{shape.name} = str")
         else:
-            code = f"# unknown shape type for {shape.name}: {shape.type_name}"
+            output.write(f"# unknown shape type for {shape.name}: {shape.type_name}")
         # TODO: BoxedInteger?
 
-        output.write(code)
         output.write("\n")
 
     def get_order(self):
