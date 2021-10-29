@@ -23,6 +23,8 @@ requests>=2.20.0,<2.26
 # TODO: "six" dependency still needed?
 six>=1.12.0
 stevedore>=3.4.0
+# needed for python3.7 compat (TypedDict, Literal, type hints)
+typing-extensions; python_version < '3.8'
 
 # extra=runtime
 airspeed>=0.5.14
@@ -78,3 +80,5 @@ flake8-quotes>=0.11.0
 pre-commit==2.13.0
 pyproject-flake8
 isort==5.9.1
+pandoc
+pypandoc

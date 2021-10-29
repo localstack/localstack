@@ -633,6 +633,25 @@ def http_server(handler, host="127.0.0.1", port=None) -> str:
     thread.stop()
 
 
+@contextmanager
+def proxy_server(proxy_listener, host="127.0.0.1", port=None) -> str:
+    """
+    Create a temporary proxy server on a random port (or the specified port) with the given proxy listener
+    for the duration of the context manager.
+    """
+    from localstack.services.generic_proxy import start_proxy_server
+
+    host = host
+    port = port or get_free_tcp_port()
+    thread = start_proxy_server(port, bind_address=host, update_listener=proxy_listener)
+    url = f"http://{host}:{port}"
+    assert poll_condition(
+        lambda: is_port_open(port), timeout=5
+    ), f"server on port {port} did not start"
+    yield url
+    thread.stop()
+
+
 def json_response(data, code=200, headers: Dict = None) -> requests.Response:
     r = requests.Response()
     r._content = json.dumps(data)
