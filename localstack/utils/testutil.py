@@ -144,17 +144,20 @@ def create_zip_file_cli(source_path, base_dir, zip_file):
     run(command)
 
 
-def create_zip_file_python(source_path, base_dir, zip_file):
-    with zipfile.ZipFile(zip_file, "w") as zip_file:
+def create_zip_file_python(source_path, base_dir, zip_file, mode="w", content_root=None):
+    with zipfile.ZipFile(zip_file, mode) as zip_file:
         for root, dirs, files in os.walk(base_dir):
             for name in files:
                 full_name = os.path.join(root, name)
                 relative = os.path.relpath(root, start=base_dir)
-                dest = os.path.join(relative, name)
+                if content_root:
+                    dest = os.path.join(content_root, relative, name)
+                else:
+                    dest = os.path.join(relative, name)
                 zip_file.write(full_name, dest)
 
 
-def create_zip_file(file_path, zip_file=None, get_content=False):
+def create_zip_file(file_path, zip_file=None, get_content=False, content_root=None, mode="w"):
     base_dir = file_path
     if not os.path.isdir(file_path):
         base_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
@@ -165,7 +168,6 @@ def create_zip_file(file_path, zip_file=None, get_content=False):
     if not full_zip_file:
         zip_file_name = "archive.zip"
         full_zip_file = os.path.join(tmp_dir, zip_file_name)
-
     # special case where target folder is empty -> create empty zip file
     if is_empty_dir(base_dir):
         # see https://stackoverflow.com/questions/25195495/how-to-create-an-empty-zip-file#25195628
