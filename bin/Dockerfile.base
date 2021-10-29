@@ -41,6 +41,8 @@ java.base,java.desktop,java.instrument,java.management,java.naming,java.scriptin
 jdk.unsupported,\
 # add ability to open ZIP/JAR files
 jdk.zipfs,\
+# add additional cipher suites
+jdk.crypto.cryptoki,\
 # Elasticsearch 7+ crashes without Thai Segmentation support
 jdk.localedata --include-locales en,th \
     --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \
