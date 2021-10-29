@@ -158,6 +158,11 @@ def create_zip_file_python(source_path, base_dir, zip_file, mode="w", content_ro
 
 
 def create_zip_file(file_path, zip_file=None, get_content=False, content_root=None, mode="w"):
+    """
+    Creates a zipfile to the designated file_path.
+
+    By default, a new zip file is created but the mode parameter can be used to append to an existing zip file
+    """
     base_dir = file_path
     if not os.path.isdir(file_path):
         base_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
@@ -181,9 +186,16 @@ def create_zip_file(file_path, zip_file=None, get_content=False, content_root=No
 
     # create zip file
     if is_alpine():
-        create_zip_file_cli(file_path, base_dir, zip_file=full_zip_file)
+        # todo: extend CLI with the new parameters
+        create_zip_file_cli(source_path=file_path, base_dir=base_dir, zip_file=full_zip_file)
     else:
-        create_zip_file_python(file_path, base_dir, zip_file=full_zip_file)
+        create_zip_file_python(
+            source_path=file_path,
+            base_dir=base_dir,
+            zip_file=full_zip_file,
+            content_root=content_root,
+            mode=mode,
+        )
     if not get_content:
         TMP_FILES.append(tmp_dir)
         return full_zip_file
