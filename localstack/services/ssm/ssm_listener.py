@@ -6,6 +6,7 @@ import traceback
 from requests.models import Request
 
 from localstack.utils.aws import aws_stack
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.common import to_str
 from localstack.utils.persistence import PersistingProxyListener
 
@@ -141,7 +142,9 @@ def get_params_by_path_with_labels(
 
 
 def notify_event_subscribers(data, target_header):
-    # publish an EventBridge event to notify subscribers of changes
+    """Publish an EventBridge event to notify subscribers of changes."""
+    if not is_api_enabled("events"):
+        return
     events = aws_stack.connect_to_service("events")
     operation = EVENT_BRIDGE_OPERATIONS.get(target_header)
     if not operation:

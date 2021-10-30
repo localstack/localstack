@@ -13,7 +13,12 @@ import requests
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import LAMBDA_TEST_ROLE, LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER
+from localstack.constants import (
+    LAMBDA_TEST_ROLE,
+    LOCALSTACK_MAVEN_VERSION,
+    LOCALSTACK_ROOT_FOLDER,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.services.apigateway.helpers import gateway_request_url
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.awslambda.lambda_api import (
@@ -230,48 +235,52 @@ def _check_lambda_logs(func_name, expected_lines=None):
         assert line in log_messages
 
 
-class LambdaTestBase(unittest.TestCase):
-    # TODO: the test below is being executed for all subclasses - should be refactored!
-    def test_create_lambda_function(self):
-        func_name = "lambda_func-{}".format(short_uid())
-        kms_key_arn = "arn:aws:kms:%s:000000000000:key11" % aws_stack.get_region()
-        vpc_config = {
-            "SubnetIds": ["subnet-123456789"],
-            "SecurityGroupIds": ["sg-123456789"],
-        }
-        tags = {"env": "testing"}
+def test_create_lambda_function():
+    """Basic test that creates and deletes a Lambda function"""
+    func_name = "lambda_func-{}".format(short_uid())
+    kms_key_arn = f"arn:aws:kms:{aws_stack.get_region()}:{TEST_AWS_ACCOUNT_ID}:key11"
+    vpc_config = {
+        "SubnetIds": ["subnet-123456789"],
+        "SecurityGroupIds": ["sg-123456789"],
+    }
+    tags = {"env": "testing"}
 
-        kwargs = {
-            "FunctionName": func_name,
-            "Runtime": LAMBDA_RUNTIME_PYTHON37,
-            "Handler": LAMBDA_DEFAULT_HANDLER,
-            "Role": LAMBDA_TEST_ROLE,
-            "KMSKeyArn": kms_key_arn,
-            "Code": {
-                "ZipFile": create_lambda_archive(
-                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
-                )
-            },
-            "Timeout": 3,
-            "VpcConfig": vpc_config,
-            "Tags": tags,
-            "Environment": {"Variables": {"foo": "bar"}},
-        }
+    kwargs = {
+        "FunctionName": func_name,
+        "Runtime": LAMBDA_RUNTIME_PYTHON37,
+        "Handler": LAMBDA_DEFAULT_HANDLER,
+        "Role": LAMBDA_TEST_ROLE,
+        "KMSKeyArn": kms_key_arn,
+        "Code": {
+            "ZipFile": create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        },
+        "Timeout": 3,
+        "VpcConfig": vpc_config,
+        "Tags": tags,
+        "Environment": {"Variables": {"foo": "bar"}},
+    }
 
-        client = aws_stack.connect_to_service("lambda")
-        client.create_function(**kwargs)
+    client = aws_stack.connect_to_service("lambda")
+    client.create_function(**kwargs)
 
-        function_arn = lambda_function_arn(func_name)
-        partial_function_arn = ":".join(function_arn.split(":")[3:])
+    function_arn = lambda_function_arn(func_name)
+    partial_function_arn = ":".join(function_arn.split(":")[3:])
 
-        # Get function by Name, ARN and partial ARN
-        for func_ref in [func_name, function_arn, partial_function_arn]:
-            rs = client.get_function(FunctionName=func_ref)
-            self.assertEqual(kms_key_arn, rs["Configuration"].get("KMSKeyArn", ""))
-            self.assertEqual(vpc_config, rs["Configuration"].get("VpcConfig", {}))
-            self.assertEqual(tags, rs["Tags"])
+    # Get function by Name, ARN and partial ARN
+    for func_ref in [func_name, function_arn, partial_function_arn]:
+        rs = client.get_function(FunctionName=func_ref)
+        assert rs["Configuration"].get("KMSKeyArn", "") == kms_key_arn
+        assert rs["Configuration"].get("VpcConfig", {}) == vpc_config
+        assert rs["Tags"] == tags
 
+    # clean up
+    client.delete_function(FunctionName=func_name)
+    with pytest.raises(Exception) as exc:
         client.delete_function(FunctionName=func_name)
+    assert "ResourceNotFoundException" in str(exc)
+
+
+class LambdaTestBase(unittest.TestCase):
 
     # TODO remove once refactoring to pytest is complete
     def check_lambda_logs(self, func_name, expected_lines=[]):

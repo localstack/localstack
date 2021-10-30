@@ -30,7 +30,6 @@ from localstack.utils.aws import templating
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.common import (
     get_service_protocol,
-    is_port_open,
     is_string,
     is_string_or_bytes,
     make_http_request,
@@ -253,16 +252,6 @@ def get_local_service_url(service_name_or_port):
         service_name = "sagemaker-runtime"
     service_name_upper = service_name.upper().replace("-", "_").replace(".", "_")
     return os.environ["TEST_%s_URL" % service_name_upper]
-
-
-def is_service_enabled(service_name):
-    """Return whether the service with the given name (e.g., "lambda") is available."""
-    try:
-        url = get_local_service_url(service_name)
-        assert url
-        return is_port_open(url, http_path="/", expect_success=False)
-    except Exception:
-        return False
 
 
 def connect_to_resource(
