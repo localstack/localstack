@@ -9,7 +9,17 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import LOG, REF_ID_ATTRS, GenericBaseModel
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import cp_r, is_base64, mkdir, new_tmp_dir, rm_rf, save_file, short_uid
+from localstack.utils.common import (
+    cp_r,
+    is_base64,
+    is_zip_file,
+    mkdir,
+    new_tmp_dir,
+    rm_rf,
+    save_file,
+    short_uid,
+    to_bytes,
+)
 from localstack.utils.testutil import create_zip_file
 
 
@@ -52,6 +62,7 @@ class LambdaFunction(GenericBaseModel):
                     'Updating code for Lambda "%s" from location: %s'
                     % (props["FunctionName"], code)
                 )
+            code = LambdaFunction.get_lambda_code_param(props)
             client.update_function_code(FunctionName=props["FunctionName"], **code)
         if "Environment" in update_props:
             environment_variables = update_props["Environment"].get("Variables", {})
@@ -69,34 +80,33 @@ class LambdaFunction(GenericBaseModel):
             )
 
     @staticmethod
+    def get_lambda_code_param(params, **kwargs):
+        code = params.get("Code", {})
+        zip_file = code.get("ZipFile")
+        if zip_file and not is_base64(zip_file) and not is_zip_file(to_bytes(zip_file)):
+            tmp_dir = new_tmp_dir()
+            handler_file = get_handler_file_from_name(params["Handler"], runtime=params["Runtime"])
+            tmp_file = os.path.join(tmp_dir, handler_file)
+            save_file(tmp_file, zip_file)
+
+            # add 'cfn-response' module to archive - see:
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
+            cfn_response_tmp_file = get_cfn_response_mod_file()
+            cfn_response_mod_dir = os.path.join(tmp_dir, "node_modules", "cfn-response")
+            mkdir(cfn_response_mod_dir)
+            cp_r(
+                cfn_response_tmp_file,
+                os.path.join(cfn_response_mod_dir, "index.js"),
+            )
+
+            # create zip file
+            zip_file = create_zip_file(tmp_dir, get_content=True)
+            code["ZipFile"] = zip_file
+            rm_rf(tmp_dir)
+        return code
+
+    @staticmethod
     def get_deploy_templates():
-        def get_lambda_code_param(params, **kwargs):
-            code = params.get("Code", {})
-            zip_file = code.get("ZipFile")
-            if zip_file and not is_base64(zip_file):
-                tmp_dir = new_tmp_dir()
-                handler_file = get_handler_file_from_name(
-                    params["Handler"], runtime=params["Runtime"]
-                )
-                tmp_file = os.path.join(tmp_dir, handler_file)
-                save_file(tmp_file, zip_file)
-
-                # add 'cfn-response' module to archive - see:
-                # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
-                cfn_response_tmp_file = get_cfn_response_mod_file()
-                cfn_response_mod_dir = os.path.join(tmp_dir, "node_modules", "cfn-response")
-                mkdir(cfn_response_mod_dir)
-                cp_r(
-                    cfn_response_tmp_file,
-                    os.path.join(cfn_response_mod_dir, "index.js"),
-                )
-
-                # create zip file
-                zip_file = create_zip_file(tmp_dir, get_content=True)
-                code["ZipFile"] = zip_file
-                rm_rf(tmp_dir)
-            return code
-
         def get_delete_params(params, **kwargs):
             return {"FunctionName": params.get("FunctionName")}
 
@@ -115,7 +125,7 @@ class LambdaFunction(GenericBaseModel):
                     "Runtime": "Runtime",
                     "Role": "Role",
                     "Handler": "Handler",
-                    "Code": get_lambda_code_param,
+                    "Code": LambdaFunction.get_lambda_code_param,
                     "Description": "Description",
                     "Environment": get_environment_params,
                     "Timeout": "Timeout",

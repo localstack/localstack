@@ -77,7 +77,7 @@ jobs:
           name: Test docker client
           environment:
             DEBUG: 1
-            TEST_PATH: "tests/integration/docker"
+            TEST_PATH: "tests/integration/docker_utils"
             TEST_SKIP_LOCALSTACK_START: 1
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/docker-client.xml -o junit_suite_name='docker-client'"
             COVERAGE_ARGS: "-p"
