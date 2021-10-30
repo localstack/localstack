@@ -39,6 +39,7 @@ from localstack.services.install import install_go_lambda_runtime
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
+from localstack.utils.aws.aws_responses import ResourceNotFoundException
 from localstack.utils.common import (
     TMP_FILES,
     empty_context_manager,
@@ -1310,7 +1311,9 @@ def delete_lambda_function(function_name: str) -> Dict[None, None]:
     try:
         region.lambdas.pop(arn)
     except KeyError:
-        return not_found_error(func_arn(function_name))
+        raise ResourceNotFoundException(
+            f"Unable to delete non-existing Lambda function {func_arn(function_name)}"
+        )
 
     event_publisher.fire_event(
         event_publisher.EVENT_LAMBDA_DELETE_FUNC,
