@@ -360,15 +360,17 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
         )
 
     # Checking whether the url is expired or not
-    if int(query_params['Expires'][0]) < time.time():
+    if int(query_params["Expires"][0]) < time.time():
         if config.S3_SKIP_SIGNATURE_VALIDATION:
-            LOGGER.warning('Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1')
+            LOGGER.warning(
+                "Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
+            )
         else:
             return requests_error_response_xml_signature_calculation(
                 code=403,
-                code_string='AccessDenied',
-                message='Request has expired',
-                expires=query_params['Expires'][0]
+                code_string="AccessDenied",
+                message="Request has expired",
+                expires=query_params["Expires"][0],
             )
 
 
@@ -430,11 +432,13 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
     # Checking whether the url is expired or not
     if is_expired(expiration_time):
         if config.S3_SKIP_SIGNATURE_VALIDATION:
-            LOGGER.warning('Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1')
+            LOGGER.warning(
+                "Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
+            )
         else:
             return requests_error_response_xml_signature_calculation(
                 code=403,
-                code_string='AccessDenied',
-                message='Request has expired',
-                expires=query_params['X-Amz-Expires'][0]
+                code_string="AccessDenied",
+                message="Request has expired",
+                expires=query_params["X-Amz-Expires"][0],
             )
