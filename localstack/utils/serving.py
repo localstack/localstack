@@ -110,6 +110,7 @@ class Server(abc.ABC):
                 return
 
             self._thread.stop()
+            self._stopped.set()
             self.do_shutdown()
 
     def start(self) -> bool:
@@ -123,18 +124,9 @@ class Server(abc.ABC):
             if self._started.is_set():
                 return False
 
-            self._thread = start_thread(self._run_internal)
+            self._thread = self.do_start_thread()
             self._started.set()
             return True
-
-    def _run_internal(self, *_):
-        self._started.wait()
-        try:
-            return self.do_run()
-        except StopServer:
-            LOG.debug("stopping server %s", self.url)
-        finally:
-            self._stopped.set()
 
     def join(self, timeout=None):
         """
@@ -149,8 +141,14 @@ class Server(abc.ABC):
 
         if not self._started.wait(timeout):
             raise TimeoutError
-        if not self._stopped.wait(timeout):
-            raise TimeoutError
+
+        try:
+            self._thread.result_future.result(timeout)
+        except TimeoutError:
+            raise
+        except Exception:
+            # Future.result() will re-raise the exception that was raised in the thread
+            return
 
     def health(self):
         """
@@ -158,9 +156,25 @@ class Server(abc.ABC):
         """
         return is_port_open(self.url)
 
+    def do_start_thread(self) -> FuncThread:
+        """
+        Creates and starts the thread running the server. By default, it calls the do_run method in a FuncThread, but
+        can be overridden to if the subclass wants to return its own thread.
+        """
+
+        def _run(*_):
+            try:
+                return self.do_run()
+            except StopServer:
+                LOG.debug("stopping server %s", self.url)
+            finally:
+                self._stopped.set()
+
+        return start_thread(_run)
+
     def do_run(self):
         """
-        Runs the server (blocking method). (Needs to be overridden by subclasses).
+        Runs the server (blocking method). (Needs to be overridden by subclasses of do_start_thread is not overridden).
 
         :raises StopServer: can be raised by the subclass to indicate the server should be stopped.
         """

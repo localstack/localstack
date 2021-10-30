@@ -29,15 +29,22 @@ Here's how you can use it:
 """
 import logging
 import os
-import threading
 from typing import Dict, List, NamedTuple, Optional
 
 import requests
 
 from localstack import config, constants
 from localstack.services import install
-from localstack.services.infra import DEFAULT_BACKEND_HOST, do_run, start_proxy_for_service
-from localstack.utils.common import chmod_r, get_free_tcp_port, is_root, mkdir, rm_rf
+from localstack.services.infra import DEFAULT_BACKEND_HOST, start_proxy_for_service
+from localstack.utils.common import (
+    ShellCommandThread,
+    chmod_r,
+    get_free_tcp_port,
+    is_root,
+    mkdir,
+    rm_rf,
+)
+from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
@@ -69,7 +76,7 @@ class ElasticsearchCluster(Server):
     def health(self):
         return get_elasticsearch_health_status(self.url)
 
-    def do_run(self):
+    def do_start_thread(self) -> FuncThread:
         # FIXME: if this fails the cluster could be left in a wonky state
         # FIXME: this is not a good place to run install, and it only works because we're
         #  assuming that there will only ever be one running Elasticsearch cluster
@@ -87,8 +94,17 @@ class ElasticsearchCluster(Server):
         env_vars = self._create_env_vars()
 
         LOG.info("starting elasticsearch: %s with env %s", cmd, env_vars)
-        # use asynchronous=True to get a ShellCommandThread
-        return do_run(cmd, asynchronous=False, env_vars=env_vars)
+        t = ShellCommandThread(
+            cmd,
+            env_vars=env_vars,
+            strip_color=True,
+            log_listener=self._log_listener,
+        )
+        t.start()
+        return t
+
+    def _log_listener(self, line, **_kwargs):
+        LOG.info(line.rstrip())
 
     def _create_run_command(
         self, additional_settings: Optional[CommandSettings] = None
@@ -155,6 +171,12 @@ class ElasticsearchCluster(Server):
         mkdir(dirs.tmp)
         chmod_r(dirs.tmp, 0o777)
 
+        # clear potentially existing lock files (which cause problems since ES 7.10)
+        for d, dirs, files in os.walk(dirs.data, True):
+            for f in files:
+                if f.endswith(".lock"):
+                    rm_rf(os.path.join(d, f))
+
 
 class ProxiedElasticsearchCluster(Server):
     """
@@ -166,10 +188,8 @@ class ProxiedElasticsearchCluster(Server):
         super().__init__(port, host)
         self._version = version or constants.ELASTICSEARCH_DEFAULT_VERSION
 
-        self._cluster = None
-        self._cluster_port = None
-        self._proxy_thread = None
-        self._running = threading.Event()
+        self.cluster = None
+        self.cluster_port = None
 
     @property
     def version(self):
@@ -177,10 +197,10 @@ class ProxiedElasticsearchCluster(Server):
 
     def is_up(self):
         # check service lifecycle
-        if not self._cluster or not self._proxy_thread:
+        if not self.cluster:
             return False
 
-        if not self._cluster.is_up():
+        if not self.cluster.is_up():
             return False
 
         return super().is_up()
@@ -192,35 +212,29 @@ class ProxiedElasticsearchCluster(Server):
         """
         return get_elasticsearch_health_status(self.url)
 
-    def do_run(self):
+    def do_start_thread(self) -> FuncThread:
         # start elasticsearch backend
-        self._cluster_port = get_free_tcp_port()
-        self._cluster = ElasticsearchCluster(port=self._cluster_port, host=DEFAULT_BACKEND_HOST)
-        self._cluster.start()
+        if not self.cluster_port:
+            self.cluster_port = get_free_tcp_port()
 
-        self._cluster.wait_is_up()
-        LOG.info("elasticsearch cluster on %s is ready", self._cluster.url)
+        self.cluster = ElasticsearchCluster(port=self.cluster_port, host=DEFAULT_BACKEND_HOST)
+        self.cluster.start()
+
+        self.cluster.wait_is_up()
+        LOG.info("elasticsearch cluster on %s is ready", self.cluster.url)
 
         # start front-facing proxy
-        self._proxy_thread = start_proxy_for_service(
+        return start_proxy_for_service(
             "elasticsearch",
             self.port,
-            self._cluster_port,
+            self.cluster_port,
             update_listener=None,
             quiet=True,
             params={"protocol_version": "HTTP/1.0"},
         )
 
-        self._running.set()
-
-        return self._proxy_thread.join()
-
     def do_shutdown(self):
-        if not self._proxy_thread:
-            self._running.wait()
-
-        self._cluster.shutdown()
-        self._proxy_thread.stop()
+        self.cluster.shutdown()
 
 
 def get_elasticsearch_health_status(url: str) -> Optional[str]:
