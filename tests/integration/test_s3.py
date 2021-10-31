@@ -513,40 +513,45 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_presigned_url_expired(self):
-        bucket_name = "test-bucket-%s" % short_uid()
-        client = self._get_test_client()
-        client.create_bucket(Bucket=bucket_name)
+        skip_before = config.S3_SKIP_SIGNATURE_VALIDATION
+        config.S3_SKIP_SIGNATURE_VALIDATION = False
+        try:
+            bucket_name = "test-bucket-%s" % short_uid()
+            client = self._get_test_client()
+            client.create_bucket(Bucket=bucket_name)
 
-        # put object and CORS configuration
-        object_key = "key-by-hostname"
-        client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
+            # put object and CORS configuration
+            object_key = "key-by-hostname"
+            client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
 
-        # get object and assert headers
-        url = client.generate_presigned_url(
-            "get_object", Params={"Bucket": bucket_name, "Key": object_key}, ExpiresIn=2
-        )
-        # retrieving it before expiry
-        resp = requests.get(url, verify=False)
-        self.assertEqual(200, resp.status_code)
-        self.assertEqual("something", to_str(resp.content))
+            # get object and assert headers
+            url = client.generate_presigned_url(
+                "get_object", Params={"Bucket": bucket_name, "Key": object_key}, ExpiresIn=2
+            )
+            # retrieving it before expiry
+            resp = requests.get(url, verify=False)
+            self.assertEqual(200, resp.status_code)
+            self.assertEqual("something", to_str(resp.content))
 
-        # waiting for the url to expire
-        time.sleep(3)
-        resp = requests.get(url, verify=False)
-        self.assertEqual(resp.status_code, 403)
+            # waiting for the url to expire
+            time.sleep(3)
+            resp = requests.get(url, verify=False)
+            self.assertEqual(resp.status_code, 403)
 
-        url = client.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": bucket_name, "Key": object_key},
-            ExpiresIn=120,
-        )
+            url = client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": bucket_name, "Key": object_key},
+                ExpiresIn=120,
+            )
 
-        resp = requests.get(url, verify=False)
-        self.assertEqual(200, resp.status_code)
-        self.assertEqual("something", to_str(resp.content))
+            resp = requests.get(url, verify=False)
+            self.assertEqual(200, resp.status_code)
+            self.assertEqual("something", to_str(resp.content))
 
-        # clean up
-        self._delete_bucket(bucket_name, [object_key])
+            # clean up
+            self._delete_bucket(bucket_name, [object_key])
+        finally:
+            config.S3_SKIP_SIGNATURE_VALIDATION = skip_before
 
     def test_bucket_availability(self):
         bucket_name = "test-bucket-lifecycle"
