@@ -1,6 +1,6 @@
 import os
 
-from localstack.services.awslambda.lambda_api import LAMBDA_POLICY_NAME_PATTERN
+from localstack.services.awslambda.lambda_api import get_lambda_policy_name
 from localstack.services.awslambda.lambda_utils import get_handler_file_from_name
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
@@ -222,7 +222,7 @@ class LambdaPermission(GenericBaseModel):
     def do_fetch_state(self, resource_name, resource_arn):
         iam = aws_stack.connect_to_service("iam")
         props = self.props
-        policy_name = LAMBDA_POLICY_NAME_PATTERN % resource_name
+        policy_name = get_lambda_policy_name(resource_name)
         policy_arn = aws_stack.policy_arn(policy_name)
         policy = iam.get_policy(PolicyArn=policy_arn)["Policy"]
         version = policy.get("DefaultVersionId")

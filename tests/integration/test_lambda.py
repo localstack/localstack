@@ -25,6 +25,7 @@ from localstack.services.awslambda.lambda_api import (
     BATCH_SIZE_RANGES,
     INVALID_PARAMETER_VALUE_EXCEPTION,
     LAMBDA_DEFAULT_HANDLER,
+    get_lambda_policy_name,
     use_docker,
 )
 from localstack.services.awslambda.lambda_utils import (
@@ -477,6 +478,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
         )
         self.assertIn("Statement", resp)
+
         # fetch lambda policy
         policy = lambda_client.get_policy(FunctionName=function_name)["Policy"]
         self.assertIsInstance(policy, str)
@@ -489,9 +491,11 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             aws_stack.s3_bucket_arn("test-bucket"),
             policy["Statement"][0]["Condition"]["ArnLike"]["AWS:SourceArn"],
         )
+
         # fetch IAM policy
         policies = iam_client.list_policies(Scope="Local", MaxItems=500)["Policies"]
-        matching = [p for p in policies if p["PolicyName"] == "lambda_policy_%s" % function_name]
+        policy_name = get_lambda_policy_name(function_name)
+        matching = [p for p in policies if p["PolicyName"] == policy_name]
         self.assertEqual(len(matching), 1)
         self.assertIn(":policy/", matching[0]["Arn"])
 
@@ -577,7 +581,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # fetch IAM policy
         policies = iam_client.list_policies(Scope="Local", MaxItems=500)["Policies"]
-        matching = [p for p in policies if p["PolicyName"] == "lambda_policy_%s" % function_name]
+        policy_name = get_lambda_policy_name(function_name)
+        matching = [p for p in policies if p["PolicyName"] == policy_name]
         self.assertEqual(1, len(matching))
         self.assertIn(":policy/", matching[0]["Arn"])
 
