@@ -494,7 +494,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # fetch IAM policy
         policies = iam_client.list_policies(Scope="Local", MaxItems=500)["Policies"]
-        policy_name = _get_lambda_policy_name(function_name)
+        policy_name = get_lambda_policy_name(function_name)
         matching = [p for p in policies if p["PolicyName"] == policy_name]
         self.assertEqual(len(matching), 1)
         self.assertIn(":policy/", matching[0]["Arn"])
