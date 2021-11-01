@@ -1277,7 +1277,9 @@ def get_lambda_policy(function, qualifier=None):
         docs.append(doc)
 
     # find policy by name
-    policy_name = _get_lambda_policy_name(aws_stack.lambda_function_name(function), qualifier=qualifier)
+    policy_name = _get_lambda_policy_name(
+        aws_stack.lambda_function_name(function), qualifier=qualifier
+    )
     policy = [d for d in docs if d["PolicyName"] == policy_name]
     if policy:
         return policy[0]
