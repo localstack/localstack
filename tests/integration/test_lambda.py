@@ -25,7 +25,7 @@ from localstack.services.awslambda.lambda_api import (
     BATCH_SIZE_RANGES,
     INVALID_PARAMETER_VALUE_EXCEPTION,
     LAMBDA_DEFAULT_HANDLER,
-    _get_lambda_policy_name,
+    get_lambda_policy_name,
     use_docker,
 )
 from localstack.services.awslambda.lambda_utils import (
@@ -581,7 +581,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # fetch IAM policy
         policies = iam_client.list_policies(Scope="Local", MaxItems=500)["Policies"]
-        policy_name = _get_lambda_policy_name(function_name)
+        policy_name = get_lambda_policy_name(function_name)
         matching = [p for p in policies if p["PolicyName"] == policy_name]
         self.assertEqual(1, len(matching))
         self.assertIn(":policy/", matching[0]["Arn"])
