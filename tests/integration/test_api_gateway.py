@@ -431,6 +431,7 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual("HTTP/1.1", request_context["protocol"])
         self.assertIn("requestTimeEpoch", request_context)
         self.assertIn("requestTime", request_context)
+        self.assertIn("requestId", request_context)
 
         # assert that header keys are lowercase (as in AWS)
         headers = parsed_body.get("headers") or {}

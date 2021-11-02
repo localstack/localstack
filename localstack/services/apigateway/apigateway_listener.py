@@ -57,7 +57,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.common import camel_to_snake_case, json_safe, to_bytes, to_str
+from localstack.utils.common import camel_to_snake_case, json_safe, long_uid, to_bytes, to_str
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -768,6 +768,7 @@ def get_lambda_event_request_context(
         "accountId": account_id,
         "resourceId": resource_id,
         "stage": stage,
+        "requestId": long_uid(),
         "identity": {
             "accountId": account_id,
             "sourceIp": source_ip,
