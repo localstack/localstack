@@ -46,7 +46,6 @@ from localstack.utils.common import (
     is_base64,
     md5,
     not_none_or,
-    region_from_arn,
     short_uid,
     timestamp_millis,
     to_bytes,
@@ -281,7 +280,7 @@ def send_notification_for_subscriber(
     message = json.dumps(message)
 
     if notif.get("Queue"):
-        region = region_from_arn(notif["Queue"])
+        region = aws_stack.extract_region_from_arn(notif["Queue"])
         sqs_client = aws_stack.connect_to_service("sqs", region_name=region)
         try:
             queue_url = aws_stack.sqs_queue_url_for_arn(notif["Queue"])
@@ -296,7 +295,7 @@ def send_notification_for_subscriber(
                 % (bucket_name, notif["Queue"], e)
             )
     if notif.get("Topic"):
-        region = region_from_arn(notif["Topic"])
+        region = aws_stack.extract_region_from_arn(notif["Topic"])
         sns_client = aws_stack.connect_to_service("sns", region_name=region)
         try:
             sns_client.publish(
@@ -313,7 +312,7 @@ def send_notification_for_subscriber(
     lambda_function_config = notif.get("CloudFunction") or notif.get("LambdaFunction")
     if lambda_function_config:
         # make sure we don't run into a socket timeout
-        region = region_from_arn(lambda_function_config)
+        region = aws_stack.extract_region_from_arn(lambda_function_config)
         connection_config = botocore.config.Config(read_timeout=300)
         lambda_client = aws_stack.connect_to_service(
             "lambda", config=connection_config, region_name=region
