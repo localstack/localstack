@@ -1,6 +1,6 @@
 import functools
 import sys
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, NamedTuple, Optional, Type
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -59,12 +59,31 @@ class HttpResponse(TypedDict):
     status_code: int
 
 
+class ServiceOperation(NamedTuple):
+    service: str
+    operation: str
+
+
 class RequestContext:
     service: ServiceModel
     operation: OperationModel
     region: str
     account_id: str
     request: HttpRequest
+    service_request: ServiceRequest
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = None
+        self.operation = None
+        self.region = None
+        self.account_id = None
+        self.request = None
+        self.service_request = None
+
+    @property
+    def service_operation(self) -> ServiceOperation:
+        return ServiceOperation(self.service.service_name, self.operation.name)
 
 
 ServiceRequestHandler = Callable[[RequestContext, ServiceRequest], Optional[ServiceResponse]]
