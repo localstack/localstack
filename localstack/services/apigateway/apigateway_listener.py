@@ -33,6 +33,8 @@ from localstack.services.apigateway.helpers import (
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
+    get_gateway_response,
+    get_gateway_responses,
     get_resource_for_path,
     handle_accounts,
     handle_authorizers,
@@ -40,10 +42,10 @@ from localstack.services.apigateway.helpers import (
     handle_client_certificates,
     handle_documentation_parts,
     handle_gateway_responses,
-    handle_test_invoke_api,
     handle_validators,
     handle_vpc_links,
     make_error_response,
+    put_gateway_response,
 )
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -106,9 +108,26 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
 
-        if re.match(PATH_REGEX_TEST_INVOKE_API, path) and method == "POST":
-            return handle_test_invoke_api(method, path, data, headers)
+        if is_test_invoke_method(path) and method == "POST":
+            kwargs = {}
 
+            # if call is from test_invoke_api then use http_method to find the integration,
+            # as test_invoke_api make POST call to interect
+            match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
+            method = match[3]
+            if data:
+                orig_data = data
+                path_with_query_string = orig_data.get("pathWithQueryString", None)
+                data = data.get("body", None)
+                headers = orig_data.get("headers", {})
+                kwargs = (
+                    {"path_with_query_string": path_with_query_string}
+                    if path_with_query_string
+                    else {}
+                )
+            return invoke_rest_api_from_request(
+                method=method, path=path, data=data, headers=headers, **kwargs
+            )
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -484,8 +503,9 @@ def invoke_rest_api_integration_backend(
                 resource_path=resource_path,
                 auth_info=auth_info,
             )
-            stage_variables = get_stage_variables(api_id, stage)
-
+            stage_variables = (
+                get_stage_variables(api_id, stage) if not is_test_invoke_method(path) else None
+            )
             result = lambda_api.process_apigateway_invocation(
                 func_arn,
                 relative_path,
@@ -795,7 +815,7 @@ def get_lambda_event_request_context(
     }
     if isinstance(auth_info, dict) and auth_info.get("context"):
         request_context["authorizer"] = auth_info["context"]
-    if not re.match(PATH_REGEX_TEST_INVOKE_API, path):
+    if not is_test_invoke_method(path):
         _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
         relative_path, query_string_params = extract_query_string_params(
             path=relative_path_w_query_params
@@ -826,6 +846,10 @@ def apply_request_response_templates(
         update_content_length(data)
         return data
     return result
+
+
+def is_test_invoke_method(path):
+    return bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
 
 
 # instantiate listener

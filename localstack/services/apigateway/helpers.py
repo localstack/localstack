@@ -803,6 +803,8 @@ def handle_gateway_responses(method, path, data, headers):
 
 
 def handle_test_invoke_api(method, path, data, headers):
+    from localstack.services.apigateway.apigateway_listener import invoke_rest_api_from_request
+
     kwargs = {}
     # if call is from test_invoke_api then use http_method to find the integration,
     # as test_invoke_api make POST call to interect
@@ -924,9 +926,6 @@ def extract_query_string_params(path):
             query_string_params[query_param_name] = query_param_values[0]
         else:
             query_string_params[query_param_name] = query_param_values
-
-    if path.endswith("None") and len(path.split("None")) > 0:
-        path = path.split("None")[0]
 
     # strip trailing slashes from path to fix downstream lookups
     path = path.rstrip("/") or "/"
