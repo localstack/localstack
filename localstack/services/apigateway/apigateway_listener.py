@@ -125,9 +125,15 @@ class ProxyListenerApiGateway(ProxyListener):
                     if path_with_query_string
                     else {}
                 )
-            return invoke_rest_api_from_request(
+            result = invoke_rest_api_from_request(
                 method=method, path=path, data=data, headers=headers, **kwargs
             )
+            result = {
+                "status": result.status_code,
+                "body": to_str(result.content),
+                "headers": dict(result.headers),
+            }
+            return result
         return True
 
     def return_response(self, method, path, data, headers, response):

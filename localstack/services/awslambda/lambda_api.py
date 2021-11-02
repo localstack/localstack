@@ -812,6 +812,7 @@ def run_lambda(
             callback=callback,
             lock_discriminator=lock_discriminator,
         )
+        return result
 
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -831,7 +832,6 @@ def run_lambda(
         if suppress_output:
             sys.stdout = stdout_
             sys.stderr = stderr_
-    return result
 
 
 def load_source(name, file):
