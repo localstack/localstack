@@ -23,11 +23,20 @@ class TestResourceGraph:
         assert isinstance(graph["edges"], list), "type of edges is %s" % type(graph["edges"])
         assert isinstance(graph["nodes"], list), "type of nodes is %s" % type(graph["nodes"])
 
-    def test_s3_notification_edges(self, s3_client, s3_bucket, sqs_create_queue, sns_topic):
+    def test_s3_notification_edges(
+        self, s3_client, s3_bucket, sqs_client, sqs_create_queue, sns_topic
+    ):
         # TODO: add LambdaFunctionConfigurations
 
-        sqs_queue_1 = sqs_create_queue()
-        sqs_queue_2 = sqs_create_queue()
+        sqs_queue_url_1 = sqs_create_queue()
+        sqs_queue_url_2 = sqs_create_queue()
+
+        sqs_queue_1 = sqs_client.get_queue_attributes(
+            QueueUrl=sqs_queue_url_1, AttributeNames=["All"]
+        )
+        sqs_queue_2 = sqs_client.get_queue_attributes(
+            QueueUrl=sqs_queue_url_2, AttributeNames=["All"]
+        )
 
         queue_arn_1 = sqs_queue_1["Attributes"]["QueueArn"]
         queue_arn_2 = sqs_queue_2["Attributes"]["QueueArn"]
