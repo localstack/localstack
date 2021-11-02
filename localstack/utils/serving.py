@@ -178,7 +178,7 @@ class Server(abc.ABC):
 
         :raises StopServer: can be raised by the subclass to indicate the server should be stopped.
         """
-        raise NotImplementedError
+        pass
 
     def do_shutdown(self):
         """
