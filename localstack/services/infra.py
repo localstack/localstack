@@ -9,12 +9,13 @@ import traceback
 from typing import Dict, List, Union
 
 import boto3
+from localstack_client.config import get_service_port
 from moto import core as moto_core
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
 from localstack.services import generic_proxy, install, motoserver
-from localstack.services.generic_proxy import start_proxy_server
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
 from localstack.utils import analytics, common, config_listener, persistence
 from localstack.utils.analytics import event_publisher
@@ -248,6 +249,10 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
         constants.BIND_HOST,
     )
     return MotoServerProperties(do_run(cmd, asynchronous), server_port)
+
+
+def add_service_proxy_listener(api: str, listener: ProxyListener, port=None):
+    PROXY_LISTENERS[api] = (api, port or get_service_port(api), listener)
 
 
 def start_local_api(name, port, api, method, asynchronous=False):
