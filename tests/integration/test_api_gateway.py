@@ -28,7 +28,10 @@ from localstack.services.apigateway.helpers import (
     get_rest_api_paths,
 )
 from localstack.services.awslambda.lambda_api import add_event_source
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_NODEJS12X,
+    LAMBDA_RUNTIME_PYTHON36,
+)
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
@@ -43,7 +46,7 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, "files", "swagger.json")
 TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
-
+TEST_LAMBDA_HANDLER_JS = os.path.join(THIS_FOLDER, "lambdas", "lambda_handler.js")
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",
@@ -1449,6 +1452,71 @@ class TestAPIGateway(unittest.TestCase):
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=fn_name
         )
+
+    def test_apigw_test_invoke_method_api(self):
+        client = aws_stack.connect_to_service("apigateway")
+        lambda_client = aws_stack.connect_to_service("lambda")
+
+        # create test Lambda
+        fn_name = f"test-{short_uid()}"
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_HANDLER_JS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
+        )
+        lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
+
+        # create REST API and test resource
+        rest_api = client.create_rest_api(name="test", description="test")
+        root_resource = client.get_resources(restApiId=rest_api["id"])
+        resource = client.create_resource(
+            restApiId=rest_api["id"], parentId=root_resource["items"][0]["id"], pathPart="foo"
+        )
+
+        # create method and integration
+        client.put_method(
+            restApiId=rest_api["id"],
+            resourceId=resource["id"],
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        client.put_integration(
+            restApiId=rest_api["id"],
+            resourceId=resource["id"],
+            httpMethod="GET",
+            integrationHttpMethod="GET",
+            type="AWS",
+            uri="arn:aws:apigateway:{}:lambda:path//2015-03-31/functions/{}/invocations".format(
+                aws_stack.get_region(), lambda_arn_1
+            ),
+        )
+
+        # run test_invoke_method API #1
+        response = client.test_invoke_method(
+            restApiId=rest_api["id"],
+            resourceId=resource["id"],
+            httpMethod="GET",
+            pathWithQueryString="/foo",
+        )
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(200, response.get("status"))
+        self.assertIn("response from", response.get("body"))
+
+        # run test_invoke_method API #2
+        response = client.test_invoke_method(
+            restApiId=rest_api["id"],
+            resourceId=resource["id"],
+            httpMethod="GET",
+            pathWithQueryString="/foo",
+            body='{"test": "val123"}',
+            headers={"content-type": "application/json"},
+        )
+        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(200, response.get("status"))
+        self.assertIn("response from", response.get("body"))
+        self.assertIn("val123", response.get("body"))
+
+        # Clean up
+        lambda_client.delete_function(FunctionName=fn_name)
+        client.delete_rest_api(restApiId=rest_api["id"])
 
     @staticmethod
     def start_http_backend(test_port):

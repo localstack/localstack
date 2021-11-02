@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import time
-from typing import Dict, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
 import requests
 from flask import Response as FlaskResponse
@@ -28,6 +28,7 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_DOC_PARTS,
     PATH_REGEX_PATH_MAPPINGS,
     PATH_REGEX_RESPONSES,
+    PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_VALIDATORS,
     extract_path_params,
     extract_query_string_params,
@@ -76,6 +77,9 @@ HOST_REGEX_EXECUTE_API = (
     % LOCALHOST_HOSTNAME
 )
 
+# type definition for data parameters (i.e., invocation payloads)
+InvocationPayload = Union[Dict, str, bytes]
+
 
 class AuthorizationError(Exception):
     pass
@@ -104,6 +108,32 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
 
+        if is_test_invoke_method(path) and method == "POST":
+            kwargs = {}
+
+            # if call is from test_invoke_api then use http_method to find the integration,
+            # as test_invoke_api make POST call to interect
+            match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
+            method = match[3]
+            if data:
+                orig_data = data
+                path_with_query_string = orig_data.get("pathWithQueryString", None)
+                data = data.get("body", None)
+                headers = orig_data.get("headers", {})
+                kwargs = (
+                    {"path_with_query_string": path_with_query_string}
+                    if path_with_query_string
+                    else {}
+                )
+            result = invoke_rest_api_from_request(
+                method=method, path=path, data=data, headers=headers, **kwargs
+            )
+            result = {
+                "status": result.status_code,
+                "body": to_str(result.content),
+                "headers": dict(result.headers),
+            }
+            return result
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -162,14 +192,14 @@ def run_authorizer(api_id, headers, authorizer):
     pass
 
 
-def authorize_invocation(api_id, headers):
+def authorize_invocation(api_id: str, headers: Dict[str, str]):
     client = aws_stack.connect_to_service("apigateway")
     authorizers = client.get_authorizers(restApiId=api_id, limit=100).get("items", [])
     for authorizer in authorizers:
         run_authorizer(api_id, headers, authorizer)
 
 
-def validate_api_key(api_key, stage):
+def validate_api_key(api_key: str, stage: str):
 
     usage_plan_ids = []
 
@@ -190,7 +220,7 @@ def validate_api_key(api_key, stage):
     return False
 
 
-def is_api_key_valid(is_api_key_required, headers, stage):
+def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: str):
     if not is_api_key_required:
         return True
 
@@ -201,12 +231,12 @@ def is_api_key_valid(is_api_key_required, headers, stage):
     return validate_api_key(api_key, stage)
 
 
-def update_content_length(response):
+def update_content_length(response: Response):
     if response and response.content is not None:
         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_request_parameter(integration, path_params):
+def apply_request_parameter(integration: Dict[str, Any], path_params: Dict[str, str]):
     request_parameters = integration.get("requestParameters", None)
     uri = integration.get("uri") or integration.get("integrationUri") or ""
     if request_parameters:
@@ -220,7 +250,13 @@ def apply_request_parameter(integration, path_params):
 
 
 def apply_template(
-    integration, req_res_type, data, path_params={}, query_params={}, headers={}, context={}
+    integration: Dict[str, Any],
+    req_res_type: str,
+    data: InvocationPayload,
+    path_params={},
+    query_params={},
+    headers={},
+    context={},
 ):
     integration_type = integration.get("type") or integration.get("integrationType")
     if integration_type in ["HTTP", "AWS"]:
@@ -246,7 +282,7 @@ def apply_template(
     return data
 
 
-def apply_response_parameters(response, integration, api_id=None):
+def apply_response_parameters(response: Response, integration: Dict[str, Any], api_id=None):
     int_responses = integration.get("integrationResponses") or {}
     if not int_responses:
         return response
@@ -270,6 +306,7 @@ def get_api_id_stage_invocation_path(path: str, headers: Dict[str, str]) -> Tupl
     path_match = re.search(PATH_REGEX_USER_REQUEST, path)
     host_header = headers.get(HEADER_LOCALSTACK_EDGE_URL, "") or headers.get("Host") or ""
     host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
+    test_invoke_match = re.search(PATH_REGEX_TEST_INVOKE_API, path)
     if path_match:
         api_id = path_match.group(1)
         stage = path_match.group(2)
@@ -278,6 +315,10 @@ def get_api_id_stage_invocation_path(path: str, headers: Dict[str, str]) -> Tupl
         api_id = extract_api_id_from_hostname_in_url(host_header)
         stage = path.strip("/").split("/")[0]
         relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
+    elif test_invoke_match:
+        api_id = test_invoke_match.group(1)
+        stage = None
+        relative_path_w_query_params = "/%s" % test_invoke_match.group(4)
     else:
         raise Exception(f"Unable to extract API Gateway details from request: {path} {headers}")
     if api_id:
@@ -296,8 +337,19 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     return api_id
 
 
-def invoke_rest_api_from_request(method, path, data, headers, context={}, auth_info={}, **kwargs):
+def invoke_rest_api_from_request(
+    method: str,
+    path: str,
+    data: InvocationPayload,
+    headers,
+    context={},
+    auth_info={},
+    path_with_query_string=None,  # TODO: look into overwriting path_with_query_string via new RequestContext class
+    **kwargs,
+):
     api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
+    if path_with_query_string:
+        relative_path_w_query_params = path_with_query_string
     try:
         return invoke_rest_api(
             api_id,
@@ -314,8 +366,17 @@ def invoke_rest_api_from_request(method, path, data, headers, context={}, auth_i
         return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
 
 
+# TODO: replace list of parameters below with a proper API GW RequestContext class!
 def invoke_rest_api(
-    api_id, stage, method, invocation_path, data, headers, path=None, context={}, auth_info={}
+    api_id: str,
+    stage: str,
+    method: str,
+    invocation_path: str,
+    data: InvocationPayload,
+    headers: Dict[str, str],
+    path: str = None,
+    context={},
+    auth_info={},
 ):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
@@ -470,8 +531,9 @@ def invoke_rest_api_integration_backend(
                 resource_path=resource_path,
                 auth_info=auth_info,
             )
-            stage_variables = get_stage_variables(api_id, stage)
-
+            stage_variables = (
+                get_stage_variables(api_id, stage) if not is_test_invoke_method(path) else None
+            )
             result = lambda_api.process_apigateway_invocation(
                 func_arn,
                 relative_path,
@@ -758,16 +820,12 @@ def get_lambda_event_request_context(
     account_id = account_id or TEST_AWS_ACCOUNT_ID
     domain_name = f"{api_id}.execute-api.{LOCALHOST_HOSTNAME}"
     request_context = {
-        # adding stage to the request context path.
-        # https://github.com/localstack/localstack/issues/2210
-        "path": "/" + stage + relative_path,
         "resourcePath": resource_path or relative_path,
         "apiId": api_id,
         "domainPrefix": api_id,
         "domainName": domain_name,
         "accountId": account_id,
         "resourceId": resource_id,
-        "stage": stage,
         "requestId": long_uid(),
         "identity": {
             "accountId": account_id,
@@ -781,6 +839,9 @@ def get_lambda_event_request_context(
     }
     if isinstance(auth_info, dict) and auth_info.get("context"):
         request_context["authorizer"] = auth_info["context"]
+    if not is_test_invoke_method(path):
+        request_context["path"] = "/" + stage + relative_path
+        request_context["stage"] = stage
     return request_context
 
 
@@ -805,6 +866,10 @@ def apply_request_response_templates(
         update_content_length(data)
         return data
     return result
+
+
+def is_test_invoke_method(path):
+    return bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
 
 
 # instantiate listener

@@ -565,7 +565,8 @@ def process_apigateway_invocation(
         event["pathParameters"] = path_params
         event["resource"] = resource_path
         event["requestContext"] = request_context
-        event["stageVariables"] = stage_variables
+        if stage_variables:
+            event["stageVariables"] = stage_variables
         LOG.debug(
             "Running Lambda function %s from API Gateway invocation: %s %s"
             % (func_arn, method or "GET", path)
@@ -811,6 +812,7 @@ def run_lambda(
             callback=callback,
             lock_discriminator=lock_discriminator,
         )
+        return result
 
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -830,7 +832,6 @@ def run_lambda(
         if suppress_output:
             sys.stdout = stdout_
             sys.stderr = stderr_
-    return result
 
 
 def load_source(name, file):
@@ -1212,9 +1213,8 @@ def format_func_details(
 
     if lambda_function.envvars:
         result["Environment"] = {"Variables": lambda_function.envvars}
-    if (always_add_version or version != VERSION_LATEST) and len(
-        result["FunctionArn"].split(":")
-    ) <= 7:
+    arn_parts = result["FunctionArn"].split(":")
+    if (always_add_version or version != VERSION_LATEST) and len(arn_parts) <= 7:
         result["FunctionArn"] += ":%s" % version
     return result
 

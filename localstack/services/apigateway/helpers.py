@@ -32,6 +32,7 @@ PATH_REGEX_DOC_PARTS = r"^/restapis/([A-Za-z0-9_\-]+)/documentation/parts/?([^?/
 PATH_REGEX_PATH_MAPPINGS = r"/domainnames/([^/]+)/basepathmappings/?(.*)"
 PATH_REGEX_CLIENT_CERTS = r"/clientcertificates/?([^/]+)?$"
 PATH_REGEX_VPC_LINKS = r"/vpclinks/([^/]+)?(.*)"
+PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
@@ -798,6 +799,27 @@ def handle_gateway_responses(method, path, data, headers):
         return delete_gateway_response(api_id, response_type)
     return make_error_response(
         "Not implemented for API Gateway gateway responses: %s" % method, code=404
+    )
+
+
+def handle_test_invoke_api(method, path, data, headers):
+    from localstack.services.apigateway.apigateway_listener import invoke_rest_api_from_request
+
+    kwargs = {}
+    # if call is from test_invoke_api then use http_method to find the integration,
+    # as test_invoke_api make POST call to interect
+    match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
+    method = match[3]
+    if data:
+        orig_data = data
+        path_with_query_string = orig_data.get("pathWithQueryString", None)
+        data = data.get("body", None)
+        headers = orig_data.get("headers", {})
+        kwargs = (
+            {"path_with_query_string": path_with_query_string} if path_with_query_string else {}
+        )
+    return invoke_rest_api_from_request(
+        method=method, path=path, data=data, headers=headers, **kwargs
     )
 
 
