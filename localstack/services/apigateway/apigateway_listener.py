@@ -33,8 +33,6 @@ from localstack.services.apigateway.helpers import (
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
-    get_gateway_response,
-    get_gateway_responses,
     get_resource_for_path,
     handle_accounts,
     handle_authorizers,
@@ -45,7 +43,6 @@ from localstack.services.apigateway.helpers import (
     handle_validators,
     handle_vpc_links,
     make_error_response,
-    put_gateway_response,
 )
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -792,16 +789,12 @@ def get_lambda_event_request_context(
     account_id = account_id or TEST_AWS_ACCOUNT_ID
     domain_name = f"{api_id}.execute-api.{LOCALHOST_HOSTNAME}"
     request_context = {
-        # adding stage to the request context path.
-        # https://github.com/localstack/localstack/issues/2210
-        "path": "/" + stage + relative_path,
         "resourcePath": resource_path or relative_path,
         "apiId": api_id,
         "domainPrefix": api_id,
         "domainName": domain_name,
         "accountId": account_id,
         "resourceId": resource_id,
-        "stage": stage,
         "requestId": long_uid(),
         "identity": {
             "accountId": account_id,
@@ -816,10 +809,6 @@ def get_lambda_event_request_context(
     if isinstance(auth_info, dict) and auth_info.get("context"):
         request_context["authorizer"] = auth_info["context"]
     if not is_test_invoke_method(path):
-        _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
-        relative_path, query_string_params = extract_query_string_params(
-            path=relative_path_w_query_params
-        )
         request_context["path"] = "/" + stage + relative_path
         request_context["stage"] = stage
     return request_context

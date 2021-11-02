@@ -565,7 +565,7 @@ def process_apigateway_invocation(
         event["pathParameters"] = path_params
         event["resource"] = resource_path
         event["requestContext"] = request_context
-        if stage:
+        if stage_variables:
             event["stageVariables"] = stage_variables
         LOG.debug(
             "Running Lambda function %s from API Gateway invocation: %s %s"
@@ -1213,9 +1213,8 @@ def format_func_details(
 
     if lambda_function.envvars:
         result["Environment"] = {"Variables": lambda_function.envvars}
-    if (always_add_version or version != VERSION_LATEST) and len(
-        result["FunctionArn"].split(":")
-    ) <= 7:
+    arn_parts = result["FunctionArn"].split(":")
+    if (always_add_version or version != VERSION_LATEST) and len(arn_parts) <= 7:
         result["FunctionArn"] += ":%s" % version
     return result
 
