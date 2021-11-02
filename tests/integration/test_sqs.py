@@ -5,6 +5,7 @@ import random
 import time
 import unittest
 
+import pytest
 import requests
 from botocore.auth import SIGV4_TIMESTAMP, SigV4Auth
 from botocore.awsrequest import AWSRequest
@@ -1103,3 +1104,274 @@ class SQSTest(unittest.TestCase):
             QueueUrl=queue_url, MessageAttributeNames=["All"]
         )
         self.assertEqual(messages_all_attributes.get("Messages")[0]["MessageAttributes"], attrs)
+
+
+class TestSqsProvider:
+    def test_list_queues(self, sqs_client, sqs_create_queue):
+        queue_names = [
+            "a-test-queue-" + short_uid(),
+            "a-test-queue-" + short_uid(),
+            "b-test-queue-" + short_uid(),
+        ]
+
+        # create three queues with prefixes and collect their urls
+        queue_urls = []
+        for name in queue_names:
+            sqs_create_queue(QueueName=name)
+            queue_url = sqs_client.get_queue_url(QueueName=name)["QueueUrl"]
+            assert queue_url.endswith(name)
+            queue_urls.append(queue_url)
+
+        # list queues with first prefix
+        result = sqs_client.list_queues(QueueNamePrefix="a-test-queue-")
+        assert "QueueUrls" in result
+        assert len(result["QueueUrls"]) == 2
+        assert queue_urls[0] in result["QueueUrls"]
+        assert queue_urls[1] in result["QueueUrls"]
+        assert queue_urls[2] not in result["QueueUrls"]
+
+        # list queues with second prefix
+        result = sqs_client.list_queues(QueueNamePrefix="b-test-queue-")
+        assert "QueueUrls" in result
+        assert len(result["QueueUrls"]) == 1
+        assert queue_urls[0] not in result["QueueUrls"]
+        assert queue_urls[1] not in result["QueueUrls"]
+        assert queue_urls[2] in result["QueueUrls"]
+
+    def test_create_queue_and_get_attributes(self, sqs_client, sqs_queue):
+        result = sqs_client.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["QueueArn", "CreatedTimestamp", "VisibilityTimeout"]
+        )
+        assert "Attributes" in result
+
+        attrs = result["Attributes"]
+        assert len(attrs) == 3
+        assert "test-queue-" in attrs["QueueArn"]
+        assert int(float(attrs["CreatedTimestamp"])) == pytest.approx(int(time.time()), 30)
+        assert int(attrs["VisibilityTimeout"]) == 30, "visibility timeout is not the default value"
+
+    def test_send_receive_message(self, sqs_client, sqs_queue):
+        send_result = sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message")
+
+        assert send_result["MessageId"]
+        assert send_result["MD5OfMessageBody"] == "78e731027d8fd50ed642340b7c9a63b3"
+        # TODO: other attributes
+
+        receive_result = sqs_client.receive_message(QueueUrl=sqs_queue)
+
+        assert len(receive_result["Messages"]) == 1
+        message = receive_result["Messages"][0]
+
+        assert message["ReceiptHandle"]
+        assert message["Body"] == "message"
+        assert message["MessageId"] == send_result["MessageId"]
+        assert message["MD5OfBody"] == send_result["MD5OfMessageBody"]
+
+    def test_send_receive_message_multiple_queues(self, sqs_client, sqs_create_queue):
+        queue0 = sqs_create_queue()
+        queue1 = sqs_create_queue()
+
+        sqs_client.send_message(QueueUrl=queue0, MessageBody="message")
+
+        result = sqs_client.receive_message(QueueUrl=queue1)
+        assert "Messages" not in result
+
+        result = sqs_client.receive_message(QueueUrl=queue0)
+        assert len(result["Messages"]) == 1
+        assert result["Messages"][0]["Body"] == "message"
+
+    def test_send_message_batch(self, sqs_client, sqs_queue):
+        sqs_client.send_message_batch(
+            QueueUrl=sqs_queue,
+            Entries=[
+                {"Id": "1", "MessageBody": "message-0"},
+                {"Id": "2", "MessageBody": "message-1"},
+            ],
+        )
+
+        response0 = sqs_client.receive_message(QueueUrl=sqs_queue)
+        response1 = sqs_client.receive_message(QueueUrl=sqs_queue)
+        response2 = sqs_client.receive_message(QueueUrl=sqs_queue)
+
+        assert len(response0.get("Messages", [])) == 1
+        assert len(response1.get("Messages", [])) == 1
+        assert len(response2.get("Messages", [])) == 0
+
+        message0 = response0["Messages"][0]
+        message1 = response1["Messages"][0]
+
+        assert message0["Body"] == "message-0"
+        assert message1["Body"] == "message-1"
+
+    def test_send_batch_receive_multiple(self, sqs_client, sqs_queue):
+        # send a batch, then a single message, receive them a
+        sqs_client.send_message_batch(
+            QueueUrl=sqs_queue,
+            Entries=[
+                {"Id": "1", "MessageBody": "message-0"},
+                {"Id": "2", "MessageBody": "message-1"},
+            ],
+        )
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message-2")
+
+        response = sqs_client.receive_message(QueueUrl=sqs_queue, MaxNumberOfMessages=3)
+        assert len(response["Messages"]) == 3
+        assert response["Messages"][0]["Body"] == "message-0"
+        assert response["Messages"][1]["Body"] == "message-1"
+        assert response["Messages"][2]["Body"] == "message-2"
+
+    def test_send_message_batch_with_empty_list(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        try:
+            sqs_client.send_message_batch(QueueUrl=queue_url, Entries=[])
+        except ClientError as e:
+            assert "EmptyBatchRequest" in e.response["Error"]["Code"]
+            assert e.response["ResponseMetadata"]["HTTPStatusCode"] in [400, 404]
+
+    def test_tag_untag_queue(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        # tag queue
+        tags = {"tag1": "value1", "tag2": "value2", "tag3": ""}
+        sqs_client.tag_queue(QueueUrl=queue_url, Tags=tags)
+
+        # check queue tags
+        response = sqs_client.list_queue_tags(QueueUrl=queue_url)
+        assert response["Tags"] == tags
+
+        # remove tag1 and tag3
+        sqs_client.untag_queue(QueueUrl=queue_url, TagKeys=["tag1", "tag3"])
+        response = sqs_client.list_queue_tags(QueueUrl=queue_url)
+        assert response["Tags"] == {"tag2": "value2"}
+
+        # remove tag2
+        sqs_client.untag_queue(QueueUrl=queue_url, TagKeys=["tag2"])
+
+        response = sqs_client.list_queue_tags(QueueUrl=queue_url)
+        assert "Tags" not in response
+
+    def test_tags_case_sensitive(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        # tag queue
+        tags = {"MyTag": "value1", "mytag": "value2"}
+        sqs_client.tag_queue(QueueUrl=queue_url, Tags=tags)
+
+        response = sqs_client.list_queue_tags(QueueUrl=queue_url)
+        assert response["Tags"] == tags
+
+    def test_untag_queue_ignores_non_existing_tag(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        # tag queue
+        tags = {"tag1": "value1", "tag2": "value2"}
+        sqs_client.tag_queue(QueueUrl=queue_url, Tags=tags)
+
+        # remove tags
+        sqs_client.untag_queue(QueueUrl=queue_url, TagKeys=["tag1", "tag3"])
+
+        response = sqs_client.list_queue_tags(QueueUrl=queue_url)
+        assert response["Tags"] == {"tag2": "value2"}
+
+    def test_tag_queue_overwrites_existing_tag(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue()
+
+        # tag queue
+        tags = {"tag1": "value1", "tag2": "value2"}
+        sqs_client.tag_queue(QueueUrl=queue_url, Tags=tags)
+
+        # overwrite tags
+        tags = {"tag1": "VALUE1", "tag3": "value3"}
+        sqs_client.tag_queue(QueueUrl=queue_url, Tags=tags)
+
+        response = sqs_client.list_queue_tags(QueueUrl=queue_url)
+        assert response["Tags"] == {"tag1": "VALUE1", "tag2": "value2", "tag3": "value3"}
+
+    def test_create_queue_with_tags(self, sqs_client, sqs_create_queue):
+        tags = {"tag1": "value1", "tag2": "value2"}
+        queue_url = sqs_create_queue(tags=tags)
+
+        response = sqs_client.list_queue_tags(QueueUrl=queue_url)
+        assert response["Tags"] == tags
+
+    def test_create_queue_with_attributes(self, sqs_client, sqs_create_queue):
+        attributes = {
+            "MessageRetentionPeriod": "604800",  # Unsupported by ElasticMq, should be saved in memory
+            "ReceiveMessageWaitTimeSeconds": "10",
+            "VisibilityTimeout": "20",
+        }
+
+        queue_url = sqs_create_queue(Attributes=attributes)
+
+        attrs = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])[
+            "Attributes"
+        ]
+
+        assert attrs["MessageRetentionPeriod"] == "604800"
+        assert attrs["VisibilityTimeout"] == "20"
+        assert attrs["ReceiveMessageWaitTimeSeconds"] == "10"
+
+    def test_send_delay_and_wait_time(self, sqs_client, sqs_queue):
+        sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="foobar", DelaySeconds=1)
+
+        result = sqs_client.receive_message(QueueUrl=sqs_queue)
+        assert "Messages" not in result
+
+        result = sqs_client.receive_message(QueueUrl=sqs_queue, WaitTimeSeconds=2)
+        assert "Messages" in result
+        assert len(result["Messages"]) == 1
+
+    def test_receive_after_visibility_timeout(self, sqs_client, sqs_create_queue):
+        queue_url = sqs_create_queue(Attributes={"VisibilityTimeout": "1"})
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar")
+
+        # receive the message
+        result = sqs_client.receive_message(QueueUrl=queue_url)
+        assert "Messages" in result
+        message_receipt_0 = result["Messages"][0]
+
+        # message should be within the visibility timeout
+        result = sqs_client.receive_message(QueueUrl=queue_url)
+        assert "Messages" not in result
+
+        # visibility timeout should have expired
+        result = sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=2)
+        assert "Messages" in result
+        message_receipt_1 = result["Messages"][0]
+
+        assert (
+            message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"]
+        ), "receipt handles should be different"
+
+    def test_receive_terminate_visibility_timeout(self, sqs_client, sqs_queue):
+        queue_url = sqs_queue
+
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar")
+
+        result = sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)
+        assert "Messages" in result
+        message_receipt_0 = result["Messages"][0]
+
+        result = sqs_client.receive_message(QueueUrl=queue_url)
+        assert "Messages" in result
+        message_receipt_1 = result["Messages"][0]
+
+        assert (
+            message_receipt_0["ReceiptHandle"] != message_receipt_1["ReceiptHandle"]
+        ), "receipt handles should be different"
+
+        # TODO: check if this is correct (whether receive with VisibilityTimeout = 0 is permanent)
+        result = sqs_client.receive_message(QueueUrl=queue_url)
+        assert "Messages" not in result
+
+
+# TODO: test visibility timeout (with various ways to set them: queue attributes, receive parameter, update call)
+# TODO: test message attributes and message system attributes
+# TODO: test message de-duplication id
+
+
+class TestSqsLambdaIntegration:
+    pass
+    # TODO: move tests here
