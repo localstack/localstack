@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import time
-from typing import Dict, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
 import requests
 from flask import Response as FlaskResponse
@@ -76,6 +76,9 @@ HOST_REGEX_EXECUTE_API = (
     r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(%s|([^\.]+)\.amazonaws\.com)(.*)"
     % LOCALHOST_HOSTNAME
 )
+
+# type definition for data parameters (i.e., invocation payloads)
+InvocationPayload = Union[Dict, str, bytes]
 
 
 class AuthorizationError(Exception):
@@ -183,14 +186,14 @@ def run_authorizer(api_id, headers, authorizer):
     pass
 
 
-def authorize_invocation(api_id, headers):
+def authorize_invocation(api_id: str, headers: Dict[str, str]):
     client = aws_stack.connect_to_service("apigateway")
     authorizers = client.get_authorizers(restApiId=api_id, limit=100).get("items", [])
     for authorizer in authorizers:
         run_authorizer(api_id, headers, authorizer)
 
 
-def validate_api_key(api_key, stage):
+def validate_api_key(api_key: str, stage: str):
 
     usage_plan_ids = []
 
@@ -211,7 +214,7 @@ def validate_api_key(api_key, stage):
     return False
 
 
-def is_api_key_valid(is_api_key_required, headers, stage):
+def is_api_key_valid(is_api_key_required: bool, headers: Dict[str, str], stage: str):
     if not is_api_key_required:
         return True
 
@@ -222,12 +225,12 @@ def is_api_key_valid(is_api_key_required, headers, stage):
     return validate_api_key(api_key, stage)
 
 
-def update_content_length(response):
+def update_content_length(response: Response):
     if response and response.content is not None:
         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_request_parameter(integration, path_params):
+def apply_request_parameter(integration: Dict[str, Any], path_params: Dict[str, str]):
     request_parameters = integration.get("requestParameters", None)
     uri = integration.get("uri") or integration.get("integrationUri") or ""
     if request_parameters:
@@ -241,7 +244,13 @@ def apply_request_parameter(integration, path_params):
 
 
 def apply_template(
-    integration, req_res_type, data, path_params={}, query_params={}, headers={}, context={}
+    integration: Dict[str, Any],
+    req_res_type: str,
+    data: InvocationPayload,
+    path_params={},
+    query_params={},
+    headers={},
+    context={},
 ):
     integration_type = integration.get("type") or integration.get("integrationType")
     if integration_type in ["HTTP", "AWS"]:
@@ -267,7 +276,7 @@ def apply_template(
     return data
 
 
-def apply_response_parameters(response, integration, api_id=None):
+def apply_response_parameters(response: Response, integration: Dict[str, Any], api_id=None):
     int_responses = integration.get("integrationResponses") or {}
     if not int_responses:
         return response
@@ -323,7 +332,14 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
 
 
 def invoke_rest_api_from_request(
-    method, path, data, headers, context={}, auth_info={}, path_with_query_string=None, **kwargs
+    method: str,
+    path: str,
+    data: InvocationPayload,
+    headers,
+    context={},
+    auth_info={},
+    path_with_query_string=None,  # TODO: look into overwriting path_with_query_string via new RequestContext class
+    **kwargs,
 ):
     api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
     if path_with_query_string:
@@ -344,8 +360,17 @@ def invoke_rest_api_from_request(
         return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
 
 
+# TODO: replace list of parameters below with a proper API GW RequestContext class!
 def invoke_rest_api(
-    api_id, stage, method, invocation_path, data, headers, path=None, context={}, auth_info={}
+    api_id: str,
+    stage: str,
+    method: str,
+    invocation_path: str,
+    data: InvocationPayload,
+    headers: Dict[str, str],
+    path: str = None,
+    context={},
+    auth_info={},
 ):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)

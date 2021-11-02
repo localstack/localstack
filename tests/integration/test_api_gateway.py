@@ -1482,6 +1482,7 @@ class TestAPIGateway(unittest.TestCase):
             restApiId=rest_api["id"],
             resourceId=resource["id"],
             httpMethod="GET",
+            integrationHttpMethod="GET",
             type="AWS",
             uri="arn:aws:apigateway:{}:lambda:path//2015-03-31/functions/{}/invocations".format(
                 aws_stack.get_region(), lambda_arn_1
