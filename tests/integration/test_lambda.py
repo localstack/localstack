@@ -1976,38 +1976,29 @@ def test_java_custom_handler_method_specification(lambda_client, create_lambda_f
     java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
     expected = ['.*"echo": "echo".*']
 
-    function_name_custom_handler = "lambda_custom_handler_%s" % short_uid()
-    create_lambda_function(
-        func_name=function_name_custom_handler,
-        zip_file=java_handler_multiple_handlers,
-        runtime=LAMBDA_RUNTIME_JAVA11,
-        handler="cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom",
+    def do_test_java_handler(handler: str, expected_result: str):
+        function_name = "lambda_handler_test_%s" % short_uid()
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=java_handler_multiple_handlers,
+            runtime=LAMBDA_RUNTIME_JAVA11,
+            handler=handler,
+        )
+
+        result = lambda_client.invoke(FunctionName=function_name, Payload=b'{"echo":"echo"}')
+        result_data = result["Payload"].read()
+
+        assert 200 == result["StatusCode"]
+        assert expected_result == to_str(result_data).strip('"\n ')
+        _check_lambda_logs(function_name, expected_lines=expected)
+
+    do_test_java_handler(
+        "cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom", "CUSTOM"
     )
-
-    result = lambda_client.invoke(
-        FunctionName=function_name_custom_handler, Payload=b'{"echo":"echo"}'
+    do_test_java_handler("cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom", "INTERFACE")
+    do_test_java_handler(
+        "cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequest", "INTERFACE"
     )
-    result_data = result["Payload"].read()
-
-    assert 200 == result["StatusCode"]
-    assert "CUSTOM" == to_str(result_data).strip('"\n ')
-    _check_lambda_logs(function_name_custom_handler, expected_lines=expected)
-
-    function_name_interface = "lambda_interface_%s" % short_uid()
-    create_lambda_function(
-        func_name=function_name_interface,
-        zip_file=java_handler_multiple_handlers,
-        runtime=LAMBDA_RUNTIME_JAVA11,
-        handler="cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom",
-    )
-
-    result = lambda_client.invoke(FunctionName=function_name_interface, Payload=b'{"echo":"echo"}')
-    result_data = result["Payload"].read()
-
-    assert 200 == result["StatusCode"]
-    assert "INTERFACE" == to_str(result_data).strip('"\n ')
-
-    _check_lambda_logs(function_name_interface, expected_lines=expected)
 
 
 class TestDockerBehaviour(LambdaTestBase):
