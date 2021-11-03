@@ -28,7 +28,7 @@ LOCALHOST_IP = "127.0.0.1"
 LOCALHOST_HOSTNAME = "localhost.localstack.cloud"
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = "0.2.16"
+LOCALSTACK_MAVEN_VERSION = "0.2.17"
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
