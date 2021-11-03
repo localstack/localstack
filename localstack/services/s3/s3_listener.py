@@ -1234,8 +1234,10 @@ class ProxyListenerS3(PersistingProxyListener):
                 return response
 
         # handling s3 website hosting requests
+        LOGGER.debug("Checking if serving static website")
         if is_static_website(headers) and method == "GET":
             return serve_static_website(headers=headers, path=path, bucket_name=bucket_name)
+        LOGGER.debug("Check ended if serving static website, Headers: %s", headers)
 
         # check content md5 hash integrity if not a copy request or multipart initialization
         if (
@@ -1581,6 +1583,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
 
 def serve_static_website(headers, path, bucket_name):
+    LOGGER.debug("Serving static website")
     s3_client = aws_stack.connect_to_service("s3")
 
     # check if bucket exists
@@ -1591,11 +1594,13 @@ def serve_static_website(headers, path, bucket_name):
 
     def respond_with_key(status_code, key):
         obj = s3_client.get_object(Bucket=bucket_name, Key=key)
+        LOGGER.warning("STATIC WEBSITE OBJECT: " + obj)
         response_headers = {}
 
         if "if-none-match" in headers and "ETag" in obj and obj["ETag"] in headers["if-none-match"]:
             return requests_response(status_code=304, content="", headers=response_headers)
         if "WebsiteRedirectLocation" in obj:
+            LOGGER.debug("Website redirection")
             response_headers["location"] = obj["WebsiteRedirectLocation"]
             return requests_response(status_code=301, content="", headers=response_headers)
         if "ContentType" in obj:

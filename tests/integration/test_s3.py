@@ -1256,6 +1256,8 @@ class TestS3(unittest.TestCase):
             bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
         )
         response = requests.get(url, headers=headers, verify=False, allow_redirects=False)
+        print(response)
+        print(response.headers)
         self.assertEqual(301, response.status_code)
         self.assertIn("location", response.headers)
         self.assertEqual("actual/key.html", response.headers["location"])
