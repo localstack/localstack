@@ -15,7 +15,7 @@ Resources:
       Description: Aurora Password
       Name: %s
       GenerateSecretString:
-        SecretStringTemplate: !Sub '{"username": "${Username}"}'
+        SecretStringTemplate: '{"username": "localstack-user"}'
         GenerateStringKey: "password"
         PasswordLength: 30
         IncludeSpace: false
@@ -47,17 +47,21 @@ def test_cfn_secretsmanager_gen_secret(
         assert "/dev/db/pass" == secret["Name"]
         assert "secret:/dev/db/pass" in secret["ARN"]
 
-        # assert that secret has ben generated and added to the result template JSON
-        value = secretsmanager_client.get_secret_value(SecretId="/dev/db/pass")
-        secret = value.get("SecretString")
-        secret = json.loads(secret)
-        assert "password" in secret
-        assert len(secret["password"]) == 30
+        # assert that secret has been generated and added to the result template JSON
+        secret_value = secretsmanager_client.get_secret_value(SecretId="/dev/db/pass")[
+            "SecretString"
+        ]
+        secret_json = json.loads(secret_value)
+        assert "password" in secret_json
+        assert len(secret_json["password"]) == 30
 
         # assert that the Ref properly returns the secret ARN
         result = cfn_client.describe_stacks(StackName=stack_name)["Stacks"][0]
         assert len(result["Outputs"]) == 1
+
         assert result["Outputs"][0]["OutputKey"] == "SecretARN"
-        assert re.match(r".*%s-[a-zA-Z0-9]+" % SECRET_NAME, result["Outputs"][0]["OutputValue"])
+        output_secret_arn = result["Outputs"][0]["OutputValue"]
+        assert output_secret_arn == secret["ARN"]
+        assert re.match(r".*%s-[a-zA-Z0-9]+" % SECRET_NAME, output_secret_arn)
     finally:
         cleanup_stacks([stack_id])

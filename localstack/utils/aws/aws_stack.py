@@ -535,6 +535,7 @@ def get_iam_role(resource, env=None):
     return "role-%s" % resource
 
 
+# TODO: remove this (can't statically define secret ARN because it includes a random suffix)
 def secretsmanager_secret_arn(secret_id, account_id=None, region_name=None):
     if ":" in (secret_id or ""):
         return secret_id
