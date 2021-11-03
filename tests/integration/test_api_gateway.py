@@ -1258,7 +1258,7 @@ class TestAPIGateway(unittest.TestCase):
 
         def _test_invoke(url):
             result = requests.get(url)
-            content = json.loads(result._content)
+            content = json.loads(to_str(result.content))
             self.assertEqual(200, result.status_code)
             self.assertRegex(
                 content["headers"].get(HEADER_LOCALSTACK_REQUEST_URL),
