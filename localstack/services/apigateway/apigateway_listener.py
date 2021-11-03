@@ -181,7 +181,11 @@ class ApiInvocationContext:
     @property
     def auth_context(self) -> Optional[Dict]:
         if isinstance(self.auth_info, dict):
-            return self.auth_info.get("context")
+            context = self.auth_info.get("context") or {}
+            principal = self.auth_info.get("principalId")
+            if principal:
+                context["principalId"] = principal
+            return context
 
 
 class ProxyListenerApiGateway(ProxyListener):
@@ -858,9 +862,7 @@ def get_stage_variables(api_id: str, stage: str) -> Dict[str, str]:
     return response.get("variables")
 
 
-def get_lambda_event_request_context(
-    invocation_context: ApiInvocationContext,
-):
+def get_lambda_event_request_context(invocation_context: ApiInvocationContext):
     method = invocation_context.method
     path = invocation_context.path
     headers = invocation_context.headers
