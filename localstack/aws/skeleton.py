@@ -3,7 +3,7 @@ import logging
 from typing import Any, Callable, Dict, NamedTuple, Optional, Union
 
 from botocore import xform_name
-from botocore.model import ListShape, MapShape, ServiceModel, StructureShape
+from botocore.model import ServiceModel
 
 from localstack.aws.api import (
     CommonServiceException,
@@ -103,9 +103,6 @@ class ServiceRequestDispatcher:
         args = []
         kwargs = {}
 
-        if context.operation:
-            self._init_required_members(context.operation, request)
-
         if not self.expand_parameters:
             if self.pass_context:
                 args.append(context)
@@ -118,25 +115,6 @@ class ServiceRequestDispatcher:
             kwargs["context"] = context
 
         return self.fn(*args, **kwargs)
-
-    def _init_required_members(self, operation, request):
-        """
-        Sets required members of the request to empty structures if they are not already in the request.
-        """
-        input_shape = operation.input_shape
-
-        if not input_shape:
-            return
-        if not isinstance(input_shape, StructureShape):
-            return
-
-        for required_member in input_shape.required_members:
-            if required_member not in request:
-                shape = input_shape.members[required_member]
-                if isinstance(shape, ListShape):
-                    request[required_member] = []
-                elif isinstance(shape, (StructureShape, MapShape)):
-                    request[required_member] = {}
 
 
 class Skeleton:
