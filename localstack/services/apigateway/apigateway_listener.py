@@ -4,7 +4,8 @@ import json
 import logging
 import re
 import time
-from typing import Any, Dict, Tuple, Union
+from enum import Enum
+from typing import Any, Dict, Optional, Tuple, Union
 
 import requests
 from flask import Response as FlaskResponse
@@ -77,6 +78,12 @@ HOST_REGEX_EXECUTE_API = (
     % LOCALHOST_HOSTNAME
 )
 
+
+class ApiGatewayVersion(Enum):
+    V1 = "v1"
+    V2 = "v2"
+
+
 # type definition for data parameters (i.e., invocation payloads)
 InvocationPayload = Union[Dict, str, bytes]
 
@@ -85,12 +92,105 @@ class AuthorizationError(Exception):
     pass
 
 
+class ApiInvocationContext:
+    """Represents the context for an incoming API Gateway invocation."""
+
+    # basic (raw) HTTP invocation details (method, path, data, headers)
+    method: str
+    path: str
+    data: InvocationPayload
+    headers: Dict[str, str]
+
+    # invocation context
+    context: Dict[str, Any]
+    # authentication info for this invocation
+    auth_info: Dict[str, Any]
+
+    # target API/resource details extracted from the invocation
+    apigw_version: ApiGatewayVersion
+    api_id: str
+    stage: str
+    region_name: str
+    # resource path, including any path parameter placeholders (e.g., "/my/path/{id}")
+    resource_path: str
+    integration: Dict
+    resource: Dict
+    # Invocation path with query string, e.g., "/my/path?test". Defaults to "path", can be used
+    #  to overwrite the actual API path, in case the path format "../_user_request_/.." is used.
+    _path_with_query_string: str
+
+    # response templates to be applied to the invocation result
+    response_templates: Dict
+
+    # response object
+    response: Response
+
+    def __init__(
+        self,
+        method,
+        path,
+        data,
+        headers,
+        api_id=None,
+        stage=None,
+        context=None,
+        auth_info=None,
+    ):
+        self.method = method
+        self.path = path
+        self.data = data
+        self.headers = headers
+        self.context = {} if context is None else context
+        self.auth_info = {} if auth_info is None else auth_info
+        self.apigw_version = ApiGatewayVersion.V1
+        self.api_id = api_id
+        self.stage = stage
+        self.region_name = None
+        self.integration = None
+        self.resource = None
+        self.resource_path = None
+        self.path_with_query_string = None
+        self.response_templates = {}
+
+    @property
+    def resource_id(self) -> Optional[str]:
+        return (self.resource or {}).get("id")
+
+    @property
+    def invocation_path(self) -> str:
+        """Return the plain invocation path, without query parameters."""
+        path = self.path_with_query_string or self.path
+        return path.split("?")[0]
+
+    @property
+    def path_with_query_string(self) -> str:
+        """Return invocation path with query string - defaults to the value of 'path', unless customized."""
+        return self._path_with_query_string or self.path
+
+    @path_with_query_string.setter
+    def path_with_query_string(self, new_path) -> str:
+        """Set a custom invocation path with query string (used to handle "../_user_request_/.." paths)."""
+        self._path_with_query_string = new_path
+        return new_path
+
+    @property
+    def integration_uri(self) -> Optional[str]:
+        integration = self.integration or {}
+        return integration.get("uri") or integration.get("integrationUri")
+
+    @property
+    def auth_context(self) -> Optional[Dict]:
+        if isinstance(self.auth_info, dict):
+            return self.auth_info.get("context")
+
+
 class ProxyListenerApiGateway(ProxyListener):
     def forward_request(self, method, path, data, headers):
+        invocation_context = ApiInvocationContext(method, path, data, headers)
 
         forwarded_for = headers.get(HEADER_LOCALSTACK_EDGE_URL, "")
         if re.match(PATH_REGEX_USER_REQUEST, path) or "execute-api" in forwarded_for:
-            result = invoke_rest_api_from_request(method, path, data, headers)
+            result = invoke_rest_api_from_request(invocation_context)
             if result is not None:
                 return result
 
@@ -108,26 +208,19 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
 
-        if is_test_invoke_method(path) and method == "POST":
-            kwargs = {}
-
+        if is_test_invoke_method(method, path):
             # if call is from test_invoke_api then use http_method to find the integration,
-            # as test_invoke_api make POST call to interect
+            #   as test_invoke_api makes a POST call to request the test invocation
             match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
-            method = match[3]
+            invocation_context.method = match[3]
             if data:
                 orig_data = data
                 path_with_query_string = orig_data.get("pathWithQueryString", None)
-                data = data.get("body", None)
-                headers = orig_data.get("headers", {})
-                kwargs = (
-                    {"path_with_query_string": path_with_query_string}
-                    if path_with_query_string
-                    else {}
-                )
-            result = invoke_rest_api_from_request(
-                method=method, path=path, data=data, headers=headers, **kwargs
-            )
+                if path_with_query_string:
+                    invocation_context.path_with_query_string = path_with_query_string
+                invocation_context.data = data.get("body")
+                invocation_context.headers = orig_data.get("headers", {})
+            result = invoke_rest_api_from_request(invocation_context)
             result = {
                 "status": result.status_code,
                 "body": to_str(result.content),
@@ -187,16 +280,18 @@ class ProxyListenerApiGateway(ProxyListener):
 # ------------
 
 
-def run_authorizer(api_id, headers, authorizer):
+def run_authorizer(invocation_context: ApiInvocationContext, authorizer: Dict):
     # TODO implement authorizers
     pass
 
 
-def authorize_invocation(api_id: str, headers: Dict[str, str]):
+def authorize_invocation(invocation_context: ApiInvocationContext):
     client = aws_stack.connect_to_service("apigateway")
-    authorizers = client.get_authorizers(restApiId=api_id, limit=100).get("items", [])
+    authorizers = client.get_authorizers(restApiId=invocation_context.api_id, limit=100).get(
+        "items", []
+    )
     for authorizer in authorizers:
-        run_authorizer(api_id, headers, authorizer)
+        run_authorizer(invocation_context, authorizer)
 
 
 def validate_api_key(api_key: str, stage: str):
@@ -236,9 +331,9 @@ def update_content_length(response: Response):
         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_request_parameter(integration: Dict[str, Any], path_params: Dict[str, str]):
+def apply_request_parameter(uri: str, integration: Dict[str, Any], path_params: Dict[str, str]):
     request_parameters = integration.get("requestParameters", None)
-    uri = integration.get("uri") or integration.get("integrationUri") or ""
+    uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
     if request_parameters:
         for key in path_params:
             # check if path_params is present in the integration request parameters
@@ -282,7 +377,10 @@ def apply_template(
     return data
 
 
-def apply_response_parameters(response: Response, integration: Dict[str, Any], api_id=None):
+def apply_response_parameters(invocation_context: ApiInvocationContext):
+    response = invocation_context.response
+    integration = invocation_context.integration
+
     int_responses = integration.get("integrationResponses") or {}
     if not int_responses:
         return response
@@ -302,7 +400,12 @@ def apply_response_parameters(response: Response, integration: Dict[str, Any], a
     return response
 
 
-def get_api_id_stage_invocation_path(path: str, headers: Dict[str, str]) -> Tuple[str, str, str]:
+def get_api_id_stage_invocation_path(
+    invocation_context: ApiInvocationContext,
+) -> Tuple[str, str, str]:
+    path = invocation_context.path
+    headers = invocation_context.headers
+
     path_match = re.search(PATH_REGEX_USER_REQUEST, path)
     host_header = headers.get(HEADER_LOCALSTACK_EDGE_URL, "") or headers.get("Host") or ""
     host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
@@ -316,9 +419,18 @@ def get_api_id_stage_invocation_path(path: str, headers: Dict[str, str]) -> Tupl
         stage = path.strip("/").split("/")[0]
         relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
     elif test_invoke_match:
-        api_id = test_invoke_match.group(1)
+        # special case: fetch the resource details for TestInvokeApi invocations
         stage = None
-        relative_path_w_query_params = "/%s" % test_invoke_match.group(4)
+        region_name = invocation_context.region_name
+        api_id = test_invoke_match.group(1)
+        resource_id = test_invoke_match.group(2)
+        query_string = test_invoke_match.group(4) or ""
+        apigateway = aws_stack.connect_to_service(
+            service_name="apigateway", region_name=region_name
+        )
+        resource = apigateway.get_resource(restApiId=api_id, resourceId=resource_id)
+        resource_path = resource.get("path")
+        relative_path_w_query_params = f"{resource_path}{query_string}"
     else:
         raise Exception(f"Unable to extract API Gateway details from request: {path} {headers}")
     if api_id:
@@ -337,60 +449,36 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     return api_id
 
 
-def invoke_rest_api_from_request(
-    method: str,
-    path: str,
-    data: InvocationPayload,
-    headers,
-    context={},
-    auth_info={},
-    path_with_query_string=None,  # TODO: look into overwriting path_with_query_string via new RequestContext class
-    **kwargs,
-):
-    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
-    if path_with_query_string:
-        relative_path_w_query_params = path_with_query_string
+def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
+    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(
+        invocation_context
+    )
+    invocation_context.api_id = api_id
+    invocation_context.stage = stage
+    invocation_context.path_with_query_string = relative_path_w_query_params
     try:
-        return invoke_rest_api(
-            api_id,
-            stage,
-            method,
-            relative_path_w_query_params,
-            data,
-            headers,
-            path=path,
-            context=context,
-            auth_info=auth_info,
-        )
+        return invoke_rest_api(invocation_context)
     except AuthorizationError as e:
         return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
 
 
-# TODO: replace list of parameters below with a proper API GW RequestContext class!
-def invoke_rest_api(
-    api_id: str,
-    stage: str,
-    method: str,
-    invocation_path: str,
-    data: InvocationPayload,
-    headers: Dict[str, str],
-    path: str = None,
-    context={},
-    auth_info={},
-):
-    path = path or invocation_path
+def invoke_rest_api(invocation_context: ApiInvocationContext):
+    invocation_path = invocation_context.path_with_query_string
+    raw_path = invocation_context.path or invocation_path
+    method = invocation_context.method
+    headers = invocation_context.headers
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
 
     # run gateway authorizers for this request
-    authorize_invocation(api_id, headers)
-    path_map = helpers.get_rest_api_paths(rest_api_id=api_id)
+    authorize_invocation(invocation_context)
+    path_map = helpers.get_rest_api_paths(rest_api_id=invocation_context.api_id)
     try:
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
     except Exception:
-        return make_error_response("Unable to find path %s" % path, 404)
+        return make_error_response("Unable to find path %s" % raw_path, 404)
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
-    if not is_api_key_valid(api_key_required, headers, stage):
+    if not is_api_key_valid(api_key_required, headers, invocation_context.stage):
         return make_error_response("Access denied - invalid API key", 403)
 
     integrations = resource.get("resourceMethods", {})
@@ -402,85 +490,52 @@ def invoke_rest_api(
         if method == "OPTIONS" and "Origin" in headers:
             # default to returning CORS headers if this is an OPTIONS request
             return get_cors_response(headers)
-        return make_error_response("Unable to find integration for path %s" % path, 404)
+        return make_error_response("Unable to find integration for path %s" % raw_path, 404)
 
     res_methods = path_map.get(relative_path, {}).get("resourceMethods", {})
     meth_integration = res_methods.get(method, {}).get("methodIntegration", {})
     int_responses = meth_integration.get("integrationResponses", {})
     response_templates = int_responses.get("200", {}).get("responseTemplates", {})
 
-    return invoke_rest_api_integration(
-        api_id,
-        stage,
-        integration,
-        method,
-        path,
-        invocation_path,
-        data,
-        headers,
-        resource_path=extracted_path,
-        context=context,
-        resource_id=resource.get("id"),
-        response_templates=response_templates,
-        auth_info=auth_info,
-    )
+    # update fields in invocation context, then forward request to next handler
+    invocation_context.resource = resource
+    invocation_context.resource_path = extracted_path
+    invocation_context.response_templates = response_templates
+    invocation_context.integration = integration
+
+    result = invoke_rest_api_integration(invocation_context)
+    return result
 
 
-def invoke_rest_api_integration(
-    api_id,
-    stage,
-    integration,
-    method,
-    path,
-    invocation_path,
-    data,
-    headers,
-    resource_path,
-    context={},
-    resource_id=None,
-    response_templates={},
-    auth_info={},
-):
+def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
     try:
         response = invoke_rest_api_integration_backend(
-            api_id,
-            stage,
-            integration,
-            method,
-            path,
-            invocation_path,
-            data,
-            headers,
-            resource_path,
-            context=context,
-            resource_id=resource_id,
-            response_templates=response_templates,
-            auth_info=auth_info,
+            invocation_context, invocation_context.integration
         )
-        response = apply_response_parameters(response, integration, api_id=api_id)
+        invocation_context.response = response
+        response = apply_response_parameters(invocation_context)
         return response
     except Exception as e:
-        msg = f"Error invoking integration for API Gateway ID '{api_id}': {e}"
+        msg = f"Error invoking integration for API Gateway ID '{invocation_context.api_id}': {e}"
         LOG.exception(msg)
         return make_error_response(msg, 400)
 
 
 def invoke_rest_api_integration_backend(
-    api_id,
-    stage,
-    integration,
-    method,
-    path,
-    invocation_path,
-    data,
-    headers,
-    resource_path,
-    context={},
-    resource_id=None,
-    response_templates={},
-    auth_info={},
+    invocation_context: ApiInvocationContext, integration: Dict
 ):
+    # define local aliases from invocation context
+    invocation_path = invocation_context.path_with_query_string
+    method = invocation_context.method
+    path = invocation_context.path
+    data = invocation_context.data
+    headers = invocation_context.headers
+    api_id = invocation_context.api_id
+    stage = invocation_context.stage
+    resource_path = invocation_context.resource_path
+    response_templates = invocation_context.response_templates
 
+    # extract integration type and path parameters
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
     integration_type_orig = integration.get("type") or integration.get("integrationType") or ""
     integration_type = integration_type_orig.upper()
@@ -489,6 +544,7 @@ def invoke_rest_api_integration_backend(
         path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
     except Exception:
         path_params = {}
+
     if (uri.startswith("arn:aws:apigateway:") and ":lambda:path" in uri) or uri.startswith(
         "arn:aws:lambda"
     ):
@@ -521,19 +577,13 @@ def invoke_rest_api_integration_backend(
 
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
-            request_context = get_lambda_event_request_context(
-                method,
-                path,
-                data,
-                headers,
-                integration_uri=uri,
-                resource_id=resource_id,
-                resource_path=resource_path,
-                auth_info=auth_info,
-            )
+            request_context = get_lambda_event_request_context(invocation_context)
             stage_variables = (
-                get_stage_variables(api_id, stage) if not is_test_invoke_method(path) else None
+                get_stage_variables(api_id, stage)
+                if not is_test_invoke_method(method, path)
+                else None
             )
+            # TODO: change this signature to InvocationContext as well!
             result = lambda_api.process_apigateway_invocation(
                 func_arn,
                 relative_path,
@@ -547,7 +597,7 @@ def invoke_rest_api_integration_backend(
                 method=method,
                 resource_path=resource_path,
                 request_context=request_context,
-                event_context=context,
+                event_context=invocation_context.context,
                 stage_variables=stage_variables,
             )
 
@@ -596,10 +646,17 @@ def invoke_rest_api_integration_backend(
         if "kinesis:action/" in uri:
             if uri.endswith("kinesis:action/PutRecord"):
                 target = kinesis_listener.ACTION_PUT_RECORD
-            if uri.endswith("kinesis:action/PutRecords"):
+            elif uri.endswith("kinesis:action/PutRecords"):
                 target = kinesis_listener.ACTION_PUT_RECORDS
-            if uri.endswith("kinesis:action/ListStreams"):
+            elif uri.endswith("kinesis:action/ListStreams"):
                 target = kinesis_listener.ACTION_LIST_STREAMS
+            else:
+                LOG.info(
+                    "Unexpected API Gateway integration URI '%s' for integration type %s",
+                    uri,
+                    integration_type,
+                )
+                target = ""
 
             # apply request templates
             new_data = apply_request_response_templates(
@@ -772,9 +829,8 @@ def invoke_rest_api_integration_backend(
         data = apply_template(integration, "request", data)
         if isinstance(data, dict):
             data = json.dumps(data)
-        uri = apply_request_parameter(integration=integration, path_params=path_params)
-        function = getattr(requests, method.lower())
-        result = function(uri, data=data, headers=headers)
+        uri = apply_request_parameter(uri, integration=integration, path_params=path_params)
+        result = requests.request(method=method, url=uri, data=data, headers=headers)
         # apply custom response template
         result = apply_template(integration, "response", result)
         return result
@@ -793,24 +849,29 @@ def invoke_rest_api_integration_backend(
     )
 
 
-def get_stage_variables(api_id, stage):
+def get_stage_variables(api_id: str, stage: str) -> Dict[str, str]:
+    if not stage:
+        return
     region_name = [name for name, region in apigateway_backends.items() if api_id in region.apis][0]
     api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
     response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
-    return response.get("variables", None)
+    return response.get("variables")
 
 
 def get_lambda_event_request_context(
-    method,
-    path,
-    data,
-    headers,
-    integration_uri=None,
-    resource_id=None,
-    resource_path=None,
-    auth_info={},
+    invocation_context: ApiInvocationContext,
 ):
-    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
+    method = invocation_context.method
+    path = invocation_context.path
+    headers = invocation_context.headers
+    integration_uri = invocation_context.integration_uri
+    resource_path = invocation_context.resource_path
+    resource_id = invocation_context.resource_id
+    auth_context = invocation_context.auth_context
+
+    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(
+        invocation_context
+    )
     relative_path, query_string_params = extract_query_string_params(
         path=relative_path_w_query_params
     )
@@ -837,10 +898,10 @@ def get_lambda_event_request_context(
         "requestTime": datetime.datetime.utcnow(),
         "requestTimeEpoch": int(time.time() * 1000),
     }
-    if isinstance(auth_info, dict) and auth_info.get("context"):
-        request_context["authorizer"] = auth_info["context"]
-    if not is_test_invoke_method(path):
-        request_context["path"] = "/" + stage + relative_path
+    if auth_context:
+        request_context["authorizer"] = auth_context
+    if not is_test_invoke_method(method, path):
+        request_context["path"] = (f"/{stage}" if stage else "") + relative_path
         request_context["stage"] = stage
     return request_context
 
@@ -868,8 +929,8 @@ def apply_request_response_templates(
     return result
 
 
-def is_test_invoke_method(path):
-    return bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
+def is_test_invoke_method(method, path):
+    return method == "POST" and bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
 
 
 # instantiate listener
