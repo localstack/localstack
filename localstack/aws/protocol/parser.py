@@ -310,7 +310,8 @@ class QueryRequestParser(RequestParser):
                 if isinstance(member_shape, ListShape):
                     member_name = self._get_serialized_name(member_shape.member, member)
             value = self._process_member(request, member_name, member_shape, node)
-            if value is not None:
+            if value is not None or member in shape.required_members:
+                # If the member is required, but not existing, we explicitly set None
                 result[member] = value
 
         return result if len(result) > 0 else None
@@ -550,10 +551,8 @@ class RestXMLRequestParser(BaseRestRequestParser):
         self, request: HttpRequest, shape: StructureShape, node: ETree.Element
     ) -> dict:
         parsed = {}
-        members = shape.members
         xml_dict = self._build_name_to_xml_node(node)
-        for member_name in members:
-            member_shape = members[member_name]
+        for member_name, member_shape in shape.members.items():
             if "location" in member_shape.serialization or member_shape.serialization.get(
                 "eventheader"
             ):
@@ -572,6 +571,9 @@ class RestXMLRequestParser(BaseRestRequestParser):
                     attributes[new_key] = value
                 if location_name in attributes:
                     parsed[member_name] = attributes[location_name]
+            elif member_name in shape.required_members:
+                # If the member is required, but not existing, we explicitly set None
+                parsed[member_name] = None
         return parsed
 
     def _parse_map(self, request: HttpRequest, shape: MapShape, node: dict) -> dict:
@@ -677,21 +679,20 @@ class BaseJSONRequestParser(RequestParser, ABC):
         if shape.is_document_type:
             final_parsed = value
         else:
-            member_shapes = shape.members
             if value is None:
                 # If the comes across the wire as "null" (None in python),
                 # we should be returning this unchanged, instead of as an
                 # empty dict.
                 return None
             final_parsed = {}
-            for member_name in member_shapes:
-                member_shape = member_shapes[member_name]
+            for member_name, member_shape in shape.members.items():
                 json_name = member_shape.serialization.get("name", member_name)
                 raw_value = value.get(json_name)
                 if raw_value is not None:
-                    final_parsed[member_name] = self._parse_shape(
-                        request, member_shapes[member_name], raw_value
-                    )
+                    final_parsed[member_name] = self._parse_shape(request, member_shape, raw_value)
+                elif member_name in shape.required_members:
+                    # If the member is required, but not existing, we explicitly set None
+                    final_parsed[member_name] = None
         return final_parsed
 
     def _parse_map(

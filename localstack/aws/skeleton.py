@@ -14,6 +14,7 @@ from localstack.aws.api import (
 from localstack.aws.api.core import ServiceRequest, ServiceRequestHandler, ServiceResponse
 from localstack.aws.protocol.parser import create_parser
 from localstack.aws.protocol.serializer import create_serializer
+from localstack.aws.spec import load_service
 from localstack.utils import analytics
 
 LOG = logging.getLogger(__name__)
@@ -21,7 +22,10 @@ LOG = logging.getLogger(__name__)
 DispatchTable = Dict[str, ServiceRequestHandler]
 
 
-def create_skeleton(service: ServiceModel, delegate: Any):
+def create_skeleton(service: Union[str, ServiceModel], delegate: Any):
+    if isinstance(service, str):
+        service = load_service(service)
+
     return Skeleton(service, create_dispatch_table(delegate))
 
 
@@ -128,11 +132,15 @@ class Skeleton:
             self.dispatch_table = create_dispatch_table(implementation)
 
     def invoke(self, context: RequestContext) -> HttpResponse:
-        parser = self.parser
-        serializer = self.serializer
+        if context.operation and context.service_request:
+            # if the parsed request is already set in the context, re-use them
+            operation, instance = context.operation, context.service_request
+        else:
+            # otherwise parse the incoming HTTPRequest
+            operation, instance = self.parser.parse(context.request)
+            context.operation = operation
 
-        # Parse the incoming HTTPRequest
-        operation, instance = parser.parse(context.request)
+        serializer = self.serializer
 
         try:
             # Find the operation's handler in the dispatch table

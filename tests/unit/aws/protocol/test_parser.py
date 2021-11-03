@@ -197,6 +197,7 @@ def _botocore_parser_integration_test(
     method: str = None,
     request_uri: str = None,
     headers: dict = None,
+    expected: dict = None,
     **kwargs
 ):
     # Load the appropriate service
@@ -216,8 +217,8 @@ def _botocore_parser_integration_test(
     parser = create_parser(service)
     operation_model, parsed_request = parser.parse(serialized_request)
 
-    # Check if the result is equal to the initial params
-    assert parsed_request == kwargs
+    # Check if the result is equal to the given "expected" dict or the kwargs (if "expected" has not been set)
+    assert parsed_request == (expected or kwargs)
 
 
 def test_query_parser_sqs_with_botocore():
@@ -255,6 +256,16 @@ def test_query_parser_sqs_with_botocore():
         },
         MessageDeduplicationId="string",
         MessageGroupId="string",
+    )
+
+
+def test_query_parser_empty_required_members_sqs_with_botocore():
+    _botocore_parser_integration_test(
+        service="sqs",
+        action="SendMessageBatch",
+        QueueUrl="string",
+        Entries=[],
+        expected={"QueueUrl": "string", "Entries": None},
     )
 
 
