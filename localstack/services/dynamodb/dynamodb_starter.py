@@ -48,9 +48,11 @@ def start_dynamodb(port=None, asynchronous=True, update_listener=None):
 
 
 def restart_dynamodb():
+    global _server
     if _server:
         _server.shutdown()
         _server.join(timeout=10)
+        _server = None
 
     LOG.debug("Restarting DynamoDB process ...")
     start_dynamodb(asynchronous=True, update_listener=dynamodb_listener.UPDATE_DYNAMODB)
