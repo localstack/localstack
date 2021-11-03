@@ -802,8 +802,12 @@ def handle_gateway_responses(method, path, data, headers):
     )
 
 
-def handle_test_invoke_api(method, path, data, headers):
+# TODO: add type hint to param
+def handle_test_invoke_api(invocation_context):
     from localstack.services.apigateway.apigateway_listener import invoke_rest_api_from_request
+
+    data = invocation_context.data
+    path = invocation_context.path
 
     kwargs = {}
     # if call is from test_invoke_api then use http_method to find the integration,

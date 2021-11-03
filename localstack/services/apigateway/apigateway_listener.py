@@ -417,9 +417,6 @@ def invoke_rest_api_from_request(
     api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(
         invocation_context
     )
-    # TODO: remove
-    # if path_with_query_string:
-    #     relative_path_w_query_params = path_with_query_string
     invocation_context.api_id = api_id
     invocation_context.stage = stage
     invocation_context.path_with_query_string = relative_path_w_query_params
