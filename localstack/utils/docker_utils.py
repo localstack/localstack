@@ -106,17 +106,31 @@ class PortMappings(object):
         if port is None or int(port) <= 0:
             raise Exception("Unable to add mapping for invalid port: %s" % port)
         if self.contains(port):
+            print("port %s already in mappings" % (port))
             return
+        bisected_host_port = None
         for from_range, to_range in self.mappings.items():
             if not self.in_expanded_range(port, from_range):
                 continue
             if not self.in_expanded_range(mapped, to_range):
                 continue
+            if self.in_range(mapped, to_range) and to_range[0] != to_range[1]:
+                bisected_port_index = mapped - to_range[0]
+                bisected_host_port = from_range[0] + bisected_port_index
+                self.bisect_range(mapped, to_range)
+                self.bisect_range(bisected_host_port, from_range)
+                break
             self.expand_range(port, from_range)
             self.expand_range(mapped, to_range)
             return
         protocol = str(protocol or "tcp").lower()
-        self.mappings[self.HashableList([port, port, protocol])] = [mapped, mapped]
+        if bisected_host_port is None:
+            port_range = [port, port, protocol]
+        elif bisected_host_port < port:
+            port_range = [bisected_host_port, port, protocol]
+        else:
+            port_range = [port, bisected_host_port, protocol]
+        self.mappings[self.HashableList(port_range)] = [mapped, mapped]
 
     def to_str(self) -> str:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
@@ -187,6 +201,16 @@ class PortMappings(object):
             range[1] = port
         else:
             raise Exception("Unable to add port %s to existing range %s" % (port, range))
+
+    def bisect_range(self, port, range):
+        if not self.in_range(port, range):
+            return
+        if port == range[0]:
+            range[0] = port + 1
+        elif port == range[1]:
+            range[1] = port - 1
+        else:
+            range[1] = port
 
 
 class ContainerClient(metaclass=ABCMeta):

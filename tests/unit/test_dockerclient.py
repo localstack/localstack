@@ -107,6 +107,12 @@ def test_argument_parsing():
     assert network == "mynet123"
 
 
+def list_in(a, b):
+    return len(a) <= len(b) and any(
+        map(lambda x: b[x : x + len(a)] == a, range(len(b) - len(a) + 1))
+    )
+
+
 class TestCommandLine(unittest.TestCase):
     def test_extract_port_flags(self):
         port_mappings = PortMappings()
@@ -161,8 +167,10 @@ class TestCommandLine(unittest.TestCase):
         }
         self.assertEqual(expected_result, result)
 
-
-def list_in(a, b):
-    return len(a) <= len(b) and any(
-        map(lambda x: b[x : x + len(a)] == a, range(len(b) - len(a) + 1))
-    )
+    def test_adjacent_multi_to_one_mappings(self):
+        port_mappings = PortMappings()
+        port_mappings.add(5003)
+        port_mappings.add([5004, 5006], 5004)
+        expected_result = {"5003/tcp": 5003, "5004/tcp": [5004, 5005, 5006]}
+        result = port_mappings.to_dict()
+        self.assertEqual(expected_result, result)
