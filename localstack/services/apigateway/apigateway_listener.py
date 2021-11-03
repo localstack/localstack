@@ -180,7 +180,7 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
 
-        if is_test_invoke_method(path) and method == "POST":
+        if method == "POST" and is_test_invoke_method(path):
             # if call is from test_invoke_api then use http_method to find the integration,
             #   as test_invoke_api makes a POST call to request the test invocation
             match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
@@ -410,16 +410,14 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     return api_id
 
 
-def invoke_rest_api_from_request(
-    invocation_context: InvocationContext,
-    **kwargs,
-):
+def invoke_rest_api_from_request(invocation_context: InvocationContext):
     api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(
         invocation_context
     )
     invocation_context.api_id = api_id
     invocation_context.stage = stage
-    invocation_context.path_with_query_string = relative_path_w_query_params
+    if not invocation_context.path_with_query_string:
+        invocation_context.path_with_query_string = relative_path_w_query_params
     try:
         return invoke_rest_api(invocation_context)
     except AuthorizationError as e:
