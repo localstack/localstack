@@ -91,14 +91,7 @@ LOG_LEVELS = ("trace-internal", "trace", "debug", "info", "warn", "error", "warn
 # Lambda defaults
 LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
 
-# installation constants
-ELASTICSEARCH_URLS = {
-    "7.10.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-x86_64.tar.gz",
-    "7.7.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.7.0-linux-x86_64.tar.gz",
-    "7.4.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.4.0-linux-x86_64.tar.gz",
-    "7.1.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.1.0-linux-x86_64.tar.gz",
-    "6.7.0": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.zip",
-}
+# the version of elasticsearch that is pre-seeded into the base image (sync with Dockerfile.base)
 ELASTICSEARCH_DEFAULT_VERSION = "7.10.0"
 # See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
 ELASTICSEARCH_PLUGIN_LIST = [

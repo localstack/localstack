@@ -24,7 +24,6 @@ from localstack.constants import (
     ELASTICSEARCH_DEFAULT_VERSION,
     ELASTICSEARCH_DELETE_MODULES,
     ELASTICSEARCH_PLUGIN_LIST,
-    ELASTICSEARCH_URLS,
     INSTALL_DIR_INFRA,
     KMS_URL_PATTERN,
     LOCALSTACK_INFRA_PROCESS,
@@ -115,7 +114,6 @@ GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + "/aws-lambda-mock"
 GO_LAMBDA_MOCKSERVER = GO_INSTALL_FOLDER + "/mockserver"
 GO_ZIP_NAME = "runtime.zip"
 
-
 GLIBC_KEY_URL = "https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub"
 GLIBC_KEY = "/etc/apk/keys/sgerrand.rsa.pub"
 GLIBC_VERSION = "2.32-r0"
@@ -128,31 +126,37 @@ GLIBC_PATH = config.TMP_FOLDER + "/" + GLIBC_FILE
 CA_CERTIFICATES = "ca-certificates"
 
 
-def get_elasticsearch_install_version(version=None):
+def get_elasticsearch_install_version(version: str) -> str:
+    from localstack.services.es import versions
+
     if config.SKIP_INFRA_DOWNLOADS:
         return ELASTICSEARCH_DEFAULT_VERSION
-    return version or ELASTICSEARCH_DEFAULT_VERSION
+
+    return versions.get_install_version(version)
 
 
-def get_elasticsearch_install_dir(version=None):
+def get_elasticsearch_install_dir(version: str) -> str:
     version = get_elasticsearch_install_version(version)
+
     if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         # install the default version into a subfolder of the code base
         install_dir = os.path.join(INSTALL_DIR_INFRA, "elasticsearch")
     else:
+        # put all other versions into the TMP_FOLDER
         install_dir = os.path.join(config.TMP_FOLDER, "elasticsearch", version)
+
     return install_dir
 
 
 def install_elasticsearch(version=None):
+    from localstack.services.es import versions
+
     version = get_elasticsearch_install_version(version)
     install_dir = get_elasticsearch_install_dir(version)
     installed_executable = os.path.join(install_dir, "bin", "elasticsearch")
     if not os.path.exists(installed_executable):
         log_install_msg("Elasticsearch (%s)" % version)
-        es_url = ELASTICSEARCH_URLS.get(version)
-        if not es_url:
-            raise Exception('Unable to find download URL for Elasticsearch version "%s"' % version)
+        es_url = versions.get_download_url(version)
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
@@ -187,8 +191,9 @@ def install_elasticsearch(version=None):
                     retry(try_install, retries=download_attempts - 1, sleep=2)
                 except Exception:
                     LOG.warning(
-                        "Unable to download Elasticsearch plugin '%s' after %s attempts"
-                        % (plugin, download_attempts)
+                        "Unable to download Elasticsearch plugin '%s' after %s attempts",
+                        plugin,
+                        download_attempts,
                     )
                     if not os.environ.get("IGNORE_ES_DOWNLOAD_ERRORS"):
                         raise
