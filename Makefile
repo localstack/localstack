@@ -213,7 +213,7 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
 clean-dist:		## Clean up python distribution directories
-	rm -rf dist/
+	rm -rf dist/ build/
 	rm -rf *.egg-info
 
 vagrant-start:
