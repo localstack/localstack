@@ -1594,7 +1594,7 @@ def serve_static_website(headers, path, bucket_name):
 
     def respond_with_key(status_code, key):
         obj = s3_client.get_object(Bucket=bucket_name, Key=key)
-        LOGGER.warning("STATIC WEBSITE OBJECT: " + obj)
+        LOGGER.warning("STATIC WEBSITE OBJECT: %s", obj)
         response_headers = {}
 
         if "if-none-match" in headers and "ETag" in obj and obj["ETag"] in headers["if-none-match"]:
