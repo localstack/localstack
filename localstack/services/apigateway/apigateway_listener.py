@@ -168,10 +168,9 @@ class ApiInvocationContext:
         return self._path_with_query_string or self.path
 
     @path_with_query_string.setter
-    def path_with_query_string(self, new_path) -> str:
+    def path_with_query_string(self, new_path: str):
         """Set a custom invocation path with query string (used to handle "../_user_request_/.." paths)."""
         self._path_with_query_string = new_path
-        return new_path
 
     @property
     def integration_uri(self) -> Optional[str]:
@@ -471,15 +470,12 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
     raw_path = invocation_context.path or invocation_path
     method = invocation_context.method
     headers = invocation_context.headers
-    relative_path, query_string_params = extract_query_string_params(path=invocation_path)
 
     # run gateway authorizers for this request
     authorize_invocation(invocation_context)
-    path_map = helpers.get_rest_api_paths(rest_api_id=invocation_context.api_id)
-    try:
-        extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
-    except Exception:
-        return make_error_response("Unable to find path %s" % raw_path, 404)
+    extracted_path, resource = get_target_resource_details(invocation_context)
+    if not resource:
+        return make_error_response("Unable to find path %s" % invocation_context.path, 404)
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
     if not is_api_key_valid(api_key_required, headers, invocation_context.stage):
@@ -496,7 +492,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
             return get_cors_response(headers)
         return make_error_response("Unable to find integration for path %s" % raw_path, 404)
 
-    res_methods = path_map.get(relative_path, {}).get("resourceMethods", {})
+    res_methods = resource.get("resourceMethods", {})
     meth_integration = res_methods.get(method, {}).get("methodIntegration", {})
     int_responses = meth_integration.get("integrationResponses", {})
     response_templates = int_responses.get("200", {}).get("responseTemplates", {})
@@ -853,9 +849,30 @@ def invoke_rest_api_integration_backend(
     )
 
 
+def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tuple[str, Dict]:
+    """Look up and return the API GW resource (path pattern + resource dict) for the given invocation context."""
+    path_map = helpers.get_rest_api_paths(rest_api_id=invocation_context.api_id)
+    relative_path = invocation_context.invocation_path
+    try:
+        extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+        return extracted_path, resource
+    except Exception:
+        return None, None
+
+
+def get_target_resource_method(invocation_context: ApiInvocationContext) -> Optional[Dict]:
+    """Look up and return the API GW resource method for the given invocation context."""
+    _, resource = get_target_resource_details(invocation_context)
+    if not resource:
+        return None
+    methods = resource.get("resourceMethods") or {}
+    method_details = methods.get(invocation_context.method.upper())
+    return method_details
+
+
 def get_stage_variables(api_id: str, stage: str) -> Dict[str, str]:
     if not stage:
-        return
+        return {}
     region_name = [name for name, region in apigateway_backends.items() if api_id in region.apis][0]
     api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
     response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
