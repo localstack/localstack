@@ -601,6 +601,8 @@ with the `--user` flag: `pip install --user localstack`
 
 * If you are using AWS Java libraries and need to disable SSL certificate checking, add `-Dcom.amazonaws.sdk.disableCertChecking` to the java invocation.
 
+* If you are using LAMBDA_REMOTE_DOCKER=true and running in a docker container in CI, do NOT set `DOCKER_HOST` as an environment variable passed into the localstack container. Any calls to lambda CLI operations will fail (https://github.com/localstack/localstack/issues/4801) 
+
 ## Developing
 
 ### Requirements for developing or starting locally

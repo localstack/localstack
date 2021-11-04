@@ -84,15 +84,6 @@ RESOURCE_TO_FUNCTION = {}
 # ----------------
 
 
-def get_secret_arn(secret_name, account_id=None):
-    # TODO: create logic to create static without lookup table!
-    from localstack.services.secretsmanager import secretsmanager_starter
-
-    storage = secretsmanager_starter.SECRET_ARN_STORAGE
-    key = "%s_%s" % (aws_stack.get_region(), secret_name)
-    return storage.get(key) or storage.get(secret_name)
-
-
 def find_stack(stack_name):
     from localstack.services.cloudformation.cloudformation_api import find_stack as api_find_stack
 
@@ -1024,11 +1015,6 @@ def determine_resource_physical_id(
         if attribute == "Arn":
             return aws_stack.role_arn(resource_props.get("RoleName"))
         return resource_props.get("RoleName")
-    elif resource_type == "SecretsManager::Secret":
-        arn = get_secret_arn(resource_props.get("Name")) or ""
-        if attribute == "Arn":
-            return arn
-        return arn.split(":")[-1]
     elif resource_type == "IAM::Policy":
         if attribute == "Arn":
             return aws_stack.policy_arn(resource_props.get("PolicyName"))

@@ -21,9 +21,7 @@ class SecretsManagerSecret(GenericBaseModel):
         return "AWS::SecretsManager::Secret"
 
     def get_physical_resource_id(self, attribute, **kwargs):
-        props = self.props
-        result = props.get("ARN") or aws_stack.secretsmanager_secret_arn(props["Name"])
-        return result
+        return self.props.get("ARN")
 
     def get_cfn_attribute(self, attribute_name):
         if attribute_name in (REF_ARN_ATTRS + REF_ID_ATTRS):
@@ -77,8 +75,8 @@ class SecretsManagerSecret(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        role_name = resource.get("Properties", {}).get("Name")
-        if not role_name:
+        name = resource.get("Properties", {}).get("Name")
+        if not name:
             resource["Properties"]["Name"] = generate_default_name(
                 stack_name, resource["LogicalResourceId"]
             )

@@ -223,6 +223,12 @@ def send_notifications(method, bucket_name, object_path, version_id, headers):
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
             if action == "ObjectCreated" and method == "PUT" and "x-amz-copy-source" in headers:
                 api_method = "Copy"
+            elif (
+                action == "ObjectCreated"
+                and method == "POST"
+                and "form-data" in headers.get("Content-Type", "")
+            ):
+                api_method = "Post"
             elif action == "ObjectCreated" and method == "POST":
                 api_method = "CompleteMultipartUpload"
             else:
@@ -274,7 +280,8 @@ def send_notification_for_subscriber(
     message = json.dumps(message)
 
     if notif.get("Queue"):
-        sqs_client = aws_stack.connect_to_service("sqs")
+        region = aws_stack.extract_region_from_arn(notif["Queue"])
+        sqs_client = aws_stack.connect_to_service("sqs", region_name=region)
         try:
             queue_url = aws_stack.sqs_queue_url_for_arn(notif["Queue"])
             sqs_client.send_message(
@@ -288,7 +295,8 @@ def send_notification_for_subscriber(
                 % (bucket_name, notif["Queue"], e)
             )
     if notif.get("Topic"):
-        sns_client = aws_stack.connect_to_service("sns")
+        region = aws_stack.extract_region_from_arn(notif["Topic"])
+        sns_client = aws_stack.connect_to_service("sns", region_name=region)
         try:
             sns_client.publish(
                 TopicArn=notif["Topic"],
@@ -304,8 +312,11 @@ def send_notification_for_subscriber(
     lambda_function_config = notif.get("CloudFunction") or notif.get("LambdaFunction")
     if lambda_function_config:
         # make sure we don't run into a socket timeout
+        region = aws_stack.extract_region_from_arn(lambda_function_config)
         connection_config = botocore.config.Config(read_timeout=300)
-        lambda_client = aws_stack.connect_to_service("lambda", config=connection_config)
+        lambda_client = aws_stack.connect_to_service(
+            "lambda", config=connection_config, region_name=region
+        )
         try:
             lambda_client.invoke(
                 FunctionName=lambda_function_config,
@@ -1578,13 +1589,27 @@ def serve_static_website(headers, path, bucket_name):
     except ClientError:
         return no_such_bucket(bucket_name, headers.get("x-amz-request-id"), 404)
 
+    def respond_with_key(status_code, key):
+        obj = s3_client.get_object(Bucket=bucket_name, Key=key)
+        response_headers = {}
+
+        if "if-none-match" in headers and "ETag" in obj and obj["ETag"] in headers["if-none-match"]:
+            return requests_response(status_code=304, content="", headers=response_headers)
+        if "WebsiteRedirectLocation" in obj:
+            response_headers["location"] = obj["WebsiteRedirectLocation"]
+            return requests_response(status_code=301, content="", headers=response_headers)
+        if "ContentType" in obj:
+            response_headers["content-type"] = obj["ContentType"]
+        if "ETag" in obj:
+            response_headers["etag"] = obj["ETag"]
+        return requests_response(
+            status_code=status_code, content=obj["Body"].read(), headers=response_headers
+        )
+
     try:
         if path != "/":
             path = path.lstrip("/")
-            obj = s3_client.get_object(Bucket=bucket_name, Key=path)
-            content = obj["Body"].read()
-            headers = {"Content-Type": obj["ContentType"]} if obj.get("ContentType") else {}
-            return requests_response(status_code=200, content=content, headers=headers)
+            return respond_with_key(status_code=200, key=path)
     except ClientError:
         LOGGER.debug("No such key found. %s" % path)
 
@@ -1592,13 +1617,11 @@ def serve_static_website(headers, path, bucket_name):
     path_suffix = website_config.get("IndexDocument", {}).get("Suffix", "").lstrip("/")
     index_document = "%s/%s" % (path.rstrip("/"), path_suffix)
     try:
-        content = s3_client.get_object(Bucket=bucket_name, Key=index_document)["Body"].read()
-        return requests_response(status_code=302, content=content)
+        return respond_with_key(status_code=200, key=index_document)
     except ClientError:
         error_document = website_config.get("ErrorDocument", {}).get("Key", "").lstrip("/")
         try:
-            content = s3_client.get_object(Bucket=bucket_name, Key=error_document)["Body"].read()
-            return requests_response(status_code=404, content=content)
+            return respond_with_key(status_code=404, key=error_document)
         except ClientError:
             return requests_response(status_code=404, content="")
 

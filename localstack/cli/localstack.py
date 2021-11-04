@@ -177,7 +177,7 @@ def print_docker_status():
     from rich.table import Table
 
     from localstack import config
-    from localstack.utils import docker
+    from localstack.utils import docker_utils
     from localstack.utils.bootstrap import (
         get_docker_image_details,
         get_main_container_ip,
@@ -200,7 +200,7 @@ def print_docker_status():
 
     # container
     cont_name = config.MAIN_CONTAINER_NAME
-    running = docker.DOCKER_CLIENT.is_container_running(cont_name)
+    running = docker_utils.DOCKER_CLIENT.is_container_running(cont_name)
     cont_status = "[bold][red]:heavy_multiplication_x: stopped"
     if running:
         cont_status = '[bold][green]:heavy_check_mark: running[/green][/bold] (name: "[italic]%s[/italic]", IP: %s)' % (

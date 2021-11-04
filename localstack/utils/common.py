@@ -25,7 +25,7 @@ from contextlib import closing
 from datetime import date, datetime, timezone, tzinfo
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Any, Callable, Dict, List, Optional, Sized, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, Type, Union
 from urllib.parse import parse_qs, urlparse
 
 import dns.resolver
@@ -1715,6 +1715,35 @@ def generate_ssl_cert(
         if not return_content:
             return target_file, cert_file_name, key_file_name
     return file_content
+
+
+def call_safe(
+    func: Callable, args: Tuple = None, kwargs: Dict = None, exception_message: str = None
+) -> Optional[Any]:
+    """
+    Call the given function with the given arguments, and if it fails, log the given exception_message.
+    If logging.DEBUG is set for the logger, then we also log the traceback.
+
+    :param func: function to call
+    :param args: arguments to pass
+    :param kwargs: keyword arguments to pass
+    :param exception_message: message to log on exception
+    :return: whatever the func returns
+    """
+    if exception_message is None:
+        exception_message = "error calling function %s" % func.__name__
+    if args is None:
+        args = ()
+    if kwargs is None:
+        kwargs = {}
+
+    try:
+        return func(*args, **kwargs)
+    except Exception as e:
+        if LOG.isEnabledFor(logging.DEBUG):
+            LOG.exception(exception_message)
+        else:
+            LOG.warning("%s: %s", exception_message, e)
 
 
 def run_safe(_python_lambda, *args, _default=None, **kwargs):

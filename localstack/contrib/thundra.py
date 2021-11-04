@@ -405,6 +405,10 @@ def _prepare_invocation_for_python_lambda(
 
 class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
     def should_apply(self, context: InvocationContext) -> bool:
+        # Local executor is not supported yet
+        if "local" in config.LAMBDA_EXECUTOR:
+            return False
+
         # Plugin can only applied if LAMBDA_REMOTE_DOCKER=0
         if "docker" in config.LAMBDA_EXECUTOR and config.LAMBDA_REMOTE_DOCKER:
             return False

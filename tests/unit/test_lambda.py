@@ -975,7 +975,7 @@ class TestLambdaAPI(unittest.TestCase):
     def test_get_java_lib_folder_classpath_archive_is_None(self):
         self.assertRaises(TypeError, lambda_executors.Util.get_java_classpath, None)
 
-    @mock.patch("localstack.services.awslambda.lambda_utils.store_cloudwatch_logs")
+    @mock.patch("localstack.utils.cloudwatch.cloudwatch_util.store_cloudwatch_logs")
     def test_executor_store_logs_can_handle_milliseconds(self, mock_store_cloudwatch_logs):
         mock_details = mock.Mock()
         t_sec = time.time()  # plain old epoch secs

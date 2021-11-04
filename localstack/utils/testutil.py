@@ -144,17 +144,25 @@ def create_zip_file_cli(source_path, base_dir, zip_file):
     run(command)
 
 
-def create_zip_file_python(source_path, base_dir, zip_file):
-    with zipfile.ZipFile(zip_file, "w") as zip_file:
+def create_zip_file_python(source_path, base_dir, zip_file, mode="w", content_root=None):
+    with zipfile.ZipFile(zip_file, mode) as zip_file:
         for root, dirs, files in os.walk(base_dir):
             for name in files:
                 full_name = os.path.join(root, name)
                 relative = os.path.relpath(root, start=base_dir)
-                dest = os.path.join(relative, name)
+                if content_root:
+                    dest = os.path.join(content_root, relative, name)
+                else:
+                    dest = os.path.join(relative, name)
                 zip_file.write(full_name, dest)
 
 
-def create_zip_file(file_path, zip_file=None, get_content=False):
+def create_zip_file(file_path, zip_file=None, get_content=False, content_root=None, mode="w"):
+    """
+    Creates a zipfile to the designated file_path.
+
+    By default, a new zip file is created but the mode parameter can be used to append to an existing zip file
+    """
     base_dir = file_path
     if not os.path.isdir(file_path):
         base_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
@@ -165,7 +173,6 @@ def create_zip_file(file_path, zip_file=None, get_content=False):
     if not full_zip_file:
         zip_file_name = "archive.zip"
         full_zip_file = os.path.join(tmp_dir, zip_file_name)
-
     # special case where target folder is empty -> create empty zip file
     if is_empty_dir(base_dir):
         # see https://stackoverflow.com/questions/25195495/how-to-create-an-empty-zip-file#25195628
@@ -179,9 +186,16 @@ def create_zip_file(file_path, zip_file=None, get_content=False):
 
     # create zip file
     if is_alpine():
-        create_zip_file_cli(file_path, base_dir, zip_file=full_zip_file)
+        # todo: extend CLI with the new parameters
+        create_zip_file_cli(source_path=file_path, base_dir=base_dir, zip_file=full_zip_file)
     else:
-        create_zip_file_python(file_path, base_dir, zip_file=full_zip_file)
+        create_zip_file_python(
+            source_path=file_path,
+            base_dir=base_dir,
+            zip_file=full_zip_file,
+            content_root=content_root,
+            mode=mode,
+        )
     if not get_content:
         TMP_FILES.append(tmp_dir)
         return full_zip_file
@@ -625,6 +639,25 @@ def http_server(handler, host="127.0.0.1", port=None) -> str:
     host = host
     port = port or get_free_tcp_port()
     thread = run_server(port, host, handler=handler, asynchronous=True)
+    url = f"http://{host}:{port}"
+    assert poll_condition(
+        lambda: is_port_open(port), timeout=5
+    ), f"server on port {port} did not start"
+    yield url
+    thread.stop()
+
+
+@contextmanager
+def proxy_server(proxy_listener, host="127.0.0.1", port=None) -> str:
+    """
+    Create a temporary proxy server on a random port (or the specified port) with the given proxy listener
+    for the duration of the context manager.
+    """
+    from localstack.services.generic_proxy import start_proxy_server
+
+    host = host
+    port = port or get_free_tcp_port()
+    thread = start_proxy_server(port, bind_address=host, update_listener=proxy_listener)
     url = f"http://{host}:{port}"
     assert poll_condition(
         lambda: is_port_open(port), timeout=5

@@ -13,13 +13,19 @@ import requests
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import LAMBDA_TEST_ROLE, LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER
+from localstack.constants import (
+    LAMBDA_TEST_ROLE,
+    LOCALSTACK_MAVEN_VERSION,
+    LOCALSTACK_ROOT_FOLDER,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.services.apigateway.helpers import gateway_request_url
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.awslambda.lambda_api import (
     BATCH_SIZE_RANGES,
     INVALID_PARAMETER_VALUE_EXCEPTION,
     LAMBDA_DEFAULT_HANDLER,
+    get_lambda_policy_name,
     use_docker,
 )
 from localstack.services.awslambda.lambda_utils import (
@@ -230,48 +236,52 @@ def _check_lambda_logs(func_name, expected_lines=None):
         assert line in log_messages
 
 
-class LambdaTestBase(unittest.TestCase):
-    # TODO: the test below is being executed for all subclasses - should be refactored!
-    def test_create_lambda_function(self):
-        func_name = "lambda_func-{}".format(short_uid())
-        kms_key_arn = "arn:aws:kms:%s:000000000000:key11" % aws_stack.get_region()
-        vpc_config = {
-            "SubnetIds": ["subnet-123456789"],
-            "SecurityGroupIds": ["sg-123456789"],
-        }
-        tags = {"env": "testing"}
+def test_create_lambda_function():
+    """Basic test that creates and deletes a Lambda function"""
+    func_name = "lambda_func-{}".format(short_uid())
+    kms_key_arn = f"arn:aws:kms:{aws_stack.get_region()}:{TEST_AWS_ACCOUNT_ID}:key11"
+    vpc_config = {
+        "SubnetIds": ["subnet-123456789"],
+        "SecurityGroupIds": ["sg-123456789"],
+    }
+    tags = {"env": "testing"}
 
-        kwargs = {
-            "FunctionName": func_name,
-            "Runtime": LAMBDA_RUNTIME_PYTHON37,
-            "Handler": LAMBDA_DEFAULT_HANDLER,
-            "Role": LAMBDA_TEST_ROLE,
-            "KMSKeyArn": kms_key_arn,
-            "Code": {
-                "ZipFile": create_lambda_archive(
-                    load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
-                )
-            },
-            "Timeout": 3,
-            "VpcConfig": vpc_config,
-            "Tags": tags,
-            "Environment": {"Variables": {"foo": "bar"}},
-        }
+    kwargs = {
+        "FunctionName": func_name,
+        "Runtime": LAMBDA_RUNTIME_PYTHON37,
+        "Handler": LAMBDA_DEFAULT_HANDLER,
+        "Role": LAMBDA_TEST_ROLE,
+        "KMSKeyArn": kms_key_arn,
+        "Code": {
+            "ZipFile": create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        },
+        "Timeout": 3,
+        "VpcConfig": vpc_config,
+        "Tags": tags,
+        "Environment": {"Variables": {"foo": "bar"}},
+    }
 
-        client = aws_stack.connect_to_service("lambda")
-        client.create_function(**kwargs)
+    client = aws_stack.connect_to_service("lambda")
+    client.create_function(**kwargs)
 
-        function_arn = lambda_function_arn(func_name)
-        partial_function_arn = ":".join(function_arn.split(":")[3:])
+    function_arn = lambda_function_arn(func_name)
+    partial_function_arn = ":".join(function_arn.split(":")[3:])
 
-        # Get function by Name, ARN and partial ARN
-        for func_ref in [func_name, function_arn, partial_function_arn]:
-            rs = client.get_function(FunctionName=func_ref)
-            self.assertEqual(kms_key_arn, rs["Configuration"].get("KMSKeyArn", ""))
-            self.assertEqual(vpc_config, rs["Configuration"].get("VpcConfig", {}))
-            self.assertEqual(tags, rs["Tags"])
+    # Get function by Name, ARN and partial ARN
+    for func_ref in [func_name, function_arn, partial_function_arn]:
+        rs = client.get_function(FunctionName=func_ref)
+        assert rs["Configuration"].get("KMSKeyArn", "") == kms_key_arn
+        assert rs["Configuration"].get("VpcConfig", {}) == vpc_config
+        assert rs["Tags"] == tags
 
+    # clean up
+    client.delete_function(FunctionName=func_name)
+    with pytest.raises(Exception) as exc:
         client.delete_function(FunctionName=func_name)
+    assert "ResourceNotFoundException" in str(exc)
+
+
+class LambdaTestBase(unittest.TestCase):
 
     # TODO remove once refactoring to pytest is complete
     def check_lambda_logs(self, func_name, expected_lines=[]):
@@ -468,6 +478,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             SourceArn=aws_stack.s3_bucket_arn("test-bucket"),
         )
         self.assertIn("Statement", resp)
+
         # fetch lambda policy
         policy = lambda_client.get_policy(FunctionName=function_name)["Policy"]
         self.assertIsInstance(policy, str)
@@ -480,9 +491,11 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             aws_stack.s3_bucket_arn("test-bucket"),
             policy["Statement"][0]["Condition"]["ArnLike"]["AWS:SourceArn"],
         )
+
         # fetch IAM policy
         policies = iam_client.list_policies(Scope="Local", MaxItems=500)["Policies"]
-        matching = [p for p in policies if p["PolicyName"] == "lambda_policy_%s" % function_name]
+        policy_name = get_lambda_policy_name(function_name)
+        matching = [p for p in policies if p["PolicyName"] == policy_name]
         self.assertEqual(len(matching), 1)
         self.assertIn(":policy/", matching[0]["Arn"])
 
@@ -568,7 +581,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # fetch IAM policy
         policies = iam_client.list_policies(Scope="Local", MaxItems=500)["Policies"]
-        matching = [p for p in policies if p["PolicyName"] == "lambda_policy_%s" % function_name]
+        policy_name = get_lambda_policy_name(function_name)
+        matching = [p for p in policies if p["PolicyName"] == policy_name]
         self.assertEqual(1, len(matching))
         self.assertIn(":policy/", matching[0]["Arn"])
 
@@ -1958,42 +1972,37 @@ class TestJavaRuntimes(LambdaTestBase):
         s3_client.delete_bucket(Bucket=bucket_name)
 
 
-def test_java_custom_handler_method_specification(lambda_client, create_lambda_function):
+@pytest.mark.parametrize(
+    "handler,expected_result",
+    [
+        (
+            "cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom",
+            "CUSTOM",
+        ),
+        ("cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom", "INTERFACE"),
+        ("cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequest", "INTERFACE"),
+    ],
+)
+def test_java_custom_handler_method_specification(
+    lambda_client, create_lambda_function, handler, expected_result
+):
     java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
     expected = ['.*"echo": "echo".*']
 
-    function_name_custom_handler = "lambda_custom_handler_%s" % short_uid()
+    function_name = "lambda_handler_test_%s" % short_uid()
     create_lambda_function(
-        func_name=function_name_custom_handler,
+        func_name=function_name,
         zip_file=java_handler_multiple_handlers,
         runtime=LAMBDA_RUNTIME_JAVA11,
-        handler="cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom::handleRequestCustom",
+        handler=handler,
     )
 
-    result = lambda_client.invoke(
-        FunctionName=function_name_custom_handler, Payload=b'{"echo":"echo"}'
-    )
+    result = lambda_client.invoke(FunctionName=function_name, Payload=b'{"echo":"echo"}')
     result_data = result["Payload"].read()
 
     assert 200 == result["StatusCode"]
-    assert "CUSTOM" == to_str(result_data).strip('"\n ')
-    _check_lambda_logs(function_name_custom_handler, expected_lines=expected)
-
-    function_name_interface = "lambda_interface_%s" % short_uid()
-    create_lambda_function(
-        func_name=function_name_interface,
-        zip_file=java_handler_multiple_handlers,
-        runtime=LAMBDA_RUNTIME_JAVA11,
-        handler="cloud.localstack.sample.LambdaHandlerWithInterfaceAndCustom",
-    )
-
-    result = lambda_client.invoke(FunctionName=function_name_interface, Payload=b'{"echo":"echo"}')
-    result_data = result["Payload"].read()
-
-    assert 200 == result["StatusCode"]
-    assert "INTERFACE" == to_str(result_data).strip('"\n ')
-
-    _check_lambda_logs(function_name_interface, expected_lines=expected)
+    assert expected_result == to_str(result_data).strip('"\n ')
+    _check_lambda_logs(function_name, expected_lines=expected)
 
 
 class TestDockerBehaviour(LambdaTestBase):

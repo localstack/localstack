@@ -7,6 +7,7 @@ from flask import Response
 from localstack import config
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.common import now_utc, to_str
 
 LOG = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ def publish_lambda_result(time_before, result, kwargs):
 
 
 def store_cloudwatch_logs(log_group_name, log_stream_name, log_output, start_time=None):
-    if not aws_stack.is_service_enabled("logs"):
+    if not is_api_enabled("logs"):
         return
     start_time = start_time or int(time.time() * 1000)
     logs_client = aws_stack.connect_to_service("logs")

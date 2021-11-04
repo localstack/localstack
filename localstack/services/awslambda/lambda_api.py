@@ -39,6 +39,7 @@ from localstack.services.install import install_go_lambda_runtime
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
+from localstack.utils.aws.aws_responses import ResourceNotFoundException
 from localstack.utils.common import (
     TMP_FILES,
     empty_context_manager,
@@ -72,8 +73,8 @@ from localstack.utils.run import FuncThread
 # logger
 LOG = logging.getLogger(__name__)
 
-# name pattern of IAM policies associated with Lambda functions
-LAMBDA_POLICY_NAME_PATTERN = "lambda_policy_%s"
+# name pattern of IAM policies associated with Lambda functions (name/qualifier)
+LAMBDA_POLICY_NAME_PATTERN = "lambda_policy_{name}_{qualifier}"
 # constants
 APP_NAME = "lambda_api"
 ARCHIVE_FILE_PATTERN = "%s/lambda.handler.*.jar" % config.TMP_FOLDER
@@ -564,7 +565,8 @@ def process_apigateway_invocation(
         event["pathParameters"] = path_params
         event["resource"] = resource_path
         event["requestContext"] = request_context
-        event["stageVariables"] = stage_variables
+        if stage_variables:
+            event["stageVariables"] = stage_variables
         LOG.debug(
             "Running Lambda function %s from API Gateway invocation: %s %s"
             % (func_arn, method or "GET", path)
@@ -810,6 +812,7 @@ def run_lambda(
             callback=callback,
             lock_discriminator=lock_discriminator,
         )
+        return result
 
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -829,7 +832,6 @@ def run_lambda(
         if suppress_output:
             sys.stdout = stdout_
             sys.stderr = stderr_
-    return result
 
 
 def load_source(name, file):
@@ -1211,9 +1213,8 @@ def format_func_details(
 
     if lambda_function.envvars:
         result["Environment"] = {"Variables": lambda_function.envvars}
-    if (always_add_version or version != VERSION_LATEST) and len(
-        result["FunctionArn"].split(":")
-    ) <= 7:
+    arn_parts = result["FunctionArn"].split(":")
+    if (always_add_version or version != VERSION_LATEST) and len(arn_parts) <= 7:
         result["FunctionArn"] += ":%s" % version
     return result
 
@@ -1271,11 +1272,26 @@ def get_lambda_policy(function, qualifier=None):
         for stmt in doc["Statement"]:
             stmt["Principal"] = stmt.get("Principal") or {"AWS": TEST_AWS_ACCOUNT_ID}
         doc["PolicyArn"] = p["Arn"]
+        doc["PolicyName"] = p["PolicyName"]
         doc["Id"] = "default"
         docs.append(doc)
+
+    # find policy by name
+    policy_name = get_lambda_policy_name(
+        aws_stack.lambda_function_name(function), qualifier=qualifier
+    )
+    policy = [d for d in docs if d["PolicyName"] == policy_name]
+    if policy:
+        return policy[0]
+    # find policy by target Resource in statement (TODO: check if this heuristic holds in the general case)
     res_qualifier = func_qualifier(function, qualifier)
     policy = [d for d in docs if d["Statement"][0]["Resource"] == res_qualifier]
     return (policy or [None])[0]
+
+
+def get_lambda_policy_name(resource_name: str, qualifier: str = None) -> str:
+    qualifier = qualifier or "latest"
+    return LAMBDA_POLICY_NAME_PATTERN.format(name=resource_name, qualifier=qualifier)
 
 
 def lookup_function(function, region, request_url):
@@ -1310,7 +1326,9 @@ def delete_lambda_function(function_name: str) -> Dict[None, None]:
     try:
         region.lambdas.pop(arn)
     except KeyError:
-        return not_found_error(func_arn(function_name))
+        raise ResourceNotFoundException(
+            f"Unable to delete non-existing Lambda function {func_arn(function_name)}"
+        )
 
     event_publisher.fire_event(
         event_publisher.EVENT_LAMBDA_DELETE_FUNC,
@@ -1581,6 +1599,7 @@ def update_function_configuration(function):
 
 
 def generate_policy_statement(sid, action, arn, sourcearn, principal):
+
     statement = {
         "Sid": sid,
         "Effect": "Allow",
@@ -1617,11 +1636,13 @@ def add_permission(function):
     arn = func_arn(function)
     qualifier = request.args.get("Qualifier")
     q_arn = func_qualifier(function, qualifier)
-    result = add_permission_policy_statement(function, arn, q_arn)
+    result = add_permission_policy_statement(function, arn, q_arn, qualifier=qualifier)
     return result
 
 
-def add_permission_policy_statement(resource_name, resource_arn, resource_arn_qualified):
+def add_permission_policy_statement(
+    resource_name, resource_arn, resource_arn_qualified, qualifier=None
+):
     region = LambdaRegion.get()
     data = json.loads(to_str(request.data))
     iam_client = aws_stack.connect_to_service("iam")
@@ -1629,46 +1650,51 @@ def add_permission_policy_statement(resource_name, resource_arn, resource_arn_qu
     action = data.get("Action")
     principal = data.get("Principal")
     sourcearn = data.get("SourceArn")
-    previous_policy = get_lambda_policy(resource_name)
+    previous_policy = get_lambda_policy(resource_name, qualifier)
 
     if resource_arn not in region.lambdas:
         return not_found_error(resource_arn)
 
     if not re.match(r"lambda:[*]|lambda:[a-zA-Z]+|[*]", action):
-        return error_response(
-            '1 validation error detected: Value "%s" at "action" failed to satisfy '
+        msg = (
+            f'1 validation error detected: Value "{action}" at "action" failed to satisfy '
             "constraint: Member must satisfy regular expression pattern: "
-            "(lambda:[*]|lambda:[a-zA-Z]+|[*])" % action,
-            400,
-            error_type="ValidationException",
+            "(lambda:[*]|lambda:[a-zA-Z]+|[*])"
         )
+        return error_response(msg, 400, error_type="ValidationException")
 
     new_policy = generate_policy(sid, action, resource_arn_qualified, sourcearn, principal)
+    new_statement = new_policy["Statement"][0]
+    result = {"Statement": json.dumps(new_statement)}
 
     if previous_policy:
         statment_with_sid = next(
             (statement for statement in previous_policy["Statement"] if statement["Sid"] == sid),
             None,
         )
+        if statment_with_sid and statment_with_sid == new_statement:
+            LOG.debug(
+                f"Policy Statement SID '{sid}' for Lambda '{resource_arn_qualified}' already exists"
+            )
+            return result
         if statment_with_sid:
             msg = (
-                "The statement id (%s) provided already exists. Please provide a new statement id, "
-                "or remove the existing statement."
-            ) % sid
+                f"The statement id {sid} provided already exists. Please provide a new "
+                "statement id, or remove the existing statement."
+            )
             return error_response(msg, 400, error_type="ResourceConflictException")
 
         new_policy["Statement"].extend(previous_policy["Statement"])
         iam_client.delete_policy(PolicyArn=previous_policy["PolicyArn"])
 
-    policy_name = LAMBDA_POLICY_NAME_PATTERN % resource_name
-    LOG.debug('Creating IAM policy "%s" for Lambda resource %s' % (policy_name, resource_arn))
+    policy_name = get_lambda_policy_name(resource_name, qualifier=qualifier)
+    LOG.debug('Creating IAM policy "%s" for Lambda resource %s', policy_name, resource_arn)
     iam_client.create_policy(
         PolicyName=policy_name,
         PolicyDocument=json.dumps(new_policy),
         Description='Policy for Lambda function "%s"' % resource_name,
     )
 
-    result = {"Statement": json.dumps(new_policy["Statement"][0])}
     return jsonify(result)
 
 
@@ -1676,7 +1702,7 @@ def add_permission_policy_statement(resource_name, resource_arn, resource_arn_qu
 def remove_permission(function, statement):
     qualifier = request.args.get("Qualifier")
     iam_client = aws_stack.connect_to_service("iam")
-    policy = get_lambda_policy(function)
+    policy = get_lambda_policy(function, qualifier=qualifier)
     if not policy:
         return not_found_error('Unable to find policy for Lambda function "%s"' % function)
     iam_client.delete_policy(PolicyArn=policy["PolicyArn"])

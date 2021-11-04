@@ -182,11 +182,11 @@ def sqs_create_queue(sqs_client):
         if "QueueName" not in kwargs:
             kwargs["QueueName"] = "test-queue-%s" % short_uid()
 
-        response = sqs_client.create_queue(QueueName=kwargs["QueueName"])
+        response = sqs_client.create_queue(**kwargs)
         url = response["QueueUrl"]
         queue_urls.append(url)
 
-        return sqs_client.get_queue_attributes(QueueUrl=url, AttributeNames=["All"])
+        return url
 
     yield factory
 

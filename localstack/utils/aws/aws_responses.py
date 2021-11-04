@@ -10,6 +10,7 @@ from urllib.parse import parse_qs
 
 import xmltodict
 from flask import Response as FlaskResponse
+from moto.core.exceptions import JsonRESTError
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 
@@ -38,6 +39,16 @@ AWS_BINARY_DATA_TYPE_STRING = 7
 class ErrorResponse(Exception):
     def __init__(self, response):
         self.response = response
+
+
+class ResourceNotFoundException(JsonRESTError):
+    """Generic ResourceNotFoundException used when processing requests in Flask contexts."""
+
+    code = 404
+
+    def __init__(self, message=None):
+        message = message or "The given resource cannot be found"
+        super(ResourceNotFoundException, self).__init__("ResourceNotFoundException", message)
 
 
 def flask_error_response_json(
@@ -227,8 +238,11 @@ def raise_exception_if_error_response(response):
     raise Exception("Received error response (code %s): %s" % (response.status_code, content))
 
 
-def is_response_obj(result):
-    return isinstance(result, (RequestsResponse, FlaskResponse))
+def is_response_obj(result, include_lambda_response=False):
+    types = (RequestsResponse, FlaskResponse)
+    if include_lambda_response:
+        types += (LambdaResponse,)
+    return isinstance(result, types)
 
 
 def get_response_payload(response, as_json=False):

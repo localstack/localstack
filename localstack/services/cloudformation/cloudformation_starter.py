@@ -15,7 +15,7 @@ from localstack import config
 from localstack.services.cloudformation import service_models
 from localstack.utils.aws import aws_stack
 
-from .models import elasticsearch, events, kinesisfirehose, logs, secretsmanager
+from .models import elasticsearch, events, kinesisfirehose, logs
 
 LOG = logging.getLogger(__name__)
 
@@ -76,19 +76,11 @@ def update_physical_resource_id(resource):
     elif isinstance(resource, kinesisfirehose.FirehoseDeliveryStream):
         resource.physical_resource_id = resource.params.get("DeliveryStreamName")
 
-    elif isinstance(resource, secretsmanager.SecretsManagerSecret):
-        resource.physical_resource_id = resource.params.get("Name")
-
     elif isinstance(resource, events.EventsRule):
         resource.physical_resource_id = resource.params.get("Name")
 
     elif isinstance(resource, elasticsearch.ElasticsearchDomain):
         resource.physical_resource_id = resource.params.get("DomainName")
-
-    elif isinstance(resource, secretsmanager.SecretsManagerSecret):
-        secret = secretsmanager.SecretsManagerSecret.fetch_details(resource.props["Name"])
-        if secret:
-            resource.props["ARN"] = resource.physical_resource_id = secret["ARN"]
 
     elif isinstance(resource, dynamodb_models.Table):
         resource.physical_resource_id = resource.name

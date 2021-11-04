@@ -113,8 +113,32 @@ class TestHealthResource:
         resource = HealthResource(service_manager)
 
         resource.put(
-            "/", b'{"features:initScripts": "initialized","features:persistence": "disabled"}'
+            "/", b'{"features:initScripts": "initializing","features:persistence": "disabled"}'
         )
+
+        state = resource.get("/", None)
+
+        assert state == {
+            "features": {
+                "initScripts": "initializing",
+                "persistence": "disabled",
+            },
+            "services": {
+                "foo": "available",
+            },
+        }
+
+    def test_put_overwrite_and_get(self):
+        service_manager = ServiceManager()
+        service_manager.get_states = mock.MagicMock(return_value={"foo": ServiceState.AVAILABLE})
+
+        resource = HealthResource(service_manager)
+
+        resource.put(
+            "/", b'{"features:initScripts": "initializing","features:persistence": "disabled"}'
+        )
+
+        resource.put("/", b'{"features:initScripts": "initialized"}')
 
         state = resource.get("/", None)
 

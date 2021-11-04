@@ -26,7 +26,7 @@ LOG = logging.getLogger(__name__)
 APP_NAME = "es_api"
 API_PREFIX = "/2015-01-01"
 
-DEFAULT_ES_VERSION = "7.7"
+DEFAULT_ES_VERSION = "7.10"
 
 DEFAULT_ES_CLUSTER_CONFIG = {
     "InstanceType": "m3.medium.elasticsearch",
