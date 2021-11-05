@@ -1,7 +1,4 @@
 provider "aws" {
-  # Note: pinning version for now, as 3.64.0 seems to be causing issues in our CI builds
-  version = "3.63.0"
-
   region                      = "us-east-1"
   access_key                  = "aws_mock_key"
   secret_key                  = "aws_mock_key"
