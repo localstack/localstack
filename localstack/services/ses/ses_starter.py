@@ -4,10 +4,10 @@ import logging
 import os
 from datetime import date, datetime
 
+from moto.ses import responses as ses_responses
 from moto.ses.exceptions import MessageRejectedError
 from moto.ses.models import SESBackend
 from moto.ses.responses import EmailResponse as email_responses
-from moto.ses.responses import ses_backend
 
 from localstack import config
 from localstack.services.infra import start_moto_server
@@ -105,7 +105,7 @@ def apply_patches():
     email_responses_list_templates_orig = email_responses.list_templates
 
     def list_templates(self):
-        email_templates = ses_backend.list_templates()
+        email_templates = ses_responses.ses_backend.list_templates()
         for template in email_templates:
             if isinstance(template["Timestamp"], (date, datetime)):
                 # Hack to change the last digits to Java SDKv2 compatible format
@@ -116,10 +116,10 @@ def apply_patches():
 
     def delete_template(self):
         template_name = self._get_param("TemplateName")
-        templates = ses_backend.templates
+        templates = ses_responses.ses_backend.templates
         if template_name in templates:
             del templates[template_name]
-        ses_backend.templates = templates
+        ses_responses.ses_backend.templates = templates
         template = self.response_template(DELETE_IDENTITY_RESPONSE)
         return template.render()
 

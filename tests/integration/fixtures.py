@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_secretsmanager import SecretsManagerClient
+    from mypy_boto3_ses import SESClient
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
@@ -118,6 +119,11 @@ def secretsmanager_client() -> "SecretsManagerClient":
 @pytest.fixture(scope="class")
 def stepfunctions_client() -> "SFNClient":
     return _client("stepfunctions")
+
+
+@pytest.fixture(scope="class")
+def ses_client() -> "SESClient":
+    return _client("ses")
 
 
 @pytest.fixture

@@ -275,7 +275,9 @@ def do_forward_request_network(port, method, path, data, headers, target_url=Non
     # TODO: enable per-service endpoints, to allow deploying in distributed settings
     target_url = target_url or "%s://%s:%s" % (get_service_protocol(), LOCALHOST, port)
     url = "%s%s" % (target_url, path)
-    response = requests.request(method, url, data=data, headers=headers, verify=False, stream=True)
+    response = requests.request(
+        method, url, data=data, headers=headers, verify=False, stream=True, allow_redirects=False
+    )
     return response
 
 
