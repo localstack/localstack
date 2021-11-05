@@ -51,9 +51,13 @@ LOG = logging.getLogger(__name__)
 
 CommandSettings = Dict[str, str]
 
-Directories = NamedTuple(
-    "Directories", [("base", str), ("tmp", str), ("mods", str), ("data", str), ("backup", str)]
-)
+
+class Directories(NamedTuple):
+    base: str
+    tmp: str
+    mods: str
+    data: str
+    backup: str
 
 
 def _build_elasticsearch_run_command(es_bin: str, settings: CommandSettings) -> List[str]:
@@ -124,11 +128,14 @@ class ElasticsearchCluster(Server):
             "path.data": f'"{dirs.data}"',
             "path.repo": f'"{dirs.backup}"',
         }
+
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
             settings["xpack.ml.enabled"] = "false"
 
         if additional_settings:
             settings.update(additional_settings)
+
+        self._settings_compatibility(settings)
 
         cmd = _build_elasticsearch_run_command(bin_path, settings)
 
@@ -139,6 +146,12 @@ class ElasticsearchCluster(Server):
             "ES_JAVA_OPTS": os.environ.get("ES_JAVA_OPTS", "-Xms200m -Xmx600m"),
             "ES_TMPDIR": self.directories.tmp,
         }
+
+    def _settings_compatibility(self, settings):
+        # compatibility hacks for older versions
+        if int(self.version.split(".")[0]) <= 5:
+            settings["transport.tcp.port"] = settings["transport.port"]
+            del settings["transport.port"]
 
     def _resolve_directories(self) -> Directories:
         # determine various directory paths
@@ -217,7 +230,9 @@ class ProxiedElasticsearchCluster(Server):
         if not self.cluster_port:
             self.cluster_port = get_free_tcp_port()
 
-        self.cluster = ElasticsearchCluster(port=self.cluster_port, host=DEFAULT_BACKEND_HOST)
+        self.cluster = ElasticsearchCluster(
+            port=self.cluster_port, host=DEFAULT_BACKEND_HOST, version=self.version
+        )
         self.cluster.start()
 
         self.cluster.wait_is_up()

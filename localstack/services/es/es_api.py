@@ -11,14 +11,15 @@ from typing import Dict, Optional
 from flask import Flask, jsonify, make_response, request
 
 from localstack import config, constants
-from localstack.constants import ELASTICSEARCH_URLS, TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
+from localstack.services.es import versions
 from localstack.services.es.cluster import ProxiedElasticsearchCluster
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import get_service_protocol, poll_condition, to_str
+from localstack.utils.common import get_service_protocol, poll_condition, start_thread, to_str
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -100,12 +101,17 @@ def _create_cluster(domain_name, data):
         return
 
     # creating cluster for the first time
-    version = data.get("ElasticsearchVersion") or DEFAULT_ES_VERSION
+    version = versions.get_install_version(data.get("ElasticsearchVersion") or DEFAULT_ES_VERSION)
     _cluster = ProxiedElasticsearchCluster(
         port=config.PORT_ELASTICSEARCH, host=constants.LOCALHOST, version=version
     )
-    LOG.info("starting %s on %s:%s", type(_cluster), _cluster.host, _cluster.port)
-    _cluster.start()
+
+    def _start_async(*_):
+        LOG.info("starting %s on %s:%s", type(_cluster), _cluster.host, _cluster.port)
+        _cluster.start()  # start may block during install
+
+    start_thread(_start_async)
+
     region.es_clusters[domain_name] = _cluster
 
     # run a background thread that will update all domains that use this cluster to set
@@ -396,7 +402,7 @@ def delete_domain(domain_name):
 @app.route("%s/es/versions" % API_PREFIX, methods=["GET"])
 def list_es_versions():
     result = []
-    for key in ELASTICSEARCH_URLS.keys():
+    for key in versions.install_versions.keys():
         result.append(key)
     return jsonify({"ElasticsearchVersions": result})
 
@@ -404,10 +410,23 @@ def list_es_versions():
 @app.route("%s/es/compatibleVersions" % API_PREFIX, methods=["GET"])
 def get_compatible_versions():
     result = [
-        {"SourceVersion": "6.5", "TargetVersions": ["6.7", "6.8"]},
+        {"SourceVersion": "7.10", "TargetVersions": []},
+        {"SourceVersion": "7.9", "TargetVersions": ["7.10"]},
+        {"SourceVersion": "7.8", "TargetVersions": ["7.9", "7.10"]},
+        {"SourceVersion": "7.7", "TargetVersions": ["7.8", "7.9", "7.10"]},
+        {"SourceVersion": "7.4", "TargetVersions": ["7.7", "7.8", "7.9", "7.10"]},
+        {"SourceVersion": "7.1", "TargetVersions": ["7.4", "7.7", "7.8", "7.9", "7.10"]},
+        {"SourceVersion": "6.8", "TargetVersions": ["7.1", "7.4", "7.7", "7.8", "7.9", "7.10"]},
         {"SourceVersion": "6.7", "TargetVersions": ["6.8"]},
-        {"SourceVersion": "6.8", "TargetVersions": ["7.1"]},
-        {"SourceVersion": "7.1", "TargetVersions": ["7.4", "7.7"]},
+        {"SourceVersion": "6.5", "TargetVersions": ["6.7", "6.8"]},
+        {"SourceVersion": "6.4", "TargetVersions": ["6.5", "6.7", "6.8"]},
+        {"SourceVersion": "6.3", "TargetVersions": ["6.4", "6.5", "6.7", "6.8"]},
+        {"SourceVersion": "6.2", "TargetVersions": ["6.3", "6.4", "6.5", "6.7", "6.8"]},
+        {"SourceVersion": "6.0", "TargetVersions": ["6.3", "6.4", "6.5", "6.7", "6.8"]},
+        {"SourceVersion": "5.6", "TargetVersions": ["6.3", "6.4", "6.5", "6.7", "6.8"]},
+        {"SourceVersion": "5.5", "TargetVersions": ["5.6"]},
+        {"SourceVersion": "5.3", "TargetVersions": ["5.6"]},
+        {"SourceVersion": "5.1", "TargetVersions": ["5.6"]},
     ]
     return jsonify({"CompatibleElasticsearchVersions": result})
 
