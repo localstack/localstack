@@ -1391,6 +1391,7 @@ class TestSqsProvider:
         response_receive = sqs_client.receive_message(QueueUrl=queue_url)
         assert response_receive["Messages"][0]["MessageId"] == response_send["MessageId"]
 
+    @pytest.mark.skip
     def test_batch_send_with_invalid_char_should_succeed(self, sqs_client, sqs_create_queue):
         # issue 4135
         queue_name = "queue_4135_" + short_uid()
