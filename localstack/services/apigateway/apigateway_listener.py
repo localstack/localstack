@@ -142,7 +142,7 @@ class ApiInvocationContext:
         self.headers = headers
         self.context = {} if context is None else context
         self.auth_info = {} if auth_info is None else auth_info
-        self.apigw_version = ApiGatewayVersion.V1
+        self.apigw_version = None
         self.api_id = api_id
         self.stage = stage
         self.region_name = None
@@ -403,9 +403,18 @@ def apply_response_parameters(invocation_context: ApiInvocationContext):
     return response
 
 
-def get_api_id_stage_invocation_path(
+def set_api_id_stage_invocation_path(
     invocation_context: ApiInvocationContext,
-) -> Tuple[str, str, str]:
+) -> ApiInvocationContext:
+    # skip if all details are already available
+    values = (
+        invocation_context.api_id,
+        invocation_context.stage,
+        invocation_context.path_with_query_string,
+    )
+    if all(values):
+        return invocation_context
+
     path = invocation_context.path
     headers = invocation_context.headers
 
@@ -442,7 +451,12 @@ def get_api_id_stage_invocation_path(
             THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = API_REGIONS.get(
                 api_id, ""
             )
-    return api_id, stage, relative_path_w_query_params
+
+    # set details in invocation context
+    invocation_context.api_id = api_id
+    invocation_context.stage = stage
+    invocation_context.path_with_query_string = relative_path_w_query_params
+    return invocation_context
 
 
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
@@ -453,15 +467,11 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
 
 
 def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
-    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(
-        invocation_context
-    )
-    invocation_context.api_id = api_id
-    invocation_context.stage = stage
-    invocation_context.path_with_query_string = relative_path_w_query_params
+    set_api_id_stage_invocation_path(invocation_context)
     try:
         return invoke_rest_api(invocation_context)
     except AuthorizationError as e:
+        api_id = invocation_context.api_id
         return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
 
 
@@ -866,7 +876,8 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
     if not resource:
         return None
     methods = resource.get("resourceMethods") or {}
-    method_details = methods.get(invocation_context.method.upper())
+    method_name = invocation_context.method.upper()
+    method_details = methods.get(method_name) or methods.get("ANY")
     return method_details
 
 
@@ -888,12 +899,13 @@ def get_lambda_event_request_context(invocation_context: ApiInvocationContext):
     resource_id = invocation_context.resource_id
     auth_context = invocation_context.auth_context
 
-    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(
-        invocation_context
-    )
+    set_api_id_stage_invocation_path(invocation_context)
     relative_path, query_string_params = extract_query_string_params(
-        path=relative_path_w_query_params
+        path=invocation_context.path_with_query_string
     )
+    api_id = invocation_context.api_id
+    stage = invocation_context.stage
+
     source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
