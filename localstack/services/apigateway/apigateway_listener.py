@@ -142,7 +142,7 @@ class ApiInvocationContext:
         self.headers = headers
         self.context = {} if context is None else context
         self.auth_info = {} if auth_info is None else auth_info
-        self.apigw_version = ApiGatewayVersion.V1
+        self.apigw_version = None
         self.api_id = api_id
         self.stage = stage
         self.region_name = None
@@ -168,10 +168,9 @@ class ApiInvocationContext:
         return self._path_with_query_string or self.path
 
     @path_with_query_string.setter
-    def path_with_query_string(self, new_path) -> str:
+    def path_with_query_string(self, new_path: str):
         """Set a custom invocation path with query string (used to handle "../_user_request_/.." paths)."""
         self._path_with_query_string = new_path
-        return new_path
 
     @property
     def integration_uri(self) -> Optional[str]:
@@ -404,9 +403,18 @@ def apply_response_parameters(invocation_context: ApiInvocationContext):
     return response
 
 
-def get_api_id_stage_invocation_path(
+def set_api_id_stage_invocation_path(
     invocation_context: ApiInvocationContext,
-) -> Tuple[str, str, str]:
+) -> ApiInvocationContext:
+    # skip if all details are already available
+    values = (
+        invocation_context.api_id,
+        invocation_context.stage,
+        invocation_context.path_with_query_string,
+    )
+    if all(values):
+        return invocation_context
+
     path = invocation_context.path
     headers = invocation_context.headers
 
@@ -443,7 +451,12 @@ def get_api_id_stage_invocation_path(
             THREAD_LOCAL.request_context.headers[MARKER_APIGW_REQUEST_REGION] = API_REGIONS.get(
                 api_id, ""
             )
-    return api_id, stage, relative_path_w_query_params
+
+    # set details in invocation context
+    invocation_context.api_id = api_id
+    invocation_context.stage = stage
+    invocation_context.path_with_query_string = relative_path_w_query_params
+    return invocation_context
 
 
 def extract_api_id_from_hostname_in_url(hostname: str) -> str:
@@ -454,15 +467,11 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
 
 
 def invoke_rest_api_from_request(invocation_context: ApiInvocationContext):
-    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(
-        invocation_context
-    )
-    invocation_context.api_id = api_id
-    invocation_context.stage = stage
-    invocation_context.path_with_query_string = relative_path_w_query_params
+    set_api_id_stage_invocation_path(invocation_context)
     try:
         return invoke_rest_api(invocation_context)
     except AuthorizationError as e:
+        api_id = invocation_context.api_id
         return make_error_response("Not authorized to invoke REST API %s: %s" % (api_id, e), 403)
 
 
@@ -471,15 +480,12 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
     raw_path = invocation_context.path or invocation_path
     method = invocation_context.method
     headers = invocation_context.headers
-    relative_path, query_string_params = extract_query_string_params(path=invocation_path)
 
     # run gateway authorizers for this request
     authorize_invocation(invocation_context)
-    path_map = helpers.get_rest_api_paths(rest_api_id=invocation_context.api_id)
-    try:
-        extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
-    except Exception:
-        return make_error_response("Unable to find path %s" % raw_path, 404)
+    extracted_path, resource = get_target_resource_details(invocation_context)
+    if not resource:
+        return make_error_response("Unable to find path %s" % invocation_context.path, 404)
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
     if not is_api_key_valid(api_key_required, headers, invocation_context.stage):
@@ -496,7 +502,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
             return get_cors_response(headers)
         return make_error_response("Unable to find integration for path %s" % raw_path, 404)
 
-    res_methods = path_map.get(relative_path, {}).get("resourceMethods", {})
+    res_methods = resource.get("resourceMethods", {})
     meth_integration = res_methods.get(method, {}).get("methodIntegration", {})
     int_responses = meth_integration.get("integrationResponses", {})
     response_templates = int_responses.get("200", {}).get("responseTemplates", {})
@@ -853,9 +859,31 @@ def invoke_rest_api_integration_backend(
     )
 
 
+def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tuple[str, Dict]:
+    """Look up and return the API GW resource (path pattern + resource dict) for the given invocation context."""
+    path_map = helpers.get_rest_api_paths(rest_api_id=invocation_context.api_id)
+    relative_path = invocation_context.invocation_path
+    try:
+        extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+        return extracted_path, resource
+    except Exception:
+        return None, None
+
+
+def get_target_resource_method(invocation_context: ApiInvocationContext) -> Optional[Dict]:
+    """Look up and return the API GW resource method for the given invocation context."""
+    _, resource = get_target_resource_details(invocation_context)
+    if not resource:
+        return None
+    methods = resource.get("resourceMethods") or {}
+    method_name = invocation_context.method.upper()
+    method_details = methods.get(method_name) or methods.get("ANY")
+    return method_details
+
+
 def get_stage_variables(api_id: str, stage: str) -> Dict[str, str]:
     if not stage:
-        return
+        return {}
     region_name = [name for name, region in apigateway_backends.items() if api_id in region.apis][0]
     api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
     response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
@@ -871,12 +899,13 @@ def get_lambda_event_request_context(invocation_context: ApiInvocationContext):
     resource_id = invocation_context.resource_id
     auth_context = invocation_context.auth_context
 
-    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(
-        invocation_context
-    )
+    set_api_id_stage_invocation_path(invocation_context)
     relative_path, query_string_params = extract_query_string_params(
-        path=relative_path_w_query_params
+        path=invocation_context.path_with_query_string
     )
+    api_id = invocation_context.api_id
+    stage = invocation_context.stage
+
     source_ip = headers.get("X-Forwarded-For", ",").split(",")[-2].strip()
     integration_uri = integration_uri or ""
     account_id = integration_uri.split(":lambda:path")[-1].split(":function:")[0].split(":")[-1]
