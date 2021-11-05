@@ -98,6 +98,7 @@ RUN pip uninstall -y argparse dataclasses
 RUN LAMBDA_EXECUTOR=local \
     PYTEST_LOGLEVEL=info \
     PYTEST_ARGS='--junitxml=target/test-report.xml' \
+    TEST_PATH=tests/integration/test_terraform.py \
     make test-coverage
 
 # clean up tests (created earlier via make freeze)
