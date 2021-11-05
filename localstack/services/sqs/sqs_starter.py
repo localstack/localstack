@@ -112,7 +112,7 @@ def patch_moto():
 
     # escape message responses to allow for special characters like "<"
     sqs_responses.RECEIVE_MESSAGE_RESPONSE = sqs_responses.RECEIVE_MESSAGE_RESPONSE.replace(
-        "<StringValue>{{ value.string_value }}</StringValue>",
+        "<StringValue><![CDATA[{{ value.string_value }}]]></StringValue>",
         "<StringValue>{{ _escape(value.string_value) }}</StringValue>",
     )
 
