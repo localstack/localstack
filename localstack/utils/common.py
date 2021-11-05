@@ -1322,14 +1322,18 @@ def extract_from_jsonpointer_path(target, path: str, delimiter: str = "/", auto_
     return target
 
 
-def save_file(file, content, append=False):
+def save_file(file, content, append=False, permissions=None):
     mode = "a" if append else "w+"
     if not isinstance(content, six.string_types):
         mode = mode + "b"
+
+    def _opener(path, flags):
+        return os.open(path, flags, permissions)
+
     # make sure that the parent dir exsits
     mkdir(os.path.dirname(file))
     # store file contents
-    with open(file, mode) as f:
+    with open(file, mode, opener=_opener if permissions else None) as f:
         f.write(content)
         f.flush()
 
@@ -1344,12 +1348,12 @@ def load_file(file_path, default=None, mode=None):
     return result
 
 
-def get_or_create_file(file_path, content=None):
+def get_or_create_file(file_path, content=None, permissions=None):
     if os.path.exists(file_path):
         return load_file(file_path)
     content = "{}" if content is None else content
     try:
-        save_file(file_path, content)
+        save_file(file_path, content, permissions=permissions)
         return content
     except Exception:
         pass

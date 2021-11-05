@@ -599,13 +599,20 @@ def load_config_file(config_file=None):
     from localstack.utils.common import get_or_create_file, to_str
 
     config_file = config_file or CONFIG_FILE_PATH
-    content = get_or_create_file(config_file)
+    content = get_or_create_file(config_file, permissions=0o600)
     try:
         configs = json.loads(to_str(content) or "{}")
     except Exception as e:
         print("Unable to load local config file %s as JSON: %s" % (config_file, e))
         return {}
     return configs
+
+
+def save_config_file(config, config_file=None):
+    from localstack.utils.common import save_file
+
+    config_file = config_file or CONFIG_FILE_PATH
+    save_file(config_file, json.dumps(config), permissions=0o600)
 
 
 class ServiceProviderConfig(Mapping[str, str]):
