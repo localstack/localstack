@@ -7,10 +7,11 @@ import unittest
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.services.es.cluster import CustomEndpoint, CustomEndpointElasticsearchCluster
 from localstack.services.es.es_api import DEFAULT_ES_VERSION
 from localstack.services.install import install_elasticsearch
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import retry
+from localstack.utils.common import poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread
 
@@ -215,3 +216,35 @@ class ElasticsearchTest(unittest.TestCase):
             assert created, "gave up waiting on cluster to be ready"
 
         retry(check_cluster_ready, sleep=10, retries=12)
+
+
+class TestCustomEndpointElasticsearchCluster:
+    def test_route_through_edge(self):
+        cluster = CustomEndpointElasticsearchCluster(
+            CustomEndpoint(endpoint="http://localhost:4566/my-es-cluster", enabled=True)
+        )
+
+        try:
+            with INIT_LOCK:
+                cluster.start()
+                assert cluster.wait_is_up(120), "gave up waiting for server"
+
+            response = requests.get("http://localhost:4566/my-es-cluster")
+            assert response.ok, "cluster endpoint returned an error: %s" % response.text
+            assert response.json()["version"]["number"] == cluster.version
+
+            response = requests.get("http://localhost:4566/my-es-cluster/_cluster/health")
+            assert response.ok, "cluster health endpoint returned an error: %s" % response.text
+            assert response.json()["status"] in [
+                "red",
+                "orange",
+                "yellow",
+                "green",
+            ], "expected cluster state to be in a valid state"
+
+        finally:
+            cluster.shutdown()
+
+        assert poll_condition(
+            lambda: not cluster.is_up(), timeout=10
+        ), "gave up waiting for cluster to shut down"
