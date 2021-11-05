@@ -608,6 +608,13 @@ def load_config_file(config_file=None):
     return configs
 
 
+def save_config_file(config, config_file=None):
+    from localstack.utils.common import save_file
+
+    config_file = config_file or CONFIG_FILE_PATH
+    save_file(config_file, json.dumps(config), permissions=0o600)
+
+
 class ServiceProviderConfig(Mapping[str, str]):
     _provider_config: Dict[str, str]
     default_value: str
