@@ -599,7 +599,7 @@ def load_config_file(config_file=None):
     from localstack.utils.common import get_or_create_file, to_str
 
     config_file = config_file or CONFIG_FILE_PATH
-    content = get_or_create_file(config_file)
+    content = get_or_create_file(config_file, permissions=0o600)
     try:
         configs = json.loads(to_str(content) or "{}")
     except Exception as e:

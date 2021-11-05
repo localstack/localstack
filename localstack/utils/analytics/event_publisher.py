@@ -84,7 +84,7 @@ def read_api_key_safe():
 
 
 def _get_config_file(path):
-    get_or_create_file(path)
+    get_or_create_file(path, permissions=0o600)
     return path
 
 

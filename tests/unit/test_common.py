@@ -15,7 +15,15 @@ import yaml
 from localstack import config
 from localstack.utils import common
 from localstack.utils.bootstrap import extract_port_flags
-from localstack.utils.common import is_empty_dir, mkdir, new_tmp_dir, rm_rf, save_file
+from localstack.utils.common import (
+    is_empty_dir,
+    load_file,
+    mkdir,
+    new_tmp_dir,
+    rm_rf,
+    save_file,
+    short_uid,
+)
 from localstack.utils.docker_utils import PortMappings
 from localstack.utils.testutil import create_zip_file
 
@@ -549,3 +557,47 @@ class TestCommonFileOperations:
         assert len(zip_obj.infolist()) == 1
         assert zip_obj.infolist()[0].filename == "testfile"
         rm_rf(tmp_dir)
+
+
+def test_save_load_file(tmp_path):
+    file_name = tmp_path / ("normal_permissions_%s" % short_uid())
+    content = "some_content_%s" % short_uid()
+    more_content = "some_more_content_%s" % short_uid()
+
+    save_file(file_name, content)
+    assert content == load_file(file_name)
+    save_file(file_name, more_content, append=True)
+    assert content + more_content == load_file(file_name)
+
+
+def test_save_load_file_with_permissions(tmp_path):
+    file_name = tmp_path / ("special_permissions_%s" % short_uid())
+    content = "some_content_%s" % short_uid()
+    more_content = "some_more_content_%s" % short_uid()
+    permissions = 0o600
+
+    save_file(file_name, content, permissions=permissions)
+    assert permissions == os.stat(file_name).st_mode & 0o777
+    assert content == load_file(file_name)
+    save_file(file_name, more_content, append=True)
+    assert permissions == os.stat(file_name).st_mode & 0o777
+    assert content + more_content == load_file(file_name)
+
+
+def test_save_load_file_with_changing_permissions(tmp_path):
+    file_name = tmp_path / ("changing_permissions_%s" % short_uid())
+    content = "some_content_%s" % short_uid()
+    more_content = "some_more_content_%s" % short_uid()
+    permissions = 0o600
+
+    save_file(file_name, content)
+    assert permissions != os.stat(file_name).st_mode & 0o777
+    assert content == load_file(file_name)
+    # setting the permissions on append should not change the permissions
+    save_file(file_name, more_content, append=True, permissions=permissions)
+    assert permissions != os.stat(file_name).st_mode & 0o777
+    assert content + more_content == load_file(file_name)
+    # overwriting the file also will not change the permissions
+    save_file(file_name, content, permissions=permissions)
+    assert permissions != os.stat(file_name).st_mode & 0o777
+    assert content == load_file(file_name)
