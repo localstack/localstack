@@ -30,11 +30,13 @@ Here's how you can use it:
 import logging
 import os
 from typing import Dict, List, NamedTuple, Optional
+from urllib.parse import urlparse
 
 import requests
 
 from localstack import config, constants
 from localstack.services import install
+from localstack.services.generic_proxy import ProxyListener, UrlMatchingForwarder
 from localstack.services.infra import DEFAULT_BACKEND_HOST, start_proxy_for_service
 from localstack.utils.common import (
     ShellCommandThread,
@@ -250,6 +252,104 @@ class ProxiedElasticsearchCluster(Server):
 
     def do_shutdown(self):
         self.cluster.shutdown()
+
+
+class CustomEndpoint:
+    enabled: bool
+    endpoint: str
+
+    def __init__(self, enabled: bool, endpoint: str) -> None:
+        self.enabled = enabled
+        self.endpoint = endpoint
+
+        if self.endpoint:
+            self.url = urlparse(endpoint)
+        else:
+            self.url = None
+
+
+class CustomEndpointProxy(ProxyListener):
+    def __init__(self, custom_endpoint: CustomEndpoint, cluster_url: str) -> None:
+        super().__init__()
+        self.forwarder = UrlMatchingForwarder(
+            base_url=custom_endpoint.endpoint,
+            forward_url=cluster_url,
+        )
+
+    def forward_request(self, method, path, data, headers):
+        return self.forwarder.forward_request(method, path, data, headers)
+
+    def register(self):
+        ProxyListener.DEFAULT_LISTENERS.append(self)
+
+    def unregister(self):
+        ProxyListener.DEFAULT_LISTENERS.remove(self)
+
+
+class CustomEndpointElasticsearchCluster(Server):
+    """
+    Elasticsearch-backed Server that can be routed through the edge proxy using an UrlMatchingForwarder to forward
+    requests to the backend cluster.
+    """
+
+    def __init__(self, custom_endpoint: CustomEndpoint, version=None) -> None:
+        super().__init__(
+            host=custom_endpoint.url.hostname,
+            port=custom_endpoint.url.port,
+        )
+        self.custom_endpoint = custom_endpoint
+
+        self._version = version or constants.ELASTICSEARCH_DEFAULT_VERSION
+
+        self.cluster = None
+        self.cluster_port = None
+        self.proxy = None
+
+    @property
+    def version(self):
+        return self._version
+
+    @property
+    def url(self) -> str:
+        return self.custom_endpoint.endpoint
+
+    def is_up(self):
+        # check service lifecycle
+        if not self.cluster:
+            return False
+
+        if not self.cluster.is_up():
+            return False
+
+        return super().is_up()
+
+    def health(self):
+        """
+        calls the health endpoint of elasticsearch through the proxy, making sure implicitly that
+        both are running
+        """
+        return get_elasticsearch_health_status(self.url)
+
+    def do_run(self):
+        self.cluster_port = get_free_tcp_port()
+        self.cluster = ElasticsearchCluster(
+            port=self.cluster_port, host=DEFAULT_BACKEND_HOST, version=self.version
+        )
+        self.cluster.start()
+
+        self.proxy = CustomEndpointProxy(self.custom_endpoint, self.cluster.url)
+        self.proxy.register()
+
+        self.cluster.wait_is_up()
+        LOG.info("elasticsearch cluster on %s is ready", self.cluster.url)
+
+        return self.cluster.join()
+
+    def do_shutdown(self):
+        if self.proxy:
+            self.proxy.unregister()
+        if self.cluster:
+            self.cluster.shutdown()
 
 
 def get_elasticsearch_health_status(url: str) -> Optional[str]:

@@ -14,12 +14,17 @@ from localstack import config, constants
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.services.es import versions
-from localstack.services.es.cluster import ProxiedElasticsearchCluster
+from localstack.services.es.cluster import (
+    CustomEndpoint,
+    CustomEndpointElasticsearchCluster,
+    ElasticsearchCluster,
+    ProxiedElasticsearchCluster,
+)
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import get_service_protocol, poll_condition, start_thread, to_str
+from localstack.utils.common import poll_condition, start_thread, to_str
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -57,7 +62,7 @@ app.url_map.strict_slashes = False
 
 class ElasticsearchServiceBackend(RegionBackend):
     # maps cluster names to cluster details
-    es_clusters: Dict[str, ProxiedElasticsearchCluster]
+    es_clusters: Dict[str, ElasticsearchCluster]
     # storage for domain resources (access should be protected with the _domain_mutex)
     es_domains: Dict[str, Dict]
     # static tagging service instance
@@ -85,7 +90,7 @@ def _run_cluster_startup_monitor(cluster):
                     region.es_domains[domain]["Created"] = status
 
 
-def _create_cluster(domain_name, data):
+def _create_cluster(domain_name, data, custom_endpoint: Optional[CustomEndpoint] = None):
     """
     Create a new entry in ES_DOMAINS if the domain does not yet exist. Start a ElasticsearchCluster if this is the first
     domain being created. NOT thread safe, needs to be called around _domain_mutex.
@@ -102,12 +107,18 @@ def _create_cluster(domain_name, data):
 
     # creating cluster for the first time
     version = versions.get_install_version(data.get("ElasticsearchVersion") or DEFAULT_ES_VERSION)
-    _cluster = ProxiedElasticsearchCluster(
-        port=config.PORT_ELASTICSEARCH, host=constants.LOCALHOST, version=version
-    )
+
+    if custom_endpoint and custom_endpoint.enabled:
+        # custom endpoints are routed through the edge proxy directly to the ES backend
+        _cluster = CustomEndpointElasticsearchCluster(custom_endpoint, version=version)
+    else:
+        # otherwise a new proxy instance is exposed on a separate port
+        _cluster = ProxiedElasticsearchCluster(
+            port=config.PORT_ELASTICSEARCH, host=constants.LOCALHOST, version=version
+        )
 
     def _start_async(*_):
-        LOG.info("starting %s on %s:%s", type(_cluster), _cluster.host, _cluster.port)
+        LOG.info("starting %s on %s", type(_cluster), _cluster.url)
         _cluster.start()  # start may block during install
 
     start_thread(_start_async)
@@ -179,7 +190,7 @@ def get_domain_config(domain_name):
                     aws_stack.get_region(),
                     TEST_AWS_ACCOUNT_ID,
                     domain_name,
-                ),  # noqa: E501
+                ),
                 "Status": config_status,
             },
             "AdvancedOptions": {
@@ -227,13 +238,15 @@ def get_domain_config(domain_name):
             "LogPublishingOptions": {
                 "Options": {
                     "INDEX_SLOW_LOGS": {
-                        "CloudWatchLogsLogGroupArn": "arn:aws:logs:%s:%s:log-group:sample-domain"
-                        % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID),  # noqa: E501
+                        "CloudWatchLogsLogGroupArn": "arn:aws:logs:%s:%s:log-group:%s"
+                        % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, domain_name),
+                        # noqa: E501
                         "Enabled": False,
                     },
                     "SEARCH_SLOW_LOGS": {
-                        "CloudWatchLogsLogGroupArn": "arn:aws:logs:%s:%s:log-group:sample-domain"
-                        % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID),  # noqa: E501
+                        "CloudWatchLogsLogGroupArn": "arn:aws:logs:%s:%s:log-group:%s"
+                        % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, domain_name),
+                        # noqa: E501
                         "Enabled": False,
                     },
                 },
@@ -252,6 +265,10 @@ def get_domain_config(domain_name):
                 },
                 "Status": config_status,
             },
+            "DomainEndpointOptions": {
+                "Options": status.get("DomainEndpointOptions", {}),
+                "Status": config_status,
+            },
         }
     }
 
@@ -261,11 +278,11 @@ def get_domain_status(domain_name, deleted=False):
     status = region.es_domains.get(domain_name) or {}
     cluster_cfg = status.get("ElasticsearchClusterConfig") or {}
     default_cfg = DEFAULT_ES_CLUSTER_CONFIG
-    endpoint = "%s://%s:%s" % (
-        get_service_protocol(),
-        config.HOSTNAME_EXTERNAL,
-        config.PORT_ELASTICSEARCH,
-    )
+
+    # this is a bit hacky
+    region = ElasticsearchServiceBackend.get()
+    endpoint = region.es_clusters[domain_name].url
+
     return {
         "DomainStatus": {
             "ARN": "arn:aws:es:%s:%s:domain/%s"
@@ -317,6 +334,15 @@ def create_domain():
     data = json.loads(to_str(request.data))
     domain_name = data["DomainName"]
 
+    # create custom domain endpoint options
+    endpoint_options = data.get("DomainEndpointOptions")
+    custom_endpoint = None
+    if endpoint_options:
+        custom_endpoint = CustomEndpoint(
+            endpoint_options.get("CustomEndpointEnabled", False),
+            endpoint_options.get("CustomEndpoint", ""),
+        )
+
     with _domain_mutex:
         if domain_name in region.es_domains:
             # domain already created
@@ -326,7 +352,7 @@ def create_domain():
         region.es_domains[domain_name] = data
 
         # lazy-init the cluster, and set the data["Created"] flag
-        _create_cluster(domain_name, data)
+        _create_cluster(domain_name, data, custom_endpoint)
 
         # create result document
         result = get_domain_status(domain_name)

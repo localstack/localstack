@@ -151,6 +151,9 @@ def get_elasticsearch_install_dir(version: str) -> str:
 def install_elasticsearch(version=None):
     from localstack.services.es import versions
 
+    if not version:
+        version = ELASTICSEARCH_DEFAULT_VERSION
+
     version = get_elasticsearch_install_version(version)
     install_dir = get_elasticsearch_install_dir(version)
     installed_executable = os.path.join(install_dir, "bin", "elasticsearch")

@@ -487,6 +487,79 @@ class GenericProxy(object):
         return None
 
 
+class UrlMatchingForwarder(ProxyListener):
+    """
+    ProxyListener that matches URLs to a base url pattern, and if the request url matches the pattern, forwards it to
+    a forward_url. See TestUrlMatchingForwarder for how it behaves.
+    """
+
+    def __init__(self, base_url: str, forward_url: str) -> None:
+        super().__init__()
+        self.base_url = urlparse(base_url)
+        self.forward_url = urlparse(forward_url)
+
+    def forward_request(self, method, path, data, headers):
+        host = headers.get("Host", "")
+
+        if not self.matches(host, path):
+            return True
+
+        # build forward url
+        forward_url = self.build_forward_url(host, path)
+
+        # update headers
+        headers["Host"] = forward_url.netloc
+
+        # TODO: set proxy headers like x-forwarded-for?
+
+        return self.do_forward(method, forward_url.geturl(), headers, data)
+
+    def do_forward(self, method, url, headers, data):
+        return requests.request(method, url, data=data, headers=headers, stream=True, verify=False)
+
+    def matches(self, host, path):
+        # TODO: consider matching default ports (80, 443 if scheme is https). Example: http://localhost:80 matches
+        #  http://localhost) check host rule
+        if self.base_url.netloc:
+            if host != self.base_url.netloc:
+                return False
+
+        # check path components
+        if self.base_url.path == "/":
+            if path.startswith("/"):
+                return True
+
+        path_parts = path.split("/")
+        base_path_parts = self.base_url.path.split("/")
+
+        if len(base_path_parts) > len(path_parts):
+            return False
+
+        for i, component in enumerate(base_path_parts):
+            if component != path_parts[i]:
+                return False
+
+        return True
+
+    def build_forward_url(self, host, path):
+        # build forward url
+        if self.forward_url.hostname:
+            forward_host = self.forward_url.scheme + "://" + self.forward_url.netloc
+        else:
+            forward_host = host
+        forward_path_root = self.forward_url.path
+        forward_path = path[len(self.base_url.path) :]  # strip base path
+
+        # avoid double slashes
+        if forward_path and not forward_path_root.endswith("/"):
+            if not forward_path.startswith("/"):
+                forward_path = "/" + forward_path
+
+        forward_url = forward_host + forward_path_root + forward_path
+
+        return urlparse(forward_url)
+
+
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
     is_ssl_socket = DuplexSocket.is_ssl_socket(conn)
     if is_ssl_socket is False:
