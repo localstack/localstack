@@ -7,7 +7,7 @@ import unittest
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.services.es.cluster import CustomEndpoint, CustomEndpointElasticsearchCluster
+from localstack.services.es.cluster import EdgeProxiedElasticsearchCluster
 from localstack.services.es.es_api import DEFAULT_ES_VERSION
 from localstack.services.install import install_elasticsearch
 from localstack.utils.aws import aws_stack
@@ -50,6 +50,10 @@ class ElasticsearchTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # this is the configuration the test was originally written for
+        config.ES_ENDPOINT_STRATEGY = "off"
+        config.ES_MULTI_CLUSTER = False
+
         then = time.time()
         LOG.info("waiting for initialization lock")
         with INIT_LOCK:
@@ -145,7 +149,7 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertFalse(status["DomainStatus"]["Processing"])
         self.assertFalse(status["DomainStatus"]["Deleted"])
         self.assertEqual(
-            "http://localhost:%s" % config.PORT_ELASTICSEARCH,
+            "localhost:%s" % config.PORT_ELASTICSEARCH,
             status["DomainStatus"]["Endpoint"],
         )
         self.assertTrue(status["DomainStatus"]["EBSOptions"]["EBSEnabled"])
@@ -218,11 +222,9 @@ class ElasticsearchTest(unittest.TestCase):
         retry(check_cluster_ready, sleep=10, retries=12)
 
 
-class TestCustomEndpointElasticsearchCluster:
+class TestEdgeProxiedElasticsearchCluster:
     def test_route_through_edge(self):
-        cluster = CustomEndpointElasticsearchCluster(
-            CustomEndpoint(endpoint="http://localhost:4566/my-es-cluster", enabled=True)
-        )
+        cluster = EdgeProxiedElasticsearchCluster("http://localhost:4566/my-es-cluster")
 
         try:
             with INIT_LOCK:

@@ -293,6 +293,13 @@ LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
 
+# Strategy used when creating elasticsearch domain endpoints routed through the edge proxy
+# valid values: domain | path | off
+ES_ENDPOINT_STRATEGY = os.environ.get("ES_ENDPOINT_STRATEGY", "").strip() or "domain"
+
+# Whether to start one cluster per domain (default), or multiplex domains to a single clusters
+ES_MULTI_CLUSTER = is_env_not_false("ES_MULTI_CLUSTER")
+
 # Equivalent to HTTP_PROXY, but only applicable for external connections
 OUTBOUND_HTTP_PROXY = os.environ.get("OUTBOUND_HTTP_PROXY", "")
 
@@ -319,6 +326,8 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_ERROR_PROBABILITY",
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
+    "ES_ENDPOINT_STRATEGY",
+    "ES_MULTI_CLUSTER",
     "DOCKER_BRIDGE_IP",
     "DEFAULT_REGION",
     "LAMBDA_JAVA_OPTS",

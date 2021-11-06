@@ -8,14 +8,8 @@ Here's how you can use it:
     cluster = ElasticsearchCluster(7541)
 
     def monitor():
-        for i in range(60):
-            if cluster.is_up():
-                print('elasticsearch is up!', cluster.health())
-                return
-            else:
-                print('sill waiting')
-
-            time.sleep(1)
+        cluster.wait_is_up()
+        print('elasticsearch is up!', cluster.health())
 
     threading.Thread(target=monitor, daemon=True).start()
 
@@ -268,16 +262,14 @@ class CustomEndpoint:
             self.url = None
 
 
-class CustomEndpointProxy(ProxyListener):
-    def __init__(self, custom_endpoint: CustomEndpoint, cluster_url: str) -> None:
+class EndpointProxy(ProxyListener):
+    def __init__(self, base_url: str, cluster_url: str) -> None:
         super().__init__()
         self.forwarder = UrlMatchingForwarder(
-            base_url=custom_endpoint.endpoint,
+            base_url=base_url,
             forward_url=cluster_url,
         )
-
-    def forward_request(self, method, path, data, headers):
-        return self.forwarder.forward_request(method, path, data, headers)
+        self.forward_request = self.forwarder.forward_request
 
     def register(self):
         ProxyListener.DEFAULT_LISTENERS.append(self)
@@ -286,19 +278,19 @@ class CustomEndpointProxy(ProxyListener):
         ProxyListener.DEFAULT_LISTENERS.remove(self)
 
 
-class CustomEndpointElasticsearchCluster(Server):
+class EdgeProxiedElasticsearchCluster(Server):
     """
     Elasticsearch-backed Server that can be routed through the edge proxy using an UrlMatchingForwarder to forward
     requests to the backend cluster.
     """
 
-    def __init__(self, custom_endpoint: CustomEndpoint, version=None) -> None:
-        super().__init__(
-            host=custom_endpoint.url.hostname,
-            port=custom_endpoint.url.port,
-        )
-        self.custom_endpoint = custom_endpoint
+    def __init__(self, url: str, version=None) -> None:
+        self._url = urlparse(url)
 
+        super().__init__(
+            host=self._url.hostname,
+            port=self._url.port,
+        )
         self._version = version or constants.ELASTICSEARCH_DEFAULT_VERSION
 
         self.cluster = None
@@ -311,7 +303,7 @@ class CustomEndpointElasticsearchCluster(Server):
 
     @property
     def url(self) -> str:
-        return self.custom_endpoint.endpoint
+        return self._url.geturl()
 
     def is_up(self):
         # check service lifecycle
@@ -337,7 +329,8 @@ class CustomEndpointElasticsearchCluster(Server):
         )
         self.cluster.start()
 
-        self.proxy = CustomEndpointProxy(self.custom_endpoint, self.cluster.url)
+        self.proxy = EndpointProxy(self.url, self.cluster.url)
+        LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
         self.proxy.register()
 
         self.cluster.wait_is_up()
