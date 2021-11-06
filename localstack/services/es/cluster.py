@@ -30,7 +30,7 @@ import requests
 
 from localstack import config, constants
 from localstack.services import install
-from localstack.services.generic_proxy import ProxyListener, UrlMatchingForwarder
+from localstack.services.generic_proxy import EndpointProxy
 from localstack.services.infra import DEFAULT_BACKEND_HOST, start_proxy_for_service
 from localstack.utils.common import (
     ShellCommandThread,
@@ -260,22 +260,6 @@ class CustomEndpoint:
             self.url = urlparse(endpoint)
         else:
             self.url = None
-
-
-class EndpointProxy(ProxyListener):
-    def __init__(self, base_url: str, cluster_url: str) -> None:
-        super().__init__()
-        self.forwarder = UrlMatchingForwarder(
-            base_url=base_url,
-            forward_url=cluster_url,
-        )
-        self.forward_request = self.forwarder.forward_request
-
-    def register(self):
-        ProxyListener.DEFAULT_LISTENERS.append(self)
-
-    def unregister(self):
-        ProxyListener.DEFAULT_LISTENERS.remove(self)
 
 
 class EdgeProxiedElasticsearchCluster(Server):

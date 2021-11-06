@@ -1,39 +1,33 @@
 """
 Serve the elasticsearch API as a threaded Flask app.
+
+TODO: restoring persistence requires re-starting of cluster instances.
 """
 import json
 import logging
 import threading
 import time
 from random import randint
-from typing import Dict, List, Optional
+from typing import Dict
 
 from flask import Flask, jsonify, make_response, request
 
-from localstack import config, constants
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.services.es import versions
-from localstack.services.es.cluster import (
-    CustomEndpoint,
-    EdgeProxiedElasticsearchCluster,
-    ElasticsearchCluster,
-    EndpointProxy,
-    ProxiedElasticsearchCluster,
-)
-from localstack.services.generic_proxy import ProxyListener, RegionBackend
+from localstack.services.es.cluster_manager import ClusterManager, create_cluster_manager
+from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import poll_condition, start_thread, to_str
+from localstack.utils.common import synchronized, to_str
+from localstack.utils.serving import Server
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
 
 APP_NAME = "es_api"
 API_PREFIX = "/2015-01-01"
-
-DEFAULT_ES_VERSION = "7.10"
 
 DEFAULT_ES_CLUSTER_CONFIG = {
     "InstanceType": "m3.medium.elasticsearch",
@@ -44,139 +38,86 @@ DEFAULT_ES_CLUSTER_CONFIG = {
     "DedicatedMasterCount": 1,
 }
 
-ES_BASE_DOMAIN = "es.localhost.localstack.cloud"
-
 # timeout in seconds when giving up on waiting for the cluster to start
 CLUSTER_STARTUP_TIMEOUT = 600
 
-# ideally, each domain gets its own cluster. to save resources, we currently re-use the same
-# cluster instance. this also means we lie to the client about the the elasticsearch domain
-# version. the first call to create_domain with a specific version will create the cluster
-# with that version. subsequent calls will believe they created a cluster with the version
-# they specified.
-_cluster: Optional[ProxiedElasticsearchCluster] = None
-
-# mutex for modifying domains
-_domain_mutex = threading.Lock()
-
+# flask app serving the API endpoints
 app = Flask(APP_NAME)
 app.url_map.strict_slashes = False
+
+# mutex for modifying domains
+_domain_mutex = threading.RLock()
+
+# cluster manager singleton
+_cluster_manager = None
+
+
+@synchronized(_domain_mutex)
+def cluster_manager() -> ClusterManager:
+    global _cluster_manager
+    if not _cluster_manager:
+        _cluster_manager = create_cluster_manager()
+    return _cluster_manager
 
 
 class ElasticsearchServiceBackend(RegionBackend):
     # maps cluster names to cluster details
-    es_clusters: Dict[str, ElasticsearchCluster]
+    es_clusters: Dict[str, Server]
     # storage for domain resources (access should be protected with the _domain_mutex)
     es_domains: Dict[str, Dict]
-    # storage for domain endpoints
-    es_endpoints: Dict[str, str]
     # static tagging service instance
     TAGS = TaggingService()
 
     def __init__(self):
         self.es_clusters = dict()
         self.es_domains = dict()
-        self.es_endpoints = dict()
 
 
-def _run_cluster_startup_monitor(cluster):
-    region = ElasticsearchServiceBackend.get()
+def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str):
     LOG.debug("running cluster startup monitor for cluster %s", cluster)
+
     # wait until the cluster is started, or the timeout is reached
-    status = poll_condition(cluster.is_up, timeout=CLUSTER_STARTUP_TIMEOUT, interval=5)
+    is_up = cluster.wait_is_up(CLUSTER_STARTUP_TIMEOUT)
 
-    LOG.debug("cluster state polling returned! status = %s", status)
-
+    LOG.debug("cluster state polling for %s returned! status = %s", domain_name, is_up)
     with _domain_mutex:
-        LOG.debug("iterating over cluster domains %s", region.es_clusters.keys())
-        for domain, domain_cluster in region.es_clusters.items():
-            LOG.debug("checking cluster for domain %s", domain)
-            if cluster is domain_cluster:
-                if domain in region.es_domains:
-                    region.es_domains[domain]["Created"] = status
+        status = ElasticsearchServiceBackend.get(region).es_domains[domain_name]
+        status["Processing"] = False
+        if is_up:
+            status["Endpoint"] = cluster.url.split("://")[-1]
 
 
-def _create_cluster(domain_name, data, endpoint: str):
+def _create_cluster(domain_name: str, data: Dict):
     """
-    Create a new entry in ES_DOMAINS if the domain does not yet exist. Start a ElasticsearchCluster if this is the first
-    domain being created. NOT thread safe, needs to be called around _domain_mutex.
+    Uses the ClusterManager to create a new cluster for the given domain_name in the region of the current request
+    context. NOT thread safe, needs to be called around _domain_mutex.
     """
-    global _cluster
     region = ElasticsearchServiceBackend.get()
+    arn = get_domain_arn(domain_name)
 
-    # TODO: https?
-    endpoint_url = f"http://{endpoint}" if "://" not in endpoint else endpoint
+    manager = cluster_manager()
+    cluster = manager.create(arn, data)
 
-    if _cluster:
-        # see comment on _cluster
-        LOG.info("elasticsearch cluster already created, using existing one for %s", domain_name)
-        region.es_clusters[domain_name] = _cluster
-        data["Created"] = _cluster.is_up()
+    region.es_clusters[domain_name] = cluster
 
-        if config.ES_ENDPOINT_STRATEGY != "off":
-            EndpointProxy(endpoint_url, _cluster.url).register()
-        return
-
-    # creating cluster for the first time
-    version = versions.get_install_version(data.get("ElasticsearchVersion") or DEFAULT_ES_VERSION)
-
-    if config.ES_ENDPOINT_STRATEGY == "off":
-        # without endpoints, we cannot route through the edge proxy, so the proxy is exposed on a separate port
-        _cluster = ProxiedElasticsearchCluster(
-            port=config.PORT_ELASTICSEARCH, host=constants.LOCALHOST, version=version
-        )
+    if cluster.is_up():
+        data["Processing"] = False
+        data["Endpoint"] = cluster.url.split("://")[-1]
     else:
-        # otherwise custom endpoints are routed through the edge proxy directly to the ES backend
-        _cluster = EdgeProxiedElasticsearchCluster(endpoint_url, version=version)
-
-    def _start_async(*_):
-        LOG.info("starting %s on %s", type(_cluster), _cluster.url)
-        _cluster.start()  # start may block during install
-
-    start_thread(_start_async)
-
-    region.es_clusters[domain_name] = _cluster
-
-    # run a background thread that will update all domains that use this cluster to set
-    # data['Created'] = <status> once it is started, or the CLUSTER_STARTUP_TIMEOUT is reached
-    # FIXME: if the cluster doesn't start, these threads will stay open until the timeout is
-    #  reached, even if the cluster is already shut down. we could fix this with an additional
-    #  event, or a timer instead of Poll, but it seems like a rare case in the first place.
-    threading.Thread(target=_run_cluster_startup_monitor, daemon=True, args=(_cluster,)).start()
+        # run a background thread that will update all domains that use this cluster to set
+        # the cluster state once it is started, or the CLUSTER_STARTUP_TIMEOUT is reached
+        threading.Thread(
+            target=_run_cluster_startup_monitor,
+            args=(cluster, domain_name, region.name),
+            daemon=True,
+        ).start()
 
 
-def _cleanup_cluster(domain_name):
-    global _cluster
+def _remove_cluster(domain_name: str):
     region = ElasticsearchServiceBackend.get()
-    cluster = region.es_clusters.pop(domain_name)
-
-    LOG.debug(
-        "cleanup cluster for domain %s, %d domains remaining", domain_name, len(region.es_clusters)
-    )
-
-    if not region.es_clusters:
-        # because cluster is currently always mapped to _cluster, we only shut it down if no other
-        # domains are using it
-        LOG.info("shutting down elasticsearch cluster after domain %s cleanup", domain_name)
-        cluster.shutdown()
-        # FIXME: if delete_domain() is called, then immediately after, create_domain() (without
-        #  letting time pass for the proxy to shut down) there's a chance that there will be a bind
-        #  exception when trying to start the proxy again (which is currently always bound to
-        #  PORT_ELASTICSEARCH)
-        _cluster = None
-        return
-
-    # hacky way of finding the endpoint proxy when cluster multiplexing is in use
-    endpoint = region.es_endpoints[domain_name]
-    endpoint_url = f"http://{endpoint}" if "://" not in endpoint else endpoint
-    candidates: List[EndpointProxy] = []
-    for listener in ProxyListener.DEFAULT_LISTENERS:
-        if isinstance(listener, EndpointProxy):
-            if listener.forwarder.base_url.geturl() == endpoint_url:
-                candidates.append(listener)
-
-    for listener in candidates:
-        listener.unregister()
+    arn = get_domain_arn(domain_name)
+    cluster_manager().remove(arn)
+    del region.es_clusters[domain_name]
 
 
 def error_response(error_type, code=400, message="Unknown error."):
@@ -188,6 +129,12 @@ def error_response(error_type, code=400, message="Unknown error."):
     response = make_response(jsonify({"error": message}))
     response.headers["x-amzn-errortype"] = error_type
     return response, code
+
+
+def get_domain_arn(domain_name: str, region: str = None, account_id: str = None) -> str:
+    region = region or aws_stack.get_region()
+    account_id = account_id or TEST_AWS_ACCOUNT_ID
+    return "arn:aws:es:%s:%s:domain/%s" % (region, account_id, domain_name)
 
 
 def get_domain_config_status():
@@ -300,17 +247,16 @@ def get_domain_config(domain_name):
 
 def get_domain_status(domain_name, deleted=False):
     region = ElasticsearchServiceBackend.get()
-    endpoint = region.es_endpoints.get(domain_name)
     status = region.es_domains.get(domain_name) or {}
     cluster_cfg = status.get("ElasticsearchClusterConfig") or {}
     default_cfg = DEFAULT_ES_CLUSTER_CONFIG
 
-    return {
+    result = {
         "DomainStatus": {
-            "ARN": "arn:aws:es:%s:%s:domain/%s"
-            % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, domain_name),
-            "Created": status.get("Created", False),
+            "ARN": get_domain_arn(domain_name, region.name, TEST_AWS_ACCOUNT_ID),
+            "Created": True,
             "Deleted": deleted,
+            "Processing": status.get("Processing", True),
             "DomainId": "%s/%s" % (TEST_AWS_ACCOUNT_ID, domain_name),
             "DomainName": domain_name,
             "ElasticsearchClusterConfig": {
@@ -329,9 +275,8 @@ def get_domain_status(domain_name, deleted=False):
                     "ZoneAwarenessEnabled", default_cfg["ZoneAwarenessEnabled"]
                 ),
             },
-            "ElasticsearchVersion": status.get("ElasticsearchVersion") or DEFAULT_ES_VERSION,
-            "Endpoint": endpoint,
-            "Processing": False,
+            "ElasticsearchVersion": status.get("ElasticsearchVersion")
+            or ELASTICSEARCH_DEFAULT_VERSION,
             "EBSOptions": {
                 "EBSEnabled": True,
                 "VolumeType": "gp2",
@@ -342,6 +287,11 @@ def get_domain_status(domain_name, deleted=False):
         }
     }
 
+    if status.get("Endpoint"):
+        result["DomainStatus"]["Endpoint"] = status.get("Endpoint")
+
+    return result
+
 
 @app.route("%s/domain" % API_PREFIX, methods=["GET"])
 def list_domain_names():
@@ -350,62 +300,11 @@ def list_domain_names():
     return jsonify(result)
 
 
-def build_cluster_endpoint(
-    domain_name: str, custom_endpoint: Optional[CustomEndpoint] = None
-) -> str:
-    """
-    Builds the cluster endpoint from and optional custom_endpoint and the localstack elasticsearch config. Example
-    values:
-
-    - my-domain.es.localhost.localstack.cloud:4566 (endpoint strategy = domain (default))
-    - localhost:4566/my-domain (endpoint strategy = path)
-    - localhost:4751 (endpoint strategy = off)
-    - my.domain:443/foo (arbitrary endpoints (technically not allowed by AWS, but there are no rules in localstack))
-    """
-    if custom_endpoint and custom_endpoint.enabled:
-        return custom_endpoint.endpoint
-
-    if config.ES_ENDPOINT_STRATEGY == "off":
-        return "%s:%s" % (config.LOCALSTACK_HOSTNAME, config.PORT_ELASTICSEARCH)
-    if config.ES_ENDPOINT_STRATEGY == "path":
-        return "%s:%s/%s" % (config.LOCALSTACK_HOSTNAME, config.EDGE_PORT, domain_name)
-
-    return f"{domain_name}.{ES_BASE_DOMAIN}:{config.EDGE_PORT}"
-
-
-def determine_custom_endpoint(domain_endpoint_options: Dict) -> Optional[CustomEndpoint]:
-    if not domain_endpoint_options:
-        return
-
-    custom_endpoint = domain_endpoint_options.get("CustomEndpoint")
-    enabled = domain_endpoint_options.get("CustomEndpointEnabled", False)
-    # TODO: other attributes (are they relevant?)
-    #  - EnforceHTTPS: bool
-    #  - TLSSecurityPolicy: str
-    #  - CustomEndpointCertificateArn: str
-
-    if not custom_endpoint:
-        raise ValueError("Please provide the CustomEndpoint field to create a custom endpoint.")
-
-    # TODO: validate custom_endpoint
-
-    return CustomEndpoint(enabled, custom_endpoint)
-
-
 @app.route("%s/es/domain" % API_PREFIX, methods=["POST"])
 def create_domain():
     region = ElasticsearchServiceBackend.get()
     data = json.loads(to_str(request.data))
     domain_name = data["DomainName"]
-
-    # determine custom domain endpoint
-    endpoint_options = data.get("DomainEndpointOptions")
-    try:
-        custom_endpoint = determine_custom_endpoint(endpoint_options)
-    except ValueError as e:
-        return error_response(error_type="ValidationException", message=str(e))
-
-    endpoint = build_cluster_endpoint(domain_name, custom_endpoint)
 
     with _domain_mutex:
         if domain_name in region.es_domains:
@@ -414,10 +313,9 @@ def create_domain():
 
         # "create" domain data
         region.es_domains[domain_name] = data
-        region.es_endpoints[domain_name] = endpoint
 
-        # lazy-init the cluster, and set the data["Created"] flag
-        _create_cluster(domain_name, data, endpoint)
+        # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
+        _create_cluster(domain_name, data)
 
         # create result document
         result = get_domain_status(domain_name)
@@ -478,7 +376,7 @@ def delete_domain(domain_name):
 
         result = get_domain_status(domain_name, deleted=True)
         del region.es_domains[domain_name]
-        _cleanup_cluster(domain_name)
+        _remove_cluster(domain_name)
 
     # record event
     event_publisher.fire_event(

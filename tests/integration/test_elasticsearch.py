@@ -7,8 +7,8 @@ import unittest
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION
 from localstack.services.es.cluster import EdgeProxiedElasticsearchCluster
-from localstack.services.es.es_api import DEFAULT_ES_VERSION
 from localstack.services.install import install_elasticsearch
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import poll_condition, retry
@@ -96,7 +96,7 @@ class ElasticsearchTest(unittest.TestCase):
         status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)[
             "DomainStatus"
         ]
-        self.assertEqual(DEFAULT_ES_VERSION, status["ElasticsearchVersion"])
+        self.assertEqual(ELASTICSEARCH_DEFAULT_VERSION, status["ElasticsearchVersion"])
 
         domain_name = "es-%s" % short_uid()
         self._create_domain(name=domain_name, version="6.8", es_cluster_config=ES_CLUSTER_CONFIG)
