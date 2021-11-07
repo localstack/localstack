@@ -78,7 +78,7 @@ HEADER_SKIP_RESPONSE_ZIPPING = "_skip_response_gzipping_"
 SKIP_GZIP_APIS = [S3]
 
 # path prefix to indicate internal endpoints (e.g., resource graph, CFN deployment UI, etc)
-PATH_PREFIX_INTERNAL = "/_/"
+PATH_PREFIX_INTERNAL = "/_localstack/"
 
 
 class ProxyListenerEdge(ProxyListener):
@@ -486,7 +486,7 @@ def serve_internal_resource(method, path, data, headers):
     path = path if path.startswith("/") else f"/{path}"
     if method == "POST" and path == "/graph":
         return serve_resource_graph(data)
-    if path.startswith("/deploy"):
+    if path.startswith("/cloudformation/deploy"):
         return serve_cloudformation_ui(method, path)
     LOG.warning("Unable to find handler for internal endpoint: %s", path_orig)
     return 404

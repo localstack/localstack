@@ -21,6 +21,7 @@
       const LOCALSTACK_ENDPOINT = `${window.location.protocol}//${window.location.host}`;
       AWS.config.update({endpoint: LOCALSTACK_ENDPOINT, accessKeyId: "test", secretAccessKey: "test"});
 
+      // parameter placeholders - filled in by the server when final HTML page gets rendered
       const templateBody = <templateBody>;
       const defaultStackName = "<stackName>";
       const initErrorMessage = <errorMessage>;
@@ -57,6 +58,7 @@
             setErrorMessage(`Error deploying CloudFormation stack: ${e}`);
           }
         };
+
         return (
           <table className="pure-table">
             <tbody>
