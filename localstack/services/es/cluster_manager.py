@@ -10,6 +10,7 @@ from localstack.services.es.cluster import (
     EdgeProxiedElasticsearchCluster,
     ElasticsearchCluster,
     ProxiedElasticsearchCluster,
+    resolve_directories,
 )
 from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
 from localstack.utils.common import get_free_tcp_port, start_thread
@@ -98,7 +99,7 @@ class ClusterManager:
         url = f"http://{endpoint}" if "://" not in endpoint else endpoint
 
         # call abstract cluster factory
-        cluster = self._create_cluster(url, version, create_domain_request)
+        cluster = self._create_cluster(arn, url, version, create_domain_request)
         cluster.start()
 
         # save cluster into registry and return
@@ -119,7 +120,7 @@ class ClusterManager:
         cluster = self.get(arn)
         return cluster.is_up() if cluster else False
 
-    def _create_cluster(self, url, version, create_domain_request) -> Server:
+    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
         """
         Abstract cluster factory.
         """
@@ -150,14 +151,18 @@ class SingletonClusterManager(ClusterManager):
         with self.mutex:
             return super().create(arn, create_domain_request)
 
-    def _create_cluster(self, url, version, create_domain_request) -> Server:
+    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
         if not self.cluster:
             # FIXME: if remove() is called, then immediately after, create() (without letting time pass for the proxy to
             #  shut down) there's a chance that there will be a bind exception when trying to start the proxy again
             #  (which is currently always bound to PORT_ELASTICSEARCH)
             self.cluster = ProxiedElasticsearchCluster(
-                port=config.PORT_ELASTICSEARCH, host=constants.LOCALHOST, version=version
+                port=config.PORT_ELASTICSEARCH,
+                host=constants.LOCALHOST,
+                version=version,
+                directories=resolve_directories(version, arn),
             )
+
         return self.cluster
 
     def remove(self, arn: str):
@@ -175,7 +180,7 @@ class SingletonClusterManager(ClusterManager):
                 self.cluster = None
 
 
-class EndpointCluster(FakeEndpointProxyServer):
+class ClusterEndpoint(FakeEndpointProxyServer):
     """
     An endpoint that points to a cluster, and behaves like a Server.
     """
@@ -198,7 +203,7 @@ class MultiplexingClusterManager(ClusterManager):
     """
 
     cluster: Optional[Server]
-    endpoints: Dict[str, EndpointCluster]
+    endpoints: Dict[str, ClusterEndpoint]
 
     def __init__(self) -> None:
         super().__init__()
@@ -206,11 +211,13 @@ class MultiplexingClusterManager(ClusterManager):
         self.endpoints = dict()
         self.mutex = threading.RLock()
 
-    def _create_cluster(self, url, version, create_domain_request) -> Server:
+    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
         with self.mutex:
             if not self.cluster:
                 # startup routine for the singleton cluster instance
-                self.cluster = ElasticsearchCluster(port=get_free_tcp_port())
+                self.cluster = ElasticsearchCluster(
+                    port=get_free_tcp_port(), directories=resolve_directories(version, arn)
+                )
 
                 def _start_async(*_):
                     LOG.info("starting %s on %s", type(self.cluster), self.cluster.url)
@@ -218,7 +225,7 @@ class MultiplexingClusterManager(ClusterManager):
 
                 start_thread(_start_async)
 
-        return EndpointCluster(self.cluster, EndpointProxy(url, self.cluster.url))
+        return ClusterEndpoint(self.cluster, EndpointProxy(url, self.cluster.url))
 
     def remove(self, arn: str):
         super().remove(arn)  # removes the fake server
@@ -239,5 +246,7 @@ class MultiClusterManager(ClusterManager):
     Manages one cluster and endpoint per domain.
     """
 
-    def _create_cluster(self, url, version, create_domain_request) -> Server:
-        return EdgeProxiedElasticsearchCluster(url, version)
+    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
+        return EdgeProxiedElasticsearchCluster(
+            url, version, directories=resolve_directories(version, arn)
+        )

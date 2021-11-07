@@ -4,14 +4,17 @@ import threading
 import time
 import unittest
 
+import pytest
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION
+from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT_ID
 from localstack.services.es.cluster import EdgeProxiedElasticsearchCluster
+from localstack.services.es.cluster_manager import MultiClusterManager, MultiplexingClusterManager
+from localstack.services.es.es_api import get_domain_arn
 from localstack.services.install import install_elasticsearch
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import poll_condition, retry
+from localstack.utils.common import call_safe, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread
 
@@ -31,22 +34,44 @@ ES_CLUSTER_CONFIG = {
     "DedicatedMasterCount": 3,
 }
 
+installed = threading.Event()
+
+
+def install_async():
+    """
+    Installs the default elasticsearch version in a worker thread. Used by conftest.py to make
+    sure elasticsearch is downloaded once the tests arrive here.
+    """
+    if installed.is_set():
+        return
+
+    def run_install(*args):
+        with INIT_LOCK:
+            if installed.is_set():
+                return
+
+            LOG.info("installing elasticsearch")
+            install_elasticsearch()
+            LOG.info("done installing elasticsearch")
+            installed.set()
+
+    start_worker_thread(run_install)
+
+
+@pytest.fixture(autouse=True)
+def elasticsearch():
+    if not installed.is_set():
+        install_async()
+
+    # wait up to five minutes for the installation to finish
+    assert installed.wait(timeout=60 * 5), "gave up waiting for elasticsearch to install"
+    yield
+
 
 class ElasticsearchTest(unittest.TestCase):
     @classmethod
     def init_async(cls):
-        """
-        Installs the default elasticsearch version in a worker thread. Used by conftest.py to make
-        sure elasticsearch is downloaded once the tests arrive here.
-        """
-
-        def run_install(*args):
-            with INIT_LOCK:
-                LOG.info("installing elasticsearch")
-                install_elasticsearch()
-                LOG.info("done installing elasticsearch")
-
-        start_worker_thread(run_install)
+        install_async()
 
     @classmethod
     def setUpClass(cls):
@@ -224,18 +249,20 @@ class ElasticsearchTest(unittest.TestCase):
 
 class TestEdgeProxiedElasticsearchCluster:
     def test_route_through_edge(self):
-        cluster = EdgeProxiedElasticsearchCluster("http://localhost:4566/my-es-cluster")
+        cluster_id = f"domain-{short_uid()}"
+        cluster_url = f"http://localhost:4566/{cluster_id}"
+        cluster = EdgeProxiedElasticsearchCluster(cluster_url)
 
         try:
             with INIT_LOCK:
                 cluster.start()
                 assert cluster.wait_is_up(120), "gave up waiting for server"
 
-            response = requests.get("http://localhost:4566/my-es-cluster")
+            response = requests.get(cluster_url)
             assert response.ok, "cluster endpoint returned an error: %s" % response.text
             assert response.json()["version"]["number"] == cluster.version
 
-            response = requests.get("http://localhost:4566/my-es-cluster/_cluster/health")
+            response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, "cluster health endpoint returned an error: %s" % response.text
             assert response.json()["status"] in [
                 "red",
@@ -250,3 +277,83 @@ class TestEdgeProxiedElasticsearchCluster:
         assert poll_condition(
             lambda: not cluster.is_up(), timeout=10
         ), "gave up waiting for cluster to shut down"
+
+
+class TestMultiClusterManager:
+    def test_multi_cluster(self, monkeypatch):
+        monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
+        monkeypatch.setattr(config, "ES_MULTI_CLUSTER", True)
+
+        manager = MultiClusterManager()
+
+        # create two elasticsearch domains
+        domain0_name = f"domain-{short_uid()}"
+        domain1_name = f"domain-{short_uid()}"
+        domain0_arn = get_domain_arn(domain0_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        domain1_arn = get_domain_arn(domain1_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        cluster0 = manager.create(domain0_arn, dict(DomainName=domain0_name))
+        cluster1 = manager.create(domain1_arn, dict(DomainName=domain1_name))
+
+        try:
+            # spawn the two clusters
+            cluster0.wait_is_up(120)
+            cluster1.wait_is_up(120)
+
+            # create an index in cluster0, wait for it to appear, make sure it's not in cluster1
+            index0_url = cluster0.url + "/my-index?pretty"
+            index1_url = cluster1.url + "/my-index?pretty"
+
+            response = requests.put(index0_url)
+            assert response.ok, "failed to put index into cluster %s: %s" % (
+                cluster0.url,
+                response.text,
+            )
+            assert poll_condition(
+                lambda: requests.head(index0_url).ok, timeout=10
+            ), "gave up waiting for index"
+
+            assert not requests.head(index1_url).ok, "index should not appear in second cluster"
+
+        finally:
+            call_safe(cluster0.shutdown)
+            call_safe(cluster1.shutdown)
+
+
+class TestMultiplexingClusterManager:
+    def test_multiplexing_cluster(self, monkeypatch):
+        monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
+        monkeypatch.setattr(config, "ES_MULTI_CLUSTER", False)
+
+        manager = MultiplexingClusterManager()
+
+        # create two elasticsearch domains
+        domain0_name = f"domain-{short_uid()}"
+        domain1_name = f"domain-{short_uid()}"
+        domain0_arn = get_domain_arn(domain0_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        domain1_arn = get_domain_arn(domain1_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        cluster0 = manager.create(domain0_arn, dict(DomainName=domain0_name))
+        cluster1 = manager.create(domain1_arn, dict(DomainName=domain1_name))
+
+        try:
+            # spawn the two clusters
+            cluster0.wait_is_up(120)
+            cluster1.wait_is_up(120)
+
+            # create an index in cluster0, wait for it to appear, make sure it's not in cluster1
+            index0_url = cluster0.url + "/my-index?pretty"
+            index1_url = cluster1.url + "/my-index?pretty"
+
+            response = requests.put(index0_url)
+            assert response.ok, "failed to put index into cluster %s: %s" % (
+                cluster0.url,
+                response.text,
+            )
+            assert poll_condition(
+                lambda: requests.head(index0_url).ok, timeout=10
+            ), "gave up waiting for index"
+
+            assert requests.head(index1_url).ok, "expected index to appear by multiplexing"
+
+        finally:
+            call_safe(cluster0.shutdown)
+            call_safe(cluster1.shutdown)
