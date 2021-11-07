@@ -24,7 +24,6 @@ INIT_LOCK = threading.Lock()
 TEST_INDEX = "megacorp"
 TEST_DOC_ID = 1
 COMMON_HEADERS = {"content-type": "application/json", "Accept-encoding": "identity"}
-TEST_DOMAIN_NAME = "test_es_domain_1"
 ES_CLUSTER_CONFIG = {
     "InstanceType": "m3.xlarge.elasticsearch",
     "InstanceCount": 4,
@@ -84,6 +83,8 @@ def try_cluster_health(cluster_url: str):
 class ElasticsearchTest(unittest.TestCase):
     # TODO: refactor this test into a pytest
 
+    domain_name: str
+
     @classmethod
     def init_async(cls):
         install_async()
@@ -101,7 +102,9 @@ class ElasticsearchTest(unittest.TestCase):
 
             cls.es_url = aws_stack.get_local_service_url("elasticsearch")
             # create ES domain
-            cls._create_domain(name=TEST_DOMAIN_NAME)
+            cls.domain_name = f"test-domain-{short_uid()}"
+            cls._create_domain(name=cls.domain_name)
+
             document = {
                 "first_name": "Jane",
                 "last_name": "Smith",
@@ -120,20 +123,20 @@ class ElasticsearchTest(unittest.TestCase):
 
         # make sure domain deletion works
         es_client = aws_stack.connect_to_service("es")
-        es_client.delete_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
-        assert TEST_DOMAIN_NAME not in [
+        es_client.delete_elasticsearch_domain(DomainName=cls.domain_name)
+        assert cls.domain_name not in [
             d["DomainName"] for d in es_client.list_domain_names()["DomainNames"]
         ]
 
     def test_create_existing_domain_causes_exception(self):
         # the domain was already created in TEST_DOMAIN_NAME
         with self.assertRaises(ClientError):
-            self._create_domain(name=TEST_DOMAIN_NAME, es_cluster_config=ES_CLUSTER_CONFIG)
+            self._create_domain(name=self.domain_name, es_cluster_config=ES_CLUSTER_CONFIG)
 
     def test_domain_es_version(self):
         es_client = aws_stack.connect_to_service("es")
 
-        status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)[
+        status = es_client.describe_elasticsearch_domain(DomainName=self.domain_name)[
             "DomainStatus"
         ]
         self.assertEqual(ELASTICSEARCH_DEFAULT_VERSION, status["ElasticsearchVersion"])
@@ -149,9 +152,7 @@ class ElasticsearchTest(unittest.TestCase):
         for index_name in indexes:
             index_path = "{}/{}".format(self.es_url, index_name)
             requests.put(index_path, headers=COMMON_HEADERS)
-            endpoint = "http://localhost:{}/_cat/indices/{}?format=json&pretty".format(
-                config.PORT_ELASTICSEARCH, index_name
-            )
+            endpoint = "{}/_cat/indices/{}?format=json&pretty".format(self.es_url, index_name)
             req = requests.get(endpoint)
             self.assertEqual(200, req.status_code)
             req_result = json.loads(req.text)
@@ -179,12 +180,12 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertRaises(
             ClientError,
             es_client.create_elasticsearch_domain,
-            DomainName=TEST_DOMAIN_NAME,
+            DomainName=self.domain_name,
         )
 
         # get domain status
-        status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
-        self.assertEqual(TEST_DOMAIN_NAME, status["DomainStatus"]["DomainName"])
+        status = es_client.describe_elasticsearch_domain(DomainName=self.domain_name)
+        self.assertEqual(self.domain_name, status["DomainStatus"]["DomainName"])
         self.assertTrue(status["DomainStatus"]["Created"])
         self.assertFalse(status["DomainStatus"]["Deleted"])
 
@@ -228,16 +229,16 @@ class ElasticsearchTest(unittest.TestCase):
         )
 
     @classmethod
-    def _add_document(self, id, document):
-        article_path = "{}/{}/employee/{}?pretty".format(self.es_url, TEST_INDEX, id)
+    def _add_document(cls, id, document):
+        article_path = "{}/{}/employee/{}?pretty".format(cls.es_url, TEST_INDEX, id)
         resp = requests.put(article_path, data=json.dumps(document), headers=COMMON_HEADERS)
         # Pause to allow the document to be indexed
         time.sleep(1)
         return resp
 
     @classmethod
-    def _delete_document(self, id):
-        article_path = "{}/{}/employee/{}?pretty".format(self.es_url, TEST_INDEX, id)
+    def _delete_document(cls, id):
+        article_path = "{}/{}/employee/{}?pretty".format(cls.es_url, TEST_INDEX, id)
         resp = requests.delete(article_path, headers=COMMON_HEADERS)
         # Pause to allow the document to be indexed
         time.sleep(1)
@@ -246,7 +247,7 @@ class ElasticsearchTest(unittest.TestCase):
     @classmethod
     def _create_domain(cls, name=None, version=None, es_cluster_config=None):
         es_client = aws_stack.connect_to_service("es")
-        name = name or TEST_DOMAIN_NAME
+        name = name or cls.domain_name
         kwargs = {}
         if version:
             kwargs["ElasticsearchVersion"] = version

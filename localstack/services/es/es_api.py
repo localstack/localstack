@@ -315,7 +315,10 @@ def create_domain():
     with _domain_mutex:
         if domain_name in region.es_domains:
             # domain already created
-            return error_response(error_type="ResourceAlreadyExistsException")
+            return error_response(
+                error_type="ResourceAlreadyExistsException",
+                message=f"domain {domain_name} already exists in region {region.name}",
+            )
 
         # "create" domain data
         region.es_domains[domain_name] = data
