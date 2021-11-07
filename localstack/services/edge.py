@@ -7,7 +7,7 @@ import subprocess
 import sys
 import threading
 from collections import defaultdict
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from requests.models import Response
 
@@ -20,6 +20,7 @@ from localstack.constants import (
     LOCALHOST_IP,
     LOCALSTACK_ROOT_FOLDER,
     LS_LOG_TRACE_INTERNAL,
+    MODULE_MAIN_PATH,
     PATH_USER_REQUEST,
 )
 from localstack.dashboard import infra as dashboard_infra
@@ -31,6 +32,7 @@ from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.aws.aws_stack import (
     Environment,
     is_internal_call_context,
@@ -43,7 +45,9 @@ from localstack.utils.common import (
     get_service_protocol,
     is_port_open,
     is_root,
+    load_file,
     merge_recursive,
+    parse_json_or_yaml,
     parse_request_data,
     run,
 )
@@ -73,6 +77,9 @@ API_UNKNOWN = "_unknown_"
 HEADER_SKIP_RESPONSE_ZIPPING = "_skip_response_gzipping_"
 SKIP_GZIP_APIS = [S3]
 
+# path prefix to indicate internal endpoints (e.g., resource graph, CFN deployment UI, etc)
+PATH_PREFIX_INTERNAL = "/_localstack/"
+
 
 class ProxyListenerEdge(ProxyListener):
     def __init__(self, service_manager=None) -> None:
@@ -90,7 +97,10 @@ class ProxyListenerEdge(ProxyListener):
         if path.split("?")[0] == "/health":
             return self.health.handle(method, path, data)
         if method == "POST" and path == "/graph":
+            # TODO: leaving this here for backwards compatibility - should use internal path prefix below in the future
             return serve_resource_graph(data)
+        if path.startswith(PATH_PREFIX_INTERNAL):
+            return serve_internal_resource(method, path, data, headers)
 
         # kill the process if we receive this header
         headers.get(HEADER_KILL_SIGNAL) and sys.exit(0)
@@ -470,7 +480,19 @@ class HealthResource:
         return {"status": "OK"}
 
 
-def serve_resource_graph(data):
+def serve_internal_resource(method, path, data, headers):
+    path_orig = path
+    path = path[len(PATH_PREFIX_INTERNAL) :]
+    path = path if path.startswith("/") else f"/{path}"
+    if method == "POST" and path == "/graph":
+        return serve_resource_graph(data)
+    if path.startswith("/cloudformation/deploy"):
+        return serve_cloudformation_ui(method, path)
+    LOG.warning("Unable to find handler for internal endpoint: %s", path_orig)
+    return 404
+
+
+def serve_resource_graph(data: Dict[str, Any]) -> Dict[str, Any]:
     data = json.loads(to_str(data or "{}"))
 
     if not data.get("awsEnvironment"):
@@ -483,6 +505,36 @@ def serve_resource_graph(data):
         region=data.get("awsRegion"),
     )
     return graph
+
+
+def serve_cloudformation_ui(method, path):
+    deploy_html_file = os.path.join(MODULE_MAIN_PATH, "services", "cloudformation", "deploy.html")
+    deploy_html = load_file(deploy_html_file)
+    req_params = parse_request_data(method, path)
+    params = {
+        "stackName": "stack1",
+        "templateBody": "{}",
+        "errorMessage": "''",
+        "regions": json.dumps(sorted(list(config.VALID_REGIONS))),
+    }
+
+    download_url = req_params.get("templateURL")
+    if download_url:
+        try:
+            LOG.debug("Attempting to download CloudFormation template URL: %s", download_url)
+            template_body = to_str(requests.get(download_url).content)
+            template_body = parse_json_or_yaml(template_body)
+            params["templateBody"] = json.dumps(template_body)
+        except Exception as e:
+            msg = f"Unable to download CloudFormation template URL: {e}"
+            LOG.info(msg)
+            params["errorMessage"] = json.dumps(msg.replace("\n", " - "))
+
+    # using simple string replacement here, for simplicity (could be replaced with, e.g., jinja)
+    for key, value in params.items():
+        deploy_html = deploy_html.replace(f"<{key}>", value)
+    result = requests_response(deploy_html)
+    return result
 
 
 def get_api_from_custom_rules(method, path, data, headers):
