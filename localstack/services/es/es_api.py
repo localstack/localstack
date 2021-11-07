@@ -10,6 +10,7 @@ import time
 from random import randint
 from typing import Dict
 
+from botocore.utils import ArnParser
 from flask import Flask, jsonify, make_response, request
 
 from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT_ID
@@ -83,8 +84,6 @@ def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str)
     with _domain_mutex:
         status = ElasticsearchServiceBackend.get(region).es_domains[domain_name]
         status["Processing"] = False
-        if is_up:
-            status["Endpoint"] = cluster.url.split("://")[-1]
 
 
 def _create_cluster(domain_name: str, data: Dict):
@@ -100,9 +99,12 @@ def _create_cluster(domain_name: str, data: Dict):
 
     region.es_clusters[domain_name] = cluster
 
+    # FIXME: in AWS, the Endpoint is set once the cluster is running, not before (like here), but our tests and
+    #  in particular cloudformation currently relies on the assumption that it is set when the domain is created.
+    data["Endpoint"] = cluster.url.split("://")[-1]
+
     if cluster.is_up():
         data["Processing"] = False
-        data["Endpoint"] = cluster.url.split("://")[-1]
     else:
         # run a background thread that will update all domains that use this cluster to set
         # the cluster state once it is started, or the CLUSTER_STARTUP_TIMEOUT is reached
@@ -135,6 +137,10 @@ def get_domain_arn(domain_name: str, region: str = None, account_id: str = None)
     region = region or aws_stack.get_region()
     account_id = account_id or TEST_AWS_ACCOUNT_ID
     return "arn:aws:es:%s:%s:domain/%s" % (region, account_id, domain_name)
+
+
+def parse_domain_arn(arn: str):
+    return ArnParser().parse_arn(arn)
 
 
 def get_domain_config_status():

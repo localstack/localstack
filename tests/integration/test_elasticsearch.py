@@ -68,6 +68,19 @@ def elasticsearch():
     yield
 
 
+def try_cluster_health(cluster_url: str):
+    response = requests.get(cluster_url)
+    assert response.ok, "cluster endpoint returned an error: %s" % response.text
+
+    response = requests.get(f"{cluster_url}/_cluster/health")
+    assert response.ok, "cluster health endpoint returned an error: %s" % response.text
+    assert response.json()["status"] in [
+        "orange",
+        "yellow",
+        "green",
+    ], "expected cluster state to be in a valid state"
+
+
 class ElasticsearchTest(unittest.TestCase):
     # TODO: refactor this test into a pytest
 
@@ -246,15 +259,18 @@ class ElasticsearchTest(unittest.TestCase):
         # wait for completion status
         def check_cluster_ready(*args):
             status = es_client.describe_elasticsearch_domain(DomainName=name)
-            endpoint = status["DomainStatus"]["Endpoint"]
+            processing = status["DomainStatus"]["Processing"]
             LOG.info(
-                "asserting that cluster of domain %s has an endpoint (endpoint = %s)",
+                "asserting that cluster of domain %s is not processing (processing = %s)",
                 name,
-                endpoint,
+                processing,
             )
-            assert endpoint, "gave up waiting on cluster to be ready"
+            assert processing is False, "gave up waiting on cluster to be ready"
 
-        retry(check_cluster_ready, sleep=10, retries=12)
+            # also check that the cluster is healthy
+            try_cluster_health(f"http://{status['DomainStatus']['Endpoint']}")
+
+        retry(check_cluster_ready, sleep=10, retries=24)
 
 
 class TestEdgeProxiedElasticsearchCluster:
@@ -264,9 +280,8 @@ class TestEdgeProxiedElasticsearchCluster:
         cluster = EdgeProxiedElasticsearchCluster(cluster_url)
 
         try:
-            with INIT_LOCK:
-                cluster.start()
-                assert cluster.wait_is_up(120), "gave up waiting for server"
+            cluster.start()
+            assert cluster.wait_is_up(240), "gave up waiting for server"
 
             response = requests.get(cluster_url)
             assert response.ok, "cluster endpoint returned an error: %s" % response.text
@@ -285,7 +300,7 @@ class TestEdgeProxiedElasticsearchCluster:
             cluster.shutdown()
 
         assert poll_condition(
-            lambda: not cluster.is_up(), timeout=10
+            lambda: not cluster.is_up(), timeout=240
         ), "gave up waiting for cluster to shut down"
 
 
@@ -306,8 +321,11 @@ class TestMultiClusterManager:
 
         try:
             # spawn the two clusters
-            cluster0.wait_is_up(120)
-            cluster1.wait_is_up(120)
+            assert cluster0.wait_is_up(240)
+            assert cluster1.wait_is_up(240)
+
+            retry(lambda: try_cluster_health(cluster0.url), retries=12, sleep=10)
+            retry(lambda: try_cluster_health(cluster1.url), retries=12, sleep=10)
 
             # create an index in cluster0, wait for it to appear, make sure it's not in cluster1
             index0_url = cluster0.url + "/my-index?pretty"
@@ -346,8 +364,11 @@ class TestMultiplexingClusterManager:
 
         try:
             # spawn the two clusters
-            cluster0.wait_is_up(120)
-            cluster1.wait_is_up(120)
+            assert cluster0.wait_is_up(240)
+            assert cluster1.wait_is_up(240)
+
+            retry(lambda: try_cluster_health(cluster0.url), retries=12, sleep=10)
+            retry(lambda: try_cluster_health(cluster1.url), retries=12, sleep=10)
 
             # create an index in cluster0, wait for it to appear, make sure it's not in cluster1
             index0_url = cluster0.url + "/my-index?pretty"

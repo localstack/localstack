@@ -1,6 +1,9 @@
+import dataclasses
 import logging
 import threading
 from typing import Dict, Optional
+
+from botocore.utils import ArnParser
 
 from localstack import config, constants
 from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION
@@ -36,15 +39,38 @@ def create_cluster_manager() -> "ClusterManager":
     )
 
 
+@dataclasses.dataclass
+class DomainKey:
+    domain_name: str
+    region: str
+    account: str
+
+    @property
+    def arn(self):
+        return f"arn:aws:es:{self.region}:{self.account}:domain/{self.domain_name}"
+
+    @staticmethod
+    def from_arn(arn: str) -> "DomainKey":
+        parsed = ArnParser().parse_arn(arn)
+        if parsed["service"] != "es":
+            raise ValueError("not an elasticsearch arn: %s", arn)
+
+        return DomainKey(
+            domain_name=parsed["resource"][7:],  # strip 'domain/'
+            region=parsed["region"],
+            account=parsed["account"],
+        )
+
+
 def build_cluster_endpoint(
-    domain_name: str, custom_endpoint: Optional[CustomEndpoint] = None
+    domain_key: DomainKey, custom_endpoint: Optional[CustomEndpoint] = None
 ) -> str:
     """
     Builds the cluster endpoint from and optional custom_endpoint and the localstack elasticsearch config. Example
     values:
 
-    - my-domain.es.localhost.localstack.cloud:4566 (endpoint strategy = domain (default))
-    - localhost:4566/my-domain (endpoint strategy = path)
+    - my-domain.us-east-1.es.localhost.localstack.cloud:4566 (endpoint strategy = domain (default))
+    - localhost:4566/us-east-1/my-domain (endpoint strategy = path)
     - localhost:4751 (endpoint strategy = off)
     - my.domain:443/foo (arbitrary endpoints (technically not allowed by AWS, but there are no rules in localstack))
     """
@@ -54,9 +80,14 @@ def build_cluster_endpoint(
     if config.ES_ENDPOINT_STRATEGY == "off":
         return "%s:%s" % (config.LOCALSTACK_HOSTNAME, config.PORT_ELASTICSEARCH)
     if config.ES_ENDPOINT_STRATEGY == "path":
-        return "%s:%s/%s" % (config.LOCALSTACK_HOSTNAME, config.EDGE_PORT, domain_name)
+        return "%s:%s/%s/%s" % (
+            config.LOCALSTACK_HOSTNAME,
+            config.EDGE_PORT,
+            domain_key.region,
+            domain_key.domain_name,
+        )
 
-    return f"{domain_name}.{ES_BASE_DOMAIN}:{config.EDGE_PORT}"
+    return f"{domain_key.domain_name}.{domain_key.region}.{ES_BASE_DOMAIN}:{config.EDGE_PORT}"
 
 
 def determine_custom_endpoint(domain_endpoint_options: Dict) -> Optional[CustomEndpoint]:
@@ -85,7 +116,6 @@ class ClusterManager:
         self.clusters = dict()
 
     def create(self, arn: str, create_domain_request: Dict) -> Server:
-        domain_name = create_domain_request.get("DomainName")
         version = versions.get_install_version(
             create_domain_request.get("ElasticsearchVersion") or ELASTICSEARCH_DEFAULT_VERSION
         )
@@ -95,7 +125,7 @@ class ClusterManager:
         custom_endpoint = determine_custom_endpoint(endpoint_options)
 
         # build final endpoint and cluster url
-        endpoint = build_cluster_endpoint(domain_name, custom_endpoint)
+        endpoint = build_cluster_endpoint(DomainKey.from_arn(arn), custom_endpoint)
         url = f"http://{endpoint}" if "://" not in endpoint else endpoint
 
         # call abstract cluster factory
