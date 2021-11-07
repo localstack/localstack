@@ -680,21 +680,26 @@ def es_domain_arn(domain_name, account_id=None, region_name=None):
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def kms_key_arn(key_id, account_id=None, region_name=None):
+def kms_key_arn(key_id: str, account_id: str = None, region_name: str = None) -> str:
     pattern = "arn:aws:kms:%s:%s:key/%s"
     return _resource_arn(key_id, pattern, account_id=account_id, region_name=region_name)
 
 
-def code_signing_arn(code_signing_id, account_id=None, region_name=None):
+def code_signing_arn(code_signing_id: str, account_id: str = None, region_name: str = None) -> str:
     pattern = "arn:aws:lambda:%s:%s:code-signing-config:%s"
     return _resource_arn(code_signing_id, pattern, account_id=account_id, region_name=region_name)
 
 
-def s3_bucket_arn(bucket_name, account_id=None):
-    return "arn:aws:s3:::%s" % (bucket_name)
+def s3_bucket_arn(bucket_name_or_arn: str, account_id=None):
+    bucket_name = s3_bucket_name(bucket_name_or_arn)
+    return "arn:aws:s3:::%s" % bucket_name
 
 
-def _resource_arn(name, pattern, account_id=None, region_name=None):
+def s3_bucket_name(bucket_name_or_arn: str) -> str:
+    return bucket_name_or_arn.split(":::")[-1]
+
+
+def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: str = None) -> str:
     if ":" in name:
         return name
     account_id = get_account_id(account_id)
@@ -1078,7 +1083,6 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
 
 def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
     env = get_environment(env)
-    # stream
     stream = KinesisStream(id=stream_name, num_shards=shards)
     conn = connect_to_service("kinesis", env=env)
     stream.connect(conn)
