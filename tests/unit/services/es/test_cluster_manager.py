@@ -15,12 +15,12 @@ class TestBuildClusterEndpoint:
         monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "path")
 
         endpoint = build_cluster_endpoint(DomainKey("my-domain", "us-east-1", TEST_AWS_ACCOUNT_ID))
-        assert endpoint == "localhost:4566/us-east-1/my-domain"
+        assert endpoint == "localhost:4566/es/us-east-1/my-domain"
 
         endpoint = build_cluster_endpoint(
             DomainKey("my-domain-1", "eu-central-1", TEST_AWS_ACCOUNT_ID)
         )
-        assert endpoint == "localhost:4566/eu-central-1/my-domain-1"
+        assert endpoint == "localhost:4566/es/eu-central-1/my-domain-1"
 
     def test_endpoint_strategy_domain(self, monkeypatch):
         monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")

@@ -80,7 +80,7 @@ def build_cluster_endpoint(
     if config.ES_ENDPOINT_STRATEGY == "off":
         return "%s:%s" % (config.LOCALSTACK_HOSTNAME, config.PORT_ELASTICSEARCH)
     if config.ES_ENDPOINT_STRATEGY == "path":
-        return "%s:%s/%s/%s" % (
+        return "%s:%s/es/%s/%s" % (
             config.LOCALSTACK_HOSTNAME,
             config.EDGE_PORT,
             domain_key.region,
