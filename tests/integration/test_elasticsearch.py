@@ -139,7 +139,7 @@ class ElasticsearchTest(unittest.TestCase):
             d["DomainName"] for d in es_client.list_domain_names()["DomainNames"]
         ]
 
-        es_api.cluster_manager.shutdown_all()
+        es_api.cluster_manager().shutdown_all()
         es_api._cluster_manager = None
 
     def test_create_existing_domain_causes_exception(self):
