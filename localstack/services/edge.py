@@ -514,7 +514,7 @@ def serve_cloudformation_ui(method, path):
     params = {
         "stackName": "stack1",
         "templateBody": "{}",
-        "errorMessage": "",
+        "errorMessage": "''",
         "regions": json.dumps(sorted(list(config.VALID_REGIONS))),
     }
 
@@ -526,7 +526,9 @@ def serve_cloudformation_ui(method, path):
             template_body = parse_json_or_yaml(template_body)
             params["templateBody"] = json.dumps(template_body)
         except Exception as e:
-            params["errorMessage"] = f"Unable to download CloudFormation template URL: {e}"
+            msg = f"Unable to download CloudFormation template URL: {e}"
+            LOG.info(msg)
+            params["errorMessage"] = json.dumps(msg.replace("\n", " - "))
 
     # using simple string replacement here, for simplicity (could be replaced with, e.g., jinja)
     for key, value in params.items():
