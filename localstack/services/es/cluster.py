@@ -110,12 +110,15 @@ def init_directories(dirs: Directories):
         # only clear previous data if it's not in DATA_DIR
         rm_rf(dirs.data)
 
-    mkdir(dirs.data)
-    chmod_r(dirs.data, 0o777)
-
     rm_rf(dirs.tmp)
     mkdir(dirs.tmp)
     chmod_r(dirs.tmp, 0o777)
+
+    mkdir(dirs.data)
+    chmod_r(dirs.data, 0o777)
+
+    mkdir(dirs.backup)
+    chmod_r(dirs.backup, 0o777)
 
     # clear potentially existing lock files (which cause problems since ES 7.10)
     for d, dirs, files in os.walk(dirs.data, True):
