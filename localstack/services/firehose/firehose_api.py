@@ -6,7 +6,7 @@ import logging
 import time
 import traceback
 import uuid
-from typing import Dict
+from typing import Dict, List, Optional
 
 import requests
 from boto3.dynamodb.types import TypeDeserializer
@@ -17,14 +17,14 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws import aws_responses
+from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_stack import (
     connect_elasticsearch,
     connect_to_resource,
-    extract_region_from_auth_header,
     firehose_stream_arn,
+    s3_bucket_name,
 )
-from localstack.utils.common import clone, short_uid, timestamp, to_str
+from localstack.utils.common import clone, short_uid, timestamp, to_bytes, to_str
 from localstack.utils.kinesis import kinesis_connector
 
 APP_NAME = "firehose_api"
@@ -37,6 +37,14 @@ LOG = logging.getLogger(__name__)
 # dynamodb deserializer
 deser = TypeDeserializer()
 
+# attributes specific to extended S3 destinations
+S3_EXTENDED_DEST_ATTRS = [
+    "ProcessingConfiguration",
+    "S3BackupMode",
+    "S3BackupDescription",
+    "DataFormatConversionConfiguration",
+]
+
 
 class FirehoseBackend(RegionBackend):
     # maps stream names to details
@@ -46,7 +54,7 @@ class FirehoseBackend(RegionBackend):
         self.delivery_streams = {}
 
 
-def get_delivery_stream_names():
+def get_delivery_stream_names() -> List[str]:
     region = FirehoseBackend.get()
     names = []
     for name, stream in iteritems(region.delivery_streams):
@@ -54,7 +62,9 @@ def get_delivery_stream_names():
     return names
 
 
-def get_delivery_stream_tags(stream_name, exclusive_start_tag_key=None, limit=50):
+def get_delivery_stream_tags(
+    stream_name: str, exclusive_start_tag_key: str = None, limit: int = 50
+) -> Dict:
     region = FirehoseBackend.get()
     stream = region.delivery_streams[stream_name]
     response = {}
@@ -71,15 +81,50 @@ def get_delivery_stream_tags(stream_name, exclusive_start_tag_key=None, limit=50
     return response
 
 
-def put_record(stream_name, record):
+def preprocess_records(processor: Dict, records: List[Dict]) -> List[Dict]:
+    """Preprocess the list of records by calling the given processor (e.g., Lamnda function)."""
+    proc_type = processor.get("Type")
+    parameters = processor.get("Parameters", [])
+    parameters = {p["ParameterName"]: p["ParameterValue"] for p in parameters}
+    if proc_type == "Lambda":
+        lambda_arn = parameters.get("LambdaArn")
+        # TODO: add support for other parameters, e.g., NumberOfRetries, BufferSizeInMBs, BufferIntervalInSeconds, ...
+        client = aws_stack.connect_to_service("lambda")
+        event = {"records": records}
+        event = to_bytes(json.dumps(event))
+        response = client.invoke(FunctionName=lambda_arn, Payload=event)
+        result = response.get("Payload").read()
+        result = json.loads(to_str(result))
+        records = result.get("records", [])
+    else:
+        LOG.warning("Unsupported Firehose processor type '%s'", proc_type)
+    return records
+
+
+def put_record(stream_name: str, record: Dict) -> Dict:
+    """Put a record to the firehose stream from a PutRecord API call"""
     return put_records(stream_name, [record])
 
 
-def put_records(stream_name, records):
+def put_records(stream_name: str, records: List[Dict]) -> Dict:
+    """Put a list of records to the firehose stream - either directly from a PutRecord API call, or
+    received from an underlying Kinesis stream (if 'KinesisStreamAsSource' is configured)"""
     stream = get_stream(stream_name)
     if not stream:
         return error_not_found(stream_name)
     for dest in stream.get("Destinations", []):
+
+        # apply processing steps to incoming items
+        proc_config = {}
+        for child in dest.values():
+            proc_config = (
+                isinstance(child, dict) and child.get("ProcessingConfiguration") or proc_config
+            )
+        if proc_config.get("Enabled") is not False:
+            for processor in proc_config.get("Processors", []):
+                # TODO: run processors asynchronously, to avoid request timeouts on PutRecord API calls
+                records = preprocess_records(processor, records)
+
         if "ESDestinationDescription" in dest:
             es_dest = dest["ESDestinationDescription"]
             es_index = es_dest["IndexName"]
@@ -90,6 +135,7 @@ def put_records(stream_name, records):
             for record in records:
                 obj_id = uuid.uuid4()
 
+                data = "{}"
                 # DirectPut
                 if "Data" in record:
                     data = base64.b64decode(record["Data"])
@@ -106,7 +152,7 @@ def put_records(stream_name, records):
                     raise e
         if "S3DestinationDescription" in dest:
             s3_dest = dest["S3DestinationDescription"]
-            bucket = bucket_name(s3_dest["BucketARN"])
+            bucket = s3_bucket_name(s3_dest["BucketARN"])
             prefix = s3_dest.get("Prefix", "")
 
             s3 = connect_to_resource("s3")
@@ -161,8 +207,7 @@ def get_destination(stream_name, destination_id):
     for dest in destinations:
         if dest["DestinationId"] == destination_id:
             return dest
-    dest = {}
-    dest["DestinationId"] = destination_id
+    dest = {"DestinationId": destination_id}
     destinations.append(dest)
     return dest
 
@@ -178,7 +223,7 @@ def update_destination(
     dest = get_destination(stream_name, destination_id)
     if elasticsearch_update:
         details = dest.setdefault("ESDestinationDescription", {})
-        dest.update(elasticsearch_update)
+        details.update(elasticsearch_update)
     if s3_update:
         details = dest.setdefault("S3DestinationDescription", {})
         details.update(s3_update)
@@ -188,20 +233,22 @@ def update_destination(
     return dest
 
 
-def process_records(records, shard_id, fh_d_stream):
+def process_records(records: List[Dict], shard_id: str, fh_d_stream: str):
+    """Process the given records from the underlying Kinesis stream"""
     return put_records(fh_d_stream, records)
 
 
 def create_stream(
-    stream_name,
-    delivery_stream_type="DirectPut",
-    delivery_stream_type_configuration=None,
-    s3_destination=None,
-    elasticsearch_destination=None,
-    http_destination=None,
-    tags=None,
-    region_name=None,
+    stream_name: str,
+    delivery_stream_type: str = "DirectPut",
+    delivery_stream_type_configuration: Dict = None,
+    s3_destination: Dict = None,
+    elasticsearch_destination: Dict = None,
+    http_destination: Dict = None,
+    tags: Dict[str, str] = None,
 ):
+    """Create a firehose stream with destination configurations. In case 'KinesisStreamAsSource' is set,
+    creates a listener to process records from the underlying kinesis stream."""
     region = FirehoseBackend.get()
     tags = tags or {}
     stream = {
@@ -252,12 +299,11 @@ def create_stream(
             listener_func=process_records,
             wait_until_started=True,
             ddb_lease_table_suffix="-firehose",
-            region_name=region_name,
         )
     return stream
 
 
-def delete_stream(stream_name):
+def delete_stream(stream_name: str) -> Dict:
     region = FirehoseBackend.get()
     stream = region.delivery_streams.pop(stream_name, {})
     if not stream:
@@ -272,38 +318,28 @@ def delete_stream(stream_name):
     return {}
 
 
-def get_stream(stream_name: str, format_s3_dest: bool = False):
+def get_stream(stream_name: str, format_s3_dest: bool = False) -> Optional[Dict]:
     region = FirehoseBackend.get()
     result = region.delivery_streams.get(stream_name)
     if result and format_s3_dest:
-        extended_attrs = [
-            "ProcessingConfiguration",
-            "S3BackupMode",
-            "S3BackupDescription",
-            "DataFormatConversionConfiguration",
-        ]
         result = clone(result)
         for dest in result.get("Destinations", []):
             s3_dest = dest.get("S3DestinationDescription") or {}
-            if any([s3_dest.get(attr) is not None for attr in extended_attrs]):
+            if is_extended_s3_destination(s3_dest):
                 dest["ExtendedS3DestinationDescription"] = dest.pop("S3DestinationDescription")
     return result
 
 
-def bucket_name(bucket_arn):
-    return bucket_arn.split(":::")[-1]
+def is_extended_s3_destination(s3_dest: Dict) -> bool:
+    return any([s3_dest.get(attr) is not None for attr in S3_EXTENDED_DEST_ATTRS])
 
 
-def role_arn(stream_name):
-    return "arn:aws:iam::%s:role/%s" % (TEST_AWS_ACCOUNT_ID, stream_name)
-
-
-def error_not_found(stream_name):
+def error_not_found(stream_name: str):
     msg = "Firehose %s under account %s not found." % (stream_name, TEST_AWS_ACCOUNT_ID)
     return error_response(msg, code=400, error_type="ResourceNotFoundException")
 
 
-def error_response(msg, code=500, error_type="InternalFailure"):
+def error_response(msg: str, code: int = 500, error_type: str = "InternalFailure"):
     return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
 
 
@@ -312,7 +348,6 @@ def post_request():
     action = request.headers.get("x-amz-target", "")
     action = action.split(".")[-1]
     data = json.loads(to_str(request.data))
-    response = None
     if action == "ListDeliveryStreams":
         response = {
             "DeliveryStreamNames": get_delivery_stream_names(),
@@ -320,7 +355,6 @@ def post_request():
         }
     elif action == "CreateDeliveryStream":
         stream_name = data["DeliveryStreamName"]
-        region_name = extract_region_from_auth_header(request.headers)
         _s3_destination = data.get("S3DestinationConfiguration") or data.get(
             "ExtendedS3DestinationConfiguration"
         )
@@ -332,7 +366,6 @@ def post_request():
             elasticsearch_destination=data.get("ElasticsearchDestinationConfiguration"),
             http_destination=data.get("HttpEndpointDestinationConfiguration"),
             tags=data.get("Tags"),
-            region_name=region_name,
         )
     elif action == "DeleteDeliveryStream":
         stream_name = data["DeliveryStreamName"]
