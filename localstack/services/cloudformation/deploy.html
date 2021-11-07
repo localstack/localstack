@@ -18,7 +18,8 @@
     <script type="text/babel">
       const REGIONS = <regions>;
       const DEFAULT_REGION = "us-east-1";
-      const LOCALSTACK_ENDPOINT = "http://localhost:4566";
+      const LOCALSTACK_ENDPOINT = `${window.location.protocol}//${window.location.host}`;
+      AWS.config.update({endpoint: LOCALSTACK_ENDPOINT, accessKeyId: "test", secretAccessKey: "test"});
 
       const templateBody = <templateBody>;
       const defaultStackName = "<stackName>";
@@ -45,7 +46,7 @@
         };
         const deployStack = async () => {
           setErrorMessage("");
-          AWS.config.update({endpoint: LOCALSTACK_ENDPOINT, region, accessKeyId: "test", secretAccessKey: "test"});
+          AWS.config.update({region});
           const client = new AWS.CloudFormation();
           const stackParameters = [];
           const params = {StackName: stackName, TemplateBody: templateBodyStr, Parameters: stackParameters};
