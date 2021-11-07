@@ -9,8 +9,13 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT_ID
+from localstack.services.es import es_api
 from localstack.services.es.cluster import EdgeProxiedElasticsearchCluster
-from localstack.services.es.cluster_manager import MultiClusterManager, MultiplexingClusterManager
+from localstack.services.es.cluster_manager import (
+    MultiClusterManager,
+    MultiplexingClusterManager,
+    SingletonClusterManager,
+)
 from localstack.services.es.es_api import get_domain_arn
 from localstack.services.install import install_elasticsearch
 from localstack.utils.aws import aws_stack
@@ -95,6 +100,12 @@ class ElasticsearchTest(unittest.TestCase):
         config.ES_ENDPOINT_STRATEGY = "off"
         config.ES_MULTI_CLUSTER = False
 
+        # FIXME clean up this test to avoid these hacks!
+        es_api.cluster_manager().shutdown_all()
+        es_api._cluster_manager = None
+        manager = es_api.cluster_manager()
+        assert isinstance(manager, SingletonClusterManager)
+
         then = time.time()
         LOG.info("waiting for initialization lock")
         with INIT_LOCK:
@@ -127,6 +138,9 @@ class ElasticsearchTest(unittest.TestCase):
         assert cls.domain_name not in [
             d["DomainName"] for d in es_client.list_domain_names()["DomainNames"]
         ]
+
+        es_api.cluster_manager.shutdown_all()
+        es_api._cluster_manager = None
 
     def test_create_existing_domain_causes_exception(self):
         # the domain was already created in TEST_DOMAIN_NAME

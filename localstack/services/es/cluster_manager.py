@@ -16,7 +16,7 @@ from localstack.services.es.cluster import (
     resolve_directories,
 )
 from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
-from localstack.utils.common import get_free_tcp_port, start_thread
+from localstack.utils.common import call_safe, get_free_tcp_port, start_thread
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
@@ -155,6 +155,11 @@ class ClusterManager:
         Abstract cluster factory.
         """
         raise NotImplementedError
+
+    def shutdown_all(self):
+        while self.clusters:
+            domain, cluster = self.clusters.popitem()
+            call_safe(cluster.shutdown)
 
 
 class SingletonClusterManager(ClusterManager):
