@@ -69,6 +69,8 @@ def elasticsearch():
 
 
 class ElasticsearchTest(unittest.TestCase):
+    # TODO: refactor this test into a pytest
+
     @classmethod
     def init_async(cls):
         install_async()
@@ -154,8 +156,8 @@ class ElasticsearchTest(unittest.TestCase):
         status_test_domain_name_2 = es_client.describe_elasticsearch_domain(
             DomainName=test_domain_name_2
         )
-        self.assertTrue(status_test_domain_name_1["DomainStatus"]["Created"])
-        self.assertTrue(status_test_domain_name_2["DomainStatus"]["Created"])
+        self.assertFalse(status_test_domain_name_1["DomainStatus"]["Processing"])
+        self.assertFalse(status_test_domain_name_2["DomainStatus"]["Processing"])
 
     def test_domain_creation(self):
         es_client = aws_stack.connect_to_service("es")
@@ -171,8 +173,12 @@ class ElasticsearchTest(unittest.TestCase):
         status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
         self.assertEqual(TEST_DOMAIN_NAME, status["DomainStatus"]["DomainName"])
         self.assertTrue(status["DomainStatus"]["Created"])
-        self.assertFalse(status["DomainStatus"]["Processing"])
         self.assertFalse(status["DomainStatus"]["Deleted"])
+
+        # wait for domain to appear
+        self.assertTrue(
+            poll_condition(lambda: status["DomainStatus"].get("Processing") is False, timeout=30)
+        )
         self.assertEqual(
             "localhost:%s" % config.PORT_ELASTICSEARCH,
             status["DomainStatus"]["Endpoint"],
@@ -240,9 +246,13 @@ class ElasticsearchTest(unittest.TestCase):
         # wait for completion status
         def check_cluster_ready(*args):
             status = es_client.describe_elasticsearch_domain(DomainName=name)
-            created = status["DomainStatus"]["Created"]
-            LOG.info("asserting created state of domain %s (state = %s)", name, created)
-            assert created, "gave up waiting on cluster to be ready"
+            endpoint = status["DomainStatus"]["Endpoint"]
+            LOG.info(
+                "asserting that cluster of domain %s has an endpoint (endpoint = %s)",
+                name,
+                endpoint,
+            )
+            assert endpoint, "gave up waiting on cluster to be ready"
 
         retry(check_cluster_ready, sleep=10, retries=12)
 
