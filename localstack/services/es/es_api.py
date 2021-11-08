@@ -134,9 +134,9 @@ def error_response(error_type, code=400, message="Unknown error."):
 
 
 def get_domain_arn(domain_name: str, region: str = None, account_id: str = None) -> str:
-    region = region or aws_stack.get_region()
-    account_id = account_id or TEST_AWS_ACCOUNT_ID
-    return "arn:aws:es:%s:%s:domain/%s" % (region, account_id, domain_name)
+    return aws_stack.elasticsearch_domain_arn(
+        domain_name=domain_name, account_id=account_id, region_name=region
+    )
 
 
 def parse_domain_arn(arn: str):

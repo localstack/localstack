@@ -147,6 +147,13 @@ class ElasticsearchTest(unittest.TestCase):
         with self.assertRaises(ClientError):
             self._create_domain(name=self.domain_name, es_cluster_config=ES_CLUSTER_CONFIG)
 
+    def test_describe_elasticsearch_domains(self):
+        es_client = aws_stack.connect_to_service("es")
+
+        result = es_client.describe_elasticsearch_domains(DomainNames=[self.domain_name])
+        self.assertEqual(1, len(result["DomainStatusList"]))
+        self.assertEqual(result["DomainStatusList"][0]["DomainName"], self.domain_name)
+
     def test_domain_es_version(self):
         es_client = aws_stack.connect_to_service("es")
 
@@ -291,7 +298,7 @@ class ElasticsearchTest(unittest.TestCase):
 class TestEdgeProxiedElasticsearchCluster:
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
-        cluster_url = f"http://localhost:4566/{cluster_id}"
+        cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
         cluster = EdgeProxiedElasticsearchCluster(cluster_url)
 
         try:
@@ -360,6 +367,25 @@ class TestMultiClusterManager:
         finally:
             call_safe(cluster0.shutdown)
             call_safe(cluster1.shutdown)
+
+
+class TestElasticsearchApi:
+    def test_list_es_versions(self, es_client):
+        response = es_client.list_elasticsearch_versions()
+
+        assert "ElasticsearchVersions" in response
+
+        versions = response["ElasticsearchVersions"]
+        assert "7.10" in versions
+        assert "5.5" in versions
+
+    def test_get_compatible_versions(self, es_client):
+        response = es_client.get_compatible_elasticsearch_versions()
+
+        assert "CompatibleElasticsearchVersions" in response
+
+        versions = response["CompatibleElasticsearchVersions"]
+        assert {"SourceVersion": "5.5", "TargetVersions": ["5.6"]} in versions
 
 
 class TestMultiplexingClusterManager:

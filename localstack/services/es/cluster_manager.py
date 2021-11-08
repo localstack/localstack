@@ -35,7 +35,7 @@ def create_cluster_manager() -> "ClusterManager":
             return MultiplexingClusterManager()
 
     raise ValueError(
-        "cannot manage clusters with ES_ENDPOINT_STRATEGY=off and ES_MULTI_CLUSTER=False"
+        "cannot manage clusters with ES_ENDPOINT_STRATEGY=off and ES_MULTI_CLUSTER=True"
     )
 
 
