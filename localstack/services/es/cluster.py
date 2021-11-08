@@ -8,14 +8,8 @@ Here's how you can use it:
     cluster = ElasticsearchCluster(7541)
 
     def monitor():
-        for i in range(60):
-            if cluster.is_up():
-                print('elasticsearch is up!', cluster.health())
-                return
-            else:
-                print('sill waiting')
-
-            time.sleep(1)
+        cluster.wait_is_up()
+        print('elasticsearch is up!', cluster.health())
 
     threading.Thread(target=monitor, daemon=True).start()
 
@@ -36,7 +30,7 @@ import requests
 
 from localstack import config, constants
 from localstack.services import install
-from localstack.services.generic_proxy import ProxyListener, UrlMatchingForwarder
+from localstack.services.generic_proxy import EndpointProxy
 from localstack.services.infra import DEFAULT_BACKEND_HOST, start_proxy_for_service
 from localstack.utils.common import (
     ShellCommandThread,
@@ -55,25 +49,98 @@ CommandSettings = Dict[str, str]
 
 
 class Directories(NamedTuple):
-    base: str
+    install: str
     tmp: str
     mods: str
     data: str
     backup: str
 
 
-def _build_elasticsearch_run_command(es_bin: str, settings: CommandSettings) -> List[str]:
+def get_elasticsearch_health_status(url: str) -> Optional[str]:
+    """
+    Queries the health endpoint of elasticsearch and returns either the status ('green', 'yellow',
+    ...) or None if the response returned a non-200 response.
+    """
+    resp = requests.get(url + "/_cluster/health")
+
+    if resp and resp.ok:
+        es_status = resp.json()
+        es_status = es_status["status"]
+        return es_status
+
+    return None
+
+
+def resolve_directories(version: str, cluster_path: str, data_root: str = None) -> Directories:
+    """
+    Determines directories to find the elasticsearch binary as well as where to store the instance data.
+
+    :param version: the elasticsearch version (to resolve the install dir)
+    :param cluster_path: the path between data_root and the actual data directories
+    :param data_root: the root of the data dir (will be resolved to TMP_PATH or DATA_DIR by default)
+    :returns: a Directories data structure
+    """
+    # where to find elasticsearch binary and the modules
+    install_dir = install.get_elasticsearch_install_dir(version)
+    modules_dir = os.path.join(install_dir, "modules")
+
+    if data_root is None:
+        if config.DATA_DIR:
+            data_root = config.DATA_DIR
+        else:
+            data_root = config.TMP_FOLDER
+
+    data_path = os.path.join(data_root, "elasticsearch", cluster_path)
+
+    tmp_dir = os.path.join(data_path, "tmp")
+    data_dir = os.path.join(data_path, "data")
+    backup_dir = os.path.join(data_path, "backup")
+
+    return Directories(install_dir, tmp_dir, modules_dir, data_dir, backup_dir)
+
+
+def init_directories(dirs: Directories):
+    """
+    Makes sure the directories exist and have the necessary permissions.
+    """
+    LOG.debug("initializing elasticsearch directories %s", dirs)
+    chmod_r(dirs.install, 0o777)
+
+    if not dirs.data.startswith(config.DATA_DIR):
+        # only clear previous data if it's not in DATA_DIR
+        rm_rf(dirs.data)
+
+    rm_rf(dirs.tmp)
+    mkdir(dirs.tmp)
+    chmod_r(dirs.tmp, 0o777)
+
+    mkdir(dirs.data)
+    chmod_r(dirs.data, 0o777)
+
+    mkdir(dirs.backup)
+    chmod_r(dirs.backup, 0o777)
+
+    # clear potentially existing lock files (which cause problems since ES 7.10)
+    for d, dirs, files in os.walk(dirs.data, True):
+        for f in files:
+            if f.endswith(".lock"):
+                rm_rf(os.path.join(d, f))
+
+
+def build_elasticsearch_run_command(es_bin: str, settings: CommandSettings) -> List[str]:
     cmd_settings = [f"-E {k}={v}" for k, v, in settings.items()]
     return [es_bin] + cmd_settings
 
 
 class ElasticsearchCluster(Server):
-    def __init__(self, port=9200, host="localhost", version=None) -> None:
+    def __init__(
+        self, port=9200, host="localhost", version: str = None, directories: Directories = None
+    ) -> None:
         super().__init__(port, host)
         self._version = version or constants.ELASTICSEARCH_DEFAULT_VERSION
 
         self.command_settings = {}
-        self.directories = self._resolve_directories()
+        self.directories = directories or self._resolve_directories()
 
     @property
     def version(self):
@@ -118,7 +185,7 @@ class ElasticsearchCluster(Server):
         # delete Elasticsearch data that may be cached locally from a previous test run
         dirs = self.directories
 
-        bin_path = os.path.join(dirs.base, "bin/elasticsearch")
+        bin_path = os.path.join(dirs.install, "bin/elasticsearch")
 
         # build command settings for bin/elasticsearch
         settings = {
@@ -139,7 +206,7 @@ class ElasticsearchCluster(Server):
 
         self._settings_compatibility(settings)
 
-        cmd = _build_elasticsearch_run_command(bin_path, settings)
+        cmd = build_elasticsearch_run_command(bin_path, settings)
 
         return cmd
 
@@ -156,41 +223,11 @@ class ElasticsearchCluster(Server):
             del settings["transport.port"]
 
     def _resolve_directories(self) -> Directories:
-        # determine various directory paths
-        base_dir = install.get_elasticsearch_install_dir(self.version)
-
-        es_tmp_dir = os.path.join(base_dir, "tmp")
-        es_mods_dir = os.path.join(base_dir, "modules")
-        if config.DATA_DIR:
-            es_data_dir = os.path.join(config.DATA_DIR, "elasticsearch")
-        else:
-            es_data_dir = os.path.join(base_dir, "data")
-        backup_dir = os.path.join(config.TMP_FOLDER, "es_backup")
-
-        return Directories(base_dir, es_tmp_dir, es_mods_dir, es_data_dir, backup_dir)
+        # by default, the cluster data will be placed in <data_dir>/elasticsearch/<version>/
+        return resolve_directories(version=self.version, cluster_path=self.version)
 
     def _init_directories(self):
-        dirs = self.directories
-
-        LOG.debug("initializing elasticsearch directories %s", dirs)
-        chmod_r(dirs.base, 0o777)
-
-        if not dirs.data.startswith(config.DATA_DIR):
-            # only clear previous data if it's not in DATA_DIR
-            rm_rf(dirs.data)
-
-        mkdir(dirs.data)
-        chmod_r(dirs.data, 0o777)
-
-        rm_rf(dirs.tmp)
-        mkdir(dirs.tmp)
-        chmod_r(dirs.tmp, 0o777)
-
-        # clear potentially existing lock files (which cause problems since ES 7.10)
-        for d, dirs, files in os.walk(dirs.data, True):
-            for f in files:
-                if f.endswith(".lock"):
-                    rm_rf(os.path.join(d, f))
+        init_directories(self.directories)
 
 
 class ProxiedElasticsearchCluster(Server):
@@ -199,12 +236,15 @@ class ProxiedElasticsearchCluster(Server):
     backend will be assigned a random port.
     """
 
-    def __init__(self, port=9200, host="localhost", version=None) -> None:
+    def __init__(
+        self, port=9200, host="localhost", version=None, directories: Directories = None
+    ) -> None:
         super().__init__(port, host)
         self._version = version or constants.ELASTICSEARCH_DEFAULT_VERSION
 
         self.cluster = None
         self.cluster_port = None
+        self.directories = directories
 
     @property
     def version(self):
@@ -233,7 +273,10 @@ class ProxiedElasticsearchCluster(Server):
             self.cluster_port = get_free_tcp_port()
 
         self.cluster = ElasticsearchCluster(
-            port=self.cluster_port, host=DEFAULT_BACKEND_HOST, version=self.version
+            port=self.cluster_port,
+            host=DEFAULT_BACKEND_HOST,
+            version=self.version,
+            directories=self.directories,
         )
         self.cluster.start()
 
@@ -268,42 +311,25 @@ class CustomEndpoint:
             self.url = None
 
 
-class CustomEndpointProxy(ProxyListener):
-    def __init__(self, custom_endpoint: CustomEndpoint, cluster_url: str) -> None:
-        super().__init__()
-        self.forwarder = UrlMatchingForwarder(
-            base_url=custom_endpoint.endpoint,
-            forward_url=cluster_url,
-        )
-
-    def forward_request(self, method, path, data, headers):
-        return self.forwarder.forward_request(method, path, data, headers)
-
-    def register(self):
-        ProxyListener.DEFAULT_LISTENERS.append(self)
-
-    def unregister(self):
-        ProxyListener.DEFAULT_LISTENERS.remove(self)
-
-
-class CustomEndpointElasticsearchCluster(Server):
+class EdgeProxiedElasticsearchCluster(Server):
     """
     Elasticsearch-backed Server that can be routed through the edge proxy using an UrlMatchingForwarder to forward
     requests to the backend cluster.
     """
 
-    def __init__(self, custom_endpoint: CustomEndpoint, version=None) -> None:
-        super().__init__(
-            host=custom_endpoint.url.hostname,
-            port=custom_endpoint.url.port,
-        )
-        self.custom_endpoint = custom_endpoint
+    def __init__(self, url: str, version=None, directories: Directories = None) -> None:
+        self._url = urlparse(url)
 
+        super().__init__(
+            host=self._url.hostname,
+            port=self._url.port,
+        )
         self._version = version or constants.ELASTICSEARCH_DEFAULT_VERSION
 
         self.cluster = None
         self.cluster_port = None
         self.proxy = None
+        self.directories = directories
 
     @property
     def version(self):
@@ -311,7 +337,7 @@ class CustomEndpointElasticsearchCluster(Server):
 
     @property
     def url(self) -> str:
-        return self.custom_endpoint.endpoint
+        return self._url.geturl()
 
     def is_up(self):
         # check service lifecycle
@@ -333,11 +359,15 @@ class CustomEndpointElasticsearchCluster(Server):
     def do_run(self):
         self.cluster_port = get_free_tcp_port()
         self.cluster = ElasticsearchCluster(
-            port=self.cluster_port, host=DEFAULT_BACKEND_HOST, version=self.version
+            port=self.cluster_port,
+            host=DEFAULT_BACKEND_HOST,
+            version=self.version,
+            directories=self.directories,
         )
         self.cluster.start()
 
-        self.proxy = CustomEndpointProxy(self.custom_endpoint, self.cluster.url)
+        self.proxy = EndpointProxy(self.url, self.cluster.url)
+        LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
         self.proxy.register()
 
         self.cluster.wait_is_up()
@@ -350,18 +380,3 @@ class CustomEndpointElasticsearchCluster(Server):
             self.proxy.unregister()
         if self.cluster:
             self.cluster.shutdown()
-
-
-def get_elasticsearch_health_status(url: str) -> Optional[str]:
-    """
-    Queries the health endpoint of elasticsearch and returns either the status ('green', 'yellow',
-    ...) or None if the response returned a non-200 response.
-    """
-    resp = requests.get(url + "/_cluster/health")
-
-    if resp and resp.ok:
-        es_status = resp.json()
-        es_status = es_status["status"]
-        return es_status
-
-    return None

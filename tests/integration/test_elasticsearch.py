@@ -4,14 +4,22 @@ import threading
 import time
 import unittest
 
+import pytest
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.services.es.cluster import CustomEndpoint, CustomEndpointElasticsearchCluster
-from localstack.services.es.es_api import DEFAULT_ES_VERSION
+from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT_ID
+from localstack.services.es import es_api
+from localstack.services.es.cluster import EdgeProxiedElasticsearchCluster
+from localstack.services.es.cluster_manager import (
+    MultiClusterManager,
+    MultiplexingClusterManager,
+    SingletonClusterManager,
+)
+from localstack.services.es.es_api import get_domain_arn
 from localstack.services.install import install_elasticsearch
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import poll_condition, retry
+from localstack.utils.common import call_safe, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread
 
@@ -21,7 +29,6 @@ INIT_LOCK = threading.Lock()
 TEST_INDEX = "megacorp"
 TEST_DOC_ID = 1
 COMMON_HEADERS = {"content-type": "application/json", "Accept-encoding": "identity"}
-TEST_DOMAIN_NAME = "test_es_domain_1"
 ES_CLUSTER_CONFIG = {
     "InstanceType": "m3.xlarge.elasticsearch",
     "InstanceCount": 4,
@@ -31,25 +38,74 @@ ES_CLUSTER_CONFIG = {
     "DedicatedMasterCount": 3,
 }
 
+installed = threading.Event()
+
+
+def install_async():
+    """
+    Installs the default elasticsearch version in a worker thread. Used by conftest.py to make
+    sure elasticsearch is downloaded once the tests arrive here.
+    """
+    if installed.is_set():
+        return
+
+    def run_install(*args):
+        with INIT_LOCK:
+            if installed.is_set():
+                return
+
+            LOG.info("installing elasticsearch")
+            install_elasticsearch()
+            LOG.info("done installing elasticsearch")
+            installed.set()
+
+    start_worker_thread(run_install)
+
+
+@pytest.fixture(autouse=True)
+def elasticsearch():
+    if not installed.is_set():
+        install_async()
+
+    # wait up to five minutes for the installation to finish
+    assert installed.wait(timeout=60 * 5), "gave up waiting for elasticsearch to install"
+    yield
+
+
+def try_cluster_health(cluster_url: str):
+    response = requests.get(cluster_url)
+    assert response.ok, "cluster endpoint returned an error: %s" % response.text
+
+    response = requests.get(f"{cluster_url}/_cluster/health")
+    assert response.ok, "cluster health endpoint returned an error: %s" % response.text
+    assert response.json()["status"] in [
+        "orange",
+        "yellow",
+        "green",
+    ], "expected cluster state to be in a valid state"
+
 
 class ElasticsearchTest(unittest.TestCase):
+    # TODO: refactor this test into a pytest
+
+    domain_name: str
+
     @classmethod
     def init_async(cls):
-        """
-        Installs the default elasticsearch version in a worker thread. Used by conftest.py to make
-        sure elasticsearch is downloaded once the tests arrive here.
-        """
-
-        def run_install(*args):
-            with INIT_LOCK:
-                LOG.info("installing elasticsearch")
-                install_elasticsearch()
-                LOG.info("done installing elasticsearch")
-
-        start_worker_thread(run_install)
+        install_async()
 
     @classmethod
     def setUpClass(cls):
+        # this is the configuration the test was originally written for
+        config.ES_ENDPOINT_STRATEGY = "off"
+        config.ES_MULTI_CLUSTER = False
+
+        # FIXME clean up this test to avoid these hacks!
+        es_api.cluster_manager().shutdown_all()
+        es_api._cluster_manager = None
+        manager = es_api.cluster_manager()
+        assert isinstance(manager, SingletonClusterManager)
+
         then = time.time()
         LOG.info("waiting for initialization lock")
         with INIT_LOCK:
@@ -57,7 +113,9 @@ class ElasticsearchTest(unittest.TestCase):
 
             cls.es_url = aws_stack.get_local_service_url("elasticsearch")
             # create ES domain
-            cls._create_domain(name=TEST_DOMAIN_NAME)
+            cls.domain_name = f"test-domain-{short_uid()}"
+            cls._create_domain(name=cls.domain_name)
+
             document = {
                 "first_name": "Jane",
                 "last_name": "Smith",
@@ -76,23 +134,33 @@ class ElasticsearchTest(unittest.TestCase):
 
         # make sure domain deletion works
         es_client = aws_stack.connect_to_service("es")
-        es_client.delete_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
-        assert TEST_DOMAIN_NAME not in [
+        es_client.delete_elasticsearch_domain(DomainName=cls.domain_name)
+        assert cls.domain_name not in [
             d["DomainName"] for d in es_client.list_domain_names()["DomainNames"]
         ]
+
+        es_api.cluster_manager().shutdown_all()
+        es_api._cluster_manager = None
 
     def test_create_existing_domain_causes_exception(self):
         # the domain was already created in TEST_DOMAIN_NAME
         with self.assertRaises(ClientError):
-            self._create_domain(name=TEST_DOMAIN_NAME, es_cluster_config=ES_CLUSTER_CONFIG)
+            self._create_domain(name=self.domain_name, es_cluster_config=ES_CLUSTER_CONFIG)
+
+    def test_describe_elasticsearch_domains(self):
+        es_client = aws_stack.connect_to_service("es")
+
+        result = es_client.describe_elasticsearch_domains(DomainNames=[self.domain_name])
+        self.assertEqual(1, len(result["DomainStatusList"]))
+        self.assertEqual(result["DomainStatusList"][0]["DomainName"], self.domain_name)
 
     def test_domain_es_version(self):
         es_client = aws_stack.connect_to_service("es")
 
-        status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)[
+        status = es_client.describe_elasticsearch_domain(DomainName=self.domain_name)[
             "DomainStatus"
         ]
-        self.assertEqual(DEFAULT_ES_VERSION, status["ElasticsearchVersion"])
+        self.assertEqual(ELASTICSEARCH_DEFAULT_VERSION, status["ElasticsearchVersion"])
 
         domain_name = "es-%s" % short_uid()
         self._create_domain(name=domain_name, version="6.8", es_cluster_config=ES_CLUSTER_CONFIG)
@@ -105,9 +173,7 @@ class ElasticsearchTest(unittest.TestCase):
         for index_name in indexes:
             index_path = "{}/{}".format(self.es_url, index_name)
             requests.put(index_path, headers=COMMON_HEADERS)
-            endpoint = "http://localhost:{}/_cat/indices/{}?format=json&pretty".format(
-                config.PORT_ELASTICSEARCH, index_name
-            )
+            endpoint = "{}/_cat/indices/{}?format=json&pretty".format(self.es_url, index_name)
             req = requests.get(endpoint)
             self.assertEqual(200, req.status_code)
             req_result = json.loads(req.text)
@@ -125,8 +191,8 @@ class ElasticsearchTest(unittest.TestCase):
         status_test_domain_name_2 = es_client.describe_elasticsearch_domain(
             DomainName=test_domain_name_2
         )
-        self.assertTrue(status_test_domain_name_1["DomainStatus"]["Created"])
-        self.assertTrue(status_test_domain_name_2["DomainStatus"]["Created"])
+        self.assertFalse(status_test_domain_name_1["DomainStatus"]["Processing"])
+        self.assertFalse(status_test_domain_name_2["DomainStatus"]["Processing"])
 
     def test_domain_creation(self):
         es_client = aws_stack.connect_to_service("es")
@@ -135,17 +201,21 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertRaises(
             ClientError,
             es_client.create_elasticsearch_domain,
-            DomainName=TEST_DOMAIN_NAME,
+            DomainName=self.domain_name,
         )
 
         # get domain status
-        status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
-        self.assertEqual(TEST_DOMAIN_NAME, status["DomainStatus"]["DomainName"])
+        status = es_client.describe_elasticsearch_domain(DomainName=self.domain_name)
+        self.assertEqual(self.domain_name, status["DomainStatus"]["DomainName"])
         self.assertTrue(status["DomainStatus"]["Created"])
-        self.assertFalse(status["DomainStatus"]["Processing"])
         self.assertFalse(status["DomainStatus"]["Deleted"])
+
+        # wait for domain to appear
+        self.assertTrue(
+            poll_condition(lambda: status["DomainStatus"].get("Processing") is False, timeout=30)
+        )
         self.assertEqual(
-            "http://localhost:%s" % config.PORT_ELASTICSEARCH,
+            "localhost:%s" % config.PORT_ELASTICSEARCH,
             status["DomainStatus"]["Endpoint"],
         )
         self.assertTrue(status["DomainStatus"]["EBSOptions"]["EBSEnabled"])
@@ -180,16 +250,16 @@ class ElasticsearchTest(unittest.TestCase):
         )
 
     @classmethod
-    def _add_document(self, id, document):
-        article_path = "{}/{}/employee/{}?pretty".format(self.es_url, TEST_INDEX, id)
+    def _add_document(cls, id, document):
+        article_path = "{}/{}/employee/{}?pretty".format(cls.es_url, TEST_INDEX, id)
         resp = requests.put(article_path, data=json.dumps(document), headers=COMMON_HEADERS)
         # Pause to allow the document to be indexed
         time.sleep(1)
         return resp
 
     @classmethod
-    def _delete_document(self, id):
-        article_path = "{}/{}/employee/{}?pretty".format(self.es_url, TEST_INDEX, id)
+    def _delete_document(cls, id):
+        article_path = "{}/{}/employee/{}?pretty".format(cls.es_url, TEST_INDEX, id)
         resp = requests.delete(article_path, headers=COMMON_HEADERS)
         # Pause to allow the document to be indexed
         time.sleep(1)
@@ -198,7 +268,7 @@ class ElasticsearchTest(unittest.TestCase):
     @classmethod
     def _create_domain(cls, name=None, version=None, es_cluster_config=None):
         es_client = aws_stack.connect_to_service("es")
-        name = name or TEST_DOMAIN_NAME
+        name = name or cls.domain_name
         kwargs = {}
         if version:
             kwargs["ElasticsearchVersion"] = version
@@ -211,29 +281,35 @@ class ElasticsearchTest(unittest.TestCase):
         # wait for completion status
         def check_cluster_ready(*args):
             status = es_client.describe_elasticsearch_domain(DomainName=name)
-            created = status["DomainStatus"]["Created"]
-            LOG.info("asserting created state of domain %s (state = %s)", name, created)
-            assert created, "gave up waiting on cluster to be ready"
+            processing = status["DomainStatus"]["Processing"]
+            LOG.info(
+                "asserting that cluster of domain %s is not processing (processing = %s)",
+                name,
+                processing,
+            )
+            assert processing is False, "gave up waiting on cluster to be ready"
 
-        retry(check_cluster_ready, sleep=10, retries=12)
+            # also check that the cluster is healthy
+            try_cluster_health(f"http://{status['DomainStatus']['Endpoint']}")
+
+        retry(check_cluster_ready, sleep=10, retries=24)
 
 
-class TestCustomEndpointElasticsearchCluster:
+class TestEdgeProxiedElasticsearchCluster:
     def test_route_through_edge(self):
-        cluster = CustomEndpointElasticsearchCluster(
-            CustomEndpoint(endpoint="http://localhost:4566/my-es-cluster", enabled=True)
-        )
+        cluster_id = f"domain-{short_uid()}"
+        cluster_url = f"http://localhost:{config.EDGE_PORT}/{cluster_id}"
+        cluster = EdgeProxiedElasticsearchCluster(cluster_url)
 
         try:
-            with INIT_LOCK:
-                cluster.start()
-                assert cluster.wait_is_up(120), "gave up waiting for server"
+            cluster.start()
+            assert cluster.wait_is_up(240), "gave up waiting for server"
 
-            response = requests.get("http://localhost:4566/my-es-cluster")
+            response = requests.get(cluster_url)
             assert response.ok, "cluster endpoint returned an error: %s" % response.text
             assert response.json()["version"]["number"] == cluster.version
 
-            response = requests.get("http://localhost:4566/my-es-cluster/_cluster/health")
+            response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, "cluster health endpoint returned an error: %s" % response.text
             assert response.json()["status"] in [
                 "red",
@@ -246,5 +322,110 @@ class TestCustomEndpointElasticsearchCluster:
             cluster.shutdown()
 
         assert poll_condition(
-            lambda: not cluster.is_up(), timeout=10
+            lambda: not cluster.is_up(), timeout=240
         ), "gave up waiting for cluster to shut down"
+
+
+class TestMultiClusterManager:
+    def test_multi_cluster(self, monkeypatch):
+        monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
+        monkeypatch.setattr(config, "ES_MULTI_CLUSTER", True)
+
+        manager = MultiClusterManager()
+
+        # create two elasticsearch domains
+        domain0_name = f"domain-{short_uid()}"
+        domain1_name = f"domain-{short_uid()}"
+        domain0_arn = get_domain_arn(domain0_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        domain1_arn = get_domain_arn(domain1_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        cluster0 = manager.create(domain0_arn, dict(DomainName=domain0_name))
+        cluster1 = manager.create(domain1_arn, dict(DomainName=domain1_name))
+
+        try:
+            # spawn the two clusters
+            assert cluster0.wait_is_up(240)
+            assert cluster1.wait_is_up(240)
+
+            retry(lambda: try_cluster_health(cluster0.url), retries=12, sleep=10)
+            retry(lambda: try_cluster_health(cluster1.url), retries=12, sleep=10)
+
+            # create an index in cluster0, wait for it to appear, make sure it's not in cluster1
+            index0_url = cluster0.url + "/my-index?pretty"
+            index1_url = cluster1.url + "/my-index?pretty"
+
+            response = requests.put(index0_url)
+            assert response.ok, "failed to put index into cluster %s: %s" % (
+                cluster0.url,
+                response.text,
+            )
+            assert poll_condition(
+                lambda: requests.head(index0_url).ok, timeout=10
+            ), "gave up waiting for index"
+
+            assert not requests.head(index1_url).ok, "index should not appear in second cluster"
+
+        finally:
+            call_safe(cluster0.shutdown)
+            call_safe(cluster1.shutdown)
+
+
+class TestElasticsearchApi:
+    def test_list_es_versions(self, es_client):
+        response = es_client.list_elasticsearch_versions()
+
+        assert "ElasticsearchVersions" in response
+
+        versions = response["ElasticsearchVersions"]
+        assert "7.10" in versions
+        assert "5.5" in versions
+
+    def test_get_compatible_versions(self, es_client):
+        response = es_client.get_compatible_elasticsearch_versions()
+
+        assert "CompatibleElasticsearchVersions" in response
+
+        versions = response["CompatibleElasticsearchVersions"]
+        assert {"SourceVersion": "5.5", "TargetVersions": ["5.6"]} in versions
+
+
+class TestMultiplexingClusterManager:
+    def test_multiplexing_cluster(self, monkeypatch):
+        monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
+        monkeypatch.setattr(config, "ES_MULTI_CLUSTER", False)
+
+        manager = MultiplexingClusterManager()
+
+        # create two elasticsearch domains
+        domain0_name = f"domain-{short_uid()}"
+        domain1_name = f"domain-{short_uid()}"
+        domain0_arn = get_domain_arn(domain0_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        domain1_arn = get_domain_arn(domain1_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        cluster0 = manager.create(domain0_arn, dict(DomainName=domain0_name))
+        cluster1 = manager.create(domain1_arn, dict(DomainName=domain1_name))
+
+        try:
+            # spawn the two clusters
+            assert cluster0.wait_is_up(240)
+            assert cluster1.wait_is_up(240)
+
+            retry(lambda: try_cluster_health(cluster0.url), retries=12, sleep=10)
+            retry(lambda: try_cluster_health(cluster1.url), retries=12, sleep=10)
+
+            # create an index in cluster0, wait for it to appear, make sure it's not in cluster1
+            index0_url = cluster0.url + "/my-index?pretty"
+            index1_url = cluster1.url + "/my-index?pretty"
+
+            response = requests.put(index0_url)
+            assert response.ok, "failed to put index into cluster %s: %s" % (
+                cluster0.url,
+                response.text,
+            )
+            assert poll_condition(
+                lambda: requests.head(index0_url).ok, timeout=10
+            ), "gave up waiting for index"
+
+            assert requests.head(index1_url).ok, "expected index to appear by multiplexing"
+
+        finally:
+            call_safe(cluster0.shutdown)
+            call_safe(cluster1.shutdown)

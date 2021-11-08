@@ -71,7 +71,7 @@ def get_download_url(version: str) -> str:
     return f"{repo}/elasticsearch-{ver_str}-linux-x86_64.tar.gz"
 
 
-def fetch_latest_versions() -> Dict[str, str]:
+def fetch_latest_versions() -> Dict[str, str]:  # pragma: no cover
     """
     Fetches from the elasticsearch git repository tags the latest patch versions for a minor version and returns a
     dictionary where the key corresponds to the minor version, and the value to the patch version. Run this once in a
@@ -122,7 +122,7 @@ def fetch_latest_versions() -> Dict[str, str]:
     return {k: str(max(versions)) for k, versions in minor.items()}
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     from pprint import pprint
 
     pprint(fetch_latest_versions())

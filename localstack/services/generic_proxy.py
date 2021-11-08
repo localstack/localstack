@@ -5,6 +5,7 @@ import os
 import re
 import socket
 import ssl
+import threading
 from asyncio.selector_events import BaseSelectorEventLoop
 from typing import Dict
 
@@ -32,6 +33,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.common import Mock, generate_ssl_cert, json_safe, path_from_url, start_thread
 from localstack.utils.server import http2_server
+from localstack.utils.serving import Server
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -99,7 +101,6 @@ if EXTRA_CORS_ALLOWED_ORIGINS:
 
 
 class ProxyListener(object):
-
     # List of `ProxyListener` instances that are enabled by default for all requests
     DEFAULT_LISTENERS = []
 
@@ -146,15 +147,24 @@ class ProxyListener(object):
 
 
 class RegionBackend(object):
-    """Base class for region-specific backends for the different APIs."""
+    """Base class for region-specific backends for the different APIs.
+    RegionBackend lookup methods are not thread safe."""
 
     REGIONS: Dict[str, "RegionBackend"]
 
+    name: str  # name of the region
+
     @classmethod
-    def get(cls, region=None):
-        regions = cls.regions()
+    def get(cls, region: str = None) -> "RegionBackend":
         region = region or cls.get_current_request_region()
-        regions[region] = regions.get(region) or cls()
+
+        regions = cls.regions()
+        backend = regions.get(region)
+        if not backend:
+            backend = cls()
+            backend.name = region
+            regions[region] = backend
+
         return regions[region]
 
     @classmethod
@@ -558,6 +568,57 @@ class UrlMatchingForwarder(ProxyListener):
         forward_url = forward_host + forward_path_root + forward_path
 
         return urlparse(forward_url)
+
+
+class EndpointProxy(ProxyListener):
+    def __init__(self, base_url: str, forward_url: str) -> None:
+        super().__init__()
+        self.forwarder = UrlMatchingForwarder(
+            base_url=base_url,
+            forward_url=forward_url,
+        )
+
+    def forward_request(self, method, path, data, headers):
+        return self.forwarder.forward_request(method, path, data, headers)
+
+    def register(self):
+        ProxyListener.DEFAULT_LISTENERS.append(self)
+
+    def unregister(self):
+        try:
+            ProxyListener.DEFAULT_LISTENERS.remove(self)
+        except ValueError:
+            pass
+
+
+class FakeEndpointProxyServer(Server):
+    """
+    Makes an EndpointProxy behave like a Server. You can use this to create transparent multiplexing behavior.
+    """
+
+    endpoint: EndpointProxy
+
+    def __init__(self, endpoint: EndpointProxy) -> None:
+        self.endpoint = endpoint
+        self._shutdown_event = threading.Event()
+
+        self._url = self.endpoint.forwarder.base_url
+        super().__init__(self._url.port, self._url.hostname)
+
+    @property
+    def url(self):
+        return self._url.geturl()
+
+    def do_run(self):
+        self.endpoint.register()
+        try:
+            self._shutdown_event.wait()
+        finally:
+            self.endpoint.unregister()
+
+    def do_shutdown(self):
+        self._shutdown_event.set()
+        self.endpoint.unregister()
 
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
