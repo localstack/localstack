@@ -70,6 +70,8 @@ TEST_MESSAGE_ATTRIBUTES = {
     "Population": {"DataType": "Number", "StringValue": "1250800"},
 }
 
+os.environ["TEST_TARGET"] = "AWS_CLOUD"
+
 
 class SQSTest(unittest.TestCase):
     @classmethod
@@ -1403,6 +1405,91 @@ class TestSqsProvider:
         batch.append({"Id": "9", "MessageBody": "\x01"})
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
         assert len(result_send["Failed"]) == 1
+
+    # TODO: Why are certain attributes "unsupported"
+    def test_get_specific_queue_attribute_response(self, sqs_client, sqs_create_queue):
+        queue_name = "queue-%s" % short_uid()
+        dead_letter_queue_name = "dead_letter_queue-%s" % short_uid()
+
+        dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
+        dl_result = sqs_client.get_queue_attributes(
+            QueueUrl=dl_queue_url, AttributeNames=["QueueArn"]
+        )
+
+        assert "QueueArn" in dl_result["Attributes"].keys()
+        dl_queue_arn = dl_result["Attributes"]["QueueArn"]
+
+        _redrive_policy = {
+            "deadLetterTargetArn": dl_queue_arn,
+            "maxReceiveCount": "10",
+        }
+        attributes = {
+            "MessageRetentionPeriod": "604800",
+            "DelaySeconds": "10",
+            "RedrivePolicy": json.dumps(_redrive_policy),
+        }
+
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+        unsupported_attributes = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url,
+            AttributeNames=["MessageRetentionPeriod", "RedrivePolicy"],
+        )
+        supported_attributes = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url,
+            AttributeNames=["QueueArn"],
+        )
+        assert "MessageRetentionPeriod" in unsupported_attributes["Attributes"].keys()
+        assert "604800" == unsupported_attributes["Attributes"]["MessageRetentionPeriod"]
+        assert "QueueArn" in supported_attributes["Attributes"].keys()
+        assert "RedrivePolicy" in unsupported_attributes["Attributes"].keys()
+
+        redrive_policy = json.loads(unsupported_attributes["Attributes"]["RedrivePolicy"])
+        assert isinstance(redrive_policy["maxReceiveCount"], int)
+
+    def test_set_unsupported_attributes(self, sqs_client, sqs_create_queue):
+        # TODO: behaviour diverges from AWS
+        queue_name = "queue-%s" % short_uid()
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"FifoQueue": "true"})
+
+        result = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert "FifoQueue" in result["Attributes"]
+        assert result["Attributes"]["FifoQueue"] == "true"
+
+    def test_fifo_queue_send_multiple_messages_multiple_single_receives(self):
+        (
+            queue_url,
+            number_of_messages,
+            results,
+        ) = self._run_test_fifo_queue_send_multiple_messages()
+
+        for i in range(number_of_messages):
+            resp = self.client.receive_message(QueueUrl=queue_url)
+            self.assertEqual("message-{}".format(i), resp["Messages"][0]["Body"])
+            self.assertEqual(results[i]["MD5OfMessageBody"], resp["Messages"][0]["MD5OfBody"])
+            self.assertEqual(results[i]["MessageId"], resp["Messages"][0]["MessageId"])
+
+            # delete message to receive next message in queue
+            self.client.delete_message(
+                QueueUrl=queue_url, ReceiptHandle=resp["Messages"][0]["ReceiptHandle"]
+            )
+
+    def test_posting_to_queue_with_trailing_slash(self):
+        pass
+
+    def test_create_queue_with_slashes(self):
+        pass
+
+    def list_queues_with_auth_in_presigned_url(self, method):
+        pass
+
+    def test_post_list_queues_with_auth_in_presigned_url(self):
+        pass
+
+    def test_get_list_queues_with_auth_in_presigned_url(self):
+        pass
 
 
 # TODO: test visibility timeout (with various ways to set them: queue attributes, receive parameter, update call)
