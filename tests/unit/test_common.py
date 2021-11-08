@@ -14,7 +14,6 @@ import yaml
 
 from localstack import config
 from localstack.utils import common
-from localstack.utils.bootstrap import extract_port_flags
 from localstack.utils.common import (
     is_empty_dir,
     load_file,
@@ -24,7 +23,6 @@ from localstack.utils.common import (
     save_file,
     short_uid,
 )
-from localstack.utils.docker_utils import PortMappings
 from localstack.utils.testutil import create_zip_file
 
 
@@ -391,56 +389,6 @@ class TestCommon(unittest.TestCase):
         assert {} == common.get_proxies()
         config.OUTBOUND_HTTP_PROXY = old_http_proxy
         config.OUTBOUND_HTTPS_PROXY = old_https_proxy
-
-
-class TestCommandLine(unittest.TestCase):
-    def test_extract_port_flags(self):
-        port_mappings = PortMappings()
-        flags = extract_port_flags("foo -p 1234:1234 bar", port_mappings=port_mappings)
-        self.assertEqual("foo  bar", flags)
-        mapping_str = port_mappings.to_str()
-        self.assertEqual("-p 1234:1234", mapping_str)
-
-        port_mappings = PortMappings()
-        flags = extract_port_flags(
-            "foo -p 1234:1234 bar -p 80-90:81-91 baz", port_mappings=port_mappings
-        )
-        self.assertEqual("foo  bar  baz", flags)
-        mapping_str = port_mappings.to_str()
-        self.assertIn("-p 1234:1234", mapping_str)
-        self.assertIn("-p 80-90:81-91", mapping_str)
-
-    def test_overlapping_port_ranges(self):
-        port_mappings = PortMappings()
-        port_mappings.add(4590)
-        port_mappings.add(4591)
-        port_mappings.add(4593)
-        port_mappings.add(4592)
-        port_mappings.add(4593)
-        result = port_mappings.to_str()
-        # assert that ranges are non-overlapping, i.e., no duplicate ports
-        self.assertEqual("-p 4590-4592:4590-4592 -p 4593:4593", result)
-
-    def test_port_ranges_with_bind_host(self):
-        port_mappings = PortMappings(bind_host="0.0.0.0")
-        port_mappings.add(5000)
-        port_mappings.add(5001)
-        port_mappings.add(5003)
-        result = port_mappings.to_str()
-        self.assertEqual("-p 0.0.0.0:5000-5001:5000-5001 -p 0.0.0.0:5003:5003", result)
-
-    def test_port_ranges_with_bind_host_to_dict(self):
-        port_mappings = PortMappings(bind_host="0.0.0.0")
-        port_mappings.add(5000, 6000)
-        port_mappings.add(5001, 7000)
-        port_mappings.add(5003, 8000)
-        result = port_mappings.to_dict()
-        expected_result = {
-            "6000/tcp": ("0.0.0.0", 5000),
-            "7000/tcp": ("0.0.0.0", 5001),
-            "8000/tcp": ("0.0.0.0", 5003),
-        }
-        self.assertEqual(expected_result, result)
 
 
 class TestCommonFileOperations:

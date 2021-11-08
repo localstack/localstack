@@ -98,22 +98,50 @@ class PortMappings(object):
         mapped = mapped or port
         if isinstance(port, list):
             for i in range(port[1] - port[0] + 1):
-                self.add(port[0] + i, mapped[0] + i)
+                if isinstance(mapped, list):
+                    self.add(port[0] + i, mapped[0] + i)
+                else:
+                    self.add(port[0] + i, mapped)
             return
         if port is None or int(port) <= 0:
             raise Exception("Unable to add mapping for invalid port: %s" % port)
         if self.contains(port):
+            print("port %s already in mappings" % (port))
             return
+        bisected_host_port = None
         for from_range, to_range in self.mappings.items():
             if not self.in_expanded_range(port, from_range):
                 continue
             if not self.in_expanded_range(mapped, to_range):
                 continue
-            self.expand_range(port, from_range)
-            self.expand_range(mapped, to_range)
+            from_range_len = from_range[1] - from_range[0]
+            to_range_len = to_range[1] - to_range[0]
+            is_uniform = from_range_len == to_range_len
+            if is_uniform:
+                self.expand_range(port, from_range)
+                self.expand_range(mapped, to_range)
+            else:
+                if not self.in_range(mapped, to_range):
+                    continue
+                # extending a 1 to 1 mapping to be many to 1
+                elif from_range_len == 1:
+                    self.expand_range(port, from_range)
+                # splitting a uniform mapping
+                else:
+                    bisected_port_index = mapped - to_range[0]
+                    bisected_host_port = from_range[0] + bisected_port_index
+                    self.bisect_range(mapped, to_range)
+                    self.bisect_range(bisected_host_port, from_range)
+                    break
             return
         protocol = str(protocol or "tcp").lower()
-        self.mappings[self.HashableList([port, port, protocol])] = [mapped, mapped]
+        if bisected_host_port is None:
+            port_range = [port, port, protocol]
+        elif bisected_host_port < port:
+            port_range = [bisected_host_port, port, protocol]
+        else:
+            port_range = [port, bisected_host_port, protocol]
+        self.mappings[self.HashableList(port_range)] = [mapped, mapped]
 
     def to_str(self) -> str:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
@@ -122,6 +150,8 @@ class PortMappings(object):
             protocol = "/%s" % k[2] if k[2] != "tcp" else ""
             if k[0] == k[1] and v[0] == v[1]:
                 return "-p %s%s:%s%s" % (bind_address, k[0], v[0], protocol)
+            if k[0] != k[1] and v[0] == v[1]:
+                return "-p %s%s-%s:%s%s" % (bind_address, k[0], k[1], v[0], protocol)
             return "-p %s%s-%s:%s-%s%s" % (bind_address, k[0], k[1], v[0], v[1], protocol)
 
         return " ".join([entry(k, v) for k, v in self.mappings.items()])
@@ -137,11 +167,20 @@ class PortMappings(object):
 
         return [item for k, v in self.mappings.items() for item in entry(k, v)]
 
-    def to_dict(self) -> Dict[str, Union[Tuple[str, int], int]]:
+    def to_dict(self) -> Dict[str, Union[Tuple[str, Union[int, List[int]]], int]]:
         bind_address = self.bind_host or ""
 
         def entry(k, v):
             protocol = "/%s" % k[2]
+            if k[0] != k[1] and v[0] == v[1]:
+                container_port = v[0]
+                host_ports = list(range(k[0], k[1] + 1))
+                return [
+                    (
+                        f"{container_port}{protocol}",
+                        (bind_address, host_ports) if bind_address else host_ports,
+                    )
+                ]
             return [
                 (
                     f"{container_port}{protocol}",
@@ -173,6 +212,19 @@ class PortMappings(object):
             range[1] = port
         else:
             raise Exception("Unable to add port %s to existing range %s" % (port, range))
+
+    """Bisect a port range, at the provided port
+        This is needed in some cases when adding a non-uniform host to port mapping
+        adjacent to an existing port range
+    """
+
+    def bisect_range(self, port, range):
+        if not self.in_range(port, range):
+            return
+        if port == range[0]:
+            range[0] = port + 1
+        else:
+            range[1] = port - 1
 
 
 class ContainerClient(metaclass=ABCMeta):
@@ -947,10 +999,17 @@ class Util:
                         _, host_port, container_port = port_split
                     else:
                         raise ValueError("Invalid port string provided: %s", flag)
+                    host_port_split = host_port.split("-")
+                    if len(host_port_split) == 2:
+                        host_port = [int(host_port_split[0]), int(host_port_split[1])]
+                    elif len(host_port_split) == 1:
+                        host_port = int(host_port)
+                    else:
+                        raise ValueError("Invalid port string provided: %s", flag)
                     if "/" in container_port:
                         container_port, protocol = container_port.split("/")
                     ports = ports if ports is not None else PortMappings()
-                    ports.add(int(host_port), int(container_port), protocol)
+                    ports.add(host_port, int(container_port), protocol)
                 elif cur_state == "env":
                     lhs, _, rhs = flag.partition("=")
                     env_vars = env_vars if env_vars is not None else {}
