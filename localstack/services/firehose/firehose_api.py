@@ -3,6 +3,7 @@ from __future__ import print_function
 import base64
 import json
 import logging
+import threading
 import time
 import traceback
 import uuid
@@ -24,7 +25,17 @@ from localstack.utils.aws.aws_stack import (
     firehose_stream_arn,
     s3_bucket_name,
 )
-from localstack.utils.common import clone, short_uid, timestamp, to_bytes, to_str
+from localstack.utils.common import (
+    TIMESTAMP_FORMAT_MICROS,
+    clone,
+    first_char_to_lower,
+    keys_to_lower,
+    now_utc,
+    short_uid,
+    timestamp,
+    to_bytes,
+    to_str,
+)
 from localstack.utils.kinesis import kinesis_connector
 
 APP_NAME = "firehose_api"
@@ -44,6 +55,10 @@ S3_EXTENDED_DEST_ATTRS = [
     "S3BackupDescription",
     "DataFormatConversionConfiguration",
 ]
+
+# global sequence number counter for Firehose records (these are very large long values in AWS)
+SEQUENCE_NUMBER = 49546986683135544286507457936321625675700192471156785154
+SEQUENCE_NUMBER_MUTEX = threading.RLock()
 
 
 class FirehoseBackend(RegionBackend):
@@ -90,6 +105,7 @@ def preprocess_records(processor: Dict, records: List[Dict]) -> List[Dict]:
         lambda_arn = parameters.get("LambdaArn")
         # TODO: add support for other parameters, e.g., NumberOfRetries, BufferSizeInMBs, BufferIntervalInSeconds, ...
         client = aws_stack.connect_to_service("lambda")
+        records = keys_to_lower(records)
         event = {"records": records}
         event = to_bytes(json.dumps(event))
         response = client.invoke(FunctionName=lambda_arn, Payload=event)
@@ -99,6 +115,35 @@ def preprocess_records(processor: Dict, records: List[Dict]) -> List[Dict]:
     else:
         LOG.warning("Unsupported Firehose processor type '%s'", proc_type)
     return records
+
+
+def add_missing_record_attributes(records: List[Dict]):
+    def _contained(key, obj):
+        return key in obj or first_char_to_lower(key) in obj
+
+    for record in records:
+        if not _contained("ApproximateArrivalTimestamp", record):
+            record["ApproximateArrivalTimestamp"] = int(now_utc(millis=True))
+        if not _contained("KinesisRecordMetadata", record):
+            record["kinesisRecordMetadata"] = {
+                "shardId": "shardId-000000000000",
+                # not really documented what AWS is using internally - simply using a random UUID here
+                "partitionKey": str(uuid.uuid4()),
+                "approximateArrivalTimestamp": timestamp(
+                    float(record["ApproximateArrivalTimestamp"]) / 1000,
+                    format=TIMESTAMP_FORMAT_MICROS,
+                ),
+                "sequenceNumber": next_sequence_number(),
+                "subsequenceNumber": "",
+            }
+
+
+def next_sequence_number() -> int:
+    """Increase and return the next global sequence number."""
+    global SEQUENCE_NUMBER
+    with SEQUENCE_NUMBER_MUTEX:
+        SEQUENCE_NUMBER += 1
+        return SEQUENCE_NUMBER
 
 
 def put_record(stream_name: str, record: Dict) -> Dict:
@@ -112,6 +157,10 @@ def put_records(stream_name: str, records: List[Dict]) -> Dict:
     stream = get_stream(stream_name)
     if not stream:
         return error_not_found(stream_name)
+
+    # preprocess records, add any missing attributes
+    add_missing_record_attributes(records)
+
     for dest in stream.get("Destinations", []):
 
         # apply processing steps to incoming items

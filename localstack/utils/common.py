@@ -75,6 +75,11 @@ SSL_CERT_LOCK = threading.RLock()
 # user of the currently running process
 CACHED_USER = None
 
+# type definitions for JSON-serializable objects
+JsonComplexType = Union[Dict, List]
+JsonType = Union[JsonComplexType, str, int, float, bool, None]
+SerializableObj = JsonType
+
 
 class Mock(object):
     """Dummy class that can be used for mocking custom attributes."""
@@ -842,7 +847,7 @@ def merge_dicts(*dicts, **kwargs):
     return result
 
 
-def recurse_object(obj, func, path=""):
+def recurse_object(obj: JsonType, func: Callable, path: str = "") -> Any:
     """Recursively apply `func` to `obj` (may be a list, dict, or other object)."""
     obj = func(obj, path=path)
     if isinstance(obj, list):
@@ -856,13 +861,10 @@ def recurse_object(obj, func, path=""):
     return obj
 
 
-def keys_to_lower(obj, skip_children_of=None):
+def keys_to_lower(obj: JsonComplexType, skip_children_of: List[str] = None) -> JsonComplexType:
     """Recursively changes all dict keys to first character lowercase. Skip children
     of any elements whose names are contained in skip_children_of (e.g., ['Tags'])"""
-    skip_children_of = skip_children_of or []
-    skip_children_of = (
-        skip_children_of if isinstance(skip_children_of, list) else [skip_children_of]
-    )
+    skip_children_of = ensure_list(skip_children_of or [])
 
     def fix_keys(o, path="", **kwargs):
         if any([re.match(r"(^|.*\.)%s($|[.\[].*)" % k, path) for k in skip_children_of]):
@@ -877,11 +879,11 @@ def keys_to_lower(obj, skip_children_of=None):
     return result
 
 
-def camel_to_snake_case(string):
+def camel_to_snake_case(string: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "_", string).replace("__", "_").lower()
 
 
-def snake_to_camel_case(string, capitalize_first=True):
+def snake_to_camel_case(string: str, capitalize_first: bool = True) -> str:
     components = string.split("_")
     start_idx = 0 if capitalize_first else 1
     components = [x.title() for x in components[start_idx:]]
@@ -892,7 +894,7 @@ def base64_to_hex(b64_string: str) -> bytes:
     return binascii.hexlify(base64.b64decode(b64_string))
 
 
-def obj_to_xml(obj) -> str:
+def obj_to_xml(obj: SerializableObj) -> str:
     """Return an XML representation of the given object (dict, list, or primitive).
     Does NOT add a common root element if the given obj is a list.
     Does NOT work for nested dict structures."""
@@ -917,7 +919,7 @@ def mktime(ts: datetime, millis: bool = False) -> int:
     return int(ts.timestamp())
 
 
-def mkdir(folder):
+def mkdir(folder: str):
     if not os.path.exists(folder):
         os.makedirs(folder, exist_ok=True)
 
@@ -944,8 +946,8 @@ def ensure_readable(file_path: str, default_perms: int = None):
         os.chmod(file_path, default_perms)
 
 
-def chown_r(path, user):
-    """Recursive chown"""
+def chown_r(path: str, user: str):
+    """Recursive chown on the given file/directory path."""
     # keep these imports here for Windows compatibility
     import grp
     import pwd
@@ -1046,7 +1048,7 @@ def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=F
         shutil.copystat = copystat_orig
 
 
-def disk_usage(path: str):
+def disk_usage(path: str) -> int:
     if not os.path.exists(path):
         return 0
 
@@ -1063,7 +1065,8 @@ def disk_usage(path: str):
     return total_size
 
 
-def format_bytes(count, default="n/a"):
+def format_bytes(count: float, default: str = "n/a"):
+    """Format a bytes number as a human-readable unit, e.g., 1.3GB or 21.53MB"""
     if not is_number(count):
         return default
     cnt = float(count)
@@ -1137,7 +1140,7 @@ def download(url: str, path: str, verify_ssl=True):
         s.close()
 
 
-def parse_request_data(method: str, path: str, data=None, headers=None):
+def parse_request_data(method: str, path: str, data=None, headers=None) -> Dict:
     """Extract request data either from query string as well as request body (e.g., for POST)."""
     result = {}
     headers = headers or {}
@@ -1161,15 +1164,15 @@ def parse_request_data(method: str, path: str, data=None, headers=None):
     return result
 
 
-def first_char_to_lower(s):
+def first_char_to_lower(s: str) -> str:
     return s and "%s%s" % (s[0].lower(), s[1:])
 
 
-def first_char_to_upper(s):
+def first_char_to_upper(s: str) -> str:
     return s and "%s%s" % (s[0].upper(), s[1:])
 
 
-def format_number(number, decimals=2):
+def format_number(number: float, decimals: int = 2):
     # Note: interestingly, f"{number:.3g}" seems to yield incorrect results in some cases.
     # The logic below seems to be the most stable/reliable.
     result = f"{number:.{decimals}f}"
@@ -1178,7 +1181,7 @@ def format_number(number, decimals=2):
     return result
 
 
-def is_number(s):
+def is_number(s: Any) -> bool:
     try:
         float(s)  # for int, long and float
         return True
@@ -1186,19 +1189,19 @@ def is_number(s):
         return False
 
 
-def is_mac_os():
+def is_mac_os() -> bool:
     return localstack.utils.run.is_mac_os()
 
 
-def is_linux():
+def is_linux() -> bool:
     return localstack.utils.run.is_linux()
 
 
-def is_windows():
+def is_windows() -> bool:
     return platform.system().lower() == "windows"
 
 
-def is_alpine():
+def is_alpine() -> bool:
     try:
         with MUTEX_CLEAN:
             if "_is_alpine_" not in CACHE:
@@ -1213,7 +1216,7 @@ def is_alpine():
 
 
 # TODO: rename to "get_os()"
-def get_arch():
+def get_arch() -> str:
     if is_mac_os():
         return "osx"
     if is_alpine():
@@ -1225,7 +1228,7 @@ def get_arch():
     raise Exception("Unable to determine local operating system")
 
 
-def is_command_available(cmd):
+def is_command_available(cmd: str) -> bool:
     try:
         run("which %s" % cmd, print_error=False)
         return True
@@ -1233,15 +1236,15 @@ def is_command_available(cmd):
         return False
 
 
-def short_uid():
+def short_uid() -> str:
     return str(uuid.uuid4())[0:8]
 
 
-def long_uid():
+def long_uid() -> str:
     return str(uuid.uuid4())
 
 
-def parse_json_or_yaml(markup):
+def parse_json_or_yaml(markup: str) -> JsonComplexType:
     import yaml  # leave import here, to avoid breaking our Lambda tests!
 
     try:
@@ -1256,8 +1259,8 @@ def parse_json_or_yaml(markup):
                 raise
 
 
-def json_safe(item):
-    """return a copy of the given object (e.g., dict) that is safe for JSON dumping"""
+def json_safe(item: JsonType) -> JsonType:
+    """Return a copy of the given object (e.g., dict) that is safe for JSON dumping"""
     try:
         return json.loads(json.dumps(item, cls=CustomEncoder))
     except Exception:
@@ -1265,7 +1268,7 @@ def json_safe(item):
         return json.loads(json.dumps(item, cls=CustomEncoder))
 
 
-def fix_json_keys(item):
+def fix_json_keys(item: JsonType):
     """make sure the keys of a JSON are strings (not binary type or other)"""
     item_copy = item
     if isinstance(item, list):
@@ -1913,13 +1916,13 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN, last_clean_time=None, max_age=C
     return time_now
 
 
-def truncate(data, max_length=100):
+def truncate(data: str, max_length: int = 100) -> str:
     data = str(data or "")
     return ("%s..." % data[:max_length]) if len(data) > max_length else data
 
 
 # this requires that all subclasses have been imported before(!)
-def get_all_subclasses(clazz: Type):
+def get_all_subclasses(clazz: Type) -> List[Type]:
     """Recursively get all subclasses of the given class."""
     result = set()
     subs = clazz.__subclasses__()
@@ -1929,7 +1932,7 @@ def get_all_subclasses(clazz: Type):
     return result
 
 
-def parallelize(func, arr, size=None):
+def parallelize(func: Callable, arr: List, size: int = None):
     if not size:
         size = len(arr)
     if size <= 0:
@@ -1939,7 +1942,7 @@ def parallelize(func, arr, size=None):
         return pool.map(func, arr)
 
 
-def isoformat_milliseconds(t):
+def isoformat_milliseconds(t) -> str:
     try:
         return t.isoformat(timespec="milliseconds")
     except TypeError:
