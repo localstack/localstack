@@ -32,7 +32,7 @@
       // TODO: allow passing stack parameter values via queryParams as well!
 
       function StackDetails (props) {
-        const templateBodyStr = JSON.stringify(templateBody);
+        const templateBodyStr = JSON.stringify(templateBody, undefined, 2);
         const params = templateBody.Parameters || {};
         const paramsMapped = Object.keys(params).map(p => ({ParameterKey: p, ParameterValue: params[p].Default || "", ... params[p]}));
 
