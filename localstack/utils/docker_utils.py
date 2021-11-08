@@ -106,7 +106,6 @@ class PortMappings(object):
         if port is None or int(port) <= 0:
             raise Exception("Unable to add mapping for invalid port: %s" % port)
         if self.contains(port):
-            print("port %s already in mappings" % (port))
             return
         bisected_host_port = None
         for from_range, to_range in self.mappings.items():
