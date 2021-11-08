@@ -70,7 +70,7 @@ TEST_MESSAGE_ATTRIBUTES = {
     "Population": {"DataType": "Number", "StringValue": "1250800"},
 }
 
-os.environ["TEST_TARGET"] = "AWS_CLOUD"
+# os.environ["TEST_TARGET"] = "AWS_CLOUD"
 
 
 class SQSTest(unittest.TestCase):
@@ -1408,8 +1408,8 @@ class TestSqsProvider:
 
     # TODO: Why are certain attributes "unsupported"
     def test_get_specific_queue_attribute_response(self, sqs_client, sqs_create_queue):
-        queue_name = "queue-%s" % short_uid()
-        dead_letter_queue_name = "dead_letter_queue-%s" % short_uid()
+        queue_name = "queue-{}".format(short_uid())
+        dead_letter_queue_name = "dead_letter_queue-{}".format(short_uid())
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
         dl_result = sqs_client.get_queue_attributes(
@@ -1446,35 +1446,54 @@ class TestSqsProvider:
         redrive_policy = json.loads(unsupported_attributes["Attributes"]["RedrivePolicy"])
         assert isinstance(redrive_policy["maxReceiveCount"], int)
 
-    def test_set_unsupported_attributes(self, sqs_client, sqs_create_queue):
+    @pytest.mark.skip
+    def test_set_unsupported_attribute(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
-        queue_name = "queue-%s" % short_uid()
+        queue_name = "queue-{}".format(short_uid())
         queue_url = sqs_create_queue(QueueName=queue_name)
-        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"FifoQueue": "true"})
+        with pytest.raises(Exception) as e:
+            sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"FifoQueue": "true"})
+        e.match("InvalidAttributeName")
 
-        result = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
+    def test_fifo_queue_send_multiple_messages_multiple_single_receives(
+        self, sqs_client, sqs_create_queue
+    ):
 
-        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
-        assert "FifoQueue" in result["Attributes"]
-        assert result["Attributes"]["FifoQueue"] == "true"
-
-    def test_fifo_queue_send_multiple_messages_multiple_single_receives(self):
-        (
-            queue_url,
-            number_of_messages,
-            results,
-        ) = self._run_test_fifo_queue_send_multiple_messages()
-
-        for i in range(number_of_messages):
-            resp = self.client.receive_message(QueueUrl=queue_url)
-            self.assertEqual("message-{}".format(i), resp["Messages"][0]["Body"])
-            self.assertEqual(results[i]["MD5OfMessageBody"], resp["Messages"][0]["MD5OfBody"])
-            self.assertEqual(results[i]["MessageId"], resp["Messages"][0]["MessageId"])
-
-            # delete message to receive next message in queue
-            self.client.delete_message(
-                QueueUrl=queue_url, ReceiptHandle=resp["Messages"][0]["ReceiptHandle"]
+        fifo_queue_name = "queue-{}.fifo".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
+        message_count = 4
+        group_id = "fifo_group-{}".format(short_uid())
+        sent_messages = []
+        for i in range(message_count):
+            result = sqs_client.send_message(
+                QueueUrl=queue_url,
+                MessageBody="message{}".format(i),
+                MessageDeduplicationId="deduplication{}".format(i),
+                MessageGroupId=group_id,
             )
+            sent_messages.append(result)
+
+        for i in range(message_count):
+            result = sqs_client.receive_message(QueueUrl=queue_url)
+            message = result["Messages"][0]
+            assert message["Body"] == "message{}".format(i)
+            assert message["MD5OfBody"] == sent_messages[i]["MD5OfMessageBody"]
+            assert message["MessageId"] == sent_messages[i]["MessageId"]
+            sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
+
+    @pytest.mark.skip
+    def test_posting_to_fifo_requires_deduplicationid(self, sqs_client, sqs_create_queue):
+        # TODO: behaviour diverges from AWS
+        fifo_queue_name = "queue-{}.fifo".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
+        message_content = "test{}".format(short_uid())
+        group_id = "fifo_group-{}".format(short_uid())
+
+        with pytest.raises(Exception) as e:
+            sqs_client.send_message(
+                QueueUrl=queue_url, MessageBody=message_content, MessageGroupId=group_id
+            )
+        e.match("InvalidParameterValue")
 
     def test_posting_to_queue_with_trailing_slash(self):
         pass
