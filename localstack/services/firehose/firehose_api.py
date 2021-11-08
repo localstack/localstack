@@ -118,19 +118,19 @@ def preprocess_records(processor: Dict, records: List[Dict]) -> List[Dict]:
 
 
 def add_missing_record_attributes(records: List[Dict]):
-    def _contained(key, obj):
-        return key in obj or first_char_to_lower(key) in obj
+    def _get_entry(obj, key):
+        return obj.get(key) or obj.get(first_char_to_lower(key))
 
     for record in records:
-        if not _contained("ApproximateArrivalTimestamp", record):
+        if not _get_entry(record, "ApproximateArrivalTimestamp"):
             record["ApproximateArrivalTimestamp"] = int(now_utc(millis=True))
-        if not _contained("KinesisRecordMetadata", record):
+        if not _get_entry(record, "KinesisRecordMetadata"):
             record["kinesisRecordMetadata"] = {
                 "shardId": "shardId-000000000000",
                 # not really documented what AWS is using internally - simply using a random UUID here
                 "partitionKey": str(uuid.uuid4()),
                 "approximateArrivalTimestamp": timestamp(
-                    float(record["ApproximateArrivalTimestamp"]) / 1000,
+                    float(_get_entry(record, "ApproximateArrivalTimestamp")) / 1000,
                     format=TIMESTAMP_FORMAT_MICROS,
                 ),
                 "sequenceNumber": next_sequence_number(),
