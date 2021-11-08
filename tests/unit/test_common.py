@@ -14,7 +14,6 @@ import yaml
 
 from localstack import config
 from localstack.utils import common
-from localstack.utils.bootstrap import extract_port_flags
 from localstack.utils.common import (
     is_empty_dir,
     load_file,
@@ -24,7 +23,6 @@ from localstack.utils.common import (
     save_file,
     short_uid,
 )
-from localstack.utils.common import is_empty_dir, mkdir, new_tmp_dir, rm_rf, save_file
 from localstack.utils.testutil import create_zip_file
 
 

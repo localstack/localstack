@@ -113,7 +113,7 @@ def list_in(a, b):
     )
 
 
-class TestCommandLine(unittest.TestCase):
+class TestPortMappings(unittest.TestCase):
     def test_extract_port_flags(self):
         port_mappings = PortMappings()
         flags = extract_port_flags("foo -p 1234:1234 bar", port_mappings=port_mappings)
@@ -167,10 +167,26 @@ class TestCommandLine(unittest.TestCase):
         }
         self.assertEqual(expected_result, result)
 
-    def test_adjacent_multi_to_one_mappings(self):
+    def test_many_to_one_adjacent_to_uniform(self):
         port_mappings = PortMappings()
+        port_mappings.add(5002)
         port_mappings.add(5003)
         port_mappings.add([5004, 5006], 5004)
-        expected_result = {"5003/tcp": 5003, "5004/tcp": [5004, 5005, 5006]}
+        expected_result = {
+            "5002/tcp": 5002,
+            "5003/tcp": 5003,
+            "5004/tcp": [5004, 5005, 5006],
+        }
+        result = port_mappings.to_dict()
+        self.assertEqual(expected_result, result)
+
+    def test_adjacent_port_to_many_to_one(self):
+        port_mappings = PortMappings()
+        port_mappings.add([7000, 7002], 7000)
+        port_mappings.add(6999)
+        expected_result = {
+            "6999/tcp": 6999,
+            "7000/tcp": [7000, 7001, 7002],
+        }
         result = port_mappings.to_dict()
         self.assertEqual(expected_result, result)

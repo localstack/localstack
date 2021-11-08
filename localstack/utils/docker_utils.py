@@ -114,14 +114,25 @@ class PortMappings(object):
                 continue
             if not self.in_expanded_range(mapped, to_range):
                 continue
-            if self.in_range(mapped, to_range) and to_range[0] != to_range[1]:
-                bisected_port_index = mapped - to_range[0]
-                bisected_host_port = from_range[0] + bisected_port_index
-                self.bisect_range(mapped, to_range)
-                self.bisect_range(bisected_host_port, from_range)
-                break
-            self.expand_range(port, from_range)
-            self.expand_range(mapped, to_range)
+            from_range_len = from_range[1] - from_range[0]
+            to_range_len = to_range[1] - to_range[0]
+            is_uniform = from_range_len == to_range_len
+            if is_uniform:
+                self.expand_range(port, from_range)
+                self.expand_range(mapped, to_range)
+            else:
+                if not self.in_range(mapped, to_range):
+                    continue
+                # extending a 1 to 1 mapping to be many to 1
+                elif from_range_len == 1:
+                    self.expand_range(port, from_range)
+                # splitting a uniform mapping
+                else:
+                    bisected_port_index = mapped - to_range[0]
+                    bisected_host_port = from_range[0] + bisected_port_index
+                    self.bisect_range(mapped, to_range)
+                    self.bisect_range(bisected_host_port, from_range)
+                    break
             return
         protocol = str(protocol or "tcp").lower()
         if bisected_host_port is None:
@@ -156,7 +167,7 @@ class PortMappings(object):
 
         return [item for k, v in self.mappings.items() for item in entry(k, v)]
 
-    def to_dict(self) -> Dict[str, Union[Tuple[str, int], int]]:
+    def to_dict(self) -> Dict[str, Union[Tuple[str, Union[int, List[int]]], int]]:
         bind_address = self.bind_host or ""
 
         def entry(k, v):
@@ -202,15 +213,18 @@ class PortMappings(object):
         else:
             raise Exception("Unable to add port %s to existing range %s" % (port, range))
 
+    """Bisect a port range, at the provided port
+        This is needed in some cases when adding a non-uniform host to port mapping
+        adjacent to an existing port range
+    """
+
     def bisect_range(self, port, range):
         if not self.in_range(port, range):
             return
         if port == range[0]:
             range[0] = port + 1
-        elif port == range[1]:
-            range[1] = port - 1
         else:
-            range[1] = port
+            range[1] = port - 1
 
 
 class ContainerClient(metaclass=ABCMeta):
