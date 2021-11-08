@@ -292,6 +292,11 @@ def is_stack_updated(cfn_client):
     return _has_stack_status(cfn_client, ["UPDATE_COMPLETE", "UPDATE_FAILED"])
 
 
+@pytest.fixture
+def is_stack_deleted(cfn_client):
+    return _has_stack_status(cfn_client, ["DELETE_COMPLETE"])
+
+
 def _has_stack_status(cfn_client, statuses: List[str]):
     def _has_status(stack_id: str):
         def _inner():
