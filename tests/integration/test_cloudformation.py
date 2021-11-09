@@ -2405,3 +2405,30 @@ class CloudFormationTest(unittest.TestCase):
 
         # Clean up
         self.cleanup(stack_name)
+
+    def test_cfn_with_multiple_route_table_associations(self):
+        ec2_client = aws_stack.connect_to_service("ec2")
+
+        resp = ec2_client.describe_vpcs()
+        vpcs_before = [vpc["VpcId"] for vpc in resp["Vpcs"]]
+
+        template = load_file(os.path.join(THIS_FOLDER, "templates", "template37.yaml"))
+
+        stack_name = "stack-%s" % short_uid()
+        create_and_await_stack(StackName=stack_name, TemplateBody=template)
+        resp = ec2_client.describe_vpcs()
+        vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
+        self.assertEqual(1, len(vpcs))
+
+        resp = ec2_client.describe_route_tables(
+            Filters=[
+                {"Name": "vpc-id", "Values": [vpcs[0]]},
+                {"Name": "tag:env", "Values": ["production"]},
+            ]
+        )
+
+        # Cloudformation Template will create more than one route table 2 in template + default
+        self.assertEqual(2, len(resp["RouteTables"][0]["Associations"]))
+
+        # Clean up
+        self.cleanup(stack_name)
