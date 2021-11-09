@@ -180,11 +180,18 @@ class ApiInvocationContext:
     @property
     def auth_context(self) -> Optional[Dict]:
         if isinstance(self.auth_info, dict):
-            context = self.auth_info.get("context") or {}
+            context = self.auth_info.setdefault("context", {})
             principal = self.auth_info.get("principalId")
             if principal:
                 context["principalId"] = principal
             return context
+
+    @property
+    def auth_identity(self) -> Optional[Dict]:
+        if isinstance(self.auth_info, dict):
+            if self.auth_info.get("identity") is None:
+                self.auth_info["identity"] = {}
+            return self.auth_info["identity"]
 
 
 class ProxyListenerApiGateway(ProxyListener):
@@ -902,7 +909,6 @@ def get_lambda_event_request_context(invocation_context: ApiInvocationContext):
     integration_uri = invocation_context.integration_uri
     resource_path = invocation_context.resource_path
     resource_id = invocation_context.resource_id
-    auth_context = invocation_context.auth_context
 
     set_api_id_stage_invocation_path(invocation_context)
     relative_path, query_string_params = extract_query_string_params(
@@ -934,8 +940,13 @@ def get_lambda_event_request_context(invocation_context: ApiInvocationContext):
         "requestTime": datetime.datetime.utcnow(),
         "requestTimeEpoch": int(time.time() * 1000),
     }
+
+    # set "authorizer" and "identity" event attributes from request context
+    auth_context = invocation_context.auth_context
     if auth_context:
         request_context["authorizer"] = auth_context
+    request_context["identity"].update(invocation_context.auth_identity or {})
+
     if not is_test_invoke_method(method, path):
         request_context["path"] = (f"/{stage}" if stage else "") + relative_path
         request_context["stage"] = stage
