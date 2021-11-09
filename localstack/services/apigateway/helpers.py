@@ -405,7 +405,8 @@ def update_base_path_mapping(path, data):
     mapping = ([m for m in mappings_list if m["basePath"] == base_path] or [None])[0]
     if mapping is None:
         return make_error_response(
-            "Not found: mapping for domain name %s, base path %s" % (domain_name, base_path),
+            "Not found: mapping for domain name %s, base path %s in list %s"
+            % (domain_name, base_path, mappings_list),
             code=404,
         )
 

@@ -796,27 +796,45 @@ class TestAPIGateway(unittest.TestCase):
 
         # CREATE
         domain_name = "domain1.example.com"
-        base_path = "/foo"
+        client.create_domain_name(domainName=domain_name)
+        root_res_id = client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
+        res_id = client.create_resource(
+            restApiId=rest_api_id, parentId=root_res_id, pathPart="path"
+        )["id"]
+        client.put_method(
+            restApiId=rest_api_id, resourceId=res_id, httpMethod="GET", authorizationType="NONE"
+        )
+        client.put_integration(
+            restApiId=rest_api_id, resourceId=res_id, httpMethod="GET", type="MOCK"
+        )
+        depl_id = client.create_deployment(restApiId=rest_api_id)["id"]
+        client.create_stage(restApiId=rest_api_id, deploymentId=depl_id, stageName="dev")
+        base_path = "foo"
         result = client.create_base_path_mapping(
             domainName=domain_name,
             basePath=base_path,
             restApiId=rest_api_id,
             stage="dev",
         )
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertIn(result["ResponseMetadata"]["HTTPStatusCode"], [200, 201])
+
         # LIST
         result = client.get_base_path_mappings(domainName=domain_name)
         self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
         expected = {"basePath": base_path, "restApiId": rest_api_id, "stage": "dev"}
         self.assertEqual([expected], result["items"])
+
         # GET
         result = client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
         self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
         self.assertEqual(expected, select_attributes(result, ["basePath", "restApiId", "stage"]))
+
         # UPDATE
         result = client.update_base_path_mapping(
             domainName=domain_name, basePath=base_path, patchOperations=[]
         )
+        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+
         # DELETE
         client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
         with self.assertRaises(Exception):
