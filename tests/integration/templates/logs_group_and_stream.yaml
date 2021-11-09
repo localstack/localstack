@@ -1,0 +1,21 @@
+Resources:
+  logGroup68A52FBE:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  stream19075594:
+    Type: AWS::Logs::LogStream
+    Properties:
+      LogGroupName:
+        Ref: logGroup68A52FBE
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+Outputs:
+  LogStreamNameOutput:
+    Value:
+      Ref: stream19075594
+  LogGroupNameOutput:
+    Value:
+      Ref: logGroup68A52FBE
