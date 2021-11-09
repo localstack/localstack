@@ -444,7 +444,9 @@ def set_api_id_stage_invocation_path(
         resource_path = resource.get("path")
         relative_path_w_query_params = f"{resource_path}{query_string}"
     else:
-        raise Exception(f"Unable to extract API Gateway details from request: {path} {headers}")
+        raise Exception(
+            f"Unable to extract API Gateway details from request: {path} {dict(headers)}"
+        )
     if api_id:
         # set current region in request thread local, to ensure aws_stack.get_region() works properly
         if getattr(THREAD_LOCAL, "request_context", None) is not None:
@@ -500,7 +502,10 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
         if method == "OPTIONS" and "Origin" in headers:
             # default to returning CORS headers if this is an OPTIONS request
             return get_cors_response(headers)
-        return make_error_response("Unable to find integration for path %s" % raw_path, 404)
+        return make_error_response(
+            "Unable to find integration for: %s %s (%s)" % (method, invocation_path, raw_path),
+            404,
+        )
 
     res_methods = resource.get("resourceMethods", {})
     meth_integration = res_methods.get(method, {}).get("methodIntegration", {})
