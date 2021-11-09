@@ -28,8 +28,8 @@ class LogsLogGroup(GenericBaseModel):
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
-        role_name = resource.get("Properties", {}).get("LogGroupName")
-        if not role_name:
+        name = resource.get("Properties", {}).get("LogGroupName")
+        if not name:
             resource["Properties"]["LogGroupName"] = generate_default_name(
                 stack_name, resource["LogicalResourceId"]
             )
@@ -44,6 +44,49 @@ class LogsLogGroup(GenericBaseModel):
             "delete": {
                 "function": "delete_log_group",
                 "parameters": {"logGroupName": "LogGroupName"},
+            },
+        }
+
+
+class LogsLogStream(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::Logs::LogStream"
+
+    def get_cfn_attribute(self, attribute_name):
+        return super(LogsLogStream, self).get_cfn_attribute(attribute_name)
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get("LogStreamName")
+
+    def fetch_state(self, stack_name, resources):
+        group_name = self.props.get("LogGroupName")
+        stream_name = self.props.get("LogStreamName")
+        group_name = self.resolve_refs_recursively(stack_name, group_name, resources)
+        logs = aws_stack.connect_to_service("logs")
+        streams = logs.describe_log_streams(
+            logGroupName=group_name, logStreamNamePrefix=stream_name
+        )["logStreams"]
+        return ([s for s in streams if s["logStreamName"] == stream_name] or [None])[0]
+
+    @staticmethod
+    def add_defaults(resource, stack_name: str):
+        name = resource.get("Properties", {}).get("LogStreamName")
+        if not name:
+            resource["Properties"]["LogStreamName"] = generate_default_name(
+                stack_name, resource["LogicalResourceId"]
+            )
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            "create": {
+                "function": "create_log_stream",
+                "parameters": {"logGroupName": "LogGroupName", "logStreamName": "LogStreamName"},
+            },
+            "delete": {
+                "function": "delete_log_stream",
+                "parameters": {"logGroupName": "LogGroupName", "logStreamName": "LogStreamName"},
             },
         }
 
