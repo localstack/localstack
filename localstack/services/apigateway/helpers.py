@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
@@ -930,6 +930,7 @@ def get_rest_api_paths(rest_api_id, region_name=None):
     resource_map = {}
     for resource in resources["items"]:
         path = resource.get("path")
+        # TODO: check if this is still required in the general case (can we rely on "path" being present?)
         path = path or aws_stack.get_apigateway_path_for_resource(
             rest_api_id, resource["id"], region_name=region_name
         )
@@ -937,7 +938,7 @@ def get_rest_api_paths(rest_api_id, region_name=None):
     return resource_map
 
 
-def get_resource_for_path(path, path_map):
+def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Tuple[str, Dict]:
     matches = []
     for api_path, details in path_map.items():
         api_path_regex = re.sub(r"\{[^\+]+\+\}", r"[^\?#]+", api_path)

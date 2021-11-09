@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_iam import IAMClient
     from mypy_boto3_kinesis import KinesisClient
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_secretsmanager import SecretsManagerClient
+    from mypy_boto3_ses import SESClient
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
@@ -118,6 +120,16 @@ def secretsmanager_client() -> "SecretsManagerClient":
 @pytest.fixture(scope="class")
 def stepfunctions_client() -> "SFNClient":
     return _client("stepfunctions")
+
+
+@pytest.fixture(scope="class")
+def ses_client() -> "SESClient":
+    return _client("ses")
+
+
+@pytest.fixture(scope="class")
+def es_client() -> "ElasticsearchServiceClient":
+    return _client("es")
 
 
 @pytest.fixture
@@ -284,6 +296,11 @@ def is_stack_created(cfn_client):
 @pytest.fixture
 def is_stack_updated(cfn_client):
     return _has_stack_status(cfn_client, ["UPDATE_COMPLETE", "UPDATE_FAILED"])
+
+
+@pytest.fixture
+def is_stack_deleted(cfn_client):
+    return _has_stack_status(cfn_client, ["DELETE_COMPLETE"])
 
 
 def _has_stack_status(cfn_client, statuses: List[str]):

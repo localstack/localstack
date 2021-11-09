@@ -493,7 +493,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         from localstack.services.edge import start_edge
 
         # TODO: we want a composable LocalStack runtime (edge proxy, service manager, dns, ...)
-        t = start_thread(start_edge, quiet=True)
+        t = start_thread(start_edge, quiet=False)
 
         # TODO: properly encapsulate starting/stopping of edge server in a class
         if not poll_condition(

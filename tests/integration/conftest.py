@@ -53,6 +53,7 @@ def pytest_runtestloop(session):
             test_init_functions.add(TestTerraform.init_async)
             continue
         if ElasticsearchTest is test_class:
+            # FIXME: there are other elasticsearch test classes
             logger.info("will initialize ElasticsearchTest")
             test_init_functions.add(ElasticsearchTest.init_async)
             continue
