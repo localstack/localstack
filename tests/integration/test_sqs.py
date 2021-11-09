@@ -70,7 +70,7 @@ TEST_MESSAGE_ATTRIBUTES = {
     "Population": {"DataType": "Number", "StringValue": "1250800"},
 }
 
-# os.environ["TEST_TARGET"] = "AWS_CLOUD"
+os.environ["TEST_TARGET"] = "AWS_CLOUD"
 
 
 class SQSTest(unittest.TestCase):
@@ -1406,6 +1406,27 @@ class TestSqsProvider:
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
         assert len(result_send["Failed"]) == 1
 
+    # Tests to check
+    # test_list_queue_tags
+    # test_publish_get_delete_message
+    # test_delete_message_deletes_visibility_agnostic
+    # test_publish_get_delete_message_batch
+    # test_create_fifo_queue
+    # test_set_queue_policy
+    def test_send_message_with_attributes(self, sqs_client, sqs_create_queue):
+        # Old name: test_send_message_attributes
+        pass
+
+    def test_send_message_retains_attributes(self, sqs_client, sqs_create_queue):
+        pass
+
+    # Tests to check
+    # test_send_message_with_invalid_string_attributes
+    # test_send_message_with_invalid_payload_characters
+    # test_dead_letter_queue_config
+    # test_dead_letter_queue_execution
+    # test_dead_letter_queue_max_receive_count
+    # test_set_queue_attribute_at_creation -> test_create_queue_with_attributes
     # TODO: Why are certain attributes "unsupported"
     def test_get_specific_queue_attribute_response(self, sqs_client, sqs_create_queue):
         queue_name = "queue-{}".format(short_uid())
@@ -1498,8 +1519,13 @@ class TestSqsProvider:
     def test_posting_to_queue_with_trailing_slash(self):
         pass
 
-    def test_create_queue_with_slashes(self):
-        pass
+    @pytest.mark.skip
+    def test_create_queue_with_slashes(self, sqs_client, sqs_create_queue):
+        # TODO: behaviour diverges from AWS
+        queue_name = "queue/{}/".format(short_uid())
+        with pytest.raises(Exception) as e:
+            sqs_create_queue(QueueName=queue_name)
+        e.match("InvalidParameterValue")
 
     def list_queues_with_auth_in_presigned_url(self, method):
         pass
