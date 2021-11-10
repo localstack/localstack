@@ -453,6 +453,21 @@ class MessageConversion(object):
             response._content = re.sub(regex, replace, to_str(response.content), flags=REGEX_FLAGS)
 
     @staticmethod
+    def booleans_to_lowercase(response, tag_names):
+        for tag_name in tag_names:
+            regex_true = r"<{tag}>\s*True\s*</{tag}>".format(tag=tag_name)
+            replace_true = r"<{tag}>true</{tag}>".format(tag=tag_name)
+            response._content = re.sub(
+                regex_true, replace_true, to_str(response.content), flags=REGEX_FLAGS
+            )
+
+            regex_false = r"<{tag}>\s*False\s*</{tag}>".format(tag=tag_name)
+            replace_false = r"<{tag}>false</{tag}>".format(tag=tag_name)
+            response._content = re.sub(
+                regex_false, replace_false, to_str(response.content), flags=REGEX_FLAGS
+            )
+
+    @staticmethod
     def _reset_account_id(data):
         """Fix account ID in request payload. All external-facing responses contain our
         predefined account ID (defaults to 000000000000), whereas the backend endpoint

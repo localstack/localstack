@@ -59,13 +59,13 @@ def test_cfn_apigateway_aws_integration(
         domain_names = [
             domain["domainName"] for domain in apigateway_client.get_domain_names()["items"]
         ]
-        assert len(domain_names) == 1
-        assert domain_names[0] == "localstack.cloud"
+        expected_domain = "cfn5632.localstack.cloud"  # hardcoded value from template yaml file
+        assert expected_domain in domain_names
 
         # check basepath mappings creation
         mappings = [
             mapping["basePath"]
-            for mapping in apigateway_client.get_base_path_mappings(domainName=domain_names[0])[
+            for mapping in apigateway_client.get_base_path_mappings(domainName=expected_domain)[
                 "items"
             ]
         ]

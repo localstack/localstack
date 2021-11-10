@@ -119,7 +119,7 @@ Resources:
   RestApiCustomDomainBA087742:
     Type: AWS::ApiGateway::DomainName
     Properties:
-      DomainName: localstack.cloud
+      DomainName: cfn5632.localstack.cloud
       EndpointConfiguration:
         Types:
           - REGIONAL

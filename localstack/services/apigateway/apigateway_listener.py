@@ -218,6 +218,9 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
 
+        if re.match(PATH_REGEX_PATH_MAPPINGS, path):
+            return handle_base_path_mappings(method, path, data, headers)
+
         if is_test_invoke_method(method, path):
             # if call is from test_invoke_api then use http_method to find the integration,
             #   as test_invoke_api makes a POST call to request the test invocation
@@ -253,8 +256,6 @@ class ProxyListenerApiGateway(ProxyListener):
                 result = handle_accounts(method, path, data, headers)
             elif path.startswith("/vpclinks"):
                 result = handle_vpc_links(method, path, data, headers)
-            elif re.match(PATH_REGEX_PATH_MAPPINGS, path):
-                result = handle_base_path_mappings(method, path, data, headers)
             elif re.match(PATH_REGEX_CLIENT_CERTS, path):
                 result = handle_client_certificates(method, path, data, headers)
 
