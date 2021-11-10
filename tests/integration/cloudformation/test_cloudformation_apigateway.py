@@ -30,6 +30,8 @@ def test_cfn_apigateway_aws_integration(
     change_set_id = response["Id"]
     stack_id = response["StackId"]
 
+    domain_names_before = apigateway_client.get_domain_names()["items"]
+
     try:
         wait_until(is_change_set_created_and_available(change_set_id))
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
@@ -59,7 +61,7 @@ def test_cfn_apigateway_aws_integration(
         domain_names = [
             domain["domainName"] for domain in apigateway_client.get_domain_names()["items"]
         ]
-        assert len(domain_names) == 1
+        assert len(domain_names) == len(domain_names_before) + 1
         assert domain_names[0] == "localstack.cloud"
 
         # check basepath mappings creation
