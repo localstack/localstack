@@ -1199,13 +1199,9 @@ class SdkDockerClient(ContainerClient):
     def pull_image(self, docker_image: str) -> None:
         LOG.debug("Pulling image: %s", docker_image)
         # some path in the docker image string indicates a custom repository
-        path_split = docker_image.rpartition("/")
-        image_split = path_split[2].partition(":")
-        repository = f"{path_split[0]}{path_split[1]}{image_split[0]}"
-        tag = image_split[2]
         try:
-            LOG.debug("Repository: %s Tag: %s", repository, tag)
-            self.client().images.pull(repository, tag)
+            LOG.debug("Repository: %s", docker_image)
+            self.client().images.pull(docker_image)
         except ImageNotFound:
             raise NoSuchImage(docker_image)
         except APIError:
