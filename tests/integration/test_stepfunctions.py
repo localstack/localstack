@@ -2,6 +2,8 @@ import json
 import os
 import unittest
 
+import pytest
+
 from localstack.services.awslambda import lambda_api
 from localstack.services.events.events_listener import TEST_EVENTS_CACHE
 from localstack.utils import testutil
@@ -462,3 +464,43 @@ class TestStateMachine(unittest.TestCase):
         events = sorted(result["events"], key=lambda event: event["timestamp"])
         result = json.loads(events[-1]["executionSucceededEventDetails"]["output"])
         return result
+
+
+TEST_STATE_MACHINE = {
+    "StartAt": "s0",
+    "States": {"s0": {"Type": "Pass", "Result": {}, "End": True}},
+}
+
+
+@pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1"))
+def test_multiregion(region_name):
+    other_region = "us-east-1" if region_name != "us-east-1" else "us-east-2"
+    # TODO: create client factory fixture
+    client1 = aws_stack.connect_to_service("stepfunctions", region_name=region_name)
+    client2 = aws_stack.connect_to_service("stepfunctions", region_name=other_region)
+
+    # create state machine
+    name = "sf-%s" % short_uid()
+    role = aws_stack.role_arn("sfn_role")
+    result = client1.create_state_machine(
+        name=name, definition=json.dumps(TEST_STATE_MACHINE), roleArn=role
+    )
+    machine_arn = result["stateMachineArn"]
+
+    # list state machine
+    result = client1.list_state_machines()["stateMachines"]
+    result = [sm for sm in result if sm["name"] == name]
+    assert len(result) > 0
+
+    # start state machine execution
+    result = client1.start_execution(stateMachineArn=machine_arn)
+    assert f":{region_name}:" in result["executionArn"]
+    assert f":{region_name}_" not in result["executionArn"]
+
+    # assert state machine does not exist in other region
+    result = client2.list_state_machines()["stateMachines"]
+    result = [sm for sm in result if sm["name"] == name]
+    assert len(result) == 0
+
+    with pytest.raises(Exception):
+        client1.start_execution(stateMachineArn=machine_arn.replace(region_name, other_region))

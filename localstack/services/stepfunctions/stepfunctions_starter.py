@@ -16,6 +16,8 @@ MAX_HEAP_SIZE = "256m"
 # todo: will be replaced with plugin mechanism
 PROCESS_THREAD = None
 
+default_region = "us-east-1"
+
 
 def get_command(backend_port):
     cmd = (
@@ -25,14 +27,14 @@ def get_command(backend_port):
         install.INSTALL_DIR_STEPFUNCTIONS,
         backend_port,
         MAX_HEAP_SIZE,
-        aws_stack.get_region(),
+        default_region,  # doesn't matter, because we patch multi-region. just needs to correspond to patches in stepfunctions_listener
         TEST_AWS_ACCOUNT_ID,
     )
     if config.STEPFUNCTIONS_LAMBDA_ENDPOINT.lower() != "default":
         lambda_endpoint = config.STEPFUNCTIONS_LAMBDA_ENDPOINT or aws_stack.get_local_service_url(
             "lambda"
         )
-        cmd += (" --lambda-endpoint %s") % (lambda_endpoint)
+        cmd += f" --lambda-endpoint {lambda_endpoint}"
     # add service endpoint flags
     services = [
         "athena",
@@ -48,15 +50,16 @@ def get_command(backend_port):
         "stepfunctions",
     ]
     for service in services:
-        flag = "--%s-endpoint" % service
+        flag = f"--{service}-endpoint"
         if service == "stepfunctions":
             flag = "--step-functions-endpoint"
         elif service == "events":
             flag = "--eventbridge-endpoint"
         elif service in ["athena", "eks"]:
-            flag = "--step-functions-%s" % service
+            flag = f"--step-functions-{service}"
         endpoint = aws_stack.get_local_service_url(service)
-        cmd += " %s %s" % (flag, endpoint)
+        cmd += f" {flag} {endpoint}"
+
     return cmd
 
 
