@@ -16,6 +16,7 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
+from localstack.utils.aws.aws_stack import parse_arn
 
 LOG = logging.getLogger(__name__)
 
@@ -977,8 +978,10 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
     template = APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE
     resource_path = path.replace("/", "")
     region_name = region_name or aws_stack.get_region()
-    queue_name = aws_stack.sqs_queue_name(queue_arn)
-    sqs_region = aws_stack.extract_region_from_arn(queue_arn) or region_name
+
+    arn = parse_arn(queue_arn)
+    queue_name = arn["resource"]
+    sqs_region = arn["region"]
     resources[resource_path] = [
         {
             "httpMethod": "POST",
