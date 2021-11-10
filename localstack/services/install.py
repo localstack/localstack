@@ -9,7 +9,6 @@ import stat
 import sys
 import tempfile
 import time
-import zipfile
 from pathlib import Path
 
 import requests
@@ -106,13 +105,11 @@ JAVAC_TARGET_VERSION = "1.8"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 
 # GO Lambda runtime
-GO_RUNTIME_DOWNLOAD_URL = (
-    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/runtime.zip"
-)
-GO_INSTALL_FOLDER = config.TMP_FOLDER + "/runtime"
-GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + "/aws-lambda-mock"
-GO_LAMBDA_MOCKSERVER = GO_INSTALL_FOLDER + "/mockserver"
-GO_ZIP_NAME = "runtime.zip"
+GO_RUNTIME_VERSION = "0.4.0"
+GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/awslamba-go-runtime-{version}-{os}-{arch}.tar.gz"
+GO_INSTALL_FOLDER = os.path.join(config.TMP_FOLDER, "awslamba-go-runtime")
+GO_LAMBDA_RUNTIME = os.path.join(GO_INSTALL_FOLDER, "aws-lambda-mock")
+GO_LAMBDA_MOCKSERVER = os.path.join(GO_INSTALL_FOLDER, "mockserver")
 
 GLIBC_KEY_URL = "https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub"
 GLIBC_KEY = "/etc/apk/keys/sgerrand.rsa.pub"
@@ -416,22 +413,43 @@ def install_lambda_java_libs():
 
 
 def install_go_lambda_runtime():
-    install_glibc_for_alpine()
+    if is_alpine():
+        install_glibc_for_alpine()
 
-    if not os.path.isfile(GO_LAMBDA_RUNTIME):
-        log_install_msg("Installing golang runtime")
-        file_location = os.path.join(config.TMP_FOLDER, GO_ZIP_NAME)
-        download(GO_RUNTIME_DOWNLOAD_URL, file_location)
+    if os.path.isfile(GO_LAMBDA_RUNTIME):
+        return
 
-        if not zipfile.is_zipfile(file_location):
-            raise ValueError("Downloaded file is not zip ")
+    log_install_msg("Installing golang runtime")
 
-        zipfile.ZipFile(file_location).extractall(config.TMP_FOLDER)
-        st = os.stat(GO_LAMBDA_RUNTIME)
-        os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    machine = platform.machine().lower()
+    system = platform.system().lower()
+    version = platform.version().lower()
 
-        st = os.stat(GO_LAMBDA_MOCKSERVER)
-        os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    if system == "linux":
+        pass
+    else:
+        raise ValueError("unsupported os for awslambda-go-runtime")
+
+    if version == "arm64":
+        arch = "amd64"
+    elif machine == "x86_64" or machine == "amd64":
+        arch = "amd64"
+    else:
+        raise ValueError("unsupported platform for awslambda-go-runtime")
+
+    url = GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
+        version=GO_RUNTIME_VERSION,
+        os=system,
+        arch=arch,
+    )
+
+    download_and_extract(url, GO_INSTALL_FOLDER)
+
+    st = os.stat(GO_LAMBDA_RUNTIME)
+    os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+    st = os.stat(GO_LAMBDA_MOCKSERVER)
+    os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def install_glibc_for_alpine():
@@ -520,6 +538,11 @@ def log_install_msg(component, verbatim=False):
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
 
+    if tmp_archive:
+        _, ext = os.path.splitext(tmp_archive)
+    else:
+        _, ext = os.path.splitext(archive_url)
+
     tmp_archive = tmp_archive or new_tmp_file()
     if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
         # create temporary placeholder file, to avoid duplicate parallel downloads
@@ -531,7 +554,6 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
             except Exception:
                 time.sleep(sleep)
 
-    _, ext = os.path.splitext(tmp_archive)
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
     elif ext == ".gz" or ext == ".bz2":
