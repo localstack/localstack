@@ -1404,26 +1404,138 @@ class TestSqsProvider:
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
         assert len(result_send["Failed"]) == 1
 
-    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
+    def test_list_queue_tags(self, sqs_client, sqs_create_queue):
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        tags = {"testTag1": "test1", "testTag2": "test2"}
 
-    # Tests to check
-    def test_list_queue_tags(self):
-        pass
+        sqs_client.tag_queue(QueueUrl=queue_url, Tags=tags)
+        tag_list = sqs_client.list_queue_tags(QueueUrl=queue_url)
+        assert tags == tag_list["Tags"]
 
-    def test_publish_get_delete_message(self):
-        pass
+    def test_queue_list_nonexistent_tags(self, sqs_client, sqs_create_queue):
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
 
-    def test_delete_message_deletes_visibility_agnostic(self):
-        pass
+        tag_list = sqs_client.list_queue_tags(QueueUrl=queue_url)
+
+        assert "Tags" not in tag_list["ResponseMetadata"].keys()
+
+    def test_publish_get_delete_message(self, sqs_client, sqs_create_queue):
+
+        # visibility part handled by test_receive_terminate_visibility_timeout
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        message_body = "test message"
+        result_send = sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_body)
+
+        result_recv = sqs_client.receive_message(QueueUrl=queue_url)
+        assert result_recv["Messages"][0]["MessageId"] == result_send["MessageId"]
+
+        sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=result_recv["Messages"][0]["ReceiptHandle"]
+        )
+        result_recv = sqs_client.receive_message(QueueUrl=queue_url)
+        assert "Messages" not in result_recv.keys()
+
+    def test_delete_message_deletes_after_visibility_timeout(self, sqs_client, sqs_create_queue):
+        # Old name: test_delete_message_deletes_visibility_agnostic
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        message_id = sqs_client.send_message(QueueUrl=queue_url, MessageBody="test")["MessageId"]
+        result_recv = sqs_client.receive_message(QueueUrl=queue_url)
+        result_follow_up = sqs_client.receive_message(QueueUrl=queue_url)
+        assert result_recv["Messages"][0]["MessageId"] == message_id
+        assert "Messages" not in result_follow_up.keys()
+
+        receipt_handle = result_recv["Messages"][0]["ReceiptHandle"]
+        sqs_client.change_message_visibility(
+            QueueUrl=queue_url, ReceiptHandle=receipt_handle, VisibilityTimeout=0
+        )
+
+        # check if the new timeout enables instant re-receiving, to ensure the message was deleted
+        result_recv = sqs_client.receive_message(QueueUrl=queue_url)
+        assert result_recv["Messages"][0]["MessageId"] == message_id
+        # TODO: is there a better way to check for final deletion?
+        receipt_handle = result_recv["Messages"][0]["ReceiptHandle"]
+        sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+        result_follow_up = sqs_client.receive_message(QueueUrl=queue_url)
+        assert "Messages" not in result_follow_up.keys()
 
     def test_publish_get_delete_message_batch(self):
         pass
 
-    def test_create_fifo_queue(self):
-        pass
+    def test_create_and_send_to_fifo_queue(self, sqs_client, sqs_create_queue):
+        # Old name: test_create_fifo_queue
+        queue_name = "queue-{}.fifo".format(short_uid())
+        attributes = {"FifoQueue": "true"}
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
 
-    def test_set_queue_policy(self):
-        pass
+        # it should preserve .fifo in the queue name
+        assert queue_name in queue_url
+
+        message_id = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="test",
+            MessageDeduplicationId="dedup-{}".format(short_uid()),
+            MessageGroupId="test_group",
+        )["MessageId"]
+
+        result_recv = sqs_client.receive_message(QueueUrl=queue_url)
+        assert result_recv["Messages"][0]["MessageId"] == message_id
+
+    def test_fifo_queue_requires_suffix(self, sqs_create_queue):
+        queue_name = "invalid-{}".format(short_uid())
+        attributes = {"FifoQueue": "true"}
+
+        with pytest.raises(Exception) as e:
+            sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+        e.match("InvalidParameterValue")
+
+    def test_set_queue_policy(self, sqs_client, sqs_create_queue):
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        attributes = {"Policy": TEST_POLICY}
+        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+
+        # accessing the policy generally and specifically
+        attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])[
+            "Attributes"
+        ]
+        assert "sqs:SendMessage" in attributes["Policy"]
+        attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["Policy"])[
+            "Attributes"
+        ]
+        assert "sqs:SendMessage" in attributes["Policy"]
+
+    def test_set_empty_queue_policy(self, sqs_client, sqs_create_queue):
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        attributes = {"Policy": ""}
+        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+
+        attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])[
+            "Attributes"
+        ]
+        assert "Policy" not in attributes.keys()
+
+        # check if this behaviour holds on existing Policies as well
+        attributes = {"Policy": TEST_POLICY}
+        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+        attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])[
+            "Attributes"
+        ]
+        assert "sqs:SendMessage" in attributes["Policy"]
+
+        attributes = {"Policy": ""}
+        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+        attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])[
+            "Attributes"
+        ]
+        assert "Policy" not in attributes.keys()
 
     def test_send_message_with_attributes(self, sqs_client, sqs_create_queue):
         # Old name: test_send_message_attributes
@@ -1466,12 +1578,14 @@ class TestSqsProvider:
         )
         assert receive_result["Messages"][0]["MessageAttributes"] == attributes
 
-    # Tests to check
-    # test_send_message_with_invalid_string_attributes
-    # test_send_message_with_invalid_payload_characters
+    def test_send_message_with_invalid_string_attributes(self, sqs_client, sqs_create_queue):
+        pass
+
+    def test_send_message_with_invalid_payload_characters(self, sqs_client, sqs_create_queue):
+        pass
 
     @pytest.mark.skipif(
-        os.environ["TEST_TARGET"] == "AWS_CLOUD", reason="Test needs executing Account ID"
+        os.environ["TEST_TARGET"] == "AWS_CLOUD", reason="Test needs executing Account ID for arn"
     )
     def test_dead_letter_queue_config(self, sqs_client, sqs_create_queue):
         # TODO: not tested against AWS
@@ -1494,7 +1608,7 @@ class TestSqsProvider:
     def test_dead_letter_queue_max_receive_count(self):
         pass
 
-    # test_set_queue_attribute_at_creation -> test_create_queue_with_attributes
+    # TODO: check if test_set_queue_attribute_at_creation == test_create_queue_with_attributes
 
     # TODO: Why are certain attributes "unsupported"
     def test_get_specific_queue_attribute_response(self, sqs_client, sqs_create_queue):
