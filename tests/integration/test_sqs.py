@@ -1464,6 +1464,7 @@ class TestSqsProvider:
         assert "Messages" not in result_follow_up.keys()
 
     def test_publish_get_delete_message_batch(self):
+        # TODO: rewrite by using batch operations?
         pass
 
     def test_create_and_send_to_fifo_queue(self, sqs_client, sqs_create_queue):
@@ -1578,15 +1579,33 @@ class TestSqsProvider:
         )
         assert receive_result["Messages"][0]["MessageAttributes"] == attributes
 
+    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
     def test_send_message_with_invalid_string_attributes(self, sqs_client, sqs_create_queue):
-        pass
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        # String Attributes must not contain non-printable characters
+        # See: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
+        invalid_attribute = {
+            "attr1": {"StringValue": "Invalid-{},{}".format(chr(8), chr(11)), "DataType": "String"}
+        }
+
+        with pytest.raises(Exception) as e:
+            sqs_client.send_message(
+                QueueUrl=queue_url, MessageBody="test", MessageAttributes=invalid_attribute
+            )
+        e.match("Invalid")
 
     def test_send_message_with_invalid_payload_characters(self, sqs_client, sqs_create_queue):
-        pass
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        invalid_message_body = "Invalid-{}-{}-{}-{}".format(chr(0), chr(8), chr(19), chr(65535))
 
-    @pytest.mark.skipif(
-        os.environ["TEST_TARGET"] == "AWS_CLOUD", reason="Test needs executing Account ID for arn"
-    )
+        with pytest.raises(Exception) as e:
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=invalid_message_body)
+        e.match("InvalidMessageContents")
+
+    @pytest.mark.skip
     def test_dead_letter_queue_config(self, sqs_client, sqs_create_queue):
         # TODO: not tested against AWS
         queue_name = "queue-{}".format(short_uid())
@@ -1686,6 +1705,7 @@ class TestSqsProvider:
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
 
     def test_posting_to_queue_with_trailing_slash(self):
+        # TODO: does this make sense when slashes are forbidden? see test_create_queue_with_slashes
         pass
 
     @pytest.mark.skip
@@ -1695,9 +1715,6 @@ class TestSqsProvider:
         with pytest.raises(Exception) as e:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
-
-    def list_queues_with_auth_in_presigned_url(self, method):
-        pass
 
     def test_post_list_queues_with_auth_in_presigned_url(self):
         pass
@@ -1730,6 +1747,24 @@ class TestSqsProvider:
             QueueUrl=queue_name, MessageBody="Using name instead of URL"
         )
         assert result_send
+
+    @pytest.mark.skip
+    def test_invalid_string_attributes_cause_invalid_parameter_value_error(
+        self, sqs_client, sqs_create_queue
+    ):
+        # TODO: behaviour diverges from AWS
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        invalid_attribute = {
+            "attr1": {"StringValue": "Invalid-{},{}".format(chr(8), chr(11)), "DataType": "String"}
+        }
+
+        with pytest.raises(Exception) as e:
+            sqs_client.send_message(
+                QueueUrl=queue_url, MessageBody="test", MessageAttributes=invalid_attribute
+            )
+        e.match("InvalidParameterValue")
 
 
 # TODO: test visibility timeout (with various ways to set them: queue attributes, receive parameter, update call)
