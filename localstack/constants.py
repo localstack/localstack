@@ -65,6 +65,9 @@ DOCKER_IMAGE_NAME_FULL = "localstack/localstack-full"
 # backdoor API path used to retrieve or update config variables
 CONFIG_UPDATE_PATH = "/?_config_"
 
+# API path for localstack internal resources
+INTERNAL_RESOURCE_PATH = "/_localstack"
+
 # environment variable name to tag local test runs
 ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 
