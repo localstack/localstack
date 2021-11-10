@@ -70,8 +70,6 @@ TEST_MESSAGE_ATTRIBUTES = {
     "Population": {"DataType": "Number", "StringValue": "1250800"},
 }
 
-os.environ["TEST_TARGET"] = "AWS_CLOUD"
-
 
 class SQSTest(unittest.TestCase):
     @classmethod
@@ -1406,27 +1404,98 @@ class TestSqsProvider:
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
         assert len(result_send["Failed"]) == 1
 
+    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
+
     # Tests to check
-    # test_list_queue_tags
-    # test_publish_get_delete_message
-    # test_delete_message_deletes_visibility_agnostic
-    # test_publish_get_delete_message_batch
-    # test_create_fifo_queue
-    # test_set_queue_policy
-    def test_send_message_with_attributes(self, sqs_client, sqs_create_queue):
-        # Old name: test_send_message_attributes
+    def test_list_queue_tags(self):
         pass
 
-    def test_send_message_retains_attributes(self, sqs_client, sqs_create_queue):
+    def test_publish_get_delete_message(self):
         pass
+
+    def test_delete_message_deletes_visibility_agnostic(self):
+        pass
+
+    def test_publish_get_delete_message_batch(self):
+        pass
+
+    def test_create_fifo_queue(self):
+        pass
+
+    def test_set_queue_policy(self):
+        pass
+
+    def test_send_message_with_attributes(self, sqs_client, sqs_create_queue):
+        # Old name: test_send_message_attributes
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        attributes = {
+            "attr1": {"StringValue": "test1", "DataType": "String"},
+            "attr2": {"StringValue": "test2", "DataType": "String"},
+        }
+        result_send = sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody="test", MessageAttributes=attributes
+        )
+
+        result_receive = sqs_client.receive_message(
+            QueueUrl=queue_url, MessageAttributeNames=["All"]
+        )
+        messages = result_receive["Messages"]
+
+        assert messages[0]["MessageId"] == result_send["MessageId"]
+        assert messages[0]["MessageAttributes"] == attributes
+        assert messages[0]["MD5OfMessageAttributes"] == result_send["MD5OfMessageAttributes"]
+
+    def test_sent_message_retains_attributes_after_receive(self, sqs_client, sqs_create_queue):
+        # Old name: test_send_message_retains_attributes
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        attributes = {"attr1": {"StringValue": "test1", "DataType": "String"}}
+        sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody="test", MessageAttributes=attributes
+        )
+
+        # receive should not interfere with message attributes
+        sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=0, MessageAttributeNames=["All"]
+        )
+        receive_result = sqs_client.receive_message(
+            QueueUrl=queue_url, MessageAttributeNames=["All"]
+        )
+        assert receive_result["Messages"][0]["MessageAttributes"] == attributes
 
     # Tests to check
     # test_send_message_with_invalid_string_attributes
     # test_send_message_with_invalid_payload_characters
-    # test_dead_letter_queue_config
-    # test_dead_letter_queue_execution
-    # test_dead_letter_queue_max_receive_count
+
+    @pytest.mark.skipif(
+        os.environ["TEST_TARGET"] == "AWS_CLOUD", reason="Test needs executing Account ID"
+    )
+    def test_dead_letter_queue_config(self, sqs_client, sqs_create_queue):
+        # TODO: not tested against AWS
+        queue_name = "queue-{}".format(short_uid())
+        dead_letter_queue_name = "dead_letter_queue-{}".format(short_uid())
+
+        sqs_create_queue(QueueName=dead_letter_queue_name)
+        dl_queue_arn = aws_stack.sqs_queue_arn(dead_letter_queue_name)
+
+        conf = {"deadLetterTargetArn": dl_queue_arn, "maxReceiveCount": 50}
+        attributes = {"RedrivePolicy": json.dumps(conf)}
+
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
+        assert queue_url
+
+    def test_dead_letter_queue_execution(self, sqs_client, sqs_create_queue):
+        pass
+
+    def test_dead_letter_queue_max_receive_count(self):
+        pass
+
     # test_set_queue_attribute_at_creation -> test_create_queue_with_attributes
+
     # TODO: Why are certain attributes "unsupported"
     def test_get_specific_queue_attribute_response(self, sqs_client, sqs_create_queue):
         queue_name = "queue-{}".format(short_uid())
@@ -1502,20 +1571,6 @@ class TestSqsProvider:
             assert message["MessageId"] == sent_messages[i]["MessageId"]
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
 
-    @pytest.mark.skip
-    def test_posting_to_fifo_requires_deduplicationid(self, sqs_client, sqs_create_queue):
-        # TODO: behaviour diverges from AWS
-        fifo_queue_name = "queue-{}.fifo".format(short_uid())
-        queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
-        message_content = "test{}".format(short_uid())
-        group_id = "fifo_group-{}".format(short_uid())
-
-        with pytest.raises(Exception) as e:
-            sqs_client.send_message(
-                QueueUrl=queue_url, MessageBody=message_content, MessageGroupId=group_id
-            )
-        e.match("InvalidParameterValue")
-
     def test_posting_to_queue_with_trailing_slash(self):
         pass
 
@@ -1535,6 +1590,32 @@ class TestSqsProvider:
 
     def test_get_list_queues_with_auth_in_presigned_url(self):
         pass
+
+    # Tests of diverging behaviour that was discovered during rewrite
+    @pytest.mark.skip
+    def test_posting_to_fifo_requires_deduplicationid(self, sqs_client, sqs_create_queue):
+        # TODO: behaviour diverges from AWS
+        fifo_queue_name = "queue-{}.fifo".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
+        message_content = "test{}".format(short_uid())
+        group_id = "fifo_group-{}".format(short_uid())
+
+        with pytest.raises(Exception) as e:
+            sqs_client.send_message(
+                QueueUrl=queue_url, MessageBody=message_content, MessageGroupId=group_id
+            )
+        e.match("InvalidParameterValue")
+
+    @pytest.mark.skip
+    def test_posting_to_queue_via_queue_name(self, sqs_client, sqs_create_queue):
+        # TODO: behaviour diverges from AWS
+        queue_name = "queue-{}".format(short_uid())
+        sqs_create_queue(QueueName=queue_name)
+
+        result_send = sqs_client.send_message(
+            QueueUrl=queue_name, MessageBody="Using name instead of URL"
+        )
+        assert result_send
 
 
 # TODO: test visibility timeout (with various ways to set them: queue attributes, receive parameter, update call)
