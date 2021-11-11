@@ -1,5 +1,4 @@
 import base64
-import boto3
 import contextlib
 import glob
 import json
@@ -14,6 +13,8 @@ import traceback
 import uuid
 from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import boto3
 
 from localstack import config
 from localstack.services.awslambda.lambda_utils import (
@@ -797,14 +798,14 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self,
         lambda_function: LambdaFunction,
         inv_context: InvocationContext,
-        lambda_docker_ip
+        lambda_docker_ip=None,
     ) -> InvocationResult:
         full_url = f"http://{lambda_docker_ip}:9001"
 
         client = boto3.client(
-            service_name='lambda',
+            service_name="lambda",
             region_name=config.DEFAULT_REGION,
-            endpoint_url=full_url
+            endpoint_url=full_url,
         )
 
         event = inv_context.event or "{}"
@@ -813,13 +814,13 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             FunctionName=lambda_function.name(),
             InvocationType=inv_context.invocation_type,
             Payload=to_bytes(event),
-            LogType='Tail'
+            LogType="Tail",
         )
 
-        log_output = base64.b64decode(response["LogResult"]).decode('utf-8')
-        result = response["Payload"].read().decode('utf-8')
+        log_output = base64.b64decode(response["LogResult"]).decode("utf-8")
+        result = response["Payload"].read().decode("utf-8")
 
-        if("FunctionError" in response):
+        if "FunctionError" in response:
             raise InvocationException(
                 "Lambda process returned with error. Result: %s. Output:\n%s"
                 % (result, log_output),
