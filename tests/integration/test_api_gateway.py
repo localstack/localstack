@@ -842,6 +842,59 @@ class TestAPIGateway(unittest.TestCase):
         with self.assertRaises(Exception):
             client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
 
+    def test_base_path_mapping_root(self):
+        client = aws_stack.connect_to_service("apigateway")
+        response = client.create_rest_api(name="my_api2", description="this is my api")
+        rest_api_id = response["id"]
+
+        # CREATE
+        domain_name = "domain2.example.com"
+        client.create_domain_name(domainName=domain_name)
+        root_res_id = client.get_resources(restApiId=rest_api_id)["items"][0]["id"]
+        res_id = client.create_resource(
+            restApiId=rest_api_id, parentId=root_res_id, pathPart="path"
+        )["id"]
+        client.put_method(
+            restApiId=rest_api_id, resourceId=res_id, httpMethod="GET", authorizationType="NONE"
+        )
+        client.put_integration(
+            restApiId=rest_api_id, resourceId=res_id, httpMethod="GET", type="MOCK"
+        )
+        depl_id = client.create_deployment(restApiId=rest_api_id)["id"]
+        client.create_stage(restApiId=rest_api_id, deploymentId=depl_id, stageName="dev")
+        result = client.create_base_path_mapping(
+            domainName=domain_name,
+            basePath="",
+            restApiId=rest_api_id,
+            stage="dev",
+        )
+        self.assertIn(result["ResponseMetadata"]["HTTPStatusCode"], [200, 201])
+
+        base_path = "(none)"
+        # LIST
+        result = client.get_base_path_mappings(domainName=domain_name)
+        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+        expected = {"basePath": "(none)", "restApiId": rest_api_id, "stage": "dev"}
+        self.assertEqual([expected], result["items"])
+
+        # GET
+        result = client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
+        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+        self.assertEqual(expected, select_attributes(result, ["basePath", "restApiId", "stage"]))
+
+        # UPDATE
+        result = client.update_base_path_mapping(
+            domainName=domain_name, basePath=base_path, patchOperations=[]
+        )
+        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+
+        # DELETE
+        client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
+        with self.assertRaises(Exception):
+            client.get_base_path_mapping(domainName=domain_name, basePath=base_path)
+        with self.assertRaises(Exception):
+            client.delete_base_path_mapping(domainName=domain_name, basePath=base_path)
+
     def test_api_account(self):
         client = aws_stack.connect_to_service("apigateway")
         response = client.create_rest_api(name="my_api", description="test 123")

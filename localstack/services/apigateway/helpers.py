@@ -445,6 +445,7 @@ def delete_base_path_mapping(path):
 
 
 def handle_base_path_mappings(method, path, data, headers):
+    path = urlparse.unquote(path)
     if method == "GET":
         return get_base_path_mapping(path)
     if method == "POST":
