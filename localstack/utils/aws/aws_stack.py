@@ -464,9 +464,13 @@ def sqs_queue_url_for_arn(queue_arn):
     if queue_arn in SQS_ARN_TO_URL_CACHE:
         return SQS_ARN_TO_URL_CACHE[queue_arn]
 
-    arn = parse_arn(queue_arn)
-    region_name = arn["region"]
-    queue_name = arn["resource"]
+    try:
+        arn = parse_arn(queue_arn)
+        region_name = arn["region"]
+        queue_name = arn["resource"]
+    except InvalidArnException:
+        region_name = None
+        queue_name = queue_arn
 
     sqs_client = connect_to_service("sqs", region_name=region_name)
     result = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]

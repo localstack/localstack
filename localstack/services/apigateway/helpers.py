@@ -3,6 +3,7 @@ import logging
 import re
 from typing import Any, Dict, List, Tuple
 
+from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
 from jsonpointer import JsonPointerException
 from moto.apigateway import models as apigateway_models
@@ -979,9 +980,14 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
     resource_path = path.replace("/", "")
     region_name = region_name or aws_stack.get_region()
 
-    arn = parse_arn(queue_arn)
-    queue_name = arn["resource"]
-    sqs_region = arn["region"]
+    try:
+        arn = parse_arn(queue_arn)
+        queue_name = arn["resource"]
+        sqs_region = arn["region"]
+    except InvalidArnException:
+        queue_name = queue_arn
+        sqs_region = region_name
+
     resources[resource_path] = [
         {
             "httpMethod": "POST",
