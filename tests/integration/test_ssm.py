@@ -1,20 +1,16 @@
-import unittest
+import pytest
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
-class SSMTest(unittest.TestCase):
-    def test_describe_parameters(self):
-        ssm_client = aws_stack.connect_to_service("ssm")
-
+class TestSSM:
+    def test_describe_parameters(self, ssm_client):
         response = ssm_client.describe_parameters()
-        self.assertIn("Parameters", response)
-        self.assertIsInstance(response["Parameters"], list)
+        assert "Parameters" in response
+        assert isinstance(response["Parameters"], list)
 
-    def test_put_parameters(self):
-        ssm_client = aws_stack.connect_to_service("ssm")
-
+    def test_put_parameters(self, ssm_client):
         ssm_client.put_parameter(
             Name="test_put",
             Description="test",
@@ -22,28 +18,23 @@ class SSMTest(unittest.TestCase):
             Type="String",
         )
 
-        self._assert("test_put", "test_put")
-        self._assert("/test_put", "test_put")
+        self._assert("test_put", "test_put", ssm_client)
+        self._assert("/test_put", "test_put", ssm_client)
 
-    def test_hierarchical_parameter(self):
-        ssm_client = aws_stack.connect_to_service("ssm")
-
+    def test_hierarchical_parameter(self, ssm_client):
         ssm_client.put_parameter(
             Name="/a/b/c",
             Value="123",
             Type="String",
         )
 
-        self._assert("/a/b/c", "/a/b/c")
-        self._assert("/a//b//c", "/a/b/c")
-        self._assert("a/b//c", "/a/b/c")
+        self._assert("/a/b/c", "/a/b/c", ssm_client)
+        self._assert("/a//b//c", "/a/b/c", ssm_client)
+        self._assert("a/b//c", "/a/b/c", ssm_client)
 
-    def test_get_secret_parameter(self):
-        ssm_client = aws_stack.connect_to_service("ssm")
-        sec_client = aws_stack.connect_to_service("secretsmanager")
-
+    def test_get_secret_parameter(self, ssm_client, secretsmanager_client):
         secret_name = "test_secret"
-        sec_client.create_secret(
+        secretsmanager_client.create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing creation of secrets",
@@ -53,25 +44,20 @@ class SSMTest(unittest.TestCase):
             Name="/aws/reference/secretsmanager/{0}".format(secret_name)
         )
 
-        self.assertEqual(
-            "/aws/reference/secretsmanager/{0}".format(secret_name),
-            result.get("Parameter").get("Name"),
-        )
-        self.assertEqual("my_secret", result.get("Parameter").get("Value"))
+        assert "/aws/reference/secretsmanager/{0}".format(secret_name) == result.get(
+            "Parameter"
+        ).get("Name")
+        assert "my_secret" == result.get("Parameter").get("Value")
 
         source_result = result.get("Parameter").get("SourceResult")
-        self.assertTrue(source_result is not None, "SourceResult should be present")
-        self.assertTrue(type(source_result) is str, "SourceResult should be a string")
+        assert source_result is not None, "SourceResult should be present"
+        assert type(source_result) is str, "SourceResult should be a string"
 
-    def test_get_inexistent_secret(self):
-        ssm_client = aws_stack.connect_to_service("ssm")
-        self.assertRaises(
-            ssm_client.exceptions.ParameterNotFound,
-            ssm_client.get_parameter,
-            Name="/aws/reference/secretsmanager/inexistent",
-        )
+    def test_get_inexistent_secret(self, ssm_client):
+        with pytest.raises(ssm_client.exceptions.ParameterNotFound):
+            ssm_client.get_parameter(Name="/aws/reference/secretsmanager/inexistent")
 
-    def test_get_parameters_and_secrets(self):
+    def test_get_parameters_and_secrets(self, ssm_client):
         ssm_client = aws_stack.connect_to_service("ssm")
         sec_client = aws_stack.connect_to_service("secretsmanager")
         secret_path = "/aws/reference/secretsmanager/"
@@ -104,17 +90,15 @@ class SSMTest(unittest.TestCase):
         not_found = response.get("InvalidParameters")
 
         for param in found:
-            self.assertIn(param["Name"], [param_name, complete_secret])
+            assert param["Name"] in [param_name, complete_secret]
         for param in not_found:
-            self.assertIn(param, ["inexistent_param", secret_path + "inexistent_secret"])
+            assert param in ["inexistent_param", secret_path + "inexistent_secret"]
 
-    def _assert(self, search_name, param_name):
-        ssm_client = aws_stack.connect_to_service("ssm")
-
+    def _assert(self, search_name, param_name, ssm_client):
         def do_assert(result):
-            self.assertGreater(len(result), 0)
-            self.assertEqual(param_name, result[0]["Name"])
-            self.assertEqual("123", result[0]["Value"])
+            assert len(result) > 0
+            assert param_name == result[0]["Name"]
+            assert "123" == result[0]["Value"]
 
         response = ssm_client.get_parameter(Name=search_name)
         do_assert([response["Parameter"]])
@@ -122,8 +106,7 @@ class SSMTest(unittest.TestCase):
         response = ssm_client.get_parameters(Names=[search_name])
         do_assert(response["Parameters"])
 
-    def test_get_parameters_by_path_and_filter_by_labels(self):
-        ssm_client = aws_stack.connect_to_service("ssm")
+    def test_get_parameters_by_path_and_filter_by_labels(self, ssm_client):
         prefix = f"/prefix-{short_uid()}"
         path = f"{prefix}/path"
         value = "value"
@@ -134,4 +117,4 @@ class SSMTest(unittest.TestCase):
         list_of_params = ssm_client.get_parameters_by_path(
             Path=prefix, ParameterFilters=[{"Key": "Label", "Values": ["latest"]}]
         )
-        self.assertEqual(path, list_of_params["Parameters"][0]["Name"])
+        assert path == list_of_params["Parameters"][0]["Name"]
