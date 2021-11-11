@@ -343,6 +343,35 @@ def create_lambda_function(lambda_client: "LambdaClient"):
         lambda_client.delete_function(FunctionName=arn)
 
 
+@pytest.fixture
+def create_parameter(ssm_client):
+    params = []
+
+    def _create_parameter(**kwargs):
+        params.append(kwargs["Name"])
+        return ssm_client.put_parameter(**kwargs)
+
+    yield _create_parameter
+
+    for param in params:
+        ssm_client.delete_parameter(Name=param)
+
+
+@pytest.fixture
+def create_secret(secretsmanager_client):
+    items = []
+
+    def _create_parameter(**kwargs):
+        create_response = secretsmanager_client.create_secret(**kwargs)
+        items.append(create_response["ARN"])
+        return create_response
+
+    yield _create_parameter
+
+    for item in items:
+        secretsmanager_client.delete_secret(SecretId=item)
+
+
 only_in_alpine = pytest.mark.skipif(
     not is_alpine(),
     reason="test only applicable if run in alpine",

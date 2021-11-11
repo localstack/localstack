@@ -3,20 +3,6 @@ import pytest
 from localstack.utils.common import short_uid
 
 
-@pytest.fixture(scope="class")
-def create_parameter(ssm_client):
-    params = []
-
-    def _create_parameter(**kwargs):
-        params.append(kwargs["Name"])
-        return ssm_client.put_parameter(**kwargs)
-
-    yield _create_parameter
-
-    for param in params:
-        ssm_client.delete_parameter(Name=param)
-
-
 def _assert(search_name, param_name, ssm_client):
     def do_assert(result):
         assert len(result) > 0
@@ -30,15 +16,16 @@ def _assert(search_name, param_name, ssm_client):
     do_assert(response["Parameters"])
 
 
+# TODO: fix AWS compatibility
 class TestSSM:
     def test_describe_parameters(self, ssm_client):
         response = ssm_client.describe_parameters()
         assert "Parameters" in response
         assert isinstance(response["Parameters"], list)
 
-    def test_put_parameters(self, ssm_client):
+    def test_put_parameters(self, ssm_client, create_parameter):
         param_name = f"param-{short_uid()}"
-        ssm_client.put_parameter(
+        create_parameter(
             Name=param_name,
             Description="test",
             Value="123",
@@ -46,8 +33,9 @@ class TestSSM:
         )
 
         _assert(param_name, param_name, ssm_client)
-        _assert(f"/{param_name}", param_name, ssm_client)
+        _assert(f"/{param_name}", param_name, ssm_client)  # TODO: not valid
 
+    # TODO botocore.exceptions.ClientError: An error occurred (ValidationException) when calling the GetParameter operation: Parameter name: can't be prefixed with "ssm" (case-insensitive). If formed as a path, it can consist of sub-paths divided by slash symbol; each sub-path can be formed as a mix of letters, numbers and the following 3 symbols .-_
     def test_hierarchical_parameter(self, ssm_client, create_parameter):
         param_a = f"{short_uid()}"
         create_parameter(
@@ -60,9 +48,10 @@ class TestSSM:
         _assert(f"/{param_a}//b//c", f"/{param_a}/b/c", ssm_client)
         _assert(f"{param_a}/b//c", f"/{param_a}/b/c", ssm_client)
 
-    def test_get_secret_parameter(self, ssm_client, secretsmanager_client):
+    # TODO botocore.exceptions.ClientError: An error occurred (ValidationException) when calling the GetParameter operation: WithDecryption flag must be True for retrieving a Secret Manager secret.
+    def test_get_secret_parameter(self, ssm_client, secretsmanager_client, create_secret):
         secret_name = f"test_secret-{short_uid()}"
-        secretsmanager_client.create_secret(
+        create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing creation of secrets",
@@ -76,11 +65,15 @@ class TestSSM:
         assert source_result is not None, "SourceResult should be present"
         assert type(source_result) is str, "SourceResult should be a string"
 
+    # TODO: botocore.exceptions.ClientError: An error occurred (ValidationException) when calling the GetParameter operation: WithDecryption flag must be True for retrieving a Secret Manager secret.
     def test_get_inexistent_secret(self, ssm_client):
         with pytest.raises(ssm_client.exceptions.ParameterNotFound):
             ssm_client.get_parameter(Name="/aws/reference/secretsmanager/inexistent")
 
-    def test_get_parameters_and_secrets(self, ssm_client, secretsmanager_client, create_parameter):
+    # TODO: AssertionError: assert '/aws/reference/secretsmanager/9763a545_test_secret_params' in ['inexistent_param', '/aws/reference/secretsmanager/inexistent_secret']
+    def test_get_parameters_and_secrets(
+        self, ssm_client, secretsmanager_client, create_parameter, create_secret
+    ):
         param_name = f"param-{short_uid()}"
         secret_path = "/aws/reference/secretsmanager/"
         secret_name = f"{short_uid()}_test_secret_params"
@@ -93,7 +86,7 @@ class TestSSM:
             Type="String",
         )
 
-        secretsmanager_client.create_secret(
+        create_secret(
             Name=secret_name,
             SecretString="my_secret",
             Description="testing creation of secrets",
@@ -113,6 +106,7 @@ class TestSSM:
         for param in found:
             assert param["Name"] in [param_name, complete_secret]
         for param in not_found:
+            # TODO: AssertionError: assert '/aws/reference/secretsmanager/9763a545_test_secret_params' in ['inexistent_param', '/aws/reference/secretsmanager/inexistent_secret']
             assert param in ["inexistent_param", secret_path + "inexistent_secret"]
 
     def test_get_parameters_by_path_and_filter_by_labels(self, ssm_client, create_parameter):
