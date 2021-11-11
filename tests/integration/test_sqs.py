@@ -21,7 +21,7 @@ from localstack.constants import (
 )
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import get_service_protocol, retry, short_uid, to_str
+from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid, to_str
 from localstack.utils.testutil import get_lambda_log_events
 
 from .lambdas import lambda_integration
@@ -69,6 +69,7 @@ TEST_MESSAGE_ATTRIBUTES = {
     },
     "Population": {"DataType": "Number", "StringValue": "1250800"},
 }
+TEST_REGION = "us-east-1"
 
 
 class SQSTest(unittest.TestCase):
@@ -208,12 +209,13 @@ class SQSTest(unittest.TestCase):
             received_hashes = get_hashes(messages)
             self.assertEqual(received_hashes, sent_hashes)
 
+        delete_entries = [
+            {"Id": "{:02d}".format(i), "ReceiptHandle": m["ReceiptHandle"]}
+            for i, m in enumerate(messages)
+        ]
         self.client.delete_message_batch(
             QueueUrl=queue_url,
-            Entries=[
-                {"Id": "{:02d}".format(i), "ReceiptHandle": m["ReceiptHandle"]}
-                for i, m in enumerate(messages)
-            ],
+            Entries=delete_entries,
         )
 
         response = receive_messages()
@@ -1398,7 +1400,7 @@ class TestSqsProvider:
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         batch = []
-        for i in range(0, 8):
+        for i in range(0, 9):
             batch.append({"Id": str(i), "MessageBody": str(i)})
         batch.append({"Id": "9", "MessageBody": "\x01"})
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
@@ -1463,9 +1465,51 @@ class TestSqsProvider:
         result_follow_up = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in result_follow_up.keys()
 
-    def test_publish_get_delete_message_batch(self):
-        # TODO: rewrite by using batch operations?
-        pass
+    def test_publish_get_delete_message_batch(self, sqs_client, sqs_create_queue):
+        # TODO: this does not work against AWS
+        message_count = 10
+        queue_name = "queue-{}".format(short_uid())
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        message_batch = [
+            {
+                "Id": "message-{}".format(i),
+                "MessageBody": "messageBody-{}".format(i),
+            }
+            for i in range(message_count)
+        ]
+
+        result_send_batch = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=message_batch)
+        successful = result_send_batch["Successful"]
+        assert len(successful) == len(message_batch)
+
+        result_recv = {"Messages": []}
+        i = 0
+        while len(result_recv["Messages"]) < message_count and i < 3:
+            result_recv = sqs_client.receive_message(
+                QueueUrl=queue_url, MaxNumberOfMessages=message_count, VisibilityTimeout=0
+            )
+            i += 1
+        messages_recv = result_recv["Messages"]
+        assert len(messages_recv) == message_count
+
+        ids_sent = []
+        ids_received = []
+        for i in range(message_count):
+            ids_sent.append(successful[i]["MessageId"])
+            ids_received.append((messages_recv[i]["MessageId"]))
+
+        assert set(ids_sent) == set(ids_received)
+
+        delete_entries = [
+            {"Id": message["MessageId"], "ReceiptHandle": message["ReceiptHandle"]}
+            for message in messages_recv
+        ]
+        sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=delete_entries)
+        confirmation = sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=message_count
+        )
+        assert "Messages" not in confirmation.keys()
 
     def test_create_and_send_to_fifo_queue(self, sqs_client, sqs_create_queue):
         # Old name: test_create_fifo_queue
@@ -1579,7 +1623,6 @@ class TestSqsProvider:
         )
         assert receive_result["Messages"][0]["MessageAttributes"] == attributes
 
-    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
     def test_send_message_with_invalid_string_attributes(self, sqs_client, sqs_create_queue):
         queue_name = "queue-{}".format(short_uid())
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1605,69 +1648,152 @@ class TestSqsProvider:
             sqs_client.send_message(QueueUrl=queue_url, MessageBody=invalid_message_body)
         e.match("InvalidMessageContents")
 
-    @pytest.mark.skip
     def test_dead_letter_queue_config(self, sqs_client, sqs_create_queue):
         # TODO: not tested against AWS
         queue_name = "queue-{}".format(short_uid())
         dead_letter_queue_name = "dead_letter_queue-{}".format(short_uid())
 
-        sqs_create_queue(QueueName=dead_letter_queue_name)
-        dl_queue_arn = aws_stack.sqs_queue_arn(dead_letter_queue_name)
+        dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
+        url_parts = dl_queue_url.split("/")
+        region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
+        dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
+            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+        )
 
-        conf = {"deadLetterTargetArn": dl_queue_arn, "maxReceiveCount": 50}
+        conf = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 50}
         attributes = {"RedrivePolicy": json.dumps(conf)}
 
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
 
         assert queue_url
 
-    def test_dead_letter_queue_execution(self, sqs_client, sqs_create_queue):
-        pass
+    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
 
-    def test_dead_letter_queue_max_receive_count(self):
-        pass
+    def test_dead_letter_queue_execution(
+        self, sqs_client, sqs_create_queue, lambda_client, create_lambda_function
+    ):
+
+        # TODO: lambda creation does not work when testing against AWS
+        queue_name = "queue-{}".format(short_uid())
+        dead_letter_queue_name = "dl-queue-{}".format(short_uid())
+        dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
+
+        # create arn
+        url_parts = dl_queue_url.split("/")
+        region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
+        dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
+            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+        )
+
+        policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
+        queue_url = sqs_create_queue(
+            QueueName=queue_name, Attributes={"RedrivePolicy": json.dumps(policy)}
+        )
+
+        lambda_name = "lambda-{}".format(short_uid())
+        create_lambda_function(
+            lambda_name,
+            libs=TEST_LAMBDA_LIBS,
+            handler_file=TEST_LAMBDA_PYTHON,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+        )
+        # create arn
+        url_parts = queue_url.split("/")
+        queue_arn = "arn:aws:sqs:{}:{}:{}".format(
+            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+        )
+        lambda_client.create_event_source_mapping(
+            EventSourceArn=queue_arn, FunctionName=lambda_name
+        )
+
+        # add message to SQS, which will trigger the Lambda, resulting in an error
+        payload = {lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1}
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(payload))
+
+        assert poll_condition(
+            lambda: "Messages" in sqs_client.receive_message(QueueUrl=dl_queue_url), 5.0, 1.0
+        )
+
+    def test_dead_letter_queue_max_receive_count(self, sqs_client, sqs_create_queue):
+        queue_name = "queue-{}".format(short_uid())
+        dead_letter_queue_name = "dl-queue-{}".format(short_uid())
+        dl_queue_url = sqs_create_queue(
+            QueueName=dead_letter_queue_name, Attributes={"VisibilityTimeout": "0"}
+        )
+
+        # create arn
+        url_parts = dl_queue_url.split("/")
+        region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
+        dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
+            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+        )
+
+        policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
+        queue_url = sqs_create_queue(
+            QueueName=queue_name,
+            Attributes={"RedrivePolicy": json.dumps(policy), "VisibilityTimeout": "0"},
+        )
+        result_send = sqs_client.send_message(QueueUrl=queue_url, MessageBody="test")
+
+        result_recv1_messages = sqs_client.receive_message(QueueUrl=queue_url).get("Messages")
+        result_recv2_messages = sqs_client.receive_message(QueueUrl=queue_url).get("Messages")
+        # only one request received a message
+        assert (result_recv1_messages is None) != (result_recv2_messages is None)
+
+        assert poll_condition(
+            lambda: "Messages" in sqs_client.receive_message(QueueUrl=dl_queue_url), 5.0, 1.0
+        )
+        assert (
+            sqs_client.receive_message(QueueUrl=dl_queue_url)["Messages"][0]["MessageId"]
+            == result_send["MessageId"]
+        )
 
     # TODO: check if test_set_queue_attribute_at_creation == test_create_queue_with_attributes
 
-    # TODO: Why are certain attributes "unsupported"
     def test_get_specific_queue_attribute_response(self, sqs_client, sqs_create_queue):
         queue_name = "queue-{}".format(short_uid())
         dead_letter_queue_name = "dead_letter_queue-{}".format(short_uid())
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
+        region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
         dl_result = sqs_client.get_queue_attributes(
             QueueUrl=dl_queue_url, AttributeNames=["QueueArn"]
         )
 
-        assert "QueueArn" in dl_result["Attributes"].keys()
         dl_queue_arn = dl_result["Attributes"]["QueueArn"]
 
+        max_receive_count = 10
         _redrive_policy = {
             "deadLetterTargetArn": dl_queue_arn,
-            "maxReceiveCount": "10",
+            "maxReceiveCount": max_receive_count,
         }
+        message_retention_period = "604800"
         attributes = {
-            "MessageRetentionPeriod": "604800",
+            "MessageRetentionPeriod": message_retention_period,
             "DelaySeconds": "10",
             "RedrivePolicy": json.dumps(_redrive_policy),
         }
 
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
-        unsupported_attributes = sqs_client.get_queue_attributes(
+        url_parts = queue_url.split("/")
+        get_two_attributes = sqs_client.get_queue_attributes(
             QueueUrl=queue_url,
             AttributeNames=["MessageRetentionPeriod", "RedrivePolicy"],
         )
-        supported_attributes = sqs_client.get_queue_attributes(
+        get_single_attribute = sqs_client.get_queue_attributes(
             QueueUrl=queue_url,
             AttributeNames=["QueueArn"],
         )
-        assert "MessageRetentionPeriod" in unsupported_attributes["Attributes"].keys()
-        assert "604800" == unsupported_attributes["Attributes"]["MessageRetentionPeriod"]
-        assert "QueueArn" in supported_attributes["Attributes"].keys()
-        assert "RedrivePolicy" in unsupported_attributes["Attributes"].keys()
-
-        redrive_policy = json.loads(unsupported_attributes["Attributes"]["RedrivePolicy"])
-        assert isinstance(redrive_policy["maxReceiveCount"], int)
+        # asserts
+        constructed_arn = "arn:aws:sqs:{}:{}:{}".format(
+            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+        )
+        redrive_policy = json.loads(get_two_attributes.get("Attributes").get("RedrivePolicy"))
+        assert message_retention_period == get_two_attributes.get("Attributes").get(
+            "MessageRetentionPeriod"
+        )
+        assert constructed_arn == get_single_attribute.get("Attributes").get("QueueArn")
+        assert max_receive_count == redrive_policy.get("maxReceiveCount")
 
     @pytest.mark.skip
     def test_set_unsupported_attribute(self, sqs_client, sqs_create_queue):
@@ -1704,10 +1830,6 @@ class TestSqsProvider:
             assert message["MessageId"] == sent_messages[i]["MessageId"]
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
 
-    def test_posting_to_queue_with_trailing_slash(self):
-        # TODO: does this make sense when slashes are forbidden? see test_create_queue_with_slashes
-        pass
-
     @pytest.mark.skip
     def test_create_queue_with_slashes(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
@@ -1716,11 +1838,91 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
 
+    @pytest.mark.skipif(
+        os.environ.get("TEST_TARGET") == "AWS_CLOUD", reason="coded localstack specific"
+    )
     def test_post_list_queues_with_auth_in_presigned_url(self):
-        pass
+        # TODO: does not work when testing against AWS
+        method = "post"
+        base_url = "{}://{}:{}".format(
+            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.EDGE_PORT
+        )
 
+        req = AWSRequest(
+            method=method,
+            url=base_url,
+            data={"Action": "ListQueues", "Version": "2012-11-05"},
+        )
+
+        # boto doesn't support querystring-style auth, so we have to do some
+        # weird logic to use boto's signing functions, to understand what's
+        # going on here look at the internals of the SigV4Auth.add_auth
+        # method.
+        datetime_now = datetime.datetime.utcnow()
+        req.context["timestamp"] = datetime_now.strftime(SIGV4_TIMESTAMP)
+        signer = SigV4Auth(
+            Credentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY),
+            "sqs",
+            os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION,
+        )
+        canonical_request = signer.canonical_request(req)
+        string_to_sign = signer.string_to_sign(req, canonical_request)
+
+        payload = {
+            "Action": "ListQueues",
+            "Version": "2012-11-05",
+            "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+            "X-Amz-Credential": signer.scope(req),
+            "X-Amz-SignedHeaders": ";".join(signer.headers_to_sign(req).keys()),
+            "X-Amz-Signature": signer.signature(string_to_sign, req),
+        }
+
+        response = requests.post(url=base_url, data=urlencode(payload))
+        assert response.status_code == 200
+        assert b"<ListQueuesResponse>" in response.content
+
+    @pytest.mark.skipif(
+        os.environ.get("TEST_TARGET") == "AWS_CLOUD", reason="coded localstack specific"
+    )
     def test_get_list_queues_with_auth_in_presigned_url(self):
-        pass
+        # TODO: does not work when testing against AWS
+        method = "get"
+        base_url = "{}://{}:{}".format(
+            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.EDGE_PORT
+        )
+
+        req = AWSRequest(
+            method=method,
+            url=base_url,
+            data={"Action": "ListQueues", "Version": "2012-11-05"},
+        )
+
+        # boto doesn't support querystring-style auth, so we have to do some
+        # weird logic to use boto's signing functions, to understand what's
+        # going on here look at the internals of the SigV4Auth.add_auth
+        # method.
+        datetime_now = datetime.datetime.utcnow()
+        req.context["timestamp"] = datetime_now.strftime(SIGV4_TIMESTAMP)
+        signer = SigV4Auth(
+            Credentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY),
+            "sqs",
+            os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION,
+        )
+        canonical_request = signer.canonical_request(req)
+        string_to_sign = signer.string_to_sign(req, canonical_request)
+
+        payload = {
+            "Action": "ListQueues",
+            "Version": "2012-11-05",
+            "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+            "X-Amz-Credential": signer.scope(req),
+            "X-Amz-SignedHeaders": ";".join(signer.headers_to_sign(req).keys()),
+            "X-Amz-Signature": signer.signature(string_to_sign, req),
+        }
+
+        response = requests.get(base_url, params=payload)
+        assert response.status_code == 200
+        assert b"<ListQueuesResponse>" in response.content
 
     # Tests of diverging behaviour that was discovered during rewrite
     @pytest.mark.skip
@@ -1769,7 +1971,6 @@ class TestSqsProvider:
 
 # TODO: test visibility timeout (with various ways to set them: queue attributes, receive parameter, update call)
 # TODO: test message attributes and message system attributes
-# TODO: test message de-duplication id
 
 
 class TestSqsLambdaIntegration:
