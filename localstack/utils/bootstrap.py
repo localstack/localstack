@@ -39,7 +39,7 @@ BASIC_LIB_MARKER = "#basic-lib"
 DO_CHMOD_DOCKER_SOCK = False
 
 # log format strings
-LOG_FORMAT = "%(asctime)s:%(levelname)s:%(name)s: %(message)s"
+LOG_FORMAT = "%(asctime)s.%(msecs)03d:%(levelname)s:%(name)s: %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 # plugin scopes
