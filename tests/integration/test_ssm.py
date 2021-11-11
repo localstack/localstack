@@ -1,6 +1,7 @@
 import unittest
 
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 
 class SSMTest(unittest.TestCase):
@@ -123,13 +124,14 @@ class SSMTest(unittest.TestCase):
 
     def test_get_parameters_by_path_and_filter_by_labels(self):
         ssm_client = aws_stack.connect_to_service("ssm")
-        path = "/my/path"
+        prefix = f"/prefix-{short_uid()}"
+        path = f"{prefix}/path"
         value = "value"
         param = ssm_client.put_parameter(Name=path, Value=value, Type="String")
         ssm_client.label_parameter_version(
             Name=path, ParameterVersion=param["Version"], Labels=["latest"]
         )
         list_of_params = ssm_client.get_parameters_by_path(
-            Path="/my", ParameterFilters=[{"Key": "Label", "Values": ["latest"]}]
+            Path=prefix, ParameterFilters=[{"Key": "Label", "Values": ["latest"]}]
         )
-        self.assertEqual("/my/path", list_of_params["Parameters"][0]["Name"])
+        self.assertEqual(path, list_of_params["Parameters"][0]["Name"])
