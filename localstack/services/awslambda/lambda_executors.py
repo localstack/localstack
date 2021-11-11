@@ -793,10 +793,14 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         inv_result = self.invoke_lambda(lambda_function, inv_context, lambda_docker_ip)
         return (inv_result.result, inv_result.log_output)
 
-    def invoke_lambda(self, lambda_function: LambdaFunction, inv_context: InvocationContext, lambda_docker_ip) -> InvocationResult:
+    def invoke_lambda(
+        self,
+        lambda_function: LambdaFunction,
+        inv_context: InvocationContext,
+        lambda_docker_ip
+    ) -> InvocationResult:
+        full_url = f"http://{lambda_docker_ip}:9001"
 
-        full_url=f"http://{lambda_docker_ip}:9001"
-        
         client = boto3.client(
             service_name='lambda',
             region_name=config.DEFAULT_REGION,
@@ -812,8 +816,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LogType='Tail'
         )
 
-        log_output=base64.b64decode(response["LogResult"]).decode('utf-8')
-        result=response["Payload"].read().decode('utf-8')
+        log_output = base64.b64decode(response["LogResult"]).decode('utf-8')
+        result = response["Payload"].read().decode('utf-8')
 
         if("FunctionError" in response):
             raise InvocationException(
@@ -821,7 +825,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 % (result, log_output),
                 log_output,
                 result,
-            ) 
+            )
 
         return InvocationResult(result, log_output)
 
@@ -902,53 +906,53 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             return ContainerInfo(container_name, entry_point)
 
     def create_container(
-            self,
-            lambda_function: LambdaFunction,
-            env_vars: Dict,
-            lambda_cwd: str,
-            docker_flags: str = None,
-        ):
-            docker_image = Util.docker_image_for_lambda(lambda_function)
-            container_name = self.get_container_name(lambda_function.arn())
+        self,
+        lambda_function: LambdaFunction,
+        env_vars: Dict,
+        lambda_cwd: str,
+        docker_flags: str = None,
+    ):
+        docker_image = Util.docker_image_for_lambda(lambda_function)
+        container_name = self.get_container_name(lambda_function.arn())
 
-            # make sure we set LOCALSTACK_HOSTNAME
-            Util.inject_endpoints_into_env(env_vars)
+        # make sure we set LOCALSTACK_HOSTNAME
+        Util.inject_endpoints_into_env(env_vars)
 
-            # make sure AWS_LAMBDA_EVENT_BODY is not set (otherwise causes issues with "docker exec ..." above)
-            env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
+        # make sure AWS_LAMBDA_EVENT_BODY is not set (otherwise causes issues with "docker exec ..." above)
+        env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
 
-            network = config.LAMBDA_DOCKER_NETWORK
-            additional_flags = docker_flags
+        network = config.LAMBDA_DOCKER_NETWORK
+        additional_flags = docker_flags
 
-            dns = config.LAMBDA_DOCKER_DNS
+        dns = config.LAMBDA_DOCKER_DNS
 
-            mount_volumes = not config.LAMBDA_REMOTE_DOCKER
-            lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
-            if ":" in lambda_cwd and "\\" in lambda_cwd:
-                lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
-            mount_volumes = [(lambda_cwd_on_host, DOCKER_TASK_FOLDER)] if mount_volumes else None
+        mount_volumes = not config.LAMBDA_REMOTE_DOCKER
+        lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
+        if ":" in lambda_cwd and "\\" in lambda_cwd:
+            lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
+        mount_volumes = [(lambda_cwd_on_host, DOCKER_TASK_FOLDER)] if mount_volumes else None
 
-            if os.environ.get("HOSTNAME"):
-                env_vars["HOSTNAME"] = os.environ.get("HOSTNAME")
-            env_vars["EDGE_PORT"] = config.EDGE_PORT
-            env_vars["DOCKER_LAMBDA_STAY_OPEN"] = "1"
+        if os.environ.get("HOSTNAME"):
+            env_vars["HOSTNAME"] = os.environ.get("HOSTNAME")
+        env_vars["EDGE_PORT"] = config.EDGE_PORT
+        env_vars["DOCKER_LAMBDA_STAY_OPEN"] = "1"
 
-            LOG.debug(
-                "Creating docker-reuse Lambda container %s from image %s", container_name, docker_image
-            )
-            return DOCKER_CLIENT.create_container(
-                image_name=docker_image,
-                remove=False,
-                interactive=False,
-                detach=True,
-                name=container_name,
-                command=[lambda_function.handler], # needs the handler to spin up
-                network=network,
-                env_vars=env_vars,
-                dns=dns,
-                mount_volumes=mount_volumes,
-                additional_flags=additional_flags,
-            )
+        LOG.debug(
+            "Creating docker-reuse Lambda container %s from image %s", container_name, docker_image
+        )
+        return DOCKER_CLIENT.create_container(
+            image_name=docker_image,
+            remove=False,
+            interactive=False,
+            detach=True,
+            name=container_name,
+            command=[lambda_function.handler],  # needs the handler to spin up
+            network=network,
+            env_vars=env_vars,
+            dns=dns,
+            mount_volumes=mount_volumes,
+            additional_flags=additional_flags,
+        )
 
     def destroy_docker_container(self, func_arn):
         """
