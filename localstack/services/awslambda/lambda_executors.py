@@ -14,6 +14,8 @@ import uuid
 from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import boto3
+
 from localstack import config
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
@@ -602,6 +604,10 @@ class LambdaExecutorContainers(LambdaExecutor):
             result = e.stdout or ""
             log_output = e.stderr or ""
             error = e
+        except InvocationException as e:
+            result = e.result or ""
+            log_output = e.log_output or ""
+            error = e
         try:
             result = to_str(result).strip()
         except Exception:
@@ -783,13 +789,46 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 container_info.name, f"{lambda_cwd}/.", DOCKER_TASK_FOLDER
             )
 
-        return DOCKER_CLIENT.exec_in_container(
-            container_name_or_id=container_info.name,
-            command=inv_context.lambda_command,
-            interactive=True,
-            env_vars=env_vars,
-            stdin=stdin,
+        lambda_docker_ip = DOCKER_CLIENT.get_container_ip(container_info.name)
+
+        inv_result = self.invoke_lambda(lambda_function, inv_context, lambda_docker_ip)
+        return (inv_result.result, inv_result.log_output)
+
+    def invoke_lambda(
+        self,
+        lambda_function: LambdaFunction,
+        inv_context: InvocationContext,
+        lambda_docker_ip=None,
+    ) -> InvocationResult:
+        full_url = f"http://{lambda_docker_ip}:9001"
+
+        client = boto3.client(
+            service_name="lambda",
+            region_name=config.DEFAULT_REGION,
+            endpoint_url=full_url,
         )
+
+        event = inv_context.event or "{}"
+
+        response = client.invoke(
+            FunctionName=lambda_function.name(),
+            InvocationType=inv_context.invocation_type,
+            Payload=to_bytes(event),
+            LogType="Tail",
+        )
+
+        log_output = base64.b64decode(response["LogResult"]).decode("utf-8")
+        result = response["Payload"].read().decode("utf-8")
+
+        if "FunctionError" in response:
+            raise InvocationException(
+                "Lambda process returned with error. Result: %s. Output:\n%s"
+                % (result, log_output),
+                log_output,
+                result,
+            )
+
+        return InvocationResult(result, log_output)
 
     def _execute(self, func_arn, *args, **kwargs):
         if not LAMBDA_CONCURRENCY_LOCK.get(func_arn):
@@ -885,6 +924,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         network = config.LAMBDA_DOCKER_NETWORK
         additional_flags = docker_flags
+
         dns = config.LAMBDA_DOCKER_DNS
 
         mount_volumes = not config.LAMBDA_REMOTE_DOCKER
@@ -896,16 +936,18 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         if os.environ.get("HOSTNAME"):
             env_vars["HOSTNAME"] = os.environ.get("HOSTNAME")
         env_vars["EDGE_PORT"] = config.EDGE_PORT
+        env_vars["DOCKER_LAMBDA_STAY_OPEN"] = "1"
 
         LOG.debug(
             "Creating docker-reuse Lambda container %s from image %s", container_name, docker_image
         )
         return DOCKER_CLIENT.create_container(
             image_name=docker_image,
-            remove=True,
-            interactive=True,
+            remove=False,
+            interactive=False,
+            detach=True,
             name=container_name,
-            entrypoint="/bin/bash",
+            command=[lambda_function.handler],  # needs the handler to spin up
             network=network,
             env_vars=env_vars,
             dns=dns,
