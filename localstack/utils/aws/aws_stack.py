@@ -3,12 +3,19 @@ import logging
 import os
 import re
 import socket
+import sys
 import threading
 import time
-from typing import Dict
+from typing import Dict, Optional
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 import boto3
 import botocore
+from botocore.utils import ArnParser, InvalidArnException
 
 from localstack import config
 from localstack.constants import (
@@ -456,9 +463,16 @@ def sqs_queue_url_for_arn(queue_arn):
         return queue_arn
     if queue_arn in SQS_ARN_TO_URL_CACHE:
         return SQS_ARN_TO_URL_CACHE[queue_arn]
-    region_name = extract_region_from_arn(queue_arn)
+
+    try:
+        arn = parse_arn(queue_arn)
+        region_name = arn["region"]
+        queue_name = arn["resource"]
+    except InvalidArnException:
+        region_name = None
+        queue_name = queue_arn
+
     sqs_client = connect_to_service("sqs", region_name=region_name)
-    queue_name = sqs_queue_name(queue_arn)
     result = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
     SQS_ARN_TO_URL_CACHE[queue_arn] = result
     return result
@@ -487,14 +501,42 @@ def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> str:
     return access_id
 
 
-def extract_region_from_arn(arn: str) -> str:
-    parts = arn.split(":")
-    return parts[3] if len(parts) > 1 else None
+# TODO: extract ARN utils into separate file!
+
+_arn_parser = ArnParser()
 
 
-def extract_service_from_arn(arn: str) -> str:
-    parts = arn.split(":")
-    return parts[2] if len(parts) > 1 else None
+class ArnData(TypedDict):
+    partition: str
+    service: str
+    region: str
+    account: str
+    resource: str
+
+
+def parse_arn(arn: str) -> ArnData:
+    """
+    Uses a botocore ArnParser to parse an arn.
+
+    :param arn: the arn string to parse
+    :returns: a dictionary containing the ARN components
+    :raises InvalidArnException: if the arn is invalid
+    """
+    return _arn_parser.parse_arn(arn)
+
+
+def extract_region_from_arn(arn: str) -> Optional[str]:
+    try:
+        return parse_arn(arn).get("region")
+    except InvalidArnException:
+        return None
+
+
+def extract_service_from_arn(arn: str) -> Optional[str]:
+    try:
+        return parse_arn(arn).get("service")
+    except InvalidArnException:
+        return None
 
 
 def get_account_id(account_id=None, env=None):
@@ -624,14 +666,14 @@ def lambda_function_or_layer_arn(
 
 
 def lambda_function_name(name_or_arn):
-    if ":" not in name_or_arn:
+    if ":" in name_or_arn:
+        arn = parse_arn(name_or_arn)
+        if arn["service"] != "lambda":
+            raise ValueError("arn is not a lambda arn %s" % name_or_arn)
+
+        return parse_arn(name_or_arn)["resource"].split(":")[1]
+    else:
         return name_or_arn
-    parts = name_or_arn.split(":")
-    # name is index #6 in pattern: arn:aws:lambda:.*:.*:function:.*
-    return parts[6]
-
-
-# TODO: extract ARN utils into separate file!
 
 
 def state_machine_arn(name, account_id=None, region_name=None):
@@ -742,8 +784,10 @@ def apigateway_restapi_arn(api_id, account_id=None, region_name=None):
 
 
 def sqs_queue_name(queue_arn):
-    parts = queue_arn.split(":")
-    return queue_arn if len(parts) == 1 else parts[5]
+    if ":" in queue_arn:
+        return parse_arn(queue_arn)["resource"]
+    else:
+        return queue_arn
 
 
 def sns_topic_arn(topic_name, account_id=None):
