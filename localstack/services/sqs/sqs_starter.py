@@ -1,7 +1,7 @@
 import logging
-import os
 import types
 from html import escape
+from typing import Optional
 
 from moto.core.utils import camelcase_to_underscores
 from moto.sqs import responses as sqs_responses
@@ -9,23 +9,16 @@ from moto.sqs.exceptions import QueueDoesNotExist
 from moto.sqs.models import Queue
 
 from localstack import config
-from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.services.infra import (
-    do_run,
     log_startup_message,
     start_moto_server,
     start_proxy_for_service,
 )
-from localstack.services.install import INSTALL_DIR_ELASTICMQ, SQS_BACKEND_IMPL, install_elasticmq
+from localstack.services.install import SQS_BACKEND_IMPL
+from localstack.services.sqs.elasticmq import ElasticMQSerer
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (
-    TMP_FILES,
-    get_free_tcp_port,
-    save_file,
-    short_uid,
-    to_str,
-    wait_for_port_open,
-)
+from localstack.utils.common import get_free_tcp_port, to_str
+from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
 
@@ -36,13 +29,20 @@ PORT_SQS_BACKEND = None
 MAX_HEAP_SIZE = "256m"
 
 
+# server singleton
+_server: Optional[Server] = None
+
+
 def check_sqs(expect_shutdown=False, print_error=False):
     out = None
+
     try:
-        # wait for port to be opened
-        wait_for_port_open(PORT_SQS_BACKEND)
+        if not expect_shutdown:
+            assert _server, "server has not been started yet"
+            assert _server.wait_is_up(5), "gave up waiting for server"
+
         # check SQS
-        endpoint_url = f"http://127.0.0.1:{PORT_SQS_BACKEND}"
+        endpoint_url = _server.url
         out = aws_stack.connect_to_service(
             service_name="sqs", endpoint_url=endpoint_url
         ).list_queues()
@@ -52,13 +52,26 @@ def check_sqs(expect_shutdown=False, print_error=False):
     if expect_shutdown:
         assert out is None
     else:
+        assert out is not None
         assert out.get("ResponseMetadata", {}).get("HTTPStatusCode") == 200
 
 
 def start_sqs(*args, **kwargs):
-    if SQS_BACKEND_IMPL == "moto":
-        return start_sqs_moto(*args, **kwargs)
-    return start_sqs_elasticmq(*args, **kwargs)
+    global _server, PORT_SQS_BACKEND
+
+    if _server:
+        return _server
+
+    log_startup_message("SQS")
+
+    if SQS_BACKEND_IMPL == "elasticmq":
+        _server = start_sqs_elasticmq(*args, **kwargs)
+    else:
+        _server = start_sqs_moto(*args, **kwargs)
+
+    PORT_SQS_BACKEND = _server.port
+
+    return _server
 
 
 def patch_moto():
@@ -136,56 +149,27 @@ def patch_moto():
     sqs_responses.SQSResponse._get_queue_name = sqs_responses_get_queue_name
 
 
-def start_sqs_moto(port=None, asynchronous=False, update_listener=None):
+def start_sqs_moto(port=None, asynchronous=False, update_listener=None) -> Server:
+    from localstack.services import motoserver
+
     port = port or config.PORT_SQS
     patch_moto()
-    result = start_moto_server(
+    start_moto_server(
         "sqs",
         port,
         name="SQS",
         asynchronous=asynchronous,
         update_listener=update_listener,
     )
-    global PORT_SQS_BACKEND
-    PORT_SQS_BACKEND = result.service_port
-    return result
+
+    return motoserver.get_moto_server()
 
 
-def start_sqs_elasticmq(port=None, asynchronous=False, update_listener=None):
-    global PORT_SQS_BACKEND
-
-    port = port or config.PORT_SQS
-    install_elasticmq()
-    PORT_SQS_BACKEND = get_free_tcp_port()
-    # create config file
-    config_params = """
-    include classpath("application.conf")
-    node-address {
-        protocol = http
-        host = "%s"
-        port = %s
-        context-path = ""
-    }
-    rest-sqs {
-        enabled = true
-        bind-port = %s
-        bind-hostname = "0.0.0.0"
-        sqs-limits = strict
-    }
-    """ % (
-        LOCALSTACK_HOSTNAME,
-        port,
-        PORT_SQS_BACKEND,
-    )
-    config_file = os.path.join(TMP_FOLDER, "sqs.%s.conf" % short_uid())
-    TMP_FILES.append(config_file)
-    save_file(config_file, config_params)
-    # start process
-    cmd = "java -Dconfig.file=%s -Xmx%s -jar %s/elasticmq-server.jar" % (
-        config_file,
-        MAX_HEAP_SIZE,
-        INSTALL_DIR_ELASTICMQ,
-    )
-    log_startup_message("SQS")
-    start_proxy_for_service("sqs", port, PORT_SQS_BACKEND, update_listener)
-    return do_run(cmd, asynchronous)
+def start_sqs_elasticmq(port=None, asynchronous=False, update_listener=None) -> Server:
+    server = ElasticMQSerer(get_free_tcp_port())
+    server.start()
+    start_proxy_for_service("sqs", port, server.port, update_listener)
+    LOG.debug("waiting for elasticmq server to start...")
+    if not server.wait_is_up(120):
+        LOG.debug("gave up waiting for elasticmq server after 120 seconds")
+    return server
