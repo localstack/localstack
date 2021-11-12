@@ -711,7 +711,6 @@ def invoke_rest_api_integration_backend(
 
         elif "states:action/" in uri:
             action = uri.split("/")[-1]
-            payload = {}
 
             if APPLICATION_JSON in integration.get("requestTemplates", {}):
                 payload = apply_request_response_templates(
@@ -723,6 +722,9 @@ def invoke_rest_api_integration_backend(
             else:
                 payload = json.loads(data.decode("utf-8"))
             client = aws_stack.connect_to_service("stepfunctions")
+
+            if isinstance(payload.get("input"), dict):
+                payload["input"] = json.dumps(payload["input"])
 
             # Hot fix since step functions local package responses: Unsupported Operation: 'StartSyncExecution'
             method_name = (
@@ -736,9 +738,7 @@ def invoke_rest_api_integration_backend(
                 LOG.error(msg)
                 return make_error_response(msg, 400)
 
-            result = method(
-                **payload,
-            )
+            result = method(**payload)
             result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
             response = requests_response(
                 content=result,
