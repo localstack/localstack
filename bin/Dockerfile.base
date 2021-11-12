@@ -8,12 +8,24 @@ RUN apk add --no-cache autoconf automake boost-dev build-base ca-certificates cm
         g++ gcc git groff iputils libffi-dev libtool linux-headers make nss openssl openssl-dev \
         py3-pip python3 python3-dev tar xz zip && \
     update-ca-certificates
+
+
+# NOTE: packages are in a bit of a bad state right now, couple of manual overrides required (see below)
+# TODO: this will soon become obsolete with the new build on Debian...
+
 # ARG PG_VER=12.7-r0
 # ARG APK_REPO=http://dl-cdn.alpinelinux.org/alpine/v3.12/main
 # reverting back to v11.12 to save ~150MB of disk space in the final image
 ARG PG_VER=11.12-r0
 ARG APK_REPO=http://dl-cdn.alpinelinux.org/alpine/v3.10/main
+# pinning to python 3.7 from v3.10 repo (default for base image is 3.8 at the time of writing),
+# to preserve compatibility with the plpython3 postgres package (which requires 3.7 currently)
+RUN apk del --force python3 python3-dev py3-pip boost boost-dev libffi-dev
+RUN apk add python3=3.7.10-r0 python3-dev=3.7.10-r0 boost-dev=1.69.0-r4 boost=1.69.0-r4 libffi-dev=3.2.1-r6 --repository=$APK_REPO
 RUN apk add --no-cache postgresql=$PG_VER postgresql-client=$PG_VER postgresql-dev=$PG_VER postgresql-plpython3=$PG_VER --repository=$APK_REPO
+# using "ensurepip" module here instead of py3-pip (currently broken in apk package constraints from above)
+RUN python -m ensurepip --upgrade
+RUN which pip
 
 # install Docker (CLI only)
 RUN docker_version=20.10.7; \
