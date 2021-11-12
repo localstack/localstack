@@ -1,3 +1,5 @@
+ARG IMAGE_TYPE=full
+
 # java-builder: Stage to build a custom JRE (with jlink)
 FROM python:3.8-slim-buster as java-builder
 ARG TARGETARCH
@@ -115,6 +117,9 @@ ENV PYTHONUNBUFFERED=1
 ENV EDGE_BIND_HOST=0.0.0.0
 ENV LOCALSTACK_HOSTNAME=localhost
 
+# Create the infra folder (will be populated later)
+RUN mkdir -p /opt/code/localstack/localstack/infra
+
 RUN mkdir /root/.serverless; chmod -R 777 /root/.serverless
 
 # add trusted CA certificates to the cert store
@@ -145,18 +150,14 @@ RUN apt-get update && apt-get install -y autoconf automake cmake libsasl2-dev \
         g++ gcc libffi-dev libkrb5-dev libssl-dev \
         postgresql-server-dev-11 libpq-dev
 
-# TODO Check if this can be removed (should only be necessary in the tests)
-# installing terraform temporary - removed in the final docker image
-ARG TERRAFORM_ZIP_URL=https://releases.hashicorp.com/terraform/0.15.5/terraform_0.15.5_linux_${TARGETARCH}.zip
-RUN mkdir -p /opt/terraform && \
-    curl -L -o /opt/terraform/terraform.zip ${TERRAFORM_ZIP_URL} && \
-    (cd /opt/terraform && unzip -q /opt/terraform/terraform.zip && rm /opt/terraform/terraform.zip)
-ENV PATH="${PATH}:/opt/terraform"
+# Install timescaledb into postgresql
+RUN (cd /tmp && git clone https://github.com/timescale/timescaledb.git) && \
+    (cd /tmp/timescaledb && git checkout 2.0.0-rc4 && ./bootstrap -DREGRESS_CHECKS=OFF && \
+      cd build && make && make install)
 
 # init environment and cache some dependencies
 ARG DYNAMODB_ZIP_URL=https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip
-RUN mkdir -p /opt/code/localstack/localstack/infra && \
-    mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
+RUN mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
       curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
       (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip) && \
     curl -L -o /opt/code/localstack/localstack/infra/elasticmq-server.jar \
@@ -182,57 +183,14 @@ ADD localstack/infra/ localstack/infra/
 
 
 
-# light: Stage which produces a final working localstack image (which does not contain some additional infrastructure like eleasticsearch - see "full" stage)
-FROM base-${TARGETARCH} as light
-
-LABEL authors="LocalStack Contributors"
-LABEL maintainer="LocalStack Team (info@localstack.cloud)"
-LABEL description="LocalStack Docker image"
-
-ARG LOCALSTACK_BUILD_DATE
-ARG LOCALSTACK_BUILD_GIT_HASH
-
-ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
-ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
-
-# Copy in the build dependencies
-COPY --from=builder /opt/code/localstack/ /opt/code/localstack/
-
-RUN mkdir -p /tmp/localstack && \
-    if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
-
-# fix some permissions and create local user
-RUN mkdir -p /.npm && \
-    chmod 777 . && \
-    chmod 755 /root && \
-    chmod -R 777 /.npm && \
-    chmod -R 777 /tmp/localstack && \
-    useradd -ms /bin/bash localstack && \
-    # TODO check if this is necessary or not
-    # chown -R localstack:localstack . /tmp/localstack && \
-    ln -s `pwd` /tmp/localstack_install_dir
-
-# Add the code in the last step
-ADD localstack/ localstack/
-
-# Download some more dependencies (make init needs the LocalStack code)
-# FIXME the init python code should be independent and executed in the builder stage
-RUN make init
-
-# Install the latest version of localstack-ext and generate the plugin entrypoints
-RUN (virtualenv .venv && source .venv/bin/activate && pip3 install --upgrade localstack-ext)
-RUN make entrypoints
-
-# expose edge service, ElasticSearch & debugpy ports
-EXPOSE 4566 4571 5678
-
-# define command at startup
-ENTRYPOINT ["docker-entrypoint.sh"]
+# base-light: Stage which does not add additional dependencies (like elasticsearch)
+FROM base-${TARGETARCH} as base-light
+RUN touch localstack/infra/.light-version
 
 
 
-# full: Final stage which contains additional dependencies to avoid installing them at runtime (f.e. elasticsearch)
-FROM light as full
+# base-full: Stage which adds additional dependencies to avoid installing them at runtime (f.e. elasticsearch)
+FROM base-${TARGETARCH} as base-full
 
 # Install Elasticsearch
 # https://github.com/pires/docker-elasticsearch/issues/56
@@ -241,6 +199,7 @@ ENV ES_TMPDIR /tmp
 ENV ES_BASE_DIR=localstack/infra/elasticsearch
 ENV ES_JAVA_HOME /usr/lib/jvm/java-11
 RUN TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo "aarch64"); \
+    mkdir -p /opt/code/localstack/localstack/infra && \
     curl -L -o /tmp/localstack.es.tar.gz \
         https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.10.0-linux-${TARGETARCH_SYNONYM}.tar.gz && \
     (cd localstack/infra/ && tar -xf /tmp/localstack.es.tar.gz && \
@@ -260,4 +219,61 @@ RUN TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo
         mkdir -p $ES_BASE_DIR/logs && \
         chmod -R 777 $ES_BASE_DIR/config && \
         chmod -R 777 $ES_BASE_DIR/data && \
-        chmod -R 777 $ES_BASE_DIR/logs)
+        chmod -R 777 $ES_BASE_DIR/logs) && \
+    ( rm -rf $ES_BASE_DIR/modules/x-pack-ml/platform && \
+        rm -rf $ES_BASE_DIR/modules/ingest-geoip)
+
+
+
+# light: Stage which produces a final working localstack image (which does not contain some additional infrastructure like eleasticsearch - see "full" stage)
+FROM base-${IMAGE_TYPE}
+
+LABEL authors="LocalStack Contributors"
+LABEL maintainer="LocalStack Team (info@localstack.cloud)"
+LABEL description="LocalStack Docker image"
+
+# Copy in the build dependencies
+COPY --from=builder /opt/code/localstack/ /opt/code/localstack/
+
+# Copy in postgresql extensions
+COPY --from=builder /usr/share/postgresql/11/extension /usr/share/postgresql/11/extension
+COPY --from=builder /usr/lib/postgresql/11/lib /usr/lib/postgresql/11/lib
+
+RUN mkdir -p /tmp/localstack && \
+    if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
+
+# fix some permissions and create local user
+RUN mkdir -p /.npm && \
+    chmod 777 . && \
+    chmod 755 /root && \
+    chmod -R 777 /.npm && \
+    chmod -R 777 /tmp/localstack && \
+    useradd -ms /bin/bash localstack && \
+    ln -s `pwd` /tmp/localstack_install_dir
+
+# Add the code in the last step
+ADD localstack/ localstack/
+
+# Download some more dependencies (make init needs the LocalStack code)
+# FIXME the init python code should be independent and executed in the builder stage
+RUN make init
+
+# Install the latest version of awslocal globally
+RUN pip3 install --upgrade awscli awscli-local requests
+
+# Install the latest version of localstack-ext and generate the plugin entrypoints
+RUN (virtualenv .venv && source .venv/bin/activate && \
+      pip3 install --upgrade localstack-ext localstack-plugin-loader)
+RUN make entrypoints
+
+# Add the build date and git hash at last (changes everytime)
+ARG LOCALSTACK_BUILD_DATE
+ARG LOCALSTACK_BUILD_GIT_HASH
+ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
+ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
+
+# expose edge service, ElasticSearch & debugpy ports
+EXPOSE 4566 4571 5678
+
+# define command at startup
+ENTRYPOINT ["docker-entrypoint.sh"]

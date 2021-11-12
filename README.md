@@ -601,7 +601,7 @@ with the `--user` flag: `pip install --user localstack`
 
 * If you are using AWS Java libraries and need to disable SSL certificate checking, add `-Dcom.amazonaws.sdk.disableCertChecking` to the java invocation.
 
-* If you are using LAMBDA_REMOTE_DOCKER=true and running in a docker container in CI, do NOT set `DOCKER_HOST` as an environment variable passed into the localstack container. Any calls to lambda CLI operations will fail (https://github.com/localstack/localstack/issues/4801) 
+* If you are using LAMBDA_REMOTE_DOCKER=true and running in a docker container in CI, do NOT set `DOCKER_HOST` as an environment variable passed into the localstack container. Any calls to lambda CLI operations will fail (https://github.com/localstack/localstack/issues/4801)
 
 ## Developing
 
@@ -626,6 +626,27 @@ Please note that there are a few commands we need to run on the host to prepare 
 We generally recommend using this command to build the Docker image locally (works on Linux/MacOS):
 ```
 make docker-build
+```
+
+#### Multi-arch Docker image building
+
+LocalStack is now built for multiple architectures.
+The Docker images are built natively in our CI environment.
+However, if you need to cross-build the Docker image (i.e. build the `amd64` image on an `arm64` host, or vice versa), you need to setup the cross-platform emulation for Docker's buildx builder.
+
+    # Load the emulators (Careful! This modifies your machine host machine!)
+    docker run --privileged --rm tonistiigi/binfmt --install all
+    # Create a new buildx builder
+    docker buildx create --name multiarch-builder --use
+    # Build the multiarch image
+    make docker-build-multiarch
+
+You cannot load the result to your host-machine since your local Docker daemon does not have a notion of multiple platforms.
+If you want to build and export the image of another platform than your host-machine, you can use the following command:
+
+```
+# target-platform can be `linux/amd64` or `linux/arm64`
+make DOCKER_BUILD_FLAGS="--platform <target-platform> --load" docker-build
 ```
 
 ### Development Environment

@@ -1,9 +1,7 @@
-IMAGE_NAME ?= localstack/localstack
 IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_NAME_FULL ?= localstack/localstack-full
 IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
-DOCKER_SQUASH ?= --squash
 VENV_BIN ?= python3 -m venv
 VENV_DIR ?= .venv
 PIP_CMD ?= pip3
@@ -20,7 +18,7 @@ endif
 VENV_RUN = . $(VENV_ACTIVATE)
 
 usage:                    ## Show this help
-	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-20s %s\n", $$1, $$2 }'
+	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-25s %s\n", $$1, $$2 }'
 
 $(VENV_ACTIVATE): setup.py requirements.txt
 	test -d $(VENV_DIR) || $(VENV_BIN) $(VENV_DIR)
@@ -62,93 +60,47 @@ dist:					  ## Build source and built (wheel) distributions of the current versi
 publish: clean-dist dist  ## Publish the library to the central PyPi repository
 	$(VENV_RUN); twine upload dist/*
 
-coveralls:         ## Publish coveralls metrics
+coveralls:         		  ## Publish coveralls metrics
 	$(VENV_RUN); coveralls
 
-start:             ## Manually start the local infrastructure for testing
+start:             		  ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
 
-docker-image-stats:
-	docker image inspect $(IMAGE_NAME) --format='{{.Size}}'
-	docker history $(IMAGE_NAME)
+docker-image-stats: 	  ## TODO remove when image size is acceptable
+	docker image inspect $(IMAGE_NAME_FULL) --format='{{.Size}}'
+	docker history $(IMAGE_NAME_FULL)
 
-docker-save-image:
-	docker save $(IMAGE_NAME) -o target/localstack-docker-image-$(PLATFORM).tar
+TAG ?= $(IMAGE_NAME_FULL)	# By default we export the full image
+EXPORT_SUFFIX ?=			# By default we use no suffix
+docker-save-image: 		  ## Export the built Docker image
+	docker save $(TAG) -o target/localstack-docker-image$(EXPORT_SUFFIX)-$(PLATFORM).tar
 
 docker-save-image-light:
-	docker save $(IMAGE_NAME) -o target/localstack-docker-image-light-$(PLATFORM).tar
+	make EXPORT_SUFFIX="-light" TAG=$(IMAGE_NAME_LIGHT) docker-save-image
 
-docker-build:      ## Build Docker image
+TAG ?= $(IMAGE_NAME_FULL)      # By default we build the full image
+DOCKER_BUILD_FLAGS ?= "--load" # By default we load the result to the docker daemon
+docker-build: 			  ## Build Docker image
 	# prepare
 	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
 	# start build
 	# --add-host: Fix for Centos host OS
-	docker build --build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
-	  --build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") -t $(IMAGE_NAME) \
-	  --add-host="localhost.localdomain:127.0.0.1" $(DOCKER_BUILD_FLAGS) .
-
-docker-build-linux-amd64-light:      ## Build Light Docker image
-	# prepare
-	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
-	# start build
-	# --add-host: Fix for Centos host OS
-	DOCKER_BUILDKIT=1 docker buildx build --load --pull --platform linux/amd64 --progress=plain --target light \
+	DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
 		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
 		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
 		--add-host="localhost.localdomain:127.0.0.1" \
-		-t $(IMAGE_NAME_LIGHT) $(DOCKER_BUILD_FLAGS) .
+		-t $(TAG) $(DOCKER_BUILD_FLAGS) .
 
-docker-build-linux-arm64-light:      ## Build Light Docker image
-	# prepare
-	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
-	# start build
-	# --add-host: Fix for Centos host OS
-	DOCKER_BUILDKIT=1 docker buildx build --load --pull --platform linux/arm64 --progress=plain --target light \
-		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
-		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
-		--add-host="localhost.localdomain:127.0.0.1" \
-		-t $(IMAGE_NAME_LIGHT) $(DOCKER_BUILD_FLAGS) .
+docker-build-light: 	  ## Build Light Docker image
+	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=light --load" \
+	  TAG=$(IMAGE_NAME_LIGHT) docker-build
 
-docker-build-linux-arm64:
-	# prepare
-	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
-	# start build
-	# --add-host: Fix for Centos host OS
-	DOCKER_BUILDKIT=1 docker buildx build --load --pull --platform linux/arm64 --progress=plain --target full \
-		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
-		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
-		--add-host="localhost.localdomain:127.0.0.1" \
-		-t $(IMAGE_NAME) $(DOCKER_BUILD_FLAGS) .
+docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
+	# Make sure to prepare your environment for cross-platform docker builds! (see doc/developer_guides/README.md)
+	# Multi-Platform builds cannot be loaded to the docker daemon from buildx, so we can't add "--load".
+	make DOCKER_BUILD_FLAGS="--platform linux/amd64,linux/arm64" docker-build
 
-docker-build-linux-amd64:
-	# prepare
-	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
-	# start build
-	# --add-host: Fix for Centos host OS
-	DOCKER_BUILDKIT=1 docker buildx build --load --pull --platform linux/amd64 --progress=plain --target full \
-		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
-		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
-		--add-host="localhost.localdomain:127.0.0.1" \
-		-t $(IMAGE_NAME) $(DOCKER_BUILD_FLAGS) .
-
-
-docker-push:       ## Push Docker image to registry
-	docker push $(IMAGE_NAME):$(IMAGE_TAG)
-
-docker-push-multi-platform:
-	# prepare
-	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
-	# start build
-	# --add-host: Fix for Centos host OS
-	export DOCKER_BUILDKIT=1
-	docker buildx create tls-context --platform linux/amd64,linux/arm64 --use
-	docker buildx build --pull --push --platform linux/amd64,linux/arm64 --progress=plain \
-		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
-		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
-		--add-host="localhost.localdomain:127.0.0.1" \
-		-t $(IMAGE_NAME):$(IMAGE_TAG) $(DOCKER_BUILD_FLAGS) .
-
-docker-push-master: ## Push Docker image to registry IF we are currently on the master branch
+docker-push-master: 	  ## Push Docker image to registry IF we are currently on the master branch
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
@@ -159,14 +111,14 @@ docker-push-master: ## Push Docker image to registry IF we are currently on the 
 		echo "This is a fork and not the main repo.") || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-			docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):latest-$(PLATFORM) \
-			docker tag $(IMAGE_NAME):latest $(IMAGE_NAME_FULL):latest-$(PLATFORM) && \
+			docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME):latest-$(PLATFORM) && \
 			docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) && \
+			docker tag $(IMAGE_NAME_FULL):latest $(IMAGE_NAME_FULL):latest-$(PLATFORM) && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
-			(docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME_FULL):latest $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM) && \
+			(docker tag $(IMAGE_NAME):latest-$(PLATFORM) $(IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME_FULL):latest-$(PLATFORM) $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM) && \
 				docker push $(IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
 				docker push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-$(PLATFORM) && \
 				docker push $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM))) && \
@@ -175,25 +127,36 @@ docker-push-master: ## Push Docker image to registry IF we are currently on the 
 	  docker push $(IMAGE_NAME_FULL):latest-$(PLATFORM) \
 	)
 
+MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
+docker-create-push-manifests:	## Create and push manifests for a docker image (default: full)
+	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
+		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
+	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
+		echo "Skipping docker manifest push as no credentials are provided.") || \
+	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
+		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
+		test "$$REMOTE_ORIGIN" != 'git@github.com:localstack/localstack.git' && \
+		echo "This is a fork and not the main repo.") || \
+	( \
+		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
+			docker manifest create $(MANIFEST_IMAGE_NAME):latest --amend $(MANIFEST_IMAGE_NAME):latest-amd64 --amend $(MANIFEST_IMAGE_NAME):latest-arm64 && \
+		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) --amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 --amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
+				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG))) && \
+		docker manifest push $(MANIFEST_IMAGE_NAME):latest \
+	)
 
-docker-create-manifests:
-	docker manifest create $(IMAGE_NAME):$(IMAGE_TAG) --ammend $(IMAGE_NAME):$(IMAGE_TAG)-amd64 --ammend $(IMAGE_NAME):$(IMAGE_TAG)-arm64
-	docker manifest push $(IMAGE_NAME):$(IMAGE_TAG)
-	docker manifest create $(IMAGE_NAME):latest --ammend $(IMAGE_NAME):latest-amd64 --ammend $(IMAGE_NAME):latest-arm64
-	docker manifest push $(IMAGE_NAME):latest
+docker-create-push-manifests-light:	## Create and push manifests for the light docker image
+	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-create-push-manifests
+	make MANIFEST_IMAGE_NAME=$(IMAGE_NAME) docker-create-push-manifests
 
-docker-create-manifests-light:
-	docker manifest create $(IMAGE_NAME_LIGHT):$(IMAGE_TAG) --ammend $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-amd64 --ammend $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-arm64
-	docker manifest push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)
-	docker manifest create $(IMAGE_NAME_LIGHT):latest --ammend $(IMAGE_NAME_LIGHT):latest-amd64 --ammend $(IMAGE_NAME_LIGHT):latest-arm64
-	docker manifest push $(IMAGE_NAME_LIGHT):latest
-
-docker-run-tests:
+docker-run-tests:		  ## Initializes the test environment and runs the tests in a docker container
+	# Remove argparse and dataclasses to fix https://github.com/pytest-dev/pytest/issues/5594
 	docker run --entrypoint= -v `pwd`/tests/:/opt/code/localstack/tests/ -v `pwd`/target/:/opt/code/localstack/target/ \
-	    localstack/localstack \
-	    bash -c "make install-test && make init-testlibs && pip uninstall -y argparse dataclasses && DEBUG=1 LAMBDA_EXECUTOR=local PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' make test-coverage"
+		$(IMAGE_NAME_FULL) \
+	    bash -c "make install-test && make init-testlibs && pip uninstall -y argparse dataclasses && DEBUG=$(DEBUG) LAMBDA_EXECUTOR=local PYTEST_LOGLEVEL=debug PYTEST_ARGS='$(PYTEST_ARGS)' COVERAGE_FILE='$(COVERAGE_FILE)' TEST_PATH='$(TEST_PATH)' make test-coverage"
 
-docker-run:        ## Run Docker image locally
+docker-run:        		  ## Run Docker image locally
 	($(VENV_RUN); bin/localstack start)
 
 docker-mount-run:
@@ -209,10 +172,10 @@ docker-cp-coverage:
 		docker cp $$id:/opt/code/localstack/.coverage .coverage; \
 		docker rm -v $$id
 
-test:              ## Run automated tests
+test:              		  ## Run automated tests
 	($(VENV_RUN); DEBUG=$(DEBUG) pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
-test-coverage:     ## Run automated tests and create coverage report
+test-coverage:     		  ## Run automated tests and create coverage report
 	($(VENV_RUN); python -m coverage --version; \
 		DEBUG=$(DEBUG) \
 		python -m coverage run $(COVERAGE_ARGS) -m \
@@ -221,7 +184,7 @@ test-coverage:     ## Run automated tests and create coverage report
 test-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
 
-test-docker-mount: ## Run automated tests in Docker (mounting local code)
+test-docker-mount:		  ## Run automated tests in Docker (mounting local code)
 	# TODO: find a cleaner way to mount/copy the dependencies into the container...
 	VENV_DIR=$$(pwd)/.venv/; \
 		PKG_DIR=$$(echo $$VENV_DIR/lib/python*/site-packages | awk '{print $$NF}'); \
@@ -238,7 +201,7 @@ test-docker-mount-code:
 ci-pro-smoke-tests:
 	which awslocal || pip3 install awscli-local
 	which localstack || pip3 install localstack
-	DOCKER_FLAGS='-d' SERVICES=lambda,qldb,rds,xray LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DEBUG=1 localstack start
+	IMAGE_NAME=$(IMAGE_NAME_LIGHT) DOCKER_FLAGS='-d' SERVICES=lambda,qldb,rds,xray LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DEBUG=1 localstack start
 	docker logs -f $(MAIN_CONTAINER_NAME) &
 	for i in 0 1 2 3 4 5 6 7 8 9; do if docker logs $(MAIN_CONTAINER_NAME) | grep 'Ready.'; then break; fi; sleep 3; done
 	awslocal qldb list-ledgers
@@ -247,30 +210,22 @@ ci-pro-smoke-tests:
 	awslocal lambda list-layers
 	docker rm -f $(MAIN_CONTAINER_NAME)
 
-reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
-	rm -rf $(VENV_DIR)
-	PIP_CMD=pip2 VENV_OPTS="-p '`which python2`'" make install
-
-reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
-	rm -rf $(VENV_DIR)
-	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install
-
-lint:              ## Run code linter to check code style
+lint:              		  ## Run code linter to check code style
 	($(VENV_RUN); python -m pflake8 --show-source)
 
-lint-modified:     ## Run code linter on modified files
+lint-modified:     		  ## Run code linter on modified files
 	($(VENV_RUN); python -m pflake8 --show-source `git ls-files -m | grep '\.py$$' | xargs` )
 
-format:            ## Run black and isort code formatter
+format:            		  ## Run black and isort code formatter
 	($(VENV_RUN); python -m isort localstack tests; python -m black localstack tests )
 
-format-modified:   ## Run black and isort code formatter on modified files
+format-modified:   		  ## Run black and isort code formatter on modified files
 	($(VENV_RUN); python -m isort `git ls-files -m | grep '\.py$$' | xargs`; python -m black `git ls-files -m | grep '\.py$$' | xargs` )
 
-init-precommit:    ## install te pre-commit hook into your local git repository
+init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
 
-clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
+clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/
 	rm -rf localstack/infra/amazon-kinesis-client
 	rm -rf localstack/infra/elasticsearch
@@ -283,23 +238,12 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
-clean-dist:		## Clean up python distribution directories
+clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-vagrant-start:
-	@vagrant up || EXIT_CODE=$$? ;\
- 	if [ "$EXIT_CODE" != "0" ]; then\
- 		echo "Predicted error. Ignoring...";\
-		vagrant ssh -c "sudo yum install -y epel-release && sudo yum update -y && sudo yum -y install wget perl gcc gcc-c++ dkms kernel-devel kernel-headers make bzip2";\
-		vagrant reload --provision;\
-	fi
-
-vagrant-stop:
-	vagrant halt
-
 # deprecated commands
-infra:             # legacy command used in the supervisord file to
+infra:             		  # legacy command used in the supervisord file to
 	($(VENV_RUN); exec bin/localstack start --host --no-banner)
 
-.PHONY: usage compile clean dist clean-dist install-basic install-runtime install-test install-dev infra run-dev test test-coverage install-venv-docker lint lint-modified format format-modified venv
+.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints init init-testlibs dist publish coveralls start docker-save-image docker-save-image-light docker-build docker-build-light docker-build-multi-platform docker-push-master docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra
