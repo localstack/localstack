@@ -220,7 +220,7 @@ DISABLE_EVENTS = is_env_true("DISABLE_EVENTS")
 DEBUG_ANALYTICS = is_env_true("DEBUG_ANALYTICS")
 
 # whether to eagerly start services
-EAGER_SERVICE_LOADING = is_env_not_false("EAGER_SERVICE_LOADING")
+EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
@@ -293,6 +293,13 @@ LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
 
+# Strategy used when creating elasticsearch domain endpoints routed through the edge proxy
+# valid values: domain | path | off
+ES_ENDPOINT_STRATEGY = os.environ.get("ES_ENDPOINT_STRATEGY", "").strip() or "domain"
+
+# Whether to start one cluster per domain (default), or multiplex domains to a single clusters
+ES_MULTI_CLUSTER = is_env_not_false("ES_MULTI_CLUSTER")
+
 # Equivalent to HTTP_PROXY, but only applicable for external connections
 OUTBOUND_HTTP_PROXY = os.environ.get("OUTBOUND_HTTP_PROXY", "")
 
@@ -319,6 +326,8 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_ERROR_PROBABILITY",
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
+    "ES_ENDPOINT_STRATEGY",
+    "ES_MULTI_CLUSTER",
     "DOCKER_BRIDGE_IP",
     "DEFAULT_REGION",
     "LAMBDA_JAVA_OPTS",
@@ -368,6 +377,8 @@ CONFIG_ENV_VARS = [
     "LOCALSTACK_HTTP_PROXY",
     "LOCALSTACK_HTTPS_PROXY",
     "REQUESTS_CA_BUNDLE",
+    "LEGACY_DOCKER_CLIENT",
+    "EAGER_SERVICE_LOADING",
 ]
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
@@ -599,13 +610,20 @@ def load_config_file(config_file=None):
     from localstack.utils.common import get_or_create_file, to_str
 
     config_file = config_file or CONFIG_FILE_PATH
-    content = get_or_create_file(config_file)
+    content = get_or_create_file(config_file, permissions=0o600)
     try:
         configs = json.loads(to_str(content) or "{}")
     except Exception as e:
         print("Unable to load local config file %s as JSON: %s" % (config_file, e))
         return {}
     return configs
+
+
+def save_config_file(config, config_file=None):
+    from localstack.utils.common import save_file
+
+    config_file = config_file or CONFIG_FILE_PATH
+    save_file(config_file, json.dumps(config), permissions=0o600)
 
 
 class ServiceProviderConfig(Mapping[str, str]):

@@ -7,8 +7,11 @@ import time
 import unittest
 from datetime import datetime, timedelta
 
+import pytest
+
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import (
     clone,
     load_file,
@@ -712,6 +715,7 @@ class IntegrationTest(unittest.TestCase):
         retry(check_invocation, retries=14, sleep=5)
 
 
+@pytest.mark.xfail(in_ci(), reason="This test is notoriously flaky in CI environments")
 def test_sqs_batch_lambda_forward(lambda_client, sqs_client, create_lambda_function):
 
     lambda_name_queue_batch = "lambda_queue_batch-%s" % short_uid()
@@ -781,8 +785,11 @@ def test_sqs_batch_lambda_forward(lambda_client, sqs_client, create_lambda_funct
     # wait for the queue to drain (max 60s)
     retry(wait_for_done, retries=12, sleep=5.0)
 
-    events = get_lambda_log_events(lambda_name_queue_batch, 10)
-    assert 3 == len(events), "expected 3 lambda invocations"
+    def check_lambda_logs():
+        events = get_lambda_log_events(lambda_name_queue_batch, 10)
+        assert 3 == len(events), "expected 3 lambda invocations"
+
+    retry(check_lambda_logs, retries=5, sleep=3)
 
     sqs_client.delete_queue(QueueUrl=queue_url)
 

@@ -45,5 +45,6 @@ class SSMParameter(GenericBaseModel):
                     ),
                 ),
                 "types": {"Value": str},
-            }
+            },
+            "delete": {"function": "delete_parameter", "parameters": ["Name"]},
         }

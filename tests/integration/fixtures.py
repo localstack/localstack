@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_iam import IAMClient
     from mypy_boto3_kinesis import KinesisClient
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_secretsmanager import SecretsManagerClient
+    from mypy_boto3_ses import SESClient
     from mypy_boto3_sns import SNSClient
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
@@ -118,6 +120,16 @@ def secretsmanager_client() -> "SecretsManagerClient":
 @pytest.fixture(scope="class")
 def stepfunctions_client() -> "SFNClient":
     return _client("stepfunctions")
+
+
+@pytest.fixture(scope="class")
+def ses_client() -> "SESClient":
+    return _client("ses")
+
+
+@pytest.fixture(scope="class")
+def es_client() -> "ElasticsearchServiceClient":
+    return _client("es")
 
 
 @pytest.fixture
@@ -286,6 +298,11 @@ def is_stack_updated(cfn_client):
     return _has_stack_status(cfn_client, ["UPDATE_COMPLETE", "UPDATE_FAILED"])
 
 
+@pytest.fixture
+def is_stack_deleted(cfn_client):
+    return _has_stack_status(cfn_client, ["DELETE_COMPLETE"])
+
+
 def _has_stack_status(cfn_client, statuses: List[str]):
     def _has_status(stack_id: str):
         def _inner():
@@ -324,6 +341,35 @@ def create_lambda_function(lambda_client: "LambdaClient"):
 
     for arn in lambda_arns:
         lambda_client.delete_function(FunctionName=arn)
+
+
+@pytest.fixture
+def create_parameter(ssm_client):
+    params = []
+
+    def _create_parameter(**kwargs):
+        params.append(kwargs["Name"])
+        return ssm_client.put_parameter(**kwargs)
+
+    yield _create_parameter
+
+    for param in params:
+        ssm_client.delete_parameter(Name=param)
+
+
+@pytest.fixture
+def create_secret(secretsmanager_client):
+    items = []
+
+    def _create_parameter(**kwargs):
+        create_response = secretsmanager_client.create_secret(**kwargs)
+        items.append(create_response["ARN"])
+        return create_response
+
+    yield _create_parameter
+
+    for item in items:
+        secretsmanager_client.delete_secret(SecretId=item)
 
 
 only_in_alpine = pytest.mark.skipif(

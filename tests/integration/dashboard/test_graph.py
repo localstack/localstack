@@ -6,15 +6,19 @@ from localstack.dashboard.infra import (
     find_node_by_attribute,
     find_node_by_id,
 )
-from localstack.services.edge import serve_resource_graph
+from localstack.services.internal import ResourceGraph
+
+
+def serve_resource_graph(data):
+    return ResourceGraph().serve_resource_graph(data)
 
 
 class TestResourceGraph:
-    request_data = '{"awsEnvironment": "%s:aws"}' % config.DEFAULT_REGION
+    request_data = {"awsEnvironment": "%s:aws" % config.DEFAULT_REGION}
 
     def test_empty_data_arg(self):
         with pytest.raises(ValueError):
-            serve_resource_graph("{}")
+            serve_resource_graph({})
 
     def test_basic_return_types(self):
         graph = serve_resource_graph(self.request_data)

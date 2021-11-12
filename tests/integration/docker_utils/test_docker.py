@@ -597,6 +597,42 @@ class TestDockerClient:
         with pytest.raises(NoSuchImage):
             docker_client.pull_image("localstack_non_existing_image_for_tests")
 
+    def test_pull_docker_image_with_tag(self, docker_client: ContainerClient):
+        try:
+            docker_client.get_image_cmd("alpine")
+            safe_run([config.DOCKER_CMD, "rmi", "alpine"])
+        except ContainerException:
+            pass
+        with pytest.raises(NoSuchImage):
+            docker_client.get_image_cmd("alpine")
+        docker_client.pull_image("alpine:3.13")
+        assert "/bin/sh" == docker_client.get_image_cmd("alpine:3.13").strip()
+        assert "alpine:3.13" in docker_client.inspect_image("alpine:3.13")["RepoTags"]
+
+    def test_pull_docker_image_with_hash(self, docker_client: ContainerClient):
+        try:
+            docker_client.get_image_cmd("alpine")
+            safe_run([config.DOCKER_CMD, "rmi", "alpine"])
+        except ContainerException:
+            pass
+        with pytest.raises(NoSuchImage):
+            docker_client.get_image_cmd("alpine")
+        docker_client.pull_image(
+            "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
+        )
+        assert (
+            "/bin/sh"
+            == docker_client.get_image_cmd(
+                "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
+            ).strip()
+        )
+        assert (
+            "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
+            in docker_client.inspect_image(
+                "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
+            )["RepoDigests"]
+        )
+
     def test_run_container_automatic_pull(self, docker_client: ContainerClient):
         try:
             safe_run([config.DOCKER_CMD, "rmi", "alpine"])

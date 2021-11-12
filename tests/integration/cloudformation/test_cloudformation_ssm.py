@@ -1,4 +1,5 @@
 import jinja2
+import pytest
 
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
@@ -11,6 +12,7 @@ def test_parameter_defaults(
     cleanup_changesets,
     is_change_set_created_and_available,
     is_stack_created,
+    is_stack_deleted,
     ssm_client,
 ):
     stack_name = f"stack-{short_uid()}"
@@ -40,6 +42,13 @@ def test_parameter_defaults(
         assert "CustomParameter" in parameter_name
         param = ssm_client.get_parameter(Name=parameter_name)
         assert param["Parameter"]["Value"] == ssm_parameter_value
+
+        # make sure parameter is deleted
+        cfn_client.delete_stack(StackName=stack_id)
+        wait_until(is_stack_deleted(stack_id))
+        with pytest.raises(Exception) as ctx:
+            ssm_client.get_parameter(Name=parameter_name)
+        ctx.match("ParameterNotFound")
 
     finally:
         cleanup_changesets([change_set_id])

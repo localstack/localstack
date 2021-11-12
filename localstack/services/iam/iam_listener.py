@@ -9,7 +9,10 @@ BOOL_ATTRS = [
     "HardExpiry",
     "RequireSymbols",
     "ExpirePasswords",
+    "IsTruncated",
 ]
+
+AWS_SDK_JS = "aws-sdk-js"
 
 
 class ProxyListenerIAM(ProxyListener):
@@ -28,6 +31,10 @@ class ProxyListenerIAM(ProxyListener):
             MessageConversion.fix_date_format(response)
             MessageConversion.fix_error_codes(method, data, response)
             MessageConversion.fix_xml_empty_boolean(response, BOOL_ATTRS)
+
+            if AWS_SDK_JS in headers.get("User-Agent", ""):
+                MessageConversion.booleans_to_lowercase(response, BOOL_ATTRS)
+
             # fix content-length header
             response.headers["Content-Length"] = str(len(response._content))
 

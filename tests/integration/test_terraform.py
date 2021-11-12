@@ -34,8 +34,6 @@ def check_terraform_version():
     return version.parse(ver_string) < version.parse("0.15"), ver_string
 
 
-# TODO: temporarily disabled to unblock our build pipeline
-@unittest.skip
 class TestTerraform(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

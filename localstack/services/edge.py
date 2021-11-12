@@ -6,7 +6,6 @@ import re
 import subprocess
 import sys
 import threading
-from collections import defaultdict
 from typing import Dict, Optional
 
 from requests.models import Response
@@ -22,20 +21,15 @@ from localstack.constants import (
     LS_LOG_TRACE_INTERNAL,
     PATH_USER_REQUEST,
 )
-from localstack.dashboard import infra as dashboard_infra
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
-from localstack.services.infra import PROXY_LISTENERS, terminate_all_processes_in_docker
+from localstack.services.infra import PROXY_LISTENERS
 from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import (
-    Environment,
-    is_internal_call_context,
-    set_default_region_in_headers,
-)
+from localstack.utils.aws.aws_stack import is_internal_call_context, set_default_region_in_headers
 from localstack.utils.aws.request_routing import extract_version_and_action, matches_service_action
 from localstack.utils.common import (
     TMP_THREADS,
@@ -43,7 +37,6 @@ from localstack.utils.common import (
     get_service_protocol,
     is_port_open,
     is_root,
-    merge_recursive,
     parse_request_data,
     run,
 )
@@ -73,12 +66,14 @@ API_UNKNOWN = "_unknown_"
 HEADER_SKIP_RESPONSE_ZIPPING = "_skip_response_gzipping_"
 SKIP_GZIP_APIS = [S3]
 
+# path prefix to indicate internal endpoints (e.g., resource graph, CFN deployment UI, etc)
+PATH_PREFIX_INTERNAL = "/_localstack/"
+
 
 class ProxyListenerEdge(ProxyListener):
     def __init__(self, service_manager=None) -> None:
         super().__init__()
         self.service_manager = service_manager or SERVICE_PLUGINS
-        self.health = HealthResource(self.service_manager)
 
     def forward_request(self, method, path, data, headers):
 
@@ -86,11 +81,6 @@ class ProxyListenerEdge(ProxyListener):
             return do_forward_request_network(
                 0, method, path, data, headers, target_url=config.EDGE_FORWARD_URL
             )
-
-        if path.split("?")[0] == "/health":
-            return self.health.handle(method, path, data)
-        if method == "POST" and path == "/graph":
-            return serve_resource_graph(data)
 
         # kill the process if we receive this header
         headers.get(HEADER_KILL_SIGNAL) and sys.exit(0)
@@ -275,7 +265,9 @@ def do_forward_request_network(port, method, path, data, headers, target_url=Non
     # TODO: enable per-service endpoints, to allow deploying in distributed settings
     target_url = target_url or "%s://%s:%s" % (get_service_protocol(), LOCALHOST, port)
     url = "%s%s" % (target_url, path)
-    response = requests.request(method, url, data=data, headers=headers, verify=False, stream=True)
+    response = requests.request(
+        method, url, data=data, headers=headers, verify=False, stream=True, allow_redirects=False
+    )
     return response
 
 
@@ -405,84 +397,6 @@ def is_s3_form_data(data_bytes):
     return False
 
 
-class HealthResource:
-    """
-    Resource for the LocalStack /health endpoint. It provides access to the service states and other components of
-    localstack. We support arbitrary data to be put into the health state to support things like the
-    run_startup_scripts function in docker-entrypoint.sh which sets the status of the init scripts feature.
-    """
-
-    def __init__(self, service_manager) -> None:
-        super().__init__()
-        self.service_manager = service_manager
-        self.state = dict()
-
-    def handle(self, method, path, data) -> Optional[Dict]:
-        if method == "GET":
-            return self.get(path, data)
-        if method == "POST":
-            return self.post(path, data)
-        if method == "PUT":
-            return self.put(path, data)
-
-        return {}
-
-    def post(self, _, data):
-        data = json.loads(to_str(data or "{}"))
-        # backdoor API to support restarting the instance
-        if data.get("action") in ["kill", "restart"]:
-            terminate_all_processes_in_docker()
-
-    def get(self, path, _):
-        reload = "reload" in path
-
-        # get service state
-        if reload:
-            self.service_manager.check_all()
-        services = {
-            service: state.value for service, state in self.service_manager.get_states().items()
-        }
-
-        # build state dict from internal state and merge into it the service states
-        result = dict(self.state)
-        result = merge_recursive({"services": services}, result)
-        return result
-
-    def put(self, _, data):
-        data = json.loads(to_str(data or "{}"))
-
-        # keys like "features:initScripts" should be interpreted as ['features']['initScripts']
-        state = defaultdict(dict)
-        for k, v in data.items():
-            if ":" in k:
-                path = k.split(":")
-            else:
-                path = [k]
-
-            d = state
-            for p in path[:-1]:
-                d = state[p]
-            d[path[-1]] = v
-
-        self.state = merge_recursive(state, self.state, overwrite=True)
-        return {"status": "OK"}
-
-
-def serve_resource_graph(data):
-    data = json.loads(to_str(data or "{}"))
-
-    if not data.get("awsEnvironment"):
-        raise ValueError("cannot parse aws Environment from empty string")
-
-    env = Environment.from_string(data.get("awsEnvironment"))
-    graph = dashboard_infra.get_graph(
-        name_filter=data.get("nameFilter") or ".*",
-        env=env,
-        region=data.get("awsRegion"),
-    )
-    return graph
-
-
 def get_api_from_custom_rules(method, path, data, headers):
     """Determine backend port based on custom rules."""
 
@@ -603,6 +517,11 @@ def is_trace_logging_enabled(headers):
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
+    from localstack.services.internal import LocalstackResourceHandler
+
+    # add internal routes as default listener
+    ProxyListener.DEFAULT_LISTENERS.append(LocalstackResourceHandler())
+
     start_dns_server(asynchronous=True)
 
     # get port and start Edge

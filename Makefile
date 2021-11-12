@@ -156,11 +156,16 @@ test-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
 
 test-docker-mount: ## Run automated tests in Docker (mounting local code)
-	ENTRYPOINT="-v `pwd`/tests:/opt/code/localstack/tests" make test-docker-mount-code
+	# TODO: find a cleaner way to mount/copy the dependencies into the container...
+	VENV_DIR=$$(pwd)/.venv/; \
+		PKG_DIR=$$(echo $$VENV_DIR/lib/python*/site-packages | awk '{print $$NF}'); \
+		PKG_DIR_CON=/opt/code/localstack/.venv/lib/python3.8/site-packages; \
+		echo "#!/usr/bin/env python" > /tmp/pytest.ls.bin; cat $$VENV_DIR/bin/pytest >> /tmp/pytest.ls.bin; chmod +x /tmp/pytest.ls.bin; \
+		ENTRYPOINT="-v `pwd`/tests:/opt/code/localstack/tests -v /tmp/pytest.ls.bin:/opt/code/localstack/.venv/bin/pytest -v $$PKG_DIR/py:$$PKG_DIR_CON/py -v $$PKG_DIR/pluggy:$$PKG_DIR_CON/pluggy -v $$PKG_DIR/iniconfig:$$PKG_DIR_CON/iniconfig -v $$PKG_DIR/packaging:$$PKG_DIR_CON/packaging -v $$PKG_DIR/pytest:$$PKG_DIR_CON/pytest -v $$PKG_DIR/_pytest:/opt/code/localstack/.venv/lib/python3.8/site-packages/_pytest" make test-docker-mount-code
 
 test-docker-mount-code:
-	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); \
-	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/ -e TEST_PATH=$(TEST_PATH) -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
+	PACKAGES_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages | awk '{print $$NF}'); \
+		ENTRYPOINT="--entrypoint= -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/Makefile:/opt/code/localstack/Makefile -v $$PACKAGES_DIR/moto:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/ -e TEST_PATH=$(TEST_PATH) -e LAMBDA_JAVA_OPTS=$(LAMBDA_JAVA_OPTS) $(ENTRYPOINT)" CMD="make test" make docker-run
 
 # Note: the ci-* targets below should only be used in CI builds!
 

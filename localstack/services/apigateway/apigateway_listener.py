@@ -180,11 +180,18 @@ class ApiInvocationContext:
     @property
     def auth_context(self) -> Optional[Dict]:
         if isinstance(self.auth_info, dict):
-            context = self.auth_info.get("context") or {}
+            context = self.auth_info.setdefault("context", {})
             principal = self.auth_info.get("principalId")
             if principal:
                 context["principalId"] = principal
             return context
+
+    @property
+    def auth_identity(self) -> Optional[Dict]:
+        if isinstance(self.auth_info, dict):
+            if self.auth_info.get("identity") is None:
+                self.auth_info["identity"] = {}
+            return self.auth_info["identity"]
 
 
 class ProxyListenerApiGateway(ProxyListener):
@@ -210,6 +217,9 @@ class ProxyListenerApiGateway(ProxyListener):
 
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
+
+        if re.match(PATH_REGEX_PATH_MAPPINGS, path):
+            return handle_base_path_mappings(method, path, data, headers)
 
         if is_test_invoke_method(method, path):
             # if call is from test_invoke_api then use http_method to find the integration,
@@ -246,8 +256,6 @@ class ProxyListenerApiGateway(ProxyListener):
                 result = handle_accounts(method, path, data, headers)
             elif path.startswith("/vpclinks"):
                 result = handle_vpc_links(method, path, data, headers)
-            elif re.match(PATH_REGEX_PATH_MAPPINGS, path):
-                result = handle_base_path_mappings(method, path, data, headers)
             elif re.match(PATH_REGEX_CLIENT_CERTS, path):
                 result = handle_client_certificates(method, path, data, headers)
 
@@ -444,7 +452,9 @@ def set_api_id_stage_invocation_path(
         resource_path = resource.get("path")
         relative_path_w_query_params = f"{resource_path}{query_string}"
     else:
-        raise Exception(f"Unable to extract API Gateway details from request: {path} {headers}")
+        raise Exception(
+            f"Unable to extract API Gateway details from request: {path} {dict(headers)}"
+        )
     if api_id:
         # set current region in request thread local, to ensure aws_stack.get_region() works properly
         if getattr(THREAD_LOCAL, "request_context", None) is not None:
@@ -500,7 +510,10 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
         if method == "OPTIONS" and "Origin" in headers:
             # default to returning CORS headers if this is an OPTIONS request
             return get_cors_response(headers)
-        return make_error_response("Unable to find integration for path %s" % raw_path, 404)
+        return make_error_response(
+            "Unable to find integration for: %s %s (%s)" % (method, invocation_path, raw_path),
+            404,
+        )
 
     res_methods = resource.get("resourceMethods", {})
     meth_integration = res_methods.get(method, {}).get("methodIntegration", {})
@@ -897,7 +910,6 @@ def get_lambda_event_request_context(invocation_context: ApiInvocationContext):
     integration_uri = invocation_context.integration_uri
     resource_path = invocation_context.resource_path
     resource_id = invocation_context.resource_id
-    auth_context = invocation_context.auth_context
 
     set_api_id_stage_invocation_path(invocation_context)
     relative_path, query_string_params = extract_query_string_params(
@@ -929,8 +941,13 @@ def get_lambda_event_request_context(invocation_context: ApiInvocationContext):
         "requestTime": datetime.datetime.utcnow(),
         "requestTimeEpoch": int(time.time() * 1000),
     }
+
+    # set "authorizer" and "identity" event attributes from request context
+    auth_context = invocation_context.auth_context
     if auth_context:
         request_context["authorizer"] = auth_context
+    request_context["identity"].update(invocation_context.auth_identity or {})
+
     if not is_test_invoke_method(method, path):
         request_context["path"] = (f"/{stage}" if stage else "") + relative_path
         request_context["stage"] = stage

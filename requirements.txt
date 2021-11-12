@@ -20,6 +20,7 @@ localstack-plugin-loader>=0.1.0
 pyyaml>=5.1
 rich>=10.7.0
 requests>=2.20.0,<2.26
+semver>=2.10
 # TODO: "six" dependency still needed?
 six>=1.12.0
 stevedore>=3.4.0
@@ -49,7 +50,7 @@ flask_swagger==0.2.12
 jsonpatch>=1.24,<2.0
 jsonpath-rw>=1.4.0,<2.0.0
 localstack-ext[full]>=0.12.19
-moto-ext[all]>=2.0.3.23
+moto-ext[all]>=2.2.4
 pproxy>=2.7.0
 psutil>=5.4.8,<6.0.0
 #pympler>=0.6
