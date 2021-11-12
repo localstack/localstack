@@ -876,17 +876,17 @@ def evaluate_exists_condition(conditions, message_attributes, criteria):
     # support for exists: false was added in april 2021
     # https://aws.amazon.com/about-aws/whats-new/2021/04/amazon-sns-grows-the-set-of-message-filtering-operators/
     if conditions:
-        return message_attributes.get(criteria) != None
+        return message_attributes.get(criteria) is not None
     else:
-        return message_attributes.get(criteria) == None
+        return message_attributes.get(criteria) is None
 
 
 def evaluate_condition(value, condition, message_attributes, criteria):
     if type(condition) is not dict:
         return value == condition
-    elif condition.get("exists") != None:
+    elif condition.get("exists") is not None:
         return evaluate_exists_condition(condition.get("exists"), message_attributes, criteria)
-    elif value == None:
+    elif value is None:
         # the remaining conditions require the value to not be None
         return False
     elif condition.get("anything-but"):
@@ -903,7 +903,7 @@ def evaluate_filter_policy_conditions(conditions, attribute, message_attributes,
     if type(conditions) is not list:
         conditions = [conditions]
 
-    if attribute != None and attribute["Type"] == "String.Array":
+    if attribute is not None and attribute["Type"] == "String.Array":
         values = ast.literal_eval(attribute["Value"])
         for value in values:
             for condition in conditions:
@@ -911,7 +911,7 @@ def evaluate_filter_policy_conditions(conditions, attribute, message_attributes,
                     return True
     else:
         for condition in conditions:
-            value = attribute["Value"] if attribute != None else None
+            value = attribute["Value"] if attribute is not None else None
             if evaluate_condition(value, condition, message_attributes, criteria):
                 return True
 
