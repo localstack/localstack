@@ -30,7 +30,6 @@ def test_version(runner):
     assert result.output.strip() == constants.VERSION
 
 
-@pytest.mark.skip(reason="TODO - Test needs to be re-written per @thrau")
 def test_status_services_error(runner):
     result = runner.invoke(cli, ["status", "services"])
     assert result.exit_code == 1

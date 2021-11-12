@@ -33,7 +33,7 @@ from localstack.utils.common import (
     chmod_r,
     ensure_list,
     get_free_tcp_port,
-    is_alpine,
+    is_debian,
     is_empty_dir,
     is_port_open,
     load_file,
@@ -60,14 +60,14 @@ def is_local_test_mode():
 
 
 def copy_dir(source, target):
-    if is_alpine():
+    if is_debian():
         # Using the native command can be an order of magnitude faster on Travis-CI
         return run("cp -r %s %s" % (source, target))
     shutil.copytree(source, target)
 
 
 def rm_dir(dir):
-    if is_alpine():
+    if is_debian():
         # Using the native command can be an order of magnitude faster on Travis-CI
         return run("rm -r %s" % dir)
     shutil.rmtree(dir)
@@ -185,7 +185,7 @@ def create_zip_file(file_path, zip_file=None, get_content=False, content_root=No
         return full_zip_file
 
     # create zip file
-    if is_alpine():
+    if is_debian():
         # todo: extend CLI with the new parameters
         create_zip_file_cli(source_path=file_path, base_dir=base_dir, zip_file=full_zip_file)
     else:

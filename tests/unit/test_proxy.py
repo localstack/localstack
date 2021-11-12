@@ -81,7 +81,7 @@ def test_ssl_proxy_server():
     url = f"https://{LOCALHOST_HOSTNAME}:{proxy_port}"
     num_requests = 3
     for i in range(num_requests):
-        response = requests.get(url)
+        response = requests.get(url, verify=False)
         assert response.status_code == 200
 
     # assert backend server has been invoked

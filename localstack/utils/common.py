@@ -981,7 +981,7 @@ def rm_rf(path: str):
     if not path or not os.path.exists(path):
         return
     # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
-    if is_alpine():
+    if is_debian():
         try:
             return run('rm -rf "%s"' % path)
         except Exception:
@@ -1209,26 +1209,37 @@ def is_windows() -> bool:
     return platform.system().lower() == "windows"
 
 
-def is_alpine() -> bool:
+def is_debian() -> bool:
+    cache_key = "_is_debian_"
     try:
         with MUTEX_CLEAN:
-            if "_is_alpine_" not in CACHE:
-                CACHE["_is_alpine_"] = False
+            if cache_key not in CACHE:
+                CACHE[cache_key] = False
                 if not os.path.exists("/etc/issue"):
                     return False
-                out = to_str(subprocess.check_output("cat /etc/issue", shell=True))
-                CACHE["_is_alpine_"] = "Alpine" in out
+                out = to_str(subprocess.check_output(["cat", "/etc/issue"]))
+                CACHE[cache_key] = "Debian" in out
     except subprocess.CalledProcessError:
         return False
-    return CACHE["_is_alpine_"]
+    return CACHE[cache_key]
 
 
-# TODO: rename to "get_os()"
 def get_arch() -> str:
+    """
+    Returns the current machine architecture
+    :return: "amd64" when x86_64, "arm64" if aarch64, platform.machine() otherwise
+    """
+    arch = platform.machine()
+    if arch == "x86_64":
+        return "amd64"
+    if arch == "aarch64":
+        return "arm64"
+    return arch
+
+
+def get_os() -> str:
     if is_mac_os():
         return "osx"
-    if is_alpine():
-        return "alpine"
     if is_linux():
         return "linux"
     if is_windows():
@@ -1548,8 +1559,8 @@ def is_zip_file(content):
 
 
 def unzip(path, target_dir, overwrite=True):
-    is_in_alpine = is_alpine()
-    if is_in_alpine:
+    is_in_debian = is_debian()
+    if is_in_debian:
         # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
         flags = "-o" if overwrite else ""
         flags += " -q"
@@ -1570,7 +1581,7 @@ def unzip(path, target_dir, overwrite=True):
     def _unzip_file_entry(zip_ref, file_entry, target_dir):
         """Extracts a Zipfile entry and preserves permissions"""
         out_path = os.path.join(target_dir, file_entry.filename)
-        if is_in_alpine and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+        if is_in_debian and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
             # this can happen under certain circumstances if the native "unzip" command
             # fails with a non-zero exit code, yet manages to extract parts of the zip file
             return

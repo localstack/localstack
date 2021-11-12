@@ -5,7 +5,8 @@
   "version": "0.0.1",
   "dependencies": {
     "kinesalite": "3.3.3",
-    "serverless-iot-offline": "github:whummer/serverless-iot-offline"
+    "leveldown": "^5.2.1",
+    "serverless-iot-offline": "git+https://github.com/whummer/serverless-iot-offline.git"
   },
   "optionalDependencies": {
     "leveldown": "^5.2.1"

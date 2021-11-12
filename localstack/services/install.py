@@ -9,7 +9,6 @@ import stat
 import sys
 import tempfile
 import time
-import zipfile
 from pathlib import Path
 
 import requests
@@ -19,7 +18,6 @@ from localstack.config import is_env_true
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
-    DYNAMODB_JAR_URL_ALPINE,
     ELASTICMQ_JAR_URL,
     ELASTICSEARCH_DEFAULT_VERSION,
     ELASTICSEARCH_DELETE_MODULES,
@@ -36,7 +34,7 @@ from localstack.utils.common import (
     chmod_r,
     download,
     get_arch,
-    is_alpine,
+    get_os,
     is_windows,
     load_file,
     mkdir,
@@ -106,24 +104,18 @@ JAVAC_TARGET_VERSION = "1.8"
 SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 
 # GO Lambda runtime
-GO_RUNTIME_DOWNLOAD_URL = (
-    "https://github.com/localstack/awslamba-go-runtime/releases/download/first/runtime.zip"
-)
-GO_INSTALL_FOLDER = config.TMP_FOLDER + "/runtime"
-GO_LAMBDA_RUNTIME = GO_INSTALL_FOLDER + "/aws-lambda-mock"
-GO_LAMBDA_MOCKSERVER = GO_INSTALL_FOLDER + "/mockserver"
-GO_ZIP_NAME = "runtime.zip"
+GO_RUNTIME_VERSION = "0.4.0"
+GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/awslamba-go-runtime-{version}-{os}-{arch}.tar.gz"
+GO_INSTALL_FOLDER = os.path.join(config.TMP_FOLDER, "awslamba-go-runtime")
+GO_LAMBDA_RUNTIME = os.path.join(GO_INSTALL_FOLDER, "aws-lambda-mock")
+GO_LAMBDA_MOCKSERVER = os.path.join(GO_INSTALL_FOLDER, "mockserver")
 
-GLIBC_KEY_URL = "https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub"
-GLIBC_KEY = "/etc/apk/keys/sgerrand.rsa.pub"
-GLIBC_VERSION = "2.32-r0"
-GLIBC_FILE = "glibc-%s.apk" % GLIBC_VERSION
-GLIBC_URL = "https://github.com/sgerrand/alpine-pkg-glibc/releases/download/%s/%s" % (
-    GLIBC_VERSION,
-    GLIBC_FILE,
+# Terraform (used for tests, whose templates require TF < 0.14.0 )
+TERRAFORM_VERSION = "0.13.7"
+TERRAFORM_URL_TEMPLATE = (
+    "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{os}_{arch}.zip"
 )
-GLIBC_PATH = config.TMP_FOLDER + "/" + GLIBC_FILE
-CA_CERTIFICATES = "ca-certificates"
+TERRAFORM_BIN = os.path.join(INSTALL_DIR_INFRA, f"terraform-{TERRAFORM_VERSION}", "terraform")
 
 
 def get_elasticsearch_install_version(version: str) -> str:
@@ -177,9 +169,6 @@ def install_elasticsearch(version=None):
 
         # install default plugins
         for plugin in ELASTICSEARCH_PLUGIN_LIST:
-            if is_alpine():
-                # https://github.com/pires/docker-elasticsearch/issues/56
-                os.environ["ES_TMPDIR"] = "/tmp"
             plugin_binary = os.path.join(install_dir, "bin", "elasticsearch-plugin")
             plugin_dir = os.path.join(install_dir, "plugins", plugin)
             if not os.path.exists(plugin_dir):
@@ -308,11 +297,12 @@ def install_kinesis_mock():
 
 
 def install_local_kms():
-    local_arch = get_arch()
+    local_arch = get_os()
     binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace("<arch>", local_arch)
     if not os.path.exists(binary_path):
         log_install_msg("KMS")
         mkdir(INSTALL_DIR_KMS)
+        # TODO ARM download platform specific binary
         kms_url = KMS_URL_PATTERN.replace("<arch>", local_arch)
         download(kms_url, binary_path)
         chmod_r(binary_path, 0o777)
@@ -363,10 +353,8 @@ def install_dynamodb_local():
     if not os.path.exists(INSTALL_PATH_DDB_JAR):
         log_install_msg("DynamoDB")
         # download and extract archive
-        is_in_alpine = is_alpine()
         tmp_archive = os.path.join(tempfile.gettempdir(), "localstack.ddb.zip")
-        dynamodb_url = DYNAMODB_JAR_URL_ALPINE if is_in_alpine else DYNAMODB_JAR_URL
-        download_and_extract_with_retry(dynamodb_url, tmp_archive, INSTALL_DIR_DDB)
+        download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, INSTALL_DIR_DDB)
 
     # fix logging configuration for DynamoDBLocal
     log4j2_config = """<Configuration status="WARN">
@@ -416,45 +404,32 @@ def install_lambda_java_libs():
 
 
 def install_go_lambda_runtime():
-    install_glibc_for_alpine()
-
-    if not os.path.isfile(GO_LAMBDA_RUNTIME):
-        log_install_msg("Installing golang runtime")
-        file_location = os.path.join(config.TMP_FOLDER, GO_ZIP_NAME)
-        download(GO_RUNTIME_DOWNLOAD_URL, file_location)
-
-        if not zipfile.is_zipfile(file_location):
-            raise ValueError("Downloaded file is not zip ")
-
-        zipfile.ZipFile(file_location).extractall(config.TMP_FOLDER)
-        st = os.stat(GO_LAMBDA_RUNTIME)
-        os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-        st = os.stat(GO_LAMBDA_MOCKSERVER)
-        os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-
-def install_glibc_for_alpine():
-    try:
-        run("apk info glibc")
+    if os.path.isfile(GO_LAMBDA_RUNTIME):
         return
-    except Exception:
-        pass
 
-    log_install_msg("Installing glibc")
-    try:
-        try:
-            run("apk add %s" % CA_CERTIFICATES)
-        except Exception:
-            raise Exception("ca-certificates not installed")
+    log_install_msg("Installing golang runtime")
 
-        download(GLIBC_KEY_URL, GLIBC_KEY)
-        download(GLIBC_URL, GLIBC_PATH)
+    system = platform.system().lower()
+    arch = get_arch()
 
-        run("apk add %s" % GLIBC_PATH)
+    if system not in ["linux"]:
+        raise ValueError("unsupported os %s for awslambda-go-runtime" % system)
+    if arch not in ["amd64", "arm32"]:
+        raise ValueError("unsupported arch %s for awslambda-go-runtime" % arch)
 
-    except Exception as e:
-        log_install_msg("glibc installation failed: " + str(e))
+    url = GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
+        version=GO_RUNTIME_VERSION,
+        os=system,
+        arch=arch,
+    )
+
+    download_and_extract(url, GO_INSTALL_FOLDER)
+
+    st = os.stat(GO_LAMBDA_RUNTIME)
+    os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+    st = os.stat(GO_LAMBDA_MOCKSERVER)
+    os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def install_cloudformation_libs():
@@ -462,6 +437,30 @@ def install_cloudformation_libs():
 
     # trigger download of CF module file
     deployment_utils.get_cfn_response_mod_file()
+
+
+def install_terraform() -> str:
+    if os.path.isfile(TERRAFORM_BIN):
+        return TERRAFORM_BIN
+
+    log_install_msg(f"Installing terraform {TERRAFORM_VERSION}")
+
+    system = platform.system().lower()
+    arch = get_arch()
+
+    url = TERRAFORM_URL_TEMPLATE.format(version=TERRAFORM_VERSION, os=system, arch=arch)
+
+    download_and_extract(url, os.path.dirname(TERRAFORM_BIN))
+    chmod_r(TERRAFORM_BIN, 0o777)
+
+    return TERRAFORM_BIN
+
+
+def get_terraform_binary() -> str:
+    if not os.path.isfile(TERRAFORM_BIN):
+        install_terraform()
+
+    return TERRAFORM_BIN
 
 
 def install_component(name):
@@ -520,6 +519,11 @@ def log_install_msg(component, verbatim=False):
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
 
+    if tmp_archive:
+        _, ext = os.path.splitext(tmp_archive)
+    else:
+        _, ext = os.path.splitext(archive_url)
+
     tmp_archive = tmp_archive or new_tmp_file()
     if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
         # create temporary placeholder file, to avoid duplicate parallel downloads
@@ -531,7 +535,6 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
             except Exception:
                 time.sleep(sleep)
 
-    _, ext = os.path.splitext(tmp_archive)
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
     elif ext == ".gz" or ext == ".bz2":
