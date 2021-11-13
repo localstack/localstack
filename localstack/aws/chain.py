@@ -15,6 +15,7 @@ ExceptionHandler = Callable[["HandlerChain", Exception, RequestContext, HttpResp
 class HandlerChain:
     # handlers
     request_handlers: List[Handler]
+    response_handlers: List[Handler]
     exception_handlers: List[ExceptionHandler]
 
     # behavior configuration
@@ -23,24 +24,35 @@ class HandlerChain:
 
     # state
     stopped: bool
+    terminated: bool
     error: Optional[Exception]
-    current: Handler
+    response: Optional[HttpResponse]
+    context: Optional[RequestContext]
 
     def __init__(
-        self, handlers: List[Handler] = None, exception_handlers: List[ExceptionHandler] = None
+        self,
+        request_handlers: List[Handler] = None,
+        response_handlers: List[Handler] = None,
+        exception_handlers: List[ExceptionHandler] = None,
     ) -> None:
         super().__init__()
-        self.request_handlers = handlers or list()
+        self.request_handlers = request_handlers or list()
+        self.response_handlers = response_handlers or list()
         self.exception_handlers = exception_handlers or list()
 
         self.stopped = False
+        self.terminated = False
         self.error = None
+        self.response = None
+        self.context = None
 
     def handle(self, context: RequestContext, response: HttpResponse):
+        self.context = context
+        self.response = response
+
         for handler in self.request_handlers:
             try:
-                self.current = handler
-                handler(self, context, response)
+                handler(self, self.context, response)
             except Exception as e:
                 # prepare the continuation behavior, but exception handlers could overwrite it
                 if self.raise_on_error:
@@ -48,29 +60,54 @@ class HandlerChain:
                 if self.stop_on_error:
                     self.stopped = True
 
-                for exception_handler in self.exception_handlers:
-                    try:
-                        exception_handler(self, e, context, response)
-                    except Exception as nested:
-                        # make sure we run all exception handlers
-                        msg = "exception while running exception handler"
-                        if LOG.isEnabledFor(logging.DEBUG):
-                            LOG.exception(msg)
-                        else:
-                            LOG.warning(msg + ": %s", nested)
+                # call exception handlers safely
+                self._call_exception_handlers(e, response)
 
             # decide next step
             if self.error:
                 raise self.error
-
-            if self.stopped:
+            if self.terminated:
                 return
+            if self.stopped:
+                break
+
+        # call response filters
+        self._call_response_handlers(response)
 
     def stop(self):
         self.stopped = True
 
+    def terminate(self):
+        self.terminated = True
+
     def throw(self, error: Exception):
         self.error = error
+
+    def _call_response_handlers(self, response):
+        for handler in self.response_handlers:
+            if self.terminated:
+                return
+
+            try:
+                handler(self, self.context, response)
+            except Exception as e:
+                msg = "exception while running response handler"
+                if LOG.isEnabledFor(logging.DEBUG):
+                    LOG.exception(msg)
+                else:
+                    LOG.warning(msg + ": %s", e)
+
+    def _call_exception_handlers(self, e, response):
+        for exception_handler in self.exception_handlers:
+            try:
+                exception_handler(self, e, self.context, response)
+            except Exception as nested:
+                # make sure we run all exception handlers
+                msg = "exception while running exception handler"
+                if LOG.isEnabledFor(logging.DEBUG):
+                    LOG.exception(msg)
+                else:
+                    LOG.warning(msg + ": %s", nested)
 
 
 class HandlerChainAdapter(Handler):

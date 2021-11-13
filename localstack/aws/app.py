@@ -4,6 +4,7 @@ from typing import Any
 
 from localstack.aws import handlers
 from localstack.aws.chain import HandlerChain
+from localstack.aws.handlers import EmptyResponseHandler
 from localstack.aws.plugins import HandlerServiceAdapter, ServiceProvider
 from localstack.services.plugins import Service, ServiceManager, ServicePluginManager
 
@@ -21,18 +22,18 @@ class LocalstackAwsGateway(Gateway):
         self.mutex = threading.RLock()
 
         # the request router used within the handler chain
-        self.request_router = handlers.ServiceRequestRouter()
+        self.service_request_router = handlers.ServiceRequestRouter()
 
-        # the main handler chain
+        # the main request handler chain
         self.request_handlers.extend(
             [
                 handlers.parse_service_name,
                 handlers.add_region_from_header,
                 handlers.add_default_account_id,
                 handlers.parse_service_request,
-                self.require_route,
-                self.route_request,
-                self.log_response,
+                self.require_service,
+                self.service_request_router,
+                EmptyResponseHandler(404, b'{"message": "Not Found"}'),
             ]
         )
 
@@ -40,40 +41,62 @@ class LocalstackAwsGateway(Gateway):
         self.exception_handlers.extend(
             [
                 handlers.log_exception,
-                handlers.return_serialized_exception,
+                handlers.handle_service_exception,
+                handlers.handle_internal_failure,
+            ]
+        )
+
+        # response post-processing
+        self.response_handlers.extend(
+            [
+                self.log_response,
             ]
         )
 
     def log_response(self, _: HandlerChain, context: RequestContext, response: HttpResponse):
-        # TODO: log analytics event here
-        LOG.info(
-            "Response(%s.%s,%d)",
-            context.service.service_name,
-            context.operation.name,
-            response.get("status_code", 0),
-        )
+        if context.operation:
+            # TODO: log analytics event here
+            LOG.info(
+                "%s %s.%s => %d",
+                context.request["method"],
+                context.service.service_name,
+                context.operation.name,
+                response.get("status_code", 0),
+            )
+        else:
+            LOG.info(
+                "%s %s => %d",
+                context.request["method"],
+                context.request["path"],
+                response.get("status_code", 0),
+            )
 
-    def require_route(self, _: HandlerChain, context: RequestContext, response: HttpResponse):
+    def require_service(self, _: HandlerChain, context: RequestContext, response: HttpResponse):
+        request_router = self.service_request_router
+
         # verify that we have a route for this request
         service_operation = context.service_operation
-        if service_operation in self.request_router.handlers:
+        if service_operation in request_router.handlers:
             return
 
         # FIXME: this blocks all requests to other services, so a mutex list per-service would be useful
         with self.mutex:
             # try again to avoid race conditions
-            if service_operation in self.request_router.handlers:
+            if service_operation in request_router.handlers:
                 return
 
             service_name = context.service.service_name
+            if not self.service_manager.exists(service_name):
+                raise NotImplementedError
+
             service_plugin: Service = self.service_manager.require(service_name)
 
             if isinstance(service_plugin, ServiceProvider):
-                self.request_router.add_provider(service_plugin.listener)
+                request_router.add_provider(service_plugin.listener)
             elif isinstance(service_plugin, HandlerServiceAdapter):
-                self.request_router.add_handler(service_operation, service_plugin.listener)
+                request_router.add_handler(service_operation, service_plugin.listener)
             elif isinstance(service_plugin, Service):
-                self.request_router.add_handler(service_operation, handlers.LegacyPluginHandler())
+                request_router.add_handler(service_operation, handlers.LegacyPluginHandler())
             else:
                 LOG.warning(
                     "found plugin for %s, but cannot attach service plugin of type %s",
@@ -81,14 +104,11 @@ class LocalstackAwsGateway(Gateway):
                     type(service_plugin),
                 )
 
-    def route_request(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
-        self.request_router(chain, context, response)
-
     def add_provider(self, provider: Any, service_name: str = None):
         if service_name is None:
             service_name = provider.service
 
-        self.request_router.add_provider(provider=provider, service=service_name)
+        self.service_request_router.add_provider(provider=provider, service=service_name)
 
 
 def main():
