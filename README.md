@@ -217,8 +217,8 @@ Please be aware that the following configurations may have severe security impli
 * `DISABLE_CUSTOM_CORS_S3`: Whether to disable CORS override by S3 (default: 0).
 * `DISABLE_CUSTOM_CORS_APIGATEWAY`: Whether to disable CORS override by apigateway (default: 0).
 * `EXTRA_CORS_ALLOWED_ORIGINS`: Comma-separated list of origins that are allowed to communicate with localstack.
-* `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
-* `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
+* `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be added to `Access-Control-Allow-Headers` CORS header
+* `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be added to `Access-Control-Expose-Headers` CORS header
 
 ### Providers Configurations
 
