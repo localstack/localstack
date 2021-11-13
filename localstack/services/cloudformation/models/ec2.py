@@ -13,8 +13,8 @@ class EC2RouteTable(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service("ec2")
         tags_filters = map(
-            lambda tag: {"Name": "tag:" + tag.get("Key"), "Values": [tag.get("Value")]},
-            self.props["Tags"] or [],
+            lambda tag: {"Name": f"tag:{tag.get('Key')}", "Values": [tag.get("Value")]},
+            self.props.get("Tags") or [],
         )
         filters = [
             {"Name": "vpc-id", "Values": [self.props["VpcId"]]},
