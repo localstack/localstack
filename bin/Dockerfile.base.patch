@@ -1,0 +1,41 @@
+# NOTE: This is only a *temporary* patch to be applied to re-enable building Python packages that require gcc
+# It can be applied on top of the latest tagged base image localstack/java-maven-node-python:2021-11-05
+# This patch will become obsolete once we're switching over to the new Debian-based (multi-arch) build mechanism.
+
+FROM localstack/java-maven-node-python:2021-11-05
+
+# add dependencies for building pip packages
+RUN apk add g++ gcc cmake
+
+# NOTE: code below copied mainly from main Dockerfile!
+
+ADD Makefile setup.cfg setup.py requirements.txt pyproject.toml ./
+ADD localstack/ localstack/
+ADD bin/localstack bin/localstack
+# necessary for running pip install -e
+ADD bin/localstack.bat bin/localstack.bat
+
+RUN python --version
+RUN apk add python3-dev=3.7.10-r0 python3=3.7.10-r0 --repository=http://dl-cdn.alpinelinux.org/alpine/v3.10/main
+
+# install dependencies to run the localstack runtime and save which ones were installed
+# RUN make install-runtime
+
+# initialize installation
+ADD requirements.txt .
+RUN (pip install --upgrade pip) && \
+    (test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
+    (virtualenv .testvenv && source .testvenv/bin/activate && \
+        pip install Cython && export CPATH=/usr/include/python3.8 && \
+        pip install -q -r requirements.txt && rm -rf .testvenv) || exit 1
+
+# install libs that require dependencies that are cleaned up below (e.g., gcc)
+RUN (virtualenv .venv && source .venv/bin/activate && pip install 'cryptography<3.4' 'uamqp>=1.2.14' 'coverage[toml]>=5.5')
+
+# clean up
+RUN rm -rf localstack/aws localstack/services localstack/utils
+
+RUN rm -rf /root/.npm; \
+  apk del --purge autoconf automake boost-dev build-base cmake g++ gcc giflib libc-dev libffi-dev \
+  libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev
+RUN apk del --purge krb5-conf krb5-libs || true
