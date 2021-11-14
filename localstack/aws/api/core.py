@@ -178,6 +178,14 @@ class HttpResponse(Response):
     def set_json(self, doc: Dict):
         self.data = json.dumps(doc)
 
+    def set_response(self, payload):
+        if payload is None:
+            self.response = []
+        elif isinstance(payload, (str, bytes, bytearray)):
+            self.data = payload
+        else:
+            self.response = payload
+
     def to_readonly_response_dict(self) -> Dict:
         """
         Returns a read-only version of a response dictionary as it is often expected by other libraries like boto.

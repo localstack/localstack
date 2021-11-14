@@ -1,11 +1,13 @@
 from botocore.model import ServiceModel
 from requests.models import Response
+from werkzeug.datastructures import Headers
 
 from localstack import constants
 from localstack.aws.api import HttpRequest, HttpResponse, RequestContext
+from localstack.aws.chain import Handler, HandlerChain
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
-from localstack.services.generic_proxy import ProxyListener
+from localstack.services.generic_proxy import ProxyListener, modify_and_forward
 from localstack.utils.aws.request_context import extract_region_from_headers
 
 
@@ -53,3 +55,46 @@ class AwsApiListener(ProxyListener):
         resp.status_code = response.status_code
         resp.headers.update(response.headers)
         return resp
+
+
+class _NoHandlerCalled(Exception):
+    pass
+
+
+class _DummyProxyListener(ProxyListener):
+    def forward_request(self, method, path, data, headers):
+        raise _NoHandlerCalled
+
+
+class DefaultListenerHandler(Handler):
+    """
+    Adapter that exposes the ProxyListener.DEFAULT_LISTENERS as a Handler.
+    """
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+        if not ProxyListener.DEFAULT_LISTENERS:
+            return
+
+        req = context.request
+
+        try:
+            resp = modify_and_forward(
+                method=req.method,
+                path=req.path,  # TODO: should have parameters
+                data_bytes=req.data,
+                headers=req.headers,
+                forward_base_url=None,
+                listeners=[_DummyProxyListener()],
+                request_handler=None,
+                client_address=req.remote_addr,
+                server_address=req.host,
+            )
+        except _NoHandlerCalled:
+            return
+
+        # TODO: replace with util code
+        response.status_code = resp.status_code
+        response.headers = Headers(dict(resp.headers))
+        response.set_response(resp.content)
+
+        chain.stop()
