@@ -77,7 +77,6 @@ not work out-of-the-box.
 import abc
 import base64
 import calendar
-import json
 from abc import ABC
 from datetime import datetime
 from email.utils import formatdate
@@ -88,7 +87,7 @@ import six
 from boto.utils import ISO8601
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601_MICRO
-from botocore.utils import conditionally_calculate_md5, parse_to_aware_datetime
+from botocore.utils import calculate_md5, parse_to_aware_datetime
 from moto.core.utils import gen_amzn_requestid_long
 
 from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
@@ -172,7 +171,7 @@ class ResponseSerializer(abc.ABC):
 
         # Some specifications do not contain the httpStatusCode field.
         # These errors typically have the http status code 400.
-        serialized_response["status_code"] = status_code or 400
+        serialized_response.status_code = status_code or 400
 
         self._serialize_error(
             error, code, sender_fault, serialized_response, shape, operation_model
@@ -208,15 +207,13 @@ class ResponseSerializer(abc.ABC):
     @staticmethod
     def _create_default_response(operation_model: OperationModel) -> HttpResponse:
         """
-        Creates a boilerplate default response dict to be used by subclasses as starting points.
+        Creates a boilerplate default response to be used by subclasses as starting points.
         Uses the default HTTP response status code defined in the operation model (if defined).
 
         :param operation_model: to extract the default HTTP status code
         :return: boilerplate HTTP response
         """
-        return HttpResponse(
-            headers={}, body=b"", status_code=operation_model.http.get("responseCode", 200)
-        )
+        return HttpResponse(response=b"", status=operation_model.http.get("responseCode", 200))
 
     # Some extra utility methods subclasses can use.
 
@@ -271,8 +268,17 @@ class ResponseSerializer(abc.ABC):
     ):
         """Applies additional traits on the raw response for a given model or protocol."""
         if operation_model.http_checksum_required:
-            conditionally_calculate_md5(response)
+            add_md5_header(response)
         return response
+
+
+def add_md5_header(response: HttpResponse):
+    """Add a Content-MD5 header if not yet there. Adapted from botocore.utils"""
+    headers = response.headers
+    body = response.data
+    if body is not None and "Content-MD5" not in headers:
+        md5_digest = calculate_md5(body)
+        headers["Content-MD5"] = md5_digest
 
 
 class BaseXMLResponseSerializer(ResponseSerializer):
@@ -313,19 +319,19 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             # If it's streaming, then the body is just the value of the payload.
             body_payload = parameters.get(payload_member, b"")
             body_payload = self._encode_payload(body_payload)
-            serialized["body"] = body_payload
+            serialized.data = body_payload
         elif payload_member is not None:
             # If there's a payload member, we serialized that member to the body.
             body_params = parameters.get(payload_member)
             if body_params is not None:
-                serialized["body"] = self._encode_payload(
+                serialized.data = self._encode_payload(
                     self._serialize_body_params(
                         body_params, shape_members[payload_member], operation_model
                     )
                 )
         else:
             # Otherwise we use the "traditional" way of serializing the whole parameters dict recursively.
-            serialized["body"] = self._encode_payload(
+            serialized.data = self._encode_payload(
                 self._serialize_body_params(parameters, shape, operation_model)
             )
 
@@ -350,9 +356,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestId")
         request_id.text = gen_amzn_requestid_long()
-        serialized["body"] = self._encode_payload(
-            ETree.tostring(root, encoding=self.DEFAULT_ENCODING)
-        )
+        serialized.data = self._encode_payload(ETree.tostring(root, encoding=self.DEFAULT_ENCODING))
 
     @staticmethod
     def _add_error_tags(
@@ -539,7 +543,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
     ):
         """Adds the request ID to the headers (in contrast to the body - as in the Query protocol)."""
         response = super()._prepare_additional_traits_in_response(response, operation_model)
-        response["headers"]["x-amz-request-id"] = gen_amzn_requestid_long()
+        response.headers["x-amz-request-id"] = gen_amzn_requestid_long()
         return response
 
 
@@ -576,7 +580,7 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
             self._add_error_tags(code, error, root, sender_fault)
             request_id = ETree.SubElement(root, "RequestId")
             request_id.text = gen_amzn_requestid_long()
-            serialized["body"] = self._encode_payload(
+            serialized.data = self._encode_payload(
                 ETree.tostring(root, encoding=self.DEFAULT_ENCODING)
             )
         else:
@@ -663,9 +667,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestID")
         request_id.text = gen_amzn_requestid_long()
-        serialized["body"] = self._encode_payload(
-            ETree.tostring(root, encoding=self.DEFAULT_ENCODING)
-        )
+        serialized.data = self._encode_payload(ETree.tostring(root, encoding=self.DEFAULT_ENCODING))
 
     def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
         # The EC2 protocol does not use the root output shape, therefore we need to remove the hierarchy level
@@ -704,7 +706,7 @@ class JSONResponseSerializer(ResponseSerializer):
     ) -> None:
         # TODO handle error shapes with members
         body = {"__type": code, "message": str(error)}
-        serialized["body"] = json.dumps(body).encode(self.DEFAULT_ENCODING)
+        serialized.set_json(body)
 
     def _serialize_payload(
         self,
@@ -716,13 +718,11 @@ class JSONResponseSerializer(ResponseSerializer):
     ) -> None:
         json_version = operation_model.metadata.get("jsonVersion")
         if json_version is not None:
-            serialized["headers"] = {
-                "Content-Type": "application/x-amz-json-%s" % json_version,
-            }
+            serialized.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
         body = {}
         if shape is not None:
             self._serialize(body, parameters, shape)
-        serialized["body"] = json.dumps(body).encode(self.DEFAULT_ENCODING)
+        serialized.set_json(body)
 
     def _serialize(self, body: dict, value: any, shape, key: Optional[str] = None):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
@@ -782,7 +782,7 @@ class JSONResponseSerializer(ResponseSerializer):
     def _prepare_additional_traits_in_response(
         self, response: HttpResponse, operation_model: OperationModel
     ):
-        response["headers"]["x-amzn-requestid"] = gen_amzn_requestid_long()
+        response.headers["x-amzn-requestid"] = gen_amzn_requestid_long()
         response = super()._prepare_additional_traits_in_response(response, operation_model)
         return response
 

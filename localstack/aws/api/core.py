@@ -1,6 +1,9 @@
 import functools
+import json
 import sys
 from typing import Any, Callable, Dict, NamedTuple, Optional, Type
+
+from werkzeug.wrappers import Response
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -53,10 +56,24 @@ class HttpRequest(TypedDict):
     body: bytes
 
 
-class HttpResponse(TypedDict):
-    headers: Dict[str, str]
-    body: bytes
-    status_code: int
+class HttpResponse(Response):
+    def update_from(self, other: Response):
+        self.status_code = other.status_code
+        self.data = other.data
+        self.headers.update(other.headers)
+
+    def set_json(self, doc: Dict):
+        self.data = json.dumps(doc)
+
+    def to_readonly_response_dict(self) -> Dict:
+        """
+        Returns a read-only version of a response dictionary as it is often expected by other libraries like boto.
+        """
+        return {
+            "body": self.get_data(as_text=True).encode("utf-8"),
+            "status_code": self.status_code,
+            "headers": dict(self.headers),
+        }
 
 
 class ServiceOperation(NamedTuple):
