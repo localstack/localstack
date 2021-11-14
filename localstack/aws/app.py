@@ -6,6 +6,7 @@ from localstack.aws import handlers
 from localstack.aws.chain import HandlerChain
 from localstack.aws.handlers import EmptyResponseHandler
 from localstack.aws.plugins import HandlerServiceAdapter, ServiceProvider
+from localstack.aws.proxy import DefaultListenerHandler
 from localstack.services.plugins import Service, ServiceManager, ServicePluginManager
 
 from .api import HttpResponse, RequestContext
@@ -27,12 +28,15 @@ class LocalstackAwsGateway(Gateway):
         # the main request handler chain
         self.request_handlers.extend(
             [
+                DefaultListenerHandler(),  # legacy compatibility with DEFAULT_LISTENERS
+                # start aws handler chain
                 handlers.parse_service_name,
                 handlers.add_region_from_header,
                 handlers.add_default_account_id,
                 handlers.parse_service_request,
                 self.require_service,
                 self.service_request_router,
+                # if the chain is still running, set an empty response
                 EmptyResponseHandler(404, b'{"message": "Not Found"}'),
             ]
         )
