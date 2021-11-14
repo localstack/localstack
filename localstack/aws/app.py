@@ -58,21 +58,24 @@ class LocalstackAwsGateway(Gateway):
             # TODO: log analytics event here
             LOG.info(
                 "%s %s.%s => %d",
-                context.request["method"],
+                context.request.method,
                 context.service.service_name,
                 context.operation.name,
-                response.get("status_code", 0),
+                response.status_code,
             )
         else:
             LOG.info(
                 "%s %s => %d",
-                context.request["method"],
-                context.request["path"],
-                response.get("status_code", 0),
+                context.request.method,
+                context.request.path,
+                response.status_code,
             )
 
     def require_service(self, _: HandlerChain, context: RequestContext, response: HttpResponse):
         request_router = self.service_request_router
+
+        if not context.service:
+            return
 
         # verify that we have a route for this request
         service_operation = context.service_operation
