@@ -59,6 +59,7 @@ Quart>=0.6.15
 readerwriterlock>=1.0.7
 requests-aws4auth==0.9
 #sasl>=0.2.1
+Werkzeug>=2.0
 xmltodict>=0.11.0
 
 # extra=test
