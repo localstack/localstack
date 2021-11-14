@@ -162,7 +162,7 @@ def test_skeleton_e2e_sqs_send_message():
     # Use the parser from botocore to parse the serialized response
     response_parser = create_parser(sqs_service.protocol)
     parsed_response = response_parser.parse(
-        result, sqs_service.operation_model("SendMessage").output_shape
+        result.to_readonly_response_dict(), sqs_service.operation_model("SendMessage").output_shape
     )
 
     # Test the ResponseMetadata and delete it afterwards
@@ -201,7 +201,7 @@ def test_skeleton_e2e_sqs_send_message_not_implemented():
     # Use the parser from botocore to parse the serialized response
     response_parser = create_parser(sqs_service.protocol)
     parsed_response = response_parser.parse(
-        result, sqs_service.operation_model("SendMessage").output_shape
+        result.to_readonly_response_dict(), sqs_service.operation_model("SendMessage").output_shape
     )
 
     # Test the ResponseMetadata
@@ -244,7 +244,7 @@ def test_dispatch_common_service_exception():
     # Use the parser from botocore to parse the serialized response
     response_parser = create_parser(sqs_service.protocol)
     parsed_response = response_parser.parse(
-        result, sqs_service.operation_model("SendMessage").output_shape
+        result.to_readonly_response_dict(), sqs_service.operation_model("SendMessage").output_shape
     )
 
     assert "Error" in parsed_response
@@ -275,7 +275,7 @@ def test_dispatch_missing_method_returns_internal_failure():
     # Use the parser from botocore to parse the serialized response
     response_parser = create_parser(sqs_service.protocol)
     parsed_response = response_parser.parse(
-        result, sqs_service.operation_model("SendMessage").output_shape
+        result.to_readonly_response_dict(), sqs_service.operation_model("SendMessage").output_shape
     )
     assert "Error" in parsed_response
     assert parsed_response["Error"] == {
