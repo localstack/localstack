@@ -14,8 +14,6 @@ import uuid
 from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import boto3
-
 from localstack import config
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
@@ -41,11 +39,14 @@ from localstack.utils.common import (
     CaptureOutput,
     get_all_subclasses,
     get_free_tcp_port,
+    in_docker,
+    is_port_open,
     json_safe,
     last_index_of,
     long_uid,
     md5,
     now,
+    retry,
     run,
     run_safe,
     safe_requests,
@@ -54,8 +55,14 @@ from localstack.utils.common import (
     timestamp,
     to_bytes,
     to_str,
+    wait_for_port_open,
 )
-from localstack.utils.docker_utils import DOCKER_CLIENT, ContainerException, PortMappings
+from localstack.utils.docker_utils import (
+    DOCKER_CLIENT,
+    ContainerException,
+    DockerContainerStatus,
+    PortMappings,
+)
 from localstack.utils.run import FuncThread
 
 # constants
@@ -71,6 +78,9 @@ LAMBDA_API_UNIQUE_PORTS = 500
 LAMBDA_API_PORT_OFFSET = 9000
 
 MAX_ENV_ARGS_LENGTH = 20000
+
+# port number used in lambci images for stay-open invocation mode
+STAY_OPEN_API_PORT = 9001
 
 INTERNAL_LOG_PREFIX = "ls-daemon: "
 
@@ -791,6 +801,16 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         lambda_docker_ip = DOCKER_CLIENT.get_container_ip(container_info.name)
 
+        if not self._should_use_stay_open_mode(lambda_docker_ip, check_port=True):
+            LOG.debug("Using 'docker exec' to run invocation in docker-reuse Lambda container")
+            return DOCKER_CLIENT.exec_in_container(
+                container_name_or_id=container_info.name,
+                command=inv_context.lambda_command,
+                interactive=True,
+                env_vars=env_vars,
+                stdin=stdin,
+            )
+
         inv_result = self.invoke_lambda(lambda_function, inv_context, lambda_docker_ip)
         return (inv_result.result, inv_result.log_output)
 
@@ -800,16 +820,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         inv_context: InvocationContext,
         lambda_docker_ip=None,
     ) -> InvocationResult:
-        full_url = f"http://{lambda_docker_ip}:9001"
+        full_url = self._get_lambda_stay_open_url(lambda_docker_ip)
 
-        client = boto3.client(
-            service_name="lambda",
-            region_name=config.DEFAULT_REGION,
-            endpoint_url=full_url,
-        )
-
+        client = aws_stack.connect_to_service("lambda", endpoint_url=full_url)
         event = inv_context.event or "{}"
 
+        LOG.debug(f"Calling {full_url} to run invocation in docker-reuse Lambda container")
         response = client.invoke(
             FunctionName=lambda_function.name(),
             InvocationType=inv_context.invocation_type,
@@ -817,7 +833,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LogType="Tail",
         )
 
-        log_output = base64.b64decode(response["LogResult"]).decode("utf-8")
+        log_output = base64.b64decode(response.get("LogResult") or b"").decode("utf-8")
         result = response["Payload"].read().decode("utf-8")
 
         if "FunctionError" in response:
@@ -830,7 +846,21 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         return InvocationResult(result, log_output)
 
-    def _execute(self, func_arn, *args, **kwargs):
+    def _should_use_stay_open_mode(
+        self, lambda_docker_ip: Optional[str], check_port: bool = False
+    ) -> bool:
+        """Return whether to use stay-open execution mode - if we're running in Docker, the given IP
+        is defined, and if the target API endpoint is available (optionally, if check_port is True)."""
+        should_use = lambda_docker_ip and in_docker()
+        if not should_use or not check_port:
+            return False
+        full_url = self._get_lambda_stay_open_url(lambda_docker_ip)
+        return is_port_open(full_url)
+
+    def _get_lambda_stay_open_url(self, lambda_docker_ip: str) -> str:
+        return f"http://{lambda_docker_ip}:{STAY_OPEN_API_PORT}"
+
+    def _execute(self, func_arn: str, *args, **kwargs) -> InvocationResult:
         if not LAMBDA_CONCURRENCY_LOCK.get(func_arn):
             concurrency_lock = threading.RLock()
             LAMBDA_CONCURRENCY_LOCK[func_arn] = concurrency_lock
@@ -843,7 +873,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         if config.LAMBDA_REMOVE_CONTAINERS:
             self.start_idle_container_destroyer_interval()
 
-    def cleanup(self, arn=None):
+    def cleanup(self, arn: str = None):
         if arn:
             self.function_invoke_times.pop(arn, None)
             return self.destroy_docker_container(arn)
@@ -893,8 +923,20 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
                 LOG.debug("Starting docker-reuse Lambda container: %s", container_name)
                 DOCKER_CLIENT.start_container(container_name)
+
+                def wait_up():
+                    cont_status = DOCKER_CLIENT.get_container_status(container_name)
+                    assert cont_status == DockerContainerStatus.UP
+                    if not in_docker():
+                        return
+                    # if we're executing in Docker using stay-open mode, additionally check if the target is available
+                    lambda_docker_ip = DOCKER_CLIENT.get_container_ip(container_name)
+                    if self._should_use_stay_open_mode(lambda_docker_ip):
+                        full_url = self._get_lambda_stay_open_url(lambda_docker_ip)
+                        wait_for_port_open(full_url, sleep_time=0.5, retries=8)
+
                 # give the container some time to start up
-                time.sleep(1)
+                retry(wait_up, retries=15, sleep=0.8)
 
             container_network = self.get_docker_container_network(func_arn)
             entry_point = DOCKER_CLIENT.get_image_entrypoint(docker_image)
@@ -936,18 +978,27 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         if os.environ.get("HOSTNAME"):
             env_vars["HOSTNAME"] = os.environ.get("HOSTNAME")
         env_vars["EDGE_PORT"] = config.EDGE_PORT
-        env_vars["DOCKER_LAMBDA_STAY_OPEN"] = "1"
+        command = None
+        entrypoint = "/bin/bash"
+        interactive = True
+
+        if in_docker():
+            env_vars["DOCKER_LAMBDA_STAY_OPEN"] = "1"
+            entrypoint = None
+            command = [lambda_function.handler]
+            interactive = False
 
         LOG.debug(
             "Creating docker-reuse Lambda container %s from image %s", container_name, docker_image
         )
         return DOCKER_CLIENT.create_container(
             image_name=docker_image,
-            remove=False,
-            interactive=False,
+            remove=True,
+            interactive=interactive,
             detach=True,
             name=container_name,
-            command=[lambda_function.handler],  # needs the handler to spin up
+            entrypoint=entrypoint,
+            command=command,
             network=network,
             env_vars=env_vars,
             dns=dns,
@@ -1452,18 +1503,6 @@ class Util:
             )
         docker_tag = runtime
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
-        # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
-        #  See https://github.com/lambci/docker-lambda/pull/218
-        lambdas_to_add_prefix = [
-            "dotnetcore2.0",
-            "dotnetcore2.1",
-            "python3.6",
-            "python3.7",
-        ]
-        if docker_image == "lambci/lambda" and any(
-            img in docker_tag for img in lambdas_to_add_prefix
-        ):
-            docker_tag = "20191117-%s" % docker_tag
         if runtime == "nodejs14.x":
             # TODO temporary fix until lambci image for nodejs14.x becomes available
             docker_image = "localstack/lambda-js"

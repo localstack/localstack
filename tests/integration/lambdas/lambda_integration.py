@@ -17,10 +17,6 @@ logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
 
-# TODO: should be injected by Lambda executor! (Doesn't seem to be the case for default python executor?)
-os.environ["AWS_ACCESS_KEY_ID"] = os.environ.get("AWS_ACCESS_KEY_ID") or "test"
-os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ.get("AWS_SECRET_ACCESS_KEY") or "test"
-
 ENDPOINT_URL = "http://%s:%s" % (
     os.environ["LOCALSTACK_HOSTNAME"],
     os.environ.get("EDGE_PORT", 4566),
