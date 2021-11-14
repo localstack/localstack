@@ -1,8 +1,8 @@
+from websockets.datastructures import Headers
 from werkzeug import run_simple
-from werkzeug.datastructures import Headers
-from werkzeug.wrappers import Request, Response
+from werkzeug.wrappers import Request
 
-from localstack.aws.api import HttpRequest, HttpResponse
+from localstack.aws.api import HttpResponse
 from localstack.aws.gateway import Gateway
 
 
@@ -18,25 +18,15 @@ class WsgiGateway:
         self.gateway = gateway
 
     def __call__(self, environ, start_response):
-        request = Request(environ)
+        http_request = Request(environ)
+        http_request.headers = Headers(http_request.headers)
+        http_response = HttpResponse()
 
-        http_request = HttpRequest(
-            method=request.method,
-            path=request.path,
-            headers=Headers(request.headers),
-            body=request.get_data(),
-        )
-        http_response: HttpResponse = dict()
-        http_response["headers"] = Headers()
+        # Request is a drop-in replacement for HttpRequest
+        # noinspection PyTypeChecker
         self.gateway.process(http_request, http_response)
 
-        response = Response(
-            http_response.get("body", b""),
-            status=http_response.get("status_code", 200),
-            headers=http_response["headers"],
-        )
-
-        return response(environ, start_response)
+        return http_response(environ, start_response)
 
 
 def serve(gateway: Gateway, host="localhost", port=4566, use_reloader=True, **kwargs):

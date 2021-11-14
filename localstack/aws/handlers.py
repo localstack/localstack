@@ -33,11 +33,11 @@ class ServiceNameParser(Handler):
 
         LOG.debug("loading service for request to %s", service)
         context.service = load_service(service)
-        headers = context.request["headers"]
+        headers = context.request.headers
         headers["x-localstack-tgt-api"] = service
 
     def guess_aws_service(self, request: HttpRequest) -> Optional[str]:
-        headers = request["headers"]
+        headers = request.headers
 
         target = headers.get("x-amz-target", "")
         host = headers.get("host", "")
@@ -167,7 +167,7 @@ class RegionContextEnricher(Handler):
     def get_region(request: HttpRequest) -> str:
         from localstack.utils.aws.request_context import extract_region_from_headers
 
-        return extract_region_from_headers(request["headers"])
+        return extract_region_from_headers(request.headers)
 
 
 class DefaultAccountIdEnricher(Handler):
@@ -192,9 +192,7 @@ class SkeletonHandler(Handler):
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
         skeleton_response = self.skeleton.invoke(context)
-        response["status_code"] = skeleton_response["status_code"]
-        response["body"] = skeleton_response["body"]
-        response["headers"] = Headers(skeleton_response["headers"])
+        response.update_from(skeleton_response)
 
 
 class ServiceRequestRouter(Handler):
@@ -208,6 +206,9 @@ class ServiceRequestRouter(Handler):
         self.handlers = dict()
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+        if not context.service:
+            return
+
         service_name = context.service.service_name
         operation_name = context.operation.name
 
@@ -216,9 +217,7 @@ class ServiceRequestRouter(Handler):
         handler = self.handlers.get(key)
         if not handler:
             error = self.create_not_implemented_response(context)
-            response["body"] = error["body"]
-            response["status_code"] = error["status_code"]
-            response["headers"] = error["headers"]
+            response.update_from(error)
             chain.stop()
             return
 
@@ -302,9 +301,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
 
         error = self.create_exception_response(exception, context)
         if error:
-            response["body"] = error["body"]
-            response["status_code"] = error["status_code"]
-            response["headers"] = error["headers"]
+            response.update_from(error)
 
     def create_exception_response(self, exception, context):
         operation = context.operation
@@ -344,13 +341,13 @@ class InternalFailureHandler(ExceptionHandler):
         context: RequestContext,
         response: HttpResponse,
     ):
-        if response.get("status_code"):
-            # response code already set
+        if response.data:
+            # response already set
             return
 
         LOG.debug("setting internal failure response for %s", exception)
-        response["status_code"] = 500
-        response["body"] = json.dumps(
+        response.status_code = 500
+        response.data = json.dumps(
             {
                 "message": "Unexpected exception",
                 "error": str(exception),
@@ -370,17 +367,17 @@ class LegacyPluginHandler(Handler):
         request = context.request
 
         api = context.service.service_name
-        method = request["method"]
-        path = request["path"]
-        data = request["body"]
-        headers = request["headers"]
+        method = request.method
+        path = request.path  # FIXME: make sure the path also contains the query string
+        data = request.data
+        headers = request.headers
 
         result = do_forward_request(api, method, path, data, headers, port=None)
         # TODO: the edge proxy does a lot more to the result, so this may not work for all corner cases
 
-        response["status_code"] = result.status_code
-        response["body"] = result.content
-        response["headers"] = dict(result.headers)
+        response.status_code = result.status_code
+        response.data = result.content
+        response.headers.update(dict(result.headers))
 
 
 class EmptyResponseHandler(Handler):
@@ -402,12 +399,12 @@ class EmptyResponseHandler(Handler):
             self.populate_default_response(response)
 
     def is_empty_response(self, response: HttpResponse):
-        return response.get("status_code") in [0, None] and not response.get("body")
+        return response.status_code in [0, None] or not response.data
 
     def populate_default_response(self, response: HttpResponse):
-        response["status_code"] = self.status_code
-        response["body"] = self.body
-        response["headers"] = self.headers
+        response.status_code = self.status_code
+        response.data = self.body
+        response.headers.update(self.headers)
 
 
 parse_service_name = ServiceNameParser()
