@@ -10,6 +10,7 @@ from botocore.parsers import create_parser
 
 from localstack.aws.api import (
     CommonServiceException,
+    HttpRequest,
     RequestContext,
     ServiceException,
     ServiceRequest,
@@ -151,12 +152,14 @@ def test_skeleton_e2e_sqs_send_message():
     context.account = "test"
     context.region = "us-west-1"
     context.service = sqs_service
-    context.request = {
-        "method": "POST",
-        "path": "/",
-        "body": "Action=SendMessage&Version=2012-11-05&QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue&MessageBody=%7B%22foo%22%3A+%22bared%22%7D&DelaySeconds=2",
-        "headers": _get_sqs_request_headers(),
-    }
+    context.request = HttpRequest(
+        **{
+            "method": "POST",
+            "path": "/",
+            "body": "Action=SendMessage&Version=2012-11-05&QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue&MessageBody=%7B%22foo%22%3A+%22bared%22%7D&DelaySeconds=2",
+            "headers": _get_sqs_request_headers(),
+        }
+    )
     result = skeleton.invoke(context)
 
     # Use the parser from botocore to parse the serialized response
@@ -190,12 +193,14 @@ def test_skeleton_e2e_sqs_send_message_not_implemented():
     context.account = "test"
     context.region = "us-west-1"
     context.service = sqs_service
-    context.request = {
-        "method": "POST",
-        "path": "/",
-        "body": "Action=SendMessage&Version=2012-11-05&QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue&MessageBody=%7B%22foo%22%3A+%22bared%22%7D&DelaySeconds=2",
-        "headers": _get_sqs_request_headers(),
-    }
+    context.request = HttpRequest(
+        **{
+            "method": "POST",
+            "path": "/",
+            "body": "Action=SendMessage&Version=2012-11-05&QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue&MessageBody=%7B%22foo%22%3A+%22bared%22%7D&DelaySeconds=2",
+            "headers": _get_sqs_request_headers(),
+        }
+    )
     result = skeleton.invoke(context)
 
     # Use the parser from botocore to parse the serialized response
@@ -233,12 +238,14 @@ def test_dispatch_common_service_exception():
     context.account = "test"
     context.region = "us-west-1"
     context.service = sqs_service
-    context.request = {
-        "method": "POST",
-        "path": "/",
-        "body": "Action=DeleteQueue&Version=2012-11-05&QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue",
-        "headers": _get_sqs_request_headers(),
-    }
+    context.request = HttpRequest(
+        **{
+            "method": "POST",
+            "path": "/",
+            "body": "Action=DeleteQueue&Version=2012-11-05&QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue",
+            "headers": _get_sqs_request_headers(),
+        }
+    )
     result = skeleton.invoke(context)
 
     # Use the parser from botocore to parse the serialized response
@@ -264,12 +271,14 @@ def test_dispatch_missing_method_returns_internal_failure():
     context.account = "test"
     context.region = "us-west-1"
     context.service = sqs_service
-    context.request = {
-        "method": "POST",
-        "path": "/",
-        "body": "Action=DeleteQueue&Version=2012-11-05&QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue",
-        "headers": _get_sqs_request_headers(),
-    }
+    context.request = HttpRequest(
+        **{
+            "method": "POST",
+            "path": "/",
+            "body": "Action=DeleteQueue&Version=2012-11-05&QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue",
+            "headers": _get_sqs_request_headers(),
+        }
+    )
 
     result = skeleton.invoke(context)
     # Use the parser from botocore to parse the serialized response

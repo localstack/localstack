@@ -10,7 +10,7 @@ from localstack.utils.aws.request_context import extract_region_from_headers
 
 
 def get_region(request: HttpRequest) -> str:
-    return extract_region_from_headers(request["headers"])
+    return extract_region_from_headers(request.headers)
 
 
 def get_account_id(_: HttpRequest) -> str:
