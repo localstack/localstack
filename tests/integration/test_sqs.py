@@ -571,7 +571,7 @@ class SQSTest(unittest.TestCase):
 
     def test_lambda_invoked_by_sqs_message_with_attributes(self):
         function_name = "lambda_func-{}".format(short_uid())
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
 
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
 
@@ -613,7 +613,7 @@ class SQSTest(unittest.TestCase):
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_send_message_with_delay_seconds(self):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
 
         # send message with DelaySeconds = 0
@@ -649,7 +649,7 @@ class SQSTest(unittest.TestCase):
         self.client.delete_queue(QueueUrl=queue_url)
 
     def test_get_multiple_messages(self):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
         number_of_messages = 3
 
@@ -673,7 +673,7 @@ class SQSTest(unittest.TestCase):
 
     def test_lambda_invoked_by_sqs_message_with_delay_seconds(self):
         function_name = "lambda_func-{}".format(short_uid())
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         delay_time = 6
 
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
@@ -945,7 +945,7 @@ class SQSTest(unittest.TestCase):
 
     # Not the same to create a queue with tags than tagging an existing queue
     def test_create_queue_with_tags(self):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         response = self.client.create_queue(
             QueueName=queue_name,
             tags=TEST_LAMBDA_TAGS,
@@ -954,7 +954,7 @@ class SQSTest(unittest.TestCase):
         self.check_tagged_queue(response["QueueUrl"])
 
     def test_tag_untag_queue(self):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
         response = self.client.tag_queue(
             QueueUrl=queue_url,
@@ -964,7 +964,7 @@ class SQSTest(unittest.TestCase):
         self.check_tagged_queue(queue_url)
 
     def test_posting_to_queue_with_trailing_slash(self):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = self.client.create_queue(QueueName=queue_name)["QueueUrl"]
 
         base_url = "{}://{}:{}".format(
@@ -1407,7 +1407,7 @@ class TestSqsProvider:
         assert len(result_send["Failed"]) == 1
 
     def test_list_queue_tags(self, sqs_client, sqs_create_queue):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         tags = {"testTag1": "test1", "testTag2": "test2"}
 
@@ -1416,7 +1416,7 @@ class TestSqsProvider:
         assert tags == tag_list["Tags"]
 
     def test_queue_list_nonexistent_tags(self, sqs_client, sqs_create_queue):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         tag_list = sqs_client.list_queue_tags(QueueUrl=queue_url)
@@ -1426,7 +1426,7 @@ class TestSqsProvider:
     def test_publish_get_delete_message(self, sqs_client, sqs_create_queue):
 
         # visibility part handled by test_receive_terminate_visibility_timeout
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         message_body = "test message"
         result_send = sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_body)
@@ -1442,7 +1442,7 @@ class TestSqsProvider:
 
     def test_delete_message_deletes_after_visibility_timeout(self, sqs_client, sqs_create_queue):
         # Old name: test_delete_message_deletes_visibility_agnostic
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         message_id = sqs_client.send_message(QueueUrl=queue_url, MessageBody="test")["MessageId"]
@@ -1468,13 +1468,13 @@ class TestSqsProvider:
     def test_publish_get_delete_message_batch(self, sqs_client, sqs_create_queue):
         # TODO: this does not work against AWS
         message_count = 10
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         message_batch = [
             {
-                "Id": "message-{}".format(i),
-                "MessageBody": "messageBody-{}".format(i),
+                "Id": f"message-{i}",
+                "MessageBody": f"messageBody-{i}",
             }
             for i in range(message_count)
         ]
@@ -1513,7 +1513,7 @@ class TestSqsProvider:
 
     def test_create_and_send_to_fifo_queue(self, sqs_client, sqs_create_queue):
         # Old name: test_create_fifo_queue
-        queue_name = "queue-{}.fifo".format(short_uid())
+        queue_name = f"queue-{short_uid()}.fifo"
         attributes = {"FifoQueue": "true"}
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
 
@@ -1523,7 +1523,7 @@ class TestSqsProvider:
         message_id = sqs_client.send_message(
             QueueUrl=queue_url,
             MessageBody="test",
-            MessageDeduplicationId="dedup-{}".format(short_uid()),
+            MessageDeduplicationId=f"dedup-{short_uid()}",
             MessageGroupId="test_group",
         )["MessageId"]
 
@@ -1531,7 +1531,7 @@ class TestSqsProvider:
         assert result_recv["Messages"][0]["MessageId"] == message_id
 
     def test_fifo_queue_requires_suffix(self, sqs_create_queue):
-        queue_name = "invalid-{}".format(short_uid())
+        queue_name = f"invalid-{short_uid()}"
         attributes = {"FifoQueue": "true"}
 
         with pytest.raises(Exception) as e:
@@ -1539,7 +1539,7 @@ class TestSqsProvider:
         e.match("InvalidParameterValue")
 
     def test_set_queue_policy(self, sqs_client, sqs_create_queue):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         attributes = {"Policy": TEST_POLICY}
@@ -1556,7 +1556,7 @@ class TestSqsProvider:
         assert "sqs:SendMessage" in attributes["Policy"]
 
     def test_set_empty_queue_policy(self, sqs_client, sqs_create_queue):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         attributes = {"Policy": ""}
@@ -1584,7 +1584,7 @@ class TestSqsProvider:
 
     def test_send_message_with_attributes(self, sqs_client, sqs_create_queue):
         # Old name: test_send_message_attributes
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         attributes = {
@@ -1606,7 +1606,7 @@ class TestSqsProvider:
 
     def test_sent_message_retains_attributes_after_receive(self, sqs_client, sqs_create_queue):
         # Old name: test_send_message_retains_attributes
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         attributes = {"attr1": {"StringValue": "test1", "DataType": "String"}}
@@ -1624,13 +1624,13 @@ class TestSqsProvider:
         assert receive_result["Messages"][0]["MessageAttributes"] == attributes
 
     def test_send_message_with_invalid_string_attributes(self, sqs_client, sqs_create_queue):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         # String Attributes must not contain non-printable characters
         # See: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
         invalid_attribute = {
-            "attr1": {"StringValue": "Invalid-{},{}".format(chr(8), chr(11)), "DataType": "String"}
+            "attr1": {"StringValue": f"Invalid-{chr(8)},{chr(11)}", "DataType": "String"}
         }
 
         with pytest.raises(Exception) as e:
@@ -1640,9 +1640,9 @@ class TestSqsProvider:
         e.match("Invalid")
 
     def test_send_message_with_invalid_payload_characters(self, sqs_client, sqs_create_queue):
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        invalid_message_body = "Invalid-{}-{}-{}-{}".format(chr(0), chr(8), chr(19), chr(65535))
+        invalid_message_body = f"Invalid-{chr(0)}-{chr(8)}-{chr(19)}-{chr(65535)}"
 
         with pytest.raises(Exception) as e:
             sqs_client.send_message(QueueUrl=queue_url, MessageBody=invalid_message_body)
@@ -1650,8 +1650,8 @@ class TestSqsProvider:
 
     def test_dead_letter_queue_config(self, sqs_client, sqs_create_queue):
         # TODO: not tested against AWS
-        queue_name = "queue-{}".format(short_uid())
-        dead_letter_queue_name = "dead_letter_queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
+        dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
         url_parts = dl_queue_url.split("/")
@@ -1672,8 +1672,8 @@ class TestSqsProvider:
     ):
 
         # TODO: lambda creation does not work when testing against AWS
-        queue_name = "queue-{}".format(short_uid())
-        dead_letter_queue_name = "dl-queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
+        dead_letter_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
 
         # create arn
@@ -1688,7 +1688,7 @@ class TestSqsProvider:
             QueueName=queue_name, Attributes={"RedrivePolicy": json.dumps(policy)}
         )
 
-        lambda_name = "lambda-{}".format(short_uid())
+        lambda_name = f"lambda-{short_uid()}"
         create_lambda_function(
             lambda_name,
             libs=TEST_LAMBDA_LIBS,
@@ -1718,8 +1718,8 @@ class TestSqsProvider:
         assert result_recv["Messages"][0]["Body"] == json.dumps(payload)
 
     def test_dead_letter_queue_max_receive_count(self, sqs_client, sqs_create_queue):
-        queue_name = "queue-{}".format(short_uid())
-        dead_letter_queue_name = "dl-queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
+        dead_letter_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(
             QueueName=dead_letter_queue_name, Attributes={"VisibilityTimeout": "0"}
         )
@@ -1754,8 +1754,8 @@ class TestSqsProvider:
     # TODO: check if test_set_queue_attribute_at_creation == test_create_queue_with_attributes
 
     def test_get_specific_queue_attribute_response(self, sqs_client, sqs_create_queue):
-        queue_name = "queue-{}".format(short_uid())
-        dead_letter_queue_name = "dead_letter_queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
+        dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
         region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
@@ -1801,7 +1801,7 @@ class TestSqsProvider:
     @pytest.mark.skip
     def test_set_unsupported_attribute(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         with pytest.raises(Exception) as e:
             sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"FifoQueue": "true"})
@@ -1811,16 +1811,16 @@ class TestSqsProvider:
         self, sqs_client, sqs_create_queue
     ):
 
-        fifo_queue_name = "queue-{}.fifo".format(short_uid())
+        fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
         message_count = 4
-        group_id = "fifo_group-{}".format(short_uid())
+        group_id = f"fifo_group-{short_uid()}"
         sent_messages = []
         for i in range(message_count):
             result = sqs_client.send_message(
                 QueueUrl=queue_url,
-                MessageBody="message{}".format(i),
-                MessageDeduplicationId="deduplication{}".format(i),
+                MessageBody=f"message{i}",
+                MessageDeduplicationId=f"deduplication{i}",
                 MessageGroupId=group_id,
             )
             sent_messages.append(result)
@@ -1828,7 +1828,7 @@ class TestSqsProvider:
         for i in range(message_count):
             result = sqs_client.receive_message(QueueUrl=queue_url)
             message = result["Messages"][0]
-            assert message["Body"] == "message{}".format(i)
+            assert message["Body"] == f"message{i}"
             assert message["MD5OfBody"] == sent_messages[i]["MD5OfMessageBody"]
             assert message["MessageId"] == sent_messages[i]["MessageId"]
             sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
@@ -1836,7 +1836,7 @@ class TestSqsProvider:
     @pytest.mark.skip
     def test_create_queue_with_slashes(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
-        queue_name = "queue/{}/".format(short_uid())
+        queue_name = f"queue/{short_uid()}/"
         with pytest.raises(Exception) as e:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
@@ -1931,10 +1931,10 @@ class TestSqsProvider:
     @pytest.mark.skip
     def test_posting_to_fifo_requires_deduplicationid(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
-        fifo_queue_name = "queue-{}.fifo".format(short_uid())
+        fifo_queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
-        message_content = "test{}".format(short_uid())
-        group_id = "fifo_group-{}".format(short_uid())
+        message_content = f"test{short_uid()}"
+        group_id = f"fifo_group-{short_uid()}"
 
         with pytest.raises(Exception) as e:
             sqs_client.send_message(
@@ -1945,7 +1945,7 @@ class TestSqsProvider:
     @pytest.mark.skip
     def test_posting_to_queue_via_queue_name(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         sqs_create_queue(QueueName=queue_name)
 
         result_send = sqs_client.send_message(
@@ -1958,11 +1958,11 @@ class TestSqsProvider:
         self, sqs_client, sqs_create_queue
     ):
         # TODO: behaviour diverges from AWS
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
         invalid_attribute = {
-            "attr1": {"StringValue": "Invalid-{},{}".format(chr(8), chr(11)), "DataType": "String"}
+            "attr1": {"StringValue": f"Invalid-{chr(8)},{chr(11)}", "DataType": "String"}
         }
 
         with pytest.raises(Exception) as e:
@@ -1977,7 +1977,7 @@ class TestSqsProvider:
     ):
         # TODO: lambda triggered dead letter delivery does not preserve the message id
         # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = "dl-queue-{}".format(short_uid())
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
 
