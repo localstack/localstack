@@ -1459,7 +1459,7 @@ class TestSqsProvider:
         # check if the new timeout enables instant re-receiving, to ensure the message was deleted
         result_recv = sqs_client.receive_message(QueueUrl=queue_url)
         assert result_recv["Messages"][0]["MessageId"] == message_id
-        # TODO: is there a better way to check for final deletion?
+
         receipt_handle = result_recv["Messages"][0]["ReceiptHandle"]
         sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
         result_follow_up = sqs_client.receive_message(QueueUrl=queue_url)
@@ -1490,6 +1490,7 @@ class TestSqsProvider:
                 QueueUrl=queue_url, MaxNumberOfMessages=message_count, VisibilityTimeout=0
             )
             i += 1
+            time.sleep(1)
         messages_recv = result_recv["Messages"]
         assert len(messages_recv) == message_count
 
@@ -1549,11 +1550,13 @@ class TestSqsProvider:
         attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])[
             "Attributes"
         ]
-        assert "sqs:SendMessage" in attributes["Policy"]
+        policy = json.loads(attributes["Policy"])
+        assert "sqs:SendMessage" == policy["Statement"][0]["Action"]
         attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["Policy"])[
             "Attributes"
         ]
-        assert "sqs:SendMessage" in attributes["Policy"]
+        policy = json.loads(attributes["Policy"])
+        assert "sqs:SendMessage" == policy["Statement"][0]["Action"]
 
     def test_set_empty_queue_policy(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
@@ -1649,7 +1652,7 @@ class TestSqsProvider:
         e.match("InvalidMessageContents")
 
     def test_dead_letter_queue_config(self, sqs_client, sqs_create_queue):
-        # TODO: not tested against AWS
+
         queue_name = f"queue-{short_uid()}"
         dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
 
