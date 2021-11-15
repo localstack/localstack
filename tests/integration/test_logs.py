@@ -6,7 +6,7 @@ from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.awslambda.lambda_api import func_arn
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
-from localstack.utils.common import now_utc, retry, short_uid
+from localstack.utils.common import poll_condition, now_utc, retry, short_uid
 from tests.integration.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON3
 
 
@@ -35,12 +35,16 @@ class TestCloudWatchLogs:
         logs_client.create_log_group(logGroupName=test_name)
 
         log_groups_between = logs_client.describe_log_groups().get("logGroups", [])
-        assert len(log_groups_before) + 1 == len(log_groups_between)
+        assert poll_condition(
+            lambda: len(log_groups_before) + 1 == len(log_groups_between), timeout=5.0, interval=0.5
+        )
 
         logs_client.delete_log_group(logGroupName=test_name)
 
         log_groups_after = logs_client.describe_log_groups().get("logGroups", [])
-        assert len(log_groups_between) - 1 == len(log_groups_after)
+        assert poll_condition(
+            lambda: len(log_groups_between) - 1 == len(log_groups_after), timeout=5.0, interval=0.5
+        )
         assert len(log_groups_before) == len(log_groups_after)
 
     def test_list_tags_log_group(self, logs_client):
@@ -66,6 +70,11 @@ class TestCloudWatchLogs:
         log_streams_between = logs_client.describe_log_streams(logGroupName=logs_log_group).get(
             "logStreams", []
         )
+        assert poll_condition(
+            lambda: len(log_streams_before) + 1 == len(log_streams_between),
+            timeout=5.0,
+            interval=0.5,
+        )
         assert len(log_streams_before) + 1 == len(log_streams_between)
 
         logs_client.delete_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
@@ -73,7 +82,11 @@ class TestCloudWatchLogs:
         log_streams_after = logs_client.describe_log_streams(logGroupName=logs_log_group).get(
             "logStreams", []
         )
-        assert len(log_streams_between) - 1 == len(log_streams_after)
+        assert poll_condition(
+            lambda: len(log_streams_between) - 1 == len(log_streams_after),
+            timeout=5.0,
+            interval=0.5,
+        )
         assert len(log_streams_before) == len(log_streams_after)
 
     def test_put_events_multi_bytes_msg(self, logs_client, logs_log_group, logs_log_stream):
