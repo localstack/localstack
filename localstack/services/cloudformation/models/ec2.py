@@ -147,7 +147,7 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
         gw_id = self.resolve_refs_recursively(stack_name, props.get("GatewayId"), resources)
         route_tables = client.describe_route_tables()["RouteTables"]
         route_table = ([t for t in route_tables if t["RouteTableId"] == table_id] or [None])[0]
-        subnet_id = props.get("SubnetId")
+        subnet_id = self.resolve_refs_recursively(stack_name, props.get("SubnetId"), resources)
         if route_table:
             associations = route_table.get("Associations", [])
             association = [a for a in associations if a.get("GatewayId") == gw_id]
@@ -342,7 +342,7 @@ class EC2VPC(GenericBaseModel):
                     ]
                 )
                 for rt in resp["RouteTables"]:
-                    for assoc in rt["Associations"]:
+                    for assoc in rt.get("Associations", []):
                         ec2_client.disassociate_route_table(
                             AssociationId=assoc["RouteTableAssociationId"]
                         )
