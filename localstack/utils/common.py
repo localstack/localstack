@@ -1189,6 +1189,14 @@ def is_number(s: Any) -> bool:
         return False
 
 
+def to_number(s: Any) -> Union[int, float]:
+    """Cast the string representation of the given object to a number (int or float), or raise ValueError."""
+    try:
+        return int(str(s))
+    except ValueError:
+        return float(str(s))
+
+
 def is_mac_os() -> bool:
     return localstack.utils.run.is_mac_os()
 

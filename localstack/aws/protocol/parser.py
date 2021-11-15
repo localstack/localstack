@@ -81,7 +81,6 @@ import dateutil.parser
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 
 from localstack.aws.api import HttpRequest
-from localstack.utils.common import to_str
 
 
 def _text_content(func):
@@ -161,7 +160,7 @@ class RequestParser(abc.ABC):
                 # TODO implement proper parsing from the header field
                 # https://awslabs.github.io/smithy/1.0/spec/core/http-traits.html#httpheader-trait
                 # Attention: This differs from the other protocols!
-                # headers = request.get("headers")
+                # headers = request.headers
                 # location_name = shape.serialization.get("locationName")
                 payload = ""
                 raise NotImplementedError
@@ -169,7 +168,7 @@ class RequestParser(abc.ABC):
                 # TODO implement proper parsing from the header fields (prefix)
                 # https://awslabs.github.io/smithy/1.0/spec/core/http-traits.html#httpprefixheaders-trait
                 # Attention: This differs from the other protocols!
-                # headers = request.get("headers")
+                # headers = request.headers
                 # location_name = shape.serialization.get("locationName")
                 payload = ""
                 raise NotImplementedError
@@ -177,7 +176,7 @@ class RequestParser(abc.ABC):
                 # TODO implement proper parsing from the query string
                 # https://awslabs.github.io/smithy/1.0/spec/core/http-traits.html#httpquery-trait
                 # Attention: This differs from the other protocols, even the Query protocol!
-                # body = to_str(request["body"])
+                # body = request.text
                 # location_name = shape.serialization.get("locationName")
                 payload = ""
                 raise NotImplementedError
@@ -185,7 +184,7 @@ class RequestParser(abc.ABC):
                 # TODO implement proper parsing from the URI path
                 # https://awslabs.github.io/smithy/1.0/spec/core/http-traits.html#httplabel-trait
                 # Attention: This differs from the other protocols, even the Query protocol!
-                # path = to_str(request["path"])
+                # path = request.path
                 # location_name = shape.serialization.get("locationName")
                 payload = ""
                 raise NotImplementedError
@@ -275,7 +274,7 @@ class QueryRequestParser(RequestParser):
     NON_FLATTENED_LIST_PREFIX = "member."
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        body = to_str(request["body"])
+        body = request.get_data(as_text=True)
         instance = parse_qs(body, keep_blank_values=True)
         # The query parsing returns a list for each entry in the dict (this is how HTTP handles lists in query params).
         # However, the AWS Query format does not have any duplicates.
@@ -440,7 +439,7 @@ class BaseRestRequestParser(RequestParser):
                 self.operation_lookup[method][request_uri] = operation_model
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        operation = self.operation_lookup[request["method"]][request["path"]]
+        operation = self.operation_lookup[request.method][request.path]
         shape: StructureShape = operation.input_shape
         final_parsed = {}
         if shape is not None:
@@ -466,17 +465,17 @@ class BaseRestRequestParser(RequestParser):
                 final_parsed[payload_member_name] = body
             elif body_shape.type_name in ["string", "blob"]:
                 # This is a stream
-                body = request["body"]
+                body = request.data
                 if isinstance(body, bytes):
                     body = body.decode(self.DEFAULT_ENCODING)
                 final_parsed[payload_member_name] = body
             else:
-                original_parsed = self._initial_body_parse(request["body"])
+                original_parsed = self._initial_body_parse(request.data)
                 final_parsed[payload_member_name] = self._parse_shape(
                     request, body_shape, original_parsed
                 )
         else:
-            original_parsed = self._initial_body_parse(request["body"])
+            original_parsed = self._initial_body_parse(request.data)
             body_parsed = self._parse_shape(request, shape, original_parsed)
             final_parsed.update(body_parsed)
 
@@ -484,7 +483,7 @@ class BaseRestRequestParser(RequestParser):
         self, request: HttpRequest, member_shapes: dict, final_parsed: dict
     ) -> None:
         """Parses all attributes which are not located in the payload."""
-        headers = request["headers"]
+        headers = request.headers
         for name in member_shapes:
             member_shape = member_shapes[name]
             location = member_shape.serialization.get("location")
@@ -524,7 +523,7 @@ class BaseRestRequestParser(RequestParser):
         """
         raise NotImplementedError("_initial_body_parse")
 
-    def _create_event_stream(self, request: dict, shape: Shape) -> any:
+    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> any:
         # TODO handle event streams
         raise NotImplementedError("_create_event_stream")
 
@@ -660,7 +659,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
                 xml_dict[key] = item
         return xml_dict
 
-    def _create_event_stream(self, request: dict, shape: Shape) -> any:
+    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> any:
         # TODO handle event streams
         raise NotImplementedError("_create_event_stream")
 
@@ -735,7 +734,7 @@ class JSONRequestParser(BaseJSONRequestParser):
     """
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        target = request["headers"]["X-Amz-Target"]
+        target = request.headers["X-Amz-Target"]
         _, operation_name = target.split(".")
         operation = self.service.operation_model(operation_name)
         shape = operation.input_shape
@@ -749,7 +748,7 @@ class JSONRequestParser(BaseJSONRequestParser):
             if event_name:
                 parsed = self._handle_event_stream(request, shape, event_name)
             else:
-                parsed = self._handle_json_body(request, request["body"], shape)
+                parsed = self._handle_json_body(request, request.data, shape)
         return parsed
 
     def _handle_event_stream(self, request: HttpRequest, shape: Shape, event_name: str):
@@ -777,7 +776,7 @@ class RestJSONRequestParser(BaseRestRequestParser, BaseJSONRequestParser):
     def _initial_body_parse(self, body_contents: bytes) -> dict:
         return self._parse_body_as_json(body_contents)
 
-    def _create_event_stream(self, request: dict, shape: Shape) -> any:
+    def _create_event_stream(self, request: HttpRequest, shape: Shape) -> any:
         raise NotImplementedError
 
 

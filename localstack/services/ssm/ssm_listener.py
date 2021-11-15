@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-import traceback
 
 from requests.models import Request
 
@@ -90,57 +89,6 @@ def get_params_and_secrets(names):
     return result
 
 
-def get_params_by_path_with_labels(
-    path="", param_filters=None, labels_to_filter=None, recursive=False
-):
-    ssm_client = aws_stack.connect_to_service("ssm")
-    result = {"Parameters": []}
-    filters = [{"Key": "Path", "Values": [path]}]
-    filters.extend(param_filters)
-    if recursive:
-        filters[0]["Option"] = "Recursive"
-
-    def filter_by_label(param, labels):
-        for label in param["Labels"]:
-            if label in labels:
-                return param
-
-    try:
-        # Get all the params in the path
-        params_in_path = ssm_client.describe_parameters(ParameterFilters=filters)["Parameters"]
-
-        # Get parameter with all its labels (for all the parameters in params_in_path)
-        # Labels of the parameters can be obtained by calling get_parameter_history with parameter name
-        all_params = []
-        for params in params_in_path:
-            all_params.extend(ssm_client.get_parameter_history(Name=params["Name"])["Parameters"])
-
-        # Filter the params with matched labels
-        filtered_params = list(
-            filter(
-                lambda param: filter_by_label(param=param, labels=labels_to_filter),
-                all_params,
-            )
-        )
-
-        # Get details of the filtered params to return
-        # This step is needed because get_parameter_history doesn't return parameter's ARN
-        details_of_filtered_params = list(
-            map(
-                lambda param: ssm_client.get_parameter(Name=param["Name"])["Parameter"],
-                filtered_params,
-            )
-        )
-        result["Parameters"].extend(details_of_filtered_params)
-    except Exception as e:
-        LOG.info(
-            "Unable to get SSM parameters by path and filter by labels : %s %s"
-            % (e, traceback.format_exc())
-        )
-        raise e
-    return result
-
-
 def notify_event_subscribers(data, target_header):
     """Publish an EventBridge event to notify subscribers of changes."""
     if not is_api_enabled("events"):
@@ -192,22 +140,7 @@ class ProxyListenerSSM(PersistingProxyListener):
                             secret = get_secrets_information(name, resource_name)
                             if secret is not None:
                                 return secret
-            elif target == ACTION_GET_PARAMS_BY_PATH and data.get("ParameterFilters"):
-                params_filters = data.get("ParameterFilters") or []
-                labels = []
-                for filter in params_filters:
-                    if filter["Key"] == "Label":
-                        labels = filter["Values"]
-                        params_filters.remove(filter)
-                if labels:
-                    path = data.get("Path")
-                    recursive = data.get("Recursive") or False
-                    return get_params_by_path_with_labels(
-                        path=path,
-                        param_filters=params_filters,
-                        labels_to_filter=labels,
-                        recursive=recursive,
-                    )
+
             # send event notifications
             if target in EVENT_BRIDGE_OPERATIONS:
                 notify_event_subscribers(data, target)

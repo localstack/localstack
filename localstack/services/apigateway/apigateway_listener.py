@@ -193,6 +193,14 @@ class ApiInvocationContext:
                 self.auth_info["identity"] = {}
             return self.auth_info["identity"]
 
+    def is_websocket_request(self):
+        upgrade_header = str(self.headers.get("upgrade") or "")
+        return upgrade_header.lower() == "websocket"
+
+    def is_v1(self):
+        """Whether this is an API Gateway v1 request"""
+        return self.apigw_version == ApiGatewayVersion.V1
+
 
 class ProxyListenerApiGateway(ProxyListener):
     def forward_request(self, method, path, data, headers):
@@ -423,6 +431,10 @@ def set_api_id_stage_invocation_path(
     if all(values):
         return invocation_context
 
+    # skip if this is a websocket request
+    if invocation_context.is_websocket_request():
+        return invocation_context
+
     path = invocation_context.path
     headers = invocation_context.headers
 
@@ -600,7 +612,7 @@ def invoke_rest_api_integration_backend(
 
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
-            request_context = get_lambda_event_request_context(invocation_context)
+            request_context = get_event_request_context(invocation_context)
             stage_variables = (
                 get_stage_variables(api_id, stage)
                 if not is_test_invoke_method(method, path)
@@ -699,7 +711,6 @@ def invoke_rest_api_integration_backend(
 
         elif "states:action/" in uri:
             action = uri.split("/")[-1]
-            payload = {}
 
             if APPLICATION_JSON in integration.get("requestTemplates", {}):
                 payload = apply_request_response_templates(
@@ -711,6 +722,9 @@ def invoke_rest_api_integration_backend(
             else:
                 payload = json.loads(data.decode("utf-8"))
             client = aws_stack.connect_to_service("stepfunctions")
+
+            if isinstance(payload.get("input"), dict):
+                payload["input"] = json.dumps(payload["input"])
 
             # Hot fix since step functions local package responses: Unsupported Operation: 'StartSyncExecution'
             method_name = (
@@ -724,9 +738,7 @@ def invoke_rest_api_integration_backend(
                 LOG.error(msg)
                 return make_error_response(msg, 400)
 
-            result = method(
-                **payload,
-            )
+            result = method(**payload)
             result = json_safe({k: result[k] for k in result if k not in "ResponseMetadata"})
             response = requests_response(
                 content=result,
@@ -903,7 +915,7 @@ def get_stage_variables(api_id: str, stage: str) -> Dict[str, str]:
     return response.get("variables")
 
 
-def get_lambda_event_request_context(invocation_context: ApiInvocationContext):
+def get_event_request_context(invocation_context: ApiInvocationContext):
     method = invocation_context.method
     path = invocation_context.path
     headers = invocation_context.headers

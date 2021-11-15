@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from localstack.services.apigateway import apigateway_listener
@@ -76,18 +77,34 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertEqual(None, result)
 
 
-class TestVelocityUtil(unittest.TestCase):
-    def test_render_template_values(self):
-        util = templating.VelocityUtil()
+def test_render_template_values():
+    util = templating.VelocityUtil()
 
-        encoded = util.urlEncode("x=a+b")
-        self.assertEqual("x%3Da%2Bb", encoded)
+    encoded = util.urlEncode("x=a+b")
+    assert encoded == "x%3Da%2Bb"
 
-        decoded = util.urlDecode("x=a+b")
-        self.assertEqual("x=a b", decoded)
+    decoded = util.urlDecode("x=a+b")
+    assert decoded == "x=a b"
 
-        escaped = util.escapeJavaScript("it's")
-        self.assertEqual(r"it\'s", escaped)
+    escape_tests = (
+        ("it's", '"it\'s"'),
+        ("0010", "10"),
+        ("true", "true"),
+        ("True", '"True"'),
+        ("1.021", "1.021"),
+        ("'''", "\"'''\""),
+        ('""', '""'),
+        ('"""', '"\\"\\"\\""'),
+        ('{"foo": 123}', '{"foo": 123}'),
+        ('{"foo"": 123}', '"{\\"foo\\"\\": 123}"'),
+        (1, "1"),
+        (True, "true"),
+    )
+    for string, expected in escape_tests:
+        escaped = util.escapeJavaScript(string)
+        assert escaped == expected
+        # we should be able to json.loads in all of the cases!
+        json.loads(escaped)
 
 
 class TestJSONPatch(unittest.TestCase):

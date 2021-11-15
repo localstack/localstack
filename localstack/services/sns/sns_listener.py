@@ -873,16 +873,22 @@ def evaluate_numeric_condition(conditions, value):
 
 
 def evaluate_exists_condition(conditions, message_attributes, criteria):
-    # filtering should not match any messages if the exists is set to false,As per aws docs
-    # https://docs.aws.amazon.com/sns/latest/dg/sns-subscription-filter-policies.html
+    # support for exists: false was added in april 2021
+    # https://aws.amazon.com/about-aws/whats-new/2021/04/amazon-sns-grows-the-set-of-message-filtering-operators/
     if conditions:
-        return bool(message_attributes.get(criteria))
-    return False
+        return message_attributes.get(criteria) is not None
+    else:
+        return message_attributes.get(criteria) is None
 
 
 def evaluate_condition(value, condition, message_attributes, criteria):
     if type(condition) is not dict:
         return value == condition
+    elif condition.get("exists") is not None:
+        return evaluate_exists_condition(condition.get("exists"), message_attributes, criteria)
+    elif value is None:
+        # the remaining conditions require the value to not be None
+        return False
     elif condition.get("anything-but"):
         return value not in condition.get("anything-but")
     elif condition.get("prefix"):
@@ -890,9 +896,6 @@ def evaluate_condition(value, condition, message_attributes, criteria):
         return value.startswith(prefix)
     elif condition.get("numeric"):
         return evaluate_numeric_condition(condition.get("numeric"), value)
-    elif condition.get("exists"):
-        return evaluate_exists_condition(condition.get("exists"), message_attributes, criteria)
-
     return False
 
 
@@ -900,7 +903,7 @@ def evaluate_filter_policy_conditions(conditions, attribute, message_attributes,
     if type(conditions) is not list:
         conditions = [conditions]
 
-    if attribute["Type"] == "String.Array":
+    if attribute is not None and attribute["Type"] == "String.Array":
         values = ast.literal_eval(attribute["Value"])
         for value in values:
             for condition in conditions:
@@ -908,7 +911,8 @@ def evaluate_filter_policy_conditions(conditions, attribute, message_attributes,
                     return True
     else:
         for condition in conditions:
-            if evaluate_condition(attribute["Value"], condition, message_attributes, criteria):
+            value = attribute["Value"] if attribute is not None else None
+            if evaluate_condition(value, condition, message_attributes, criteria):
                 return True
 
     return False
@@ -921,8 +925,6 @@ def check_filter_policy(filter_policy, message_attributes):
     for criteria in filter_policy:
         conditions = filter_policy.get(criteria)
         attribute = message_attributes.get(criteria)
-        if attribute is None:
-            return False
 
         if (
             evaluate_filter_policy_conditions(conditions, attribute, message_attributes, criteria)

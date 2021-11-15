@@ -538,6 +538,30 @@ class SNSTests(unittest.TestCase):
                 },
                 True,
             ),
+            (
+                "exists with existing attribute",
+                {"field": [{"exists": True}]},
+                {"field": {"Type": "String", "Value": "anything"}},
+                True,
+            ),
+            (
+                "exists without existing attribute",
+                {"field": [{"exists": True}]},
+                {"other_field": {"Type": "String", "Value": "anything"}},
+                False,
+            ),
+            (
+                "does not exists without existing attribute",
+                {"field": [{"exists": False}]},
+                {"other_field": {"Type": "String", "Value": "anything"}},
+                True,
+            ),
+            (
+                "does not exists with existing attribute",
+                {"field": [{"exists": False}]},
+                {"field": {"Type": "String", "Value": "anything"}},
+                False,
+            ),
         ]
 
         for test in test_data:
