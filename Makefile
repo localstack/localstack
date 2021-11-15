@@ -127,6 +127,7 @@ docker-push-master: 	  ## Push Docker image to registry IF we are currently on t
 	  docker push $(IMAGE_NAME_FULL):latest-$(PLATFORM) \
 	)
 
+
 MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
 docker-create-push-manifests:	## Create and push manifests for a docker image (default: full)
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
@@ -141,7 +142,8 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 			docker manifest create $(MANIFEST_IMAGE_NAME):latest --amend $(MANIFEST_IMAGE_NAME):latest-amd64 --amend $(MANIFEST_IMAGE_NAME):latest-arm64 && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
-			docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) --amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 --amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
+				echo "Only pushing tag 'latest' as version has not changed.") || \
+			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) --amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 --amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
 				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG))) && \
 		docker manifest push $(MANIFEST_IMAGE_NAME):latest \
 	)
