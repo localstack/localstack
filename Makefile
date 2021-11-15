@@ -1,4 +1,4 @@
-IMAGE_NAME_BASE ?= localstack/java-maven-node-python
+IMAGE_NAME ?= localstack/localstack
 IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_NAME_FULL ?= localstack/localstack-full
 IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
