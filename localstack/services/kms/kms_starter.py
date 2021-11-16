@@ -10,7 +10,7 @@ from localstack.services.infra import (
     start_proxy_for_service,
 )
 from localstack.services.install import INSTALL_PATH_KMS_BINARY_PATTERN
-from localstack.utils.common import get_arch, get_free_tcp_port, wait_for_port_open
+from localstack.utils.common import get_free_tcp_port, get_os, wait_for_port_open
 
 LOG = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
 def start_kms_local(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_KMS
     backend_port = get_free_tcp_port()
-    kms_binary = INSTALL_PATH_KMS_BINARY_PATTERN.replace("<arch>", get_arch())
+    kms_binary = INSTALL_PATH_KMS_BINARY_PATTERN.replace("<arch>", get_os())
     log_startup_message("KMS")
     start_proxy_for_service("kms", port, backend_port, update_listener)
     env_vars = {

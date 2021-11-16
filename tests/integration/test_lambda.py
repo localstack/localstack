@@ -71,7 +71,6 @@ from localstack.utils.testutil import (
     get_lambda_log_events,
 )
 
-from .fixtures import only_in_alpine
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -421,7 +420,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             self.assertIn("ErrorCode", msg_attrs)
             self.assertIn("ErrorMessage", msg_attrs)
 
-        retry(receive_dlq, retries=8, sleep=2)
+        retry(receive_dlq, retries=10, sleep=2)
 
         # update DLQ config
         lambda_client.update_function_configuration(FunctionName=lambda_name, DeadLetterConfig={})
@@ -862,7 +861,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         lambda_client.create_event_source_mapping(EventSourceArn=arn, FunctionName=function_name)
 
         def process_records(record):
-            print("Processing {}".format(record))
+            assert record
 
         stream_name = "test-foobar"
         aws_stack.create_kinesis_stream(stream_name, delete=True)
@@ -1689,7 +1688,7 @@ class TestGolangRuntimes(LambdaTestBase):
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service("lambda")
 
-    @only_in_alpine
+    @pytest.mark.skip(reason="TODO examples are not yet cross-compiled")
     def test_golang_lambda_running_locally(self):
         if use_docker():
             return
@@ -2178,7 +2177,7 @@ def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     lambda_client.create_event_source_mapping(EventSourceArn=arn, FunctionName=function_name)
 
     def process_records(record):
-        print("Processing {}".format(record))
+        assert record
 
     aws_stack.create_kinesis_stream(stream_name, delete=True)
     kinesis_connector.listen_to_kinesis(

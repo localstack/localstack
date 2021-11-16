@@ -11,7 +11,6 @@ import pytest
 
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import (
     clone,
     load_file,
@@ -715,7 +714,7 @@ class IntegrationTest(unittest.TestCase):
         retry(check_invocation, retries=14, sleep=5)
 
 
-@pytest.mark.xfail(in_ci(), reason="This test is notoriously flaky in CI environments")
+@pytest.mark.skip(reason="This test is notoriously flaky in CI environments")  # FIXME
 def test_sqs_batch_lambda_forward(lambda_client, sqs_client, create_lambda_function):
 
     lambda_name_queue_batch = "lambda_queue_batch-%s" % short_uid()

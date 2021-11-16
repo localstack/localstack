@@ -76,7 +76,7 @@ def check_stepfunctions(expect_shutdown=False, print_error=False):
     out = None
     try:
         # check Kinesis
-        wait_for_port_open(config.LOCAL_PORT_STEPFUNCTIONS)
+        wait_for_port_open(config.LOCAL_PORT_STEPFUNCTIONS, sleep_time=2)
         endpoint_url = f"http://127.0.0.1:{config.LOCAL_PORT_STEPFUNCTIONS}"
         out = aws_stack.connect_to_service(
             service_name="stepfunctions", endpoint_url=endpoint_url

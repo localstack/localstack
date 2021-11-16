@@ -6,7 +6,7 @@ from typing import Dict, List
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.common import first_char_to_upper
+from localstack.utils.common import convert_to_printable_chars, first_char_to_upper
 
 LOG = logging.getLogger(__name__)
 
@@ -70,6 +70,8 @@ def _send_to_dead_letter_queue(source_type: str, source_arn: str, dlq_arn: str, 
                 result_code,
                 error,
             )
+            if "InvalidMessageContents" in str(error):
+                msg += f" - messages: {messages}"
             LOG.info(msg)
             raise Exception(msg)
     elif ":sns:" in dlq_arn:
@@ -132,6 +134,10 @@ def _prepare_messages_to_dlq(source_arn: str, event: Dict, error) -> List[Dict]:
                     "MessageAttributes": custom_attrs,
                 }
             )
+    # make sure we only have printable strings in the message attributes
+    for message in messages:
+        if message.get("MessageAttributes"):
+            message["MessageAttributes"] = convert_to_printable_chars(message["MessageAttributes"])
     return messages
 
 

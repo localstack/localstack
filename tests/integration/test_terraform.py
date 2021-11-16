@@ -6,6 +6,7 @@ import unittest
 import pytest
 from packaging import version
 
+from localstack.services.install import TERRAFORM_BIN, install_terraform
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
 
@@ -24,10 +25,10 @@ INIT_LOCK = threading.RLock()
 
 
 def check_terraform_version():
-    if not is_command_available("terraform"):
+    if not is_command_available(TERRAFORM_BIN):
         return False, None
 
-    ver_string = run("terraform -version")
+    ver_string = run([TERRAFORM_BIN, "-version"])
     ver_string = re.search(r"v(\d+\.\d+\.\d+)", ver_string).group(1)
     if ver_string is None:
         return False, None
@@ -37,38 +38,33 @@ def check_terraform_version():
 class TestTerraform(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        available, version = check_terraform_version()
-
-        if not available:
-            msg = "could not find a compatible version of terraform"
-            if version:
-                msg += f" (version = {version})"
-            else:
-                msg += " (command not found)"
-
-            return pytest.skip(msg)
-
         with INIT_LOCK:
-            run("cd %s; terraform apply -input=false tfplan" % (cls.get_base_dir()))
+            available, version = check_terraform_version()
+
+            if not available:
+                msg = "could not find a compatible version of terraform"
+                if version:
+                    msg += f" (version = {version})"
+                else:
+                    msg += " (command not found)"
+
+                return pytest.skip(msg)
+
+            run("cd %s; %s apply -input=false tfplan" % (cls.get_base_dir(), TERRAFORM_BIN))
 
     @classmethod
     def tearDownClass(cls):
-        run("cd %s; terraform destroy -auto-approve" % (cls.get_base_dir()))
+        run("cd %s; %s destroy -auto-approve" % (cls.get_base_dir(), TERRAFORM_BIN))
 
     @classmethod
     def init_async(cls):
-        available, ver_string = check_terraform_version()
-        if not available:
-            print(
-                "Skipping Terraform test init as version check failed (version: '%s')" % ver_string
-            )
-            return
-
         def _run(*args):
             with INIT_LOCK:
+                install_terraform()
+
                 base_dir = cls.get_base_dir()
                 if not os.path.exists(os.path.join(base_dir, ".terraform", "plugins")):
-                    run("cd %s; terraform init -input=false" % base_dir)
+                    run("cd %s; %s init -input=false" % (base_dir, TERRAFORM_BIN))
                 # remove any cache files from previous runs
                 for tf_file in [
                     "tfplan",
@@ -77,12 +73,12 @@ class TestTerraform(unittest.TestCase):
                 ]:
                     rm_rf(os.path.join(base_dir, tf_file))
                 # create TF plan
-                run("cd %s; terraform plan -out=tfplan -input=false" % base_dir)
+                run("cd %s; %s plan -out=tfplan -input=false" % (base_dir, TERRAFORM_BIN))
 
         start_worker_thread(_run)
 
     @classmethod
-    def get_base_dir(*args):
+    def get_base_dir(cls):
         return os.path.join(os.path.dirname(__file__), "terraform")
 
     def test_bucket_exists(self):

@@ -1,7 +1,0 @@
-FROM localstack/localstack
-
-RUN rm -rf localstack/infra/elasticsearch localstack/dashboard/web
-
-RUN touch localstack/infra/.light-version
-
-ENV START_WEB=0
