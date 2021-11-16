@@ -1,4 +1,6 @@
+import base64
 import copy
+import hashlib
 import inspect
 import logging
 import random
@@ -8,6 +10,9 @@ import threading
 import time
 from queue import Empty, PriorityQueue
 from typing import Dict, List, NamedTuple, Optional, Set
+
+from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
+from moto.sqs.models import Message as MotoMessage
 
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sqs import (
@@ -626,7 +631,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         return SendMessageResult(
             MessageId=message["MessageId"],
             MD5OfMessageBody=message["MD5OfBody"],
-            MD5OfMessageAttributes=None,  # TODO
+            MD5OfMessageAttributes=message.get("MD5OfMessageAttributes"),  # TODO
             SequenceNumber=None,  # TODO
             MD5OfMessageSystemAttributes=None,  # TODO
         )
@@ -699,7 +704,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MD5OfBody=md5(message_body),
             Body=message_body,
             Attributes=self._create_message_attributes(context, message_system_attributes),
-            MD5OfMessageAttributes=None,  # TODO (see Message.attribute_md5 from moto)
+            MD5OfMessageAttributes=_create_message_attribute_hash(message_attributes),
             MessageAttributes=message_attributes,
         )
 
@@ -747,7 +752,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                         for k, v in msg["MessageAttributes"].items()
                         if k in message_attribute_names
                     }
-                msg["MD5OfMessageAttributes"] = ""  # TODO
+                # TODO: why is this called even if we receive "All" attributes?
+                msg["MD5OfMessageAttributes"] = _create_message_attribute_hash(
+                    msg["MessageAttributes"]
+                )
             else:
                 del msg["MessageAttributes"]
 
@@ -946,3 +954,32 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 raise BatchEntryIdsNotDistinct()
             else:
                 visited.add(entry["Id"])
+
+
+# Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
+def _create_message_attribute_hash(message_attributes):
+
+    hash = hashlib.md5()
+
+    for attrName in sorted(message_attributes.keys()):
+        MotoMessage.validate_attribute_name(attrName)
+        attr_value = message_attributes[attrName]
+        # Encode name
+        MotoMessage.update_binary_length_and_value(hash, MotoMessage.utf8(attrName))
+        # Encode type
+        MotoMessage.update_binary_length_and_value(hash, MotoMessage.utf8(attr_value["DataType"]))
+
+        if attr_value.get("StringValue"):
+            hash.update(bytearray([STRING_TYPE_FIELD_INDEX]))
+            MotoMessage.update_binary_length_and_value(
+                hash, MotoMessage.utf8(attr_value.get("StringValue"))
+            )
+        elif attr_value.get("BinaryValue"):
+            hash.update(bytearray([BINARY_TYPE_FIELD_INDEX]))
+            decoded_binary_value = base64.b64decode(attr_value.get("BinaryValue"))
+            MotoMessage.update_binary_length_and_value(hash, decoded_binary_value)
+        # string_list_value, binary_list_value type is not implemented, reserved for the future use.
+        # See https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_MessageAttributeValue.html
+    return hash.hexdigest()
+
+    pass
