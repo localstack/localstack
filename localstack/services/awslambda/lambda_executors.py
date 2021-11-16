@@ -14,8 +14,6 @@ import uuid
 from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import boto3
-
 from localstack import config
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
@@ -41,6 +39,7 @@ from localstack.utils.common import (
     CaptureOutput,
     get_all_subclasses,
     get_free_tcp_port,
+    in_docker,
     json_safe,
     last_index_of,
     long_uid,
@@ -791,6 +790,16 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         lambda_docker_ip = DOCKER_CLIENT.get_container_ip(container_info.name)
 
+        # if we fail to get a valid docker ip_address, or we are running in process, fall back to exec in container
+        if (not in_docker()) or (not lambda_docker_ip) or lambda_docker_ip.isspace():
+            return DOCKER_CLIENT.exec_in_container(
+                container_name_or_id=container_info.name,
+                command=inv_context.lambda_command,
+                interactive=True,
+                env_vars=env_vars,
+                stdin=stdin,
+            )
+
         inv_result = self.invoke_lambda(lambda_function, inv_context, lambda_docker_ip)
         return (inv_result.result, inv_result.log_output)
 
@@ -802,12 +811,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     ) -> InvocationResult:
         full_url = f"http://{lambda_docker_ip}:9001"
 
-        client = boto3.client(
-            service_name="lambda",
-            region_name=config.DEFAULT_REGION,
-            endpoint_url=full_url,
-        )
-
+        client = aws_stack.connect_to_service("lambda", endpoint_url=full_url)
         event = inv_context.event or "{}"
 
         response = client.invoke(
@@ -817,7 +821,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LogType="Tail",
         )
 
-        log_output = base64.b64decode(response["LogResult"]).decode("utf-8")
+        log_output = base64.b64decode(response.get("LogResult") or b"").decode("utf-8")
         result = response["Payload"].read().decode("utf-8")
 
         if "FunctionError" in response:
