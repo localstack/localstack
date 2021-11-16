@@ -10,7 +10,7 @@ from localstack.utils.aws.request_context import extract_region_from_headers
 
 
 def get_region(request: HttpRequest) -> str:
-    return extract_region_from_headers(request["headers"])
+    return extract_region_from_headers(request.headers)
 
 
 def get_account_id(_: HttpRequest) -> str:
@@ -49,8 +49,7 @@ class AwsApiListener(ProxyListener):
         # TODO: creating response objects in this way (re-using the requests library instead of an HTTP server
         #  framework) is a bit ugly, but it's the way that the edge proxy expects them.
         resp = Response()
-        resp._content = response["body"]
-        resp.status_code = response["status_code"]
-        resp.headers.update(response["headers"])
-        resp.headers["Content-Length"] = str(len(response["body"]))
+        resp._content = response.get_data()
+        resp.status_code = response.status_code
+        resp.headers.update(response.headers)
         return resp

@@ -9,7 +9,7 @@ import pytest
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
-from localstack.utils.common import is_alpine, short_uid
+from localstack.utils.common import short_uid
 
 if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
@@ -370,9 +370,3 @@ def create_secret(secretsmanager_client):
 
     for item in items:
         secretsmanager_client.delete_secret(SecretId=item)
-
-
-only_in_alpine = pytest.mark.skipif(
-    not is_alpine(),
-    reason="test only applicable if run in alpine",
-)

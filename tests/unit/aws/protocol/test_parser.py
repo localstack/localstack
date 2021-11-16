@@ -204,18 +204,19 @@ def _botocore_parser_integration_test(
     service = load_service(service)
     # Use the serializer from botocore to serialize the request params
     serializer = create_serializer(service.protocol)
+
     serialized_request = serializer.serialize_to_request(kwargs, service.operation_model(action))
-    serialized_request["path"] = request_uri
-    serialized_request["method"] = method
-    serialized_request["headers"] = headers
+    body = serialized_request["body"]
 
     if service.protocol in ["query", "ec2"]:
         # Serialize the body as query parameter
-        serialized_request["body"] = urlencode(serialized_request["body"])
+        body = urlencode(serialized_request["body"])
 
     # Use our parser to parse the serialized body
     parser = create_parser(service)
-    operation_model, parsed_request = parser.parse(serialized_request)
+    operation_model, parsed_request = parser.parse(
+        HttpRequest(method=method or "GET", path=request_uri or "", headers=headers, body=body)
+    )
 
     # Check if the result is equal to the given "expected" dict or the kwargs (if "expected" has not been set)
     assert parsed_request == (expected or kwargs)

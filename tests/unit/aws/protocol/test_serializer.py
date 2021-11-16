@@ -47,7 +47,8 @@ def _botocore_serializer_integration_test(
     # Use the parser from botocore to parse the serialized response
     response_parser = create_parser(service.protocol)
     parsed_response = response_parser.parse(
-        serialized_response, service.operation_model(action).output_shape
+        serialized_response.to_readonly_response_dict(),
+        service.operation_model(action).output_shape,
     )
 
     # Check if the result is equal to the initial response params
@@ -101,7 +102,8 @@ def _botocore_error_serializer_integration_test(
     # Use the parser from botocore to parse the serialized response
     response_parser: ResponseParser = create_parser(service.protocol)
     parsed_response = response_parser.parse(
-        serialized_response, service.operation_model(action).output_shape
+        serialized_response.to_readonly_response_dict(),
+        service.operation_model(action).output_shape,
     )
 
     # Check if the result is equal to the initial response params
