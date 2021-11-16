@@ -6,6 +6,7 @@ import glob
 import hashlib
 import inspect
 import io
+import itertools
 import json
 import logging
 import os
@@ -71,6 +72,21 @@ CACHE = {}
 
 # lock for creating certificate files
 SSL_CERT_LOCK = threading.RLock()
+
+# regular expression for unprintable characters
+# Based on https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
+#     #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
+_unprintables = (
+    range(0x00, 0x09),
+    range(0x0A, 0x0A),
+    range(0x0B, 0x0D),
+    range(0x0E, 0x20),
+    range(0xD800, 0xE000),
+    range(0xFFFE, 0x10000),
+)
+REGEX_UNPRINTABLE_CHARS = re.compile(
+    f"[{re.escape(''.join(map(chr, itertools.chain(*_unprintables))))}]"
+)
 
 # user of the currently running process
 CACHED_USER = None
@@ -1984,6 +2000,21 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
 
 def canonicalize_bool_to_str(val: bool) -> str:
     return "true" if str(val).lower() == "true" else "false"
+
+
+def convert_to_printable_chars(value: Union[List, Dict, str]) -> str:
+    """Removes all unprintable characters from the given string."""
+    if isinstance(value, (dict, list)):
+
+        def _convert(obj, **kwargs):
+            if isinstance(obj, str):
+                return convert_to_printable_chars(obj)
+            return obj
+
+        return recurse_object(value, _convert)
+
+    result = REGEX_UNPRINTABLE_CHARS.sub("", value)
+    return result
 
 
 # Code that requires util functions from above
