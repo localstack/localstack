@@ -208,8 +208,8 @@ def sqs():
     )
 
 
-@aws_provider(api="sqs", name="custom")
-def sqs_custom():
+@aws_provider(api="sqs", name="asf")
+def sqs_asf():
     from localstack.aws.proxy import AwsApiListener
     from localstack.services.sqs.provider import SqsProvider
 

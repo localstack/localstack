@@ -17,7 +17,7 @@ from localstack.services.generic_proxy import (
 from localstack.services.messages import Request, Response
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.common import get_free_tcp_port, get_service_protocol, short_uid, to_str
+from localstack.utils.common import get_free_tcp_port, short_uid, to_str
 
 
 class TestEdgeAPI:
@@ -157,19 +157,18 @@ class TestEdgeAPI:
         assert json.loads(to_str(response.content)) == expected
         proxy.stop()
 
-    def test_invoke_sns_sqs_integration_using_edge_port(self):
-        edge_port = config.get_edge_port_http()
+    def test_invoke_sns_sqs_integration_using_edge_port(
+        self, sqs_create_queue, sqs_client, sns_client, sns_create_topic
+    ):
+        topic_name = f"topic-{short_uid()}"
+        queue_name = f"queue-{short_uid()}"
+
         region_original = os.environ.get("DEFAULT_REGION")
         os.environ["DEFAULT_REGION"] = "us-southeast-2"
-        edge_url = "%s://localhost:%s" % (get_service_protocol(), edge_port)
-        sns_client = aws_stack.create_external_boto_client("sns", endpoint_url=edge_url)
-        sqs_client = aws_stack.create_external_boto_client("sqs", endpoint_url=edge_url)
 
-        topic = sns_client.create_topic(Name="test_topic3")
+        topic = sns_client.create_topic(Name=topic_name)
         topic_arn = topic["TopicArn"]
-        test_queue = sqs_client.create_queue(QueueName="test_queue3")
-
-        queue_url = test_queue["QueueUrl"]
+        queue_url = sqs_create_queue(QueueName=queue_name)
         sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])
         sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_url)
         sns_client.publish(TargetArn=topic_arn, Message="Test msg")

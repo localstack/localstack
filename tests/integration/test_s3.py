@@ -1831,6 +1831,7 @@ class TestS3(unittest.TestCase):
                 QueueUrl=queue_url,
                 AttributeNames=["AWSTraceHeader"],
                 MessageAttributeNames=["All"],
+                VisibilityTimeout=0,
             )
 
             self.assertEqual(
@@ -2440,9 +2441,7 @@ class TestS3(unittest.TestCase):
         return open(filename, "r")
 
     def _create_test_queue(self):
-        queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)[
-            "QueueUrl"
-        ]
+        queue_url = self.sqs_client.create_queue(QueueName=f"queue-{short_uid()}")["QueueUrl"]
         queue_attributes = self.sqs_client.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
         )

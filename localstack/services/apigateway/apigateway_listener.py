@@ -804,11 +804,15 @@ def invoke_rest_api_integration_backend(
                 template = integration["requestTemplates"][APPLICATION_JSON]
                 account_id, queue = uri.split("/")[-2:]
                 region_name = uri.split(":")[3]
-
-                new_request = "%s&QueueName=%s" % (
-                    aws_stack.render_velocity_template(template, data),
-                    queue,
-                )
+                if "GetQueueUrl" in template or "CreateQueue" in template:
+                    new_request = (
+                        f"{aws_stack.render_velocity_template(template, data)}&QueueName={queue}"
+                    )
+                else:
+                    queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
+                    new_request = (
+                        f"{aws_stack.render_velocity_template(template, data)}&QueueUrl={queue_url}"
+                    )
                 headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
 
                 url = urljoin(config.TEST_SQS_URL, "%s/%s" % (TEST_AWS_ACCOUNT_ID, queue))

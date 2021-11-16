@@ -493,7 +493,8 @@ class EventsTest(unittest.TestCase):
 
         queue_url = self.sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         fifo_queue_url = self.sqs_client.create_queue(
-            QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"}
+            QueueName=fifo_queue_name,
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
         )["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
         fifo_queue_arn = aws_stack.sqs_queue_arn(fifo_queue_name)
