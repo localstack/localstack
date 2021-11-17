@@ -1442,6 +1442,10 @@ def str_remove(string, index, end_index=None):
     return "%s%s" % (string[:index], string[end_index:])
 
 
+def str_startswith_ignore_case(value: str, prefix: str) -> bool:
+    return value[: len(prefix)].lower() == prefix.lower()
+
+
 def last_index_of(array, value):
     """Return the last index of `value` in the given list, or -1 if it does not exist."""
     result = -1

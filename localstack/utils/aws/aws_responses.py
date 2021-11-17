@@ -26,6 +26,7 @@ from localstack.utils.common import (
     json_safe,
     replace_response_content,
     short_uid,
+    str_startswith_ignore_case,
     to_bytes,
     to_str,
     truncate,
@@ -223,6 +224,11 @@ def is_json_request(req_headers: Dict) -> bool:
     ctype = req_headers.get("Content-Type", "")
     accept = req_headers.get("Accept", "")
     return "json" in ctype or "json" in accept
+
+
+def is_invalid_html_response(headers, content) -> bool:
+    content_type = headers.get("Content-Type", "")
+    return "text/html" in content_type and not str_startswith_ignore_case(content, "<!doctype html")
 
 
 def raise_exception_if_error_response(response):

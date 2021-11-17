@@ -39,7 +39,11 @@ from localstack.services.s3.s3_utils import (
 )
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import create_sqs_system_attributes, requests_response
+from localstack.utils.aws.aws_responses import (
+    create_sqs_system_attributes,
+    is_invalid_html_response,
+    requests_response,
+)
 from localstack.utils.common import (
     clone,
     get_service_protocol,
@@ -1516,9 +1520,8 @@ class ProxyListenerS3(PersistingProxyListener):
                 # fix content-type: https://github.com/localstack/localstack/issues/618
                 #                   https://github.com/localstack/localstack/issues/549
                 #                   https://github.com/localstack/localstack/issues/854
-                if "text/html" in response.headers.get(
-                    "Content-Type", ""
-                ) and not response_content_str.lower().startswith("<!doctype html"):
+
+                if is_invalid_html_response(response.headers, response_content_str):
                     response.headers["Content-Type"] = "application/xml; charset=utf-8"
 
                 reset_content_length = True
