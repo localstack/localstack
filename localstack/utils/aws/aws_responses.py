@@ -226,9 +226,9 @@ def is_json_request(req_headers: Dict) -> bool:
     return "json" in ctype or "json" in accept
 
 
-def is_html_response(headers, content) -> bool:
+def is_invalid_html_response(headers, content) -> bool:
     content_type = headers.get("Content-Type", "")
-    return "text/html" in content_type and str_startswith_ignore_case(content, "<!doctype html")
+    return "text/html" in content_type and not str_startswith_ignore_case(content, "<!doctype html")
 
 
 def raise_exception_if_error_response(response):
