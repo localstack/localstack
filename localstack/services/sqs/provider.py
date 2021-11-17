@@ -959,6 +959,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
 def _create_message_attribute_hash(message_attributes):
 
+    if not isinstance(message_attributes, dict):
+        return
     hash = hashlib.md5()
 
     for attrName in sorted(message_attributes.keys()):
