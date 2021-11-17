@@ -738,23 +738,6 @@ def ret304_on_etag(data, headers, response):
             response._content = ""
 
 
-def fix_etag_for_multipart(data, headers, response):
-    # Fix for https://github.com/localstack/localstack/issues/1978
-    if headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD:
-        try:
-            if b"chunk-signature=" not in to_bytes(data):
-                return
-            correct_hash = md5(strip_chunk_signatures(data))
-            tags = r"<ETag>%s</ETag>"
-            pattern = r"(&#34;)?([^<&]+)(&#34;)?"
-            replacement = r"\g<1>%s\g<3>" % correct_hash
-            response._content = re.sub(tags % pattern, tags % replacement, to_str(response.content))
-            if response.headers.get("ETag"):
-                response.headers["ETag"] = re.sub(pattern, replacement, response.headers["ETag"])
-        except Exception:
-            pass
-
-
 def remove_xml_preamble(response):
     """Removes <?xml ... ?> from a response content"""
     response._content = re.sub(r"^<\?[^\?]+\?>", "", to_str(response._content))
@@ -848,25 +831,6 @@ def set_replication(bucket_name, replication):
 # -------------
 
 
-def strip_chunk_signatures(data):
-    # For clients that use streaming v4 authentication, the request contains chunk signatures
-    # in the HTTP body (see example below) which we need to strip as moto cannot handle them
-    #
-    # 17;chunk-signature=6e162122ec4962bea0b18bc624025e6ae4e9322bdc632762d909e87793ac5921
-    # <payload data ...>
-    # 0;chunk-signature=927ab45acd82fc90a3c210ca7314d59fedc77ce0c914d79095f8cc9563cf2c70
-    data_new = ""
-    if data is not None:
-        data_new = re.sub(
-            b"(^|\r\n)[0-9a-fA-F]+;chunk-signature=[0-9a-f]{64}(\r\n)(\r\n$)?",
-            b"",
-            to_bytes(data),
-            flags=re.MULTILINE | re.DOTALL,
-        )
-
-    return data_new
-
-
 def is_bucket_available(bucket_name):
     body = {"Code": "200"}
     exists, code = bucket_exists(bucket_name)
@@ -900,7 +864,7 @@ def bucket_exists(bucket_name):
 
 
 def check_content_md5(data, headers):
-    actual = md5(strip_chunk_signatures(data))
+    actual = md5(data)
     try:
         md5_header = headers["Content-MD5"]
         if not is_base64(md5_header):
@@ -1257,15 +1221,6 @@ class ProxyListenerS3(PersistingProxyListener):
             # contain a valid <LocationConstraint>, or not be present at all in the body.
             modified_data = b""
 
-        # If this request contains streaming v4 authentication signatures, strip them from the message
-        # Related isse: https://github.com/localstack/localstack/issues/98
-        # TODO: can potentially be removed after this fix in moto: https://github.com/spulec/moto/pull/4201
-        is_streaming_payload = headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD
-        if is_streaming_payload:
-            modified_data = strip_chunk_signatures(not_none_or(modified_data, data))
-            headers["Content-Length"] = headers.get("x-amz-decoded-content-length")
-            headers.pop(CONTENT_SHA256_HEADER)
-
         # POST requests to S3 may include a "${filename}" placeholder in the
         # key, which should be replaced with an actual file name before storing.
         if method == "POST":
@@ -1487,7 +1442,6 @@ class ProxyListenerS3(PersistingProxyListener):
             fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
             fix_metadata_key_underscores(response=response)
             fix_creation_date(method, path, response=response)
-            fix_etag_for_multipart(data, headers, response)
             ret304_on_etag(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
             fix_delimiter(data, headers, response)
