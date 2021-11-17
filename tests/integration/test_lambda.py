@@ -9,7 +9,6 @@ from datetime import datetime
 from io import BytesIO
 
 import pytest
-import requests
 from botocore.exceptions import ClientError
 
 from localstack import config
@@ -43,14 +42,20 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
-from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.services.install import (
+    GO_RUNTIME_VERSION,
+    INSTALL_PATH_LOCALSTACK_FAT_JAR,
+    download_and_extract,
+)
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import lambda_function_arn
 from localstack.utils.common import (
     cp_r,
     download,
+    get_arch,
     get_free_tcp_port,
+    get_os,
     get_service_protocol,
     load_file,
     mkdir,
@@ -110,7 +115,6 @@ TEST_LAMBDA_NAME_PY = "test_lambda_py"
 TEST_LAMBDA_NAME_PY3 = "test_lambda_py3"
 TEST_LAMBDA_NAME_JS = "test_lambda_js"
 TEST_LAMBDA_NAME_RUBY = "test_lambda_ruby"
-TEST_LAMBDA_NAME_GOLANG = "test_lambda_GOLANG"
 TEST_LAMBDA_NAME_DOTNETCORE2 = "test_lambda_dotnetcore2"
 TEST_LAMBDA_NAME_DOTNETCORE31 = "test_lambda_dotnetcore31"
 TEST_LAMBDA_NAME_CUSTOM_RUNTIME = "test_lambda_custom_runtime"
@@ -132,10 +136,7 @@ TEST_STAGE_NAME = "testing"
 
 MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
 
-TEST_GOLANG_LAMBDA_URL = (
-    "https://github.com/localstack/awslamba-go-runtime/releases/download/v0.2/example-lambda.zip"
-)
-
+TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
 TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
 )
@@ -1683,40 +1684,40 @@ class TestRubyRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_RUBY)
 
 
-class TestGolangRuntimes(LambdaTestBase):
-    @classmethod
-    def setUpClass(cls):
-        cls.lambda_client = aws_stack.connect_to_service("lambda")
-
-    @pytest.mark.skip(reason="TODO examples are not yet cross-compiled")
-    def test_golang_lambda_running_locally(self):
+class TestGolangRuntimes:
+    def test_golang_lambda_running_locally(self, lambda_client, tmp_path):
         if use_docker():
-            return
+            pytest.skip("skipped lambda test for local executor")
 
-        # TODO: bundle in repo
-        response = requests.get(TEST_GOLANG_LAMBDA_URL, allow_redirects=True)
-        if not response.ok:
-            response.raise_for_status()
+        # fetch platform-specific example handler
+        url = TEST_GOLANG_LAMBDA_URL_TEMPLATE.format(
+            version=GO_RUNTIME_VERSION,
+            os=get_os(),
+            arch=get_arch(),
+        )
+        handler = tmp_path / "go-handler"
+        download_and_extract(url, handler)
 
-        open(TEST_LAMBDA_GOLANG_ZIP, "wb").write(response.content)
-
+        # create function
+        func_name = f"test_lambda_{short_uid()}"
         testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_GOLANG,
-            zip_file=load_file(TEST_LAMBDA_GOLANG_ZIP, mode="rb"),
+            func_name=func_name,
+            handler_file=handler,
             handler="handler",
             runtime=LAMBDA_RUNTIME_GOLANG,
         )
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_GOLANG, Payload=json.dumps({"name": "Test"})
-        )
-        result_data = result["Payload"].read()
-        self.maxDiff = None
-        self.assertEqual(200, result["StatusCode"])
-        self.assertEqual('"Hello Test!"', to_str(result_data).strip())
 
-        # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_GOLANG)
-        os.remove(TEST_LAMBDA_GOLANG_ZIP)
+        # invoke
+        try:
+            result = lambda_client.invoke(
+                FunctionName=func_name, Payload=json.dumps({"name": "pytest"})
+            )
+            result_data = result["Payload"].read()
+            assert result["StatusCode"] == 200
+            assert to_str(result_data).strip() == '"Hello pytest!"'
+        finally:
+            # clean up
+            testutil.delete_lambda_function(func_name)
 
 
 class TestJavaRuntimes(LambdaTestBase):
