@@ -414,7 +414,7 @@ def install_go_lambda_runtime():
 
     if system not in ["linux"]:
         raise ValueError("unsupported os %s for awslambda-go-runtime" % system)
-    if arch not in ["amd64", "arm32"]:
+    if arch not in ["amd64", "arm64"]:
         raise ValueError("unsupported arch %s for awslambda-go-runtime" % arch)
 
     url = GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
