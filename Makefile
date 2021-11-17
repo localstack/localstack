@@ -85,7 +85,10 @@ docker-build: 			  ## Build Docker image
 	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
 	# start build
 	# --add-host: Fix for Centos host OS
+	# --build-arg BUILDKIT_INLINE_CACHE=1: Instruct buildkit to inline the caching information into the image
+	# --cache-from: Use the inlined caching information when building the image
 	DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
+		--cache-from $(TAG) --build-arg BUILDKIT_INLINE_CACHE=1 \
 		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
 		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
 		--add-host="localhost.localdomain:127.0.0.1" \
