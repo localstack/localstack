@@ -6,9 +6,7 @@ import re
 import shlex
 import sys
 import threading
-import time
 import warnings
-from datetime import datetime
 from functools import wraps
 from typing import Iterable, List, Set
 
@@ -17,6 +15,7 @@ import six
 from localstack import config, constants
 from localstack.config import parse_service_ports
 from localstack.constants import LS_LOG_TRACE_INTERNAL, TRACE_LOG_LEVELS
+from localstack.utils.common import chmod_r, mkdir
 from localstack.utils.docker_utils import DOCKER_CLIENT, ContainerException, PortMappings
 
 # set up logger
@@ -34,9 +33,6 @@ PLUGIN_MODULES = ["localstack_ext", "localstack"]
 # marker for extended/ignored libs in requirements.txt
 IGNORED_LIB_MARKER = "#extended-lib"
 BASIC_LIB_MARKER = "#basic-lib"
-
-# whether or not to manually fix permissions on /var/run/docker.sock (currently disabled)
-DO_CHMOD_DOCKER_SOCK = False
 
 # log format strings
 LOG_FORMAT = "%(asctime)s.%(msecs)03d:%(levelname)s:%(name)s: %(message)s"
@@ -144,7 +140,6 @@ def load_plugins(scope=None):
     if PLUGINS_LOADED.get(scope):
         return PLUGINS_LOADED[scope]
 
-    t1 = now_utc()
     is_infra_process = (
         os.environ.get(constants.LOCALSTACK_INFRA_PROCESS) in ["1", "true"] or "--host" in sys.argv
     )
@@ -181,11 +176,6 @@ def load_plugins(scope=None):
             loaded_files.append(file_path)
     # set global flag
     PLUGINS_LOADED[scope] = result
-
-    # debug plugin loading time
-    load_time = now_utc() - t1
-    if load_time > 5:
-        LOG.debug("Plugin loading took %s sec" % load_time)
 
     return result
 
@@ -523,7 +513,6 @@ def get_docker_image_to_start():
 def extract_port_flags(user_flags, port_mappings):
     regex = r"-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-([0-9]+))?"
     matches = re.match(".*%s" % regex, user_flags)
-    start = end = 0
     if matches:
         for match in re.findall(regex, user_flags):
             start = int(match[0])
@@ -624,7 +613,7 @@ def start_infra_in_docker():
 
     mkdir(config.TMP_FOLDER)
     try:
-        run(["chmod", "-R", "777", config.TMP_FOLDER], print_error=False, shell=False)
+        chmod_r(config.TMP_FOLDER, 0o777)
     except Exception:
         pass
 
@@ -633,26 +622,18 @@ def start_infra_in_docker():
             threading.Thread.__init__(self)
             self.daemon = True
             self.cmd = cmd
+            self.started = threading.Event()
+            self.process = None
 
         def run(self):
             self.process = run(self.cmd, asynchronous=True, shell=False)
+            self.started.set()
 
     # keep this print output here for debugging purposes
     print(docker_cmd)
     t = ShellRunnerThread(docker_cmd)
     t.start()
-    time.sleep(2)
-
-    if DO_CHMOD_DOCKER_SOCK:
-        # fix permissions on /var/run/docker.sock
-        for i in range(0, 100):
-            if DOCKER_CLIENT.is_container_running(container_name):
-                break
-            time.sleep(2)
-        DOCKER_CLIENT.exec_in_container(
-            container_name, command=["chmod", "777", "/var/run/docker.sock"], user="root"
-        )
-
+    t.started.wait()
     t.process.wait()
     sys.exit(t.process.returncode)
 
@@ -662,24 +643,9 @@ def start_infra_in_docker():
 # ---------------
 
 
-def now_utc():
-    epoch = datetime.utcfromtimestamp(0)
-    return (datetime.utcnow() - epoch).total_seconds()
-
-
 def in_ci():
     """Whether or not we are running in a CI environment"""
     for key in ("CI", "TRAVIS"):
         if os.environ.get(key, "") not in [False, "", "0", "false"]:
             return True
     return False
-
-
-def mkdir(folder):
-    if not os.path.exists(folder):
-        try:
-            os.makedirs(folder)
-        except OSError as err:
-            # Ignore rare 'File exists' race conditions.
-            if err.errno != 17:
-                raise
