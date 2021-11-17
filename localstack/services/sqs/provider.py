@@ -33,6 +33,7 @@ from localstack.aws.api.sqs import (
     GetQueueUrlResult,
     Integer,
     InvalidAttributeName,
+    InvalidMessageContents,
     ListQueuesResult,
     ListQueueTagsResult,
     Message,
@@ -65,6 +66,10 @@ from localstack.utils.common import long_uid, md5, now, start_thread
 from localstack.utils.run import FuncThread
 
 LOG = logging.getLogger(__name__)
+
+# Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
+# https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
+MSG_CONTENT_REGEX = "^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$"
 
 
 def generate_message_id():
@@ -101,6 +106,15 @@ def assert_queue_name(queue_name: str):
         raise InvalidParameterValues(
             "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
         )
+
+
+def check_message_content(data: dict):
+    for key, value in data.items():
+        if isinstance(value, dict):
+            check_message_content(value)
+        string_value = str(value)
+        if not re.match(MSG_CONTENT_REGEX, string_value):
+            raise InvalidMessageContents()
 
 
 class QueueKey(NamedTuple):
@@ -699,6 +713,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> Message:
         # TODO: default message attributes (SenderId, ApproximateFirstReceiveTimestamp, ...)
 
+        arguments = dict(locals())
+        arguments.pop("self")
+        check_message_content(arguments)
         message: Message = Message(
             MessageId=generate_message_id(),
             MD5OfBody=md5(message_body),
