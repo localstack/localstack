@@ -117,9 +117,6 @@ ENV PYTHONUNBUFFERED=1
 ENV EDGE_BIND_HOST=0.0.0.0
 ENV LOCALSTACK_HOSTNAME=localhost
 
-# Create the infra folder (will be populated later)
-RUN mkdir -p /opt/code/localstack/localstack/infra
-
 RUN mkdir /root/.serverless; chmod -R 777 /root/.serverless
 
 # add trusted CA certificates to the cert store
@@ -177,9 +174,6 @@ RUN make freeze > requirements-runtime.txt
 
 # remove localstack (added as a transitive dependency of localstack-ext)
 RUN (virtualenv .venv && source .venv/bin/activate && pip3 uninstall -y localstack)
-
-# add the results of `make init` to the container. `make init` _needs_ to be executed before building this docker image.
-ADD localstack/infra/ localstack/infra/
 
 
 
@@ -251,15 +245,18 @@ RUN mkdir -p /.npm && \
     useradd -ms /bin/bash localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
+# Install the latest version of awslocal globally
+RUN pip3 install --upgrade awscli awscli-local requests
+
 # Add the code in the last step
+# Also adds the results of `make init` to the container.
+# `make init` _needs_ to be executed before building this docker image (since the execution needs docker itself).
 ADD localstack/ localstack/
 
 # Download some more dependencies (make init needs the LocalStack code)
-# FIXME the init python code should be independent and executed in the builder stage
+# FIXME the init python code should be independent (i.e. not depend on the localstack code), idempotent/reproducible,
+#       modify only folders outside of the localstack package folder, and executed in the builder stage.
 RUN make init
-
-# Install the latest version of awslocal globally
-RUN pip3 install --upgrade awscli awscli-local requests
 
 # Install the latest version of localstack-ext and generate the plugin entrypoints
 RUN (virtualenv .venv && source .venv/bin/activate && \
