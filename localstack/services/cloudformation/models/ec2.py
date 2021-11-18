@@ -155,7 +155,7 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
                 association = [
                     a
                     for a in associations
-                    if a.get("GatewayId") == gw_id and a.get("SubnetId") == subnet_id
+                    if a.get("SubnetId") == subnet_id
                 ]
             return (association or [None])[0]
 

@@ -1,8 +1,4 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Parameters:
-  Environment:
-    Type: String
-    Default: 'companyname-ci'
 
 Resources:
   VPC:
@@ -71,8 +67,6 @@ Resources:
 
 
 Outputs:
-  PublicRoute:
+  RouteTable:
     Value:
-      Ref: PublicRoute
-    Export:
-      Name: 'publicRoute-identify'
+      Ref: RouteTable

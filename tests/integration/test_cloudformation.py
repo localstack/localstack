@@ -2415,20 +2415,16 @@ class CloudFormationTest(unittest.TestCase):
         template = load_file(os.path.join(THIS_FOLDER, "templates", "template37.yaml"))
 
         stack_name = "stack-%s" % short_uid()
-        create_and_await_stack(StackName=stack_name, TemplateBody=template)
-        resp = ec2_client.describe_vpcs()
-        vpcs = [vpc["VpcId"] for vpc in resp["Vpcs"] if vpc["VpcId"] not in vpcs_before]
-        self.assertEqual(1, len(vpcs))
+        details = create_and_await_stack(StackName=stack_name, TemplateBody=template)
+        route_table_id = [out["OutputValue"] for out in details['Outputs'] if out["OutputKey"] == "RouteTable"][0]
+        route_table = ec2_client.describe_route_tables(
+                Filters=[
+                    {"Name": "route-table-id", "Values": [route_table_id]}
+                ]
+        )['RouteTables'][0]
 
-        resp = ec2_client.describe_route_tables(
-            Filters=[
-                {"Name": "vpc-id", "Values": [vpcs[0]]},
-                {"Name": "tag:env", "Values": ["production"]},
-            ]
-        )
-
-        # Cloudformation Template will create more than one route table 2 in template + default
-        self.assertEqual(2, len(resp["RouteTables"][0]["Associations"]))
+        # # Cloudformation Template will create more than one route table 2 in template + default
+        self.assertEqual(2, len(route_table["Associations"]))
 
         # Clean up
         self.cleanup(stack_name)
