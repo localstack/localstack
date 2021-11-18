@@ -660,7 +660,12 @@ def fix_delete_objects_response(bucket_name, method, parsed_path, data, headers,
     content = to_str(response._content)
     if "<Error>" not in content:
         return
+
     result = xmltodict.parse(content).get("DeleteResult")
+    # can be NoSuchBucket error
+    if not result:
+        return
+
     errors = result.get("Error")
     errors = errors if isinstance(errors, list) else [errors]
     deleted = result.get("Deleted")
