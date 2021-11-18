@@ -152,11 +152,7 @@ class EC2SubnetRouteTableAssociation(GenericBaseModel):
             associations = route_table.get("Associations", [])
             association = [a for a in associations if a.get("GatewayId") == gw_id]
             if subnet_id:
-                association = [
-                    a
-                    for a in associations
-                    if a.get("SubnetId") == subnet_id
-                ]
+                association = [a for a in associations if a.get("SubnetId") == subnet_id]
             return (association or [None])[0]
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
