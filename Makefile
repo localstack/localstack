@@ -70,16 +70,20 @@ docker-image-stats: 	  ## TODO remove when image size is acceptable
 	docker image inspect $(IMAGE_NAME_FULL) --format='{{.Size}}'
 	docker history $(IMAGE_NAME_FULL)
 
-TAG ?= $(IMAGE_NAME_FULL)	# By default we export the full image
-EXPORT_SUFFIX ?=			# By default we use no suffix
+# By default we export the full image
+TAG ?= $(IMAGE_NAME_FULL)
+# By default we use no suffix
+EXPORT_SUFFIX ?=
 docker-save-image: 		  ## Export the built Docker image
 	docker save $(TAG) -o target/localstack-docker-image$(EXPORT_SUFFIX)-$(PLATFORM).tar
 
 docker-save-image-light:
 	make EXPORT_SUFFIX="-light" TAG=$(IMAGE_NAME_LIGHT) docker-save-image
 
-TAG ?= $(IMAGE_NAME_FULL)      # By default we build the full image
-DOCKER_BUILD_FLAGS ?= "--load" # By default we load the result to the docker daemon
+# By default we export the full image
+TAG ?= $(IMAGE_NAME_FULL)
+# By default we load the result to the docker daemon
+DOCKER_BUILD_FLAGS ?= "--load"
 docker-build: 			  ## Build Docker image
 	# prepare
 	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
