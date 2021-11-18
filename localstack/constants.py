@@ -48,12 +48,15 @@ LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(MODULE_MAIN_PATH, ".."))
 INSTALL_DIR_INFRA = os.path.join(MODULE_MAIN_PATH, "infra")
 
 # virtualenv folder
-LOCALSTACK_VENV_FOLDER = os.path.join(LOCALSTACK_ROOT_FOLDER, ".venv")
-if not os.path.isdir(LOCALSTACK_VENV_FOLDER):
-    # assuming this package lives here: <python>/lib/pythonX.X/site-packages/localstack/
-    LOCALSTACK_VENV_FOLDER = os.path.realpath(
-        os.path.join(LOCALSTACK_ROOT_FOLDER, "..", "..", "..")
-    )
+LOCALSTACK_VENV_FOLDER = os.environ.get("VIRTUAL_ENV")
+if not LOCALSTACK_VENV_FOLDER:
+    # fallback to the previous logic
+    LOCALSTACK_VENV_FOLDER = os.path.join(LOCALSTACK_ROOT_FOLDER, ".venv")
+    if not os.path.isdir(LOCALSTACK_VENV_FOLDER):
+        # assuming this package lives here: <python>/lib/pythonX.X/site-packages/localstack/
+        LOCALSTACK_VENV_FOLDER = os.path.realpath(
+            os.path.join(LOCALSTACK_ROOT_FOLDER, "..", "..", "..")
+        )
 
 # API Gateway path to indicate a user request sent to the gateway
 PATH_USER_REQUEST = "_user_request_"
