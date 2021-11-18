@@ -864,6 +864,14 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name)
 
+    def test_delete_non_existing_keys_in_non_existing_bucket(self):
+        with self.assertRaises(ClientError) as ctx:
+            self.s3_client.delete_objects(
+                Bucket="non-existent-bucket",
+                Delete={"Objects": [{"Key": "dummy1"}, {"Key": "dummy2"}]},
+            )
+        self.assertEqual("NoSuchBucket", ctx.exception.response["Error"]["Code"])
+
     def test_s3_request_payer(self):
         bucket_name = "test-%s" % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
@@ -877,7 +885,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual("Requester", response["Payer"])
         self._delete_bucket(bucket_name)
 
-    def delete_non_existing_bucket(self):
+    def test_delete_non_existing_bucket(self):
         bucket_name = "test-%s" % short_uid()
         with self.assertRaises(ClientError) as ctx:
             self.s3_client.delete_bucket(Bucket=bucket_name)
