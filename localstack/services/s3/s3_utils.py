@@ -248,11 +248,10 @@ def authenticate_presign_url(method, path, headers, data=None):
     request_url = "{}://{}{}".format(parsed.scheme, parsed.netloc, parsed.path)
     # Fix https://github.com/localstack/localstack/issues/3912
     # urlencode method replaces white spaces with plus sign cause signature calculation to fail
-    request_url = (
-        "%s?%s" % (request_url, urlencode(query_string, quote_via=urlparse.quote, safe=" "))
-        if query_string
-        else request_url
+    query_string_encoded = (
+        urlencode(query_string, quote_via=urlparse.quote, safe=" ") if query_string else None
     )
+    request_url = "%s?%s" % (request_url, query_string_encoded) if query_string else request_url
     if forwarded_for:
         request_url = re.sub("://[^/]+", "://%s" % forwarded_for, request_url)
 
@@ -286,7 +285,7 @@ def authenticate_presign_url(method, path, headers, data=None):
             request_dict["url_path"],
         )
         request_dict["url"] = (
-            "%s?%s" % (request_dict["url"], urlencode(query_string))
+            "%s?%s" % (request_dict["url"], query_string_encoded)
             if query_string
             else request_dict["url"]
         )
