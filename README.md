@@ -235,6 +235,7 @@ Some of the services can be configured to switch to a particular provider:
 * `MOCK_UNIMPLEMENTED`: Whether to return mocked success responses (instead of 501 errors) for currently unimplemented API methods.
 * `OVERRIDE_IN_DOCKER`: Overrides the check whether LocalStack is executed within a docker container. If set to true, LocalStack assumes it runs in a docker container. Should not be set unless necessary.
 * `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
+* `DISABLE_EVENTS`: Whether to disable publishing LocalStack events.
 
 ### Debugging Configurations
 
