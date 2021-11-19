@@ -504,7 +504,7 @@ class ContainerClient(metaclass=ABCMeta):
 class CmdDockerClient(ContainerClient):
     """Class for managing docker containers using the command line executable"""
 
-    default_run_outfile: Optional[str]
+    default_run_outfile: Optional[str] = None
 
     def _docker_cmd(self) -> List[str]:
         """Return the string to be used for running Docker commands."""
