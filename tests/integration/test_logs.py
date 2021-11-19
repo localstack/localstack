@@ -306,6 +306,24 @@ class CloudWatchLogsTest(unittest.TestCase):
         )
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
+    def test_delivery_logs_for_sns(self):
+        topic_name = "test-logs-{}".format(short_uid())
+        contact = "+10123456789"
+
+        sns_client = aws_stack.connect_to_service("sns")
+        topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
+        sns_client.subscribe(TopicArn=topic_arn, Protocol="sms", Endpoint=contact)
+
+        message = "Good news everyone!"
+        sns_client.publish(Message=message, TopicArn=topic_arn)
+        logs_group_name = topic_arn.replace("arn:aws:", "").replace(":", "/")
+
+        def log_group_exists():
+            response = self.logs_client.describe_log_streams(logGroupName=logs_group_name)
+            self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+
+        retry(log_group_exists)
+
     def cleanup(self, log_group, log_stream):
         self.logs_client.delete_log_stream(logGroupName=log_group, logStreamName=log_stream)
         self.logs_client.delete_log_group(logGroupName=log_group)
