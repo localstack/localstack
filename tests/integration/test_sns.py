@@ -905,7 +905,7 @@ class SNSTest(unittest.TestCase):
             self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol="sms", Endpoint=number)
         # Publish a message.
         self.sns_client.publish(Message=message, TopicArn=self.topic_arn)
-        retry(check_messages, retries=3, sleep=0.5)
+        retry(check_messages)
 
     def test_publish_sqs_from_sns(self):
         topic = self.sns_client.create_topic(Name="test_topic3")

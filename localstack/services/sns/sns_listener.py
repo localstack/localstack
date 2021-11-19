@@ -1004,5 +1004,4 @@ def store_delivery_log(
 
     log_output = json.dumps(delivery_log)
 
-    print(log_group_name)
     return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
