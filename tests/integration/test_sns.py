@@ -894,8 +894,11 @@ class SNSTest(unittest.TestCase):
         return queue_name, queue_arn, queue_url
 
     def test_publish_sms_endpoint(self):
+        # Clean posible previous sms messages
+        sns_backend = SNSBackend.get()
+        sns_backend.sms_messages = []
+
         def check_messages():
-            sns_backend = SNSBackend.get()
             self.assertEqual(len(list_of_contacts), len(sns_backend.sms_messages))
 
         list_of_contacts = ["+10123456789", "+10000000000", "+19876543210"]
@@ -905,7 +908,7 @@ class SNSTest(unittest.TestCase):
             self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol="sms", Endpoint=number)
         # Publish a message.
         self.sns_client.publish(Message=message, TopicArn=self.topic_arn)
-        retry(check_messages)
+        retry(check_messages, sleep=0.5)
 
     def test_publish_sqs_from_sns(self):
         topic = self.sns_client.create_topic(Name="test_topic3")
