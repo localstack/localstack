@@ -179,7 +179,8 @@ RUN (virtualenv .venv && source .venv/bin/activate && pip3 uninstall -y localsta
 
 # base-light: Stage which does not add additional dependencies (like elasticsearch)
 FROM base-${TARGETARCH} as base-light
-RUN touch localstack/infra/.light-version
+RUN mkdir -p /opt/code/localstack/localstack/infra && \
+    touch localstack/infra/.light-version
 
 
 
