@@ -204,6 +204,8 @@ class OutputReaderThread(FuncThread):
                 LOGGER.warning("Unable to notify log subscriber: %s" % e)
 
     def start_reading(self, params):
+        # FIXME: consider using common.FileListener
+
         for line in self._tail(params["file"]):
             # notify subscribers
             self.notify_subscribers(line)
