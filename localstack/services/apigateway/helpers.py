@@ -881,24 +881,26 @@ def tokenize_path(path):
     return path.lstrip("/").split("/")
 
 
-def extract_path_params(path, extracted_path):
+def extract_path_params(path: str, extracted_path: str) -> Dict[str, str]:
     tokenized_extracted_path = tokenize_path(extracted_path)
     # Looks for '{' in the tokenized extracted path
     path_params_list = [(i, v) for i, v in enumerate(tokenized_extracted_path) if "{" in v]
     tokenized_path = tokenize_path(path)
     path_params = {}
     for param in path_params_list:
-        path_param_name = param[1][1:-1].encode("utf-8")
+        path_param_name = param[1][1:-1]
         path_param_position = param[0]
-        if path_param_name.endswith(b"+"):
-            path_params[path_param_name] = "/".join(tokenized_path[path_param_position:])
+        if path_param_name.endswith("+"):
+            path_params[path_param_name.rstrip("+")] = "/".join(
+                tokenized_path[path_param_position:]
+            )
         else:
             path_params[path_param_name] = tokenized_path[path_param_position]
     path_params = common.json_safe(path_params)
     return path_params
 
 
-def extract_query_string_params(path):
+def extract_query_string_params(path: str) -> Tuple[str, Dict[str, str]]:
     parsed_path = urlparse.urlparse(path)
     path = parsed_path.path
     parsed_query_string_params = urlparse.parse_qs(parsed_path.query)
