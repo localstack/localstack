@@ -24,6 +24,7 @@ from docker.utils.socket import STDERR, STDOUT, frames_iter
 from localstack import config
 from localstack.utils.common import (
     TMP_FILES,
+    HashableList,
     rm_rf,
     safe_run,
     save_file,
@@ -83,13 +84,6 @@ class NoSuchNetwork(ContainerException):
 class PortMappings(object):
     """Maps source to target port ranges for Docker port mappings."""
 
-    class HashableList(list):
-        def __hash__(self):
-            result = 0
-            for i in self:
-                result += hash(i)
-            return result
-
     def __init__(self, bind_host=None):
         self.bind_host = bind_host if bind_host else ""
         self.mappings = {}
@@ -140,7 +134,7 @@ class PortMappings(object):
             port_range = [bisected_host_port, port, protocol]
         else:
             port_range = [port, bisected_host_port, protocol]
-        self.mappings[self.HashableList(port_range)] = [mapped, mapped]
+        self.mappings[HashableList(port_range)] = [mapped, mapped]
 
     def to_str(self) -> str:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""

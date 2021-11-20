@@ -378,6 +378,7 @@ class TestS3(unittest.TestCase):
         )
         # append metadata manually to URL (this is not easily possible with boto3, as "Metadata" cannot
         # be passed to generate_presigned_url, and generate_presigned_post works differently)
+        url += "&x-amz-meta-foo=bar"
 
         # get object and assert metadata is present
         response = requests.put(url, data="content 123", verify=False)

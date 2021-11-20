@@ -66,9 +66,6 @@ API_UNKNOWN = "_unknown_"
 HEADER_SKIP_RESPONSE_ZIPPING = "_skip_response_gzipping_"
 SKIP_GZIP_APIS = [S3]
 
-# path prefix to indicate internal endpoints (e.g., resource graph, CFN deployment UI, etc)
-PATH_PREFIX_INTERNAL = "/_localstack/"
-
 
 class ProxyListenerEdge(ProxyListener):
     def __init__(self, service_manager=None) -> None:
