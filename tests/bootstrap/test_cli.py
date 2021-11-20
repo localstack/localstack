@@ -68,9 +68,8 @@ class TestCliContainerLifecycle:
         assert result.exit_code == 0
         assert "starting LocalStack" in result.output
 
-        result = runner.invoke(
-            cli, ["wait", "-t", "0.5"]
-        )  # on day this test will hopefully fail ;-)
+        result = runner.invoke(cli, ["wait", "-t", "0.5"])
+        # one day this test will surely fail ;-)
         assert result.exit_code != 0
 
     def test_logs(self, runner, container_client):

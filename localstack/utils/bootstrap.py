@@ -613,16 +613,42 @@ class LocalstackContainer:
 class LocalstackContainerServer(Server):
     container: LocalstackContainer
 
-    def __init__(self, container) -> None:
+    def __init__(self, container=None) -> None:
         super().__init__(config.EDGE_PORT, config.EDGE_BIND_HOST)
-        self.container = container
+        self.container = container or LocalstackContainer()
+
+    def is_up(self) -> bool:
+        """
+        Checks whether the container is running, and the Ready marker has been printed to the logs.
+        """
+        from localstack.services.infra import READY_MARKER_OUTPUT
+
+        if not self.is_container_running():
+            return False
+        logs = DOCKER_CLIENT.get_container_logs(self.container.name)
+
+        if READY_MARKER_OUTPUT not in logs.splitlines():
+            return False
+        # also checks the edge port health status
+        return super().is_up()
+
+    def is_container_running(self) -> bool:
+        return DOCKER_CLIENT.is_container_running(self.container.name)
+
+    def wait_is_container_running(self, timeout=None) -> bool:
+        return poll_condition(self.is_container_running, timeout)
 
     def do_run(self):
+        if DOCKER_CLIENT.is_container_running(self.container.name):
+            raise ContainerExists(
+                'LocalStack container named "%s" is already running' % self.container.name
+            )
+
         return self.container.run()
 
     def do_shutdown(self):
         try:
-            CmdDockerClient().stop_container(self.container.name)
+            DOCKER_CLIENT.stop_container(self.container.name)
         except Exception as e:
             LOG.info("error cleaning up localstack container %s: %s", self.container.name, e)
 
@@ -753,7 +779,7 @@ def start_infra_in_docker_detached(console):
     console.log("starting container")
     server = LocalstackContainerServer(container)
     server.start()
-    server.wait_is_up()
+    server.wait_is_container_running()
     console.log("detaching")
 
 
