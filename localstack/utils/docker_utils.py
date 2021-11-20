@@ -82,14 +82,6 @@ class NoSuchNetwork(ContainerException):
         self.network_name = network_name
 
 
-class HashableList(list):
-    def __hash__(self):
-        result = 0
-        for i in self:
-            result += hash(i)
-        return result
-
-
 class PortMappings(object):
     """Maps source to target port ranges for Docker port mappings."""
 
