@@ -914,7 +914,7 @@ def has_event_sources_or_streams_enabled(table_name, cache={}):
         result = True
     if not result and dynamodbstreams_api.get_stream_for_table(table_arn):
         result = True
-    cache[table_arn] = result
+
     # if kinesis streaming destination is enabled
     # get table name from table_arn
     # since batch_wrtie and transact write operations passing table_arn instead of table_name
@@ -923,6 +923,7 @@ def has_event_sources_or_streams_enabled(table_name, cache={}):
     if not result and table_definitions.get(table_name):
         if table_definitions[table_name].get("KinesisDataStreamDestinationStatus") == "ACTIVE":
             result = True
+    cache[table_arn] = result
     return result
 
 

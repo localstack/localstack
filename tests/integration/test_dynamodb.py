@@ -446,6 +446,15 @@ class TestDynamoDB(unittest.TestCase):
         # put item into table
         dynamodb.put_item(TableName=table_name, Item={"Username": {"S": "Fred"}})
 
+        dynamodb.update_item(
+            TableName=table_name,
+            Key={"Username": {"S": "Fred"}},
+            UpdateExpression="set S=:r",
+            ExpressionAttributeValues={":r": {"S": "Fred_Modified"}},
+            ReturnValues="UPDATED_NEW",
+        )
+
+        dynamodb.delete_item(TableName=table_name, Key={"Username": {"S": "Fred"}})
         # get shard iterator of the stream
         shard_iterator = kinesis.get_shard_iterator(
             StreamName="kinesis_dest_stream",
@@ -454,15 +463,23 @@ class TestDynamoDB(unittest.TestCase):
         )["ShardIterator"]
 
         # get records from the stream
-        rec = kinesis.get_records(ShardIterator=shard_iterator)["Records"]
-        # assert records in stream
-        self.assertEqual(1, len(rec))
+        records = kinesis.get_records(ShardIterator=shard_iterator)["Records"]
+        self.assertEqual(3, len(records))
 
-        # check tableName exists in the stream record
-        record_data = json.loads(rec[0]["Data"])
-        self.assertEqual(record_data["tableName"], table_name)
-        # check eventSourceARN not exists in the stream record
-        self.assertNotIn("eventSourceARN", record_data)
+        for record in records:
+            record = json.loads(record["Data"])
+            self.assertEqual(record["tableName"], table_name)
+            # check eventSourceARN not exists in the stream record
+            self.assertNotIn("eventSourceARN", record)
+            if record["eventName"] == "INSERT":
+                self.assertNotIn("OldImage", record["dynamodb"])
+                self.assertIn("NewImage", record["dynamodb"])
+            elif record["eventName"] == "MODIFY":
+                self.assertIn("NewImage", record["dynamodb"])
+                self.assertIn("OldImage", record["dynamodb"])
+            elif record["eventName"] == "REMOVE":
+                self.assertNotIn("NewImage", record["dynamodb"])
+                self.assertIn("OldImage", record["dynamodb"])
         # describe kinesis streaming destination of the table
         describe = dynamodb.describe_kinesis_streaming_destination(TableName=table_name)[
             "KinesisDataStreamDestinations"
