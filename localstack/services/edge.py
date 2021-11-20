@@ -537,7 +537,7 @@ def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
 
 def can_use_sudo():
     try:
-        run("echo | sudo -S echo", print_error=False)
+        run("sudo -n -v", print_error=False)
         return True
     except Exception:
         return False
