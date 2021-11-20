@@ -1966,7 +1966,7 @@ class FileListener:
 
     def _do_start_thread(self) -> FuncThread:
         if self.use_tail_command:
-            thread = self._create_tail_command_thread()  # FIXME run shell command thread
+            thread = self._create_tail_command_thread()
             thread.start()
             thread.started.wait(5)
             self.started.set()

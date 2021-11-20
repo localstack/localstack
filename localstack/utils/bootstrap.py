@@ -577,7 +577,7 @@ class LocalstackContainer:
                 mount_volumes.append((volume.host_dir, volume.container_dir))
             else:
                 raise NotImplementedError("no support for volume type %s" % type(volume))
-            mount_volumes.append(volume)
+
         return mount_volumes
 
     def run(self):
