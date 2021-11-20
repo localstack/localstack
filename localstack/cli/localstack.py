@@ -94,6 +94,8 @@ def cmd_status_services():
 def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
     if docker and host:
         raise click.ClickException("Please specify either --docker or --host")
+    if host and detached:
+        raise click.ClickException("Cannot start detached in host mode")
 
     if not no_banner:
         print_banner()
@@ -108,15 +110,12 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
         else:
             console.log("starting LocalStack in Docker mode :whale:")
 
-        if not detached:
-            console.rule(
-                "LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)"
-            )
+    bootstrap.prepare_host()
+
+    if not no_banner and not detached:
+        console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
 
     if host:
-        if detached:
-            raise click.ClickException("cannot start detached in host mode")
-
         bootstrap.start_infra_locally()
     else:
         if detached:

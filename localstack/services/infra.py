@@ -14,6 +14,7 @@ from moto import core as moto_core
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
+from localstack.runtime import hooks
 from localstack.services import generic_proxy, install, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
@@ -24,7 +25,6 @@ from localstack.utils.bootstrap import (
     canonicalize_api_names,
     get_main_container_id,
     in_ci,
-    load_plugins,
     log_duration,
     setup_logging,
 )
@@ -394,10 +394,10 @@ def start_infra(asynchronous=False, apis=None):
         patch_urllib3_connection_pool(maxsize=128)
         patch_instance_tracker_meta()
 
-        # load plugins
-        load_plugins()
+        # set up logging
+        setup_logging()
 
-        # with plugins loaded, now start the infrastructure
+        # with changes that hooks have made, now start the infrastructure
         thread = do_start_infra(asynchronous, apis, is_in_docker)
 
         if not asynchronous and thread:
@@ -419,13 +419,12 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
+    hooks.on_infra_start.run()
+
     event_publisher.fire_event(
         event_publisher.EVENT_START_INFRA,
         {"d": is_in_docker and 1 or 0, "c": in_ci() and 1 or 0},
     )
-
-    # set up logging
-    setup_logging()
 
     if config.DEVELOP:
         install.install_debugpy_and_dependencies()
@@ -522,5 +521,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     INFRA_READY.set()
     analytics.log.event("infra_ready")
+
+    hooks.on_infra_ready.run()
 
     return thread
