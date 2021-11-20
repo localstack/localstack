@@ -591,7 +591,7 @@ def configure_container(container: LocalstackContainer):
     container.additional_flags.extend(shlex.split(user_flags))
 
     # get additional parameters from plugins
-    hooks.configure_localstack_container.run()
+    hooks.configure_localstack_container.run(container)
 
     # construct default port mappings
     service_ports = config.SERVICE_PORTS
