@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Dict
+from typing import Dict, Optional
 
 import click
 
@@ -88,7 +88,10 @@ def cmd_status_services():
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container (default)")
 @click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
 @click.option("--no-banner", is_flag=True, help="Disable LocalStack banner", default=False)
-def cmd_start(docker: bool, host: bool, no_banner: bool):
+@click.option(
+    "-d", "--detached", is_flag=True, help="Start LocalStack in the background", default=False
+)
+def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
     if docker and host:
         raise click.ClickException("Please specify either --docker or --host")
 
@@ -105,12 +108,91 @@ def cmd_start(docker: bool, host: bool, no_banner: bool):
         else:
             console.log("starting LocalStack in Docker mode :whale:")
 
-        console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
+        if not detached:
+            console.rule(
+                "LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)"
+            )
 
     if host:
+        if detached:
+            raise click.ClickException("cannot start detached in host mode")
+
         bootstrap.start_infra_locally()
     else:
-        bootstrap.start_infra_in_docker()
+        if detached:
+            bootstrap.start_infra_in_docker_detached(console)
+        else:
+            bootstrap.start_infra_in_docker()
+
+
+@localstack.command(name="stop", help="Stop the running LocalStack container")
+def cmd_stop():
+    from localstack import config
+    from localstack.utils.docker_utils import DOCKER_CLIENT, NoSuchContainer
+
+    container_name = config.MAIN_CONTAINER_NAME
+
+    try:
+        DOCKER_CLIENT.stop_container(container_name)
+        console.print("container stopped: %s" % container_name)
+    except NoSuchContainer:
+        console.print("no such container: %s" % container_name)
+        sys.exit(1)
+
+
+@localstack.command(name="logs", help="Show the logs of the LocalStack container")
+@click.option(
+    "-f",
+    "--follow",
+    is_flag=True,
+    help="Block the terminal and follow the log output",
+    default=False,
+)
+def cmd_logs(follow: bool):
+    from localstack import config
+    from localstack.utils.bootstrap import LocalstackContainer
+    from localstack.utils.common import FileListener
+    from localstack.utils.docker_utils import DOCKER_CLIENT
+
+    container_name = config.MAIN_CONTAINER_NAME
+    logfile = LocalstackContainer(container_name).logfile
+
+    if not DOCKER_CLIENT.is_container_running(container_name):
+        console.print("localstack container not running")
+        sys.exit(1)
+
+    if not os.path.exists(logfile):
+        console.print("localstack container logfile not found at %s" % logfile)
+        sys.exit(1)
+
+    if follow:
+        listener = FileListener(logfile, print)
+        listener.start()
+        try:
+            listener.join()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            listener.close()
+    else:
+        with open(logfile) as fd:
+            for line in fd:
+                print(line.rstrip("\n\r"))
+
+
+@localstack.command(name="wait", help="Wait on the LocalStack container to start")
+@click.option(
+    "-t",
+    "--timeout",
+    type=float,
+    help="The amount of time in seconds to wait before raising a timeout error",
+    default=None,
+)
+def cmd_wait(timeout: Optional[float] = None):
+    from localstack.utils.bootstrap import wait_container_is_ready
+
+    if not wait_container_is_ready(timeout=timeout):
+        raise click.ClickException("timeout")
 
 
 @localstack_config.command(

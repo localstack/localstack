@@ -8,18 +8,25 @@ import sys
 import threading
 import warnings
 from functools import wraps
-from typing import Iterable, List, Set
+from typing import Iterable, List, Optional, Set
 
 import six
 
 from localstack import config, constants
-from localstack.config import parse_service_ports
-from localstack.constants import LS_LOG_TRACE_INTERNAL, TRACE_LOG_LEVELS
-from localstack.utils.common import chmod_r, mkdir
-from localstack.utils.docker_utils import DOCKER_CLIENT, ContainerException, PortMappings
+from localstack.utils.common import FileListener, chmod_r, mkdir, poll_condition
+from localstack.utils.docker_utils import (
+    DOCKER_CLIENT,
+    CmdDockerClient,
+    ContainerException,
+    PortMappings,
+    SimpleVolumeBind,
+    VolumeBind,
+    VolumeMappings,
+)
 
 # set up logger
 from localstack.utils.run import run, to_str
+from localstack.utils.serving import Server
 
 LOG = logging.getLogger(os.path.basename(__file__))
 
@@ -261,7 +268,7 @@ def setup_logging(log_level=None):
     # overriding the log level if LS_LOG has been set
     if config.LS_LOG:
         log_level = str(config.LS_LOG).upper()
-        if log_level.lower() in TRACE_LOG_LEVELS:
+        if log_level.lower() in constants.TRACE_LOG_LEVELS:
             log_level = "DEBUG"
         log_level = logging._nameToLevel[log_level]
         logging.getLogger("").setLevel(log_level)
@@ -297,7 +304,7 @@ def setup_logging(log_level=None):
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("s3transfer").setLevel(logging.INFO)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
-    if config.LS_LOG != LS_LOG_TRACE_INTERNAL:
+    if config.LS_LOG != constants.LS_LOG_TRACE_INTERNAL:
         # disable werkzeug API logs, unless detailed internal trace logging is enabled
         logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
@@ -356,7 +363,7 @@ def get_enabled_apis() -> Set[str]:
 
     The result is cached, so it's safe to call. Clear the cache with get_enabled_apis.cache_clear().
     """
-    return resolve_apis(parse_service_ports().keys())
+    return resolve_apis(config.parse_service_ports().keys())
 
 
 def canonicalize_api_names(apis: Iterable[str] = None) -> List[str]:
@@ -510,7 +517,7 @@ def get_docker_image_to_start():
     return image_name
 
 
-def extract_port_flags(user_flags, port_mappings):
+def extract_port_flags(user_flags, port_mappings: PortMappings):
     regex = r"-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-([0-9]+))?"
     matches = re.match(".*%s" % regex, user_flags)
     if matches:
@@ -524,11 +531,138 @@ def extract_port_flags(user_flags, port_mappings):
     return user_flags
 
 
-def start_infra_in_docker():
+class LocalstackContainer:
+    name: str
+    image_name: str
+    volumes: VolumeMappings
+    ports: PortMappings
+    entrypoint: str
+    additional_flags: List[str]
+    command: List[str]
+
+    privileged: bool = True
+    remove: bool = True
+    interactive: bool = False
+    tty: bool = False
+    detach: bool = False
+    inherit_env: bool = True
+
+    logfile: Optional[str] = None
+    stdin: Optional[str] = None
+    user: Optional[str] = None
+    cap_add: Optional[str] = None
+    network: Optional[str] = None
+    dns: Optional[str] = None
+    workdir: Optional[str] = None
+
+    def __init__(self, name: str = None):
+        self.name = name or config.MAIN_CONTAINER_NAME
+        self.entrypoint = os.environ.get("ENTRYPOINT", "")
+        self.command = shlex.split(os.environ.get("CMD", ""))
+        self.image_name = get_docker_image_to_start()
+        self.ports = PortMappings(bind_host=config.EDGE_BIND_HOST)
+        self.volumes = VolumeMappings()
+        self.env_vars = dict()
+        self.additional_flags = list()
+
+        self.logfile = os.path.join(config.TMP_FOLDER, f"{self.name}_container.log")
+
+    def _get_mount_volumes(self) -> List[SimpleVolumeBind]:
+        # FIXME: VolumeMappings should be supported by the docker client
+        mount_volumes = list()
+        for volume in self.volumes:
+            if isinstance(volume, tuple):
+                mount_volumes.append(volume)
+            elif isinstance(volume, VolumeBind):
+                mount_volumes.append((volume.host_dir, volume.container_dir))
+            else:
+                raise NotImplementedError("no support for volume type %s" % type(volume))
+
+        return mount_volumes
+
+    def run(self):
+        client = CmdDockerClient()
+        client.default_run_outfile = self.logfile
+
+        return client.run_container(
+            image_name=self.image_name,
+            stdin=self.stdin,
+            name=self.name,
+            entrypoint=self.entrypoint or None,
+            remove=self.remove,
+            interactive=self.interactive,
+            tty=self.tty,
+            detach=self.detach,
+            command=self.command or None,
+            mount_volumes=self._get_mount_volumes(),
+            ports=self.ports,
+            env_vars=self.env_vars,
+            user=self.user,
+            cap_add=self.cap_add,
+            network=self.network,
+            dns=self.dns,
+            additional_flags=" ".join(self.additional_flags),
+            workdir=self.workdir,
+        )
+
+    def truncate_log(self):
+        with open(self.logfile, "wb") as fd:
+            fd.write(b"")
+
+
+class LocalstackContainerServer(Server):
+    container: LocalstackContainer
+
+    def __init__(self, container=None) -> None:
+        super().__init__(config.EDGE_PORT, config.EDGE_BIND_HOST)
+        self.container = container or LocalstackContainer()
+
+    def is_up(self) -> bool:
+        """
+        Checks whether the container is running, and the Ready marker has been printed to the logs.
+        """
+        from localstack.services.infra import READY_MARKER_OUTPUT
+
+        if not self.is_container_running():
+            return False
+        logs = DOCKER_CLIENT.get_container_logs(self.container.name)
+
+        if READY_MARKER_OUTPUT not in logs.splitlines():
+            return False
+        # also checks the edge port health status
+        return super().is_up()
+
+    def is_container_running(self) -> bool:
+        return DOCKER_CLIENT.is_container_running(self.container.name)
+
+    def wait_is_container_running(self, timeout=None) -> bool:
+        return poll_condition(self.is_container_running, timeout)
+
+    def do_run(self):
+        if DOCKER_CLIENT.is_container_running(self.container.name):
+            raise ContainerExists(
+                'LocalStack container named "%s" is already running' % self.container.name
+            )
+
+        return self.container.run()
+
+    def do_shutdown(self):
+        try:
+            DOCKER_CLIENT.stop_container(self.container.name)
+        except Exception as e:
+            LOG.info("error cleaning up localstack container %s: %s", self.container.name, e)
+
+
+class ContainerExists(Exception):
+    pass
+
+
+def prepare_docker_start():
+    # prepare environment for docker start
     container_name = config.MAIN_CONTAINER_NAME
 
     if DOCKER_CLIENT.is_container_running(container_name):
-        raise Exception('LocalStack container named "%s" is already running' % container_name)
+        raise ContainerExists('LocalStack container named "%s" is already running' % container_name)
     if config.TMP_FOLDER != config.HOST_TMP_FOLDER and not config.LAMBDA_REMOTE_DOCKER:
         print(
             f"WARNING: The detected temp folder for localstack ({config.TMP_FOLDER}) is not equal to the "
@@ -537,105 +671,153 @@ def start_infra_in_docker():
 
     os.environ[ENV_SCRIPT_STARTING_DOCKER] = "1"
 
-    # load plugins before starting the docker container
-    plugin_configs = load_plugins()
-
-    # prepare APIs
-    canonicalize_api_names()
-
-    entrypoint = os.environ.get("ENTRYPOINT", "")
-    cmd = os.environ.get("CMD", "")
-    user_flags = config.DOCKER_FLAGS
-    image_name = get_docker_image_to_start()
-    service_ports = config.SERVICE_PORTS
-    force_noninteractive = os.environ.get("FORCE_NONINTERACTIVE", "")
-
-    # get run params
-    plugin_run_params = " ".join(
-        [entry.get("docker", {}).get("run_flags", "") for entry in plugin_configs]
-    )
-
-    # container for port mappings
-    port_mappings = PortMappings(bind_host=config.EDGE_BIND_HOST)
-
-    # get port ranges defined via DOCKER_FLAGS (if any)
-    user_flags = extract_port_flags(user_flags, port_mappings)
-    plugin_run_params = extract_port_flags(plugin_run_params, port_mappings)
-
-    # construct default port mappings
-    if service_ports.get("edge") == 0:
-        service_ports.pop("edge")
-    for port in service_ports.values():
-        if port:
-            port_mappings.add(port)
-
-    env_vars = {}
-    for env_var in config.CONFIG_ENV_VARS:
-        value = os.environ.get(env_var, None)
-        if value is not None:
-            env_vars[env_var] = value
-
-    bind_mounts = []
-    data_dir = os.environ.get("DATA_DIR", None)
-    if data_dir is not None:
-        container_data_dir = "/tmp/localstack_data"
-        bind_mounts.append((data_dir, container_data_dir))
-        env_vars["DATA_DIR"] = container_data_dir
-    bind_mounts.append((config.TMP_FOLDER, "/tmp/localstack"))
-    bind_mounts.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
-    env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
-    env_vars["HOST_TMP_FOLDER"] = config.HOST_TMP_FOLDER
-
-    if config.DEVELOP:
-        port_mappings.add(config.DEVELOP_PORT)
-
-    docker_cmd = [config.DOCKER_CMD, "run"]
-    if not force_noninteractive and not in_ci():
-        docker_cmd.append("-it")
-    if entrypoint:
-        docker_cmd += shlex.split(entrypoint)
-    if env_vars:
-        docker_cmd += [item for k, v in env_vars.items() for item in ["-e", "{}={}".format(k, v)]]
-    if user_flags:
-        docker_cmd += shlex.split(user_flags)
-    if plugin_run_params:
-        docker_cmd += shlex.split(plugin_run_params)
-    docker_cmd += ["--rm", "--privileged"]
-    docker_cmd += ["--name", container_name]
-    docker_cmd += port_mappings.to_list()
-    docker_cmd += [
-        volume
-        for host_path, docker_path in bind_mounts
-        for volume in ["-v", f"{host_path}:{docker_path}"]
-    ]
-    docker_cmd.append(image_name)
-    docker_cmd += shlex.split(cmd)
-
+    # make sure temp folder exists
     mkdir(config.TMP_FOLDER)
     try:
         chmod_r(config.TMP_FOLDER, 0o777)
     except Exception:
         pass
 
-    class ShellRunnerThread(threading.Thread):
-        def __init__(self, cmd):
-            threading.Thread.__init__(self)
-            self.daemon = True
-            self.cmd = cmd
-            self.started = threading.Event()
-            self.process = None
 
-        def run(self):
-            self.process = run(self.cmd, asynchronous=True, shell=False)
-            self.started.set()
+def configure_container(container: LocalstackContainer):
+    """
+    Configuration routine for the LocalstackContainer.
+    """
+    # get additional configured flags
+    user_flags = config.DOCKER_FLAGS
+    user_flags = extract_port_flags(user_flags, container.ports)
+    container.additional_flags.extend(user_flags)
 
-    # keep this print output here for debugging purposes
-    print(docker_cmd)
-    t = ShellRunnerThread(docker_cmd)
-    t.start()
-    t.started.wait()
-    t.process.wait()
-    sys.exit(t.process.returncode)
+    # get additional parameters from plugins
+    # TODO: extract this into container config hooks and remove old plugin code
+    plugin_configs = load_plugins()
+    plugin_run_params = " ".join(
+        [entry.get("docker", {}).get("run_flags", "") for entry in plugin_configs]
+    )
+    plugin_run_params = extract_port_flags(plugin_run_params, container.ports)
+    container.additional_flags.extend(plugin_run_params)
+
+    # construct default port mappings
+    service_ports = config.SERVICE_PORTS
+    if service_ports.get("edge") == 0:
+        service_ports.pop("edge")
+    for port in service_ports.values():
+        if port:
+            container.ports.add(port)
+
+    if config.DEVELOP:
+        container.ports.add(config.DEVELOP_PORT)
+
+    # environment variables
+    # pass through environment variables defined in config
+    for env_var in config.CONFIG_ENV_VARS:
+        value = os.environ.get(env_var, None)
+        if value is not None:
+            container.env_vars[env_var] = value
+    container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
+    container.env_vars["HOST_TMP_FOLDER"] = config.HOST_TMP_FOLDER
+
+    # data_dir mounting and environment variables
+    bind_mounts = []
+    data_dir = os.environ.get("DATA_DIR", None)
+    if data_dir is not None:
+        container_data_dir = "/tmp/localstack_data"
+        container.volumes.add((data_dir, container_data_dir))
+        container.env_vars["DATA_DIR"] = container_data_dir
+
+    # default bind mounts
+    container.volumes.add((config.TMP_FOLDER, "/tmp/localstack"))
+    bind_mounts.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
+
+    container.additional_flags.append("--privileged")
+
+
+def start_infra_in_docker():
+    prepare_docker_start()
+
+    container = LocalstackContainer()
+
+    # create and prepare container
+    configure_container(container)
+
+    container.truncate_log()
+
+    # printing the container log is the current way we're occupying the terminal
+    log_printer = FileListener(container.logfile, print)
+    log_printer.start()
+
+    # start the Localstack container as a Server
+    server = LocalstackContainerServer(container)
+    try:
+        server.start()
+        server.join()
+    except KeyboardInterrupt:
+        print("ok, bye!")
+    finally:
+        server.shutdown()
+        log_printer.close()
+
+
+def start_infra_in_docker_detached(console):
+    """
+    An alternative to start_infra_in_docker where the terminal is not blocked by the follow on the logfile.
+    """
+    console.log("preparing environment")
+    try:
+        prepare_docker_start()
+    except ContainerExists as e:
+        console.print(str(e))
+        return
+
+    # create and prepare container
+    console.log("configuring container")
+    container = LocalstackContainer()
+    configure_container(container)
+    container.truncate_log()
+
+    # start the Localstack container as a Server
+    console.log("starting container")
+    server = LocalstackContainerServer(container)
+    server.start()
+    server.wait_is_container_running()
+    console.log("detaching")
+
+
+def wait_container_is_ready(timeout: Optional[float] = None):
+    """Blocks until the localstack main container is running and the ready marker has been printed."""
+    from localstack.services.infra import READY_MARKER_OUTPUT
+
+    container_name = config.MAIN_CONTAINER_NAME
+
+    def is_container_running():
+        return DOCKER_CLIENT.is_container_running(container_name)
+
+    if not poll_condition(is_container_running, timeout=timeout):
+        return False
+
+    logfile = LocalstackContainer(container_name).logfile
+
+    ready = threading.Event()
+
+    def set_ready_if_marker_found(_line: str):
+        if _line == READY_MARKER_OUTPUT:
+            ready.set()
+
+    # start a tail on the logfile
+    listener = FileListener(logfile, set_ready_if_marker_found)
+    listener.start()
+
+    try:
+        # but also check the existing log in case the container has been running longer
+        with open(logfile, "r") as fd:
+            for line in fd:
+                if READY_MARKER_OUTPUT == line.strip():
+                    return True
+
+        # TODO: calculate remaining timeout
+        return ready.wait(timeout)
+    finally:
+        listener.close()
 
 
 # ---------------

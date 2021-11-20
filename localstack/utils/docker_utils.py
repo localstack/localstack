@@ -1,3 +1,4 @@
+import dataclasses
 import io
 import json
 import logging
@@ -220,6 +221,59 @@ class PortMappings(object):
             range[1] = port - 1
 
 
+SimpleVolumeBind = Tuple[str, str]
+"""Type alias for a simple version of VolumeBind"""
+
+
+@dataclasses.dataclass
+class VolumeBind:
+    """Represents a --volume argument run/create command. When using VolumeBind to bind-mount a file or directory
+    that does not yet exist on the Docker host, -v creates the endpoint for you. It is always created as a directory.
+    """
+
+    host_dir: str
+    container_dir: str
+    options: Optional[List[str]] = None
+
+    def to_str(self) -> str:
+        args = list()
+
+        if self.host_dir:
+            args.append(self.host_dir)
+
+        if not self.container_dir:
+            raise ValueError("no container dir specified")
+
+        args.append(self.container_dir)
+
+        if self.options:
+            args.append(self.options)
+
+        return ":".join(args)
+
+
+class VolumeMappings:
+    mappings: List[Union[SimpleVolumeBind, VolumeBind]]
+
+    def __init__(self, mappings: List[Union[SimpleVolumeBind, VolumeBind]] = None):
+        self.mappings = mappings if mappings is not None else list()
+
+    def add(self, mapping: Union[SimpleVolumeBind, VolumeBind]):
+        self.append(mapping)
+
+    def append(
+        self,
+        mapping: Union[
+            SimpleVolumeBind,
+            VolumeBind,
+        ],
+    ):
+        self.mappings.append(mapping)
+
+    def __iter__(self):
+        return self.mappings.__iter__()
+
+
 class ContainerClient(metaclass=ABCMeta):
     @abstractmethod
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
@@ -361,7 +415,7 @@ class ContainerClient(metaclass=ABCMeta):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -390,7 +444,7 @@ class ContainerClient(metaclass=ABCMeta):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -441,6 +495,8 @@ class ContainerClient(metaclass=ABCMeta):
 
 class CmdDockerClient(ContainerClient):
     """Class for managing docker containers using the command line executable"""
+
+    default_run_outfile: Optional[str] = None
 
     def _docker_cmd(self) -> List[str]:
         """Return the string to be used for running Docker commands."""
@@ -759,7 +815,7 @@ class CmdDockerClient(ContainerClient):
             "inherit_env": True,
             "asynchronous": True,
             "stderr": subprocess.PIPE,
-            "outfile": subprocess.PIPE,
+            "outfile": self.default_run_outfile or subprocess.PIPE,
         }
         if stdin:
             kwargs["stdin"] = True
@@ -797,7 +853,7 @@ class CmdDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -930,10 +986,14 @@ class Util:
         additional_flags: str,
         env_vars: Dict[str, str] = None,
         ports: PortMappings = None,
-        mounts: List[Tuple[str, str]] = None,
+        mounts: List[SimpleVolumeBind] = None,
         network: Optional[str] = None,
     ) -> Tuple[
-        Dict[str, str], PortMappings, List[Tuple[str, str]], Optional[Dict[str, str]], Optional[str]
+        Dict[str, str],
+        PortMappings,
+        List[SimpleVolumeBind],
+        Optional[Dict[str, str]],
+        Optional[str],
     ]:
         """Parses environment, volume and port flags passed as string
         :param additional_flags: String which contains the flag definitions
@@ -1025,7 +1085,7 @@ class Util:
 
     @staticmethod
     def convert_mount_list_to_dict(
-        mount_volumes: List[Tuple[str, str]]
+        mount_volumes: List[SimpleVolumeBind],
     ) -> Dict[str, Dict[str, str]]:
         """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
         return dict(
@@ -1350,7 +1410,7 @@ class SdkDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -1427,7 +1487,7 @@ class SdkDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
