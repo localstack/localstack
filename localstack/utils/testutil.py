@@ -464,14 +464,14 @@ def download_s3_object(s3, bucket, path):
         return result
 
 
-def all_s3_object_keys(bucket):
+def all_s3_object_keys(bucket: str) -> List[str]:
     s3_client = aws_stack.connect_to_resource("s3")
     bucket = s3_client.Bucket(bucket) if isinstance(bucket, str) else bucket
-    keys = [key for key in bucket.objects.all()]
+    keys = [key.key for key in bucket.objects.all()]
     return keys
 
 
-def map_all_s3_objects(to_json=True, buckets=None):
+def map_all_s3_objects(to_json: bool = True, buckets: List[str] = None) -> Dict[str, Any]:
     s3_client = aws_stack.connect_to_resource("s3")
     result = {}
     buckets = ensure_list(buckets)

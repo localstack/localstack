@@ -176,6 +176,14 @@ def is_real_s3_url(url):
     return re.match(r".*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*", url or "")
 
 
+def get_key_from_s3_url(url: str, leading_slash: bool = False) -> str:
+    """Extract the object key from an S3 URL"""
+    result = re.sub(r"^s3://[^/]+", "", url, flags=re.IGNORECASE).strip()
+    result = result.lstrip("/")
+    result = f"/{result}" if leading_slash else result
+    return result
+
+
 def is_expired(expiry_datetime):
     now_datetime = datetime.datetime.now(tz=expiry_datetime.tzinfo)
     return now_datetime > expiry_datetime

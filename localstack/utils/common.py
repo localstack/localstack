@@ -463,6 +463,16 @@ class ArbitraryAccessObj:
         return ArbitraryAccessObj()
 
 
+class HashableList(list):
+    """Hashable list class that can be used with dicts or hashsets."""
+
+    def __hash__(self):
+        result = 0
+        for i in self:
+            result += hash(i)
+        return result
+
+
 # ----------------
 # UTILITY METHODS
 # ----------------
