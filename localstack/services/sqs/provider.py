@@ -2,8 +2,7 @@ import base64
 import copy
 import hashlib
 import inspect
-
-# import json
+import json
 import logging
 import random
 import re
@@ -16,6 +15,7 @@ from typing import Dict, List, NamedTuple, Optional, Set
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sqs import (
     ActionNameList,
@@ -132,6 +132,36 @@ class Permission(NamedTuple):
     action: str
 
 
+class StandardMessage:
+    message: Message
+    visibility_timeout: int
+    receive_times: int
+    receipt_handles: Set[str]
+
+    def __init__(self, message: Message) -> None:
+        self.message = message
+        self.receive_times = 0
+        self.receipt_handles = set()
+
+        self.last_received = None
+        self.first_received = None
+
+    @property
+    def is_visible(self):
+        if self.last_received is None:
+            return True
+        if time.time() >= (self.last_received + self.visibility_timeout):
+            return True
+
+        return False
+
+    def __eq__(self, other):
+        return self.message["MessageId"] == other.message["MessageId"]
+
+    def __hash__(self):
+        return self.message["MessageId"].__hash__()
+
+
 class SqsQueue:
     key: QueueKey
 
@@ -208,43 +238,11 @@ class SqsQueue:
     def put(self, message: Message, visibility_timeout=None):
         raise NotImplementedError
 
-    def get(self, block=True, timeout=None, visibility_timeout: int = None) -> Message:
+    def get(self, block=True, timeout=None, visibility_timeout: int = None) -> StandardMessage:
         raise NotImplementedError
 
     def requeue_inflight_messages(self):
         raise NotImplementedError
-
-
-class StandardMessage:
-    message: Message
-    message_id: str
-    visibility_timeout: int
-    receive_times: int
-    receipt_handles: Set[str]
-
-    def __init__(self, message: Message) -> None:
-        self.message_id = message["MessageId"]
-        self.message = message
-        self.receive_times = 0
-        self.receipt_handles = set()
-
-        self.last_received = None
-        self.first_received = None
-
-    @property
-    def is_visible(self):
-        if self.last_received is None:
-            return True
-        if time.time() >= (self.last_received + self.visibility_timeout):
-            return True
-
-        return False
-
-    def __eq__(self, other):
-        self.message_id = other.message_id
-
-    def __hash__(self):
-        return self.message_id.__hash__()
 
 
 class QueuedMessage(StandardMessage):
@@ -292,10 +290,10 @@ class FifoQueue(SqsQueue):
 
         self.visible.put_nowait(qm)
 
-    def get(self, block=True, timeout=None, visibility_timeout: int = None) -> Message:
+    def get(self, block=True, timeout=None, visibility_timeout: int = None) -> StandardMessage:
         while True:
             qm: QueuedMessage = self.visible.get(block=block, timeout=timeout)
-            LOG.debug("de-queued message %s from %s", qm.message_id, self.arn)
+            LOG.debug("de-queued message %s from %s", qm.message["MessageId"], self.arn)
 
             with self.mutex:
                 if qm.deleted:
@@ -307,8 +305,6 @@ class FifoQueue(SqsQueue):
                 qm.visibility_timeout = (
                     self.visibility_timeout if visibility_timeout is None else visibility_timeout
                 )
-                # if self.attributes.get(QueueAttributeName.RedrivePolicy) is not None:
-                # self.dead_letter_check(qm)
                 qm.receive_times += 1
                 qm.last_received = time.time()
                 if qm.first_received is None:
@@ -326,10 +322,10 @@ class FifoQueue(SqsQueue):
 
                 # prepare message for receiver
                 # TODO: update message attributes (ApproximateFirstReceiveTimestamp, ApproximateReceiveCount)
-                message = copy.deepcopy(qm.message)
-                message["ReceiptHandle"] = receipt_handle
+                copied_message = copy.deepcopy(qm)
+                copied_message.message["ReceiptHandle"] = receipt_handle
 
-            return message
+            return copied_message
 
     def update_visibility_timeout(self, receipt_handle: str, visibility_timeout: int):
         with self.mutex:
@@ -344,7 +340,7 @@ class FifoQueue(SqsQueue):
             qm.visibility_timeout = visibility_timeout
 
             if visibility_timeout == 0:
-                LOG.info("terminating the visibility timeout of %s", qm.message_id)
+                LOG.info("terminating the visibility timeout of %s", qm.message["MessageId"])
                 # Terminating the visibility timeout for a message
                 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
                 self.inflight.remove(qm)
@@ -362,7 +358,7 @@ class FifoQueue(SqsQueue):
 
             qm = self.receipts[receipt_handle]
             qm.deleted = True
-            LOG.debug("deleting message %s from queue %s", qm.message_id, self.arn)
+            LOG.debug("deleting message %s from queue %s", qm.message["MessageId"], self.arn)
 
             # remove all all handles
             for handle in qm.receipt_handles:
@@ -387,18 +383,12 @@ class FifoQueue(SqsQueue):
             for qm in messages:
                 if qm.is_visible:
                     LOG.debug(
-                        "re-queueing inflight messages %s into queue %s", qm.message_id, self.arn
+                        "re-queueing inflight messages %s into queue %s",
+                        qm.message["MessageId"],
+                        self.arn,
                     )
                     self.inflight.remove(qm)
                     self.visible.put_nowait(qm)
-
-    # def dead_letter_check(self, qm: QueuedMessage):
-    # redrive_policy = json.loads(self.attributes.get(QueueAttributeName.RedrivePolicy))
-    # TODO: include the names of the dictionary sub-attributes in the autogenerated code?
-    # max_receive_count = redrive_policy["maxReceiveCount"]
-    # if max_receive_count >= qm.receive_times:
-    # dead_letter_target_arn = redrive_policy["deadLetterTargetArn"]
-    # dl_queue_url =
 
 
 class InflightUpdateWorker:
@@ -729,6 +719,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_group_id: String = None,  # TODO
     ) -> Message:
         # TODO: default message attributes (SenderId, ApproximateFirstReceiveTimestamp, ...)
+
         arguments = dict(locals())
         arguments.pop("self")
         check_message_content(arguments)
@@ -743,7 +734,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MessageAttributes=message_attributes,
         )
         delay_seconds = delay_seconds or queue.attributes.get(QueueAttributeName.DelaySeconds, "0")
-        if delay_seconds:
+
+        if int(delay_seconds):
             # FIXME: this is a pretty bad implementation (one thread per message...). polling on a priority queue
             #  would probably be better.
             threading.Timer(int(delay_seconds), queue.put, args=(message,)).start()
@@ -772,12 +764,18 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         messages = list()
         while num:
             try:
-                msg = queue.get(
+                standard_message = queue.get(
                     block=block, timeout=wait_time_seconds, visibility_timeout=visibility_timeout
                 )
+                msg = standard_message.message
             except Empty:
                 break
 
+            moved_to_dlq = False
+            if queue.attributes.get(QueueAttributeName.RedrivePolicy) is not None:
+                moved_to_dlq = self._dead_letter_check(queue, standard_message)
+            if moved_to_dlq:
+                continue
             # filter attributes
             if message_attribute_names:
                 if "All" not in message_attribute_names:
@@ -799,6 +797,21 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         # TODO: how does receiving behave if the queue was deleted in the meantime?
         return ReceiveMessageResult(Messages=messages)
+
+    def _dead_letter_check(self, queue: SqsQueue, std_m: StandardMessage) -> bool:
+        redrive_policy = json.loads(queue.attributes.get(QueueAttributeName.RedrivePolicy))
+        # TODO: include the names of the dictionary sub - attributes in the autogenerated code?
+        max_receive_count = redrive_policy["maxReceiveCount"]
+        if std_m.receive_times > max_receive_count:
+            dead_letter_target_arn = redrive_policy["deadLetterTargetArn"]
+            dl_queue = self._require_queue_by_arn(dead_letter_target_arn)
+            # TODO: this needs to be atomic?
+            dead_message = std_m.message
+            dl_queue.put(message=dead_message)
+            queue.remove(std_m.message["ReceiptHandle"])
+            return True
+        else:
+            return False
 
     def delete_message(
         self, context: RequestContext, queue_url: String, receipt_handle: String
@@ -988,6 +1001,14 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 raise BatchEntryIdsNotDistinct()
             else:
                 visited.add(entry["Id"])
+
+    def _require_queue_by_arn(self, dead_letter_target_arn):
+        arn_parts = dead_letter_target_arn.split(":")
+        url = "http://localhost:{}/{}/{}".format(
+            config.EDGE_PORT, arn_parts[len(arn_parts) - 2], arn_parts[len(arn_parts) - 1]
+        )
+        queue = self._require_queue_by_url(url)
+        return queue
 
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
