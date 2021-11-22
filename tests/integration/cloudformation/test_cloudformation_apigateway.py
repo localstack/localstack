@@ -1,5 +1,6 @@
 import jinja2
 
+from localstack import constants
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
@@ -112,13 +113,13 @@ def test_url_output(
         describe_response = cfn_client.describe_stacks(StackName=stack_id)
         outputs = describe_response["Stacks"][0]["Outputs"]
         assert len(outputs) == 2
-        api_id = [o["OutputValue"] for o in outputs if o["OutputKey"] == "ApiV2IdOutput"][0]
-        api_url = [o["OutputValue"] for o in outputs if o["OutputKey"] == "ApiV2UrlOutput"][0]
+        api_id = [o["OutputValue"] for o in outputs if o["OutputKey"] == "ApiV1IdOutput"][0]
+        api_url = [o["OutputValue"] for o in outputs if o["OutputKey"] == "ApiV1UrlOutput"][0]
         assert api_id
         assert api_url
         assert api_id in api_url
 
-        assert f"https://{api_id}.execute-api.localhost.localstack.cloud:4566" in api_url
+        assert f"https://{api_id}.execute-api.{constants.LOCALHOST_HOSTNAME}:4566" in api_url
 
     finally:
         cleanup_changesets([change_set_id])

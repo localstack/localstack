@@ -46,7 +46,7 @@ AWS_URL_SUFFIX = "localhost.localstack.cloud"  # value is "amazonaws.com" in rea
 IAM_POLICY_VERSION = "2012-10-17"
 
 REGEX_OUTPUT_APIGATEWAY = re.compile(
-    rf"^(https?://.+\.execute-api\.).+-.+-\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
+    rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
 )
 
 LOG = logging.getLogger(__name__)
