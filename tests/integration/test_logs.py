@@ -7,7 +7,7 @@ from localstack.services.awslambda.lambda_api import func_arn
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import retry, short_uid
+from localstack.utils.common import now_utc, retry, short_uid
 from tests.integration.test_lambda import (
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_NAME_PY3,
@@ -41,7 +41,7 @@ class CloudWatchLogsTest(unittest.TestCase):
 
         # send message with non-ASCII (multi-byte) chars
         body_msg = "🙀 - 参よ - 日本語"
-        events = [{"timestamp": 1546300800, "message": body_msg}]
+        events = [{"timestamp": now_utc(millis=True), "message": body_msg}]
         response = self.logs_client.put_log_events(
             logGroupName=group, logStreamName=stream, logEvents=events
         )
@@ -60,8 +60,8 @@ class CloudWatchLogsTest(unittest.TestCase):
         self.create_log_group_and_stream(group, stream)
 
         events = [
-            {"timestamp": 1585902800, "message": "log message 1"},
-            {"timestamp": 1585902961, "message": "log message 2"},
+            {"timestamp": now_utc(millis=True), "message": "log message 1"},
+            {"timestamp": now_utc(millis=True), "message": "log message 2"},
         ]
         self.logs_client.put_log_events(logGroupName=group, logStreamName=stream, logEvents=events)
 
@@ -113,8 +113,8 @@ class CloudWatchLogsTest(unittest.TestCase):
             logGroupName=log_group_name,
             logStreamName=stream,
             logEvents=[
-                {"timestamp": 0, "message": "test"},
-                {"timestamp": 0, "message": "test 2"},
+                {"timestamp": now_utc(millis=True), "message": "test"},
+                {"timestamp": now_utc(millis=True), "message": "test 2"},
             ],
         )
 
@@ -160,8 +160,8 @@ class CloudWatchLogsTest(unittest.TestCase):
             logGroupName=log_group,
             logStreamName=log_stream,
             logEvents=[
-                {"timestamp": 0, "message": "test"},
-                {"timestamp": 0, "message": "test 2"},
+                {"timestamp": now_utc(millis=True), "message": "test"},
+                {"timestamp": now_utc(millis=True), "message": "test 2"},
             ],
         )
 
@@ -169,8 +169,8 @@ class CloudWatchLogsTest(unittest.TestCase):
             logGroupName=log_group,
             logStreamName=log_stream,
             logEvents=[
-                {"timestamp": 0, "message": "test"},
-                {"timestamp": 0, "message": "test 2"},
+                {"timestamp": now_utc(millis=True), "message": "test"},
+                {"timestamp": now_utc(millis=True), "message": "test 2"},
             ],
         )
 
@@ -208,8 +208,8 @@ class CloudWatchLogsTest(unittest.TestCase):
                 logGroupName=log_group,
                 logStreamName=log_stream,
                 logEvents=[
-                    {"timestamp": 0, "message": "test"},
-                    {"timestamp": 0, "message": "test 2"},
+                    {"timestamp": now_utc(millis=True), "message": "test"},
+                    {"timestamp": now_utc(millis=True), "message": "test 2"},
                 ],
             )
 
@@ -257,8 +257,8 @@ class CloudWatchLogsTest(unittest.TestCase):
 
         # put log events and assert metrics being published
         events = [
-            {"timestamp": 1585902800, "message": "log message 1"},
-            {"timestamp": 1585902961, "message": "log message 2"},
+            {"timestamp": now_utc(millis=True), "message": "log message 1"},
+            {"timestamp": now_utc(millis=True), "message": "log message 2"},
         ]
         self.create_log_group_and_stream(log_group, log_stream)
         self.logs_client.put_log_events(
