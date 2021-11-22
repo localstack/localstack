@@ -30,6 +30,7 @@ from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.common import (
     long_uid,
     md5,
+    not_none_or,
     parse_request_data,
     short_uid,
     start_thread,
@@ -494,7 +495,7 @@ async def message_to_subscriber(
                 "statusCode": response.status_code,
                 "providerResponse": response.get_data(),
             }
-            store_delivery_log(subscriber, True, message, message_id)
+            store_delivery_log(subscriber, True, message, message_id, delivery)
 
             if isinstance(response, Response):
                 response.raise_for_status()
@@ -978,13 +979,14 @@ def is_raw_message_delivery(susbcriber):
 
 
 def store_delivery_log(
-    subscriber: dict, success: bool, message: str, message_id: str, delivery: dict = {}
+    subscriber: dict, success: bool, message: str, message_id: str, delivery: dict = None
 ):
 
     log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
     log_stream_name = long_uid()
     invocation_time = int(time.time() * 1000)
 
+    delivery = not_none_or(delivery, {})
     delivery["deliveryId"] = (long_uid(),)
     delivery["destination"] = (subscriber.get("Endpoint", ""),)
     delivery["dwellTimeMs"] = 200
