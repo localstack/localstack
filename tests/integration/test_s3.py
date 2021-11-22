@@ -13,6 +13,7 @@ from unittest.mock import patch
 from urllib.parse import parse_qs, quote
 
 import boto3
+import pytest
 import requests
 from botocore.client import Config
 from botocore.exceptions import ClientError
@@ -32,7 +33,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON36,
 )
 from localstack.services.s3 import s3_listener, s3_utils
-from localstack.utils import testutil
+from localstack.utils import persistence, testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     get_service_protocol,
@@ -2607,3 +2608,86 @@ class TestS3New:
             bucket_head["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == TEST_REGION_1
         )
         assert buckets["ResponseMetadata"]["HTTPHeaders"]["x-amz-bucket-region"] == TEST_REGION_1
+
+
+@pytest.mark.parametrize(
+    "api_version, bucket_name, payload",
+    [
+        # taken from https://github.com/localstack/localstack/issues/4297
+        (
+            "v2",
+            "test3",
+            {
+                "a": "s3",
+                "m": "PUT",
+                "p": "/test3",
+                "d": "",
+                "h": {
+                    "Remote-Addr": "172.17.0.1",
+                    "Host": "localhost:4566",
+                    "Accept": "*/*",
+                    "Accept-Encoding": "gzip, deflate",
+                    "Accept-Language": "en-us",
+                    "Date": "Tue, 13 Jul 2021 20:42:48 GMT",
+                    "User-Agent": "Transmit/5.7.4",
+                    "Content-Length": "0",
+                    "Authorization": "AWS test:AgaZIyJLcDVk0Ye46dVJEOGyVOA=",
+                    "X-Forwarded-For": "172.17.0.1, localhost:4566, 127.0.0.1, localhost:4566",
+                    "x-localstack-edge": "https://localhost:4566",
+                    "x-localstack-tgt-api": "s3",
+                    "content-type": "binary/octet-stream",
+                    "Connection": "close",
+                },
+                "rd": (
+                    "PENyZWF0ZUJ1Y2tldFJlc3BvbnNlIHhtbG5zPSJodHRwOi8vczMuYW1hem9uYXdzLmNvbS9kb2MvMjAwNi0wMy0wMSI+"
+                    "PENyZWF0ZUJ1Y2tldFJlc3BvbnNlPjxCdWNrZXQ+dGVzdDM8L0J1Y2tldD48L0NyZWF0ZUJ1Y2tldFJlc3BvbnNlPjwvQ3JlYXRlQnVja2V0UmVzcG9uc2U+"
+                ),
+            },
+        ),
+        (
+            "v4",
+            "test1",
+            {
+                "a": "s3",
+                "m": "PUT",
+                "p": "/test1",
+                "d": "",
+                "h": {
+                    "Remote-Addr": "172.17.0.1",
+                    "Host": "localhost:4566",
+                    "Accept-Encoding": "identity",
+                    "User-Agent": "aws-cli/2.0.46 Python/3.8.5 Darwin/20.3.0 source/x86_64 command/s3api.create-bucket",
+                    "X-Amz-Date": "20210713T203604Z",
+                    "X-Amz-Content-Sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "Authorization": (
+                        "AWS4-HMAC-SHA256 Credential=_not_needed_locally_/20210713/us-east-1/s3/aws4_request,"
+                        " SignedHeaders=host;x-amz-content-sha256;x-amz-date,"
+                        " Signature=61ee7abf65a8d7c4b970e647c538d99094db15dbf5c13ae59dd2624946be1475"
+                    ),
+                    "Content-Length": "0",
+                    "X-Forwarded-For": "172.17.0.1, localhost:4566, 127.0.0.1, localhost:4566",
+                    "x-localstack-edge": "http://localhost:4566",
+                    "x-localstack-tgt-api": "s3",
+                    "content-type": "binary/octet-stream",
+                    "Connection": "close",
+                },
+                "rd": (
+                    "PENyZWF0ZUJ1Y2tldFJlc3BvbnNlIHhtbG5zPSJodHRwOi8vczMuYW1hem9uYXdzLmNvbS9kb2MvMjAwNi0wMy0wMSI+"
+                    "PENyZWF0ZUJ1Y2tldFJlc3BvbnNlPjxCdWNrZXQ+dGVzdDE8L0J1Y2tldD48L0NyZWF0ZUJ1Y2tldFJlc3BvbnNlPjwvQ3JlYXRlQnVja2V0UmVzcG9uc2U+"
+                ),
+            },
+        ),
+    ],
+)
+def test_replay_s3_call(api_version, bucket_name, payload):
+    s3_client = aws_stack.connect_to_service("s3")
+
+    with pytest.raises(ClientError) as error:
+        s3_client.head_bucket(Bucket=bucket_name)
+    assert "Not Found" in str(error)
+
+    resp = persistence.replay_command(payload)
+    assert resp.status_code == 200
+
+    bucket_head = s3_client.head_bucket(Bucket=bucket_name)
+    assert bucket_head["ResponseMetadata"]["HTTPStatusCode"] == 200

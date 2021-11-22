@@ -221,27 +221,26 @@ def is_internal_call_context(headers):
     """Return whether we are executing in the context of an internal API call, i.e.,
     the case where one API uses a boto3 client to call another API internally."""
     auth_header = headers.get("Authorization") or ""
-    header_value = "Credential=%s/" % INTERNAL_AWS_ACCESS_KEY_ID
-    return header_value in auth_header
+    return get_internal_credential() in auth_header
+
+
+def get_internal_credential():
+    return "Credential=%s/" % INTERNAL_AWS_ACCESS_KEY_ID
 
 
 def set_internal_auth(headers):
     authorization = headers.get("Authorization") or ""
-    authorization = re.sub(
-        r"Credential=[^/]+/",
-        "Credential=%s/" % INTERNAL_AWS_ACCESS_KEY_ID,
-        authorization,
-    )
     if authorization.startswith("AWS "):
+        # Cover Non HMAC Authentication
         authorization = re.sub(
-            r"AWS [^/]+",  # Cover Non HMAC Authentication
-            "Credential=%s" % INTERNAL_AWS_ACCESS_KEY_ID,
+            r"AWS [^/]+",
+            "AWS %s" % get_internal_credential(),
             authorization,
         )
     else:
         authorization = re.sub(
             r"Credential=[^/]+/",
-            "Credential=%s/" % INTERNAL_AWS_ACCESS_KEY_ID,
+            get_internal_credential(),
             authorization,
         )
     headers["Authorization"] = authorization
