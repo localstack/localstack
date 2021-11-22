@@ -10,6 +10,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
 from localstack.utils.common import short_uid
+from localstack.utils.testutil import start_http_server
 
 if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
@@ -370,3 +371,16 @@ def create_secret(secretsmanager_client):
 
     for item in items:
         secretsmanager_client.delete_secret(SecretId=item)
+
+
+only_localstack = pytest.mark.skipif(
+    os.environ.get("TEST_TARGET") == "AWS_CLOUD",
+    reason="test only applicable if run against localstack",
+)
+
+
+@pytest.fixture
+def tmp_http_server():
+    test_port, invocations, proxy = start_http_server()
+    yield test_port, invocations, proxy
+    proxy.stop()
