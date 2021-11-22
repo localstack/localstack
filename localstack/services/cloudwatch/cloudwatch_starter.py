@@ -1,9 +1,7 @@
-import moto.cloudwatch.models as cloudwatch_models
 import moto.cloudwatch.responses as cloudwatch_responses
 
 from localstack import config
 from localstack.services.infra import start_moto_server
-from localstack.utils.common import to_unique_items_list
 
 
 def apply_patches():
