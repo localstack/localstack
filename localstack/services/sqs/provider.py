@@ -98,6 +98,11 @@ class NonExistentQueue(CommonServiceException):
         )
 
 
+class InvalidAttributeValue(CommonServiceException):
+    def __init__(self, message):
+        super().__init__("InvalidAttributeValue", message, 400, True)
+
+
 def assert_queue_name(queue_name: str, fifo: bool = False):
     if queue_name.endswith(".fifo"):
         if not fifo:
@@ -116,12 +121,17 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
 
 
 def check_message_content(data: dict):
+    error = "Invalid characters found. Valid unicode characters are #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF"
     for key, value in data.items():
         if isinstance(value, dict):
             check_message_content(value)
         string_value = str(value)
         if not re.match(MSG_CONTENT_REGEX, string_value):
-            raise InvalidMessageContents()
+            # TODO: Standard message attributes like QueueAttributeName.name?
+            if key == "message_body" or key == "MessageBody":
+                raise InvalidMessageContents(error)
+            else:
+                raise InvalidParameterValues(error)
 
 
 class QueueKey(NamedTuple):
@@ -373,6 +383,14 @@ class SqsQueue:
                 "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
             )
 
+    def validate_queue_attributes(self, attributes):
+        valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
+        del valid[valid.index(QueueAttributeName.FifoQueue)]
+
+        for k in attributes.keys():
+            if k not in valid:
+                raise InvalidAttributeName("Unknown attribute name %s" % k)
+
 
 class QueuedMessage(StandardMessage):
     priority: float
@@ -423,6 +441,18 @@ class FifoQueue(SqsQueue):
         # The .fifo suffix counts towards the 80-character queue name quota.
         queue_name = name[:-5] + "_fifo"
         super()._assert_queue_name(queue_name)
+
+    def validate_queue_attributes(self, attributes):
+        valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
+
+        for k in attributes.keys():
+            if k not in valid:
+                raise InvalidAttributeName("Unknown attribute name %s" % k)
+        # Special Cases
+        if attributes.get(QueueAttributeName.FifoQueue).lower() != "true":
+            raise InvalidAttributeValue(
+                "Invalid value for the parameter FifoQueue. Reason: Modifying queue type is not supported."
+            )
 
 
 class InflightUpdateWorker:
@@ -923,7 +953,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if not attributes:
             return
 
-        self._validate_queue_attributes(attributes)
+        queue.validate_queue_attributes(attributes)
 
         for k, v in attributes.items():
             queue.attributes[k] = v
@@ -1004,7 +1034,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         for k in attributes.keys():
             if k not in valid:
-                raise InvalidAttributeName("Unknown attribute name %s" % k)
+                raise InvalidAttributeName("Unknown Attribute %s" % k)
 
     def _validate_actions(self, actions: ActionNameList):
         service = load_service(service=self.service, version=self.version)

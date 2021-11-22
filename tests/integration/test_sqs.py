@@ -1393,7 +1393,6 @@ class TestSqsProvider:
         response_receive = sqs_client.receive_message(QueueUrl=queue_url)
         assert response_receive["Messages"][0]["MessageId"] == response_send["MessageId"]
 
-    @pytest.mark.skip
     def test_batch_send_with_invalid_char_should_succeed(self, sqs_client, sqs_create_queue):
         # issue 4135
         queue_name = "queue_4135_" + short_uid()
@@ -1549,10 +1548,53 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
 
+    def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_client):
+        dl_queue_name = f"dl-queue-{short_uid()}"
+        dl_queue_url = sqs_create_queue(QueueName=dl_queue_name)
+        dl_target_arn = sqs_client.get_queue_attributes(
+            QueueUrl=dl_queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        max_receive_count = 42
+
+        with pytest.raises(Exception) as e:
+            sqs_client.set_queue_attributes(
+                QueueUrl=queue_url,
+                Attributes={"RedrivePolicy": json.dumps({"deadLetterTargetArn": dl_target_arn})},
+            )
+        e.match("InvalidParameterValue")
+
+        with pytest.raises(Exception) as e:
+            sqs_client.set_queue_attributes(
+                QueueUrl=queue_url,
+                Attributes={"RedrivePolicy": json.dumps({"maxReceiveCount": max_receive_count})},
+            )
+        e.match("InvalidParameterValue")
+
+        _redrive_policy = {
+            "deadLetterTargetArn": dl_target_arn,
+            "maxReceiveCount": max_receive_count,
+        }
+
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url, Attributes={"RedrivePolicy": json.dumps(_redrive_policy)}
+        )
+
     @pytest.mark.skip
-    def test_redrive_policy_attribute_validity(self, sqs_create_queue):
-        # TODO
-        raise NotImplementedError
+    def test_invalid_dead_letter_arn_rejected_before_lookup(self, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}"
+        dl_dummy_arn = "dummy"
+        max_receive_count = 42
+        _redrive_policy = {
+            "deadLetterTargetArn": dl_dummy_arn,
+            "maxReceiveCount": max_receive_count,
+        }
+        with pytest.raises(Exception) as e:
+            sqs_create_queue(
+                QueueName=queue_name, Attributes={"RedrivePolicy": json.dumps(_redrive_policy)}
+            )
+        e.match("InvalidParameterValue")
 
     def test_set_queue_policy(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
@@ -1816,14 +1858,24 @@ class TestSqsProvider:
         assert constructed_arn == get_single_attribute.get("Attributes").get("QueueArn")
         assert max_receive_count == redrive_policy.get("maxReceiveCount")
 
-    @pytest.mark.skip
-    def test_set_unsupported_attribute(self, sqs_client, sqs_create_queue):
+    def test_set_unsupported_attribute_fifo(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         with pytest.raises(Exception) as e:
             sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"FifoQueue": "true"})
         e.match("InvalidAttributeName")
+
+        fifo_queue_name = f"queue-{short_uid()}.fifo"
+        fifo_queue_url = sqs_create_queue(
+            QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"}
+        )
+        sqs_client.set_queue_attributes(QueueUrl=fifo_queue_url, Attributes={"FifoQueue": "true"})
+        with pytest.raises(Exception) as e:
+            sqs_client.set_queue_attributes(
+                QueueUrl=fifo_queue_url, Attributes={"FifoQueue": "false"}
+            )
+        e.match("InvalidAttributeValue")
 
     def test_fifo_queue_send_multiple_messages_multiple_single_receives(
         self, sqs_client, sqs_create_queue
@@ -1971,7 +2023,6 @@ class TestSqsProvider:
         )
         assert result_send
 
-    @pytest.mark.skip
     def test_invalid_string_attributes_cause_invalid_parameter_value_error(
         self, sqs_client, sqs_create_queue
     ):
