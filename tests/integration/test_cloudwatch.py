@@ -10,7 +10,6 @@ from six.moves.urllib.request import Request, urlopen
 from localstack import config
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import mock_aws_request_headers
 from localstack.utils.common import short_uid, to_str
 
 
@@ -63,7 +62,6 @@ class CloudWatchTest(unittest.TestCase):
 
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers("cloudwatch")
-
         authorization = aws_stack.mock_aws_request_headers("monitoring")["Authorization"]
 
         headers.update(
