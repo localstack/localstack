@@ -14,6 +14,7 @@ from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.ec2.utils import generate_route_id
 from six import iteritems
 
+from localstack import config
 from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME, TEST_AWS_ACCOUNT_ID
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -41,8 +42,12 @@ from localstack.services.cloudformation.models import *  # noqa: F401, isort:ski
 
 ACTION_CREATE = "create"
 ACTION_DELETE = "delete"
-AWS_URL_SUFFIX = "localhost"  # value is "amazonaws.com" in real AWS
+AWS_URL_SUFFIX = "localhost.localstack.cloud"  # value is "amazonaws.com" in real AWS
 IAM_POLICY_VERSION = "2012-10-17"
+
+REGEX_OUTPUT_APIGATEWAY = re.compile(
+    rf"^(https?://.+\.execute-api\.).+-.+-\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -491,6 +496,24 @@ def resolve_ref(stack_name, ref, resources, attribute):
 # TODO: Potentially think about a better approach in the future
 @prevent_stack_overflow(match_parameters=True)
 def resolve_refs_recursively(stack_name, value, resources):
+    result = _resolve_refs_recursively(stack_name, value, resources)
+
+    # localstack specific patches
+    if isinstance(result, str):
+        # we're trying to filter constructed API urls here (e.g. via Join in the template)
+        api_match = REGEX_OUTPUT_APIGATEWAY.match(result)
+        if api_match:
+            prefix = api_match[1]
+            host = api_match[2]
+            path = api_match[3]
+            port = config.service_port("apigateway")
+            return f"{prefix}{host}:{port}/{path}"
+
+    return result
+
+
+@prevent_stack_overflow(match_parameters=True)
+def _resolve_refs_recursively(stack_name, value, resources):
     if isinstance(value, dict):
         keys_list = list(value.keys())
         stripped_fn_lower = keys_list[0].lower().split("::")[-1] if len(keys_list) == 1 else None

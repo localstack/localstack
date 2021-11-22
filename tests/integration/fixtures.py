@@ -370,3 +370,9 @@ def create_secret(secretsmanager_client):
 
     for item in items:
         secretsmanager_client.delete_secret(SecretId=item)
+
+
+only_localstack = pytest.mark.skipif(
+    os.environ.get("TEST_TARGET") == "AWS_CLOUD",
+    reason="test only applicable if run against localstack",
+)

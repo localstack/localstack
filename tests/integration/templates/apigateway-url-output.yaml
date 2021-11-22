@@ -1,0 +1,49 @@
+Resources:
+  apigatewayE40D7439:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: {{ api_name }}
+      ProtocolType: HTTP
+  apigatewayDefaultStage039FEAD4:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId:
+        Ref: apigatewayE40D7439
+      StageName: $default
+      AutoDeploy: true
+  apigatewayGEThttpbinHttpIntegration1cd746b1d7348180429a2b4fcf7c1b7b024AD786:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: apigatewayE40D7439
+      IntegrationType: HTTP_PROXY
+      IntegrationMethod: GET
+      IntegrationUri: {{ integration_uri }}
+      PayloadFormatVersion: "1.0"
+  apigatewayGEThttpbinF0433EA1:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: apigatewayE40D7439
+      RouteKey: GET /test
+      AuthorizationType: NONE
+      Target:
+        Fn::Join:
+          - ""
+          - - integrations/
+            - Ref: apigatewayGEThttpbinHttpIntegration1cd746b1d7348180429a2b4fcf7c1b7b024AD786
+Outputs:
+  ApiV2IdOutput:
+    Value:
+      Ref: apigatewayE40D7439
+  ApiV2UrlOutput:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: apigatewayE40D7439
+          - .execute-api.
+          - Ref: AWS::Region
+          - "."
+          - Ref: AWS::URLSuffix
+          - /

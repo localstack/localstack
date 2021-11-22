@@ -3,6 +3,7 @@ import jinja2
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
+from tests.integration.fixtures import only_localstack
 
 
 def test_cfn_apigateway_aws_integration(
@@ -71,6 +72,54 @@ def test_cfn_apigateway_aws_integration(
         ]
         assert len(mappings) == 1
         assert mappings[0] == "(none)"
+    finally:
+        cleanup_changesets([change_set_id])
+        cleanup_stacks([stack_id])
+
+
+@only_localstack
+def test_url_output(
+    cfn_client,
+    apigateway_client,
+    is_change_set_created_and_available,
+    is_stack_created,
+    cleanup_changesets,
+    cleanup_stacks,
+    tmp_http_server,
+):
+    test_port, invocations, proxy = tmp_http_server
+    integration_uri = f"http://localhost:{test_port}/{{proxy}}"
+    api_name = f"rest-api-{short_uid()}"
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+    template_rendered = jinja2.Template(load_template_raw("apigateway-url-output.yaml")).render(
+        api_name=api_name, integration_uri=integration_uri
+    )
+    response = cfn_client.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=template_rendered,
+        ChangeSetType="CREATE",
+    )
+    change_set_id = response["Id"]
+    stack_id = response["StackId"]
+
+    try:
+        wait_until(is_change_set_created_and_available(change_set_id))
+        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        wait_until(is_stack_created(stack_id))
+
+        describe_response = cfn_client.describe_stacks(StackName=stack_id)
+        outputs = describe_response["Stacks"][0]["Outputs"]
+        assert len(outputs) == 2
+        api_id = [o["OutputValue"] for o in outputs if o["OutputKey"] == "ApiV2IdOutput"][0]
+        api_url = [o["OutputValue"] for o in outputs if o["OutputKey"] == "ApiV2UrlOutput"][0]
+        assert api_id
+        assert api_url
+        assert api_id in api_url
+
+        assert f"https://{api_id}.execute-api.localhost.localstack.cloud:4566" in api_url
+
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])
