@@ -9,7 +9,7 @@ import re
 import string
 import threading
 import time
-from queue import Empty, PriorityQueue
+from queue import Empty, PriorityQueue, Queue
 from typing import Dict, List, NamedTuple, Optional, Set
 
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
@@ -176,14 +176,23 @@ class SqsQueue:
 
     purge_in_progress: bool
 
+    visible: Queue
+    inflight: Set[StandardMessage]
+    receipts: Dict[str, StandardMessage]
+
     def __init__(self, key: QueueKey, attributes=None, tags=None) -> None:
         super().__init__()
+        self._assert_queue_name(key.name)
         self.key = key
         self.tags = tags or dict()
 
         self.attributes = self.default_attributes()
         if attributes:
             self.attributes.update(attributes)
+
+        self.visible = Queue()
+        self.inflight = set()
+        self.receipts = dict()
 
         self.purge_in_progress = False
         self.permissions = set()
@@ -238,7 +247,34 @@ class SqsQueue:
         raise NotImplementedError
 
     def remove(self, receipt_handle: str):
-        raise NotImplementedError
+        with self.mutex:
+            if receipt_handle not in self.receipts:
+                LOG.debug(
+                    "no in-flight message found for receipt handle %s in queue %s",
+                    receipt_handle,
+                    self.arn,
+                )
+                return
+
+            standard_message = self.receipts[receipt_handle]
+            standard_message.deleted = True
+            LOG.debug(
+                "deleting message %s from queue %s", standard_message.message["MessageId"], self.arn
+            )
+
+            # remove all all handles
+            for handle in standard_message.receipt_handles:
+                del self.receipts[handle]
+            standard_message.receipt_handles.clear()
+
+            # remove in-flight message
+            try:
+                self.inflight.remove(standard_message)
+            except KeyError:
+                # this means the message was re-queued in the meantime
+                # TODO: remove this message from the visible queue if it exists: a message can be removed with an old
+                #  receipt handle that was issued before the message was put back in the visible queue.
+                pass
 
     def put(self, message: Message, visibility_timeout=None):
         raise NotImplementedError
@@ -248,6 +284,13 @@ class SqsQueue:
 
     def requeue_inflight_messages(self):
         raise NotImplementedError
+
+    def _assert_queue_name(self, name):
+        # TODO: slashes are actually not allowed, but we've allowed it explicitly in localstack
+        if not re.match(r"^[a-zA-Z0-9/_-]{1,80}$", name):
+            raise InvalidParameterValues(
+                "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
+            )
 
 
 class QueuedMessage(StandardMessage):
@@ -281,8 +324,6 @@ class FifoQueue(SqsQueue):
         super().__init__(key, attributes, tags)
 
         self.visible = PriorityQueue()
-        self.inflight = set()
-        self.receipts = dict()
 
     def put(self, message: Message, visibility_timeout: int = None):
         qm = QueuedMessage(time.time(), message)
@@ -351,34 +392,6 @@ class FifoQueue(SqsQueue):
                 self.inflight.remove(qm)
                 self.visible.put_nowait(qm)
 
-    def remove(self, receipt_handle: str):
-        with self.mutex:
-            if receipt_handle not in self.receipts:
-                LOG.debug(
-                    "no in-flight message found for receipt handle %s in queue %s",
-                    receipt_handle,
-                    self.arn,
-                )
-                return
-
-            qm = self.receipts[receipt_handle]
-            qm.deleted = True
-            LOG.debug("deleting message %s from queue %s", qm.message["MessageId"], self.arn)
-
-            # remove all all handles
-            for handle in qm.receipt_handles:
-                del self.receipts[handle]
-            qm.receipt_handles.clear()
-
-            # remove in-flight message
-            try:
-                self.inflight.remove(qm)
-            except KeyError:
-                # this means the message was re-queued in the meantime
-                # TODO: remove this message from the visible queue if it exists: a message can be removed with an old
-                #  receipt handle that was issued before the message was put back in the visible queue.
-                pass
-
     def requeue_inflight_messages(self):
         if not self.inflight:
             return
@@ -394,6 +407,17 @@ class FifoQueue(SqsQueue):
                     )
                     self.inflight.remove(qm)
                     self.visible.put_nowait(qm)
+
+    def _assert_queue_name(self, name):
+        # if not name.endswith(".fifo"):
+        #     raise InvalidParameterValues(
+        #         "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
+        #     )
+        # # The .fifo suffix counts towards the 80-character queue name quota.
+        # queue_name = name[:-5] + "_fifo"
+        # TODO: enable once the base implementation is used
+        queue_name = name
+        super()._assert_queue_name(queue_name)
 
 
 class InflightUpdateWorker:
@@ -500,6 +524,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         fifo = (
             attributes and attributes.get(QueueAttributeName.FifoQueue, "false").lower() == "true"
         )
+        # TODO: remove once the sqs_queue base implementation is valid
         assert_queue_name(queue_name, fifo)
 
         k = QueueKey(context.region, context.account_id, queue_name)
