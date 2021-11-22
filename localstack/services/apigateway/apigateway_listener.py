@@ -55,6 +55,7 @@ from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
     flask_to_requests_response,
+    parse_query_string,
     request_response_stream,
     requests_response,
 )
@@ -171,6 +172,11 @@ class ApiInvocationContext:
     def path_with_query_string(self, new_path: str):
         """Set a custom invocation path with query string (used to handle "../_user_request_/.." paths)."""
         self._path_with_query_string = new_path
+
+    def query_params(self) -> Dict:
+        """Extract the query parameters from the target URL or path in this request context."""
+        query_string = self.path_with_query_string.partition("?")[2]
+        return parse_query_string(query_string)
 
     @property
     def integration_uri(self) -> Optional[str]:
