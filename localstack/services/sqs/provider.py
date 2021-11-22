@@ -98,8 +98,13 @@ class NonExistentQueue(CommonServiceException):
         )
 
 
-def assert_queue_name(queue_name: str):
+def assert_queue_name(queue_name: str, fifo: bool = False):
     if queue_name.endswith(".fifo"):
+        if not fifo:
+            # Standard queues with .fifo suffix are not allowed
+            raise InvalidParameterValues(
+                "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
+            )
         # The .fifo suffix counts towards the 80-character queue name quota.
         queue_name = queue_name[:-5] + "_fifo"
 
@@ -492,14 +497,20 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         attributes: QueueAttributeMap = None,
         tags: TagMap = None,
     ) -> CreateQueueResult:
-        assert_queue_name(queue_name)
+        fifo = (
+            attributes and attributes.get(QueueAttributeName.FifoQueue, "false").lower() == "true"
+        )
+        assert_queue_name(queue_name, fifo)
 
         k = QueueKey(context.region, context.account_id, queue_name)
 
         if k in self.queues:
             raise QueueNameExists(queue_name)
-
-        queue = FifoQueue(k, attributes, tags)
+        if fifo:
+            queue = FifoQueue(k, attributes, tags)
+        else:
+            # TODO: this needs the base implementation?
+            queue = FifoQueue(k, attributes, tags)
         LOG.debug("creating queue key=%s attributes=%s tags=%s", k, attributes, tags)
         self._add_queue(queue)
 
