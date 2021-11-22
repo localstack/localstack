@@ -394,10 +394,12 @@ class SqsQueue:
 
 class QueuedMessage(StandardMessage):
     priority: float
+    deduplication_id: str
 
-    def __init__(self, priority: float, message: Message) -> None:
+    def __init__(self, priority: float, message: Message, deduplication_id: str) -> None:
         super().__init__(message)
         self.priority = priority
+        self.deduplication_id = deduplication_id
 
     def __gt__(self, other):
         return self.priority > other.priority
@@ -422,8 +424,19 @@ class FifoQueue(SqsQueue):
 
         self.visible = PriorityQueue()
 
-    def put(self, message: Message, visibility_timeout: int = None):
-        qm = QueuedMessage(time.time(), message)
+    def put(self, message: Message, visibility_timeout: int = None, deduplication_id: str = None):
+        dedup_id = deduplication_id
+        content_based_deduplication = (
+            "true"
+            == (self.attributes.get(QueueAttributeName.ContentBasedDeduplication, "false")).lower()
+        )
+        if not dedup_id and content_based_deduplication:
+            dedup_id = hashlib.sha256(message.get("Body").encode("utf-8")).hexdigest()
+        if not dedup_id:
+            raise InvalidParameterValues(
+                "The Queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly"
+            )
+        qm = QueuedMessage(time.time(), message, dedup_id)
 
         if visibility_timeout is not None:
             qm.visibility_timeout = visibility_timeout

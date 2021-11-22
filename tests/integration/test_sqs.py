@@ -1514,7 +1514,7 @@ class TestSqsProvider:
     def test_create_and_send_to_fifo_queue(self, sqs_client, sqs_create_queue):
         # Old name: test_create_fifo_queue
         queue_name = f"queue-{short_uid()}.fifo"
-        attributes = {"FifoQueue": "true"}
+        attributes = {"FifoQueue": "true", "ContentBasedDeduplication": "true"}
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
 
         # it should preserve .fifo in the queue name
@@ -1882,7 +1882,10 @@ class TestSqsProvider:
     ):
 
         fifo_queue_name = f"queue-{short_uid()}.fifo"
-        queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
+        queue_url = sqs_create_queue(
+            QueueName=fifo_queue_name,
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+        )
         message_count = 4
         group_id = f"fifo_group-{short_uid()}"
         sent_messages = []
@@ -1998,10 +2001,9 @@ class TestSqsProvider:
         assert b"<ListQueuesResponse" in response.content
 
     # Tests of diverging behaviour that was discovered during rewrite
-    @pytest.mark.skip
+    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
     def test_posting_to_fifo_requires_deduplicationid(self, sqs_client, sqs_create_queue):
-        # TODO: behaviour diverges from AWS
-        fifo_queue_name = f"queue-{short_uid()}"
+        fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
         message_content = f"test{short_uid()}"
         group_id = f"fifo_group-{short_uid()}"
