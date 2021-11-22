@@ -16,22 +16,6 @@ def apply_patches():
             )
         )
 
-    def get_all_metrics(self, *args, **kwargs):
-        # Filter results to return only unique combinations of (Namespace, MetricName, Dimensions)
-        # TODO: This is hugely inefficient (!), especially as the number of metric data is growing.
-        #       Should be fixed upstream, or we should roll our own implementation!
-        def comparator(i1, i2):
-            i1 = (i1.namespace, i1.name, set((d.name, d.value) for d in i1.dimensions))
-            i2 = (i2.namespace, i2.name, set((d.name, d.value) for d in i2.dimensions))
-            return i1 == i2
-
-        result = get_all_metrics_orig(self, *args, **kwargs)
-        result = to_unique_items_list(result, comparator=comparator)
-        return result
-
-    get_all_metrics_orig = cloudwatch_models.CloudWatchBackend.get_all_metrics
-    cloudwatch_models.CloudWatchBackend.get_all_metrics = get_all_metrics
-
     # add put_composite_alarm
 
     def put_composite_alarm(self):
