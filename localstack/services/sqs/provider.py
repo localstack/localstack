@@ -142,6 +142,7 @@ class StandardMessage:
     visibility_timeout: int
     receive_times: int
     receipt_handles: Set[str]
+    deleted: bool
 
     def __init__(self, message: Message) -> None:
         self.message = message
@@ -150,6 +151,7 @@ class StandardMessage:
 
         self.last_received = None
         self.first_received = None
+        self.deleted = False
 
     @property
     def is_visible(self):
@@ -244,7 +246,26 @@ class SqsQueue:
         return int(self.attributes[QueueAttributeName.VisibilityTimeout])
 
     def update_visibility_timeout(self, receipt_handle: str, visibility_timeout: int):
-        raise NotImplementedError
+        with self.mutex:
+            if receipt_handle not in self.receipts:
+                raise ReceiptHandleIsInvalid()
+            standard_message = self.receipts[receipt_handle]
+
+            if standard_message not in self.inflight:
+                raise MessageNotInflight()
+
+            # TODO: is the visibility timeout permanently changed?
+            standard_message.visibility_timeout = visibility_timeout
+
+            if visibility_timeout == 0:
+                LOG.info(
+                    "terminating the visibility timeout of %s",
+                    standard_message.message["MessageId"],
+                )
+                # Terminating the visibility timeout for a message
+                # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
+                self.inflight.remove(standard_message)
+                self.visible.put_nowait(standard_message)
 
     def remove(self, receipt_handle: str):
         with self.mutex:
@@ -277,13 +298,71 @@ class SqsQueue:
                 pass
 
     def put(self, message: Message, visibility_timeout=None):
-        raise NotImplementedError
+
+        standard_message = StandardMessage(message)
+
+        if visibility_timeout is not None:
+            standard_message.visibility_timeout = visibility_timeout
+        else:
+            # use the attribute from the queue
+            standard_message.visibility_timeout = self.visibility_timeout
+
+        self.visible.put_nowait(standard_message)
 
     def get(self, block=True, timeout=None, visibility_timeout: int = None) -> StandardMessage:
-        raise NotImplementedError
+        while True:
+            standard_message: QueuedMessage = self.visible.get(block=block, timeout=timeout)
+            LOG.debug(
+                "de-queued message %s from %s", standard_message.message["MessageId"], self.arn
+            )
+
+            with self.mutex:
+                if standard_message.deleted:
+                    # TODO: check what the behavior of AWS is here. should we return a deleted message?
+                    # FIXME: timeout is not adjusted
+                    continue
+
+                # update message attributes
+                standard_message.visibility_timeout = (
+                    self.visibility_timeout if visibility_timeout is None else visibility_timeout
+                )
+                standard_message.receive_times += 1
+                standard_message.last_received = time.time()
+                if standard_message.first_received is None:
+                    standard_message.first_received = standard_message.last_received
+
+                # create and manage receipt handle
+                receipt_handle = generate_receipt_handle()
+                standard_message.receipt_handles.add(receipt_handle)
+                self.receipts[receipt_handle] = standard_message
+
+                if standard_message.visibility_timeout == 0:
+                    self.visible.put_nowait(standard_message)
+                else:
+                    self.inflight.add(standard_message)
+
+                # prepare message for receiver
+                # TODO: update message attributes (ApproximateFirstReceiveTimestamp, ApproximateReceiveCount)
+                copied_message = copy.deepcopy(standard_message)
+                copied_message.message["ReceiptHandle"] = receipt_handle
+
+            return copied_message
 
     def requeue_inflight_messages(self):
-        raise NotImplementedError
+        if not self.inflight:
+            return
+
+        with self.mutex:
+            messages = list(self.inflight)
+            for stanard_message in messages:
+                if stanard_message.is_visible:
+                    LOG.debug(
+                        "re-queueing inflight messages %s into queue %s",
+                        stanard_message.message["MessageId"],
+                        self.arn,
+                    )
+                    self.inflight.remove(stanard_message)
+                    self.visible.put_nowait(stanard_message)
 
     def _assert_queue_name(self, name):
         # TODO: slashes are actually not allowed, but we've allowed it explicitly in localstack
@@ -295,12 +374,10 @@ class SqsQueue:
 
 class QueuedMessage(StandardMessage):
     priority: float
-    deleted: bool
 
     def __init__(self, priority: float, message: Message) -> None:
         super().__init__(message)
         self.priority = priority
-        self.deleted = False
 
     def __gt__(self, other):
         return self.priority > other.priority
@@ -336,87 +413,13 @@ class FifoQueue(SqsQueue):
 
         self.visible.put_nowait(qm)
 
-    def get(self, block=True, timeout=None, visibility_timeout: int = None) -> StandardMessage:
-        while True:
-            qm: QueuedMessage = self.visible.get(block=block, timeout=timeout)
-            LOG.debug("de-queued message %s from %s", qm.message["MessageId"], self.arn)
-
-            with self.mutex:
-                if qm.deleted:
-                    # TODO: check what the behavior of AWS is here. should we return a deleted message?
-                    # FIXME: timeout is not adjusted
-                    continue
-
-                # update message attributes
-                qm.visibility_timeout = (
-                    self.visibility_timeout if visibility_timeout is None else visibility_timeout
-                )
-                qm.receive_times += 1
-                qm.last_received = time.time()
-                if qm.first_received is None:
-                    qm.first_received = qm.last_received
-
-                # create and manage receipt handle
-                receipt_handle = generate_receipt_handle()
-                qm.receipt_handles.add(receipt_handle)
-                self.receipts[receipt_handle] = qm
-
-                if qm.visibility_timeout == 0:
-                    self.visible.put_nowait(qm)
-                else:
-                    self.inflight.add(qm)
-
-                # prepare message for receiver
-                # TODO: update message attributes (ApproximateFirstReceiveTimestamp, ApproximateReceiveCount)
-                copied_message = copy.deepcopy(qm)
-                copied_message.message["ReceiptHandle"] = receipt_handle
-
-            return copied_message
-
-    def update_visibility_timeout(self, receipt_handle: str, visibility_timeout: int):
-        with self.mutex:
-            if receipt_handle not in self.receipts:
-                raise ReceiptHandleIsInvalid()
-            qm = self.receipts[receipt_handle]
-
-            if qm not in self.inflight:
-                raise MessageNotInflight()
-
-            # TODO: is the visibility timeout permanently changed?
-            qm.visibility_timeout = visibility_timeout
-
-            if visibility_timeout == 0:
-                LOG.info("terminating the visibility timeout of %s", qm.message["MessageId"])
-                # Terminating the visibility timeout for a message
-                # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html#terminating-message-visibility-timeout
-                self.inflight.remove(qm)
-                self.visible.put_nowait(qm)
-
-    def requeue_inflight_messages(self):
-        if not self.inflight:
-            return
-
-        with self.mutex:
-            messages = list(self.inflight)
-            for qm in messages:
-                if qm.is_visible:
-                    LOG.debug(
-                        "re-queueing inflight messages %s into queue %s",
-                        qm.message["MessageId"],
-                        self.arn,
-                    )
-                    self.inflight.remove(qm)
-                    self.visible.put_nowait(qm)
-
     def _assert_queue_name(self, name):
-        # if not name.endswith(".fifo"):
-        #     raise InvalidParameterValues(
-        #         "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
-        #     )
-        # # The .fifo suffix counts towards the 80-character queue name quota.
-        # queue_name = name[:-5] + "_fifo"
-        # TODO: enable once the base implementation is used
-        queue_name = name
+        if not name.endswith(".fifo"):
+            raise InvalidParameterValues(
+                "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
+            )
+        # The .fifo suffix counts towards the 80-character queue name quota.
+        queue_name = name[:-5] + "_fifo"
         super()._assert_queue_name(queue_name)
 
 
@@ -521,11 +524,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         attributes: QueueAttributeMap = None,
         tags: TagMap = None,
     ) -> CreateQueueResult:
-        fifo = (
-            attributes and attributes.get(QueueAttributeName.FifoQueue, "false").lower() == "true"
+        fifo = attributes and (
+            attributes.get(QueueAttributeName.FifoQueue, "false").lower() == "true"
         )
-        # TODO: remove once the sqs_queue base implementation is valid
-        assert_queue_name(queue_name, fifo)
 
         k = QueueKey(context.region, context.account_id, queue_name)
 
@@ -535,7 +536,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             queue = FifoQueue(k, attributes, tags)
         else:
             # TODO: this needs the base implementation?
-            queue = FifoQueue(k, attributes, tags)
+            queue = SqsQueue(k, attributes, tags)
         LOG.debug("creating queue key=%s attributes=%s tags=%s", k, attributes, tags)
         self._add_queue(queue)
 
@@ -808,7 +809,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 break
 
             moved_to_dlq = False
-            if queue.attributes.get(QueueAttributeName.RedrivePolicy) is not None:
+            if (
+                queue.attributes
+                and queue.attributes.get(QueueAttributeName.RedrivePolicy) is not None
+            ):
                 moved_to_dlq = self._dead_letter_check(queue, standard_message)
             if moved_to_dlq:
                 continue
@@ -921,6 +925,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         for k, v in attributes.items():
             queue.attributes[k] = v
+
+        # Special cases
+        if queue.attributes.get(QueueAttributeName.Policy) == "":
+            del queue.attributes[QueueAttributeName.Policy]
 
     def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap) -> None:
         queue = self._require_queue_by_url(queue_url)
