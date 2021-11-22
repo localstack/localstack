@@ -124,22 +124,8 @@ RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ss
 
 
 
-# base-arm64: Stage which sets a different Kenesis provider
-# (workaround for https://github.com/localstack/localstack/issues/4358)
-FROM base as base-arm64
-ENV KINESIS_PROVIDER=kinesalite
-
-
-
-# base-amd64: Stage which sets the default Kenesis provider
-# (workaround for https://github.com/localstack/localstack/issues/4358)
-FROM base as base-amd64
-ENV KINESIS_PROVIDER=kinesis-mock
-
-
-
 # builder: Stage which installs/builds the dependencies and infra-components of LocalStack
-FROM base-${TARGETARCH} as builder
+FROM base as builder
 ARG TARGETARCH
 
 # Install build dependencies to base
@@ -178,14 +164,14 @@ RUN (virtualenv .venv && source .venv/bin/activate && pip3 uninstall -y localsta
 
 
 # base-light: Stage which does not add additional dependencies (like elasticsearch)
-FROM base-${TARGETARCH} as base-light
+FROM base as base-light
 RUN mkdir -p /opt/code/localstack/localstack/infra && \
     touch localstack/infra/.light-version
 
 
 
 # base-full: Stage which adds additional dependencies to avoid installing them at runtime (f.e. elasticsearch)
-FROM base-${TARGETARCH} as base-full
+FROM base as base-full
 
 # Install Elasticsearch
 # https://github.com/pires/docker-elasticsearch/issues/56
