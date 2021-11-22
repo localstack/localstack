@@ -1376,7 +1376,7 @@ class TestSqsProvider:
             sqs_client.change_message_visibility(
                 QueueUrl=queue_url, ReceiptHandle="INVALID", VisibilityTimeout=60
             )
-        e.match("(invalid|not a valid)")  # returned messages are slightly different but both exist
+        e.match("ReceiptHandleIsInvalid")
 
     def test_message_with_attributes_should_be_enqueued(self, sqs_client, sqs_create_queue):
         # issue 3737
@@ -1538,6 +1538,21 @@ class TestSqsProvider:
         with pytest.raises(Exception) as e:
             sqs_create_queue(QueueName=queue_name, Attributes=attributes)
         e.match("InvalidParameterValue")
+
+    @pytest.mark.skipIf(
+        os.environ.get("PROVIDER_OVERRIDE_SQS") != "custom",
+        reason="New provider test which isn't covered by old one",
+    )
+    def test_standard_queue_cannot_have_fifo_suffix(self, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}.fifo"
+        with pytest.raises(Exception) as e:
+            sqs_create_queue(QueueName=queue_name)
+        e.match("InvalidParameterValue")
+
+    @pytest.mark.skip
+    def test_redrive_policy_attribute_validity(self, sqs_create_queue):
+        # TODO
+        raise NotImplementedError
 
     def test_set_queue_policy(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
@@ -1885,7 +1900,7 @@ class TestSqsProvider:
 
         response = requests.post(url=base_url, data=urlencode(payload))
         assert response.status_code == 200
-        assert b"<ListQueuesResponse>" in response.content
+        assert b"<ListQueuesResponse" in response.content
 
     @pytest.mark.skipif(
         os.environ.get("TEST_TARGET") == "AWS_CLOUD", reason="coded localstack specific"
@@ -1928,7 +1943,7 @@ class TestSqsProvider:
 
         response = requests.get(base_url, params=payload)
         assert response.status_code == 200
-        assert b"<ListQueuesResponse>" in response.content
+        assert b"<ListQueuesResponse" in response.content
 
     # Tests of diverging behaviour that was discovered during rewrite
     @pytest.mark.skip

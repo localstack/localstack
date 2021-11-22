@@ -248,7 +248,9 @@ class SqsQueue:
     def update_visibility_timeout(self, receipt_handle: str, visibility_timeout: int):
         with self.mutex:
             if receipt_handle not in self.receipts:
-                raise ReceiptHandleIsInvalid()
+                raise ReceiptHandleIsInvalid(
+                    'The input receipt handle "INVALID" is not a valid receipt handle.'
+                )
             standard_message = self.receipts[receipt_handle]
 
             if standard_message not in self.inflight:
