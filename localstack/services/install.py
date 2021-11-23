@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import functools
 import glob
 import logging
 import os
@@ -10,8 +11,10 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from typing import Callable, Dict, List, Tuple
 
 import requests
+from plugin import Plugin, PluginManager
 
 from localstack import config
 from localstack.config import is_env_true
@@ -210,9 +213,12 @@ def install_elasticsearch(version=None):
             save_file(jvm_options_file, jvm_options_replaced)
 
 
+def install_sqs_provider():
+    if SQS_BACKEND_IMPL == "elasticmq":
+        install_elasticmq()
+
+
 def install_elasticmq():
-    if SQS_BACKEND_IMPL != "elasticmq":
-        return
     # TODO remove this function if we stop using ElasticMQ entirely
     if not os.path.exists(INSTALL_PATH_ELASTICMQ_JAR):
         log_install_msg("ElasticMQ")
@@ -464,14 +470,6 @@ def get_terraform_binary() -> str:
 
 
 def install_component(name):
-    installers = {
-        "cloudformation": install_cloudformation_libs,
-        "dynamodb": install_dynamodb_local,
-        "kinesis": install_kinesis,
-        "kms": install_local_kms,
-        "sqs": install_elasticmq,
-        "stepfunctions": install_stepfunctions_local,
-    }
     installer = installers.get(name)
     if installer:
         installer()
@@ -551,6 +549,69 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         LOG.info("Unable to extract file, re-downloading ZIP archive %s: %s" % (tmp_archive, e))
         rm_rf(tmp_archive)
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
+
+
+installers = {
+    "cloudformation": install_cloudformation_libs,
+    "dynamodb": install_dynamodb_local,
+    "kinesis": install_kinesis,
+    "kms": install_local_kms,
+    "sqs": install_sqs_provider,
+    "stepfunctions": install_stepfunctions_local,
+}
+
+Installer = Tuple[str, Callable]
+
+
+class InstallerRepository(Plugin):
+    namespace = "localstack.installer"
+
+    def get_installer(self) -> List[Installer]:
+        raise NotImplementedError
+
+
+class CommunityInstallerRepository(InstallerRepository):
+    name = "community"
+
+    def get_installer(self) -> List[Installer]:
+        return [
+            ("awslamba-go-runtime", install_go_lambda_runtime),
+            ("cloudformation-libs", install_cloudformation_libs),
+            ("dynamodb-local", install_dynamodb_local),
+            ("elasticmq", install_elasticmq),
+            ("elasticsearch", install_elasticsearch),
+            ("kinesalite", install_kinesalite),
+            ("kinesis-client-libs", install_amazon_kinesis_client_libs),
+            ("kinesis-mock", install_kinesis_mock),
+            ("lambda-java-libs", install_lambda_java_libs),
+            ("local-kms", install_local_kms),
+            ("stepfunctions-local", install_stepfunctions_local),
+            ("terraform", install_terraform),
+        ]
+
+
+class InstallerManager:
+    def __init__(self):
+        self.repositories: PluginManager[InstallerRepository] = PluginManager(
+            InstallerRepository.namespace
+        )
+
+    @functools.lru_cache()
+    def get_installers(self) -> Dict[str, Callable]:
+        installer: List[Installer] = list()
+
+        for repo in self.repositories.load_all():
+            installer.extend(repo.get_installer())
+
+        return dict(installer)
+
+    def install(self, package: str, *args, **kwargs):
+        installer = self.get_installers().get(package)
+
+        if not installer:
+            raise ValueError("no installer for package %s" % package)
+
+        return installer(*args, **kwargs)
 
 
 def main():
