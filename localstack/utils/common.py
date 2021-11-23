@@ -933,6 +933,22 @@ def obj_to_xml(obj: SerializableObj) -> str:
     return str(obj)
 
 
+def strip_xmlns(obj: Any) -> Any:
+    """Strip xmlns attributes from a dict returned by xmltodict.parse."""
+    if isinstance(obj, list):
+        return [strip_xmlns(item) for item in obj]
+    if isinstance(obj, dict):
+        # Remove xmlns attribute.
+        obj.pop("@xmlns", None)
+        if len(obj) == 1 and "#text" in obj:
+            # If the only remaining key is the #text key, elide the dict
+            # entirely, to match the structure that xmltodict.parse would have
+            # returned if the xmlns namespace hadn't been present.
+            return obj["#text"]
+        return {k: strip_xmlns(v) for k, v in obj.items()}
+    return obj
+
+
 def now(millis: bool = False, tz: Optional[tzinfo] = None) -> int:
     return mktime(datetime.now(tz=tz), millis=millis)
 

@@ -192,6 +192,67 @@ class TestS3(unittest.TestCase):
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(bucket_name, [key_by_path, key_by_host])
 
+    def test_s3_put_object_notification_extra_xmlns(self):
+        """Test that request payloads with excessive xmlns attributes are
+        correctly handled.
+
+        This happens with the AWS Rust SDK.
+        See: https://github.com/awslabs/aws-sdk-rust/issues/301
+        """
+        bucket_name = "notif-%s" % short_uid()
+        s3_listener.handle_put_bucket_notification(
+            bucket_name,
+            """
+                <NotificationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    <QueueConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                        <Id xmlns="http://s3.amazonaws.com/doc/2006-03-01/">queueid</Id>
+                        <Event xmlns="http://s3.amazonaws.com/doc/2006-03-01/">s3:ObjectCreated:Put</Event>
+                        <Event xmlns="http://s3.amazonaws.com/doc/2006-03-01/">s3:ObjectCreated:Post</Event>
+                        <Queue xmlns="http://s3.amazonaws.com/doc/2006-03-01/">queue</Queue>
+                        <Filter xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                            <S3Key xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                <FilterRule xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                    <Name xmlns="http://s3.amazonaws.com/doc/2006-03-01/">prefix</Name>
+                                    <Value xmlns="http://s3.amazonaws.com/doc/2006-03-01/">img/</Value>
+                                </FilterRule>
+                            </S3Key>
+                        </Filter>
+                    </QueueConfiguration>
+                    <TopicConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                        <Id xmlns="http://s3.amazonaws.com/doc/2006-03-01/">topicid</Id>
+                        <Event xmlns="http://s3.amazonaws.com/doc/2006-03-01/">s3:ObjectCreated:Put</Event>
+                        <Event xmlns="http://s3.amazonaws.com/doc/2006-03-01/">s3:ObjectCreated:Post</Event>
+                        <Topic xmlns="http://s3.amazonaws.com/doc/2006-03-01/">topic</Topic>
+                        <Filter xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                            <S3Key xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                <FilterRule xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                                    <Name xmlns="http://s3.amazonaws.com/doc/2006-03-01/">prefix</Name>
+                                    <Value xmlns="http://s3.amazonaws.com/doc/2006-03-01/">img/</Value>
+                                </FilterRule>
+                            </S3Key>
+                        </Filter>
+                    </TopicConfiguration>
+                </NotificationConfiguration>
+            """,
+        )
+        self.assertEqual(
+            s3_listener.S3_NOTIFICATIONS[bucket_name],
+            [
+                {
+                    "Id": "queueid",
+                    "Event": ["s3:ObjectCreated:Put", "s3:ObjectCreated:Post"],
+                    "Queue": "queue",
+                    "Filter": {"S3Key": {"FilterRule": [{"Name": "Prefix", "Value": "img/"}]}},
+                },
+                {
+                    "Id": "topicid",
+                    "Event": ["s3:ObjectCreated:Put", "s3:ObjectCreated:Post"],
+                    "Topic": "topic",
+                    "Filter": {"S3Key": {"FilterRule": [{"Name": "Prefix", "Value": "img/"}]}},
+                },
+            ],
+        )
+
     def test_s3_upload_fileobj_with_large_file_notification(self):
         bucket_name = "notif-large-%s" % short_uid()
         queue_url, queue_attributes = self._create_test_queue()

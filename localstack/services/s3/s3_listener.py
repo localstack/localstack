@@ -51,6 +51,7 @@ from localstack.utils.common import (
     md5,
     not_none_or,
     short_uid,
+    strip_xmlns,
     timestamp_millis,
     to_bytes,
     to_str,
@@ -1049,7 +1050,7 @@ def _sanitize_notification_filter_rules(filter_doc):
 
 
 def handle_put_bucket_notification(bucket, data):
-    parsed = xmltodict.parse(data)
+    parsed = strip_xmlns(xmltodict.parse(data))
     notif_config = parsed.get("NotificationConfiguration")
 
     notifications = []
