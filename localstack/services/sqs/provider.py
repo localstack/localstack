@@ -399,6 +399,7 @@ class QueuedMessage(StandardMessage):
     def __init__(self, priority: float, message: Message, deduplication_id: str) -> None:
         super().__init__(message)
         self.priority = priority
+        # TODO: this is part of the message?
         self.deduplication_id = deduplication_id
 
     def __gt__(self, other):
@@ -736,7 +737,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MD5OfMessageBody=message["MD5OfBody"],
             MD5OfMessageAttributes=message.get("MD5OfMessageAttributes"),  # TODO
             SequenceNumber=None,  # TODO
-            MD5OfMessageSystemAttributes=None,  # TODO
+            MD5OfMessageSystemAttributes=_create_message_attribute_hash(
+                message_system_attributes
+            ),  # TODO
         )
 
     def send_message_batch(
@@ -1112,9 +1115,9 @@ def _create_message_attribute_hash(message_attributes):
         attr_value = message_attributes[attrName]
         # Encode name
         MotoMessage.update_binary_length_and_value(hash, MotoMessage.utf8(attrName))
-        # Encode type
+        # Encode data type
         MotoMessage.update_binary_length_and_value(hash, MotoMessage.utf8(attr_value["DataType"]))
-
+        # Encode transport type and value
         if attr_value.get("StringValue"):
             hash.update(bytearray([STRING_TYPE_FIELD_INDEX]))
             MotoMessage.update_binary_length_and_value(
@@ -1127,5 +1130,3 @@ def _create_message_attribute_hash(message_attributes):
         # string_list_value, binary_list_value type is not implemented, reserved for the future use.
         # See https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_MessageAttributeValue.html
     return hash.hexdigest()
-
-    pass

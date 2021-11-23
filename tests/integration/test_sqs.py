@@ -1514,7 +1514,7 @@ class TestSqsProvider:
     def test_create_and_send_to_fifo_queue(self, sqs_client, sqs_create_queue):
         # Old name: test_create_fifo_queue
         queue_name = f"queue-{short_uid()}.fifo"
-        attributes = {"FifoQueue": "true", "ContentBasedDeduplication": "true"}
+        attributes = {"FifoQueue": "true"}
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
 
         # it should preserve .fifo in the queue name
@@ -1884,7 +1884,7 @@ class TestSqsProvider:
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(
             QueueName=fifo_queue_name,
-            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
+            Attributes={"FifoQueue": "true"},
         )
         message_count = 4
         group_id = f"fifo_group-{short_uid()}"
@@ -2000,8 +2000,37 @@ class TestSqsProvider:
         assert response.status_code == 200
         assert b"<ListQueuesResponse" in response.content
 
+    def test_system_attributes_have_no_effect_on_attr_md5(self, sqs_create_queue, sqs_client):
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        msg_attrs_provider = {"timestamp": {"StringValue": "1493147359900", "DataType": "Number"}}
+        aws_trace_header = {
+            "AWSTraceHeader": {
+                "StringValue": "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1",
+                "DataType": "String",
+            }
+        }
+        response_send = sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody="test", MessageAttributes=msg_attrs_provider
+        )
+        response_send_system_attr = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody="test",
+            MessageAttributes=msg_attrs_provider,
+            MessageSystemAttributes=aws_trace_header,
+        )
+        assert (
+            response_send["MD5OfMessageAttributes"]
+            == response_send_system_attr["MD5OfMessageAttributes"]
+        )
+        assert response_send.get("MD5OfMessageSystemAttributes") is None
+        assert (
+            response_send_system_attr.get("MD5OfMessageSystemAttributes")
+            == "5ae4d5d7636402d80f4eb6d213245a88"
+        )
+
     # Tests of diverging behaviour that was discovered during rewrite
-    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
     def test_posting_to_fifo_requires_deduplicationid(self, sqs_client, sqs_create_queue):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
