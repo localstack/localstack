@@ -210,14 +210,15 @@ test-docker-mount-code:
 ci-pro-smoke-tests:
 	which awslocal || pip3 install awscli-local
 	which localstack || pip3 install localstack
-	IMAGE_NAME=$(IMAGE_NAME_LIGHT) DOCKER_FLAGS='-d' SERVICES=lambda,qldb,rds,xray LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DEBUG=1 localstack start
-	docker logs -f $(MAIN_CONTAINER_NAME) &
-	for i in 0 1 2 3 4 5 6 7 8 9; do if docker logs $(MAIN_CONTAINER_NAME) | grep 'Ready.'; then break; fi; sleep 3; done
+	IMAGE_NAME=$(IMAGE_NAME_LIGHT) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DEBUG=1 localstack start -d
+	localstack logs -f &
+	localstack wait -t 120
 	awslocal qldb list-ledgers
 	awslocal rds describe-db-instances
 	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
 	awslocal lambda list-layers
-	docker rm -f $(MAIN_CONTAINER_NAME)
+	localstack stop
+	pkill -f "localstack logs -f"
 
 lint:              		  ## Run code linter to check code style
 	($(VENV_RUN); python -m pflake8 --show-source)
