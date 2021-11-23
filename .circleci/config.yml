@@ -214,15 +214,15 @@ jobs:
       - run:
           name: Build full docker image
           command: make docker-build
-      - run:
-          name: Run tests
-          command: |
-            PYTEST_ARGS='--junitxml=target/reports/test-report-<< parameters.platform >>.xml' \
-            COVERAGE_FILE='target/coverage/.coverage.<< parameters.platform >>' \
-            make docker-run-tests
+      # - run:
+      #     name: Run tests
+      #     command: |
+      #       PYTEST_ARGS='--junitxml=target/reports/test-report-<< parameters.platform >>.xml' \
+      #       COVERAGE_FILE='target/coverage/.coverage.<< parameters.platform >>' \
+      #       make docker-run-tests
       - when:
-          condition:
-            equal: [ master, << pipeline.git.branch >> ]
+          condition: true
+            # equal: [ master, << pipeline.git.branch >> ]
           steps:
             - run:
                 name: Build light docker image
@@ -230,12 +230,12 @@ jobs:
             - run:
                 name: Run pre-release smoke tests
                 command: make ci-pro-smoke-tests
-            - run:
-                name: Save full docker image
-                command: PLATFORM="<< parameters.platform >>" make docker-save-image
-            - run:
-                name: Save light docker image
-                command: PLATFORM="<< parameters.platform >>" make docker-save-image-light
+            # - run:
+            #     name: Save full docker image
+            #     command: PLATFORM="<< parameters.platform >>" make docker-save-image
+            # - run:
+            #     name: Save light docker image
+            #     command: PLATFORM="<< parameters.platform >>" make docker-save-image-light
       - persist_to_workspace:
           root:
             /tmp/workspace
