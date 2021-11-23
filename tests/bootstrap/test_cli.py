@@ -2,10 +2,9 @@ import pytest
 import requests
 from click.testing import CliRunner
 
-from localstack import config
+from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
 from localstack.config import get_edge_url, in_docker
-from localstack.services.infra import READY_MARKER_OUTPUT
 from localstack.utils import docker_utils
 from localstack.utils.common import poll_condition
 
@@ -80,7 +79,7 @@ class TestCliContainerLifecycle:
         runner.invoke(cli, ["wait", "-t", "60"])
 
         result = runner.invoke(cli, ["logs"])
-        assert READY_MARKER_OUTPUT in result.output
+        assert constants.READY_MARKER_OUTPUT in result.output
 
     def test_status_services(self, runner):
         result = runner.invoke(cli, ["status", "services"])

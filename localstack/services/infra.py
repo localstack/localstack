@@ -48,7 +48,7 @@ from localstack.utils.testutil import is_local_test_mode
 SIGNAL_HANDLERS_SETUP = False
 
 # output string that indicates that the stack is ready
-READY_MARKER_OUTPUT = "Ready."
+READY_MARKER_OUTPUT = constants.READY_MARKER_OUTPUT
 
 # default backend host address
 DEFAULT_BACKEND_HOST = "127.0.0.1"

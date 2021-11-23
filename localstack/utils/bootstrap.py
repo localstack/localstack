@@ -621,13 +621,12 @@ class LocalstackContainerServer(Server):
         """
         Checks whether the container is running, and the Ready marker has been printed to the logs.
         """
-        from localstack.services.infra import READY_MARKER_OUTPUT
 
         if not self.is_container_running():
             return False
         logs = DOCKER_CLIENT.get_container_logs(self.container.name)
 
-        if READY_MARKER_OUTPUT not in logs.splitlines():
+        if constants.READY_MARKER_OUTPUT not in logs.splitlines():
             return False
         # also checks the edge port health status
         return super().is_up()
@@ -785,8 +784,6 @@ def start_infra_in_docker_detached(console):
 
 def wait_container_is_ready(timeout: Optional[float] = None):
     """Blocks until the localstack main container is running and the ready marker has been printed."""
-    from localstack.services.infra import READY_MARKER_OUTPUT
-
     container_name = config.MAIN_CONTAINER_NAME
 
     def is_container_running():
@@ -800,7 +797,7 @@ def wait_container_is_ready(timeout: Optional[float] = None):
     ready = threading.Event()
 
     def set_ready_if_marker_found(_line: str):
-        if _line == READY_MARKER_OUTPUT:
+        if _line == constants.READY_MARKER_OUTPUT:
             ready.set()
 
     # start a tail on the logfile
@@ -811,7 +808,7 @@ def wait_container_is_ready(timeout: Optional[float] = None):
         # but also check the existing log in case the container has been running longer
         with open(logfile, "r") as fd:
             for line in fd:
-                if READY_MARKER_OUTPUT == line.strip():
+                if constants.READY_MARKER_OUTPUT == line.strip():
                     return True
 
         # TODO: calculate remaining timeout
