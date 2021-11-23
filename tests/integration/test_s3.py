@@ -971,7 +971,9 @@ class TestS3(unittest.TestCase):
             "get_object", Params={"Bucket": bucket_name, "Key": object_key}
         )
         response = requests.get(url, verify=False)
-        self.assertEqual("ETag,x-amz-version-id", response.headers["Access-Control-Expose-Headers"])
+        self.assertEqual(
+            "ETag, x-amz-version-id", response.headers["Access-Control-Expose-Headers"]
+        )
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
