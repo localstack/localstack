@@ -685,7 +685,7 @@ def configure_container(container: LocalstackContainer):
     # get additional configured flags
     user_flags = config.DOCKER_FLAGS
     user_flags = extract_port_flags(user_flags, container.ports)
-    container.additional_flags.extend(user_flags)
+    container.additional_flags.extend(shlex.split(user_flags))
 
     # get additional parameters from plugins
     # TODO: extract this into container config hooks and remove old plugin code
@@ -694,7 +694,7 @@ def configure_container(container: LocalstackContainer):
         [entry.get("docker", {}).get("run_flags", "") for entry in plugin_configs]
     )
     plugin_run_params = extract_port_flags(plugin_run_params, container.ports)
-    container.additional_flags.extend(plugin_run_params)
+    container.additional_flags.extend(shlex.split(plugin_run_params))
 
     # construct default port mappings
     service_ports = config.SERVICE_PORTS

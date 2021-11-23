@@ -96,3 +96,16 @@ class TestCliContainerLifecycle:
         for line in result.output.splitlines():
             if "dynamodb" in line:
                 assert "available" in line
+
+    def test_custom_docker_flags(self, runner, tmp_path, monkeypatch, container_client):
+        volume = tmp_path / "volume"
+        volume.mkdir()
+
+        monkeypatch.setattr(config, "DOCKER_FLAGS", f"-p 42069 -v {volume}:{volume}")
+
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "60"])
+
+        inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
+        assert "42069/tcp" in inspect["HostConfig"]["PortBindings"]
+        assert f"{volume}:{volume}" in inspect["HostConfig"]["Binds"]
