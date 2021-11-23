@@ -211,14 +211,13 @@ ci-pro-smoke-tests:
 	which awslocal || pip3 install awscli-local
 	which localstack || pip3 install localstack
 	IMAGE_NAME=$(IMAGE_NAME_LIGHT) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DEBUG=1 localstack start -d
-	localstack logs -f &
+	docker logs -f $(MAIN_CONTAINER_NAME) &
 	localstack wait -t 120
 	awslocal qldb list-ledgers
 	awslocal rds describe-db-instances
 	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
 	awslocal lambda list-layers
 	localstack stop
-	pkill -f "localstack logs -f"
 
 lint:              		  ## Run code linter to check code style
 	($(VENV_RUN); python -m pflake8 --show-source)
