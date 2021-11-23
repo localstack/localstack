@@ -2679,6 +2679,7 @@ class TestS3New:
         ),
     ],
 )
+@pytest.mark.xfail
 def test_replay_s3_call(api_version, bucket_name, payload):
     s3_client = aws_stack.connect_to_service("s3")
 
