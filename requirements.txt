@@ -27,6 +27,7 @@ stevedore>=3.4.0
 # needed for python3.7 compat (TypedDict, Literal, type hints)
 typing-extensions; python_version < '3.8'
 tailer>=0.4.1
+psutil>=5.4.8,<6.0.0
 
 # extra=runtime
 airspeed>=0.5.14
@@ -52,7 +53,6 @@ jsonpath-rw>=1.4.0,<2.0.0
 localstack-ext[full]>=0.13.0.9
 moto-ext[all]>=2.2.6.2
 pproxy>=2.7.0
-psutil>=5.4.8,<6.0.0
 #pympler>=0.6
 pyopenssl==17.5.0
 Quart>=0.6.15
