@@ -550,7 +550,9 @@ class LocalstackContainerServer(Server):
 
     def do_shutdown(self):
         try:
-            DOCKER_CLIENT.stop_container(self.container.name)
+            CmdDockerClient().stop_container(
+                self.container.name, timeout=10
+            )  # giving the container some time to stop
         except Exception as e:
             LOG.info("error cleaning up localstack container %s: %s", self.container.name, e)
 
@@ -612,6 +614,10 @@ def configure_container(container: LocalstackContainer):
             container.env_vars[env_var] = value
     container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
     container.env_vars["HOST_TMP_FOLDER"] = config.HOST_TMP_FOLDER
+
+    # TODO discuss if this should be the default?
+    # to activate proper signal handling
+    container.env_vars["SET_TERM_HANDLER"] = "1"
 
     # data_dir mounting and environment variables
     bind_mounts = []

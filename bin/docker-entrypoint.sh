@@ -23,7 +23,7 @@ term_handler() {
     kill ${send_sig} "$suppid"
     wait "$suppid"
   fi
-  exit 143; # 128 + 15 -- SIGTERM
+  exit 0; # 128 + 15 = 143 -- SIGTERM, but 0 is expected if proper shutdown takes place
 }
 
 # Strip `LOCALSTACK_` prefix in environment variables name (except LOCALSTACK_HOSTNAME)
