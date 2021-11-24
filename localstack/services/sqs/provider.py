@@ -9,7 +9,7 @@ import re
 import string
 import threading
 import time
-from queue import Empty, PriorityQueue, Queue
+from queue import Empty, PriorityQueue
 from typing import Dict, List, NamedTuple, Optional, Set
 
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
@@ -83,7 +83,7 @@ def generate_receipt_handle():
     return "".join(random.choices(string.ascii_letters + string.digits, k=172)) + "="
 
 
-class InvalidParameterValues(CommonServiceException):
+class InvalidParameterValue(CommonServiceException):
     def __init__(self, message):
         super().__init__("InvalidParameterValues", message, 400, True)
 
@@ -103,11 +103,16 @@ class InvalidAttributeValue(CommonServiceException):
         super().__init__("InvalidAttributeValue", message, 400, True)
 
 
+class MissingParameter(CommonServiceException):
+    def __init__(self, message):
+        super().__init__("MissingParameter", message, 400, True)
+
+
 def assert_queue_name(queue_name: str, fifo: bool = False):
     if queue_name.endswith(".fifo"):
         if not fifo:
             # Standard queues with .fifo suffix are not allowed
-            raise InvalidParameterValues(
+            raise InvalidParameterValue(
                 "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
             )
         # The .fifo suffix counts towards the 80-character queue name quota.
@@ -115,7 +120,7 @@ def assert_queue_name(queue_name: str, fifo: bool = False):
 
     # slashes are actually not allowed, but we've allowed it explicitly in localstack
     if not re.match(r"^[a-zA-Z0-9/_-]{1,80}$", queue_name):
-        raise InvalidParameterValues(
+        raise InvalidParameterValue(
             "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
         )
 
@@ -131,7 +136,7 @@ def check_message_content(data: dict):
             if key == "message_body" or key == "MessageBody":
                 raise InvalidMessageContents(error)
             else:
-                raise InvalidParameterValues(error)
+                raise InvalidParameterValue(error)
 
 
 class QueueKey(NamedTuple):
@@ -147,14 +152,23 @@ class Permission(NamedTuple):
     action: str
 
 
-class StandardMessage:
+class SqsMessage:
     message: Message
     visibility_timeout: int
     receive_times: int
     receipt_handles: Set[str]
     deleted: bool
+    priority: float
+    message_deduplication_id: str
+    message_group_id: str
 
-    def __init__(self, message: Message) -> None:
+    def __init__(
+        self,
+        priority: float,
+        message: Message,
+        message_deduplication_id: str = None,
+        message_group_id: str = None,
+    ) -> None:
         self.message = message
         self.receive_times = 0
         self.receipt_handles = set()
@@ -162,6 +176,9 @@ class StandardMessage:
         self.last_received = None
         self.first_received = None
         self.deleted = False
+        self.priority = priority
+        self.message_deduplication_id = message_deduplication_id
+        self.message_group_id = message_group_id
 
     @property
     def is_visible(self):
@@ -171,6 +188,18 @@ class StandardMessage:
             return True
 
         return False
+
+    def __gt__(self, other):
+        return self.priority > other.priority
+
+    def __ge__(self, other):
+        return self.priority >= other.priority
+
+    def __lt__(self, other):
+        return self.priority < other.priority
+
+    def __le__(self, other):
+        return self.priority <= other.priority
 
     def __eq__(self, other):
         return self.message["MessageId"] == other.message["MessageId"]
@@ -188,9 +217,9 @@ class SqsQueue:
 
     purge_in_progress: bool
 
-    visible: Queue
-    inflight: Set[StandardMessage]
-    receipts: Dict[str, StandardMessage]
+    visible: PriorityQueue
+    inflight: Set[SqsMessage]
+    receipts: Dict[str, SqsMessage]
 
     def __init__(self, key: QueueKey, attributes=None, tags=None) -> None:
         super().__init__()
@@ -202,7 +231,7 @@ class SqsQueue:
         if attributes:
             self.attributes.update(attributes)
 
-        self.visible = Queue()
+        self.visible = PriorityQueue()
         self.inflight = set()
         self.receipts = dict()
 
@@ -309,21 +338,19 @@ class SqsQueue:
                 #  receipt handle that was issued before the message was put back in the visible queue.
                 pass
 
-    def put(self, message: Message, visibility_timeout=None):
+    def put(
+        self,
+        message: Message,
+        visibility_timeout: int = None,
+        message_deduplication_id: str = None,
+        message_group_id: str = None,
+    ):
 
-        standard_message = StandardMessage(message)
+        raise NotImplementedError()
 
-        if visibility_timeout is not None:
-            standard_message.visibility_timeout = visibility_timeout
-        else:
-            # use the attribute from the queue
-            standard_message.visibility_timeout = self.visibility_timeout
-
-        self.visible.put_nowait(standard_message)
-
-    def get(self, block=True, timeout=None, visibility_timeout: int = None) -> StandardMessage:
+    def get(self, block=True, timeout=None, visibility_timeout: int = None) -> SqsMessage:
         while True:
-            standard_message: QueuedMessage = self.visible.get(block=block, timeout=timeout)
+            standard_message: SqsMessage = self.visible.get(block=block, timeout=timeout)
             LOG.debug(
                 "de-queued message %s from %s", standard_message.message["MessageId"], self.arn
             )
@@ -379,7 +406,7 @@ class SqsQueue:
     def _assert_queue_name(self, name):
         # TODO: slashes are actually not allowed, but we've allowed it explicitly in localstack
         if not re.match(r"^[a-zA-Z0-9/_-]{1,80}$", name):
-            raise InvalidParameterValues(
+            raise InvalidParameterValue(
                 "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
             )
 
@@ -392,41 +419,56 @@ class SqsQueue:
                 raise InvalidAttributeName("Unknown attribute name %s" % k)
 
 
-class QueuedMessage(StandardMessage):
-    priority: float
-    deduplication_id: str
+class StandardQueue(SqsQueue):
+    def put(
+        self,
+        message: Message,
+        visibility_timeout: int = None,
+        message_deduplication_id: str = None,
+        message_group_id: str = None,
+    ):
 
-    def __init__(self, priority: float, message: Message, deduplication_id: str) -> None:
-        super().__init__(message)
-        self.priority = priority
-        # TODO: this is part of the message?
-        self.deduplication_id = deduplication_id
+        if message_deduplication_id:
+            raise InvalidParameterValue(
+                f"Value {message_deduplication_id} for parameter MessageDeduplicationId is invalid. Reason: The request includes a parameter that is not valid for this queue type."
+            )
+        if message_group_id:
+            raise InvalidParameterValue(
+                f"Value {message_group_id} for parameter MessageGroupId is invalid. Reason: The request includes a parameter that is not valid for this queue type."
+            )
 
-    def __gt__(self, other):
-        return self.priority > other.priority
+        standard_message = SqsMessage(time.time(), message)
 
-    def __ge__(self, other):
-        return self.priority >= other.priority
+        if visibility_timeout is not None:
+            standard_message.visibility_timeout = visibility_timeout
+        else:
+            # use the attribute from the queue
+            standard_message.visibility_timeout = self.visibility_timeout
 
-    def __lt__(self, other):
-        return self.priority < other.priority
-
-    def __le__(self, other):
-        return self.priority <= other.priority
+        self.visible.put_nowait(standard_message)
 
 
 class FifoQueue(SqsQueue):
     visible: PriorityQueue
-    inflight: Set[QueuedMessage]
-    receipts: Dict[str, QueuedMessage]
+    inflight: Set[SqsMessage]
+    receipts: Dict[str, SqsMessage]
 
     def __init__(self, key: QueueKey, attributes=None, tags=None) -> None:
         super().__init__(key, attributes, tags)
 
         self.visible = PriorityQueue()
 
-    def put(self, message: Message, visibility_timeout: int = None, deduplication_id: str = None):
-        dedup_id = deduplication_id
+    def put(
+        self,
+        message: Message,
+        visibility_timeout: int = None,
+        message_deduplication_id: str = None,
+        message_group_id: str = None,
+    ):
+
+        if not message_group_id:
+            raise MissingParameter("The request must contain the parameter MessageGroupId.")
+        dedup_id = message_deduplication_id
         content_based_deduplication = (
             "true"
             == (self.attributes.get(QueueAttributeName.ContentBasedDeduplication, "false")).lower()
@@ -434,10 +476,15 @@ class FifoQueue(SqsQueue):
         if not dedup_id and content_based_deduplication:
             dedup_id = hashlib.sha256(message.get("Body").encode("utf-8")).hexdigest()
         if not dedup_id:
-            raise InvalidParameterValues(
+            raise InvalidParameterValue(
                 "The Queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly"
             )
-        qm = QueuedMessage(time.time(), message, dedup_id)
+        qm = SqsMessage(
+            time.time(),
+            message,
+            message_deduplication_id=message_deduplication_id,
+            message_group_id=message_group_id,
+        )
 
         if visibility_timeout is not None:
             qm.visibility_timeout = visibility_timeout
@@ -449,7 +496,7 @@ class FifoQueue(SqsQueue):
 
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):
-            raise InvalidParameterValues(
+            raise InvalidParameterValue(
                 "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
             )
         # The .fifo suffix counts towards the 80-character queue name quota.
@@ -582,7 +629,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             queue = FifoQueue(k, attributes, tags)
         else:
             # TODO: this needs the base implementation?
-            queue = SqsQueue(k, attributes, tags)
+            queue = StandardQueue(k, attributes, tags)
         LOG.debug("creating queue key=%s attributes=%s tags=%s", k, attributes, tags)
         self._add_queue(queue)
 
@@ -807,6 +854,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         arguments = dict(locals())
         arguments.pop("self")
+        arguments.pop("context")
+        arguments.pop("queue")
+
         check_message_content(arguments)
 
         default_message_attributes = {"ReceiveCount": 0}
@@ -823,9 +873,17 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if int(delay_seconds):
             # FIXME: this is a pretty bad implementation (one thread per message...). polling on a priority queue
             #  would probably be better.
-            threading.Timer(int(delay_seconds), queue.put, args=(message,)).start()
+            threading.Timer(
+                int(delay_seconds),
+                queue.put,
+                args=(message, message_deduplication_id, message_group_id),
+            ).start()
         else:
-            queue.put(message)
+            queue.put(
+                message=message,
+                message_deduplication_id=message_deduplication_id,
+                message_group_id=message_group_id,
+            )
 
         return message
 
@@ -886,7 +944,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         # TODO: how does receiving behave if the queue was deleted in the meantime?
         return ReceiveMessageResult(Messages=messages)
 
-    def _dead_letter_check(self, queue: SqsQueue, std_m: StandardMessage) -> bool:
+    def _dead_letter_check(self, queue: SqsQueue, std_m: SqsMessage) -> bool:
         redrive_policy = json.loads(queue.attributes.get(QueueAttributeName.RedrivePolicy))
         # TODO: include the names of the dictionary sub - attributes in the autogenerated code?
         max_receive_count = redrive_policy["maxReceiveCount"]
@@ -978,6 +1036,28 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if queue.attributes.get(QueueAttributeName.Policy) == "":
             del queue.attributes[QueueAttributeName.Policy]
 
+        redrive_policy = queue.attributes.get(QueueAttributeName.RedrivePolicy)
+        if redrive_policy:
+            _redrive_policy = json.loads(redrive_policy)
+            dl_target_arn = _redrive_policy.get("deadLetterTargetArn")
+            max_receive_count = _redrive_policy.get("maxReceiveCount")
+            # TODO: use the actual AWS responses
+            if not dl_target_arn:
+                raise InvalidParameterValue(
+                    "The required parameter 'deadLetterTargetArn' is missing"
+                )
+            if not max_receive_count:
+                raise InvalidParameterValue("The required parameter 'maxReceiveCount' is missing")
+            try:
+                max_receive_count = int(max_receive_count)
+                valid_count = 1 <= max_receive_count <= 1000
+            except ValueError:
+                valid_count = False
+            if not valid_count:
+                raise InvalidParameterValue(
+                    f"Value{redrive_policy} for parameter RedrivePolicy is invalid. Reason: Invalid value for maxReceiveCount: {max_receive_count}, valid values are from 1 to 1000 both inclusive."
+                )
+
     def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap) -> None:
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -1061,7 +1141,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         for action in actions:
             if action not in valid:
-                raise InvalidParameterValues(
+                raise InvalidParameterValue(
                     f"Value SQS:{action} for parameter ActionName is invalid. Reason: Please refer to the appropriate "
                     "WSDL for a list of valid actions. "
                 )

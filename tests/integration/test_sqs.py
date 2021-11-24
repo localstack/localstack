@@ -1439,7 +1439,9 @@ class TestSqsProvider:
         result_recv = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in result_recv.keys()
 
-    def test_delete_message_deletes_after_visibility_timeout(self, sqs_client, sqs_create_queue):
+    def test_delete_message_deletes_with_change_visibility_timeout(
+        self, sqs_client, sqs_create_queue
+    ):
         # Old name: test_delete_message_deletes_visibility_agnostic
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -1482,28 +1484,28 @@ class TestSqsProvider:
         successful = result_send_batch["Successful"]
         assert len(successful) == len(message_batch)
 
-        result_recv = {"Messages": []}
+        result_recv = []
         i = 0
-        while len(result_recv["Messages"]) < message_count and i < 3:
-            result_recv = sqs_client.receive_message(
-                QueueUrl=queue_url, MaxNumberOfMessages=message_count, VisibilityTimeout=0
+        while len(result_recv) < message_count and i < message_count:
+            result_recv.extend(
+                sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=message_count)[
+                    "Messages"
+                ]
             )
             i += 1
-            time.sleep(1)
-        messages_recv = result_recv["Messages"]
-        assert len(messages_recv) == message_count
+        assert len(result_recv) == message_count
 
         ids_sent = []
         ids_received = []
         for i in range(message_count):
             ids_sent.append(successful[i]["MessageId"])
-            ids_received.append((messages_recv[i]["MessageId"]))
+            ids_received.append((result_recv[i]["MessageId"]))
 
         assert set(ids_sent) == set(ids_received)
 
         delete_entries = [
             {"Id": message["MessageId"], "ReceiptHandle": message["ReceiptHandle"]}
-            for message in messages_recv
+            for message in result_recv
         ]
         sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=delete_entries)
         confirmation = sqs_client.receive_message(
@@ -1548,6 +1550,7 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
 
+    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
     def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_client):
         dl_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dl_queue_name)
@@ -1556,7 +1559,8 @@ class TestSqsProvider:
         )["Attributes"]["QueueArn"]
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
-        max_receive_count = 42
+        valid_max_receive_count = "42"
+        invalid_max_receive_count = "invalid"
 
         with pytest.raises(Exception) as e:
             sqs_client.set_queue_attributes(
@@ -1568,17 +1572,31 @@ class TestSqsProvider:
         with pytest.raises(Exception) as e:
             sqs_client.set_queue_attributes(
                 QueueUrl=queue_url,
-                Attributes={"RedrivePolicy": json.dumps({"maxReceiveCount": max_receive_count})},
+                Attributes={
+                    "RedrivePolicy": json.dumps({"maxReceiveCount": valid_max_receive_count})
+                },
             )
         e.match("InvalidParameterValue")
 
-        _redrive_policy = {
+        _invalid_redrive_policy = {
             "deadLetterTargetArn": dl_target_arn,
-            "maxReceiveCount": max_receive_count,
+            "maxReceiveCount": invalid_max_receive_count,
+        }
+
+        with pytest.raises(Exception) as e:
+            sqs_client.set_queue_attributes(
+                QueueUrl=queue_url,
+                Attributes={"RedrivePolicy": json.dumps(_invalid_redrive_policy)},
+            )
+        e.match("InvalidParameterValue")
+
+        _valid_redrive_policy = {
+            "deadLetterTargetArn": dl_target_arn,
+            "maxReceiveCount": valid_max_receive_count,
         }
 
         sqs_client.set_queue_attributes(
-            QueueUrl=queue_url, Attributes={"RedrivePolicy": json.dumps(_redrive_policy)}
+            QueueUrl=queue_url, Attributes={"RedrivePolicy": json.dumps(_valid_redrive_policy)}
         )
 
     @pytest.mark.skip
@@ -2030,11 +2048,31 @@ class TestSqsProvider:
             == "5ae4d5d7636402d80f4eb6d213245a88"
         )
 
+    def test_inflight_message_requeue(self, sqs_client, sqs_create_queue):
+        visibility_timeout = 3 if os.environ.get("TEST_TARGET") == "AWS_CLOUD" else 2
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(
+            QueueName=queue_name
+        )  # , Attributes={"VisibilityTimeout": str(visibility_timeout)})
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="test1")
+        result_receive1 = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=visibility_timeout
+        )
+        time.sleep(visibility_timeout / 2)
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody="test2")
+        time.sleep(visibility_timeout)
+        result_receive2 = sqs_client.receive_message(
+            QueueUrl=queue_url, VisibilityTimeout=visibility_timeout
+        )
+
+        assert result_receive1["Messages"][0]["Body"] == result_receive2["Messages"][0]["Body"]
+
     # Tests of diverging behaviour that was discovered during rewrite
-    def test_posting_to_fifo_requires_deduplicationid(self, sqs_client, sqs_create_queue):
+    def test_posting_to_fifo_requires_deduplicationid_group_id(self, sqs_client, sqs_create_queue):
         fifo_queue_name = f"queue-{short_uid()}.fifo"
         queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
         message_content = f"test{short_uid()}"
+        dedup_id = f"fifo_dedup-{short_uid()}"
         group_id = f"fifo_group-{short_uid()}"
 
         with pytest.raises(Exception) as e:
@@ -2042,6 +2080,15 @@ class TestSqsProvider:
                 QueueUrl=queue_url, MessageBody=message_content, MessageGroupId=group_id
             )
         e.match("InvalidParameterValue")
+
+        with pytest.raises(Exception) as e:
+            sqs_client.send_message(
+                QueueUrl=queue_url, MessageBody=message_content, MessageDeduplicationId=dedup_id
+            )
+        e.match("MissingParameter")
+
+    def test_send_with_delay(self):
+        pass
 
     @pytest.mark.skip
     def test_posting_to_queue_via_queue_name(self, sqs_client, sqs_create_queue):
