@@ -253,6 +253,6 @@ clean-dist:				  ## Clean up python distribution directories
 
 # deprecated commands
 infra:             		  # legacy command used in the supervisord file to
-	($(VENV_RUN); exec bin/localstack start --host --no-banner)
+	($(VENV_RUN); LOCALSTACK_INFRA_PROCESS=1 exec bin/localstack start --host --no-banner)
 
 .PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints init init-testlibs dist publish coveralls start docker-save-image docker-save-image-light docker-build docker-build-light docker-build-multi-platform docker-push-master docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra

@@ -636,6 +636,7 @@ def prepare_host():
     if os.environ.get(constants.LOCALSTACK_INFRA_PROCESS) in constants.TRUE_STRINGS:
         return
 
+    setup_logging()
     hooks.prepare_host.run()
 
 
