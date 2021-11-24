@@ -210,7 +210,7 @@ test-docker-mount-code:
 ci-pro-smoke-tests:
 	pip3 install --upgrade awscli-local
 	pip3 install --upgrade localstack
-	IMAGE_NAME=$(IMAGE_NAME_LIGHT) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DEBUG=1 localstack start -d
+	IMAGE_NAME=$(IMAGE_NAME_LIGHT) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DNS_ADDRESS=0 DEBUG=1 localstack start -d
 	docker logs -f $(MAIN_CONTAINER_NAME) &
 	localstack wait -t 120
 	awslocal qldb list-ledgers
