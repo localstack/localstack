@@ -467,6 +467,9 @@ def get_origin_host(headers):
 def append_cors_headers(bucket_name, request_method, request_headers, response):
     bucket_name = normalize_bucket_name(bucket_name)
 
+    # chrome sends OPTIONS request with "Access-Control-Request-Method" header first
+    request_method = request_headers.get("Access-Control-Request-Method") or request_method
+
     # Checking CORS is allowed or not
     cors = BUCKET_CORS.get(bucket_name)
     if not cors:
@@ -505,21 +508,21 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                     response.headers["Access-Control-Allow-Origin"] = origin
                     if "AllowedMethod" in rule:
                         response.headers["Access-Control-Allow-Methods"] = (
-                            ",".join(allowed_methods)
+                            ", ".join(allowed_methods)
                             if isinstance(allowed_methods, list)
                             else allowed_methods
                         )
                     if "AllowedHeader" in rule:
                         allowed_headers = rule["AllowedHeader"]
                         response.headers["Access-Control-Allow-Headers"] = (
-                            ",".join(allowed_headers)
+                            ", ".join(allowed_headers)
                             if isinstance(allowed_headers, list)
                             else allowed_headers
                         )
                     if "ExposeHeader" in rule:
                         expose_headers = rule["ExposeHeader"]
                         response.headers["Access-Control-Expose-Headers"] = (
-                            ",".join(expose_headers)
+                            ", ".join(expose_headers)
                             if isinstance(expose_headers, list)
                             else expose_headers
                         )

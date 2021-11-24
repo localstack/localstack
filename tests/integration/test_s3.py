@@ -1032,7 +1032,9 @@ class TestS3(unittest.TestCase):
             "get_object", Params={"Bucket": bucket_name, "Key": object_key}
         )
         response = requests.get(url, verify=False)
-        self.assertEqual("ETag,x-amz-version-id", response.headers["Access-Control-Expose-Headers"])
+        self.assertEqual(
+            "ETag, x-amz-version-id", response.headers["Access-Control-Expose-Headers"]
+        )
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -1585,105 +1587,6 @@ class TestS3(unittest.TestCase):
             self.assertEqual("DEEP_ARCHIVE", obj.storage_class)
 
         self._delete_bucket(bucket_name, keys)
-
-    def test_cors_with_single_origin_error(self):
-        client = self._get_test_client()
-
-        bucket_cors_config = {
-            "CORSRules": [
-                {
-                    "AllowedOrigins": ["https://localhost:4200"],
-                    "AllowedMethods": ["GET", "PUT"],
-                    "MaxAgeSeconds": 3000,
-                    "AllowedHeaders": ["*"],
-                }
-            ]
-        }
-
-        bucket_name = "my-s3-bucket"
-        client.create_bucket(Bucket=bucket_name)
-        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
-
-        # create signed url
-        url = client.generate_presigned_url(
-            ClientMethod="put_object",
-            Params={
-                "Bucket": bucket_name,
-                "Key": "424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf",
-                "ContentType": "application/pdf",
-                "ACL": "bucket-owner-full-control",
-            },
-            ExpiresIn=3600,
-        )
-        old_config = config.DISABLE_CUSTOM_CORS_S3
-        config.DISABLE_CUSTOM_CORS_S3 = False
-        result = requests.put(
-            url,
-            data="something",
-            verify=False,
-            headers={
-                "Origin": "https://localhost:4200",
-                "Content-Type": "application/pdf",
-            },
-        )
-        self.assertEqual(200, result.status_code)
-
-        bucket_cors_config = {
-            "CORSRules": [
-                {
-                    "AllowedOrigins": [
-                        "https://localhost:4200",
-                        "https://localhost:4201",
-                    ],
-                    "AllowedMethods": ["GET", "PUT"],
-                    "MaxAgeSeconds": 3000,
-                    "AllowedHeaders": ["*"],
-                }
-            ]
-        }
-
-        client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
-
-        # create signed url
-        url = client.generate_presigned_url(
-            ClientMethod="put_object",
-            Params={
-                "Bucket": bucket_name,
-                "Key": "424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf",
-                "ContentType": "application/pdf",
-                "ACL": "bucket-owner-full-control",
-            },
-            ExpiresIn=3600,
-        )
-
-        result = requests.put(
-            url,
-            data="something",
-            verify=False,
-            headers={
-                "Origin": "https://localhost:4200",
-                "Content-Type": "application/pdf",
-            },
-        )
-        self.assertEqual(200, result.status_code)
-
-        result = requests.put(
-            url,
-            data="something",
-            verify=False,
-            headers={
-                "Origin": "https://localhost:4201",
-                "Content-Type": "application/pdf",
-            },
-        )
-        self.assertEqual(200, result.status_code)
-
-        # cleanup
-        config.DISABLE_CUSTOM_CORS_S3 = old_config
-        client.delete_object(
-            Bucket=bucket_name, Key="424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf"
-        )
-        client.delete_bucket(Bucket=bucket_name)
 
     def test_s3_put_object_notification_with_lambda(self):
         bucket_name = "bucket-%s" % short_uid()
@@ -2753,3 +2656,112 @@ def test_replay_s3_call(api_version, bucket_name, payload):
 
     bucket_head = s3_client.head_bucket(Bucket=bucket_name)
     assert bucket_head["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+
+@patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
+def test_cors_with_single_origin_error(s3_client):
+    # works with TEST_TARGET=AWS_CLOUD
+    bucket_cors_config = {
+        "CORSRules": [
+            {
+                "AllowedOrigins": ["https://localhost:4200"],
+                "AllowedMethods": ["GET", "PUT"],
+                "MaxAgeSeconds": 3000,
+                "AllowedHeaders": ["*"],
+            }
+        ]
+    }
+
+    bucket_name = "bucket-%s" % short_uid()
+    object_key = "424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf"
+    s3_client.create_bucket(Bucket=bucket_name)
+    s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+
+    # create signed url
+    url = s3_client.generate_presigned_url(
+        ClientMethod="put_object",
+        Params={
+            "Bucket": bucket_name,
+            "Key": object_key,
+            "ContentType": "application/pdf",
+            "ACL": "bucket-owner-full-control",
+        },
+        ExpiresIn=3600,
+    )
+    result = requests.put(
+        url,
+        data="something",
+        verify=False,
+        headers={
+            "Origin": "https://localhost:4200",
+            "Content-Type": "application/pdf",
+        },
+    )
+    assert result.status_code == 200
+
+    bucket_cors_config = {
+        "CORSRules": [
+            {
+                "AllowedOrigins": [
+                    "https://localhost:4200",
+                    "https://localhost:4201",
+                ],
+                "AllowedMethods": ["GET", "PUT"],
+                "MaxAgeSeconds": 3000,
+                "AllowedHeaders": ["*"],
+            }
+        ]
+    }
+
+    s3_client.put_bucket_cors(Bucket=bucket_name, CORSConfiguration=bucket_cors_config)
+
+    # create signed url
+    url = s3_client.generate_presigned_url(
+        ClientMethod="put_object",
+        Params={
+            "Bucket": bucket_name,
+            "Key": object_key,
+            "ContentType": "application/pdf",
+            "ACL": "bucket-owner-full-control",
+        },
+        ExpiresIn=3600,
+    )
+
+    # mimic chrome behavior, sending OPTIONS request first for strict-origin-when-cross-origin
+    result = requests.options(
+        url,
+        headers={
+            "Origin": "https://localhost:4200",
+            "Access-Control-Request-Method": "PUT",
+        },
+    )
+    assert "Access-Control-Allow-Origin" in result.headers
+    assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4200"
+    assert "Access-Control-Allow-Methods" in result.headers
+    assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
+
+    result = requests.put(
+        url,
+        data="something",
+        verify=False,
+        headers={
+            "Origin": "https://localhost:4200",
+            "Content-Type": "application/pdf",
+        },
+    )
+    assert result.status_code == 200
+
+    result = requests.put(
+        url,
+        data="something",
+        verify=False,
+        headers={
+            "Origin": "https://localhost:4201",
+            "Content-Type": "application/pdf",
+        },
+    )
+    assert result.status_code == 200
+
+    # cleanup
+    s3_client.delete_object(Bucket=bucket_name, Key=object_key)
+    s3_client.delete_bucket(Bucket=bucket_name)
