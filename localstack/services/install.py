@@ -27,12 +27,11 @@ from localstack.constants import (
     ELASTICSEARCH_PLUGIN_LIST,
     INSTALL_DIR_INFRA,
     KMS_URL_PATTERN,
-    LOCALSTACK_INFRA_PROCESS,
     LOCALSTACK_MAVEN_VERSION,
     MODULE_MAIN_PATH,
     STS_JAR_URL,
 )
-from localstack.utils import bootstrap
+from localstack.runtime import hooks
 from localstack.utils.common import (
     chmod_r,
     download,
@@ -481,9 +480,7 @@ def install_components(names):
 
 
 def install_all_components():
-    # load plugins
-    os.environ[LOCALSTACK_INFRA_PROCESS] = "1"
-    bootstrap.load_plugins()
+    hooks.install.run()
     # install all components
     install_components(DEFAULT_SERVICE_PORTS.keys())
 
@@ -616,6 +613,7 @@ class InstallerManager:
 
 def main():
     if len(sys.argv) > 1:
+        # set API key so pro install hooks are called
         os.environ["LOCALSTACK_API_KEY"] = os.environ.get("LOCALSTACK_API_KEY") or "test"
         if sys.argv[1] == "libs":
             print("Initializing installation.")

@@ -275,6 +275,8 @@ class VolumeMappings:
 
 
 class ContainerClient(metaclass=ABCMeta):
+    STOP_TIMEOUT = 0
+
     @abstractmethod
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         """Returns the status of the container with the given name"""
@@ -286,8 +288,12 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def stop_container(self, container_name: str):
-        """Stops container with given name"""
+    def stop_container(self, container_name: str, timeout: int = None):
+        """Stops container with given name
+        :param container_name: Container identifier (name or id) of the container to be stopped
+        :param timeout: Timeout after which SIGKILL is sent to the container.
+                        If not specified, defaults to `STOP_TIMEOUT`
+        """
         pass
 
     @abstractmethod
@@ -547,9 +553,11 @@ class CmdDockerClient(ContainerClient):
         container_network = cmd_result.strip()
         return container_network
 
-    def stop_container(self, container_name: str) -> None:
+    def stop_container(self, container_name: str, timeout: int = None) -> None:
+        if timeout is None:
+            timeout = self.STOP_TIMEOUT
         cmd = self._docker_cmd()
-        cmd += ["stop", "-t0", container_name]
+        cmd += ["stop", "--time", str(timeout), container_name]
         LOG.debug("Stopping container with cmd %s", cmd)
         try:
             safe_run(cmd)
@@ -1173,11 +1181,13 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             raise ContainerException()
 
-    def stop_container(self, container_name: str) -> None:
+    def stop_container(self, container_name: str, timeout: int = None) -> None:
+        if timeout is None:
+            timeout = self.STOP_TIMEOUT
         LOG.debug("Stopping container: %s", container_name)
         try:
             container = self.client().containers.get(container_name)
-            container.stop(timeout=0)
+            container.stop(timeout=timeout)
         except NotFound:
             raise NoSuchContainer(container_name)
         except APIError:

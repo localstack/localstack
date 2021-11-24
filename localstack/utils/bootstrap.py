@@ -1,18 +1,15 @@
 import functools
 import logging
 import os
-import pkgutil
 import re
 import shlex
-import sys
 import threading
 import warnings
 from functools import wraps
 from typing import Iterable, List, Optional, Set
 
-import six
-
 from localstack import config, constants
+from localstack.runtime import hooks
 from localstack.utils.common import FileListener, chmod_r, mkdir, poll_condition
 from localstack.utils.docker_utils import (
     DOCKER_CLIENT,
@@ -29,13 +26,6 @@ from localstack.utils.run import run, to_str
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(os.path.basename(__file__))
-
-# maps plugin scope ("services", "commands") to flags which indicate whether plugins have been loaded
-PLUGINS_LOADED = {}
-
-# predefined list of plugin modules, to speed up the plugin loading at startup
-# note: make sure to load localstack_ext before localstack
-PLUGIN_MODULES = ["localstack_ext", "localstack"]
 
 # marker for extended/ignored libs in requirements.txt
 IGNORED_LIB_MARKER = "#extended-lib"
@@ -102,89 +92,6 @@ def log_duration(name=None, min_ms=500):
         return wrapped
 
     return wrapper
-
-
-@log_duration()
-def load_plugin_from_path(file_path, scope=None):
-    if os.path.exists(file_path):
-        delimiters = r"[\\/]"
-        not_delimiters = r"[^\\/]"
-        regex = r"(^|.+{d})({n}+){d}plugins.py".format(d=delimiters, n=not_delimiters)
-        module = re.sub(regex, r"\2", file_path)
-        method_name = "register_localstack_plugins"
-        scope = scope or PLUGIN_SCOPE_SERVICES
-        if scope == PLUGIN_SCOPE_COMMANDS:
-            method_name = "register_localstack_commands"
-        try:
-            namespace = {}
-            exec("from %s.plugins import %s" % (module, method_name), namespace)
-            method_to_execute = namespace[method_name]
-        except Exception as e:
-            if not re.match(r".*cannot import name .*%s.*" % method_name, str(e)) and (
-                "No module named" not in str(e)
-            ):
-                LOG.debug("Unable to load plugins from module %s: %s" % (module, e))
-            return
-        try:
-            LOG.debug(
-                'Loading plugins - scope "%s", module "%s": %s' % (scope, module, method_to_execute)
-            )
-            return method_to_execute()
-        except Exception as e:
-            if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
-                LOG.warning("Unable to load plugins from file %s: %s" % (file_path, e))
-
-
-def should_load_module(module, scope):
-    if module == "localstack_ext" and not os.environ.get("LOCALSTACK_API_KEY"):
-        return False
-    return True
-
-
-@log_duration()
-def load_plugins(scope=None):
-    scope = scope or PLUGIN_SCOPE_SERVICES
-    if PLUGINS_LOADED.get(scope):
-        return PLUGINS_LOADED[scope]
-
-    is_infra_process = (
-        os.environ.get(constants.LOCALSTACK_INFRA_PROCESS) in ["1", "true"] or "--host" in sys.argv
-    )
-    log_level = logging.WARNING if scope == PLUGIN_SCOPE_COMMANDS and not is_infra_process else None
-    setup_logging(log_level=log_level)
-
-    loaded_files = []
-    result = []
-
-    # Use a predefined list of plugin modules for now, to speed up the plugin loading at startup
-    # search_modules = pkgutil.iter_modules()
-    search_modules = PLUGIN_MODULES
-
-    for module in search_modules:
-        if not should_load_module(module, scope):
-            continue
-        file_path = None
-        if isinstance(module, six.string_types):
-            loader = pkgutil.get_loader(module)
-            if loader:
-                path = getattr(loader, "path", "") or getattr(loader, "filename", "")
-                if "__init__.py" in path:
-                    path = os.path.dirname(path)
-                file_path = os.path.join(path, "plugins.py")
-        elif six.PY3 and not isinstance(module, tuple):
-            file_path = os.path.join(module.module_finder.path, module.name, "plugins.py")
-        elif six.PY3 or isinstance(module[0], pkgutil.ImpImporter):
-            if hasattr(module[0], "path"):
-                file_path = os.path.join(module[0].path, module[1], "plugins.py")
-        if file_path and file_path not in loaded_files:
-            plugin_config = load_plugin_from_path(file_path, scope=scope)
-            if plugin_config:
-                result.append(plugin_config)
-            loaded_files.append(file_path)
-    # set global flag
-    PLUGINS_LOADED[scope] = result
-
-    return result
 
 
 def get_docker_image_details(image_name=None):
@@ -257,10 +164,6 @@ def get_server_version():
 
 def setup_logging(log_level=None):
     """Determine and set log level"""
-
-    if PLUGINS_LOADED.get("_logging_"):
-        return
-    PLUGINS_LOADED["_logging_"] = True
 
     # log level set by DEBUG env variable
     log_level = log_level or (logging.DEBUG if config.DEBUG else logging.INFO)
@@ -647,7 +550,9 @@ class LocalstackContainerServer(Server):
 
     def do_shutdown(self):
         try:
-            DOCKER_CLIENT.stop_container(self.container.name)
+            CmdDockerClient().stop_container(
+                self.container.name, timeout=10
+            )  # giving the container some time to stop
         except Exception as e:
             LOG.info("error cleaning up localstack container %s: %s", self.container.name, e)
 
@@ -688,13 +593,7 @@ def configure_container(container: LocalstackContainer):
     container.additional_flags.extend(shlex.split(user_flags))
 
     # get additional parameters from plugins
-    # TODO: extract this into container config hooks and remove old plugin code
-    plugin_configs = load_plugins()
-    plugin_run_params = " ".join(
-        [entry.get("docker", {}).get("run_flags", "") for entry in plugin_configs]
-    )
-    plugin_run_params = extract_port_flags(plugin_run_params, container.ports)
-    container.additional_flags.extend(shlex.split(plugin_run_params))
+    hooks.configure_localstack_container.run(container)
 
     # construct default port mappings
     service_ports = config.SERVICE_PORTS
@@ -716,6 +615,10 @@ def configure_container(container: LocalstackContainer):
     container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
     container.env_vars["HOST_TMP_FOLDER"] = config.HOST_TMP_FOLDER
 
+    # TODO discuss if this should be the default?
+    # to activate proper signal handling
+    container.env_vars["SET_TERM_HANDLER"] = "1"
+
     # data_dir mounting and environment variables
     bind_mounts = []
     data_dir = os.environ.get("DATA_DIR", None)
@@ -729,6 +632,18 @@ def configure_container(container: LocalstackContainer):
     bind_mounts.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
     container.additional_flags.append("--privileged")
+
+
+@log_duration()
+def prepare_host():
+    """
+    Prepare the host environment for running LocalStack, this should be called before start_infra_*.
+    """
+    if os.environ.get(constants.LOCALSTACK_INFRA_PROCESS) in constants.TRUE_STRINGS:
+        return
+
+    setup_logging()
+    hooks.prepare_host.run()
 
 
 def start_infra_in_docker():
