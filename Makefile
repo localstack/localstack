@@ -208,8 +208,8 @@ test-docker-mount-code:
 # Note: the ci-* targets below should only be used in CI builds!
 
 ci-pro-smoke-tests:
-	which awslocal || pip3 install awscli-local
-	which localstack || pip3 install localstack
+	pip3 install --upgrade awscli-local
+	pip3 install --upgrade localstack
 	IMAGE_NAME=$(IMAGE_NAME_LIGHT) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DEBUG=1 localstack start -d
 	docker logs -f $(MAIN_CONTAINER_NAME) &
 	localstack wait -t 120
