@@ -4,7 +4,6 @@ from localstack import constants
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
-from tests.integration.fixtures import only_localstack
 
 
 def test_cfn_apigateway_aws_integration(
@@ -78,8 +77,8 @@ def test_cfn_apigateway_aws_integration(
         cleanup_stacks([stack_id])
 
 
-@only_localstack
 def test_url_output(
+    only_localstack,
     cfn_client,
     apigateway_client,
     is_change_set_created_and_available,

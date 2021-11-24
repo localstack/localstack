@@ -1,5 +1,7 @@
+import base64
 import datetime
 import gzip
+import hashlib
 import io
 import json
 import os
@@ -2777,3 +2779,51 @@ def test_cors_with_allowed_origins(s3_client):
     # cleanup
     s3_client.delete_object(Bucket=bucket_name, Key=object_key)
     s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_put_object_with_md5_and_chunk_signature(only_localstack, s3_client):
+    # based on https://github.com/localstack/localstack/issues/4987
+    bucket_name = "bucket-%s" % short_uid()
+    object_key = "test-runtime.properties"
+    object_data = (
+        "#20211122+0100\n"
+        "#Mon Nov 22 20:10:44 CET 2021\n"
+        "last.sync.url.test-space-key=2822a50f-4992-425a-b8fb-923735a9ddff317e3479-5907-46cf-b33a-60da9709274f\n"
+    )
+    object_data_chunked = (
+        "93;chunk-signature=5be6b2d473e96bb9f297444da60bdf0ff8f5d2e211e1d551b3cf3646c0946641\r\n"
+        "%s"
+        "\r\n0;chunk-signature=bd5c830b94346b57ddc8805ba26c44a122256c207014433bf6579b0985f21df7\r\n\r\n"
+        % object_data
+    )
+    result = s3_client.create_bucket(Bucket=bucket_name)
+
+    content_md5 = base64.b64encode(hashlib.md5(object_data.encode()).digest()).decode()
+    url = s3_client.generate_presigned_url(
+        "put_object",
+        Params={
+            "Bucket": bucket_name,
+            "Key": object_key,
+            "ContentType": "application/octet-stream",
+            "ContentMD5": content_md5,
+        },
+    )
+    result = requests.put(
+        url,
+        data=object_data_chunked,
+        headers={
+            "Content-Md5": content_md5,
+            "Content-Type": "application/octet-stream",
+            "User-Agent": (
+                "aws-sdk-java/1.11.951 Mac_OS_X/10.15.7 OpenJDK_64-Bit_Server_VM/11.0.11+9-LTS "
+                "java/11.0.11 scala/2.13.6 kotlin/1.5.31 vendor/Amazon.com_Inc."
+            ),
+            "X-Amz-Content-Sha256": "STREAMING-AWS4-HMAC-SHA256-PAYLOAD",
+            "X-Amz-Date": "20211122T191045Z",
+            "X-Amz-Decoded-Content-Length": str(len(object_data)),
+            "Content-Length": str(len(object_data_chunked)),
+            "Connection": "Keep-Alive",
+            "Expect": "100-continue",
+        },
+    )
+    assert result.status_code == 200, (result, result.content)

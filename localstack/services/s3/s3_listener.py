@@ -2,6 +2,7 @@ import base64
 import codecs
 import collections
 import datetime
+import io
 import json
 import logging
 import random
@@ -881,8 +882,29 @@ def bucket_exists(bucket_name):
     return True, 200
 
 
+def strip_chunk_signatures(body, headers):
+    if headers.get("x-amz-content-sha256", None) != "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
+        return body
+    content_length = int(headers["x-amz-decoded-content-length"])
+
+    # borrowed from https://github.com/spulec/moto/pull/4201
+    body_io = io.BytesIO(body)
+    new_body = bytearray(content_length)
+    pos = 0
+    line = body_io.readline()
+    while line:
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html#sigv4-chunked-body-definition
+        # str(hex(chunk-size)) + ";chunk-signature=" + signature + \r\n + chunk-data + \r\n
+        chunk_size = int(line[: line.find(b";")].decode("utf8"), 16)
+        new_body[pos : pos + chunk_size] = body_io.read(chunk_size)
+        pos = pos + chunk_size
+        body_io.read(2)  # skip trailing \r\n
+        line = body_io.readline()
+    return bytes(new_body)
+
+
 def check_content_md5(data, headers):
-    actual = md5(data)
+    actual = md5(strip_chunk_signatures(data, headers))
     try:
         md5_header = headers["Content-MD5"]
         if not is_base64(md5_header):

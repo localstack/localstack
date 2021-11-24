@@ -373,10 +373,10 @@ def create_secret(secretsmanager_client):
         secretsmanager_client.delete_secret(SecretId=item)
 
 
-only_localstack = pytest.mark.skipif(
-    os.environ.get("TEST_TARGET") == "AWS_CLOUD",
-    reason="test only applicable if run against localstack",
-)
+@pytest.fixture
+def only_localstack():
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        pytest.skip("test only applicable if run against localstack")
 
 
 @pytest.fixture
