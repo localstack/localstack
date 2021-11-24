@@ -467,8 +467,13 @@ def get_origin_host(headers):
 def append_cors_headers(bucket_name, request_method, request_headers, response):
     bucket_name = normalize_bucket_name(bucket_name)
 
-    # chrome sends OPTIONS request with "Access-Control-Request-Method" header first
-    request_method = request_headers.get("Access-Control-Request-Method") or request_method
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Request-Method
+    # > The Access-Control-Request-Method request header is used by browsers when issuing a preflight request,
+    # > to let the server know which HTTP method will be used when the actual request is made.
+    # > This header is necessary as the preflight request is always an OPTIONS and doesn't use the same method
+    # > as the actual request.
+    if request_method == "OPTIONS" and "Access-Control-Request-Method" in request_headers:
+        request_method = request_headers["Access-Control-Request-Method"]
 
     # Checking CORS is allowed or not
     cors = BUCKET_CORS.get(bucket_name)

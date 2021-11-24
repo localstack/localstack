@@ -2659,7 +2659,7 @@ def test_replay_s3_call(api_version, bucket_name, payload):
 
 
 @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
-def test_cors_with_single_origin_error(s3_client):
+def test_cors_with_allowed_origins(s3_client):
     # works with TEST_TARGET=AWS_CLOUD
     bucket_cors_config = {
         "CORSRules": [
@@ -2698,6 +2698,10 @@ def test_cors_with_single_origin_error(s3_client):
         },
     )
     assert result.status_code == 200
+    assert "Access-Control-Allow-Origin" in result.headers
+    assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4200"
+    assert "Access-Control-Allow-Methods" in result.headers
+    assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
 
     bucket_cors_config = {
         "CORSRules": [
@@ -2750,6 +2754,10 @@ def test_cors_with_single_origin_error(s3_client):
         },
     )
     assert result.status_code == 200
+    assert "Access-Control-Allow-Origin" in result.headers
+    assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4200"
+    assert "Access-Control-Allow-Methods" in result.headers
+    assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
 
     result = requests.put(
         url,
@@ -2761,6 +2769,10 @@ def test_cors_with_single_origin_error(s3_client):
         },
     )
     assert result.status_code == 200
+    assert "Access-Control-Allow-Origin" in result.headers
+    assert result.headers["Access-Control-Allow-Origin"] == "https://localhost:4201"
+    assert "Access-Control-Allow-Methods" in result.headers
+    assert result.headers["Access-Control-Allow-Methods"] == "GET, PUT"
 
     # cleanup
     s3_client.delete_object(Bucket=bucket_name, Key=object_key)
