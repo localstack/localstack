@@ -609,12 +609,18 @@ class ProxyListenerDynamoDB(ProxyListener):
     # -------------
 
     def prepare_request_headers(self, headers):
+        def _replace(regex, replace):
+            headers["Authorization"] = re.sub(
+                regex, replace, headers.get("Authorization") or "", flags=re.IGNORECASE
+            )
+
         # Note: We need to ensure that the same access key is used here for all requests,
         # otherwise DynamoDBLocal stores tables/items in separate namespaces
-        headers["Authorization"] = re.sub(
-            r"Credential=[^/]+/",
-            r"Credential=%s/" % constants.TEST_AWS_ACCESS_KEY_ID,
-            headers.get("Authorization") or "",
+        _replace(r"Credential=[^/]+/", r"Credential=%s/" % constants.TEST_AWS_ACCESS_KEY_ID)
+        # Note: The NoSQL Workbench sends "localhost" as the region name, which we need to correct here
+        _replace(
+            r"Credential=([^/]+/[^/]+)/localhost",
+            r"Credential=\1/%s" % aws_stack.get_local_region(),
         )
 
     def prepare_batch_write_item_records(self, record, data):
@@ -787,8 +793,9 @@ class ProxyListenerDynamoDB(ProxyListener):
 
 
 def get_sse_kms_managed_key():
-    if MANAGED_KMS_KEYS.get(aws_stack.get_region()):
-        return MANAGED_KMS_KEYS[aws_stack.get_region()]
+    existing_key = MANAGED_KMS_KEYS.get(aws_stack.get_region())
+    if existing_key:
+        return existing_key
     kms_client = aws_stack.connect_to_service("kms")
     key_data = kms_client.create_key(Description="Default key that protects DynamoDB data")
     key_id = key_data["KeyMetadata"]["KeyId"]
