@@ -1744,7 +1744,6 @@ def generate_ssl_cert(
         # TODO: Cleaner code to load the cert dynamically
         # extract key and cert from target_file and store into separate files
         content = load_file(target_file)
-        print(content)
         key_start = re.search(PEM_KEY_START_REGEX, content)
         key_start = key_start.group(0)
         key_end = re.search(PEM_KEY_END_REGEX, content)
