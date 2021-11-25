@@ -1,4 +1,5 @@
 import os.path
+import re
 import threading
 import time
 import unittest
@@ -7,10 +8,18 @@ from unittest.mock import MagicMock
 import pytest
 
 from localstack.utils.common import (
+    PEM_CERT_END,
+    PEM_CERT_START,
+    PEM_KEY_END_REGEX,
+    PEM_KEY_START_REGEX,
     FileListener,
     FileMappedDocument,
+    generate_ssl_cert,
     is_none_or_empty,
+    load_file,
+    new_tmp_file,
     poll_condition,
+    rm_rf,
     run,
     synchronized,
 )
@@ -225,3 +234,26 @@ class TestFileMappedDocument:
         doc = FileMappedDocument(path)
         doc.save()
         assert path.exists()
+
+
+def test_generate_ssl_cert():
+    def _assert(cert, key):
+        # assert that file markers are in place
+        assert PEM_CERT_START in cert
+        assert PEM_CERT_END in cert
+        assert re.match(PEM_KEY_START_REGEX, key.replace("\n", " "))
+        assert re.match(fr".*{PEM_KEY_END_REGEX}", key.replace("\n", " "))
+
+    # generate cert and get content directly
+    cert = generate_ssl_cert()
+    _assert(cert, cert)
+
+    # generate cert to file and load content from there
+    target_file, cert_file_name, key_file_name = generate_ssl_cert(
+        target_file=new_tmp_file(), overwrite=True
+    )
+    _assert(load_file(cert_file_name), load_file(key_file_name))
+
+    # clean up
+    rm_rf(cert_file_name)
+    rm_rf(key_file_name)
