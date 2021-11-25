@@ -1145,8 +1145,8 @@ class SqsApi:
         A message can include only XML, JSON, and unformatted text. The
         following Unicode characters are allowed:
 
-        ``#x9`` \| ``#xA`` \| ``#xD`` \| ``#x20`` to ``#xD7FF`` \| ``#xE000`` to
-        ``#xFFFD`` \| ``#x10000`` to ``#x10FFFF``
+        ``#x9`` | ``#xA`` | ``#xD`` | ``#x20`` to ``#xD7FF`` | ``#xE000`` to
+        ``#xFFFD`` | ``#x10000`` to ``#x10FFFF``
 
         Any characters not included in this list will be rejected. For more
         information, see the `W3C specification for
@@ -1188,8 +1188,8 @@ class SqsApi:
         A message can include only XML, JSON, and unformatted text. The
         following Unicode characters are allowed:
 
-        ``#x9`` \| ``#xA`` \| ``#xD`` \| ``#x20`` to ``#xD7FF`` \| ``#xE000`` to
-        ``#xFFFD`` \| ``#x10000`` to ``#x10FFFF``
+        ``#x9`` | ``#xA`` | ``#xD`` | ``#x20`` to ``#xD7FF`` | ``#xE000`` to
+        ``#xFFFD`` | ``#x10000`` to ``#x10FFFF``
 
         Any characters not included in this list will be rejected. For more
         information, see the `W3C specification for

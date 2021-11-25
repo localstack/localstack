@@ -73,6 +73,8 @@ LOG = logging.getLogger(__name__)
 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
 MSG_CONTENT_REGEX = "^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$"
 
+DEDUPLICATION_INTERVALL_IN_SEC = 5 * 60
+
 
 def generate_message_id():
     return long_uid()
@@ -452,11 +454,11 @@ class FifoQueue(SqsQueue):
     visible: PriorityQueue
     inflight: Set[SqsMessage]
     receipts: Dict[str, SqsMessage]
+    deduplication: Dict[str, Dict[str, SqsMessage]]
 
     def __init__(self, key: QueueKey, attributes=None, tags=None) -> None:
         super().__init__(key, attributes, tags)
-
-        self.visible = PriorityQueue()
+        self.deduplication = dict()
 
     def put(
         self,
@@ -479,20 +481,33 @@ class FifoQueue(SqsQueue):
             raise InvalidParameterValue(
                 "The Queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly"
             )
+
         qm = SqsMessage(
             time.time(),
             message,
-            message_deduplication_id=message_deduplication_id,
+            message_deduplication_id=dedup_id,
             message_group_id=message_group_id,
         )
-
         if visibility_timeout is not None:
             qm.visibility_timeout = visibility_timeout
         else:
             # use the attribute from the queue
             qm.visibility_timeout = self.visibility_timeout
-
-        self.visible.put_nowait(qm)
+        original_message = None
+        original_message_group = self.deduplication.get(message_group_id)
+        if original_message_group:
+            original_message = original_message_group.get(dedup_id)
+        if (
+            original_message
+            and not original_message.deleted
+            and original_message.priority + DEDUPLICATION_INTERVALL_IN_SEC > qm.priority
+        ):
+            message["MessageId"] = original_message.message["MessageId"]
+        else:
+            self.visible.put_nowait(qm)
+            if not original_message_group:
+                self.deduplication[message_group_id] = dict()
+            self.deduplication[message_group_id][message_deduplication_id] = qm
 
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):

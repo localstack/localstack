@@ -1205,8 +1205,11 @@ class TestSqsProvider:
         assert message0["Body"] == "message-0"
         assert message1["Body"] == "message-1"
 
+    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
     def test_send_batch_receive_multiple(self, sqs_client, sqs_queue):
-        # send a batch, then a single message, receive them a
+        # send a batch, then a single message, then receive them
+        # Important: AWS does not guarantee the order of messages, be it within the batch or between sends
+        message_count = 3
         sqs_client.send_message_batch(
             QueueUrl=sqs_queue,
             Entries=[
@@ -1215,12 +1218,19 @@ class TestSqsProvider:
             ],
         )
         sqs_client.send_message(QueueUrl=sqs_queue, MessageBody="message-2")
-
-        response = sqs_client.receive_message(QueueUrl=sqs_queue, MaxNumberOfMessages=3)
-        assert len(response["Messages"]) == 3
-        assert response["Messages"][0]["Body"] == "message-0"
-        assert response["Messages"][1]["Body"] == "message-1"
-        assert response["Messages"][2]["Body"] == "message-2"
+        i = 0
+        result_recv = {"Messages": []}
+        while len(result_recv["Messages"]) < message_count and i < message_count:
+            result_recv["Messages"] = result_recv["Messages"] + (
+                sqs_client.receive_message(
+                    QueueUrl=sqs_queue, MaxNumberOfMessages=message_count
+                ).get("Messages")
+            )
+            i += 1
+        assert len(result_recv["Messages"]) == message_count
+        assert set(result_recv["Messages"][b]["Body"] for b in range(message_count)) == set(
+            f"message-{b}" for b in range(message_count)
+        )
 
     def test_send_message_batch_with_empty_list(self, sqs_client, sqs_create_queue):
         queue_url = sqs_create_queue()
@@ -1550,7 +1560,6 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
 
-    # os.environ["TEST_TARGET"] = "AWS_CLOUD"
     def test_redrive_policy_attribute_validity(self, sqs_create_queue, sqs_client):
         dl_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dl_queue_name)
@@ -2168,6 +2177,85 @@ class TestSqsProvider:
         )
         result_recv = sqs_client.receive_message(QueueUrl=dl_queue_url, VisibilityTimeout=0)
         assert result_recv["Messages"][0]["MessageId"] == result_send["MessageId"]
+
+    @pytest.mark.skip(
+        reason="this is an AWS behaviour test that requires 5 minutes to run. Only execute manually"
+    )
+    def test_deduplication_interval(self, sqs_client, sqs_create_queue):
+        # TODO: AWS behaviour here "seems" inconsistent -> current code might need adaption
+        fifo_queue_name = f"queue-{short_uid()}.fifo"
+        queue_url = sqs_create_queue(QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"})
+        message_content = f"test{short_uid()}"
+        message_content_duplicate = f"{message_content}-duplicate"
+        message_content_half_time = f"{message_content}-half_time"
+        dedup_id = f"fifo_dedup-{short_uid()}"
+        group_id = f"fifo_group-{short_uid()}"
+        result_send = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody=message_content,
+            MessageGroupId=group_id,
+            MessageDeduplicationId=dedup_id,
+        )
+        time.sleep(3)
+        sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody=message_content_duplicate,
+            MessageGroupId=group_id,
+            MessageDeduplicationId=dedup_id,
+        )
+        result_receive = sqs_client.receive_message(QueueUrl=queue_url)
+        sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=result_receive["Messages"][0]["ReceiptHandle"]
+        )
+        result_receive_duplicate = sqs_client.receive_message(QueueUrl=queue_url)
+
+        assert result_send.get("MessageId") == result_receive.get("Messages")[0].get("MessageId")
+        assert result_send.get("MD5OfMessageBody") == result_receive.get("Messages")[0].get(
+            "MD5OfBody"
+        )
+        assert "Messages" not in result_receive_duplicate.keys()
+
+        result_send = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody=message_content,
+            MessageGroupId=group_id,
+            MessageDeduplicationId=dedup_id,
+        )
+        # ZZZZzzz...
+        # Fifo Deduplication Interval is 5 minutes at minimum, + there seems no way to change it.
+        # We give it a bit of leeway to avoid timing issues
+        # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagededuplicationid-property.html
+        time.sleep(2)
+        sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody=message_content_half_time,
+            MessageGroupId=group_id,
+            MessageDeduplicationId=dedup_id,
+        )
+        time.sleep(6 * 60)
+
+        result_send_duplicate = sqs_client.send_message(
+            QueueUrl=queue_url,
+            MessageBody=message_content_duplicate,
+            MessageGroupId=group_id,
+            MessageDeduplicationId=dedup_id,
+        )
+        result_receive = sqs_client.receive_message(QueueUrl=queue_url)
+        sqs_client.delete_message(
+            QueueUrl=queue_url, ReceiptHandle=result_receive["Messages"][0]["ReceiptHandle"]
+        )
+        result_receive_duplicate = sqs_client.receive_message(QueueUrl=queue_url)
+
+        assert result_send.get("MessageId") == result_receive.get("Messages")[0].get("MessageId")
+        assert result_send.get("MD5OfMessageBody") == result_receive.get("Messages")[0].get(
+            "MD5OfBody"
+        )
+        assert result_send_duplicate.get("MessageId") == result_receive_duplicate.get("Messages")[
+            0
+        ].get("MessageId")
+        assert result_send_duplicate.get("MD5OfMessageBody") == result_receive_duplicate.get(
+            "Messages"
+        )[0].get("MD5OfBody")
 
 
 # TODO: test visibility timeout (with various ways to set them: queue attributes, receive parameter, update call)
