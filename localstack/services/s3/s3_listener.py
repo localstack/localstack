@@ -59,9 +59,6 @@ from localstack.utils.common import (
 )
 from localstack.utils.persistence import PersistingProxyListener
 
-CONTENT_SHA256_HEADER = "x-amz-content-sha256"
-STREAMING_HMAC_PAYLOAD = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
-
 # backend port (configured in s3_starter.py on startup)
 PORT_S3_BACKEND = None
 
@@ -910,7 +907,7 @@ def check_content_md5(data, headers):
             )
 
         try:
-            content_length = int(headers["x-amz-decoded-content-length"])
+            content_length = int(content_length)
         except ValueError:
             return error_response(
                 'Wrong "X-Amz-Decoded-Content-Length" header',
