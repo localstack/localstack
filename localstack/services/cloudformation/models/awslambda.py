@@ -17,6 +17,7 @@ from localstack.utils.common import (
     new_tmp_dir,
     rm_rf,
     save_file,
+    select_attributes,
     short_uid,
     to_bytes,
 )
@@ -41,17 +42,22 @@ class LambdaFunction(GenericBaseModel):
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
         client = aws_stack.connect_to_service("lambda")
-        keys = (
-            "FunctionName",
-            "Role",
-            "Handler",
+        keys = [
+            "Architectures",
             "Description",
-            "Timeout",
-            "MemorySize",
             "Environment",
+            "FunctionName",
+            "Handler",
+            "ImageConfig",
+            "Layers",
+            "MemorySize",
+            "Role",
             "Runtime",
-        )
-        update_props = dict([(k, props[k]) for k in keys if k in props])
+            "Timeout",
+            "TracingConfig",
+            "VpcConfig",
+        ]
+        update_props = select_attributes(props, keys)
         update_props = self.resolve_refs_recursively(stack_name, update_props, resources)
         if "Timeout" in update_props:
             update_props["Timeout"] = int(update_props["Timeout"])
@@ -62,7 +68,7 @@ class LambdaFunction(GenericBaseModel):
                     'Updating code for Lambda "%s" from location: %s'
                     % (props["FunctionName"], code)
                 )
-            code = LambdaFunction.get_lambda_code_param(props)
+            code = LambdaFunction.get_lambda_code_param(props, _include_arch=True)
             client.update_function_code(FunctionName=props["FunctionName"], **code)
         if "Environment" in update_props:
             environment_variables = update_props["Environment"].get("Variables", {})
@@ -80,7 +86,7 @@ class LambdaFunction(GenericBaseModel):
             )
 
     @staticmethod
-    def get_lambda_code_param(params, **kwargs):
+    def get_lambda_code_param(params, _include_arch=False, **kwargs):
         code = params.get("Code", {})
         zip_file = code.get("ZipFile")
         if zip_file and not is_base64(zip_file) and not is_zip_file(to_bytes(zip_file)):
@@ -103,6 +109,8 @@ class LambdaFunction(GenericBaseModel):
             zip_file = create_zip_file(tmp_dir, get_content=True)
             code["ZipFile"] = zip_file
             rm_rf(tmp_dir)
+        if _include_arch and "Architectures" in params:
+            code["Architectures"] = params.get("Architectures")
         return code
 
     @staticmethod
@@ -121,16 +129,20 @@ class LambdaFunction(GenericBaseModel):
             "create": {
                 "function": "create_function",
                 "parameters": {
-                    "FunctionName": "FunctionName",
-                    "Runtime": "Runtime",
-                    "Role": "Role",
-                    "Handler": "Handler",
+                    "Architectures": "Architectures",
                     "Code": LambdaFunction.get_lambda_code_param,
                     "Description": "Description",
                     "Environment": get_environment_params,
-                    "Timeout": "Timeout",
+                    "FunctionName": "FunctionName",
+                    "Handler": "Handler",
+                    "ImageConfig": "ImageConfig",
+                    "Layers": "Layers",
                     "MemorySize": "MemorySize",
-                    "Layers": "Layers"
+                    "Runtime": "Runtime",
+                    "Role": "Role",
+                    "Timeout": "Timeout",
+                    "TracingConfig": "TracingConfig",
+                    "VpcConfig": "VpcConfig"
                     # TODO add missing fields
                 },
                 "defaults": {"Role": "test_role"},
