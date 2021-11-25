@@ -95,6 +95,8 @@ def check_stepfunctions(expect_shutdown=False, print_error=False):
 
 
 def restart_stepfunctions():
+    if not PROCESS_THREAD:
+        return
     LOG.debug("Restarting StepFunctions process ...")
     PROCESS_THREAD.stop()
     start_stepfunctions(
