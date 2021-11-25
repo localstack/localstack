@@ -2,6 +2,7 @@ import base64
 import codecs
 import collections
 import datetime
+import io
 import json
 import logging
 import random
@@ -57,9 +58,6 @@ from localstack.utils.common import (
     to_str,
 )
 from localstack.utils.persistence import PersistingProxyListener
-
-CONTENT_SHA256_HEADER = "x-amz-content-sha256"
-STREAMING_HMAC_PAYLOAD = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
 
 # backend port (configured in s3_starter.py on startup)
 PORT_S3_BACKEND = None
@@ -881,7 +879,44 @@ def bucket_exists(bucket_name):
     return True, 200
 
 
+def strip_chunk_signatures(body, content_length):
+    # borrowed from https://github.com/spulec/moto/pull/4201
+    body_io = io.BytesIO(body)
+    new_body = bytearray(content_length)
+    pos = 0
+    line = body_io.readline()
+    while line:
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html#sigv4-chunked-body-definition
+        # str(hex(chunk-size)) + ";chunk-signature=" + signature + \r\n + chunk-data + \r\n
+        chunk_size = int(line[: line.find(b";")].decode("utf8"), 16)
+        new_body[pos : pos + chunk_size] = body_io.read(chunk_size)
+        pos = pos + chunk_size
+        body_io.read(2)  # skip trailing \r\n
+        line = body_io.readline()
+    return bytes(new_body)
+
+
 def check_content_md5(data, headers):
+    if headers.get("x-amz-content-sha256", None) == "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
+        content_length = headers.get("x-amz-decoded-content-length")
+        if not content_length:
+            return error_response(
+                '"X-Amz-Decoded-Content-Length" header is missing',
+                "SignatureDoesNotMatch",
+                status_code=403,
+            )
+
+        try:
+            content_length = int(content_length)
+        except ValueError:
+            return error_response(
+                'Wrong "X-Amz-Decoded-Content-Length" header',
+                "SignatureDoesNotMatch",
+                status_code=403,
+            )
+
+        data = strip_chunk_signatures(data, content_length)
+
     actual = md5(data)
     try:
         md5_header = headers["Content-MD5"]
