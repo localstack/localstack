@@ -31,16 +31,16 @@ freeze:                   ## Run pip freeze -l in the virtual environment
 	@$(VENV_RUN); pip freeze -l
 
 install-basic: venv       ## Install basic dependencies for CLI usage into venv
-	$(VENV_RUN); $(PIP_CMD) install -e ".[cli]"
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli]"
 
 install-runtime: venv     ## Install dependencies for the localstack runtime into venv
-	$(VENV_RUN); $(PIP_CMD) install -e ".[cli,runtime]"
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime]"
 
 install-test: venv        ## Install requirements to run tests into venv
-	$(VENV_RUN); $(PIP_CMD) install -e ".[cli,runtime,test]"
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test]"
 
 install-dev: venv         ## Install developer requirements into venv
-	$(VENV_RUN); $(PIP_CMD) install -e ".[cli,runtime,test,dev]"
+	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
 
 install:                  ## Install full dependencies into venv, and download third-party services
 	(make install-dev && make entrypoints && make init-testlibs) || exit 1

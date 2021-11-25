@@ -110,6 +110,15 @@ SIMULATE_PRINCIPAL_POLICY_RESPONSE = """
 )
 
 
+class AWSManagedPolicyUSGov(AWSManagedPolicy):
+    # Fix missing regions in managed policies (e.g., aws-us-gov). Note: make sure to keep at global scope here
+    # TODO: possibly find a more efficient way for this - e.g., lazy loading of policies in special regions
+
+    @property
+    def arn(self):
+        return "arn:aws-us-gov:iam::aws:policy{0}{1}".format(self.path, self.name)
+
+
 def apply_patches():
     # Add missing managed polices
     aws_managed_policies.extend(
@@ -406,14 +415,6 @@ def apply_patches():
         IamResponse.get_service_linked_role_deletion_status = (
             get_service_linked_role_deletion_status
         )
-
-    # fix missing regions in managed policies (e.g., aws-us-gov)
-    # TODO: possibly find a more efficient way for this - e.g., lazy loading of policies in special regions
-
-    class AWSManagedPolicyUSGov(AWSManagedPolicy):
-        @property
-        def arn(self):
-            return "arn:aws-us-gov:iam::aws:policy{0}{1}".format(self.path, self.name)
 
     managed_policies = moto_iam_backend.managed_policies
     if "arn:aws-us-gov:iam::aws:policy/AmazonRDSFullAccess" not in managed_policies:
