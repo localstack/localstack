@@ -882,11 +882,7 @@ def bucket_exists(bucket_name):
     return True, 200
 
 
-def strip_chunk_signatures(body, headers):
-    if headers.get("x-amz-content-sha256", None) != "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
-        return body
-    content_length = int(headers["x-amz-decoded-content-length"])
-
+def strip_chunk_signatures(body, content_length):
     # borrowed from https://github.com/spulec/moto/pull/4201
     body_io = io.BytesIO(body)
     new_body = bytearray(content_length)
@@ -904,7 +900,27 @@ def strip_chunk_signatures(body, headers):
 
 
 def check_content_md5(data, headers):
-    actual = md5(strip_chunk_signatures(data, headers))
+    if headers.get("x-amz-content-sha256", None) == "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
+        content_length = headers.get("x-amz-decoded-content-length")
+        if not content_length:
+            return error_response(
+                '"X-Amz-Decoded-Content-Length" header is missing',
+                "SignatureDoesNotMatch",
+                status_code=403,
+            )
+
+        try:
+            content_length = int(headers["x-amz-decoded-content-length"])
+        except ValueError:
+            return error_response(
+                'Wrong "X-Amz-Decoded-Content-Length" header',
+                "SignatureDoesNotMatch",
+                status_code=403,
+            )
+
+        data = strip_chunk_signatures(data, content_length)
+
+    actual = md5(data)
     try:
         md5_header = headers["Content-MD5"]
         if not is_base64(md5_header):
