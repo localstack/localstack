@@ -51,6 +51,7 @@ from localstack.utils.common import (
     to_str,
 )
 from localstack.utils.server import http2_server
+from tests.integration.fixtures import only_localstack
 
 TEST_BUCKET_NAME_WITH_POLICY = "test-bucket-policy-1"
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = "test_queue_for_bucket_notification_1"
@@ -2781,7 +2782,9 @@ def test_cors_with_allowed_origins(s3_client):
     s3_client.delete_bucket(Bucket=bucket_name)
 
 
-def test_put_object_with_md5_and_chunk_signature(only_localstack, s3_client):
+@only_localstack
+def test_put_object_with_md5_and_chunk_signature(s3_client):
+    # can't make it work with AWS_CLOUD
     # based on https://github.com/localstack/localstack/issues/4987
     bucket_name = "bucket-%s" % short_uid()
     object_key = "test-runtime.properties"
