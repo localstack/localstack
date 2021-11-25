@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import os
 import re
 import shutil
@@ -130,7 +131,6 @@ TEST_STAGE_NAME = "testing"
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
 
 TEST_LAMBDA_LIBS = [
-    "localstack",
     "localstack_client",
     "requests",
     "psutil",
@@ -295,6 +295,10 @@ class LambdaTestBase(unittest.TestCase):
 
 
 class TestLambdaBaseFeatures(unittest.TestCase):
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self._caplog = caplog
+
     def test_forward_to_fallback_url_dynamodb(self):
         db_table = "lambda-records"
         ddb_client = aws_stack.connect_to_service("dynamodb")
@@ -498,6 +502,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_large_payloads(self):
+        # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
+        self._caplog.set_level(logging.INFO)
+
         function_name = "large_payload-{}".format(short_uid())
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_ECHO_FILE,
@@ -1709,6 +1716,10 @@ class TestGolangRuntimes:
 
 
 class TestJavaRuntimes(LambdaTestBase):
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self._caplog = caplog
+
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service("lambda")
@@ -1781,6 +1792,9 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertIsNotNone(result_data)
 
     def test_java_runtime_with_large_payload(self):
+        # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
+        self._caplog.set_level(logging.INFO)
+
         self.assertIsNotNone(self.test_java_jar)
 
         payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
