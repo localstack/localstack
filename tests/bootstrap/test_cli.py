@@ -4,7 +4,7 @@ from click.testing import CliRunner
 
 from localstack import config, constants
 from localstack.cli.localstack import localstack as cli
-from localstack.config import get_edge_url, in_docker
+from localstack.config import DOCKER_SOCK, get_edge_url, in_docker
 from localstack.utils import docker_utils
 from localstack.utils.common import poll_condition
 
@@ -109,3 +109,25 @@ class TestCliContainerLifecycle:
         inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
         assert "42069/tcp" in inspect["HostConfig"]["PortBindings"]
         assert f"{volume}:{volume}" in inspect["HostConfig"]["Binds"]
+
+    def test_directories_mounted_correctly(self, runner, tmp_path, monkeypatch, container_client):
+        data_dir = tmp_path / "data_dir"
+        tmp_folder = tmp_path / "tmp"
+
+        # set different directories and make sure they are mounted correctly
+        monkeypatch.setenv("DATA_DIR", str(data_dir))
+        monkeypatch.setattr(config, "DATA_DIR", str(data_dir))
+        monkeypatch.setattr(config, "TMP_FOLDER", str(tmp_folder))
+        # reload directories from manipulated config
+        monkeypatch.setattr(config, "dirs", config.Directories.from_config())
+
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "60"])
+
+        # check that mounts were created correctly
+        inspect = container_client.inspect_container(config.MAIN_CONTAINER_NAME)
+        container_dirs = config.Directories.for_container()
+        binds = inspect["HostConfig"]["Binds"]
+        assert f"{tmp_folder}:{container_dirs.tmp}" in binds
+        assert f"{data_dir}:{container_dirs.data}" in binds
+        assert f"{DOCKER_SOCK}:{DOCKER_SOCK}" in binds

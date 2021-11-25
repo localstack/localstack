@@ -33,10 +33,25 @@ load_start_time = time.time()
 
 
 class Directories:
-    """Holds the different directories available to localstack"""
+    """
+    Holds the different directories available to localstack. Some directories are shared between the host and the
+    localstack container, some live only on the host and some only in the container.
+
+    Attributes:
+        infra:      container only; static infrastructure: binaries and libraries packaged with the image
+        var:        shared; variable data computed at runtime: lazy-loaded binaries, ssl cert, ...
+        cache:      shared; ephemeral data that has to persist across localstack runs and reboots
+        tmp:        individual; ephemeral data that does not have to persist across localstack runs but not reboots
+        shared_tmp: shared; ephemeral data used to communicate between container<->lambdas
+        data:       shared; holds localstack state, pods, ...
+        config:     host only; pre-defined configuration values, cached credentials, machine id, ...
+        init:       shared; user-defined provisioning scripts executed when in the container when it starts
+        logs:       shared; log files produced by localstack
+    """
 
     infra: str
     var: str
+    cache: str
     tmp: str
     shared_tmp: str
     data: str
@@ -48,6 +63,7 @@ class Directories:
         self,
         infra: str = None,
         var: str = None,
+        cache: str = None,
         tmp: str = None,
         shared_tmp: str = None,
         data: str = None,
@@ -58,6 +74,7 @@ class Directories:
         super().__init__()
         self.infra = infra
         self.var = var
+        self.cache = cache
         self.tmp = tmp
         self.shared_tmp = shared_tmp
         self.data = data
@@ -67,24 +84,49 @@ class Directories:
 
     @staticmethod
     def from_config():
+        """Returns Localstack directory paths from the config/environment variables defined by the config."""
         return Directories(
             infra=INSTALL_DIR_INFRA,
-            var=TMP_FOLDER,
-            tmp=TMP_FOLDER,
-            shared_tmp=HOST_TMP_FOLDER,
+            var=TMP_FOLDER,  # TODO: add variable
+            cache=TMP_FOLDER,  # TODO: add variable
+            tmp=TMP_FOLDER,  # TODO: move default value to /tmp/localstack/host
+            shared_tmp=HOST_TMP_FOLDER,  # TODO: move default value to /tmp/localstack/shared
             data=DATA_DIR,
-            config=None,  # FIXME: will be introduced once .localstack config file has been refactored
-            logs=TMP_FOLDER,
+            config=None,  # TODO: will be introduced once .localstack config file has been refactored
+            init=None,  # TODO: introduce environment variable
+            logs=TMP_FOLDER,  # TODO: move to /tmp/localstack/logs
+        )
+
+    @staticmethod
+    def for_container() -> "Directories":
+        """
+        /var/lib/localstack. Returns Localstack directory paths as they are defined within the container. Everything
+        shared and writable lives in /var/lib/localstack or /tmp/localstack.
+
+        :returns: Directories object
+        """
+        return Directories(
+            infra=INSTALL_DIR_INFRA,
+            var="/var/lib/localstack/libs",
+            cache="/var/lib/localstack/cache",
+            tmp=TMP_FOLDER,  # TODO: move to /tmp/localstack
+            shared_tmp=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
+            data=DATA_DIR,  # TODO: move to /var/lib/localstack/data
+            config="/etc/localstack/",  # TODO: will be introduced once .localstack config file has been refactored
+            logs="/var/lib/localstack/logs",
+            init="/docker-entrypoint-initaws.d",
         )
 
     def mkdirs(self):
         for folder in [
             self.infra,
             self.var,
+            self.cache,
             self.tmp,
             self.shared_tmp,
             self.data,
             self.config,
+            self.init,
             self.logs,
         ]:
             if folder and not os.path.exists(folder):
@@ -732,5 +774,9 @@ if LS_LOG in TRACE_LOG_LEVELS:
     )
 
 # initialize directories
-dirs = Directories.from_config()
+if is_in_docker:
+    dirs = Directories.for_container()
+else:
+    dirs = Directories.from_config()
+
 dirs.mkdirs()

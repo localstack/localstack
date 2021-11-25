@@ -9,6 +9,7 @@ from functools import wraps
 from typing import Iterable, List, Optional, Set
 
 from localstack import config, constants
+from localstack.config import Directories
 from localstack.runtime import hooks
 from localstack.utils.common import FileListener, chmod_r, mkdir, poll_condition
 from localstack.utils.docker_utils import (
@@ -619,19 +620,35 @@ def configure_container(container: LocalstackContainer):
     # to activate proper signal handling
     container.env_vars["SET_TERM_HANDLER"] = "1"
 
-    # data_dir mounting and environment variables
-    bind_mounts = []
-    data_dir = os.environ.get("DATA_DIR", None)
-    if data_dir is not None:
-        container_data_dir = "/tmp/localstack_data"
-        container.volumes.add((data_dir, container_data_dir))
-        container.env_vars["DATA_DIR"] = container_data_dir
+    configure_volume_mounts(container)
 
-    # default bind mounts
-    container.volumes.add((config.dirs.tmp, "/tmp/localstack"))
-    bind_mounts.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
+    # mount docker socket
+    container.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
     container.additional_flags.append("--privileged")
+
+
+def configure_volume_mounts(container: LocalstackContainer):
+    source_dirs = config.dirs
+    target_dirs = Directories.for_container()
+
+    # default shared directories
+    for name in ["var", "cache", "init", "logs"]:
+        src = getattr(source_dirs, name, None)
+        target = getattr(target_dirs, name, None)
+        if src and target:
+            container.volumes.add((src, target))
+
+    # tmp folder TODO: shouldn't mount this: reconcile with shared_tmp / cache
+    container.volumes.add((source_dirs.tmp, target_dirs.tmp))
+
+    # data_dir mounting and environment variables
+    if source_dirs.data:
+        container.volumes.add((source_dirs.data, target_dirs.data))
+        container.env_vars["DATA_DIR"] = target_dirs.data
+
+    if source_dirs.init:
+        container.volumes.add((source_dirs.init, target_dirs.init))
 
 
 @log_duration()
