@@ -468,7 +468,7 @@ class LocalstackContainer:
         self.env_vars = dict()
         self.additional_flags = list()
 
-        self.logfile = os.path.join(config.TMP_FOLDER, f"{self.name}_container.log")
+        self.logfile = os.path.join(config.dirs.tmp, f"{self.name}_container.log")
 
     def _get_mount_volumes(self) -> List[SimpleVolumeBind]:
         # FIXME: VolumeMappings should be supported by the docker client
@@ -567,18 +567,18 @@ def prepare_docker_start():
 
     if DOCKER_CLIENT.is_container_running(container_name):
         raise ContainerExists('LocalStack container named "%s" is already running' % container_name)
-    if config.TMP_FOLDER != config.HOST_TMP_FOLDER and not config.LAMBDA_REMOTE_DOCKER:
+    if config.dirs.tmp != config.dirs.shared_tmp and not config.LAMBDA_REMOTE_DOCKER:
         print(
-            f"WARNING: The detected temp folder for localstack ({config.TMP_FOLDER}) is not equal to the "
-            f"HOST_TMP_FOLDER environment variable set ({config.HOST_TMP_FOLDER})."
+            f"WARNING: The detected temp folder for localstack ({config.dirs.tmp}) is not equal to the "
+            f"HOST_TMP_FOLDER environment variable set ({config.dirs.shared_tmp})."
         )  # Logger is not initialized at this point, so the warning is displayed via print
 
     os.environ[ENV_SCRIPT_STARTING_DOCKER] = "1"
 
     # make sure temp folder exists
-    mkdir(config.TMP_FOLDER)
+    mkdir(config.dirs.tmp)
     try:
-        chmod_r(config.TMP_FOLDER, 0o777)
+        chmod_r(config.dirs.tmp, 0o777)
     except Exception:
         pass
 
@@ -613,7 +613,7 @@ def configure_container(container: LocalstackContainer):
         if value is not None:
             container.env_vars[env_var] = value
     container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
-    container.env_vars["HOST_TMP_FOLDER"] = config.HOST_TMP_FOLDER
+    container.env_vars["HOST_TMP_FOLDER"] = config.dirs.shared_tmp
 
     # TODO discuss if this should be the default?
     # to activate proper signal handling
@@ -628,7 +628,7 @@ def configure_container(container: LocalstackContainer):
         container.env_vars["DATA_DIR"] = container_data_dir
 
     # default bind mounts
-    container.volumes.add((config.TMP_FOLDER, "/tmp/localstack"))
+    container.volumes.add((config.dirs.tmp, "/tmp/localstack"))
     bind_mounts.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
     container.additional_flags.append("--privileged")

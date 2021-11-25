@@ -52,7 +52,7 @@ class ElasticMQSerer(Server):
         )
 
         # create temporary config
-        config_file = os.path.join(config.TMP_FOLDER, "sqs.%s.conf" % short_uid())
+        config_file = os.path.join(config.dirs.tmp, "sqs.%s.conf" % short_uid())
         LOG.debug("saving config file to %s:\n%s", config_file, config_params)
         TMP_FILES.append(config_file)
         save_file(config_file, config_params)

@@ -7,7 +7,6 @@ import socket
 import subprocess
 import tempfile
 import time
-from os.path import expanduser
 from typing import Dict, List, Mapping
 
 import six
@@ -21,6 +20,7 @@ from localstack.constants import (
     DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
     FALSE_STRINGS,
+    INSTALL_DIR_INFRA,
     LOCALHOST,
     LOCALHOST_IP,
     LOG_LEVELS,
@@ -30,6 +30,73 @@ from localstack.constants import (
 
 # keep track of start time, for performance debugging
 load_start_time = time.time()
+
+
+class Directories:
+    """Holds the different directories available to localstack"""
+
+    infra: str
+    var: str
+    tmp: str
+    shared_tmp: str
+    data: str
+    config: str
+    init: str
+    logs: str
+
+    def __init__(
+        self,
+        infra: str = None,
+        var: str = None,
+        tmp: str = None,
+        shared_tmp: str = None,
+        data: str = None,
+        config: str = None,
+        init: str = None,
+        logs: str = None,
+    ) -> None:
+        super().__init__()
+        self.infra = infra
+        self.var = var
+        self.tmp = tmp
+        self.shared_tmp = shared_tmp
+        self.data = data
+        self.config = config
+        self.init = init
+        self.logs = logs
+
+    @staticmethod
+    def from_config():
+        return Directories(
+            infra=INSTALL_DIR_INFRA,
+            var=TMP_FOLDER,
+            tmp=TMP_FOLDER,
+            shared_tmp=HOST_TMP_FOLDER,
+            data=DATA_DIR,
+            config=None,  # FIXME: will be introduced once .localstack config file has been refactored
+            logs=TMP_FOLDER,
+        )
+
+    def mkdirs(self):
+        for folder in [
+            self.infra,
+            self.var,
+            self.tmp,
+            self.shared_tmp,
+            self.data,
+            self.config,
+            self.logs,
+        ]:
+            if folder and not os.path.exists(folder):
+                try:
+                    os.makedirs(folder)
+                except Exception:
+                    # this can happen due to a race condition when starting
+                    # multiple processes in parallel. Should be safe to ignore
+                    pass
+
+    def __str__(self):
+        return str(self.__dict__)
 
 
 def eval_log_type(env_var_name):
@@ -132,16 +199,6 @@ DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), "localstack")
-
-# create folders
-for folder in [DATA_DIR, TMP_FOLDER]:
-    if folder and not os.path.exists(folder):
-        try:
-            os.makedirs(folder)
-        except Exception:
-            # this can happen due to a race condition when starting
-            # multiple processes in parallel. Should be safe to ignore
-            pass
 
 # fix for Mac OS, to be able to mount /var/folders in Docker
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
@@ -478,7 +535,7 @@ if is_in_docker and not os.environ.get("LAMBDA_REMOTE_DOCKER", "").strip():
 # local config file path in home directory
 CONFIG_FILE_PATH = os.path.join(TMP_FOLDER, ".localstack")
 if not is_in_docker:
-    CONFIG_FILE_PATH = os.path.join(expanduser("~"), ".localstack")
+    CONFIG_FILE_PATH = os.path.join(os.path.expanduser("~"), ".localstack")
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ",".join(set((LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]")))
@@ -673,3 +730,7 @@ if LS_LOG in TRACE_LOG_LEVELS:
     LOG.debug(
         "Initializing the configuration took %s ms" % int((load_end_time - load_start_time) * 1000)
     )
+
+# initialize directories
+dirs = Directories.from_config()
+dirs.mkdirs()

@@ -68,7 +68,7 @@ class TestSES:
         assert "VerificationToken" not in response[email]
 
     def test_send_email_save(self, ses_client):
-        data_dir = config.DATA_DIR or config.TMP_FOLDER
+        data_dir = config.dirs.data or config.dirs.tmp
         email = "user@example.com"
         ses_client.verify_email_address(EmailAddress=email)
         message = ses_client.send_email(
@@ -99,7 +99,7 @@ class TestSES:
         assert ["success@example.com"] == contents["Destinations"]["ToAddresses"]
 
     def test_send_templated_email_save(self, ses_client, create_template):
-        data_dir = config.DATA_DIR or config.TMP_FOLDER
+        data_dir = config.dirs.data or config.dirs.tmp
         email = "user@example.com"
         ses_client.verify_email_address(EmailAddress=email)
         ses_client.delete_template(TemplateName=TEST_TEMPLATE_ATTRIBUTES["TemplateName"])

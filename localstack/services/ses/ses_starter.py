@@ -149,7 +149,7 @@ def apply_patches():
         return email
 
     def log_email_to_data_dir(id, email):
-        ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, "ses")
+        ses_dir = os.path.join(config.dirs.data or config.dirs.tmp, "ses")
         mkdir(ses_dir)
 
         with open(os.path.join(ses_dir, id + ".json"), "w") as f:
@@ -188,7 +188,7 @@ def apply_patches():
             self, source, template, template_data, destinations, region
         )
 
-        ses_dir = os.path.join(config.DATA_DIR or config.TMP_FOLDER, "ses")
+        ses_dir = os.path.join(config.dirs.data or config.dirs.tmp, "ses")
         mkdir(ses_dir)
 
         with open(os.path.join(ses_dir, message.id + ".json"), "w") as f:

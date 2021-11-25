@@ -77,8 +77,8 @@ LOG = logging.getLogger(__name__)
 LAMBDA_POLICY_NAME_PATTERN = "lambda_policy_{name}_{qualifier}"
 # constants
 APP_NAME = "lambda_api"
-ARCHIVE_FILE_PATTERN = "%s/lambda.handler.*.jar" % config.TMP_FOLDER
-LAMBDA_SCRIPT_PATTERN = "%s/lambda_script_*.py" % config.TMP_FOLDER
+ARCHIVE_FILE_PATTERN = "%s/lambda.handler.*.jar" % config.dirs.tmp
+LAMBDA_SCRIPT_PATTERN = "%s/lambda_script_*.py" % config.dirs.tmp
 LAMBDA_ZIP_FILE_NAME = "original_lambda_archive.zip"
 LAMBDA_JAR_FILE_NAME = "original_lambda_archive.jar"
 
@@ -998,7 +998,7 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     latest_version = lambda_details.get_version(VERSION_LATEST)
     latest_version["CodeSize"] = len(zip_file_content)
     latest_version["CodeSha256"] = code_sha_256.decode("utf-8")
-    tmp_dir = "%s/zipfile.%s" % (config.TMP_FOLDER, short_uid())
+    tmp_dir = "%s/zipfile.%s" % (config.dirs.tmp, short_uid())
     mkdir(tmp_dir)
     tmp_file = "%s/%s" % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
     save_file(tmp_file, zip_file_content)
