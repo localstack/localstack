@@ -8,6 +8,7 @@ import pytest
 
 from localstack.utils.common import (
     FileListener,
+    FileMappedDocument,
     is_none_or_empty,
     poll_condition,
     run,
@@ -146,3 +147,81 @@ class TestFileListener:
 
         with pytest.raises(FileNotFoundError):
             listener.start()
+
+
+class TestFileMappedDocument:
+    def test_load_without_file_succeeds(self, tmp_path):
+        path = tmp_path / "doc.json"
+        doc = FileMappedDocument(path)
+        assert doc == {}
+
+    def test_save_and_load(self, tmp_path):
+        path = tmp_path / "doc.json"
+        doc = FileMappedDocument(path)
+
+        doc["number"] = 42
+        doc["nested"] = {"foo": "bar"}
+
+        doc.save()
+
+        doc = FileMappedDocument(path)
+        doc.load()
+
+        assert doc == {"number": 42, "nested": {"foo": "bar"}}
+
+    def test_load_merges_content(self, tmp_path):
+        path = tmp_path / "doc.json"
+        # save state
+        doc = FileMappedDocument(path)
+        doc["number"] = 42
+        doc["nested"] = {"foo": "bar"}
+        doc.save()
+
+        # save state from elsewhere
+        doc1 = FileMappedDocument(path)
+        doc1["another"] = 420
+        doc1["nested"]["baz"] = "ed"
+        doc1.save()
+
+        # load state
+        doc.load()
+        assert doc == {"number": 42, "another": 420, "nested": {"foo": "bar", "baz": "ed"}}
+
+    def test_load_with_directory_fails(self, tmp_path):
+        path = tmp_path / "somedir"
+        path.mkdir()
+
+        with pytest.raises(IsADirectoryError):
+            FileMappedDocument(path)
+
+    def test_save_with_directory_fails(self, tmp_path):
+        path = tmp_path / "somedir"
+        doc = FileMappedDocument(path)
+
+        path.mkdir()
+        with pytest.raises(IsADirectoryError):
+            doc.save()
+
+    def test_save_sets_default_mod(self, tmp_path):
+        path = tmp_path / "doc.json"
+        doc = FileMappedDocument(path)
+        doc.save()
+
+        mode = path.stat().st_mode & 0o777
+        assert oct(mode) == oct(0o664)
+
+    def test_save_sets_mod(self, tmp_path):
+        path = tmp_path / "doc.json"
+        doc = FileMappedDocument(path, mode=0o600)
+        doc.save()
+
+        mode = path.stat().st_mode & 0o777
+        assert oct(mode) == oct(0o600)
+
+    def test_save_creates_directory(self, tmp_path):
+        path = tmp_path / "some" / "dir" / "doc.json"
+        assert not path.exists()
+
+        doc = FileMappedDocument(path)
+        doc.save()
+        assert path.exists()
