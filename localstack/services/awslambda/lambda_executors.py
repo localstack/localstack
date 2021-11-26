@@ -69,7 +69,7 @@ from localstack.utils.run import FuncThread
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
 LAMBDA_EXECUTOR_CLASS = "cloud.localstack.LambdaExecutor"
 LAMBDA_HANDLER_ENV_VAR_NAME = "_HANDLER"
-EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.TMP_FOLDER
+EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.dirs.tmp
 
 LAMBDA_SERVER_UNIQUE_PORTS = 500
 LAMBDA_SERVER_PORT_OFFSET = 5000
@@ -1484,7 +1484,7 @@ class Util:
 
     @classmethod
     def get_host_path_for_path_in_docker(cls, path):
-        return re.sub(r"^%s/(.*)$" % config.TMP_FOLDER, r"%s/\1" % config.HOST_TMP_FOLDER, path)
+        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
 
     @classmethod
     def format_windows_path(cls, path):
@@ -1540,7 +1540,7 @@ class Util:
 
     @staticmethod
     def mountable_tmp_file():
-        f = os.path.join(config.TMP_FOLDER, short_uid())
+        f = os.path.join(config.dirs.tmp, short_uid())
         TMP_FILES.append(f)
         return f
 

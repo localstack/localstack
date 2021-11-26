@@ -115,7 +115,7 @@ def _init_java_agent_configs():
         "https://repo.thundra.io/service/local/artifact/maven/redirect?"
         + "r=thundra-releases&g=io.thundra.agent&a=thundra-agent-lambda-bootstrap&v={v}"
     ).format(v=version)
-    THUNDRA_JAVA_AGENT_LOCAL_PATH = "%s/%s" % (config.TMP_FOLDER, jar_name)
+    THUNDRA_JAVA_AGENT_LOCAL_PATH = "%s/%s" % (config.dirs.tmp, jar_name)
 
 
 def _install_java_agent():
@@ -217,11 +217,11 @@ def _init_node_agent_configs() -> bool:
 
     THUNDRA_NODE_AGENT_VERSION = version.strip()
     THUNDRA_NODE_AGENT_LOCAL_PATH = "%s/thundra/node/%s/" % (
-        config.TMP_FOLDER,
+        config.dirs.tmp,
         THUNDRA_NODE_AGENT_VERSION,
     )
     THUNDRA_NODE_AGENT_LOCAL_PATH_ON_HOST = "%s/thundra/node/%s/" % (
-        config.HOST_TMP_FOLDER,
+        config.dirs.functions,
         THUNDRA_NODE_AGENT_VERSION,
     )
 
@@ -327,11 +327,11 @@ def _init_python_agent_configs() -> bool:
 
     THUNDRA_PYTHON_AGENT_VERSION = version.strip()
     THUNDRA_PYTHON_AGENT_LOCAL_PATH = "%s/thundra/python/%s/" % (
-        config.TMP_FOLDER,
+        config.dirs.tmp,
         THUNDRA_PYTHON_AGENT_VERSION,
     )
     THUNDRA_PYTHON_AGENT_LOCAL_PATH_ON_HOST = "%s/thundra/python/%s/" % (
-        config.HOST_TMP_FOLDER,
+        config.dirs.functions,
         THUNDRA_PYTHON_AGENT_VERSION,
     )
 

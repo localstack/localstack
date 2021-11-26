@@ -12,7 +12,7 @@ import requests
 from six import add_metaclass
 
 from localstack import config, constants
-from localstack.config import DATA_DIR, is_env_not_false, is_env_true
+from localstack.config import is_env_not_false, is_env_true
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
@@ -202,7 +202,7 @@ def restore_persisted_data(apis):
 
 
 def is_persistence_enabled():
-    return bool(config.DATA_DIR)
+    return bool(config.dirs.data)
 
 
 def is_persistence_restored():
@@ -219,7 +219,7 @@ class StartupInfo(NamedTuple):
 def save_startup_info():
     from localstack_ext.constants import VERSION as LOCALSTACK_EXT_VERSION
 
-    file_path = os.path.join(DATA_DIR, STARTUP_INFO_FILE)
+    file_path = os.path.join(config.dirs.data, STARTUP_INFO_FILE)
 
     info = StartupInfo(
         timestamp=datetime.datetime.now().isoformat(),
@@ -257,9 +257,9 @@ def _append_startup_info(file_path, startup_info: StartupInfo):
 def get_file_path(api, create=True):
     if api not in API_FILE_PATHS:
         API_FILE_PATHS[api] = False
-        if not DATA_DIR:
+        if not config.dirs.data:
             return False
-        file_path = API_FILE_PATTERN.format(data_dir=DATA_DIR, api=api)
+        file_path = API_FILE_PATTERN.format(data_dir=config.dirs.data, api=api)
         if create and not os.path.exists(file_path):
             with open(file_path, "a"):
                 os.utime(file_path, None)

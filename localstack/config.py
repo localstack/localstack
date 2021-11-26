@@ -7,7 +7,6 @@ import socket
 import subprocess
 import tempfile
 import time
-from os.path import expanduser
 from typing import Dict, List, Mapping
 
 import six
@@ -21,6 +20,7 @@ from localstack.constants import (
     DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
     FALSE_STRINGS,
+    INSTALL_DIR_INFRA,
     LOCALHOST,
     LOCALHOST_IP,
     LOG_LEVELS,
@@ -30,6 +30,118 @@ from localstack.constants import (
 
 # keep track of start time, for performance debugging
 load_start_time = time.time()
+
+
+class Directories:
+    """
+    Holds the different directories available to localstack. Some directories are shared between the host and the
+    localstack container, some live only on the host and some only in the container.
+
+    Attributes:
+        static_libs: container only; binaries and libraries statically packaged with the image
+        var_libs:    shared; binaries and libraries+data computed at runtime: lazy-loaded binaries, ssl cert, ...
+        cache:       shared; ephemeral data that has to persist across localstack runs and reboots
+        tmp:         shared; ephemeral data that has to persist across localstack runs but not reboots
+        functions:   shared; volume to communicate between host<->lambda containers
+        data:        shared; holds localstack state, pods, ...
+        config:      host only; pre-defined configuration values, cached credentials, machine id, ...
+        init:        shared; user-defined provisioning scripts executed in the container when it starts
+        logs:        shared; log files produced by localstack
+    """
+
+    static_libs: str
+    var_libs: str
+    cache: str
+    tmp: str
+    functions: str
+    data: str
+    config: str
+    init: str
+    logs: str
+
+    # these are the folders mounted into the container by default when the CLI is used
+    default_bind_mounts = ["var_libs", "cache", "tmp", "data", "init", "logs"]
+
+    def __init__(
+        self,
+        static_libs: str = None,
+        var_libs: str = None,
+        cache: str = None,
+        tmp: str = None,
+        functions: str = None,
+        data: str = None,
+        config: str = None,
+        init: str = None,
+        logs: str = None,
+    ) -> None:
+        super().__init__()
+        self.static_libs = static_libs
+        self.var_libs = var_libs
+        self.cache = cache
+        self.tmp = tmp
+        self.functions = functions
+        self.data = data
+        self.config = config
+        self.init = init
+        self.logs = logs
+
+    @staticmethod
+    def from_config():
+        """Returns Localstack directory paths from the config/environment variables defined by the config."""
+        return Directories(
+            static_libs=INSTALL_DIR_INFRA,
+            var_libs=TMP_FOLDER,  # TODO: add variable
+            cache=TMP_FOLDER,  # TODO: add variable
+            tmp=TMP_FOLDER,  # TODO: should inherit from root value for /var/lib/localstack (e.g., MOUNT_ROOT)
+            functions=HOST_TMP_FOLDER,  # TODO: rename variable/consider a volume
+            data=DATA_DIR,
+            config=None,  # TODO: will be introduced once .localstack config file has been refactored
+            init=None,  # TODO: introduce environment variable
+            logs=TMP_FOLDER,  # TODO: add variable
+        )
+
+    @staticmethod
+    def for_container() -> "Directories":
+        """
+        /var/lib/localstack. Returns Localstack directory paths as they are defined within the container. Everything
+        shared and writable lives in /var/lib/localstack or /tmp/localstack.
+
+        :returns: Directories object
+        """
+        return Directories(
+            static_libs=INSTALL_DIR_INFRA,
+            var_libs="/var/lib/localstack/var_libs",
+            cache="/var/lib/localstack/cache",
+            tmp=TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
+            functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
+            data=DATA_DIR,  # TODO: move to /var/lib/localstack/data
+            config="/etc/localstack",  # TODO: will be introduced once .localstack config file has been refactored
+            logs="/var/lib/localstack/logs",
+            init="/docker-entrypoint-initaws.d",
+        )
+
+    def mkdirs(self):
+        for folder in [
+            self.static_libs,
+            self.var_libs,
+            self.cache,
+            self.tmp,
+            self.functions,
+            self.data,
+            self.config,
+            self.init,
+            self.logs,
+        ]:
+            if folder and not os.path.exists(folder):
+                try:
+                    os.makedirs(folder)
+                except Exception:
+                    # this can happen due to a race condition when starting
+                    # multiple processes in parallel. Should be safe to ignore
+                    pass
+
+    def __str__(self):
+        return str(self.__dict__)
 
 
 def eval_log_type(env_var_name):
@@ -132,16 +244,6 @@ DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), "localstack")
-
-# create folders
-for folder in [DATA_DIR, TMP_FOLDER]:
-    if folder and not os.path.exists(folder):
-        try:
-            os.makedirs(folder)
-        except Exception:
-            # this can happen due to a race condition when starting
-            # multiple processes in parallel. Should be safe to ignore
-            pass
 
 # fix for Mac OS, to be able to mount /var/folders in Docker
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
@@ -478,7 +580,7 @@ if is_in_docker and not os.environ.get("LAMBDA_REMOTE_DOCKER", "").strip():
 # local config file path in home directory
 CONFIG_FILE_PATH = os.path.join(TMP_FOLDER, ".localstack")
 if not is_in_docker:
-    CONFIG_FILE_PATH = os.path.join(expanduser("~"), ".localstack")
+    CONFIG_FILE_PATH = os.path.join(os.path.expanduser("~"), ".localstack")
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ",".join(set((LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]")))
@@ -673,3 +775,11 @@ if LS_LOG in TRACE_LOG_LEVELS:
     LOG.debug(
         "Initializing the configuration took %s ms" % int((load_end_time - load_start_time) * 1000)
     )
+
+# initialize directories
+if is_in_docker:
+    dirs = Directories.for_container()
+else:
+    dirs = Directories.from_config()
+
+dirs.mkdirs()

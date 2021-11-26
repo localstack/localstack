@@ -17,7 +17,7 @@ import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
-from localstack.config import is_env_true
+from localstack.config import dirs, is_env_true
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
@@ -25,7 +25,6 @@ from localstack.constants import (
     ELASTICSEARCH_DEFAULT_VERSION,
     ELASTICSEARCH_DELETE_MODULES,
     ELASTICSEARCH_PLUGIN_LIST,
-    INSTALL_DIR_INFRA,
     KMS_URL_PATTERN,
     LOCALSTACK_MAVEN_VERSION,
     MODULE_MAIN_PATH,
@@ -54,26 +53,26 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
 
-INSTALL_DIR_NPM = "%s/node_modules" % MODULE_MAIN_PATH
-INSTALL_DIR_DDB = "%s/dynamodb" % INSTALL_DIR_INFRA
-INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % INSTALL_DIR_INFRA
-INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % INSTALL_DIR_INFRA
-INSTALL_DIR_KMS = "%s/kms" % INSTALL_DIR_INFRA
-INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % INSTALL_DIR_INFRA
-INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % INSTALL_DIR_INFRA
+INSTALL_DIR_NPM = "%s/node_modules" % MODULE_MAIN_PATH  # FIXME: migrate to infra
+INSTALL_DIR_DDB = "%s/dynamodb" % dirs.static_libs
+INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
+INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
+INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
+INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.static_libs
+INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % dirs.static_libs
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
 INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, "kinesalite", "cli.js")
-INSTALL_PATH_KINESIS_MOCK = os.path.join(INSTALL_DIR_INFRA, "kinesis-mock")
+INSTALL_PATH_KINESIS_MOCK = os.path.join(dirs.static_libs, "kinesis-mock")
 URL_LOCALSTACK_FAT_JAR = (
     "https://repo1.maven.org/maven2/"
     + "cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
 ).format(v=LOCALSTACK_MAVEN_VERSION)
 
-MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % INSTALL_DIR_INFRA
+MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
@@ -108,7 +107,7 @@ SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 # GO Lambda runtime
 GO_RUNTIME_VERSION = "0.4.0"
 GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/awslamba-go-runtime-{version}-{os}-{arch}.tar.gz"
-GO_INSTALL_FOLDER = os.path.join(config.TMP_FOLDER, "awslamba-go-runtime")
+GO_INSTALL_FOLDER = os.path.join(config.dirs.tmp, "awslamba-go-runtime")
 GO_LAMBDA_RUNTIME = os.path.join(GO_INSTALL_FOLDER, "aws-lambda-mock")
 GO_LAMBDA_MOCKSERVER = os.path.join(GO_INSTALL_FOLDER, "mockserver")
 
@@ -117,7 +116,7 @@ TERRAFORM_VERSION = "0.13.7"
 TERRAFORM_URL_TEMPLATE = (
     "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{os}_{arch}.zip"
 )
-TERRAFORM_BIN = os.path.join(INSTALL_DIR_INFRA, f"terraform-{TERRAFORM_VERSION}", "terraform")
+TERRAFORM_BIN = os.path.join(dirs.static_libs, f"terraform-{TERRAFORM_VERSION}", "terraform")
 
 
 def get_elasticsearch_install_version(version: str) -> str:
@@ -134,10 +133,10 @@ def get_elasticsearch_install_dir(version: str) -> str:
 
     if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         # install the default version into a subfolder of the code base
-        install_dir = os.path.join(INSTALL_DIR_INFRA, "elasticsearch")
+        install_dir = os.path.join(dirs.static_libs, "elasticsearch")
     else:
         # put all other versions into the TMP_FOLDER
-        install_dir = os.path.join(config.TMP_FOLDER, "elasticsearch", version)
+        install_dir = os.path.join(config.dirs.tmp, "elasticsearch", version)
 
     return install_dir
 
@@ -157,7 +156,7 @@ def install_elasticsearch(version=None):
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
-        tmp_archive = os.path.join(config.TMP_FOLDER, "localstack.%s" % os.path.basename(es_url))
+        tmp_archive = os.path.join(config.dirs.tmp, "localstack.%s" % os.path.basename(es_url))
         download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
         elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, "elasticsearch*"))
         if not elasticsearch_dir:
@@ -223,7 +222,7 @@ def install_elasticmq():
         log_install_msg("ElasticMQ")
         mkdir(INSTALL_DIR_ELASTICMQ)
         # download archive
-        tmp_archive = os.path.join(config.TMP_FOLDER, "elasticmq-server.jar")
+        tmp_archive = os.path.join(config.dirs.tmp, "elasticmq-server.jar")
         if not os.path.exists(tmp_archive):
             download(ELASTICMQ_JAR_URL, tmp_archive)
         shutil.copy(tmp_archive, INSTALL_DIR_ELASTICMQ)
@@ -331,13 +330,13 @@ def install_stepfunctions_local():
         )
         time.sleep(5)
         DOCKER_CLIENT.copy_from_container(
-            docker_name, local_path=INSTALL_DIR_INFRA, container_path="/home/stepfunctionslocal/"
+            docker_name, local_path=dirs.static_libs, container_path="/home/stepfunctionslocal/"
         )
 
-        path = Path(f"{INSTALL_DIR_INFRA}/stepfunctionslocal/")
+        path = Path(f"{dirs.static_libs}/stepfunctionslocal/")
         for file in path.glob("*.jar"):
             file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
-        rm_rf("%s/stepfunctionslocal" % INSTALL_DIR_INFRA)
+        rm_rf("%s/stepfunctionslocal" % dirs.static_libs)
     # apply patches
     for patch_class, patch_url in (
         (SFN_PATCH_CLASS1, SFN_PATCH_CLASS_URL1),

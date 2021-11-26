@@ -117,7 +117,7 @@ def get_config_file_homedir():
 
 
 def get_config_file_tempdir():
-    return _get_config_file(os.path.join(config.TMP_FOLDER, ".localstack"))
+    return _get_config_file(os.path.join(config.dirs.tmp, ".localstack"))
 
 
 def read_api_key_safe():

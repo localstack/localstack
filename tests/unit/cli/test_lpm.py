@@ -3,7 +3,7 @@ import os.path
 import pytest
 from click.testing import CliRunner
 
-from localstack.cli.lpm import cli
+from localstack.cli.lpm import cli, console
 
 
 @pytest.fixture
@@ -12,7 +12,7 @@ def runner():
 
 
 def test_list(runner, monkeypatch):
-    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.setattr(console, "no_color", True)
 
     result = runner.invoke(cli, ["list"])
     assert result.exit_code == 0

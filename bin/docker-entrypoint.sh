@@ -5,6 +5,7 @@ shopt -s nullglob
 
 if [[ ! $INIT_SCRIPTS_PATH ]]
 then
+  # FIXME: move
   INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
 fi
 if [[ ! $EDGE_PORT ]]
