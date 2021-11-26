@@ -1,7 +1,5 @@
 import os
 
-from six.moves import queue
-
 from localstack import config
 
 # event type constants
@@ -30,10 +28,6 @@ EVENT_ES_CREATE_DOMAIN = "es.cd"
 EVENT_ES_DELETE_DOMAIN = "es.dd"
 EVENT_FIREHOSE_CREATE_STREAM = "fho.cs"
 EVENT_FIREHOSE_DELETE_STREAM = "fho.ds"
-
-# sender thread and queue
-SENDER_THREAD = None
-EVENT_QUEUE = queue.Queue()
 
 
 def is_travis():
