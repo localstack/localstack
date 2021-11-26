@@ -508,7 +508,9 @@ class FileMappedDocument(dict):
             mkdir(os.path.dirname(self.path))
 
         def opener(path, flags):
-            return os.open(path, flags, self.mode)
+            _fd = os.open(path, flags, self.mode)
+            os.chmod(path, mode=self.mode, follow_symlinks=True)
+            return _fd
 
         with open(self.path, "w", opener=opener) as fd:
             json.dump(self, fd)
