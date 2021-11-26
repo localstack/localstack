@@ -1,3 +1,4 @@
+import json
 import threading
 
 import click
@@ -139,3 +140,42 @@ def test_validate_config_syntax_error(runner, monkeypatch, tmp_path):
 
     assert result.exit_code == 1
     assert "error" in result.output
+
+
+def test_config_show_table(runner):
+    result = runner.invoke(cli, ["config", "show"])
+    assert result.exit_code == 0
+    assert "DATA_DIR" in result.output
+    assert "DEBUG" in result.output
+
+
+def test_config_show_json(runner):
+    result = runner.invoke(cli, ["config", "show", "--format=json"])
+    assert result.exit_code == 0
+
+    doc = json.loads(result.output)
+    assert "DATA_DIR" in doc
+    assert "DEBUG" in doc
+    assert type(doc["DEBUG"]) == bool
+
+
+def test_config_show_plain(runner, monkeypatch):
+    monkeypatch.setenv("DEBUG", "1")
+    monkeypatch.setattr(config, "DEBUG", True)
+
+    result = runner.invoke(cli, ["config", "show", "--format=plain"])
+    assert result.exit_code == 0
+
+    assert "DATA_DIR=" in result.output
+    assert "DEBUG=True" in result.output
+
+
+def test_config_show_dict(runner, monkeypatch):
+    monkeypatch.setenv("DEBUG", "1")
+    monkeypatch.setattr(config, "DEBUG", True)
+
+    result = runner.invoke(cli, ["config", "show", "--format=dict"])
+    assert result.exit_code == 0
+
+    assert "'DATA_DIR':" in result.output
+    assert "'DEBUG': True" in result.output
