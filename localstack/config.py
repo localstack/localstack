@@ -7,7 +7,7 @@ import socket
 import subprocess
 import tempfile
 import time
-from typing import Dict, List, Mapping
+from typing import Any, Dict, List, Mapping, Tuple
 
 import six
 from boto3 import Session
@@ -490,6 +490,28 @@ for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
         clean_key + "_PORT",
         clean_key + "_PORT_EXTERNAL",
     ]
+
+
+def collect_config_items() -> List[Tuple[str, Any]]:
+    """Returns a list of key-value tuples of LocalStack configuration values."""
+    none = object()  # sentinel object
+
+    # collect which keys to print
+    keys = list()
+    keys.extend(CONFIG_ENV_VARS)
+    keys.append("DATA_DIR")
+    keys.sort()
+
+    values = globals()
+
+    result = list()
+    for k in keys:
+        v = values.get(k, none)
+        if v is none:
+            continue
+        result.append((k, v))
+    result.sort()
+    return result
 
 
 def ping(host):

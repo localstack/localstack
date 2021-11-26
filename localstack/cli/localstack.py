@@ -220,6 +220,59 @@ def cmd_config_validate(file):
         sys.exit(1)
 
 
+@localstack_config.command(name="show", help="Print the current LocalStack config values")
+@click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
+def cmd_config_show(format):
+    # TODO: parse values from potential docker-compose file?
+
+    if format == "table":
+        print_config_table()
+    elif format == "plain":
+        print_config_pairs()
+    elif format == "dict":
+        print_config_dict()
+    elif format == "json":
+        print_config_json()
+    else:
+        print_config_pairs()  # fall back to plain
+
+
+def print_config_json():
+    import json
+
+    from localstack import config
+
+    console.print(json.dumps(dict(config.collect_config_items())))
+
+
+def print_config_pairs():
+    from localstack import config
+
+    for key, value in config.collect_config_items():
+        console.print(f"{key}={value}")
+
+
+def print_config_dict():
+    from localstack import config
+
+    console.print(dict(config.collect_config_items()))
+
+
+def print_config_table():
+    from rich.table import Table
+
+    from localstack import config
+
+    grid = Table(show_header=True)
+    grid.add_column("Key")
+    grid.add_column("Value")
+
+    for key, value in config.collect_config_items():
+        grid.add_row(key, str(value))
+
+    console.print(grid)
+
+
 @localstack.command(name="ssh", help="Obtain a shell in the running LocalStack container")
 def cmd_ssh():
     from localstack import config
