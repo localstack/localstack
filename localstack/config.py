@@ -91,7 +91,7 @@ class Directories:
         return Directories(
             static_libs=INSTALL_DIR_INFRA,
             var_libs=TMP_FOLDER,  # TODO: add variable
-            cache=TMP_FOLDER,  # TODO: add variable
+            cache=CACHE_DIR,
             tmp=TMP_FOLDER,  # TODO: should inherit from root value for /var/lib/localstack (e.g., MOUNT_ROOT)
             functions=HOST_TMP_FOLDER,  # TODO: rename variable/consider a volume
             data=DATA_DIR,
@@ -251,6 +251,9 @@ if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_
 
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
+
+# ephemeral cache dir that persists over reboots
+CACHE_DIR = os.environ.get("CACHE_DIR", os.path.join(TMP_FOLDER, "cache")).strip()
 
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
