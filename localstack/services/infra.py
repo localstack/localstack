@@ -378,7 +378,7 @@ def start_infra(asynchronous=False, apis=None):
                 % config.LAMBDA_EXECUTOR
             )
 
-        if is_in_docker and not config.LAMBDA_REMOTE_DOCKER and not config.dirs.shared_tmp:
+        if is_in_docker and not config.LAMBDA_REMOTE_DOCKER and not config.dirs.functions:
             print(
                 "!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=0 - "
                 "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR"

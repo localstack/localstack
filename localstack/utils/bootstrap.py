@@ -568,10 +568,10 @@ def prepare_docker_start():
 
     if DOCKER_CLIENT.is_container_running(container_name):
         raise ContainerExists('LocalStack container named "%s" is already running' % container_name)
-    if config.dirs.tmp != config.dirs.shared_tmp and not config.LAMBDA_REMOTE_DOCKER:
+    if config.dirs.tmp != config.dirs.functions and not config.LAMBDA_REMOTE_DOCKER:
         print(
             f"WARNING: The detected temp folder for localstack ({config.dirs.tmp}) is not equal to the "
-            f"HOST_TMP_FOLDER environment variable set ({config.dirs.shared_tmp})."
+            f"HOST_TMP_FOLDER environment variable set ({config.dirs.functions})."
         )  # Logger is not initialized at this point, so the warning is displayed via print
 
     os.environ[ENV_SCRIPT_STARTING_DOCKER] = "1"
@@ -614,7 +614,7 @@ def configure_container(container: LocalstackContainer):
         if value is not None:
             container.env_vars[env_var] = value
     container.env_vars["DOCKER_HOST"] = f"unix://{config.DOCKER_SOCK}"
-    container.env_vars["HOST_TMP_FOLDER"] = config.dirs.shared_tmp
+    container.env_vars["HOST_TMP_FOLDER"] = config.dirs.functions  # TODO: rename env var
 
     # TODO discuss if this should be the default?
     # to activate proper signal handling
@@ -633,22 +633,22 @@ def configure_volume_mounts(container: LocalstackContainer):
     target_dirs = Directories.for_container()
 
     # default shared directories
-    for name in ["var", "cache", "init", "logs"]:
+    for name in Directories.default_bind_mounts:
         src = getattr(source_dirs, name, None)
         target = getattr(target_dirs, name, None)
         if src and target:
-            container.volumes.add((src, target))
+            container.volumes.add(VolumeBind(src, target))
 
-    # tmp folder TODO: shouldn't mount this: reconcile with shared_tmp / cache
-    container.volumes.add((source_dirs.tmp, target_dirs.tmp))
+    # shared tmp folder
+    container.volumes.add(VolumeBind(source_dirs.tmp, target_dirs.tmp))
 
     # data_dir mounting and environment variables
     if source_dirs.data:
-        container.volumes.add((source_dirs.data, target_dirs.data))
+        container.volumes.add(VolumeBind(source_dirs.data, target_dirs.data))
         container.env_vars["DATA_DIR"] = target_dirs.data
 
     if source_dirs.init:
-        container.volumes.add((source_dirs.init, target_dirs.init))
+        container.volumes.add(VolumeBind(source_dirs.init, target_dirs.init))
 
 
 @log_duration()

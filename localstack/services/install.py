@@ -54,25 +54,25 @@ from localstack.utils.docker_utils import DOCKER_CLIENT
 LOG = logging.getLogger(__name__)
 
 INSTALL_DIR_NPM = "%s/node_modules" % MODULE_MAIN_PATH  # FIXME: migrate to infra
-INSTALL_DIR_DDB = "%s/dynamodb" % dirs.infra
-INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.infra
-INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.infra
-INSTALL_DIR_KMS = "%s/kms" % dirs.infra
-INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.infra
-INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % dirs.infra
+INSTALL_DIR_DDB = "%s/dynamodb" % dirs.static_libs
+INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
+INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
+INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
+INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.static_libs
+INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % dirs.static_libs
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
 INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, "kinesalite", "cli.js")
-INSTALL_PATH_KINESIS_MOCK = os.path.join(dirs.infra, "kinesis-mock")
+INSTALL_PATH_KINESIS_MOCK = os.path.join(dirs.static_libs, "kinesis-mock")
 URL_LOCALSTACK_FAT_JAR = (
     "https://repo1.maven.org/maven2/"
     + "cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
 ).format(v=LOCALSTACK_MAVEN_VERSION)
 
-MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.infra
+MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
@@ -116,7 +116,7 @@ TERRAFORM_VERSION = "0.13.7"
 TERRAFORM_URL_TEMPLATE = (
     "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{os}_{arch}.zip"
 )
-TERRAFORM_BIN = os.path.join(dirs.infra, f"terraform-{TERRAFORM_VERSION}", "terraform")
+TERRAFORM_BIN = os.path.join(dirs.static_libs, f"terraform-{TERRAFORM_VERSION}", "terraform")
 
 
 def get_elasticsearch_install_version(version: str) -> str:
@@ -133,7 +133,7 @@ def get_elasticsearch_install_dir(version: str) -> str:
 
     if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         # install the default version into a subfolder of the code base
-        install_dir = os.path.join(dirs.infra, "elasticsearch")
+        install_dir = os.path.join(dirs.static_libs, "elasticsearch")
     else:
         # put all other versions into the TMP_FOLDER
         install_dir = os.path.join(config.dirs.tmp, "elasticsearch", version)
@@ -330,13 +330,13 @@ def install_stepfunctions_local():
         )
         time.sleep(5)
         DOCKER_CLIENT.copy_from_container(
-            docker_name, local_path=dirs.infra, container_path="/home/stepfunctionslocal/"
+            docker_name, local_path=dirs.static_libs, container_path="/home/stepfunctionslocal/"
         )
 
-        path = Path(f"{dirs.infra}/stepfunctionslocal/")
+        path = Path(f"{dirs.static_libs}/stepfunctionslocal/")
         for file in path.glob("*.jar"):
             file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
-        rm_rf("%s/stepfunctionslocal" % dirs.infra)
+        rm_rf("%s/stepfunctionslocal" % dirs.static_libs)
     # apply patches
     for patch_class, patch_url in (
         (SFN_PATCH_CLASS1, SFN_PATCH_CLASS_URL1),

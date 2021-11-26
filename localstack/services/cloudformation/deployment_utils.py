@@ -119,7 +119,7 @@ def param_json_to_str(name):
 
 
 def get_cfn_response_mod_file():
-    cfn_response_tmp_file = os.path.join(dirs.infra, "lambda.cfn-response.js")
+    cfn_response_tmp_file = os.path.join(dirs.static_libs, "lambda.cfn-response.js")
     if not os.path.exists(cfn_response_tmp_file):
         common.download(CFN_RESPONSE_MODULE_URL, cfn_response_tmp_file)
     return cfn_response_tmp_file

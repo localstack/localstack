@@ -1484,7 +1484,7 @@ class Util:
 
     @classmethod
     def get_host_path_for_path_in_docker(cls, path):
-        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.shared_tmp, path)
+        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
 
     @classmethod
     def format_windows_path(cls, path):

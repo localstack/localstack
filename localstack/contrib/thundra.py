@@ -221,7 +221,7 @@ def _init_node_agent_configs() -> bool:
         THUNDRA_NODE_AGENT_VERSION,
     )
     THUNDRA_NODE_AGENT_LOCAL_PATH_ON_HOST = "%s/thundra/node/%s/" % (
-        config.dirs.shared_tmp,
+        config.dirs.functions,
         THUNDRA_NODE_AGENT_VERSION,
     )
 
@@ -331,7 +331,7 @@ def _init_python_agent_configs() -> bool:
         THUNDRA_PYTHON_AGENT_VERSION,
     )
     THUNDRA_PYTHON_AGENT_LOCAL_PATH_ON_HOST = "%s/thundra/python/%s/" % (
-        config.dirs.shared_tmp,
+        config.dirs.functions,
         THUNDRA_PYTHON_AGENT_VERSION,
     )
 

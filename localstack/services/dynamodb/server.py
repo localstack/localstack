@@ -38,11 +38,11 @@ class DynamodbServer(Server):
 
     @property
     def jar_path(self) -> str:
-        return f"{dirs.infra}/dynamodb/DynamoDBLocal.jar"
+        return f"{dirs.static_libs}/dynamodb/DynamoDBLocal.jar"
 
     @property
     def library_path(self) -> str:
-        return f"{dirs.infra}/dynamodb/DynamoDBLocal_lib"
+        return f"{dirs.static_libs}/dynamodb/DynamoDBLocal_lib"
 
     def _create_shell_command(self) -> List[str]:
         cmd = [
