@@ -73,16 +73,14 @@ def apply_patches():
 
     email_responses.send_raw_email = email_responses_send_raw_email
 
-    email_responses_send_email_orig = email_responses.send_email
-
     def email_responses_send_email(self):
-        bodydatakey = "Message.Body.Text.Data"
+        body_data_key = "Message.Body.Text.Data"
         if "Message.Body.Html.Data" in self.querystring:
-            bodydatakey = "Message.Body.Html.Data"
+            body_data_key = "Message.Body.Html.Data"
 
-        body = self.querystring.get(bodydatakey)[0]
-        source = self.querystring.get("Source")[0]
-        subject = self.querystring.get("Message.Subject.Data")[0]
+        body = self.querystring.get(body_data_key)
+        source = self.querystring.get("Source")
+        subject = self.querystring.get("Message.Subject.Data")
         destinations = {"ToAddresses": [], "CcAddresses": [], "BccAddresses": []}
         for dest_type in destinations:
             # consume up to 51 to allow exception
@@ -93,13 +91,21 @@ def apply_patches():
                     break
                 destinations[dest_type].append(address[0])
 
+        body = body and body[0]
+        source = source and source[0]
+        subject = subject and subject[0]
+        if not all([body, source, subject]):
+            raise MessageRejectedError(
+                "Must specify all of Body, Subject, Source for the email message"
+            )
         LOGGER.debug(
-            "Raw email\nFrom: %s\nTo: %s\nSubject: %s\nBody:\n%s"
+            "Sending email\nFrom: %s\nTo: %s\nSubject: %s\nBody:\n%s"
             % (source, destinations, subject, body)
         )
 
         return email_responses_send_email_orig(self)
 
+    email_responses_send_email_orig = email_responses.send_email
     email_responses.send_email = email_responses_send_email
 
     email_responses_list_templates_orig = email_responses.list_templates
