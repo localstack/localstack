@@ -33,6 +33,7 @@ import dns.resolver
 import requests
 import six
 from requests import Response
+from requests.models import CaseInsensitiveDict
 
 import localstack.utils.run
 from localstack import config
@@ -895,9 +896,13 @@ def merge_recursive(source, destination, none_values=[None], overwrite=False):
             node = destination.setdefault(key, {})
             merge_recursive(value, node, none_values=none_values, overwrite=overwrite)
         else:
-            if not isinstance(destination, dict):
+            if not isinstance(destination, (dict, CaseInsensitiveDict)):
                 LOG.warning(
-                    "Destination for merging %s=%s is not dict: %s", key, value, destination
+                    "Destination for merging %s=%s is not dict: %s (%s)",
+                    key,
+                    value,
+                    destination,
+                    type(destination),
                 )
             if overwrite or destination.get(key) in none_values:
                 destination[key] = value
