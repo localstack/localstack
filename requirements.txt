@@ -7,7 +7,7 @@
 # dev:      for developing localstack
 
 # extra=install
-boto3>=1.14.33
+boto3>=1.20
 click>=7.0
 # dataclasses needed for python3.6 compat
 dataclasses; python_version < '3.7'
@@ -54,7 +54,7 @@ localstack-ext[full]>=0.13.0.11
 moto-ext[all]>=2.2.6.2
 pproxy>=2.7.0
 #pympler>=0.6
-pyopenssl==17.5.0
+pyopenssl>=21.0.0
 Quart>=0.6.15
 readerwriterlock>=1.0.7
 requests-aws4auth==0.9

@@ -74,6 +74,12 @@ CACHE = {}
 # lock for creating certificate files
 SSL_CERT_LOCK = threading.RLock()
 
+# markers that indicate the start/end of sections in PEM cert files
+PEM_CERT_START = "-----BEGIN CERTIFICATE-----"
+PEM_CERT_END = "-----END CERTIFICATE-----"
+PEM_KEY_START_REGEX = r"-----BEGIN(.*)PRIVATE KEY-----"
+PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
+
 # regular expression for unprintable characters
 # Based on https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
 #     #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
@@ -1735,17 +1741,17 @@ def generate_ssl_cert(
     def store_cert_key_files(base_filename):
         key_file_name = "%s.key" % base_filename
         cert_file_name = "%s.crt" % base_filename
-        # TODO: Cleaner code to load the cert dinamically
+        # TODO: Cleaner code to load the cert dynamically
         # extract key and cert from target_file and store into separate files
         content = load_file(target_file)
-        key_start = re.search(r"-----BEGIN(.*)PRIVATE KEY-----", content)
+        key_start = re.search(PEM_KEY_START_REGEX, content)
         key_start = key_start.group(0)
-        key_end = re.search(r"-----END(.*)PRIVATE KEY-----", content)
+        key_end = re.search(PEM_KEY_END_REGEX, content)
         key_end = key_end.group(0)
-        cert_start = "-----BEGIN CERTIFICATE-----"
-        cert_end = "-----END CERTIFICATE-----"
         key_content = content[content.index(key_start) : content.index(key_end) + len(key_end)]
-        cert_content = content[content.index(cert_start) : content.rindex(cert_end) + len(cert_end)]
+        cert_content = content[
+            content.index(PEM_CERT_START) : content.rindex(PEM_CERT_END) + len(PEM_CERT_END)
+        ]
         save_file(key_file_name, key_content)
         save_file(cert_file_name, cert_content)
         return cert_file_name, key_file_name
@@ -2068,7 +2074,7 @@ class FileListener:
             finally:
                 tailer.close()
 
-        return FuncThread(func=_run_follow, on_stop=tailer.close)
+        return FuncThread(func=_run_follow, on_stop=lambda *_: tailer.close())
 
 
 # create class-of-a-class
