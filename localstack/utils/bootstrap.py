@@ -28,17 +28,10 @@ from localstack.utils.serving import Server
 
 LOG = logging.getLogger(os.path.basename(__file__))
 
-# marker for extended/ignored libs in requirements.txt
-IGNORED_LIB_MARKER = "#extended-lib"
-BASIC_LIB_MARKER = "#basic-lib"
 
 # log format strings
 LOG_FORMAT = "%(asctime)s.%(msecs)03d:%(levelname)s:%(name)s: %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
-
-# plugin scopes
-PLUGIN_SCOPE_SERVICES = "services"
-PLUGIN_SCOPE_COMMANDS = "commands"
 
 # maps from API names to list of other API names that they depend on
 API_DEPENDENCIES = {
