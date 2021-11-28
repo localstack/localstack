@@ -8,7 +8,6 @@ import tempfile
 import time
 from typing import Any, Dict, List, Mapping, Tuple
 
-import dotenv
 import six
 from boto3 import Session
 
@@ -164,6 +163,8 @@ def load_environment(profile: str = None):
     """Loads the environment variables from ~/.localstack/{profile}.env
     :param profile: the profile to load (defaults to "default")
     """
+    import dotenv
+
     if not profile:
         profile = "default"
     path = os.path.join(CONFIG_DIR, f"{profile}.env")
@@ -177,7 +178,11 @@ CONFIG_PROFILE = os.environ.get("CONFIG_PROFILE", "").strip()
 CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
 
 # keep this on top to populate environment
-load_environment(CONFIG_PROFILE)
+try:
+    load_environment(CONFIG_PROFILE)
+except ImportError:
+    # dotenv may not be available in lambdas or other environments where config is loaded
+    pass
 
 # java options to Lambda
 LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
