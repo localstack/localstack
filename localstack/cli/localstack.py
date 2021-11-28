@@ -34,7 +34,11 @@ def _setup_cli_debug():
 @click.group(name="localstack", help="The LocalStack Command Line Interface (CLI)")
 @click.version_option(version=__version__, message="%(version)s")
 @click.option("--debug", is_flag=True, help="Enable CLI debugging mode")
-def localstack(debug):
+@click.option("--profile", type=str, help="Set the configuration profile")
+def localstack(debug, profile):
+    if profile:
+        os.environ["CONFIG_PROFILE"] = profile
+
     if debug:
         _setup_cli_debug()
 
@@ -224,6 +228,13 @@ def cmd_config_validate(file):
 @click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
 def cmd_config_show(format):
     # TODO: parse values from potential docker-compose file?
+
+    from localstack_ext import config as ext_config
+
+    from localstack import config
+
+    assert config
+    assert ext_config
 
     if format == "table":
         print_config_table()
