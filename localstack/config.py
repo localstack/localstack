@@ -163,11 +163,15 @@ def load_environment(profile: str = None):
     """Loads the environment variables from ~/.localstack/{profile}.env
     :param profile: the profile to load (defaults to "default")
     """
-    import dotenv
-
     if not profile:
         profile = "default"
+
     path = os.path.join(CONFIG_DIR, f"{profile}.env")
+    if not os.path.exists(path):
+        return
+
+    import dotenv
+
     dotenv.load_dotenv(path, override=False)
 
 
