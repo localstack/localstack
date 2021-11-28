@@ -1,5 +1,8 @@
 import botocore.exceptions
 import pytest
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec, padding
 
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -96,7 +99,7 @@ class TestKMS:
         # get public key
         result1 = kms_client.get_public_key(KeyId=key_id)
         assert result.get("KeyId") == result1.get("KeyId")
-        assert result.get("KeySpec") == result1.get("KeySpec")
+        assert result.get("KeyPairSpec") == result1.get("KeySpec")
         assert result.get("PublicKey") == result1.get("PublicKey")
 
         # assert correct value of encrypted key
@@ -104,3 +107,32 @@ class TestKMS:
             CiphertextBlob=result["PrivateKeyCiphertextBlob"], KeyId=key_id
         )
         assert decrypted["Plaintext"] == result["PrivateKeyPlaintext"]
+
+    @pytest.mark.parametrize("key_type", ["rsa", "ecc"])
+    def test_sign(self, kms_client, key_type):
+        key_spec = "RSA_2048" if key_type == "rsa" else "ECC_NIST_P256"
+        result = kms_client.create_key(KeyUsage="SIGN_VERIFY", KeySpec=key_spec)
+        key_id = result["KeyMetadata"]["KeyId"]
+
+        message = b"test message 123 !%$@"
+        algo = "RSASSA_PSS_SHA_256" if key_type == "rsa" else "ECDSA_SHA_384"
+        result = kms_client.sign(
+            KeyId=key_id, Message=message, MessageType="RAW", SigningAlgorithm=algo
+        )
+
+        def _verify(signature):
+            kwargs = {}
+            if key_type == "rsa":
+                kwargs["padding"] = padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH
+                )
+                kwargs["algorithm"] = hashes.SHA256()
+            else:
+                kwargs["signature_algorithm"] = ec.ECDSA(algorithm=hashes.SHA384())
+            public_key.verify(signature=signature, data=message, **kwargs)
+
+        public_key_data = kms_client.get_public_key(KeyId=key_id)["PublicKey"]
+        public_key = serialization.load_der_public_key(public_key_data)
+        _verify(result["Signature"])
+        with pytest.raises(InvalidSignature):
+            _verify(result["Signature"] + b"foobar")

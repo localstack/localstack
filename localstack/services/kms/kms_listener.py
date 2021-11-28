@@ -4,8 +4,9 @@ import logging
 import time
 from typing import Dict, List
 
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization as crypto_serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from moto.kms.exceptions import ValidationException
 from moto.kms.models import kms_backends
 
@@ -13,7 +14,14 @@ from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import set_response_content
-from localstack.utils.common import long_uid, select_attributes, to_str
+from localstack.utils.common import (
+    json_safe,
+    long_uid,
+    select_attributes,
+    short_uid,
+    to_bytes,
+    to_str,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -50,7 +58,19 @@ CONSTRAINTS = "Constraints"
 ISSUING_ACCOUNT = "IssuingAccount"
 CREATION_DATE = "CreationDate"
 
-ATTR_KEY_PAIRS = "_key_pairs"
+
+class KMSBackend(RegionBackend):
+    # maps grant ID to grant details
+    grants: Dict[str, Dict]
+    # maps pagination markers to result lists
+    markers: Dict[str, List]
+    # maps key ID to keypair details
+    key_pairs: Dict
+
+    def __init__(self):
+        self.grants = {}
+        self.markers = {}
+        self.key_pairs = {}
 
 
 def verify_key_exists(key_id):
@@ -77,8 +97,7 @@ def validate_grant(data):
 
 def handle_create_grant(data):
     validate_grant(data)
-
-    grants = KMSBackend.get().grants
+    region_details = KMSBackend.get()
 
     data[GRANT_ID] = long_uid()
     data[GRANT_TOKENS] = [long_uid()]
@@ -86,7 +105,7 @@ def handle_create_grant(data):
         data[NAME] = ""
     data[CREATION_DATE] = time.time()
 
-    grants[data[GRANT_ID]] = data
+    region_details.grants[data[GRANT_ID]] = data
     return {GRANT_ID: data[GRANT_ID], "GrantToken": data[GRANT_TOKENS][0]}
 
 
@@ -105,19 +124,17 @@ def filter_grant_id(grant, data):
 def handle_list_grants(data):
     if KEY_ID not in data:
         raise ValidationException("KeyId must be specified")
+    region_details = KMSBackend.get()
     verify_key_exists(data[KEY_ID])
-
-    grants = KMSBackend.get().grants
 
     limit = data.get("Limit", 50)
 
     if "Marker" in data:
-        markers = KMSBackend.get().markers
-        filtered = markers.get(data["Marker"], [])
+        filtered = region_details.markers.get(data["Marker"], [])
     else:
         filtered = [
             grant
-            for grant in grants.values()
+            for grant in region_details.grants.values()
             if grant[KEY_ID] == data[KEY_ID]
             and filter_grant_id(grant, data)
             and filter_grantee_principal(grant, data)
@@ -125,24 +142,24 @@ def handle_list_grants(data):
     if len(filtered) <= limit:
         return {"Grants": filtered, "Truncated": False}
 
-    markers = KMSBackend.get().markers
-
     in_limit = filtered[:limit]
     out_limit = filtered[limit:]
 
     marker_id = long_uid()
-    markers[marker_id] = out_limit
+    region_details.markers[marker_id] = out_limit
 
     return {"Grants": in_limit, "Truncated": True, "NextMarker": marker_id}
 
 
 def handle_retire_grant(data):
-    grants = KMSBackend.get().grants
+    region_details = KMSBackend.get()
+
+    grants = region_details.grants
 
     if GRANT_ID in data and KEY_ID in data and grants[data[GRANT_ID]][KEY_ID] == data[KEY_ID]:
         del grants[data[GRANT_ID]]
     elif "GrantToken" in data:
-        KMSBackend.get().grants = {
+        region_details.grants = {
             grant_id: grant
             for grant_id, grant in grants.items()
             if data["GrantToken"] not in grant[GRANT_TOKENS]
@@ -166,12 +183,13 @@ def handle_list_retirable_grants(data):
     if RETIRING_PRINCIPAL not in data:
         raise ValidationException("Retiring principal must be specified")
 
-    grants = KMSBackend.get().grants
+    region_details = KMSBackend.get()
+    grants = region_details.grants
 
     limit = data.get("Limit", 50)
 
     if "Marker" in data:
-        markers = KMSBackend.get().markers
+        markers = region_details.markers
         filtered = markers.get(data["Marker"], [])
     else:
         filtered = [
@@ -182,7 +200,7 @@ def handle_list_retirable_grants(data):
     if len(filtered) <= limit:
         return {"Grants": filtered, "Truncated": False}
 
-    markers = KMSBackend.get().markers
+    markers = region_details.markers
 
     in_limit = filtered[:limit]
     out_limit = filtered[limit:]
@@ -194,8 +212,8 @@ def handle_list_retirable_grants(data):
 
 
 def handle_get_public_key(data, response):
-    key_pairs = _get_key_pairs()
-    result = key_pairs.get(data.get("KeyId", ""))
+    region_details = KMSBackend.get()
+    result = region_details.key_pairs.get(data.get("KeyId", ""))
     if not result:
         return 404
     attrs = [
@@ -227,51 +245,60 @@ def generate_data_key_pair_without_plaintext(data, response):
     return response
 
 
-def _generate_data_key_pair(data):
+def _generate_data_key_pair(data, create_cipher=True):
+    region_details = KMSBackend.get()
+    kms = aws_stack.connect_to_service("kms")
+
     key_id = data.get("KeyId")
-    rsa_key_sizes = {
-        "RSA_2048": 2048,
-        "RSA_3072": 3072,
-        "RSA_4096": 4096,
-    }
-    key_spec = data["KeyPairSpec"]
-    key_size = rsa_key_sizes.get(key_spec)
-    if not key_size:
-        # TODO: support other crypto/keypair types!
-        LOG.warning("Unsupported KeyPairSpec specified to generate key pair: '%s'", key_spec)
-        key_size = 2048
-    key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
+    key_spec = data.get("KeyPairSpec") or data.get("KeySpec")
+    key = None
+    public_format = None
+    if key_spec.startswith("RSA"):
+        rsa_key_sizes = {
+            "RSA_2048": 2048,
+            "RSA_3072": 3072,
+            "RSA_4096": 4096,
+        }
+        key_size = rsa_key_sizes.get(key_spec)
+        key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
+        public_format = crypto_serialization.PublicFormat.PKCS1
+    if key_spec.startswith("ECC"):
+        curve = None
+        if key_spec == "ECC_NIST_P256":
+            curve = ec.BrainpoolP256R1()
+        elif key_spec == "ECC_NIST_P384":
+            curve = ec.BrainpoolP384R1()
+        elif key_spec == "ECC_NIST_P521":
+            curve = ec.BrainpoolP512R1()
+        elif key_spec == "ECC_SECG_P256K1":
+            curve = ec.SECP256K1()
+        key = ec.generate_private_key(curve)
+        public_format = crypto_serialization.PublicFormat.SubjectPublicKeyInfo
+
     private_key = key.private_bytes(
         crypto_serialization.Encoding.DER,
         crypto_serialization.PrivateFormat.PKCS8,
         crypto_serialization.NoEncryption(),
     )
-    public_key = key.public_key().public_bytes(
-        crypto_serialization.Encoding.DER, crypto_serialization.PublicFormat.PKCS1
-    )
-    kms = aws_stack.connect_to_service("kms")
-    cipher_text = kms.encrypt(KeyId=key_id, Plaintext=private_key)["CiphertextBlob"]
+    public_key = key.public_key().public_bytes(crypto_serialization.Encoding.DER, public_format)
+    cipher_text_blob = None
+    if create_cipher:
+        cipher_text = kms.encrypt(KeyId=key_id, Plaintext=private_key)["CiphertextBlob"]
+        cipher_text_blob = base64.b64encode(cipher_text)
     result = {
-        "PrivateKeyCiphertextBlob": base64.b64encode(cipher_text),
+        "PrivateKeyCiphertextBlob": cipher_text_blob,
         "PrivateKeyPlaintext": base64.b64encode(private_key),
         "PublicKey": base64.b64encode(public_key),
         "KeyId": key_id,
-        "KeyPairSpec": data.get("KeyPairSpec"),
+        "KeyPairSpec": key_spec,
+        "KeySpec": key_spec,
+        "_key_": key,
     }
-    key_pairs = _get_key_pairs()
-    key_pairs[key_id] = result
+    region_details.key_pairs[key_id] = result
     return result
 
 
-def _get_key_pairs():
-    region_name = aws_stack.get_region()
-    backend = kms_backends.get(region_name)
-    key_pairs = getattr(backend, ATTR_KEY_PAIRS, {})
-    setattr(backend, ATTR_KEY_PAIRS, key_pairs)
-    return key_pairs
-
-
-def set_key_managed(key_id) -> None:
+def set_key_managed(key_id: str) -> None:
     """
     Sets a KMS key to AWS managed
     :param key_id: ID of the KMS key
@@ -281,6 +308,58 @@ def set_key_managed(key_id) -> None:
     key_data = backend.keys.get(key_id)
     if key_data:
         key_data.key_manager = "AWS"
+
+
+def create_key(data: Dict):
+    key_usage = data.get("KeyUsage")
+    if key_usage != "SIGN_VERIFY":
+        return
+    data["KeyId"] = short_uid()
+    result = _generate_data_key_pair(data, create_cipher=False)
+    result = {"KeyMetadata": json_safe(result)}
+    return result
+
+
+def sign(data, response):
+    region_details = KMSBackend.get()
+    response.status_code = 200
+    algo = data.get("SigningAlgorithm")
+    key_id = data.get("KeyId")
+    message = base64.b64decode(to_bytes(data.get("Message")))
+
+    key_pair = region_details.key_pairs.get(key_id)
+    kwargs = {}
+    if algo.startswith("RSA"):
+        if "PKCS" in algo:
+            kwargs["padding"] = padding.PKCS1v15()
+        elif "PSS" in algo:
+            kwargs["padding"] = padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH
+            )
+        else:
+            LOG.warning("Unsupported padding in SigningAlgorithm '%s'", algo)
+
+    if "SHA_256" in algo:
+        kwargs["algorithm"] = hashes.SHA256()
+    elif "SHA_384" in algo:
+        kwargs["algorithm"] = hashes.SHA384()
+    elif "SHA_512" in algo:
+        kwargs["algorithm"] = hashes.SHA512()
+    else:
+        LOG.warning("Unsupported hash type in SigningAlgorithm '%s'", algo)
+    if algo.startswith("ECDSA"):
+        kwargs["signature_algorithm"] = ec.ECDSA(algorithm=kwargs.pop("algorithm", None))
+
+    # generate signature
+    signature = key_pair["_key_"].sign(data=message, **kwargs)
+
+    result = {
+        "KeyId": key_id,
+        "Signature": to_str(base64.b64encode(signature)),
+        "SigningAlgorithm": algo,
+    }
+    set_response_content(response, json.dumps(result))
+    return response
 
 
 class ProxyListenerKMS(ProxyListener):
@@ -295,6 +374,9 @@ class ProxyListenerKMS(ProxyListener):
                 event_publisher.fire_event(
                     EVENT_KMS_CREATE_KEY, {"k": event_publisher.get_hash(descr)}
                 )
+                result = create_key(parsed_data)
+                if result is not None:
+                    return result
             elif action == "CreateGrant":
                 return handle_create_grant(parsed_data)
             elif action == "ListGrants":
@@ -319,17 +401,8 @@ class ProxyListenerKMS(ProxyListener):
                     return generate_data_key_pair(parsed_data, response)
                 if action == "GenerateDataKeyPairWithoutPlaintext":
                     return generate_data_key_pair_without_plaintext(parsed_data, response)
-
-
-class KMSBackend(RegionBackend):
-    # maps grant ID to grant details
-    grants: Dict[str, Dict]
-    # maps pagination markers to result lists
-    markers: Dict[str, List]
-
-    def __init__(self):
-        self.grants = {}
-        self.markers = {}
+                if action == "Sign":
+                    return sign(parsed_data, response)
 
 
 # instantiate listener
