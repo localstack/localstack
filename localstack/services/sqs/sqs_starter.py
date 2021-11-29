@@ -18,6 +18,7 @@ from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sqs.elasticmq import ElasticMQSerer
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_free_tcp_port, to_str
+from localstack.utils.patch import patch
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
@@ -76,22 +77,19 @@ def start_sqs(*args, **kwargs):
 
 def patch_moto():
     # patch add_message to disable event source mappings in moto
-    def add_message(self, *args, **kwargs):
+    @patch(Queue.add_message)
+    def add_message(fn, self, *args, **kwargs):
         mappings = self.lambda_event_source_mappings
         try:
             # temporarily set mappings to empty dict, to prevent moto from consuming messages from the queue
             self.lambda_event_source_mappings = {}
-            return add_message_orig(self, *args, **kwargs)
+            return fn(self, *args, **kwargs)
         finally:
             self.lambda_event_source_mappings = mappings
 
-    add_message_orig = Queue.add_message
-    Queue.add_message = add_message
-
-    _set_attributes_orig = Queue._set_attributes
-
-    def _set_attributes(self, attributes, now=None):
-        _set_attributes_orig(self, attributes, now)
+    @patch(Queue._set_attributes)
+    def _set_attributes(fn, self, attributes, now=None):
+        fn(self, attributes, now)
 
         integer_fields = ["ReceiveMessageWaitTimeSeconds"]
 
@@ -99,11 +97,10 @@ def patch_moto():
             attribute = camelcase_to_underscores(key)
             setattr(self, attribute, int(getattr(self, attribute, 0)))
 
-    Queue._set_attributes = _set_attributes
-
     # pass additional globals (e.g., escaping methods) to template render method
-    def response_template(self, template_str, *args, **kwargs):
-        template = response_template_orig(self, template_str, *args, **kwargs)
+    @patch(sqs_responses.SQSResponse.response_template)
+    def response_template(fn, self, template_str, *args, **kwargs):
+        template = fn(self, template_str, *args, **kwargs)
 
         def _escape(val):
             try:
@@ -120,9 +117,6 @@ def patch_moto():
             template.__patched = True
         return template
 
-    response_template_orig = sqs_responses.SQSResponse.response_template
-    sqs_responses.SQSResponse.response_template = response_template
-
     # escape message responses to allow for special characters like "<"
     sqs_responses.RECEIVE_MESSAGE_RESPONSE = sqs_responses.RECEIVE_MESSAGE_RESPONSE.replace(
         "<StringValue><![CDATA[{{ value.string_value }}]]></StringValue>",
@@ -131,6 +125,7 @@ def patch_moto():
 
     # Fix issue with trailing slash
     # https://github.com/localstack/localstack/issues/2874
+    @patch(sqs_responses.SQSResponse._get_queue_name, False)
     def sqs_responses_get_queue_name(self):
         try:
             queue_url = self.querystring.get("QueueUrl")[0]
@@ -145,8 +140,6 @@ def patch_moto():
             raise QueueDoesNotExist()
 
         return queue_name
-
-    sqs_responses.SQSResponse._get_queue_name = sqs_responses_get_queue_name
 
 
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None) -> Server:
