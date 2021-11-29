@@ -69,39 +69,3 @@ class TestParseServicePorts:
         assert "foobar" in result
         # FOOBAR_PORT cannot be parsed
         assert result["foobar"] == 1235
-
-
-class TestLoadConfigFile:
-    def test_with_existing_file(self, tmp_path):
-        test_config = '{"foo": "bar", "why": 42}'
-
-        tmp_file = tmp_path / "config.json"
-        tmp_file.write_text(test_config)
-
-        cfg = config.load_config_file(str(tmp_file))
-
-        assert len(cfg) == 2
-        assert "foo" in cfg
-        assert "why" in cfg
-        assert cfg["foo"] == "bar"
-        assert cfg["why"] == 42
-
-    def test_illegal_config_content_fails_silently(self, tmp_path):
-        test_config = '{"foo: "bar"}'  # json syntax error
-
-        tmp_file = tmp_path / "config.json"
-        tmp_file.write_text(test_config)
-
-        cfg = config.load_config_file(str(tmp_file))
-
-        assert cfg is not None
-        assert len(cfg) == 0
-
-    def test_creates_file_if_not_exists(self, tmp_path):
-        tmp_file = tmp_path / "config.json"
-        assert not tmp_file.exists()
-
-        cfg = config.load_config_file(str(tmp_file))
-
-        assert tmp_file.exists()
-        assert len(cfg) == 0
