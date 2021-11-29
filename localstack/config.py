@@ -811,3 +811,11 @@ else:
     dirs = Directories.from_config()
 
 dirs.mkdirs()
+
+# TODO: remove deprecation warning with next release
+for path in [dirs.config, os.path.join(dirs.tmp, ".localstack")]:
+    if path and os.path.isfile(path):
+        print(
+            f"warning: the config file .localstack is deprecated and no longer used, "
+            f"please remove it by running rm {path}"
+        )
