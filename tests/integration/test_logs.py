@@ -6,7 +6,7 @@ from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.awslambda.lambda_api import func_arn
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
-from localstack.utils.common import poll_condition, now_utc, retry, short_uid
+from localstack.utils.common import now_utc, poll_condition, retry, short_uid
 from tests.integration.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON3
 
 
@@ -315,11 +315,10 @@ class TestCloudWatchLogs:
         assert basic_filter_name not in filter_names
         assert json_filter_name not in filter_names
 
-    def test_delivery_logs_for_sns(self):
+    def test_delivery_logs_for_sns(self, logs_client, sns_client):
         topic_name = "test-logs-{}".format(short_uid())
         contact = "+10123456789"
 
-        sns_client = aws_stack.connect_to_service("sns")
         topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
         sns_client.subscribe(TopicArn=topic_arn, Protocol="sms", Endpoint=contact)
 
@@ -328,8 +327,7 @@ class TestCloudWatchLogs:
         logs_group_name = topic_arn.replace("arn:aws:", "").replace(":", "/")
 
         def log_group_exists():
-            response = self.logs_client.describe_log_streams(logGroupName=logs_group_name)
-            self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+            response = logs_client.describe_log_streams(logGroupName=logs_group_name)
+            assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
 
         retry(log_group_exists)
-
