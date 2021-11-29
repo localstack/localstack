@@ -512,6 +512,7 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
     def test_s3_presigned_url_expired(self):
         bucket_name = "test-bucket-%s" % short_uid()
         client = self._get_test_client()
@@ -530,10 +531,13 @@ class TestS3(unittest.TestCase):
         self.assertEqual(200, resp.status_code)
         self.assertEqual("something", to_str(resp.content))
 
-        # waiting for the url to expire
-        time.sleep(3)
-        resp = requests.get(url, verify=False)
-        self.assertEqual(resp.status_code, 403)
+        actual_time = time.time()
+        with patch("localstack.services.s3.s3_listener.is_expired", lambda v: True):
+            with patch("localstack.services.s3.s3_utils.time") as fake_time:
+                # check expired url
+                fake_time.time.return_value = actual_time + 10
+                resp = requests.get(url, verify=False)
+        self.assertEqual(resp.status_code, 403, resp.content)
 
         url = client.generate_presigned_url(
             "get_object",
