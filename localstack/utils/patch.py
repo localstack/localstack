@@ -7,14 +7,12 @@ def get_defining_object(method):
     """Returns either the class or the module that defines the given function/method."""
     # adapted from https://stackoverflow.com/a/25959545/804840
     if inspect.ismethod(method):
-        for cls in inspect.getmro(method.__self__.__class__):
-            if cls.__dict__.get(method.__name__) is method:
-                return cls
-        method = method.__func__  # fallback to __qualname__ parsing
+        return method.__self__
 
     if inspect.isfunction(method):
         class_name = method.__qualname__.split(".<locals>", 1)[0].rsplit(".", 1)[0]
         try:
+            # method is not bound but referenced by a class, like MyClass.mymethod
             cls = getattr(inspect.getmodule(method), class_name)
         except AttributeError:
             cls = method.__globals__.get(class_name)
@@ -22,6 +20,7 @@ def get_defining_object(method):
         if isinstance(cls, type):
             return cls
 
+    # method is a module-level function
     return inspect.getmodule(method)
 
 

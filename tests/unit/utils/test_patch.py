@@ -13,6 +13,10 @@ class MyEchoer:
     def do_class_echo(cls, arg):
         return f"do_class_echo: {arg}"
 
+    @staticmethod
+    def do_static_echo(arg):
+        return f"do_static_echo: {arg}"
+
 
 def test_patch_context_manager():
     assert echo("foo") == "echo: foo"
@@ -71,6 +75,36 @@ def test_patch_decorator_on_method():
     assert MyEchoer().do_echo("foo") == "do_echo: foo"
 
 
+def test_patch_decorator_on_bound_method_with_pass_target():
+    obj = MyEchoer()
+
+    @patch(target=obj.do_echo)
+    def uppercase(target, arg):
+        return target(arg).upper()
+
+    assert obj.do_echo("foo") == "DO_ECHO: FOO"
+    assert MyEchoer().do_echo("foo") == "do_echo: foo"
+    uppercase.patch.undo()
+
+    assert obj.do_echo("foo") == "do_echo: foo"
+    assert MyEchoer().do_echo("foo") == "do_echo: foo"
+
+
+def test_patch_decorator_on_bound_method():
+    obj = MyEchoer()
+
+    @patch(target=obj.do_echo, pass_target=False)
+    def monkey(arg):
+        return f"monkey: {arg}"
+
+    assert obj.do_echo("foo") == "monkey: foo"
+    assert MyEchoer().do_echo("foo") == "do_echo: foo"
+    monkey.patch.undo()
+
+    assert obj.do_echo("foo") == "do_echo: foo"
+    assert MyEchoer().do_echo("foo") == "do_echo: foo"
+
+
 def test_patch_decorator_on_class_method():
     @patch(target=MyEchoer.do_class_echo)
     def uppercase(target, *args):
@@ -87,3 +121,27 @@ def test_patch_decorator_on_class_method():
     uppercase.patch.undo()
     assert MyEchoer.do_class_echo("foo") == "do_class_echo: foo"
     assert MyEchoer().do_class_echo("foo") == "do_class_echo: foo"
+
+
+def test_get_defining_object():
+    from localstack.utils import common
+    from localstack.utils.common import short_uid
+
+    # module
+    assert get_defining_object(short_uid) == common
+
+    # unbound method (=function defined by a class)
+    assert get_defining_object(MyEchoer.do_echo) == MyEchoer
+
+    obj = MyEchoer()
+    # bound method
+    assert get_defining_object(obj.do_echo) == obj
+
+    # class method referenced by an object
+    assert get_defining_object(obj.do_class_echo) == MyEchoer
+
+    # class method referenced by the class
+    assert get_defining_object(MyEchoer.do_class_echo) == MyEchoer
+
+    # static method (= function defined by a class)
+    assert get_defining_object(MyEchoer.do_static_echo) == MyEchoer
