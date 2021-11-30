@@ -15,6 +15,7 @@ from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
+from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
@@ -1503,10 +1504,10 @@ class Util:
             )
         docker_tag = runtime
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
-        if runtime == "nodejs14.x":
+        if runtime == "nodejs14.x" and docker_image == DEFAULT_LAMBDA_CONTAINER_REGISTRY:
             # TODO temporary fix until lambci image for nodejs14.x becomes available
             docker_image = "localstack/lambda-js"
-        if runtime == "python3.9":
+        if runtime == "python3.9" and docker_image == DEFAULT_LAMBDA_CONTAINER_REGISTRY:
             # TODO temporary fix until we support AWS images via https://github.com/localstack/localstack/pull/4734
             docker_image = "mlupin/docker-lambda"
         return "%s:%s" % (docker_image, docker_tag)
