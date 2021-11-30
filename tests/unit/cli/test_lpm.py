@@ -1,9 +1,11 @@
 import os.path
+from typing import List
 
 import pytest
 from click.testing import CliRunner
 
 from localstack.cli.lpm import cli, console
+from localstack.services.install import CommunityInstallerRepository, Installer
 
 
 @pytest.fixture
@@ -22,7 +24,27 @@ def test_list(runner, monkeypatch):
 def test_install_with_non_existing_package_fails(runner):
     result = runner.invoke(cli, ["install", "elasticmq", "funny"])
     assert result.exit_code == 1
-    assert "unable to locate installer for package funny"
+    assert "unable to locate installer for package funny" in result.output
+
+
+def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
+    def failing_installer():
+        raise Exception("failing installer")
+
+    def successful_installer():
+        pass
+
+    def patched_get_installer(self) -> List[Installer]:
+        return [
+            ("failing-installer", failing_installer),
+            ("successful-installer", successful_installer),
+        ]
+
+    monkeypatch.setattr(CommunityInstallerRepository, "get_installer", patched_get_installer)
+
+    result = runner.invoke(cli, ["install", "successful-installer", "failing-installer"])
+    assert result.exit_code == 1
+    assert "one or more package installations failed." in result.output
 
 
 def test_install_with_package(runner):
