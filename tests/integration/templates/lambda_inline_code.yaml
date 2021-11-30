@@ -18,13 +18,15 @@ Resources:
   fn5FF616E3:
     Type: AWS::Lambda::Function
     Properties:
+      Architectures:
+        - {{ arch }}
       Code:
         ZipFile: exports.handler = async (event, context) => {return "{{ lambda_return_value }}"}
       Role:
         Fn::GetAtt:
           - fnServiceRole5D180AFD
           - Arn
-      FunctionName: test-func3
+      FunctionName: {{ function_name }}
       Handler: index.handler
       Runtime: nodejs14.x
     DependsOn:

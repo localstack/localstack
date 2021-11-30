@@ -204,6 +204,7 @@ class LambdaFunction(Component):
         self.description = ""
         self.code_signing_config_arn = None
         self.package_type = None
+        self.architectures = ["x86_64"]
         self.image_config = {}
         self.tracing_config = {}
 
