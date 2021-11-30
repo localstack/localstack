@@ -41,6 +41,7 @@ def _do_install(pkg):
         console.print(f"[green]installed[/green] [bold]{pkg}[/bold]")
     except Exception as e:
         console.print(f"[red]error[/red] installing {pkg}: {e}")
+        raise e
 
 
 @cli.command()
@@ -48,7 +49,7 @@ def _do_install(pkg):
 @click.option(
     "--parallel",
     type=int,
-    default=0,
+    default=1,
     required=False,
     help="how many installers to run in parallel processes",
 )
@@ -63,21 +64,15 @@ def install(package, parallel):
         if pkg not in installers:
             raise ClickException(f"unable to locate installer for package {pkg}")
 
-    if not parallel:
-        # install one by one
-        for pkg in package:
-            console.print(f"installing [bold]{pkg}[/bold]")
-            with console.status("installing..."):
-                try:
-                    installers[pkg]()
-                except Exception as e:
-                    console.print(f"[red]error[/red]: {e}")
-    else:
+    if parallel > 1:
         console.print(f"install {parallel} packages in parallel:")
-        # collect installers and install in parallel:
 
+    # collect installers and install in parallel:
+    try:
         with Pool(processes=parallel) as pool:
             pool.map(_do_install, package)
+    except Exception:
+        raise ClickException("one or more package installations failed.")
 
 
 @cli.command(name="list")
