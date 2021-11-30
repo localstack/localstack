@@ -590,9 +590,11 @@ def in_docker():
     except Exception:
         pass
     with open("/proc/1/cgroup", "rt") as ifh:
-        os_hostname = open("/etc/hostname", "rt").read().strip()
         content = ifh.read()
-        if os_hostname in content or "docker" in content:
+        if "docker" in content:
+            return True
+        os_hostname = socket.gethostname()
+        if os_hostname and os_hostname in content:
             return True
     return False
 
