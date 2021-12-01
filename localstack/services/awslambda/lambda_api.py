@@ -1211,6 +1211,7 @@ def format_func_details(
         "LastUpdateStatus": "Successful",
         "PackageType": lambda_function.package_type,
         "ImageConfig": getattr(lambda_function, "image_config", None),
+        "Architectures": lambda_function.architectures,
     }
     if lambda_function.dead_letter_config:
         result["DeadLetterConfig"] = lambda_function.dead_letter_config
@@ -1411,6 +1412,7 @@ def create_function():
             lambda_function.kms_key_arn = None
         lambda_function.memory_size = data.get("MemorySize")
         lambda_function.code_signing_config_arn = data.get("CodeSigningConfigArn")
+        lambda_function.architectures = data.get("Architectures", ["x86_64"])
         lambda_function.code = data["Code"]
         lambda_function.package_type = data.get("PackageType") or "Zip"
         lambda_function.image_config = data.get("ImageConfig", {})
@@ -1504,6 +1506,8 @@ def update_function_code(function):
     result = set_function_code(lambda_function)
     if isinstance(result, Response):
         return result
+    if data.get("Architectures"):
+        lambda_function.architectures = data["Architectures"]
     lambda_function.last_modified = datetime.utcnow()
     result.update(format_func_details(lambda_function))
     if data.get("Publish"):

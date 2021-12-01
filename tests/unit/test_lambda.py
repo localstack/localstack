@@ -454,6 +454,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result["LastUpdateStatus"] = "Successful"
             expected_result["PackageType"] = None
             expected_result["ImageConfig"] = {}
+            expected_result["Architectures"] = ["x86_64"]
             self.assertDictEqual(expected_result, result)
 
     def test_publish_update_version_increment(self):
@@ -487,6 +488,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result["LastUpdateStatus"] = "Successful"
             expected_result["PackageType"] = None
             expected_result["ImageConfig"] = {}
+            expected_result["Architectures"] = ["x86_64"]
             self.assertDictEqual(expected_result, result)
 
     def test_publish_non_existant_function_version_returns_error(self):
@@ -531,6 +533,7 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version["LastUpdateStatus"] = "Successful"
             latest_version["PackageType"] = None
             latest_version["ImageConfig"] = {}
+            latest_version["Architectures"] = ["x86_64"]
             version1 = dict(latest_version)
             version1["FunctionArn"] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ":1"
             version1["Version"] = "1"

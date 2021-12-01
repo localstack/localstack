@@ -42,8 +42,7 @@ class LambdaFunction(GenericBaseModel):
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource["Properties"]
         client = aws_stack.connect_to_service("lambda")
-        keys = [
-            "Architectures",
+        config_keys = [
             "Description",
             "Environment",
             "FunctionName",
@@ -57,10 +56,12 @@ class LambdaFunction(GenericBaseModel):
             "TracingConfig",
             "VpcConfig",
         ]
-        update_props = select_attributes(props, keys)
-        update_props = self.resolve_refs_recursively(stack_name, update_props, resources)
-        if "Timeout" in update_props:
-            update_props["Timeout"] = int(update_props["Timeout"])
+        update_config_props = select_attributes(props, config_keys)
+        update_config_props = self.resolve_refs_recursively(
+            stack_name, update_config_props, resources
+        )
+        if "Timeout" in update_config_props:
+            update_config_props["Timeout"] = int(update_config_props["Timeout"])
         if "Code" in props:
             code = props["Code"] or {}
             if not code.get("ZipFile"):
@@ -70,12 +71,12 @@ class LambdaFunction(GenericBaseModel):
                 )
             code = LambdaFunction.get_lambda_code_param(props, _include_arch=True)
             client.update_function_code(FunctionName=props["FunctionName"], **code)
-        if "Environment" in update_props:
-            environment_variables = update_props["Environment"].get("Variables", {})
-            update_props["Environment"]["Variables"] = {
+        if "Environment" in update_config_props:
+            environment_variables = update_config_props["Environment"].get("Variables", {})
+            update_config_props["Environment"]["Variables"] = {
                 k: str(v) for k, v in environment_variables.items()
             }
-        return client.update_function_configuration(**update_props)
+        return client.update_function_configuration(**update_config_props)
 
     @staticmethod
     def add_defaults(resource, stack_name: str):
