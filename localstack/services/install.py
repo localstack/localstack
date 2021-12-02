@@ -118,6 +118,13 @@ TERRAFORM_URL_TEMPLATE = (
 )
 TERRAFORM_BIN = os.path.join(dirs.static_libs, f"terraform-{TERRAFORM_VERSION}", "terraform")
 
+# Java Test Jar Download (used for tests)
+TEST_LAMBDA_JAVA = os.path.join(config.dirs.var_libs, "localstack-utils-tests.jar")
+MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
+TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
+    version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
+)
+
 
 def get_elasticsearch_install_version(version: str) -> str:
     from localstack.services.es import versions
@@ -407,6 +414,13 @@ def install_lambda_java_libs():
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
 
 
+def install_lambda_java_testlibs():
+    # Download the LocalStack Utils Test jar file from the maven repo
+    if not os.path.exists(TEST_LAMBDA_JAVA):
+        mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
+        download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
+
+
 def install_go_lambda_runtime():
     if os.path.isfile(GO_LAMBDA_RUNTIME):
         return
@@ -622,6 +636,7 @@ def main():
         if sys.argv[1] in ("libs", "testlibs"):
             # Install additional libraries for testing
             install_amazon_kinesis_client_libs()
+            install_lambda_java_testlibs()
         print("Done.")
 
 

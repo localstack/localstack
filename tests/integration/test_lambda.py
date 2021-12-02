@@ -12,12 +12,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.constants import (
-    LAMBDA_TEST_ROLE,
-    LOCALSTACK_MAVEN_VERSION,
-    LOCALSTACK_ROOT_FOLDER,
-    TEST_AWS_ACCOUNT_ID,
-)
+from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
 from localstack.services.apigateway.helpers import gateway_request_url
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.awslambda.lambda_api import (
@@ -45,6 +40,7 @@ from localstack.services.infra import start_proxy
 from localstack.services.install import (
     GO_RUNTIME_VERSION,
     INSTALL_PATH_LOCALSTACK_FAT_JAR,
+    TEST_LAMBDA_JAVA,
     download_and_extract,
 )
 from localstack.utils import testutil
@@ -52,7 +48,6 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import lambda_function_arn
 from localstack.utils.common import (
     cp_r,
-    download,
     get_arch,
     get_free_tcp_port,
     get_os,
@@ -88,9 +83,6 @@ TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.rb")
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore2", "dotnetcore2.zip")
 TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore31", "dotnetcore31.zip")
 TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "lambdas", "custom-runtime")
-TEST_LAMBDA_JAVA = os.path.join(
-    LOCALSTACK_ROOT_FOLDER, "localstack", "infra", "localstack-utils-tests.jar"
-)
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
     THIS_FOLDER, "lambdas", "java", "lambda_echo", "lambda-function-with-lib-0.0.1.jar"
 )
@@ -134,12 +126,7 @@ TEST_LAMBDA_FUNCTION_PREFIX = "lambda-function"
 TEST_SNS_TOPIC_NAME = "sns-topic-1"
 TEST_STAGE_NAME = "testing"
 
-MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
-
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
-TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
-    version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
-)
 
 TEST_LAMBDA_LIBS = [
     "localstack",
@@ -1725,12 +1712,8 @@ class TestJavaRuntimes(LambdaTestBase):
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service("lambda")
 
-        # deploy lambda - Java
-        if not os.path.exists(TEST_LAMBDA_JAVA):
-            mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
-            download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
-
         # deploy Lambda - default handler
+        # The TEST_LAMBDA_JAVA jar file is downloaded with `make init-testlibs`.
         cls.test_java_jar = load_file(TEST_LAMBDA_JAVA, mode="rb")
         zip_dir = new_tmp_dir()
         zip_lib_dir = os.path.join(zip_dir, "lib")
