@@ -605,6 +605,9 @@ def get_lambda_log_events(
             or "START" in raw_message
             or "END" in raw_message
             or "REPORT" in raw_message
+            # necessary until tail is updated in docker images. See this PR:
+            # http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=v8.24-111-g1118f32
+            or "tail: unrecognized file system type" in raw_message
             or regex_filter
             and not re.search(regex_filter, raw_message)
         ):
