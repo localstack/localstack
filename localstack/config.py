@@ -107,10 +107,17 @@ class Directories:
 
         :returns: Directories object
         """
+        # only set CONTAINER_VAR_LIBS_FOLDER/CONTAINER_CACHE_FOLDER inside the container to redirect var_libs/cache to
+        # another directory to avoid override by host mount
+        var_libs = (
+            os.environ.get("CONTAINER_VAR_LIBS_FOLDER", "").strip()
+            or "/var/lib/localstack/var_libs"
+        )
+        cache = os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or "/var/lib/localstack/cache"
         return Directories(
             static_libs=INSTALL_DIR_INFRA,
-            var_libs="/var/lib/localstack/var_libs",
-            cache="/var/lib/localstack/cache",
+            var_libs=var_libs,
+            cache=cache,
             tmp=TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
             functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
             data=DATA_DIR,  # TODO: move to /var/lib/localstack/data
