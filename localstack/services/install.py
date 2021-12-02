@@ -107,7 +107,7 @@ SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
 # GO Lambda runtime
 GO_RUNTIME_VERSION = "0.4.0"
 GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/awslamba-go-runtime-{version}-{os}-{arch}.tar.gz"
-GO_INSTALL_FOLDER = os.path.join(config.dirs.tmp, "awslamba-go-runtime")
+GO_INSTALL_FOLDER = os.path.join(config.dirs.var_libs, "awslamba-go-runtime")
 GO_LAMBDA_RUNTIME = os.path.join(GO_INSTALL_FOLDER, "aws-lambda-mock")
 GO_LAMBDA_MOCKSERVER = os.path.join(GO_INSTALL_FOLDER, "mockserver")
 
