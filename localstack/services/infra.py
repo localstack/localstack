@@ -498,6 +498,9 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         if not poll_condition(
             lambda: is_port_open(config.get_edge_port_http()), timeout=5, interval=0.1
         ):
+            if LOG.isEnabledFor(logging.DEBUG):
+                # make another call with quiet=False to print detailed error logs
+                is_port_open(config.get_edge_port_http(), quiet=False)
             raise TimeoutError(
                 f"gave up waiting for edge server on {config.EDGE_BIND_HOST}:{config.EDGE_PORT}"
             )
