@@ -682,7 +682,13 @@ def path_from_url(url: str) -> str:
     return "/%s" % str(url).partition("://")[2].partition("/")[2] if "://" in url else url
 
 
-def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=None):
+def is_port_open(
+    port_or_url: Union[int, str],
+    http_path: str = None,
+    expect_success: bool = True,
+    protocols: Optional[List[str]] = None,
+    quiet: bool = True,
+):
     protocols = protocols or ["tcp"]
     port = port_or_url
     if is_number(port):
@@ -715,10 +721,14 @@ def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=Non
                         sock.sendto(bytes(), (host, port))
                         sock.recvfrom(1024)
                 except Exception:
+                    if not quiet:
+                        LOG.exception("Error connecting to UDP port %s:%s", host, port)
                     return False
             elif nw_protocol == socket.SOCK_STREAM:
                 result = sock.connect_ex((host, port))
                 if result != 0:
+                    if not quiet:
+                        LOG.exception("Error connecting to TCP port %s:%s", host, port)
                     return False
     if "tcp" not in protocols or not http_path:
         return True

@@ -17,7 +17,7 @@ from localstack.utils.common import (
     wait_for_port_open,
 )
 
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 # event to indicate that the kinesis backend service has stopped (the terminal command has returned)
 kinesis_stopped = threading.Event()
@@ -44,12 +44,11 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
         return start_kinesis_mock(
             port=port, asynchronous=asynchronous, update_listener=update_listener
         )
-    elif config.KINESIS_PROVIDER == "kinesalite":
+    if config.KINESIS_PROVIDER == "kinesalite":
         return start_kinesalite(
             port=port, asynchronous=asynchronous, update_listener=update_listener
         )
-    else:
-        raise Exception('Unsupported Kinesis provider "%s"' % config.KINESIS_PROVIDER)
+    raise Exception('Unsupported Kinesis provider "%s"' % config.KINESIS_PROVIDER)
 
 
 def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronous):
@@ -58,6 +57,7 @@ def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronou
     start_proxy_for_service("kinesis", port, backend_port, update_listener)
 
     # TODO: generalize into service manager once it is introduced
+    LOG.debug("Running Kinesis startup command: %s", cmd)
     try:
         PROCESS_THREAD = do_run(cmd, asynchronous)
     finally:
@@ -67,7 +67,7 @@ def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronou
                 try:
                     ret_code = PROCESS_THREAD.result_future.result()
                     if ret_code not in [0, None]:
-                        LOGGER.error("kinesis terminated with return code %s", ret_code)
+                        LOG.error("kinesis terminated with return code %s", ret_code)
                 finally:
                     kinesis_stopped.set()
 
@@ -190,7 +190,7 @@ def check_kinesis(expect_shutdown=False, print_error=False):
         ).list_streams()
     except Exception:
         if print_error:
-            LOGGER.exception("Kinesis health check failed")
+            LOG.exception("Kinesis health check failed")
 
     if expect_shutdown:
         assert out is None or kinesis_stopped.is_set()
@@ -205,7 +205,7 @@ def kinesis_running():
 
 def restart_kinesis():
     if PROCESS_THREAD:
-        LOGGER.debug("Restarting Kinesis process ...")
+        LOG.debug("Restarting Kinesis process ...")
         PROCESS_THREAD.stop()
         kinesis_stopped.wait()
         kinesis_stopped.clear()
