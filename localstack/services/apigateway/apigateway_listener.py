@@ -55,6 +55,7 @@ from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
     flask_to_requests_response,
+    parse_query_string,
     request_response_stream,
     requests_response,
 )
@@ -171,6 +172,11 @@ class ApiInvocationContext:
     def path_with_query_string(self, new_path: str):
         """Set a custom invocation path with query string (used to handle "../_user_request_/.." paths)."""
         self._path_with_query_string = new_path
+
+    def query_params(self) -> Dict:
+        """Extract the query parameters from the target URL or path in this request context."""
+        query_string = self.path_with_query_string.partition("?")[2]
+        return parse_query_string(query_string)
 
     @property
     def integration_uri(self) -> Optional[str]:
@@ -350,8 +356,8 @@ def update_content_length(response: Response):
         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_request_parameter(uri: str, integration: Dict[str, Any], path_params: Dict[str, str]):
-    request_parameters = integration.get("requestParameters", None)
+def apply_request_parameters(uri: str, integration: Dict[str, Any], path_params: Dict[str, str]):
+    request_parameters = integration.get("requestParameters")
     uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
     if request_parameters:
         for key in path_params:
@@ -864,7 +870,7 @@ def invoke_rest_api_integration_backend(
         data = apply_template(integration, "request", data)
         if isinstance(data, dict):
             data = json.dumps(data)
-        uri = apply_request_parameter(uri, integration=integration, path_params=path_params)
+        uri = apply_request_parameters(uri, integration=integration, path_params=path_params)
         result = requests.request(method=method, url=uri, data=data, headers=headers)
         # apply custom response template
         result = apply_template(integration, "response", result)

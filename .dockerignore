@@ -1,3 +1,4 @@
+.git
 .venv*
 localstack/dashboard/web/node_modules/
 localstack/infra/

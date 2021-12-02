@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import platform
@@ -7,8 +6,7 @@ import socket
 import subprocess
 import tempfile
 import time
-from os.path import expanduser
-from typing import Dict, List, Mapping
+from typing import Any, Dict, List, Mapping, Tuple
 
 import six
 from boto3 import Session
@@ -21,6 +19,7 @@ from localstack.constants import (
     DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
     FALSE_STRINGS,
+    INSTALL_DIR_INFRA,
     LOCALHOST,
     LOCALHOST_IP,
     LOG_LEVELS,
@@ -30,6 +29,125 @@ from localstack.constants import (
 
 # keep track of start time, for performance debugging
 load_start_time = time.time()
+
+
+class Directories:
+    """
+    Holds the different directories available to localstack. Some directories are shared between the host and the
+    localstack container, some live only on the host and some only in the container.
+
+    Attributes:
+        static_libs: container only; binaries and libraries statically packaged with the image
+        var_libs:    shared; binaries and libraries+data computed at runtime: lazy-loaded binaries, ssl cert, ...
+        cache:       shared; ephemeral data that has to persist across localstack runs and reboots
+        tmp:         shared; ephemeral data that has to persist across localstack runs but not reboots
+        functions:   shared; volume to communicate between host<->lambda containers
+        data:        shared; holds localstack state, pods, ...
+        config:      host only; pre-defined configuration values, cached credentials, machine id, ...
+        init:        shared; user-defined provisioning scripts executed in the container when it starts
+        logs:        shared; log files produced by localstack
+    """
+
+    static_libs: str
+    var_libs: str
+    cache: str
+    tmp: str
+    functions: str
+    data: str
+    config: str
+    init: str
+    logs: str
+
+    # these are the folders mounted into the container by default when the CLI is used
+    default_bind_mounts = ["var_libs", "cache", "tmp", "data", "init", "logs"]
+
+    def __init__(
+        self,
+        static_libs: str = None,
+        var_libs: str = None,
+        cache: str = None,
+        tmp: str = None,
+        functions: str = None,
+        data: str = None,
+        config: str = None,
+        init: str = None,
+        logs: str = None,
+    ) -> None:
+        super().__init__()
+        self.static_libs = static_libs
+        self.var_libs = var_libs
+        self.cache = cache
+        self.tmp = tmp
+        self.functions = functions
+        self.data = data
+        self.config = config
+        self.init = init
+        self.logs = logs
+
+    @staticmethod
+    def from_config():
+        """Returns Localstack directory paths from the config/environment variables defined by the config."""
+        return Directories(
+            static_libs=INSTALL_DIR_INFRA,
+            var_libs=TMP_FOLDER,  # TODO: add variable
+            cache=CACHE_DIR,
+            tmp=TMP_FOLDER,  # TODO: should inherit from root value for /var/lib/localstack (e.g., MOUNT_ROOT)
+            functions=HOST_TMP_FOLDER,  # TODO: rename variable/consider a volume
+            data=DATA_DIR,
+            config=CONFIG_DIR,
+            init=None,  # TODO: introduce environment variable
+            logs=TMP_FOLDER,  # TODO: add variable
+        )
+
+    @staticmethod
+    def for_container() -> "Directories":
+        """
+        Returns Localstack directory paths as they are defined within the container. Everything shared and writable
+        lives in /var/lib/localstack or /tmp/localstack.
+
+        :returns: Directories object
+        """
+        # only set CONTAINER_VAR_LIBS_FOLDER/CONTAINER_CACHE_FOLDER inside the container to redirect var_libs/cache to
+        # another directory to avoid override by host mount
+        var_libs = (
+            os.environ.get("CONTAINER_VAR_LIBS_FOLDER", "").strip()
+            or "/var/lib/localstack/var_libs"
+        )
+        cache = os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or "/var/lib/localstack/cache"
+        return Directories(
+            static_libs=INSTALL_DIR_INFRA,
+            var_libs=var_libs,
+            cache=cache,
+            tmp=TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
+            functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
+            data=DATA_DIR,  # TODO: move to /var/lib/localstack/data
+            config=None,  # config directory is host-only
+            logs="/var/lib/localstack/logs",
+            init="/docker-entrypoint-initaws.d",
+        )
+
+    def mkdirs(self):
+        for folder in [
+            self.static_libs,
+            self.var_libs,
+            self.cache,
+            self.tmp,
+            self.functions,
+            self.data,
+            self.config,
+            self.init,
+            self.logs,
+        ]:
+            if folder and not os.path.exists(folder):
+                try:
+                    os.makedirs(folder)
+                except Exception:
+                    # this can happen due to a race condition when starting
+                    # multiple processes in parallel. Should be safe to ignore
+                    pass
+
+    def __str__(self):
+        return str(self.__dict__)
 
 
 def eval_log_type(env_var_name):
@@ -47,6 +165,35 @@ def is_env_not_false(env_var_name):
     """Whether the given environment variable is empty or has a truthy value."""
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
+
+def load_environment(profile: str = None):
+    """Loads the environment variables from ~/.localstack/{profile}.env
+    :param profile: the profile to load (defaults to "default")
+    """
+    if not profile:
+        profile = "default"
+
+    path = os.path.join(CONFIG_DIR, f"{profile}.env")
+    if not os.path.exists(path):
+        return
+
+    import dotenv
+
+    dotenv.load_dotenv(path, override=False)
+
+
+# the configuration profile to load
+CONFIG_PROFILE = os.environ.get("CONFIG_PROFILE", "").strip()
+
+# host configuration directory
+CONFIG_DIR = os.environ.get("CONFIG_DIR", os.path.expanduser("~/.localstack"))
+
+# keep this on top to populate environment
+try:
+    load_environment(CONFIG_PROFILE)
+except ImportError:
+    # dotenv may not be available in lambdas or other environments where config is loaded
+    pass
 
 # java options to Lambda
 LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
@@ -133,22 +280,15 @@ DATA_DIR = os.environ.get("DATA_DIR", "").strip()
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), "localstack")
 
-# create folders
-for folder in [DATA_DIR, TMP_FOLDER]:
-    if folder and not os.path.exists(folder):
-        try:
-            os.makedirs(folder)
-        except Exception:
-            # this can happen due to a race condition when starting
-            # multiple processes in parallel. Should be safe to ignore
-            pass
-
 # fix for Mac OS, to be able to mount /var/folders in Docker
 if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
     TMP_FOLDER = "/private%s" % TMP_FOLDER
 
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get("HOST_TMP_FOLDER", TMP_FOLDER)
+
+# ephemeral cache dir that persists over reboots
+CACHE_DIR = os.environ.get("CACHE_DIR", os.path.join(TMP_FOLDER, "cache")).strip()
 
 # whether to enable verbose debug logging
 LS_LOG = eval_log_type("LS_LOG")
@@ -390,6 +530,28 @@ for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     ]
 
 
+def collect_config_items() -> List[Tuple[str, Any]]:
+    """Returns a list of key-value tuples of LocalStack configuration values."""
+    none = object()  # sentinel object
+
+    # collect which keys to print
+    keys = list()
+    keys.extend(CONFIG_ENV_VARS)
+    keys.append("DATA_DIR")
+    keys.sort()
+
+    values = globals()
+
+    result = list()
+    for k in keys:
+        v = values.get(k, none)
+        if v is none:
+            continue
+        result.append((k, v))
+    result.sort()
+    return result
+
+
 def ping(host):
     """Returns True if host responds to a ping request"""
     is_windows = platform.system().lower() == "windows"
@@ -435,9 +597,11 @@ def in_docker():
     except Exception:
         pass
     with open("/proc/1/cgroup", "rt") as ifh:
-        os_hostname = open("/etc/hostname", "rt").read().strip()
         content = ifh.read()
-        if os_hostname in content or "docker" in content:
+        if "docker" in content:
+            return True
+        os_hostname = socket.gethostname()
+        if os_hostname and os_hostname in content:
             return True
     return False
 
@@ -474,11 +638,6 @@ except socket.error:
 # make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
 if is_in_docker and not os.environ.get("LAMBDA_REMOTE_DOCKER", "").strip():
     LAMBDA_REMOTE_DOCKER = True
-
-# local config file path in home directory
-CONFIG_FILE_PATH = os.path.join(TMP_FOLDER, ".localstack")
-if not is_in_docker:
-    CONFIG_FILE_PATH = os.path.join(expanduser("~"), ".localstack")
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ",".join(set((LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]")))
@@ -605,25 +764,12 @@ if DEBUG:
     logging.getLogger("").setLevel(logging.DEBUG)
     logging.getLogger("localstack").setLevel(logging.DEBUG)
 
-
-def load_config_file(config_file=None):
-    from localstack.utils.common import get_or_create_file, to_str
-
-    config_file = config_file or CONFIG_FILE_PATH
-    content = get_or_create_file(config_file, permissions=0o600)
-    try:
-        configs = json.loads(to_str(content) or "{}")
-    except Exception as e:
-        print("Unable to load local config file %s as JSON: %s" % (config_file, e))
-        return {}
-    return configs
-
-
-def save_config_file(config, config_file=None):
-    from localstack.utils.common import save_file
-
-    config_file = config_file or CONFIG_FILE_PATH
-    save_file(config_file, json.dumps(config), permissions=0o600)
+if LS_LOG in TRACE_LOG_LEVELS:
+    load_end_time = time.time()
+    LOG = logging.getLogger(__name__)
+    LOG.debug(
+        "Initializing the configuration took %s ms" % int((load_end_time - load_start_time) * 1000)
+    )
 
 
 class ServiceProviderConfig(Mapping[str, str]):
@@ -667,9 +813,18 @@ for key, value in os.environ.items():
     if key.startswith("PROVIDER_OVERRIDE_"):
         SERVICE_PROVIDER_CONFIG.set_provider(key.lstrip("PROVIDER_OVERRIDE_").lower(), value)
 
-if LS_LOG in TRACE_LOG_LEVELS:
-    load_end_time = time.time()
-    LOG = logging.getLogger(__name__)
-    LOG.debug(
-        "Initializing the configuration took %s ms" % int((load_end_time - load_start_time) * 1000)
-    )
+# initialize directories
+if is_in_docker:
+    dirs = Directories.for_container()
+else:
+    dirs = Directories.from_config()
+
+dirs.mkdirs()
+
+# TODO: remove deprecation warning with next release
+for path in [dirs.config, os.path.join(dirs.tmp, ".localstack")]:
+    if path and os.path.isfile(path):
+        print(
+            f"warning: the config file .localstack is deprecated and no longer used, "
+            f"please remove it by running rm {path}"
+        )

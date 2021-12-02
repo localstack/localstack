@@ -2,6 +2,7 @@
 
 import json
 import os
+import random
 import time
 import unittest
 
@@ -894,18 +895,32 @@ class SNSTest(unittest.TestCase):
         return queue_name, queue_arn, queue_url
 
     def test_publish_sms_endpoint(self):
-        def check_messages():
-            sns_backend = SNSBackend.get()
-            self.assertEqual(len(list_of_contacts), len(sns_backend.sms_messages))
-
-        list_of_contacts = ["+10123456789", "+10000000000", "+19876543210"]
+        list_of_contacts = [
+            "+%d" % random.randint(100000000, 9999999999),
+            "+%d" % random.randint(100000000, 9999999999),
+            "+%d" % random.randint(100000000, 9999999999),
+        ]
         message = "Good news everyone!"
-        # Add SMS Subscribers
+
         for number in list_of_contacts:
             self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol="sms", Endpoint=number)
-        # Publish a message.
+
         self.sns_client.publish(Message=message, TopicArn=self.topic_arn)
-        retry(check_messages, retries=3, sleep=0.5)
+
+        sns_backend = SNSBackend.get()
+
+        def check_messages():
+            sms_messages = sns_backend.sms_messages
+            for contact in list_of_contacts:
+                sms_was_found = False
+                for message in sms_messages:
+                    if message["endpoint"] == contact:
+                        sms_was_found = True
+                        break
+
+                self.assertTrue(sms_was_found)
+
+        retry(check_messages, sleep=0.5)
 
     def test_publish_sqs_from_sns(self):
         topic = self.sns_client.create_topic(Name="test_topic3")

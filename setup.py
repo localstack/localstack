@@ -33,11 +33,6 @@ package_data = {
     "localstack": [
         "package.json",
         "requirements*.txt",
-        "dashboard/web/*.*",
-        "dashboard/web/css/*",
-        "dashboard/web/img/*",
-        "dashboard/web/js/*",
-        "dashboard/web/views/*",
         "utils/kinesis/java/cloud/localstack/*.*",
     ],
 }

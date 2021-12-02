@@ -15,6 +15,7 @@ from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
+from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
@@ -69,7 +70,7 @@ from localstack.utils.run import FuncThread
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
 LAMBDA_EXECUTOR_CLASS = "cloud.localstack.LambdaExecutor"
 LAMBDA_HANDLER_ENV_VAR_NAME = "_HANDLER"
-EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.TMP_FOLDER
+EVENT_FILE_PATTERN = "%s/lambda.event.*.json" % config.dirs.tmp
 
 LAMBDA_SERVER_UNIQUE_PORTS = 500
 LAMBDA_SERVER_PORT_OFFSET = 5000
@@ -1484,7 +1485,7 @@ class Util:
 
     @classmethod
     def get_host_path_for_path_in_docker(cls, path):
-        return re.sub(r"^%s/(.*)$" % config.TMP_FOLDER, r"%s/\1" % config.HOST_TMP_FOLDER, path)
+        return re.sub(r"^%s/(.*)$" % config.dirs.tmp, r"%s/\1" % config.dirs.functions, path)
 
     @classmethod
     def format_windows_path(cls, path):
@@ -1503,10 +1504,10 @@ class Util:
             )
         docker_tag = runtime
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
-        if runtime == "nodejs14.x":
+        if runtime == "nodejs14.x" and docker_image == DEFAULT_LAMBDA_CONTAINER_REGISTRY:
             # TODO temporary fix until lambci image for nodejs14.x becomes available
             docker_image = "localstack/lambda-js"
-        if runtime == "python3.9":
+        if runtime == "python3.9" and docker_image == DEFAULT_LAMBDA_CONTAINER_REGISTRY:
             # TODO temporary fix until we support AWS images via https://github.com/localstack/localstack/pull/4734
             docker_image = "mlupin/docker-lambda"
         return "%s:%s" % (docker_image, docker_tag)
@@ -1540,7 +1541,7 @@ class Util:
 
     @staticmethod
     def mountable_tmp_file():
-        f = os.path.join(config.TMP_FOLDER, short_uid())
+        f = os.path.join(config.dirs.tmp, short_uid())
         TMP_FILES.append(f)
         return f
 

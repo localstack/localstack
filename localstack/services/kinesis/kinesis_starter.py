@@ -30,11 +30,11 @@ PORT_KINESIS_BACKEND = None
 
 def apply_patches_kinesalite():
     files = [
-        "%s/node_modules/kinesalite/validations/decreaseStreamRetentionPeriod.js",
-        "%s/node_modules/kinesalite/validations/increaseStreamRetentionPeriod.js",
+        "%s/kinesalite/validations/decreaseStreamRetentionPeriod.js",
+        "%s/kinesalite/validations/increaseStreamRetentionPeriod.js",
     ]
     for file_path in files:
-        file_path = file_path % MODULE_MAIN_PATH
+        file_path = file_path % install.INSTALL_DIR_NPM
         replace_in_file("lessThanOrEqual: 168", "lessThanOrEqual: 8760", file_path)
 
 
@@ -85,8 +85,8 @@ def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
     global PORT_KINESIS_BACKEND
     PORT_KINESIS_BACKEND = backend_port
     kinesis_data_dir_param = ""
-    if config.DATA_DIR:
-        kinesis_data_dir = "%s/kinesis" % config.DATA_DIR
+    if config.dirs.data:
+        kinesis_data_dir = "%s/kinesis" % config.dirs.data
         mkdir(kinesis_data_dir)
         kinesis_data_dir_param = "SHOULD_PERSIST_DATA=true PERSIST_PATH=%s" % kinesis_data_dir
     if not config.LS_LOG:
@@ -150,8 +150,8 @@ def start_kinesalite(port=None, asynchronous=False, update_listener=None):
     PORT_KINESIS_BACKEND = backend_port
     latency = config.KINESIS_LATENCY
     kinesis_data_dir_param = ""
-    if config.DATA_DIR:
-        kinesis_data_dir = "%s/kinesis" % config.DATA_DIR
+    if config.dirs.data:
+        kinesis_data_dir = "%s/kinesis" % config.dirs.data
         mkdir(kinesis_data_dir)
         kinesis_data_dir_param = "--path %s" % kinesis_data_dir
     cmd = (
@@ -199,11 +199,16 @@ def check_kinesis(expect_shutdown=False, print_error=False):
         assert out and isinstance(out.get("StreamNames"), list)
 
 
+def kinesis_running():
+    return PROCESS_THREAD is not None
+
+
 def restart_kinesis():
-    LOGGER.debug("Restarting Kinesis process ...")
-    PROCESS_THREAD.stop()
-    kinesis_stopped.wait()
-    kinesis_stopped.clear()
-    start_kinesis(asynchronous=True, update_listener=kinesis_listener.UPDATE_KINESIS)
-    # giving the process some time to startup; TODO: to be replaced with service lifecycle plugin
-    time.sleep(1)
+    if PROCESS_THREAD:
+        LOGGER.debug("Restarting Kinesis process ...")
+        PROCESS_THREAD.stop()
+        kinesis_stopped.wait()
+        kinesis_stopped.clear()
+        start_kinesis(asynchronous=True, update_listener=kinesis_listener.UPDATE_KINESIS)
+        # giving the process some time to startup; TODO: to be replaced with service lifecycle plugin
+        time.sleep(1)

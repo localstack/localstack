@@ -8,6 +8,7 @@ from requests.models import Response
 from localstack.constants import LOCALHOST, S3_VIRTUAL_HOSTNAME
 from localstack.services.infra import patch_instance_tracker_meta
 from localstack.services.s3 import multipart_content, s3_listener, s3_starter, s3_utils
+from localstack.services.s3.s3_utils import get_key_from_s3_url
 
 
 class S3ListenerTest(unittest.TestCase):
@@ -222,7 +223,7 @@ class S3ListenerTest(unittest.TestCase):
         self.assertNotEqual("No header", response.headers.get("Last-Modified", "No header"))
 
 
-class S3UtilsTest(unittest.TestCase):
+class TestS3Utils:
     def test_s3_bucket_name(self):
         # array description : 'bucket_name', 'expected_ouput'
         bucket_names = [
@@ -238,21 +239,17 @@ class S3UtilsTest(unittest.TestCase):
         ]
 
         for bucket_name, expected_result in bucket_names:
-            self.assertEqual(expected_result, s3_utils.validate_bucket_name(bucket_name))
+            assert s3_utils.validate_bucket_name(bucket_name) == expected_result
 
     def test_is_expired(self):
         offset = datetime.timedelta(seconds=5)
-        self.assertTrue(s3_utils.is_expired(datetime.datetime.now() - offset))
-        self.assertFalse(s3_utils.is_expired(datetime.datetime.now() + offset))
+        assert s3_utils.is_expired(datetime.datetime.now() - offset)
+        assert not s3_utils.is_expired(datetime.datetime.now() + offset)
 
     def test_is_expired_with_tz(self):
         offset = datetime.timedelta(seconds=5)
-        self.assertTrue(
-            s3_utils.is_expired(datetime.datetime.now(tz=pytz.timezone("EST")) - offset)
-        )
-        self.assertFalse(
-            s3_utils.is_expired(datetime.datetime.now(tz=pytz.timezone("EST")) + offset)
-        )
+        assert s3_utils.is_expired(datetime.datetime.now(tz=pytz.timezone("EST")) - offset)
+        assert not s3_utils.is_expired(datetime.datetime.now(tz=pytz.timezone("EST")) + offset)
 
     def test_bucket_name(self):
         # array description : 'path', 'header', 'expected_ouput'
@@ -355,7 +352,7 @@ class S3UtilsTest(unittest.TestCase):
         ]
 
         for path, headers, expected_result in bucket_names:
-            self.assertEqual(expected_result, s3_utils.extract_bucket_name(headers, path), headers)
+            assert s3_utils.extract_bucket_name(headers, path) == expected_result
 
     # test whether method correctly distinguishes between hosted and path style bucket references
     # path style format example: https://s3.{region}.localhost.localstack.cloud:4566/{bucket-name}/{key-name}
@@ -390,7 +387,7 @@ class S3UtilsTest(unittest.TestCase):
             ({"host": "s3.eu-west-1.amazonaws.com"}, False),
         ]
         for headers, expected_result in addresses:
-            self.assertEqual(expected_result, s3_utils.uses_host_addressing(headers))
+            assert s3_utils.uses_host_addressing(headers) == expected_result
 
     def test_s3_keyname_name(self):
         # array description : 'path', 'header', 'expected_ouput'
@@ -410,7 +407,15 @@ class S3UtilsTest(unittest.TestCase):
         ]
 
         for path, headers, expected_result in key_names:
-            self.assertEqual(expected_result, s3_utils.extract_key_name(headers, path))
+            assert s3_utils.extract_key_name(headers, path) == expected_result
+
+    def test_get_key_from_s3_url(self):
+        for prefix in ["s3://test-bucket/", "", "/"]:
+            for slash_prefix in [True, False]:
+                for key in ["my/key/123", "/mykey"]:
+                    url = f"{prefix}{key}"
+                    expected = f"{'/' if slash_prefix else ''}{key.lstrip('/')}"
+                    assert get_key_from_s3_url(url, leading_slash=slash_prefix) == expected
 
 
 class S3BackendTest(unittest.TestCase):

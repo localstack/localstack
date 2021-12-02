@@ -1,3 +1,4 @@
+import dataclasses
 import io
 import json
 import logging
@@ -24,6 +25,7 @@ from docker.utils.socket import STDERR, STDOUT, frames_iter
 from localstack import config
 from localstack.utils.common import (
     TMP_FILES,
+    HashableList,
     rm_rf,
     safe_run,
     save_file,
@@ -83,13 +85,6 @@ class NoSuchNetwork(ContainerException):
 class PortMappings(object):
     """Maps source to target port ranges for Docker port mappings."""
 
-    class HashableList(list):
-        def __hash__(self):
-            result = 0
-            for i in self:
-                result += hash(i)
-            return result
-
     def __init__(self, bind_host=None):
         self.bind_host = bind_host if bind_host else ""
         self.mappings = {}
@@ -140,7 +135,7 @@ class PortMappings(object):
             port_range = [bisected_host_port, port, protocol]
         else:
             port_range = [port, bisected_host_port, protocol]
-        self.mappings[self.HashableList(port_range)] = [mapped, mapped]
+        self.mappings[HashableList(port_range)] = [mapped, mapped]
 
     def to_str(self) -> str:
         bind_address = f"{self.bind_host}:" if self.bind_host else ""
@@ -226,7 +221,62 @@ class PortMappings(object):
             range[1] = port - 1
 
 
+SimpleVolumeBind = Tuple[str, str]
+"""Type alias for a simple version of VolumeBind"""
+
+
+@dataclasses.dataclass
+class VolumeBind:
+    """Represents a --volume argument run/create command. When using VolumeBind to bind-mount a file or directory
+    that does not yet exist on the Docker host, -v creates the endpoint for you. It is always created as a directory.
+    """
+
+    host_dir: str
+    container_dir: str
+    options: Optional[List[str]] = None
+
+    def to_str(self) -> str:
+        args = list()
+
+        if self.host_dir:
+            args.append(self.host_dir)
+
+        if not self.container_dir:
+            raise ValueError("no container dir specified")
+
+        args.append(self.container_dir)
+
+        if self.options:
+            args.append(self.options)
+
+        return ":".join(args)
+
+
+class VolumeMappings:
+    mappings: List[Union[SimpleVolumeBind, VolumeBind]]
+
+    def __init__(self, mappings: List[Union[SimpleVolumeBind, VolumeBind]] = None):
+        self.mappings = mappings if mappings is not None else list()
+
+    def add(self, mapping: Union[SimpleVolumeBind, VolumeBind]):
+        self.append(mapping)
+
+    def append(
+        self,
+        mapping: Union[
+            SimpleVolumeBind,
+            VolumeBind,
+        ],
+    ):
+        self.mappings.append(mapping)
+
+    def __iter__(self):
+        return self.mappings.__iter__()
+
+
 class ContainerClient(metaclass=ABCMeta):
+    STOP_TIMEOUT = 0
+
     @abstractmethod
     def get_container_status(self, container_name: str) -> DockerContainerStatus:
         """Returns the status of the container with the given name"""
@@ -238,8 +288,12 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def stop_container(self, container_name: str):
-        """Stops container with given name"""
+    def stop_container(self, container_name: str, timeout: int = None):
+        """Stops container with given name
+        :param container_name: Container identifier (name or id) of the container to be stopped
+        :param timeout: Timeout after which SIGKILL is sent to the container.
+                        If not specified, defaults to `STOP_TIMEOUT`
+        """
         pass
 
     @abstractmethod
@@ -367,7 +421,7 @@ class ContainerClient(metaclass=ABCMeta):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -396,7 +450,7 @@ class ContainerClient(metaclass=ABCMeta):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -448,6 +502,8 @@ class ContainerClient(metaclass=ABCMeta):
 class CmdDockerClient(ContainerClient):
     """Class for managing docker containers using the command line executable"""
 
+    default_run_outfile: Optional[str] = None
+
     def _docker_cmd(self) -> List[str]:
         """Return the string to be used for running Docker commands."""
         return config.DOCKER_CMD.split()
@@ -497,9 +553,11 @@ class CmdDockerClient(ContainerClient):
         container_network = cmd_result.strip()
         return container_network
 
-    def stop_container(self, container_name: str) -> None:
+    def stop_container(self, container_name: str, timeout: int = None) -> None:
+        if timeout is None:
+            timeout = self.STOP_TIMEOUT
         cmd = self._docker_cmd()
-        cmd += ["stop", "-t0", container_name]
+        cmd += ["stop", "--time", str(timeout), container_name]
         LOG.debug("Stopping container with cmd %s", cmd)
         try:
             safe_run(cmd)
@@ -765,7 +823,7 @@ class CmdDockerClient(ContainerClient):
             "inherit_env": True,
             "asynchronous": True,
             "stderr": subprocess.PIPE,
-            "outfile": subprocess.PIPE,
+            "outfile": self.default_run_outfile or subprocess.PIPE,
         }
         if stdin:
             kwargs["stdin"] = True
@@ -803,7 +861,7 @@ class CmdDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -891,7 +949,7 @@ class Util:
 
     @staticmethod
     def mountable_tmp_file():
-        f = os.path.join(config.TMP_FOLDER, short_uid())
+        f = os.path.join(config.dirs.tmp, short_uid())
         TMP_FILES.append(f)
         return f
 
@@ -936,10 +994,14 @@ class Util:
         additional_flags: str,
         env_vars: Dict[str, str] = None,
         ports: PortMappings = None,
-        mounts: List[Tuple[str, str]] = None,
+        mounts: List[SimpleVolumeBind] = None,
         network: Optional[str] = None,
     ) -> Tuple[
-        Dict[str, str], PortMappings, List[Tuple[str, str]], Optional[Dict[str, str]], Optional[str]
+        Dict[str, str],
+        PortMappings,
+        List[SimpleVolumeBind],
+        Optional[Dict[str, str]],
+        Optional[str],
     ]:
         """Parses environment, volume and port flags passed as string
         :param additional_flags: String which contains the flag definitions
@@ -1031,7 +1093,7 @@ class Util:
 
     @staticmethod
     def convert_mount_list_to_dict(
-        mount_volumes: List[Tuple[str, str]]
+        mount_volumes: List[SimpleVolumeBind],
     ) -> Dict[str, Dict[str, str]]:
         """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
         return dict(
@@ -1119,11 +1181,13 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             raise ContainerException()
 
-    def stop_container(self, container_name: str) -> None:
+    def stop_container(self, container_name: str, timeout: int = None) -> None:
+        if timeout is None:
+            timeout = self.STOP_TIMEOUT
         LOG.debug("Stopping container: %s", container_name)
         try:
             container = self.client().containers.get(container_name)
-            container.stop(timeout=0)
+            container.stop(timeout=timeout)
         except NotFound:
             raise NoSuchContainer(container_name)
         except APIError:
@@ -1356,7 +1420,7 @@ class SdkDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
@@ -1433,7 +1497,7 @@ class SdkDockerClient(ContainerClient):
         tty: bool = False,
         detach: bool = False,
         command: Optional[Union[List[str], str]] = None,
-        mount_volumes: Optional[List[Tuple[str, str]]] = None,
+        mount_volumes: Optional[List[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,

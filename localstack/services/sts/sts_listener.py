@@ -1,7 +1,7 @@
 from requests.models import Request
 
 from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.aws.aws_responses import MessageConversion
+from localstack.utils.aws.aws_responses import MessageConversion, is_invalid_html_response
 
 
 class ProxyListenerSTS(ProxyListener):
@@ -22,6 +22,9 @@ class ProxyListenerSTS(ProxyListener):
             MessageConversion.fix_error_codes(method, data, response)
             # fix content-length header
             response.headers["Content-Length"] = str(len(response._content))
+            # fix content-type header
+            if is_invalid_html_response(response.headers, response._content):
+                response.headers["Content-Type"] = "text/xml"
 
 
 # instantiate listener

@@ -62,15 +62,7 @@ class CloudWatchTest(unittest.TestCase):
 
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers("cloudwatch")
-
-        authorization = (
-            "AWS4-HMAC-SHA256 Credential=test/20201230/"
-            "us-east-1/monitoring/aws4_request, "
-            "SignedHeaders=content-encoding;host;"
-            "x-amz-content-sha256;x-amz-date, Signature="
-            "bb31fc5f4e58040ede9ed751133fe"
-            "839668b27290bc1406b6ffadc4945c705dc"
-        )
+        authorization = aws_stack.mock_aws_request_headers("monitoring")["Authorization"]
 
         headers.update(
             {
@@ -207,8 +199,7 @@ class CloudWatchTest(unittest.TestCase):
         rs = client.list_metrics()
         metrics = [m for m in rs["Metrics"] if m.get("Namespace") in namespaces]
         self.assertTrue(metrics)
-        # TODO: needs fixing in moto!
-        # self.assertEqual(len(metrics), len(namespaces) * num_dimensions)
+        self.assertEqual(len(metrics), len(namespaces) * num_dimensions)
 
     def test_store_tags(self):
         cloudwatch = aws_stack.connect_to_service("cloudwatch")

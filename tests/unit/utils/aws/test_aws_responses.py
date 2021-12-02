@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from localstack.utils.aws.aws_responses import to_xml
+from localstack.utils.aws.aws_responses import parse_query_string, to_xml
 
 result_raw = {
     "DescribeChangeSetResult": {
@@ -64,3 +64,21 @@ empty_dict = {}
 def test_to_xml_raise_error_malformeddict(test_input):
     with pytest.raises(Exception):
         to_xml(test_input)
+
+
+def test_parse_query_string():
+    assert parse_query_string("") == {}
+    assert parse_query_string("?a=1") == {"a": "1"}
+    assert parse_query_string("?a=1&b=foo2") == {"a": "1", "b": "foo2"}
+
+    assert parse_query_string("http://example.com") == {}
+    assert parse_query_string("http://example.com/foo/bar") == {}
+    assert parse_query_string("http://example.com/foo/bar#test") == {}
+    assert parse_query_string("http://example.com/foo/bar?a=1") == {"a": "1"}
+    assert parse_query_string("http://example.com/foo/bar?foo=1&1=2") == {"foo": "1", "1": "2"}
+
+    assert parse_query_string("?foo=1&foo=2&", multi_values=True) == {"foo": ["1", "2"]}
+    assert parse_query_string("?a=1&a=2&b=0&a=3", multi_values=True) == {
+        "a": ["1", "2", "3"],
+        "b": ["0"],
+    }

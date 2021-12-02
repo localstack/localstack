@@ -33,6 +33,7 @@ import dns.resolver
 import requests
 import six
 from requests import Response
+from requests.models import CaseInsensitiveDict
 
 import localstack.utils.run
 from localstack import config
@@ -72,6 +73,12 @@ CACHE = {}
 
 # lock for creating certificate files
 SSL_CERT_LOCK = threading.RLock()
+
+# markers that indicate the start/end of sections in PEM cert files
+PEM_CERT_START = "-----BEGIN CERTIFICATE-----"
+PEM_CERT_END = "-----END CERTIFICATE-----"
+PEM_KEY_START_REGEX = r"-----BEGIN(.*)PRIVATE KEY-----"
+PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
 
 # regular expression for unprintable characters
 # Based on https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
@@ -164,6 +171,7 @@ class ShellCommandThread(FuncThread):
         self.log_listener = log_listener
         self.stop_listener = stop_listener
         self.strip_color = strip_color
+        self.started = threading.Event()
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
@@ -206,6 +214,7 @@ class ShellCommandThread(FuncThread):
                 inherit_cwd=self.inherit_cwd,
                 inherit_env=self.inherit_env,
             )
+            self.started.set()
             if outfile:
                 if outfile == subprocess.PIPE:
                     # get stdout/stderr from child process and write to parent output
@@ -461,6 +470,57 @@ class ArbitraryAccessObj:
 
     def __setitem__(self, *args, **kwargs):
         return ArbitraryAccessObj()
+
+
+class HashableList(list):
+    """Hashable list class that can be used with dicts or hashsets."""
+
+    def __hash__(self):
+        result = 0
+        for i in self:
+            result += hash(i)
+        return result
+
+
+class FileMappedDocument(dict):
+    """A dictionary that is mapped to a json document on disk.
+
+    When the document is created, an attempt is made to load existing contents from disk. To load changes from
+    concurrent writes, run load(). To save and overwrite the current document on disk, run save().
+    """
+
+    path: Union[str, os.PathLike]
+
+    def __init__(self, path: Union[str, os.PathLike], mode=0o664):
+        super().__init__()
+        self.path = path
+        self.mode = mode
+        self.load()
+
+    def load(self):
+        if not os.path.exists(self.path):
+            return
+
+        if os.path.isdir(self.path):
+            raise IsADirectoryError
+
+        with open(self.path, "r") as fd:
+            self.update(json.load(fd))
+
+    def save(self):
+        if os.path.isdir(self.path):
+            raise IsADirectoryError
+
+        if not os.path.exists(self.path):
+            mkdir(os.path.dirname(self.path))
+
+        def opener(path, flags):
+            _fd = os.open(path, flags, self.mode)
+            os.chmod(path, mode=self.mode, follow_symlinks=True)
+            return _fd
+
+        with open(self.path, "w", opener=opener) as fd:
+            json.dump(self, fd)
 
 
 # ----------------
@@ -842,9 +902,13 @@ def merge_recursive(source, destination, none_values=[None], overwrite=False):
             node = destination.setdefault(key, {})
             merge_recursive(value, node, none_values=none_values, overwrite=overwrite)
         else:
-            if not isinstance(destination, dict):
+            if not isinstance(destination, (dict, CaseInsensitiveDict)):
                 LOG.warning(
-                    "Destination for merging %s=%s is not dict: %s", key, value, destination
+                    "Destination for merging %s=%s is not dict: %s (%s)",
+                    key,
+                    value,
+                    destination,
+                    type(destination),
                 )
             if overwrite or destination.get(key) in none_values:
                 destination[key] = value
@@ -919,6 +983,22 @@ def obj_to_xml(obj: SerializableObj) -> str:
     if isinstance(obj, dict):
         return "".join(["<{k}>{v}</{k}>".format(k=k, v=obj_to_xml(v)) for (k, v) in obj.items()])
     return str(obj)
+
+
+def strip_xmlns(obj: Any) -> Any:
+    """Strip xmlns attributes from a dict returned by xmltodict.parse."""
+    if isinstance(obj, list):
+        return [strip_xmlns(item) for item in obj]
+    if isinstance(obj, dict):
+        # Remove xmlns attribute.
+        obj.pop("@xmlns", None)
+        if len(obj) == 1 and "#text" in obj:
+            # If the only remaining key is the #text key, elide the dict
+            # entirely, to match the structure that xmltodict.parse would have
+            # returned if the xmlns namespace hadn't been present.
+            return obj["#text"]
+        return {k: strip_xmlns(v) for k, v in obj.items()}
+    return obj
 
 
 def now(millis: bool = False, tz: Optional[tzinfo] = None) -> int:
@@ -1442,6 +1522,10 @@ def str_remove(string, index, end_index=None):
     return "%s%s" % (string[:index], string[end_index:])
 
 
+def str_startswith_ignore_case(value: str, prefix: str) -> bool:
+    return value[: len(prefix)].lower() == prefix.lower()
+
+
 def last_index_of(array, value):
     """Return the last index of `value` in the given list, or -1 if it does not exist."""
     result = -1
@@ -1657,17 +1741,17 @@ def generate_ssl_cert(
     def store_cert_key_files(base_filename):
         key_file_name = "%s.key" % base_filename
         cert_file_name = "%s.crt" % base_filename
-        # TODO: Cleaner code to load the cert dinamically
+        # TODO: Cleaner code to load the cert dynamically
         # extract key and cert from target_file and store into separate files
         content = load_file(target_file)
-        key_start = re.search(r"-----BEGIN(.*)PRIVATE KEY-----", content)
+        key_start = re.search(PEM_KEY_START_REGEX, content)
         key_start = key_start.group(0)
-        key_end = re.search(r"-----END(.*)PRIVATE KEY-----", content)
+        key_end = re.search(PEM_KEY_END_REGEX, content)
         key_end = key_end.group(0)
-        cert_start = "-----BEGIN CERTIFICATE-----"
-        cert_end = "-----END CERTIFICATE-----"
         key_content = content[content.index(key_start) : content.index(key_end) + len(key_end)]
-        cert_content = content[content.index(cert_start) : content.rindex(cert_end) + len(cert_end)]
+        cert_content = content[
+            content.index(PEM_CERT_START) : content.rindex(PEM_CERT_END) + len(PEM_CERT_END)
+        ]
         save_file(key_file_name, key_content)
         save_file(cert_file_name, cert_content)
         return cert_file_name, key_file_name
@@ -1911,6 +1995,86 @@ class _RequestsSafe(type):
             return method(*args, **kwargs)
 
         return _wrapper
+
+
+class FileListener:
+    """
+    Platform independent `tail -f` command that calls a callback every time a new line is received on the file. If
+    use_tail_command is set (which is the default if we're not on windows and the tail command is available),
+    then a `tail -f` subprocess will be started. Otherwise the tailer library is used that uses polling with retry.
+    """
+
+    def __init__(self, file_path: str, callback: Callable[[str], None]):
+        self.file_path = file_path
+        self.callback = callback
+
+        self.thread: Optional[FuncThread] = None
+        self.started = threading.Event()
+
+        self.use_tail_command = not is_windows() and is_command_available("tail")
+
+    def start(self):
+        self.thread = self._do_start_thread()
+        self.started.wait()
+
+        if self.thread.result_future.done():
+            # this will re-raise exceptions from the run command that occurred before started was set
+            self.thread.result_future.result()
+
+    def join(self, timeout=None):
+        if self.thread:
+            self.thread.join(timeout=timeout)
+
+    def close(self):
+        if self.thread and self.thread.running:
+            self.thread.stop()
+
+        self.started.clear()
+        self.thread = None
+
+    def _do_start_thread(self) -> FuncThread:
+        if self.use_tail_command:
+            thread = self._create_tail_command_thread()
+            thread.start()
+            thread.started.wait(5)
+            self.started.set()
+        else:
+            thread = self._create_tailer_thread()
+            thread.start()
+
+        return thread
+
+    def _create_tail_command_thread(self) -> ShellCommandThread:
+        def _log_listener(line, *args, **kwargs):
+            try:
+                self.callback(line.rstrip("\r\n"))
+            except Exception:
+                pass
+
+        if not os.path.isfile(self.file_path):
+            raise FileNotFoundError
+
+        return ShellCommandThread(
+            cmd=["tail", "-f", self.file_path], quiet=False, log_listener=_log_listener
+        )
+
+    def _create_tailer_thread(self) -> FuncThread:
+        from tailer import Tailer
+
+        tailer = Tailer(open(self.file_path), end=True)
+
+        def _run_follow(*_):
+            try:
+                self.started.set()
+                for line in tailer.follow(delay=0.25):
+                    try:
+                        self.callback(line)
+                    except Exception:
+                        pass
+            finally:
+                tailer.close()
+
+        return FuncThread(func=_run_follow, on_stop=lambda *_: tailer.close())
 
 
 # create class-of-a-class

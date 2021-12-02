@@ -24,7 +24,8 @@ def cli():
 @click.option("--where", type=str, default=os.path.abspath(os.curdir))
 @click.option("--exclude", multiple=True, default=())
 @click.option("--include", multiple=True, default=("*",))
-def find(where, exclude, include):
+@click.option("--output", type=str, default="tree")
+def find(where, exclude, include, output):
     """
     Find plugins by scanning the given path for PluginSpecs.
     It starts from the current directory if --where is not specified.
@@ -33,21 +34,26 @@ def find(where, exclude, include):
     with console.status(f"Scanning path {where}"):
         plugins = find_plugins(where, exclude, include)
 
-    tree = Tree("Entrypoints")
-    for namespace, entry_points in plugins.items():
-        node = tree.add(f"[bold]{namespace}")
+    if output == "tree":
+        tree = Tree("Entrypoints")
+        for namespace, entry_points in plugins.items():
+            node = tree.add(f"[bold]{namespace}")
 
-        t = Table()
-        t.add_column("Name")
-        t.add_column("Location")
+            t = Table()
+            t.add_column("Name")
+            t.add_column("Location")
 
-        for ep in entry_points:
-            key, value = ep.split("=")
-            t.add_row(key, value)
+            for ep in entry_points:
+                key, value = ep.split("=")
+                t.add_row(key, value)
 
-        node.add(t)
+            node.add(t)
 
-    rprint(tree)
+        rprint(tree)
+    elif output == "dict":
+        rprint(dict(plugins))
+    else:
+        raise click.ClickException("unknown output format %s" % output)
 
 
 @cli.command("list")

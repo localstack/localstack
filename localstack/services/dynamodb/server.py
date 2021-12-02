@@ -3,8 +3,7 @@ import os
 from typing import List, Optional
 
 from localstack import config
-from localstack.config import is_env_true
-from localstack.constants import MODULE_MAIN_PATH
+from localstack.config import dirs, is_env_true
 from localstack.services import install
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
 from localstack.utils.run import FuncThread
@@ -39,11 +38,11 @@ class DynamodbServer(Server):
 
     @property
     def jar_path(self) -> str:
-        return f"{MODULE_MAIN_PATH}/infra/dynamodb/DynamoDBLocal.jar"
+        return f"{dirs.static_libs}/dynamodb/DynamoDBLocal.jar"
 
     @property
     def library_path(self) -> str:
-        return f"{MODULE_MAIN_PATH}/infra/dynamodb/DynamoDBLocal_lib"
+        return f"{dirs.static_libs}/dynamodb/DynamoDBLocal_lib"
 
     def _create_shell_command(self) -> List[str]:
         cmd = [
@@ -96,8 +95,8 @@ def create_dynamodb_server(port=None) -> DynamodbServer:
 
     server = DynamodbServer(port)
 
-    if config.DATA_DIR:
-        ddb_data_dir = "%s/dynamodb" % config.DATA_DIR
+    if config.dirs.data:
+        ddb_data_dir = "%s/dynamodb" % config.dirs.data
         mkdir(ddb_data_dir)
         absolute_path = os.path.abspath(ddb_data_dir)
         server.db_path = absolute_path

@@ -77,8 +77,8 @@ LOG = logging.getLogger(__name__)
 LAMBDA_POLICY_NAME_PATTERN = "lambda_policy_{name}_{qualifier}"
 # constants
 APP_NAME = "lambda_api"
-ARCHIVE_FILE_PATTERN = "%s/lambda.handler.*.jar" % config.TMP_FOLDER
-LAMBDA_SCRIPT_PATTERN = "%s/lambda_script_*.py" % config.TMP_FOLDER
+ARCHIVE_FILE_PATTERN = "%s/lambda.handler.*.jar" % config.dirs.tmp
+LAMBDA_SCRIPT_PATTERN = "%s/lambda_script_*.py" % config.dirs.tmp
 LAMBDA_ZIP_FILE_NAME = "original_lambda_archive.zip"
 LAMBDA_JAR_FILE_NAME = "original_lambda_archive.jar"
 
@@ -998,7 +998,7 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     latest_version = lambda_details.get_version(VERSION_LATEST)
     latest_version["CodeSize"] = len(zip_file_content)
     latest_version["CodeSha256"] = code_sha_256.decode("utf-8")
-    tmp_dir = "%s/zipfile.%s" % (config.TMP_FOLDER, short_uid())
+    tmp_dir = "%s/zipfile.%s" % (config.dirs.tmp, short_uid())
     mkdir(tmp_dir)
     tmp_file = "%s/%s" % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
     save_file(tmp_file, zip_file_content)
@@ -1211,6 +1211,7 @@ def format_func_details(
         "LastUpdateStatus": "Successful",
         "PackageType": lambda_function.package_type,
         "ImageConfig": getattr(lambda_function, "image_config", None),
+        "Architectures": lambda_function.architectures,
     }
     if lambda_function.dead_letter_config:
         result["DeadLetterConfig"] = lambda_function.dead_letter_config
@@ -1411,6 +1412,7 @@ def create_function():
             lambda_function.kms_key_arn = None
         lambda_function.memory_size = data.get("MemorySize")
         lambda_function.code_signing_config_arn = data.get("CodeSigningConfigArn")
+        lambda_function.architectures = data.get("Architectures", ["x86_64"])
         lambda_function.code = data["Code"]
         lambda_function.package_type = data.get("PackageType") or "Zip"
         lambda_function.image_config = data.get("ImageConfig", {})
@@ -1504,6 +1506,8 @@ def update_function_code(function):
     result = set_function_code(lambda_function)
     if isinstance(result, Response):
         return result
+    if data.get("Architectures"):
+        lambda_function.architectures = data["Architectures"]
     lambda_function.last_modified = datetime.utcnow()
     result.update(format_func_details(lambda_function))
     if data.get("Publish"):

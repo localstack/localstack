@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Dict
+from typing import Dict, Optional
 
 import click
 
@@ -34,7 +34,11 @@ def _setup_cli_debug():
 @click.group(name="localstack", help="The LocalStack Command Line Interface (CLI)")
 @click.version_option(version=__version__, message="%(version)s")
 @click.option("--debug", is_flag=True, help="Enable CLI debugging mode")
-def localstack(debug):
+@click.option("--profile", type=str, help="Set the configuration profile")
+def localstack(debug, profile):
+    if profile:
+        os.environ["CONFIG_PROFILE"] = profile
+
     if debug:
         _setup_cli_debug()
 
@@ -88,9 +92,14 @@ def cmd_status_services():
 @click.option("--docker", is_flag=True, help="Start LocalStack in a docker container (default)")
 @click.option("--host", is_flag=True, help="Start LocalStack directly on the host")
 @click.option("--no-banner", is_flag=True, help="Disable LocalStack banner", default=False)
-def cmd_start(docker: bool, host: bool, no_banner: bool):
+@click.option(
+    "-d", "--detached", is_flag=True, help="Start LocalStack in the background", default=False
+)
+def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
     if docker and host:
         raise click.ClickException("Please specify either --docker or --host")
+    if host and detached:
+        raise click.ClickException("Cannot start detached in host mode")
 
     if not no_banner:
         print_banner()
@@ -105,12 +114,88 @@ def cmd_start(docker: bool, host: bool, no_banner: bool):
         else:
             console.log("starting LocalStack in Docker mode :whale:")
 
+    bootstrap.prepare_host()
+
+    if not no_banner and not detached:
         console.rule("LocalStack Runtime Log (press [bold][yellow]CTRL-C[/yellow][/bold] to quit)")
 
     if host:
         bootstrap.start_infra_locally()
     else:
-        bootstrap.start_infra_in_docker()
+        if detached:
+            bootstrap.start_infra_in_docker_detached(console)
+        else:
+            bootstrap.start_infra_in_docker()
+
+
+@localstack.command(name="stop", help="Stop the running LocalStack container")
+def cmd_stop():
+    from localstack import config
+    from localstack.utils.docker_utils import DOCKER_CLIENT, NoSuchContainer
+
+    container_name = config.MAIN_CONTAINER_NAME
+
+    try:
+        DOCKER_CLIENT.stop_container(container_name)
+        console.print("container stopped: %s" % container_name)
+    except NoSuchContainer:
+        console.print("no such container: %s" % container_name)
+        sys.exit(1)
+
+
+@localstack.command(name="logs", help="Show the logs of the LocalStack container")
+@click.option(
+    "-f",
+    "--follow",
+    is_flag=True,
+    help="Block the terminal and follow the log output",
+    default=False,
+)
+def cmd_logs(follow: bool):
+    from localstack import config
+    from localstack.utils.bootstrap import LocalstackContainer
+    from localstack.utils.common import FileListener
+    from localstack.utils.docker_utils import DOCKER_CLIENT
+
+    container_name = config.MAIN_CONTAINER_NAME
+    logfile = LocalstackContainer(container_name).logfile
+
+    if not DOCKER_CLIENT.is_container_running(container_name):
+        console.print("localstack container not running")
+        sys.exit(1)
+
+    if not os.path.exists(logfile):
+        console.print("localstack container logfile not found at %s" % logfile)
+        sys.exit(1)
+
+    if follow:
+        listener = FileListener(logfile, print)
+        listener.start()
+        try:
+            listener.join()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            listener.close()
+    else:
+        with open(logfile) as fd:
+            for line in fd:
+                print(line.rstrip("\n\r"))
+
+
+@localstack.command(name="wait", help="Wait on the LocalStack container to start")
+@click.option(
+    "-t",
+    "--timeout",
+    type=float,
+    help="The amount of time in seconds to wait before raising a timeout error",
+    default=None,
+)
+def cmd_wait(timeout: Optional[float] = None):
+    from localstack.utils.bootstrap import wait_container_is_ready
+
+    if not wait_container_is_ready(timeout=timeout):
+        raise click.ClickException("timeout")
 
 
 @localstack_config.command(
@@ -137,6 +222,66 @@ def cmd_config_validate(file):
         console.print(Panel(str(e), title="[red]Error[/red]", expand=False))
         console.print("[red]:heavy_multiplication_x:[/red] validation error")
         sys.exit(1)
+
+
+@localstack_config.command(name="show", help="Print the current LocalStack config values")
+@click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
+def cmd_config_show(format):
+    # TODO: parse values from potential docker-compose file?
+
+    from localstack_ext import config as ext_config
+
+    from localstack import config
+
+    assert config
+    assert ext_config
+
+    if format == "table":
+        print_config_table()
+    elif format == "plain":
+        print_config_pairs()
+    elif format == "dict":
+        print_config_dict()
+    elif format == "json":
+        print_config_json()
+    else:
+        print_config_pairs()  # fall back to plain
+
+
+def print_config_json():
+    import json
+
+    from localstack import config
+
+    console.print(json.dumps(dict(config.collect_config_items())))
+
+
+def print_config_pairs():
+    from localstack import config
+
+    for key, value in config.collect_config_items():
+        console.print(f"{key}={value}")
+
+
+def print_config_dict():
+    from localstack import config
+
+    console.print(dict(config.collect_config_items()))
+
+
+def print_config_table():
+    from rich.table import Table
+
+    from localstack import config
+
+    grid = Table(show_header=True)
+    grid.add_column("Key")
+    grid.add_column("Value")
+
+    for key, value in config.collect_config_items():
+        grid.add_row(key, str(value))
+
+    console.print(grid)
 
 
 @localstack.command(name="ssh", help="Obtain a shell in the running LocalStack container")

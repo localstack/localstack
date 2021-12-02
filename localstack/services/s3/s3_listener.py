@@ -2,6 +2,7 @@ import base64
 import codecs
 import collections
 import datetime
+import io
 import json
 import logging
 import random
@@ -39,7 +40,11 @@ from localstack.services.s3.s3_utils import (
 )
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import create_sqs_system_attributes, requests_response
+from localstack.utils.aws.aws_responses import (
+    create_sqs_system_attributes,
+    is_invalid_html_response,
+    requests_response,
+)
 from localstack.utils.common import (
     clone,
     get_service_protocol,
@@ -47,14 +52,12 @@ from localstack.utils.common import (
     md5,
     not_none_or,
     short_uid,
+    strip_xmlns,
     timestamp_millis,
     to_bytes,
     to_str,
 )
 from localstack.utils.persistence import PersistingProxyListener
-
-CONTENT_SHA256_HEADER = "x-amz-content-sha256"
-STREAMING_HMAC_PAYLOAD = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
 
 # backend port (configured in s3_starter.py on startup)
 PORT_S3_BACKEND = None
@@ -462,6 +465,14 @@ def get_origin_host(headers):
 def append_cors_headers(bucket_name, request_method, request_headers, response):
     bucket_name = normalize_bucket_name(bucket_name)
 
+    # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Request-Method
+    # > The Access-Control-Request-Method request header is used by browsers when issuing a preflight request,
+    # > to let the server know which HTTP method will be used when the actual request is made.
+    # > This header is necessary as the preflight request is always an OPTIONS and doesn't use the same method
+    # > as the actual request.
+    if request_method == "OPTIONS" and "Access-Control-Request-Method" in request_headers:
+        request_method = request_headers["Access-Control-Request-Method"]
+
     # Checking CORS is allowed or not
     cors = BUCKET_CORS.get(bucket_name)
     if not cors:
@@ -500,21 +511,21 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                     response.headers["Access-Control-Allow-Origin"] = origin
                     if "AllowedMethod" in rule:
                         response.headers["Access-Control-Allow-Methods"] = (
-                            ",".join(allowed_methods)
+                            ", ".join(allowed_methods)
                             if isinstance(allowed_methods, list)
                             else allowed_methods
                         )
                     if "AllowedHeader" in rule:
                         allowed_headers = rule["AllowedHeader"]
                         response.headers["Access-Control-Allow-Headers"] = (
-                            ",".join(allowed_headers)
+                            ", ".join(allowed_headers)
                             if isinstance(allowed_headers, list)
                             else allowed_headers
                         )
                     if "ExposeHeader" in rule:
                         expose_headers = rule["ExposeHeader"]
                         response.headers["Access-Control-Expose-Headers"] = (
-                            ",".join(expose_headers)
+                            ", ".join(expose_headers)
                             if isinstance(expose_headers, list)
                             else expose_headers
                         )
@@ -656,7 +667,12 @@ def fix_delete_objects_response(bucket_name, method, parsed_path, data, headers,
     content = to_str(response._content)
     if "<Error>" not in content:
         return
+
     result = xmltodict.parse(content).get("DeleteResult")
+    # can be NoSuchBucket error
+    if not result:
+        return
+
     errors = result.get("Error")
     errors = errors if isinstance(errors, list) else [errors]
     deleted = result.get("Deleted")
@@ -736,23 +752,6 @@ def ret304_on_etag(data, headers, response):
         if match and unquote(match) == unquote(etag):
             response.status_code = 304
             response._content = ""
-
-
-def fix_etag_for_multipart(data, headers, response):
-    # Fix for https://github.com/localstack/localstack/issues/1978
-    if headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD:
-        try:
-            if b"chunk-signature=" not in to_bytes(data):
-                return
-            correct_hash = md5(strip_chunk_signatures(data))
-            tags = r"<ETag>%s</ETag>"
-            pattern = r"(&#34;)?([^<&]+)(&#34;)?"
-            replacement = r"\g<1>%s\g<3>" % correct_hash
-            response._content = re.sub(tags % pattern, tags % replacement, to_str(response.content))
-            if response.headers.get("ETag"):
-                response.headers["ETag"] = re.sub(pattern, replacement, response.headers["ETag"])
-        except Exception:
-            pass
 
 
 def remove_xml_preamble(response):
@@ -848,25 +847,6 @@ def set_replication(bucket_name, replication):
 # -------------
 
 
-def strip_chunk_signatures(data):
-    # For clients that use streaming v4 authentication, the request contains chunk signatures
-    # in the HTTP body (see example below) which we need to strip as moto cannot handle them
-    #
-    # 17;chunk-signature=6e162122ec4962bea0b18bc624025e6ae4e9322bdc632762d909e87793ac5921
-    # <payload data ...>
-    # 0;chunk-signature=927ab45acd82fc90a3c210ca7314d59fedc77ce0c914d79095f8cc9563cf2c70
-    data_new = ""
-    if data is not None:
-        data_new = re.sub(
-            b"(^|\r\n)[0-9a-fA-F]+;chunk-signature=[0-9a-f]{64}(\r\n)(\r\n$)?",
-            b"",
-            to_bytes(data),
-            flags=re.MULTILINE | re.DOTALL,
-        )
-
-    return data_new
-
-
 def is_bucket_available(bucket_name):
     body = {"Code": "200"}
     exists, code = bucket_exists(bucket_name)
@@ -899,8 +879,45 @@ def bucket_exists(bucket_name):
     return True, 200
 
 
+def strip_chunk_signatures(body, content_length):
+    # borrowed from https://github.com/spulec/moto/pull/4201
+    body_io = io.BytesIO(body)
+    new_body = bytearray(content_length)
+    pos = 0
+    line = body_io.readline()
+    while line:
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html#sigv4-chunked-body-definition
+        # str(hex(chunk-size)) + ";chunk-signature=" + signature + \r\n + chunk-data + \r\n
+        chunk_size = int(line[: line.find(b";")].decode("utf8"), 16)
+        new_body[pos : pos + chunk_size] = body_io.read(chunk_size)
+        pos = pos + chunk_size
+        body_io.read(2)  # skip trailing \r\n
+        line = body_io.readline()
+    return bytes(new_body)
+
+
 def check_content_md5(data, headers):
-    actual = md5(strip_chunk_signatures(data))
+    if headers.get("x-amz-content-sha256", None) == "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
+        content_length = headers.get("x-amz-decoded-content-length")
+        if not content_length:
+            return error_response(
+                '"X-Amz-Decoded-Content-Length" header is missing',
+                "SignatureDoesNotMatch",
+                status_code=403,
+            )
+
+        try:
+            content_length = int(content_length)
+        except ValueError:
+            return error_response(
+                'Wrong "X-Amz-Decoded-Content-Length" header',
+                "SignatureDoesNotMatch",
+                status_code=403,
+            )
+
+        data = strip_chunk_signatures(data, content_length)
+
+    actual = md5(data)
     try:
         md5_header = headers["Content-MD5"]
         if not is_base64(md5_header):
@@ -1076,7 +1093,7 @@ def _sanitize_notification_filter_rules(filter_doc):
 
 
 def handle_put_bucket_notification(bucket, data):
-    parsed = xmltodict.parse(data)
+    parsed = strip_xmlns(xmltodict.parse(data))
     notif_config = parsed.get("NotificationConfiguration")
 
     notifications = []
@@ -1256,15 +1273,6 @@ class ProxyListenerS3(PersistingProxyListener):
             # Note: with the latest version, <CreateBucketConfiguration> must either
             # contain a valid <LocationConstraint>, or not be present at all in the body.
             modified_data = b""
-
-        # If this request contains streaming v4 authentication signatures, strip them from the message
-        # Related isse: https://github.com/localstack/localstack/issues/98
-        # TODO: can potentially be removed after this fix in moto: https://github.com/spulec/moto/pull/4201
-        is_streaming_payload = headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD
-        if is_streaming_payload:
-            modified_data = strip_chunk_signatures(not_none_or(modified_data, data))
-            headers["Content-Length"] = headers.get("x-amz-decoded-content-length")
-            headers.pop(CONTENT_SHA256_HEADER)
 
         # POST requests to S3 may include a "${filename}" placeholder in the
         # key, which should be replaced with an actual file name before storing.
@@ -1487,7 +1495,6 @@ class ProxyListenerS3(PersistingProxyListener):
             fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
             fix_metadata_key_underscores(response=response)
             fix_creation_date(method, path, response=response)
-            fix_etag_for_multipart(data, headers, response)
             ret304_on_etag(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
             fix_delimiter(data, headers, response)
@@ -1562,9 +1569,8 @@ class ProxyListenerS3(PersistingProxyListener):
                 # fix content-type: https://github.com/localstack/localstack/issues/618
                 #                   https://github.com/localstack/localstack/issues/549
                 #                   https://github.com/localstack/localstack/issues/854
-                if "text/html" in response.headers.get(
-                    "Content-Type", ""
-                ) and not response_content_str.lower().startswith("<!doctype html"):
+
+                if is_invalid_html_response(response.headers, response_content_str):
                     response.headers["Content-Type"] = "application/xml; charset=utf-8"
 
                 reset_content_length = True

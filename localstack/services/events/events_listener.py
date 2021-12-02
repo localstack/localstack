@@ -67,7 +67,7 @@ def _dump_events_to_files(events_with_added_uuid):
 
 
 def _get_events_tmp_dir():
-    return os.path.join(config.TMP_FOLDER, EVENTS_TMP_DIR)
+    return os.path.join(config.dirs.tmp, EVENTS_TMP_DIR)
 
 
 def get_scheduled_rule_func(data):

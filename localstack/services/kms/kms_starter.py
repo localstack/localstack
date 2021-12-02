@@ -31,8 +31,8 @@ def start_kms_local(port=None, backend_port=None, asynchronous=None, update_list
         "KMS_ACCOUNT_ID": TEST_AWS_ACCOUNT_ID,
         "ACCOUNT_ID": TEST_AWS_ACCOUNT_ID,
     }
-    if config.DATA_DIR:
-        env_vars["KMS_DATA_PATH"] = config.DATA_DIR
+    if config.dirs.data:
+        env_vars["KMS_DATA_PATH"] = config.dirs.data
     result = do_run(kms_binary, asynchronous, env_vars=env_vars)
     wait_for_port_open(backend_port)
     return result

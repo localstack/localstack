@@ -464,14 +464,14 @@ def download_s3_object(s3, bucket, path):
         return result
 
 
-def all_s3_object_keys(bucket):
+def all_s3_object_keys(bucket: str) -> List[str]:
     s3_client = aws_stack.connect_to_resource("s3")
     bucket = s3_client.Bucket(bucket) if isinstance(bucket, str) else bucket
-    keys = [key for key in bucket.objects.all()]
+    keys = [key.key for key in bucket.objects.all()]
     return keys
 
 
-def map_all_s3_objects(to_json=True, buckets=None):
+def map_all_s3_objects(to_json: bool = True, buckets: List[str] = None) -> Dict[str, Any]:
     s3_client = aws_stack.connect_to_resource("s3")
     result = {}
     buckets = ensure_list(buckets)
@@ -605,6 +605,9 @@ def get_lambda_log_events(
             or "START" in raw_message
             or "END" in raw_message
             or "REPORT" in raw_message
+            # necessary until tail is updated in docker images. See this PR:
+            # http://git.savannah.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=v8.24-111-g1118f32
+            or "tail: unrecognized file system type" in raw_message
             or regex_filter
             and not re.search(regex_filter, raw_message)
         ):

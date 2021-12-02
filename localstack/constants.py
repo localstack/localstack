@@ -45,15 +45,20 @@ TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]
 MODULE_MAIN_PATH = os.path.dirname(os.path.realpath(__file__))
 # TODO rename to "ROOT_FOLDER"!
 LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(MODULE_MAIN_PATH, ".."))
-INSTALL_DIR_INFRA = os.path.join(MODULE_MAIN_PATH, "infra")
+INSTALL_DIR_INFRA = os.path.join(
+    MODULE_MAIN_PATH, "infra"
+)  # FIXME: deprecated, use config.dirs.infra
 
 # virtualenv folder
-LOCALSTACK_VENV_FOLDER = os.path.join(LOCALSTACK_ROOT_FOLDER, ".venv")
-if not os.path.isdir(LOCALSTACK_VENV_FOLDER):
-    # assuming this package lives here: <python>/lib/pythonX.X/site-packages/localstack/
-    LOCALSTACK_VENV_FOLDER = os.path.realpath(
-        os.path.join(LOCALSTACK_ROOT_FOLDER, "..", "..", "..")
-    )
+LOCALSTACK_VENV_FOLDER = os.environ.get("VIRTUAL_ENV")
+if not LOCALSTACK_VENV_FOLDER:
+    # fallback to the previous logic
+    LOCALSTACK_VENV_FOLDER = os.path.join(LOCALSTACK_ROOT_FOLDER, ".venv")
+    if not os.path.isdir(LOCALSTACK_VENV_FOLDER):
+        # assuming this package lives here: <python>/lib/pythonX.X/site-packages/localstack/
+        LOCALSTACK_VENV_FOLDER = os.path.realpath(
+            os.path.join(LOCALSTACK_ROOT_FOLDER, "..", "..", "..")
+        )
 
 # API Gateway path to indicate a user request sent to the gateway
 PATH_USER_REQUEST = "_user_request_"
@@ -184,3 +189,6 @@ DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
 
 # user that starts the elasticsearch process if the current user is root
 OS_USER_ELASTICSEARCH = "localstack"
+
+# output string that indicates that the stack is ready
+READY_MARKER_OUTPUT = "Ready."

@@ -66,9 +66,6 @@ API_UNKNOWN = "_unknown_"
 HEADER_SKIP_RESPONSE_ZIPPING = "_skip_response_gzipping_"
 SKIP_GZIP_APIS = [S3]
 
-# path prefix to indicate internal endpoints (e.g., resource graph, CFN deployment UI, etc)
-PATH_PREFIX_INTERNAL = "/_localstack/"
-
 
 class ProxyListenerEdge(ProxyListener):
     def __init__(self, service_manager=None) -> None:
@@ -540,7 +537,7 @@ def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
 
 def can_use_sudo():
     try:
-        run("echo | sudo -S echo", print_error=False)
+        run("sudo -n -v", print_error=False)
         return True
     except Exception:
         return False

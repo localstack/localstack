@@ -176,6 +176,14 @@ def is_real_s3_url(url):
     return re.match(r".*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*", url or "")
 
 
+def get_key_from_s3_url(url: str, leading_slash: bool = False) -> str:
+    """Extract the object key from an S3 URL"""
+    result = re.sub(r"^s3://[^/]+", "", url, flags=re.IGNORECASE).strip()
+    result = result.lstrip("/")
+    result = f"/{result}" if leading_slash else result
+    return result
+
+
 def is_expired(expiry_datetime):
     now_datetime = datetime.datetime.now(tz=expiry_datetime.tzinfo)
     return now_datetime > expiry_datetime
@@ -248,11 +256,10 @@ def authenticate_presign_url(method, path, headers, data=None):
     request_url = "{}://{}{}".format(parsed.scheme, parsed.netloc, parsed.path)
     # Fix https://github.com/localstack/localstack/issues/3912
     # urlencode method replaces white spaces with plus sign cause signature calculation to fail
-    request_url = (
-        "%s?%s" % (request_url, urlencode(query_string, quote_via=urlparse.quote, safe=" "))
-        if query_string
-        else request_url
+    query_string_encoded = (
+        urlencode(query_string, quote_via=urlparse.quote, safe=" ") if query_string else None
     )
+    request_url = "%s?%s" % (request_url, query_string_encoded) if query_string else request_url
     if forwarded_for:
         request_url = re.sub("://[^/]+", "://%s" % forwarded_for, request_url)
 
@@ -286,7 +293,7 @@ def authenticate_presign_url(method, path, headers, data=None):
             request_dict["url_path"],
         )
         request_dict["url"] = (
-            "%s?%s" % (request_dict["url"], urlencode(query_string))
+            "%s?%s" % (request_dict["url"], query_string_encoded)
             if query_string
             else request_dict["url"]
         )
@@ -361,12 +368,17 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
 
     # Checking whether the url is expired or not
     if int(query_params["Expires"][0]) < time.time():
-        return requests_error_response_xml_signature_calculation(
-            code=403,
-            code_string="AccessDenied",
-            message="Request has expired",
-            expires=query_params["Expires"][0],
-        )
+        if config.S3_SKIP_SIGNATURE_VALIDATION:
+            LOGGER.warning(
+                "Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
+            )
+        else:
+            return requests_error_response_xml_signature_calculation(
+                code=403,
+                code_string="AccessDenied",
+                message="Request has expired",
+                expires=query_params["Expires"][0],
+            )
 
 
 def authenticate_presign_url_signv4(method, path, headers, data, url, query_params, request_dict):
@@ -426,9 +438,14 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
 
     # Checking whether the url is expired or not
     if is_expired(expiration_time):
-        return requests_error_response_xml_signature_calculation(
-            code=403,
-            code_string="AccessDenied",
-            message="Request has expired",
-            expires=query_params["X-Amz-Expires"][0],
-        )
+        if config.S3_SKIP_SIGNATURE_VALIDATION:
+            LOGGER.warning(
+                "Signature is expired, but not raising an error, as S3_SKIP_SIGNATURE_VALIDATION=1"
+            )
+        else:
+            return requests_error_response_xml_signature_calculation(
+                code=403,
+                code_string="AccessDenied",
+                message="Request has expired",
+                expires=query_params["X-Amz-Expires"][0],
+            )

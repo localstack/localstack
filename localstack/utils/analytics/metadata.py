@@ -1,12 +1,12 @@
 import dataclasses
 import functools
-import json
 import logging
 import os
 import platform
 
 from localstack import config, constants
-from localstack.utils import common
+from localstack.runtime import hooks
+from localstack.utils.common import FileMappedDocument, call_safe, long_uid, md5, short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -72,52 +72,43 @@ def get_client_metadata() -> ClientMetadata:
 
 @functools.lru_cache()
 def get_machine_id() -> str:
-    machine_id = None
-    # determine machine_id from config files
-    configs_map = {}
-    # TODO check if this distinction is needed - config.CONFIG_FILE_PATH already handles tmp vs home folder
-    config_file_tmp = get_config_file_tempdir()
-    config_file_home = get_config_file_homedir()
-    for config_file in (config_file_home, config_file_tmp):
-        if config_file:
-            local_configs = configs_map[config_file] = config.load_config_file(
-                config_file=config_file
-            )
-            if "machine_id" in local_configs:
-                machine_id = local_configs["machine_id"]
-                break
+    cache_path = os.path.join(config.dirs.cache, "machine.json")
+    doc = FileMappedDocument(cache_path)
 
-    # if we can neither find NOR create the config files, fall back to process id
-    if not configs_map:
-        return get_session_id()
+    if "machine_id" not in doc:
+        # generate a machine id
+        doc["machine_id"] = _generate_machine_id()
+        # try to cache the machine ID
+        call_safe(doc.save)
 
-    # assign default id if empty
-    if not machine_id:
-        machine_id = common.short_uid()
+    return doc["machine_id"]
 
-    # update machine_id in all config files
-    for config_file, configs in configs_map.items():
-        configs["machine_id"] = machine_id
-        common.save_file(config_file, json.dumps(configs))
 
-    return machine_id
+@hooks.prepare_host()
+def prepare_host_machine_id():
+    # lazy-init machine ID into cache on the host, which can then be used in the container
+    get_machine_id()
 
 
 def _generate_session_id() -> str:
-    return common.long_uid()
+    return long_uid()
 
 
-def _get_config_file(path):
-    common.get_or_create_file(path)
-    return path
+def _generate_machine_id() -> str:
+    if config.is_in_docker:
+        return short_uid()
 
+    # this can potentially be useful when generated on the host using the CLI and then mounted into the container via
+    # machine.json
+    try:
+        if os.path.exists("/etc/machine-id"):
+            with open("/etc/machine-id") as fd:
+                return md5(str(fd.read()))[:8]
+    except Exception:
+        pass
 
-def get_config_file_homedir():
-    return _get_config_file(config.CONFIG_FILE_PATH)
-
-
-def get_config_file_tempdir():
-    return _get_config_file(os.path.join(config.TMP_FOLDER, ".localstack"))
+    # always fall back to short_uid()
+    return short_uid()
 
 
 def read_api_key_safe():

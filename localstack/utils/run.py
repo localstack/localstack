@@ -7,7 +7,7 @@ import sys
 import threading
 import traceback
 from concurrent.futures import Future
-from typing import AnyStr, Dict, List, Optional, Union
+from typing import AnyStr, Callable, Dict, List, Optional, Union
 
 from localstack import config
 
@@ -131,7 +131,9 @@ def to_str(obj: Union[str, bytes], errors="strict"):
 class FuncThread(threading.Thread):
     """Helper class to run a Python function in a background thread."""
 
-    def __init__(self, func, params=None, quiet=False):
+    def __init__(
+        self, func, params=None, quiet=False, on_stop: Callable[["FuncThread"], None] = None
+    ):
         threading.Thread.__init__(self)
         self.daemon = True
         self.params = params
@@ -139,6 +141,7 @@ class FuncThread(threading.Thread):
         self.quiet = quiet
         self.result_future = Future()
         self._stop_event = threading.Event()
+        self.on_stop = on_stop
 
     def run(self):
         result = None
@@ -169,3 +172,9 @@ class FuncThread(threading.Thread):
 
     def stop(self, quiet=False):
         self._stop_event.set()
+
+        if self.on_stop:
+            try:
+                self.on_stop(self)
+            except Exception as e:
+                LOG.warning("error while calling on_stop callback: %s", e)

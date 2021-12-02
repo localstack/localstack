@@ -85,10 +85,10 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
     modules_dir = os.path.join(install_dir, "modules")
 
     if data_root is None:
-        if config.DATA_DIR:
-            data_root = config.DATA_DIR
+        if config.dirs.data:
+            data_root = config.dirs.data
         else:
-            data_root = config.TMP_FOLDER
+            data_root = config.dirs.tmp
 
     data_path = os.path.join(data_root, "elasticsearch", cluster_path)
 
@@ -106,7 +106,7 @@ def init_directories(dirs: Directories):
     LOG.debug("initializing elasticsearch directories %s", dirs)
     chmod_r(dirs.install, 0o777)
 
-    if not dirs.data.startswith(config.DATA_DIR):
+    if not dirs.data.startswith(config.dirs.data):
         # only clear previous data if it's not in DATA_DIR
         rm_rf(dirs.data)
 

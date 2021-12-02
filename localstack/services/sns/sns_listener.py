@@ -1,8 +1,10 @@
 import ast
 import asyncio
 import base64
+import datetime
 import json
 import logging
+import time
 import traceback
 import uuid
 
@@ -24,7 +26,11 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import create_sqs_system_attributes, response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
+from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.common import (
+    long_uid,
+    md5,
+    not_none_or,
     parse_request_data,
     short_uid,
     start_thread,
@@ -410,6 +416,18 @@ async def message_to_subscriber(
             subscriber["Endpoint"],
             req_data["Message"][0],
         )
+
+        # MOCK DATA
+        delivery = {
+            "phoneCarrier": "Mock Carrier",
+            "mnc": 270,
+            "priceInUSD": 0.00645,
+            "smsType": "Transactional",
+            "mcc": 310,
+            "providerResponse": "Message has been accepted by phone carrier",
+            "dwellTimeMsUntilDeviceAck": 200,
+        }
+        store_delivery_log(subscriber, True, message, message_id, delivery)
         return
 
     elif subscriber["Protocol"] == "sqs":
@@ -442,8 +460,10 @@ async def message_to_subscriber(
                 MessageSystemAttributes=create_sqs_system_attributes(headers),
                 **kwargs,
             )
+            store_delivery_log(subscriber, True, message, message_id)
         except Exception as exc:
             LOG.info("Unable to forward SNS message to SQS: %s %s" % (exc, traceback.format_exc()))
+            store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
             if "NonExistentQueue" in str(exc):
                 LOG.info(
@@ -470,6 +490,13 @@ async def message_to_subscriber(
                 unsubscribe_url,
                 subject=req_data.get("Subject", [None])[0],
             )
+
+            delivery = {
+                "statusCode": response.status_code,
+                "providerResponse": response.get_data(),
+            }
+            store_delivery_log(subscriber, True, message, message_id, delivery)
+
             if isinstance(response, Response):
                 response.raise_for_status()
             elif isinstance(response, FlaskResponse):
@@ -482,6 +509,7 @@ async def message_to_subscriber(
                 "Unable to run Lambda function on SNS message: %s %s"
                 % (exc, traceback.format_exc())
             )
+            store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
         return
 
@@ -506,11 +534,19 @@ async def message_to_subscriber(
                 data=message_body,
                 verify=False,
             )
+
+            delivery = {
+                "statusCode": response.status_code,
+                "providerResponse": response.get_data(),
+            }
+            store_delivery_log(subscriber, True, message, message_id, delivery)
+
             response.raise_for_status()
         except Exception as exc:
             LOG.info(
                 "Received error on sending SNS message, putting to DLQ (if configured): %s" % exc
             )
+            store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
         return
 
@@ -518,11 +554,13 @@ async def message_to_subscriber(
         try:
             sns_client = aws_stack.connect_to_service("sns")
             sns_client.publish(TargetArn=subscriber["Endpoint"], Message=message)
+            store_delivery_log(subscriber, True, message, message_id)
         except Exception as exc:
             LOG.warning(
                 "Unable to forward SNS message to SNS platform app: %s %s"
                 % (exc, traceback.format_exc())
             )
+            store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
         return
 
@@ -540,6 +578,7 @@ async def message_to_subscriber(
                 },
                 Destination={"ToAddresses": [subscriber.get("Endpoint")]},
             )
+            store_delivery_log(subscriber, True, message, message_id)
     else:
         LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber["Protocol"])
 
@@ -937,3 +976,34 @@ def check_filter_policy(filter_policy, message_attributes):
 
 def is_raw_message_delivery(susbcriber):
     return susbcriber.get("RawMessageDelivery") in ("true", True, "True")
+
+
+def store_delivery_log(
+    subscriber: dict, success: bool, message: str, message_id: str, delivery: dict = None
+):
+
+    log_group_name = subscriber.get("TopicArn", "").replace("arn:aws:", "").replace(":", "/")
+    log_stream_name = long_uid()
+    invocation_time = int(time.time() * 1000)
+
+    delivery = not_none_or(delivery, {})
+    delivery["deliveryId"] = (long_uid(),)
+    delivery["destination"] = (subscriber.get("Endpoint", ""),)
+    delivery["dwellTimeMs"] = 200
+    if not success:
+        delivery["attemps"] = 1
+
+    delivery_log = {
+        "notification": {
+            "messageMD5Sum": md5(message),
+            "messageId": message_id,
+            "topicArn": subscriber.get("TopicArn"),
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f%z"),
+        },
+        "delivery": delivery,
+        "status": "SUCCESS" if success else "FAILURE",
+    }
+
+    log_output = json.dumps(delivery_log)
+
+    return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)

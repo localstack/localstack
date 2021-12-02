@@ -14,6 +14,7 @@ from moto import core as moto_core
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
+from localstack.runtime import hooks
 from localstack.services import generic_proxy, install, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
@@ -24,7 +25,6 @@ from localstack.utils.bootstrap import (
     canonicalize_api_names,
     get_main_container_id,
     in_ci,
-    load_plugins,
     log_duration,
     setup_logging,
 )
@@ -48,7 +48,7 @@ from localstack.utils.testutil import is_local_test_mode
 SIGNAL_HANDLERS_SETUP = False
 
 # output string that indicates that the stack is ready
-READY_MARKER_OUTPUT = "Ready."
+READY_MARKER_OUTPUT = constants.READY_MARKER_OUTPUT
 
 # default backend host address
 DEFAULT_BACKEND_HOST = "127.0.0.1"
@@ -378,11 +378,7 @@ def start_infra(asynchronous=False, apis=None):
                 % config.LAMBDA_EXECUTOR
             )
 
-        if (
-            is_in_docker
-            and not config.LAMBDA_REMOTE_DOCKER
-            and not os.environ.get("HOST_TMP_FOLDER")
-        ):
+        if is_in_docker and not config.LAMBDA_REMOTE_DOCKER and not config.dirs.functions:
             print(
                 "!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=0 - "
                 "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR"
@@ -394,10 +390,10 @@ def start_infra(asynchronous=False, apis=None):
         patch_urllib3_connection_pool(maxsize=128)
         patch_instance_tracker_meta()
 
-        # load plugins
-        load_plugins()
+        # set up logging
+        setup_logging()
 
-        # with plugins loaded, now start the infrastructure
+        # with changes that hooks have made, now start the infrastructure
         thread = do_start_infra(asynchronous, apis, is_in_docker)
 
         if not asynchronous and thread:
@@ -419,13 +415,12 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
+    hooks.on_infra_start.run()
+
     event_publisher.fire_event(
         event_publisher.EVENT_START_INFRA,
         {"d": is_in_docker and 1 or 0, "c": in_ci() and 1 or 0},
     )
-
-    # set up logging
-    setup_logging()
 
     if config.DEVELOP:
         install.install_debugpy_and_dependencies()
@@ -461,32 +456,32 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     @log_duration()
     def preload_services():
         """
-        Preload services if EAGER_SERVICE_LOADING is true.
+        Preload services - restore persistence, and initialize services if EAGER_SERVICE_LOADING=1.
         """
-        # TODO: lazy loading should become the default beginning 0.13.0
-        if not config.EAGER_SERVICE_LOADING:
-            # listing the available service plugins will cause resolution of the entry points
-            SERVICE_PLUGINS.list_available()
-            return
 
-        apis = list()
-        for api in SERVICE_PLUGINS.list_available():
-            try:
-                SERVICE_PLUGINS.require(api)
-                apis.append(api)
-            except ServiceDisabled as e:
-                LOG.debug("%s", e)
-            except Exception:
-                LOG.exception("could not load service plugin %s", api)
+        # listing the available service plugins will cause resolution of the entry points
+        available_services = SERVICE_PLUGINS.list_available()
 
         if persistence.is_persistence_enabled():
             if not config.is_env_true(constants.ENV_PRO_ACTIVATED):
                 LOG.warning(
-                    "Persistence mechanism for community services (based on API calls record&replay) will be "
-                    "deprecated in 0.13.0 "
+                    "Persistence mechanism for community services (based on API calls record&replay) "
+                    "will be deprecated in versions 0.13.0 and above"
                 )
 
-            persistence.restore_persisted_data(apis)
+            persistence.restore_persisted_data(available_services)
+
+        # lazy is the default beginning with version 0.13.0
+        if not config.EAGER_SERVICE_LOADING:
+            return
+
+        for api in available_services:
+            try:
+                SERVICE_PLUGINS.require(api)
+            except ServiceDisabled as e:
+                LOG.debug("%s", e)
+            except Exception:
+                LOG.exception("could not load service plugin %s", api)
 
     @log_duration()
     def start_runtime_components():
@@ -514,7 +509,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     thread = start_runtime_components()
     preload_services()
 
-    if config.DATA_DIR:
+    if config.dirs.data:
         persistence.save_startup_info()
 
     print(READY_MARKER_OUTPUT)
@@ -522,5 +517,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     INFRA_READY.set()
     analytics.log.event("infra_ready")
+
+    hooks.on_infra_ready.run()
 
     return thread

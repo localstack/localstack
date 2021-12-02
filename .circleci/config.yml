@@ -71,6 +71,9 @@ jobs:
             docker pull -q lambci/lambda:java8
             docker pull -q lambci/lambda:python3.8
       - run:
+          name: Initialize Test Libraries
+          command: make init-testlibs
+      - run:
           name: Test docker client
           environment:
             DEBUG: 1
@@ -124,6 +127,32 @@ jobs:
             SQS_PROVIDER: "elasticmq"
             TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
             PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-bootstrap:
+    machine:
+      image: ubuntu-2004:202107-02
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Run bootstrap tests
+          environment:
+            DEBUG: 1
+            TEST_PATH: "tests/bootstrap"
+            PYTEST_ARGS: "--junitxml=target/reports/bootstrap.xml -o junit_suite_name='bootstrap'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
       - run:
@@ -289,6 +318,9 @@ workflows:
       - itest-elasticmq:
           requires:
             - preflight
+      - itest-bootstrap:
+          requires:
+            - preflight
       - docker-build:
           name: docker-build-amd64
           platform: amd64
@@ -309,6 +341,7 @@ workflows:
           requires:
             - itest-lambda-docker
             - itest-elasticmq
+            - itest-bootstrap
             - docker-build-amd64
             - docker-build-arm64
       - docker-push:
@@ -318,5 +351,6 @@ workflows:
           requires:
             - itest-lambda-docker
             - itest-elasticmq
+            - itest-bootstrap
             - docker-build-amd64
             - docker-build-arm64

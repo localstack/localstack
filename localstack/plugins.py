@@ -1,16 +1,15 @@
+import logging
+
 from localstack import config
+from localstack.runtime import hooks
 
-# Note: make sure not to add any additional imports at the global scope here!
+LOG = logging.getLogger(__name__)
 
 
-def register_localstack_plugins():
-
-    docker_flags = []
-
-    # add Docker flags for edge ports
-    for port in [config.EDGE_PORT, config.EDGE_PORT_HTTP]:
+@hooks.configure_localstack_container()
+def configure_edge_port(container):
+    ports = [config.EDGE_PORT, config.EDGE_PORT_HTTP]
+    LOG.info("configuring container with edge ports: %s", ports)
+    for port in ports:
         if port:
-            docker_flags += ["-p {p}:{p}".format(p=port)]
-
-    result = {"docker": {"run_flags": " ".join(docker_flags)}}
-    return result
+            container.ports.add(port)

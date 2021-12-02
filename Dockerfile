@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=full
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.8-slim-buster as java-builder
+FROM python:3.8.12-slim-buster@sha256:7f35e171f098e3c3560db36aa68f0b3370ded7417d3473268deffd34090f8ac8 as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -32,7 +32,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.8-slim-buster as base
+FROM python:3.8.12-slim-buster@sha256:7f35e171f098e3c3560db36aa68f0b3370ded7417d3473268deffd34090f8ac8 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -117,9 +117,6 @@ ENV PYTHONUNBUFFERED=1
 ENV EDGE_BIND_HOST=0.0.0.0
 ENV LOCALSTACK_HOSTNAME=localhost
 
-# Create the infra folder (will be populated later)
-RUN mkdir -p /opt/code/localstack/localstack/infra
-
 RUN mkdir /root/.serverless; chmod -R 777 /root/.serverless
 
 # add trusted CA certificates to the cert store
@@ -127,22 +124,8 @@ RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ss
 
 
 
-# base-arm64: Stage which sets a different Kenesis provider
-# (workaround for https://github.com/localstack/localstack/issues/4358)
-FROM base as base-arm64
-ENV KINESIS_PROVIDER=kinesalite
-
-
-
-# base-amd64: Stage which sets the default Kenesis provider
-# (workaround for https://github.com/localstack/localstack/issues/4358)
-FROM base as base-amd64
-ENV KINESIS_PROVIDER=kinesis-mock
-
-
-
 # builder: Stage which installs/builds the dependencies and infra-components of LocalStack
-FROM base-${TARGETARCH} as builder
+FROM base as builder
 ARG TARGETARCH
 
 # Install build dependencies to base
@@ -178,19 +161,17 @@ RUN make freeze > requirements-runtime.txt
 # remove localstack (added as a transitive dependency of localstack-ext)
 RUN (virtualenv .venv && source .venv/bin/activate && pip3 uninstall -y localstack)
 
-# add the results of `make init` to the container. `make init` _needs_ to be executed before building this docker image.
-ADD localstack/infra/ localstack/infra/
-
 
 
 # base-light: Stage which does not add additional dependencies (like elasticsearch)
-FROM base-${TARGETARCH} as base-light
-RUN touch localstack/infra/.light-version
+FROM base as base-light
+RUN mkdir -p /opt/code/localstack/localstack/infra && \
+    touch localstack/infra/.light-version
 
 
 
 # base-full: Stage which adds additional dependencies to avoid installing them at runtime (f.e. elasticsearch)
-FROM base-${TARGETARCH} as base-full
+FROM base as base-full
 
 # Install Elasticsearch
 # https://github.com/pires/docker-elasticsearch/issues/56
@@ -251,15 +232,18 @@ RUN mkdir -p /.npm && \
     useradd -ms /bin/bash localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
+# Install the latest version of awslocal globally
+RUN pip3 install --upgrade awscli awscli-local requests
+
 # Add the code in the last step
+# Also adds the results of `make init` to the container.
+# `make init` _needs_ to be executed before building this docker image (since the execution needs docker itself).
 ADD localstack/ localstack/
 
 # Download some more dependencies (make init needs the LocalStack code)
-# FIXME the init python code should be independent and executed in the builder stage
+# FIXME the init python code should be independent (i.e. not depend on the localstack code), idempotent/reproducible,
+#       modify only folders outside of the localstack package folder, and executed in the builder stage.
 RUN make init
-
-# Install the latest version of awslocal globally
-RUN pip3 install --upgrade awscli awscli-local requests
 
 # Install the latest version of localstack-ext and generate the plugin entrypoints
 RUN (virtualenv .venv && source .venv/bin/activate && \

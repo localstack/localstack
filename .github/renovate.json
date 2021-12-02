@@ -1,0 +1,23 @@
+{
+  "extends": [
+    "schedule:earlyMondays"
+  ],
+  "enabledManagers": ["dockerfile"],
+  "dockerfile": {
+    "pinDigests": true,
+    "ignorePaths": ["bin/lambda/Dockerfile.nodejs14x"]
+  },
+  "packageRules": [
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": ["python"],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "enabled": false
+    }
+  ]
+}

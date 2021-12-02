@@ -26,6 +26,7 @@ from localstack.utils.common import (
     json_safe,
     replace_response_content,
     short_uid,
+    str_startswith_ignore_case,
     to_bytes,
     to_str,
     truncate,
@@ -225,6 +226,11 @@ def is_json_request(req_headers: Dict) -> bool:
     return "json" in ctype or "json" in accept
 
 
+def is_invalid_html_response(headers, content) -> bool:
+    content_type = headers.get("Content-Type", "")
+    return "text/html" in content_type and not str_startswith_ignore_case(content, "<!doctype html")
+
+
 def raise_exception_if_error_response(response):
     if not is_response_obj(response):
         return
@@ -352,7 +358,7 @@ def extract_url_encoded_param_list(req_data, pattern):
     return result
 
 
-def parse_urlencoded_data(qs_data, top_level_attribute):
+def parse_urlencoded_data(qs_data: Union[Dict, str, bytes], top_level_attribute: str):
     # TODO: potentially find a better way than calling moto here...
     from moto.core.responses import BaseResponse
 
@@ -364,6 +370,17 @@ def parse_urlencoded_data(qs_data, top_level_attribute):
     response = BaseResponse()
     response.querystring = qs_data
     result = response._get_multi_param(top_level_attribute, skip_result_conversion=True)
+    return result
+
+
+def parse_query_string(url_or_qs: str, multi_values=False) -> Dict:
+    url_or_qs = str(url_or_qs or "").strip()
+    if "://" in url_or_qs and "?" not in url_or_qs:
+        url_or_qs = f"{url_or_qs}?"
+    url_or_qs = url_or_qs.split("?", maxsplit=1)[-1]
+    result = parse_qs(url_or_qs, keep_blank_values=True)
+    if not multi_values:
+        result = {k: v[0] for k, v in result.items()}
     return result
 
 
