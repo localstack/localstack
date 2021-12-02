@@ -456,32 +456,32 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     @log_duration()
     def preload_services():
         """
-        Preload services if EAGER_SERVICE_LOADING is true.
+        Preload services - restore persistence, and initialize services if EAGER_SERVICE_LOADING=1.
         """
-        # TODO: lazy loading should become the default beginning 0.13.0
-        if not config.EAGER_SERVICE_LOADING:
-            # listing the available service plugins will cause resolution of the entry points
-            SERVICE_PLUGINS.list_available()
-            return
 
-        apis = list()
-        for api in SERVICE_PLUGINS.list_available():
-            try:
-                SERVICE_PLUGINS.require(api)
-                apis.append(api)
-            except ServiceDisabled as e:
-                LOG.debug("%s", e)
-            except Exception:
-                LOG.exception("could not load service plugin %s", api)
+        # listing the available service plugins will cause resolution of the entry points
+        available_services = SERVICE_PLUGINS.list_available()
 
         if persistence.is_persistence_enabled():
             if not config.is_env_true(constants.ENV_PRO_ACTIVATED):
                 LOG.warning(
-                    "Persistence mechanism for community services (based on API calls record&replay) will be "
-                    "deprecated in 0.13.0 "
+                    "Persistence mechanism for community services (based on API calls record&replay) "
+                    "will be deprecated in versions 0.13.0 and above"
                 )
 
-            persistence.restore_persisted_data(apis)
+            persistence.restore_persisted_data(available_services)
+
+        # lazy is the default beginning with version 0.13.0
+        if not config.EAGER_SERVICE_LOADING:
+            return
+
+        for api in available_services:
+            try:
+                SERVICE_PLUGINS.require(api)
+            except ServiceDisabled as e:
+                LOG.debug("%s", e)
+            except Exception:
+                LOG.exception("could not load service plugin %s", api)
 
     @log_duration()
     def start_runtime_components():
