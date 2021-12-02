@@ -1109,9 +1109,6 @@ class SQSTest(unittest.TestCase):
 
 
 class TestSqsProvider:
-    # TODO: this is only to get the CI to test against the new provider, remove afterwards
-    os.environ["PROVIDER_OVERRIDE_SQS"] = "custom"
-
     def test_list_queues(self, sqs_client, sqs_create_queue):
         queue_names = [
             "a-test-queue-" + short_uid(),
