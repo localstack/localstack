@@ -71,6 +71,9 @@ jobs:
             docker pull -q lambci/lambda:java8
             docker pull -q lambci/lambda:python3.8
       - run:
+          name: Initialize Test Libraries
+          command: make init-testlibs
+      - run:
           name: Test docker client
           environment:
             DEBUG: 1
