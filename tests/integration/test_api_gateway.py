@@ -570,7 +570,26 @@ class TestAPIGateway(unittest.TestCase):
         url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/test")
         response = requests.get("%s?param1=foobar" % url)
         self.assertLess(response.status_code, 400)
-        content = json.loads(to_str(response.content))
+        content = response.json()
+        self.assertEqual("GET", content.get("httpMethod"))
+        self.assertEqual(api_resource["id"], content.get("requestContext", {}).get("resourceId"))
+        self.assertEqual(self.TEST_STAGE_NAME, content.get("requestContext", {}).get("stage"))
+        self.assertEqual('{"param1": "foobar"}', content.get("body"))
+
+        # additional checks from https://github.com/localstack/localstack/issues/5041
+        # pass Signature param
+        response = requests.get("%s?param1=foobar&Signature=1" % url)
+        self.assertEqual(response.status_code, 200)
+        content = response.json()
+        self.assertEqual("GET", content.get("httpMethod"))
+        self.assertEqual(api_resource["id"], content.get("requestContext", {}).get("resourceId"))
+        self.assertEqual(self.TEST_STAGE_NAME, content.get("requestContext", {}).get("stage"))
+        self.assertEqual('{"param1": "foobar"}', content.get("body"))
+
+        # pass TestSignature param as well
+        response = requests.get("%s?param1=foobar&TestSignature=1" % url)
+        self.assertEqual(response.status_code, 200)
+        content = response.json()
         self.assertEqual("GET", content.get("httpMethod"))
         self.assertEqual(api_resource["id"], content.get("requestContext", {}).get("resourceId"))
         self.assertEqual(self.TEST_STAGE_NAME, content.get("requestContext", {}).get("stage"))
