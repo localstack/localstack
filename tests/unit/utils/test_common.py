@@ -277,4 +277,7 @@ def test_download_with_timeout():
     assert load_file(tmp_file) == "{}"
     with pytest.raises(TimeoutError):
         download(f"http://localhost:{port}/sleep", tmp_file, timeout=1)
+
+    # clean up
+    proxy.stop()
     rm_rf(tmp_file)
