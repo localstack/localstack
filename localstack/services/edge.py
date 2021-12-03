@@ -397,6 +397,10 @@ def is_s3_form_data(data_bytes):
 def get_api_from_custom_rules(method, path, data, headers):
     """Determine backend port based on custom rules."""
 
+    # API Gateway invocation URLs
+    if ("/%s/" % PATH_USER_REQUEST) in path:
+        return "apigateway", config.PORT_APIGATEWAY
+
     # detect S3 presigned URLs
     if "AWSAccessKeyId=" in path or "Signature=" in path:
         return "s3", config.PORT_S3
@@ -408,10 +412,6 @@ def get_api_from_custom_rules(method, path, data, headers):
     # DynamoDB shell URLs
     if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
         return "dynamodb", config.PORT_DYNAMODB
-
-    # API Gateway invocation URLs
-    if ("/%s/" % PATH_USER_REQUEST) in path:
-        return "apigateway", config.PORT_APIGATEWAY
 
     data_bytes = to_bytes(data or "")
     version, action = extract_version_and_action(path, data_bytes)
