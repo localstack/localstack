@@ -7,6 +7,7 @@ import time
 import unittest
 from datetime import datetime
 from io import BytesIO
+from unittest.mock import patch
 
 import pytest
 from botocore.exceptions import ClientError
@@ -2137,16 +2138,8 @@ class TestDockerBehaviour(LambdaTestBase):
         testutil.delete_lambda_function(func_name)
 
 
+@patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
 def test_kinesis_lambda_parallelism(lambda_client, kinesis_client):
-    old_config = config.SYNCHRONOUS_KINESIS_EVENTS
-    config.SYNCHRONOUS_KINESIS_EVENTS = False
-    try:
-        _run_kinesis_lambda_parallelism(lambda_client, kinesis_client)
-    finally:
-        config.SYNCHRONOUS_KINESIS_EVENTS = old_config
-
-
-def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     function_name = "lambda_func-{}".format(short_uid())
     stream_name = "test-foobar-{}".format(short_uid())
 
