@@ -9,12 +9,6 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import canonicalize_bool_to_str
 
 
-def retrieve_topic_arn(sns_client, topic_name):
-    topics = sns_client.list_topics()["Topics"]
-    topic_arns = [t["TopicArn"] for t in topics if t["TopicArn"].endswith(":%s" % topic_name)]
-    return topic_arns[0]
-
-
 class SNSTopic(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -67,8 +61,23 @@ class SNSTopic(GenericBaseModel):
             resource = cls(resources[resource_id])
             return resource.physical_resource_id or resource.get_physical_resource_id()
 
+        def _list_all_topics(sns_client):
+            rs = sns_client.list_topics()
+            topics = rs.get("Topics", [])
+            key = rs.get("NextToken")
+
+            while key and key != "":
+                rs = sns_client.list_topics(NextToken=key)
+                topics.extend(rs.get("Topics", []))
+                key = rs.get("NextToken")
+
+            return topics
+
         def _add_topics(resource_id, resources, resource_type, func, stack_name):
-            sns = aws_stack.connect_to_service("sns")
+            sns_client = aws_stack.connect_to_service("sns")
+            topics = _list_all_topics(sns_client)
+            topics_by_name = {t["TopicArn"].split(":")[-1]: t for t in topics}
+
             resource = cls(resources[resource_id])
             props = resource.props
 
@@ -77,8 +86,8 @@ class SNSTopic(GenericBaseModel):
                 if is_none_or_empty_value(subscription):
                     continue
                 endpoint = subscription["Endpoint"]
-                topic_arn = retrieve_topic_arn(sns, props["TopicName"])
-                sns.subscribe(
+                topic_arn = topics_by_name[props["TopicName"]]["TopicArn"]
+                sns_client.subscribe(
                     TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
                 )
 
