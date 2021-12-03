@@ -728,7 +728,9 @@ def is_port_open(
                 result = sock.connect_ex((host, port))
                 if result != 0:
                     if not quiet:
-                        LOG.exception("Error connecting to TCP port %s:%s", host, port)
+                        LOG.warning(
+                            "Error connecting to TCP port %s:%s (result=%s)", host, port, result
+                        )
                     return False
     if "tcp" not in protocols or not http_path:
         return True
@@ -1196,23 +1198,27 @@ def get_proxies() -> Dict[str, str]:
     return proxy_map
 
 
-def download(url: str, path: str, verify_ssl=True):
-    """Downloads file at url to the given path"""
-    # make sure we're creating a new session here to
-    # enable parallel file downloads during installation!
+def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None):
+    """Downloads file at url to the given path. Raises TimeoutError if the optional timeout (in secs) is reached."""
+
+    # make sure we're creating a new session here to enable parallel file downloads
     s = requests.Session()
     proxies = get_proxies()
     if proxies:
         s.proxies.update(proxies)
+
     # Use REQUESTS_CA_BUNDLE path. If it doesn't exist, use the method provided settings.
     # Note that a value that is not False, will result to True and will get the bundle file.
-    r = s.get(url, stream=True, verify=os.getenv("REQUESTS_CA_BUNDLE", verify_ssl))
-    # check status code before attempting to read body
-    if r.status_code >= 400:
-        raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
+    _verify = os.getenv("REQUESTS_CA_BUNDLE", verify_ssl)
 
-    total = 0
+    r = None
     try:
+        r = s.get(url, stream=True, verify=_verify, timeout=timeout)
+        # check status code before attempting to read body
+        if not r.ok:
+            raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
+
+        total = 0
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         LOG.debug(
@@ -1241,8 +1247,11 @@ def download(url: str, path: str, verify_ssl=True):
         LOG.debug(
             "Done downloading %s, response code %s, total bytes %d" % (url, r.status_code, total)
         )
+    except requests.exceptions.ReadTimeout as e:
+        raise TimeoutError(f"Timeout ({timeout}) reached on download: {url} - {e}")
     finally:
-        r.close()
+        if r is not None:
+            r.close()
         s.close()
 
 

@@ -8,7 +8,7 @@ import yaml
 from requests.models import Response
 
 from localstack import config
-from localstack.services.generic_proxy import GenericProxy, ProxyListener
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.utils import async_utils, config_listener
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_FILES, download, json_safe, load_file, now_utc, parallelize
@@ -112,15 +112,14 @@ def run_parallel_download():
     test_port = 12124
     tmp_file_pattern = "/tmp/test.%s"
 
-    proxy = GenericProxy(port=test_port, update_listener=DownloadListener())
-    proxy.start()
+    proxy = start_proxy_server(test_port, update_listener=DownloadListener())
 
     def do_download(param):
         tmp_file = tmp_file_pattern % param
         TMP_FILES.append(tmp_file)
         download("http://localhost:%s/%s" % (test_port, param), tmp_file)
 
-    values = (1, 2, 3)
+    values = [1, 2, 3]
     parallelize(do_download, values)
     proxy.stop()
 
