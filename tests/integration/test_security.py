@@ -88,13 +88,12 @@ class TestCSRF(unittest.TestCase):
 
     def test_cors_disable(self):
         headers = {"Origin": "https://invalid.localstack.cloud"}
-        response = requests.get(f"{config.get_edge_url()}/2015-03-31/functions/", headers=headers)
+        url = f"{config.get_edge_url()}/2015-03-31/functions/"
+        response = requests.get(url, headers=headers)
         self.assertEqual(403, response.status_code)
 
-        with patch.object(config, "DISABLE_CUSTOM_CORS_S3", True):
-            response = requests.get(
-                f"{config.get_edge_url()}/2015-03-31/functions/", headers=headers
-            )
+        with patch.object(config, "DISABLE_CORS_CHECKS", True):
+            response = requests.get(url, headers=headers)
             self.assertEqual(200, response.status_code)
             self.assertEqual(headers["Origin"], response.headers["access-control-allow-origin"])
             self.assertIn("GET", response.headers["access-control-allow-methods"].split(","))
