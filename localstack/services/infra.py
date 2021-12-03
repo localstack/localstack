@@ -496,7 +496,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
         # TODO: properly encapsulate starting/stopping of edge server in a class
         if not poll_condition(
-            lambda: is_port_open(config.get_edge_port_http()), timeout=5, interval=0.1
+            lambda: is_port_open(config.get_edge_port_http()), timeout=12, interval=0.3
         ):
             if LOG.isEnabledFor(logging.DEBUG):
                 # make another call with quiet=False to print detailed error logs
