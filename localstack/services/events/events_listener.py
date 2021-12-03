@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import time
+from typing import Dict, Set
 
 from localstack import config
 from localstack.constants import ENV_INTERNAL_TEST_RUN, MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
@@ -30,10 +31,13 @@ TEST_EVENTS_CACHE = []
 
 
 class EventsBackend(RegionBackend):
+    # maps event bus name to set of event rules - TODO: check if still required, or available upstream?
+    event_rules: Dict[str, Set]
+    # maps rule name to job_id
+    rule_scheduled_jobs: Dict[str, str]
+
     def __init__(self):
-        # maps event bus name to set of event rules - TODO: check if still required, or available upstream?
         self.event_rules = {DEFAULT_EVENT_BUS_NAME: set()}
-        # maps rule to job_id
         self.rule_scheduled_jobs = {}
 
 
@@ -60,10 +64,8 @@ def _create_and_register_temp_dir():
 def _dump_events_to_files(events_with_added_uuid):
     current_time_millis = int(round(time.time() * 1000))
     for event in events_with_added_uuid:
-        save_file(
-            os.path.join(EVENTS_TMP_DIR, "%s_%s" % (current_time_millis, event["uuid"])),
-            json.dumps(event["event"]),
-        )
+        target = os.path.join(_get_events_tmp_dir(), "%s_%s" % (current_time_millis, event["uuid"]))
+        save_file(target, json.dumps(event["event"]))
 
 
 def _get_events_tmp_dir():
@@ -77,8 +79,9 @@ def get_scheduled_rule_func(data):
         targets = client.list_targets_by_rule(Rule=rule_name)["Targets"]
         if targets:
             LOG.debug(
-                "Notifying %s targets in response to triggered Events rule %s"
-                % (len(targets), rule_name)
+                "Notifying %s targets in response to triggered Events rule %s",
+                len(targets),
+                rule_name,
             )
         for target in targets:
             arn = target.get("Arn")
@@ -115,7 +118,7 @@ def convert_schedule_to_cron(schedule):
     return schedule
 
 
-def handle_put_rule(data):
+def handle_put_rule(data: Dict):
     schedule = data.get("ScheduleExpression")
     enabled = data.get("State") != "DISABLED"
 
@@ -131,7 +134,7 @@ def handle_put_rule(data):
     return True
 
 
-def handle_delete_rule(rule_name):
+def handle_delete_rule(rule_name: str):
     rule_scheduled_jobs = EventsBackend.get().rule_scheduled_jobs
     job_id = rule_scheduled_jobs.get(rule_name)
     if job_id:
@@ -139,7 +142,7 @@ def handle_delete_rule(rule_name):
         JobScheduler.instance().cancel_job(job_id=job_id)
 
 
-def handle_disable_rule(rule_name):
+def handle_disable_rule(rule_name: str):
     rule_scheduled_jobs = EventsBackend.get().rule_scheduled_jobs
     job_id = rule_scheduled_jobs.get(rule_name)
     if job_id:

@@ -7,7 +7,7 @@ from datetime import datetime
 
 from localstack import config
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
-from localstack.services.events.events_listener import EVENTS_TMP_DIR
+from localstack.services.events.events_listener import _get_events_tmp_dir
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
@@ -88,13 +88,14 @@ class EventsTest(unittest.TestCase):
                 ]
             )
 
+        events_tmp_dir = _get_events_tmp_dir()
         sorted_events_written_to_disk = map(
-            lambda filename: json.loads(str(load_file(os.path.join(EVENTS_TMP_DIR, filename)))),
-            sorted(os.listdir(EVENTS_TMP_DIR)),
+            lambda filename: json.loads(str(load_file(os.path.join(events_tmp_dir, filename)))),
+            sorted(os.listdir(events_tmp_dir)),
         )
         sorted_events = list(
             filter(
-                lambda event: event["DetailType"] == event_type,
+                lambda event: event.get("DetailType") == event_type,
                 sorted_events_written_to_disk,
             )
         )

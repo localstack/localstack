@@ -58,9 +58,8 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
 
 def publish_log_metrics_for_events(data):
     """Filter and publish log metrics for matching events"""
-    from moto.logs.models import (  # TODO: create separate RegionBackend class to store state
-        logs_backends,
-    )
+    # TODO: create separate RegionBackend class to store state
+    from moto.logs.models import logs_backends
 
     data = data if isinstance(data, dict) else json.loads(data)
     log_events = data.get("logEvents") or []
