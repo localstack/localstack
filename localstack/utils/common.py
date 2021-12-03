@@ -728,7 +728,9 @@ def is_port_open(
                 result = sock.connect_ex((host, port))
                 if result != 0:
                     if not quiet:
-                        LOG.exception("Error connecting to TCP port %s:%s", host, port)
+                        LOG.warning(
+                            "Error connecting to TCP port %s:%s (result=%s)", host, port, result
+                        )
                     return False
     if "tcp" not in protocols or not http_path:
         return True
@@ -1213,7 +1215,7 @@ def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None
     try:
         r = s.get(url, stream=True, verify=_verify, timeout=timeout)
         # check status code before attempting to read body
-        if r.status_code >= 400:
+        if not r.ok:
             raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
 
         total = 0

@@ -266,7 +266,7 @@ def test_download_with_timeout():
     class DownloadListener(ProxyListener):
         def forward_request(self, method, path, data, headers):
             if path == "/sleep":
-                time.sleep(5)
+                time.sleep(2)
             return {}
 
     port = get_free_tcp_port()
