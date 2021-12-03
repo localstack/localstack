@@ -6,6 +6,7 @@ import re
 import unittest
 from collections import namedtuple
 from typing import Callable, Optional
+from unittest.mock import patch
 
 import xmltodict
 from botocore.exceptions import ClientError
@@ -250,12 +251,11 @@ class TestAPIGateway(unittest.TestCase):
         self.run_api_gateway_http_integration("custom")
         self.run_api_gateway_http_integration("proxy")
 
+    @patch.object(config, "DISABLE_CUSTOM_CORS_APIGATEWAY", False)
     def run_api_gateway_http_integration(self, int_type):
         test_port = get_free_tcp_port()
         backend_url = "http://localhost:%s%s" % (test_port, self.API_PATH_HTTP_BACKEND)
 
-        old_config = config.DISABLE_CUSTOM_CORS_APIGATEWAY
-        config.DISABLE_CUSTOM_CORS_APIGATEWAY = False
         # start test HTTP backend
         proxy = self.start_http_backend(test_port)
 
@@ -307,7 +307,6 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(ctype, headers["content-type"])
 
         # clean up
-        config.DISABLE_CUSTOM_CORS_APIGATEWAY = old_config
         proxy.stop()
 
     def test_api_gateway_lambda_proxy_integration(self):

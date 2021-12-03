@@ -2241,6 +2241,7 @@ class TestS3(unittest.TestCase):
         client.delete_object(Bucket=bucket, Key="foo")
         client.delete_bucket(Bucket=bucket)
 
+    @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
     def test_cors_configurations(self):
         client = self._get_test_client()
         bucket = "test-cors"
@@ -2263,8 +2264,6 @@ class TestS3(unittest.TestCase):
 
         client.put_object(Bucket=bucket, Key=object_key, Body="<h1>Index</html>")
 
-        old_config = config.DISABLE_CUSTOM_CORS_S3
-        config.DISABLE_CUSTOM_CORS_S3 = False
         response = requests.get(
             url, headers={"Origin": config.get_edge_url(), "Content-Type": "text/html"}
         )
@@ -2302,7 +2301,6 @@ class TestS3(unittest.TestCase):
         self.assertNotIn("Access-Control-MaxAge", response.headers)
 
         # cleaning
-        config.DISABLE_CUSTOM_CORS_S3 = old_config
         client.delete_object(Bucket=bucket, Key=object_key)
         client.delete_bucket(Bucket=bucket)
 
