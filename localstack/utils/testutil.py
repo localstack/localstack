@@ -444,7 +444,7 @@ def list_all_s3_objects():
 
 def delete_all_s3_objects(buckets):
     s3_client = aws_stack.connect_to_service("s3")
-    buckets = buckets if isinstance(buckets, list) else [buckets]
+    buckets = ensure_list(buckets)
     for bucket in buckets:
         keys = all_s3_object_keys(bucket)
         deletes = [{"Key": key} for key in keys]
@@ -576,19 +576,22 @@ def check_expected_lambda_log_events_length(expected_length, function_name, rege
     return events
 
 
+def list_all_log_events(log_group_name: str) -> List[Dict]:
+    logs = aws_stack.connect_to_service("logs")
+    return list_all_resources(
+        lambda kwargs: logs.filter_log_events(logGroupName=log_group_name, **kwargs),
+        last_token_attr_name="nextToken",
+        list_attr_name="events",
+    )
+
+
 def get_lambda_log_events(
     function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY, regex_filter: Optional[str] = None
 ):
-    def get_log_events(function_name, delay_time):
-        time.sleep(delay_time)
-
-        logs = aws_stack.connect_to_service("logs")
-        log_group_name = get_lambda_log_group_name(function_name)
-        return list_all_resources(
-            lambda kwargs: logs.filter_log_events(logGroupName=log_group_name, **kwargs),
-            last_token_attr_name="nextToken",
-            list_attr_name="events",
-        )
+    def get_log_events(func_name, delay):
+        time.sleep(delay)
+        log_group_name = get_lambda_log_group_name(func_name)
+        return list_all_log_events(log_group_name)
 
     try:
         events = get_log_events(function_name, delay_time)

@@ -1083,9 +1083,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
     if not is_local_mount:
         # Lambda code must be uploaded in Zip format
         if not is_zip_file(zip_file_content):
-            raise ClientError(
-                "Uploaded Lambda code for runtime ({}) is not in Zip format".format(runtime)
-            )
+            raise ClientError(f"Uploaded Lambda code for runtime ({runtime}) is not in Zip format")
         # Unzip the Lambda archive contents
         unzip(tmp_file, lambda_cwd)
 
