@@ -529,6 +529,7 @@ def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
         bind_address=bind_address,
         use_ssl=True,
         update_listener=PROXY_LISTENER_EDGE,
+        check_port=False,
     )
     if not asynchronous:
         proxy.join()

@@ -201,8 +201,16 @@ def start_proxy_for_service(
     )
 
 
-def start_proxy(port, backend_url=None, update_listener=None, quiet=False, params={}, use_ssl=None):
+def start_proxy(
+    port: int,
+    backend_url: str = None,
+    update_listener=None,
+    quiet: bool = False,
+    params: Dict = None,
+    use_ssl: bool = None,
+):
     use_ssl = config.USE_SSL if use_ssl is None else use_ssl
+    params = {} if params is None else params
     proxy_thread = start_proxy_server(
         port=port,
         forward_url=backend_url,
@@ -210,6 +218,7 @@ def start_proxy(port, backend_url=None, update_listener=None, quiet=False, param
         update_listener=update_listener,
         quiet=quiet,
         params=params,
+        check_port=False,
     )
     return proxy_thread
 
