@@ -31,7 +31,14 @@ from localstack.config import (
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
-from localstack.utils.common import Mock, generate_ssl_cert, json_safe, path_from_url, start_thread
+from localstack.utils.common import (
+    Mock,
+    generate_ssl_cert,
+    json_safe,
+    path_from_url,
+    start_thread,
+    wait_for_port_open,
+)
 from localstack.utils.server import http2_server
 from localstack.utils.serving import Server
 
@@ -651,8 +658,9 @@ def start_proxy_server(
     use_ssl=None,
     update_listener=None,
     quiet=False,
-    params=None,
+    params=None,  # TODO: not being used - should be investigated/removed
     asynchronous=True,
+    check_port=True,
 ):
     bind_address = bind_address if bind_address else BIND_HOST
 
@@ -686,9 +694,12 @@ def start_proxy_server(
         _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
         ssl_creds = (cert_file_name, key_file_name)
 
-    return http2_server.run_server(
+    result = http2_server.run_server(
         port, bind_address, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds
     )
+    if asynchronous and check_port:
+        wait_for_port_open(port, sleep_time=0.2, retries=12)
+    return result
 
 
 def install_predefined_cert_if_available():
