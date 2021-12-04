@@ -424,7 +424,7 @@ LAMBDA_FALLBACK_URL = os.environ.get("LAMBDA_FALLBACK_URL", "").strip()
 # endpoint (can use useful for advanced test setups)
 LAMBDA_FORWARD_URL = os.environ.get("LAMBDA_FORWARD_URL", "").strip()
 # Time in seconds to wait at max while extracting Lambda code.
-# By default it is 25 seconds for limiting the execution time
+# By default, it is 25 seconds for limiting the execution time
 # to avoid client/network timeout issues
 LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 
@@ -432,6 +432,10 @@ LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 # initialize during startup.
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
+
+# URL to a custom elasticsearch backend cluster. If this is set to a valid URL, then localstack will not create
+# elasticsearch cluster instances, but instead forward all domains to the given backend.
+ES_CUSTOM_BACKEND = os.environ.get("ES_CUSTOM_BACKEND", "").strip()
 
 # Strategy used when creating elasticsearch domain endpoints routed through the edge proxy
 # valid values: domain | path | off
@@ -466,6 +470,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_ERROR_PROBABILITY",
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
+    "ES_CUSTOM_BACKEND",
     "ES_ENDPOINT_STRATEGY",
     "ES_MULTI_CLUSTER",
     "DOCKER_BRIDGE_IP",

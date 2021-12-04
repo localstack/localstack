@@ -150,7 +150,7 @@ You can pass the following environment variables to LocalStack.
 * `PERSISTENCE_SINGLE_FILE`: Specify if persistence files should be combined.  (default: `true`).
 * `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
-  `KINESIS`, `S3`, `SNS`, `SQS`). This allows to easily integrate third-party services into LocalStack. You can take a look at an [elasticsearch example here](https://github.com/localstack/localstack/tree/master/doc/external_services_integration/elasticsearch/HOWTO.md).
+  `KINESIS`, `S3`, `SNS`, `SQS`). This allows to easily integrate third-party services into LocalStack.
 * `FORCE_NONINTERACTIVE`: when running with Docker, disables the `--interactive` and `--tty` flags. Useful when running headless.
 * `DOCKER_FLAGS`: Allows to pass custom flags (e.g., volume mounts) to "docker run" when running LocalStack in Docker.
 * `DOCKER_CMD`: Shell command used to run Docker containers, e.g., set to `"sudo docker"` to run as sudo (default: `docker`).

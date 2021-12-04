@@ -21,10 +21,13 @@ from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
 
-ES_BASE_DOMAIN = "es.localhost.localstack.cloud"
+ES_BASE_DOMAIN = f"es.{constants.LOCALHOST_HOSTNAME}"
 
 
 def create_cluster_manager() -> "ClusterManager":
+    if config.ES_CUSTOM_BACKEND:
+        return CustomBackendManager()
+
     if config.ES_ENDPOINT_STRATEGY == "off" and not config.ES_MULTI_CLUSTER:
         return SingletonClusterManager()
 
@@ -285,3 +288,8 @@ class MultiClusterManager(ClusterManager):
         return EdgeProxiedElasticsearchCluster(
             url, version, directories=resolve_directories(version, arn)
         )
+
+
+class CustomBackendManager(ClusterManager):
+    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
+        return FakeEndpointProxyServer(EndpointProxy(url, config.ES_CUSTOM_BACKEND))
