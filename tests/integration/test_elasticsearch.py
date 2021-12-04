@@ -435,6 +435,7 @@ class TestMultiplexingClusterManager:
 
 class TestCustomBackendManager:
     def test_custom_backend(self, httpserver, monkeypatch):
+        monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "ES_CUSTOM_BACKEND", httpserver.url_for("/"))
 
         # create fake elasticsearch cluster
@@ -484,6 +485,7 @@ class TestCustomBackendManager:
         cluster_arn = get_domain_arn(domain_name)
 
         cluster = manager.create(cluster_arn, dict(DomainName=domain_name))
+        # check that we're using the domain endpoint strategy
         assert f"{domain_name}." in cluster.url
 
         try:
