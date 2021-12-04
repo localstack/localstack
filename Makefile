@@ -9,6 +9,10 @@ TEST_PATH ?= .
 PYTEST_LOGLEVEL ?= warning
 MAIN_CONTAINER_NAME ?= localstack_main
 
+MAJOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f1)
+MINOR_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f2)
+PATCH_VERSION = $(shell echo ${IMAGE_TAG} | cut -d '.' -f3)
+
 ifeq ($(OS), Windows_NT)
 	VENV_ACTIVATE = $(VENV_DIR)/Scripts/activate
 else
@@ -124,14 +128,27 @@ docker-push-master: 	  ## Push Docker image to registry IF we are currently on t
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker tag $(IMAGE_NAME):latest-$(PLATFORM) $(IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME):latest-$(PLATFORM) $(IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME):latest-$(PLATFORM) $(IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
 				docker tag $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) $(IMAGE_NAME_LIGHT):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) $(IMAGE_NAME_LIGHT):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
 				docker tag $(IMAGE_NAME_FULL):latest-$(PLATFORM) $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME_FULL):latest-$(PLATFORM) $(IMAGE_NAME_FULL):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker tag $(IMAGE_NAME_FULL):latest-$(PLATFORM) $(IMAGE_NAME_FULL):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
 				docker push $(IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker push $(IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker push $(IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
 				docker push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM))) && \
-		docker push $(IMAGE_NAME):latest-$(PLATFORM) && \
-	  docker push $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) && \
-	  docker push $(IMAGE_NAME_FULL):latest-$(PLATFORM) \
+				docker push $(IMAGE_NAME_LIGHT):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker push $(IMAGE_NAME_LIGHT):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
+				docker push $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker push $(IMAGE_NAME_FULL):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker push $(IMAGE_NAME_FULL):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) \
+				)) && \
+				  docker push $(IMAGE_NAME):latest-$(PLATFORM) && \
+				  docker push $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) && \
+				  docker push $(IMAGE_NAME_FULL):latest-$(PLATFORM) \
 	)
 
 
@@ -150,8 +167,18 @@ docker-create-push-manifests:	## Create and push manifests for a docker image (d
 			docker manifest create $(MANIFEST_IMAGE_NAME):latest --amend $(MANIFEST_IMAGE_NAME):latest-amd64 --amend $(MANIFEST_IMAGE_NAME):latest-arm64 && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
 				echo "Only pushing tag 'latest' as version has not changed.") || \
-			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) --amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 --amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
-				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG))) && \
+			(docker manifest create $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) \
+			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-amd64 \
+			--amend $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG)-arm64 && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) \
+			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-amd64 \
+			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-arm64 && \
+			docker manifest create $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION) \
+			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-amd64 \
+			--amend $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-arm64 && \
+				docker manifest push $(MANIFEST_IMAGE_NAME):$(IMAGE_TAG) && \
+				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION) && \
+				docker manifest push $(MANIFEST_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION))) && \
 		docker manifest push $(MANIFEST_IMAGE_NAME):latest \
 	)
 
