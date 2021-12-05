@@ -13,7 +13,6 @@ from localstack import config
 from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
 from localstack.services.events.events_listener import (
     DEFAULT_EVENT_BUS_NAME,
-    EventsBackend,
     _create_and_register_temp_dir,
     _dump_events_to_files,
 )
@@ -71,7 +70,7 @@ def handle_numeric_conditions(conditions: List[Any], value: float):
 
 
 # TODO: refactor/simplify
-def filter_event_based_on_event_format(self, rule, event: Dict[str, Any]):
+def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, Any]):
     def filter_event(event_pattern_filter: Dict[str, Any], event: Dict[str, Any]):
         for key, value in event_pattern_filter.items():
             event_value = event.get(key.lower())
@@ -116,9 +115,9 @@ def filter_event_based_on_event_format(self, rule, event: Dict[str, Any]):
                     return False
         return True
 
-    rule_information = self.events_backend.describe_rule(rule)
+    rule_information = self.events_backend.describe_rule(rule_name)
     if not rule_information:
-        LOG.info('Unable to find rule "%s" in backend: %s' % (rule, rule_information))
+        LOG.info('Unable to find rule "%s" in backend: %s' % (rule_name, rule_information))
         return False
     if rule_information.event_pattern._pattern:
         event_pattern = rule_information.event_pattern._pattern
@@ -138,54 +137,28 @@ def process_events(event: Dict, targets: List[Dict]):
 
 
 def apply_patches():
-    # Fix events arn
+    # Fix events ARN
     def rule_model_generate_arn(self, name):
         return "arn:aws:events:{region_name}:{account_id}:rule/{name}".format(
             region_name=self.region_name, account_id=TEST_AWS_ACCOUNT_ID, name=name
         )
 
-    events_handler_put_rule_orig = events_handler.put_rule
-
-    def events_handler_put_rule(self):
-        name = self._get_param("Name")
-        event_bus = self._get_param("EventBusName") or DEFAULT_EVENT_BUS_NAME
-
-        event_rules = EventsBackend.get().event_rules
-        event_rules.setdefault(event_bus, set())
-        event_rules[event_bus].add(name)
-
-        return events_handler_put_rule_orig(self)
-
-    events_handler_delete_rule_orig = events_handler.delete_rule
-
-    def events_handler_delete_rule(self):
-        name = self._get_param("Name")
-        event_bus = self._get_param("EventBusName") or DEFAULT_EVENT_BUS_NAME
-
-        event_rules = EventsBackend.get().event_rules
-        rules_set = event_rules.get(event_bus, set())
-        if name not in rules_set:
-            return self.error(
-                "ValidationException",
-                'Rule "%s" not found for event bus "%s"' % (name, event_bus),
-            )
-        rules_set.remove(name)
-
-        return events_handler_delete_rule_orig(self)
-
+    # specific logic for put_events which forwards matching events to target listeners
     def events_handler_put_events(self):
         entries = self._get_param("Entries")
         events = list(map(lambda event: {"event": event, "uuid": str(uuid.uuid4())}, entries))
 
         _create_and_register_temp_dir()
         _dump_events_to_files(events)
-        event_rules = EventsBackend.get().event_rules
+        event_rules = self.events_backend.rules
 
         for event_envelope in events:
             event = event_envelope["event"]
             event_bus = event.get("EventBusName") or DEFAULT_EVENT_BUS_NAME
 
-            rules = event_rules.get(event_bus, [])
+            matchine_rules = [r for r in event_rules.values() if r.event_bus_name == event_bus]
+            if not matchine_rules:
+                continue
 
             formatted_event = {
                 "version": "0",
@@ -200,9 +173,9 @@ def apply_patches():
             }
 
             targets = []
-            for rule in rules:
-                if filter_event_based_on_event_format(self, rule, formatted_event):
-                    targets.extend(self.events_backend.list_targets_by_rule(rule)["Targets"])
+            for rule in matchine_rules:
+                if filter_event_based_on_event_format(self, rule.name, formatted_event):
+                    targets.extend(self.events_backend.list_targets_by_rule(rule.name)["Targets"])
 
             # process event
             process_events(formatted_event, targets)
@@ -219,8 +192,6 @@ def apply_patches():
         return json.dumps(content), self.response_headers
 
     rule_model._generate_arn = rule_model_generate_arn
-    events_handler.put_rule = events_handler_put_rule
-    events_handler.delete_rule = events_handler_delete_rule
     events_handler.put_events = events_handler_put_events
 
 
