@@ -16,18 +16,17 @@ MAX_HEAP_SIZE = "256m"
 # todo: will be replaced with plugin mechanism
 PROCESS_THREAD = None
 
-default_region = "us-east-1"
-
 
 def get_command(backend_port):
     cmd = (
-        "cd %s; PORT=%s java -Dcom.amazonaws.sdk.disableCertChecking -Xmx%s -jar StepFunctionsLocal.jar "
-        "--aws-region %s --aws-account %s"
+        "cd %s; PORT=%s java -Dcom.amazonaws.sdk.disableCertChecking -Xmx%s "
+        "-jar StepFunctionsLocal.jar --aws-region %s --aws-account %s"
     ) % (
         install.INSTALL_DIR_STEPFUNCTIONS,
         backend_port,
         MAX_HEAP_SIZE,
-        default_region,  # doesn't matter, because we patch multi-region. just needs to correspond to patches in stepfunctions_listener
+        # doesn't matter, because we patch multi-region. just needs to correspond to patches in stepfunctions_listener
+        stepfunctions_listener.default_region,
         TEST_AWS_ACCOUNT_ID,
     )
     if config.STEPFUNCTIONS_LAMBDA_ENDPOINT.lower() != "default":

@@ -26,6 +26,7 @@ def run(
     inherit_env=True,
     tty=False,
     shell=True,
+    cwd: str = None,
 ) -> Union[str, subprocess.Popen]:
     LOG.debug("Executing command: %s", cmd)
     env_dict = os.environ.copy() if inherit_env else {}
@@ -50,7 +51,8 @@ def run(
         stdin = True
 
     try:
-        cwd = os.getcwd() if inherit_cwd else None
+        if inherit_cwd and not cwd:
+            cwd = os.getcwd()
         if not asynchronous:
             if stdin:
                 return subprocess.check_output(
