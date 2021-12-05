@@ -155,6 +155,13 @@ def route53():
 
 
 @aws_provider()
+def route53resolver():
+    from localstack.services.route53 import route53_starter
+
+    return Service("route53resolver", start=route53_starter.start_route53_resolver)
+
+
+@aws_provider()
 def s3():
     from localstack.services.s3 import s3_listener, s3_starter
 

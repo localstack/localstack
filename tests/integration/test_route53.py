@@ -1,19 +1,21 @@
-import unittest
+import re
+
+import pytest
 
 from localstack import constants
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
-class TestRoute53(unittest.TestCase):
+class TestRoute53:
     def test_create_hosted_zone(self):
         route53 = aws_stack.connect_to_service("route53")
 
         response = route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
-        self.assertEqual(201, response["ResponseMetadata"]["HTTPStatusCode"])
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
 
         response = route53.get_change(Id="string")
-        self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     def test_associate_vpc_with_hosted_zone(self):
         ec2 = aws_stack.connect_to_service("ec2")
@@ -33,7 +35,7 @@ class TestRoute53(unittest.TestCase):
             VPC={"VPCRegion": vpc_region, "VPCId": vpc_id},
             Comment="test 123",
         )
-        self.assertTrue(result["ChangeInfo"].get("Id"))
+        assert result["ChangeInfo"].get("Id")
 
         # list zones by VPC
         result = route53.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=vpc_region)[
@@ -44,22 +46,22 @@ class TestRoute53(unittest.TestCase):
             "Name": "%s." % name,
             "Owner": {"OwningAccount": constants.TEST_AWS_ACCOUNT_ID},
         }
-        self.assertIn(expected, result)
+        assert expected in result
 
         # list zones by name
         result = route53.list_hosted_zones_by_name(DNSName=name).get("HostedZones")
-        self.assertEqual("zone123.", result[0]["Name"])
+        assert result[0]["Name"] == "zone123."
         result = route53.list_hosted_zones_by_name(DNSName="%s." % name).get("HostedZones")
-        self.assertEqual("zone123.", result[0]["Name"])
+        assert result[0]["Name"] == "zone123."
 
-        result = route53.disassociate_vpc_from_hosted_zone(
+        route53.disassociate_vpc_from_hosted_zone(
             HostedZoneId=zone_id,
             VPC={"VPCRegion": aws_stack.get_region(), "VPCId": vpc_id},
             Comment="test2",
         )
-        self.assertIn(response["ResponseMetadata"]["HTTPStatusCode"], [200, 201])
+        assert response["ResponseMetadata"]["HTTPStatusCode"] in [200, 201]
         # subsequent call (after disassociation) should fail with 404 error
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             route53.disassociate_vpc_from_hosted_zone(
                 HostedZoneId=zone_id,
                 VPC={"VPCRegion": aws_stack.get_region(), "VPCId": vpc_id},
@@ -83,19 +85,49 @@ class TestRoute53(unittest.TestCase):
         set_id_2 = result_2["Id"]
 
         result_1 = client.get_reusable_delegation_set(Id=set_id_1)
-        self.assertEqual(200, result_1["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertEqual(set_id_1, result_1["DelegationSet"]["Id"])
+        assert result_1["ResponseMetadata"]["HTTPStatusCode"] == 200
+        assert result_1["DelegationSet"]["Id"] == set_id_1
 
         result_1 = client.list_reusable_delegation_sets()
-        self.assertEqual(200, result_1["ResponseMetadata"]["HTTPStatusCode"])
-        self.assertEqual(len(sets_before) + 2, len(result_1["DelegationSets"]))
+        assert result_1["ResponseMetadata"]["HTTPStatusCode"] == 200
+        # TODO: assertion should be updated, to allow for parallel tests
+        assert len(result_1["DelegationSets"]) == len(sets_before) + 2
 
         result_1 = client.delete_reusable_delegation_set(Id=set_id_1)
-        self.assertEqual(200, result_1["ResponseMetadata"]["HTTPStatusCode"])
+        assert result_1["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         result_2 = client.delete_reusable_delegation_set(Id=set_id_2)
-        self.assertEqual(200, result_2["ResponseMetadata"]["HTTPStatusCode"])
+        assert result_2["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-        with self.assertRaises(Exception) as ctx:
+        with pytest.raises(Exception) as ctx:
             client.get_reusable_delegation_set(Id=set_id_1)
-        self.assertEqual(404, ctx.exception.response["ResponseMetadata"]["HTTPStatusCode"])
+        assert ctx.value.response["ResponseMetadata"]["HTTPStatusCode"] == 404
+
+
+class TestRoute53Resolver:
+    def test_create_resolver_endpoint(self):
+        ec2 = aws_stack.connect_to_service("ec2")
+        resolver = aws_stack.connect_to_service("route53resolver")
+
+        # getting list of existing (default) subnets
+        subnets = ec2.describe_subnets()["Subnets"]
+        subnet_ids = [s["SubnetId"] for s in subnets]
+        # construct IPs within CIDR range
+        ips = [re.sub(r"(.*)\.[0-9]+/.+", r"\1.5", s["CidrBlock"]) for s in subnets]
+
+        groups = []
+        addresses = [
+            {"SubnetId": subnet_ids[0], "Ip": ips[0]},
+            {"SubnetId": subnet_ids[1], "Ip": ips[1]},
+        ]
+
+        result = resolver.create_resolver_endpoint(
+            CreatorRequestId="req123",
+            SecurityGroupIds=groups,
+            Direction="INBOUND",
+            IpAddresses=addresses,
+        )
+        result = result.get("ResolverEndpoint")
+        assert result
+        assert result.get("CreatorRequestId") == "req123"
+        assert result.get("Direction") == "INBOUND"
