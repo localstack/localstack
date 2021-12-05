@@ -79,7 +79,7 @@ SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
 SFN_PATCH_CLASS2 = (
     "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
 )
-SFN_PATCH_CLASS_PREFIX = f"{ARTIFACTS_REPO}/raw/master/stepfunctions-local-patch"
+SFN_PATCH_URL_PREFIX = f"{ARTIFACTS_REPO}/raw/master/stepfunctions-local-patch"
 
 # kinesis-mock version
 KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.0"
@@ -339,7 +339,7 @@ def install_stepfunctions_local():
         rm_rf("%s/stepfunctionslocal" % dirs.static_libs)
     # apply patches
     for patch_class in (SFN_PATCH_CLASS1, SFN_PATCH_CLASS2):
-        patch_url = f"{SFN_PATCH_CLASS_PREFIX}/{patch_class}"
+        patch_url = f"{SFN_PATCH_URL_PREFIX}/{patch_class}"
         add_file_to_jar(patch_class, patch_url, target_jar=INSTALL_PATH_STEPFUNCTIONS_JAR)
 
 
