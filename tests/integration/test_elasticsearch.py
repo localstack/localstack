@@ -12,9 +12,11 @@ from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT
 from localstack.services.es import es_api
 from localstack.services.es.cluster import EdgeProxiedElasticsearchCluster
 from localstack.services.es.cluster_manager import (
+    CustomBackendManager,
     MultiClusterManager,
     MultiplexingClusterManager,
     SingletonClusterManager,
+    create_cluster_manager,
 )
 from localstack.services.es.es_api import get_domain_arn
 from localstack.services.install import install_elasticsearch
@@ -429,3 +431,68 @@ class TestMultiplexingClusterManager:
         finally:
             call_safe(cluster0.shutdown)
             call_safe(cluster1.shutdown)
+
+
+class TestCustomBackendManager:
+    def test_custom_backend(self, httpserver, monkeypatch):
+        monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
+        monkeypatch.setattr(config, "ES_CUSTOM_BACKEND", httpserver.url_for("/"))
+
+        # create fake elasticsearch cluster
+        httpserver.expect_request("/").respond_with_json(
+            {
+                "name": "om",
+                "cluster_name": "elasticsearch",
+                "cluster_uuid": "gREewvVZR0mIswR-8-6VRQ",
+                "version": {
+                    "number": "7.10.0",
+                    "build_flavor": "default",
+                    "build_type": "tar",
+                    "build_hash": "51e9d6f22758d0374a0f3f5c6e8f3a7997850f96",
+                    "build_date": "2020-11-09T21:30:33.964949Z",
+                    "build_snapshot": False,
+                    "lucene_version": "8.7.0",
+                    "minimum_wire_compatibility_version": "6.8.0",
+                    "minimum_index_compatibility_version": "6.0.0-beta1",
+                },
+                "tagline": "You Know, for Search",
+            }
+        )
+        httpserver.expect_request("/_cluster/health").respond_with_json(
+            {
+                "cluster_name": "elasticsearch",
+                "status": "green",
+                "timed_out": False,
+                "number_of_nodes": 1,
+                "number_of_data_nodes": 1,
+                "active_primary_shards": 0,
+                "active_shards": 0,
+                "relocating_shards": 0,
+                "initializing_shards": 0,
+                "unassigned_shards": 0,
+                "delayed_unassigned_shards": 0,
+                "number_of_pending_tasks": 0,
+                "number_of_in_flight_fetch": 0,
+                "task_max_waiting_in_queue_millis": 0,
+                "active_shards_percent_as_number": 100,
+            }
+        )
+
+        manager = create_cluster_manager()
+        assert isinstance(manager, CustomBackendManager)
+
+        domain_name = f"domain-{short_uid()}"
+        cluster_arn = get_domain_arn(domain_name)
+
+        cluster = manager.create(cluster_arn, dict(DomainName=domain_name))
+        # check that we're using the domain endpoint strategy
+        assert f"{domain_name}." in cluster.url
+
+        try:
+            assert cluster.wait_is_up(10)
+            retry(lambda: try_cluster_health(cluster.url), retries=3, sleep=5)
+
+        finally:
+            call_safe(cluster.shutdown)
+
+        httpserver.check()
