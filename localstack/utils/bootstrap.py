@@ -3,6 +3,8 @@ import logging
 import os
 import re
 import shlex
+import signal
+import sys
 import threading
 import warnings
 from functools import wraps
@@ -63,6 +65,10 @@ MAIN_CONTAINER_NAME_CACHED = None
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = "LS_SCRIPT_STARTING_DOCKER"
+
+# event used to synchronize shutdown signals and handlers
+SHUTDOWN_EVENT = threading.Event()
+SHUTDOWN_EVENT_LOCK = threading.RLock()
 
 
 def log_duration(name=None, min_ms=500):
@@ -670,6 +676,26 @@ def start_infra_in_docker():
     log_printer = FileListener(container.logfile, print)
     log_printer.start()
 
+    # Set up signal handler, to enable clean shutdown across different operating systems.
+    #  There are subtle differences across operating systems and terminal emulators when it
+    #  comes to handling of CTRL-C - in particular, Linux sends SIGINT to the parent process,
+    #  whereas MacOS sends SIGINT to the process group, which can result in multiple SIGINT signals
+    #  being received (e.g., when running the localstack CLI as part of an "npm run .." script).
+    #  Hence, using a shutdown handler and synchronization event here, to avoid inconsistencies.
+    def shutdown_handler(*args):
+        with SHUTDOWN_EVENT_LOCK:
+            if SHUTDOWN_EVENT.is_set():
+                return
+            SHUTDOWN_EVENT.set()
+        print("Shutting down...")
+        try:
+            server.shutdown()
+            log_printer.close()
+        finally:
+            sys.exit(0)
+
+    signal.signal(signal.SIGINT, shutdown_handler)
+
     # start the Localstack container as a Server
     server = LocalstackContainerServer(container)
     try:
@@ -677,9 +703,7 @@ def start_infra_in_docker():
         server.join()
     except KeyboardInterrupt:
         print("ok, bye!")
-    finally:
-        server.shutdown()
-        log_printer.close()
+        shutdown_handler()
 
 
 def start_infra_in_docker_detached(console):
