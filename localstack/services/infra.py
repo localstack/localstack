@@ -146,7 +146,7 @@ def do_run(
     cmd: Union[str, List],
     asynchronous: bool,
     print_output: bool = None,
-    env_vars: Dict[str, str] = {},
+    env_vars: Dict[str, str] = None,
     auto_restart=False,
     strip_color: bool = False,
 ):

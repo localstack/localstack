@@ -1157,6 +1157,8 @@ def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=F
 
 
 def disk_usage(path: str) -> int:
+    """Return the disk usage of the given file or directory."""
+
     if not os.path.exists(path):
         return 0
 
@@ -1171,6 +1173,11 @@ def disk_usage(path: str) -> int:
             if not os.path.islink(fp):
                 total_size += os.path.getsize(fp)
     return total_size
+
+
+def file_exists_not_empty(path: str) -> bool:
+    """Return whether the given file or directory exists and is non-empty (i.e., >0 bytes content)"""
+    return disk_usage(path) > 0
 
 
 def format_bytes(count: float, default: str = "n/a"):
