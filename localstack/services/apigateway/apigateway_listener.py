@@ -7,6 +7,7 @@ import time
 from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
 
+import pytz
 import requests
 from flask import Response as FlaskResponse
 from moto.apigateway.models import apigateway_backends
@@ -78,6 +79,8 @@ HOST_REGEX_EXECUTE_API = (
     r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(%s|([^\.]+)\.amazonaws\.com)(.*)"
     % LOCALHOST_HOSTNAME
 )
+
+REQUEST_TIME_DATE_FORMAT = "%d/%b/%Y:%H:%M:%S %z"
 
 
 class ApiGatewayVersion(Enum):
@@ -956,7 +959,9 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         },
         "httpMethod": method,
         "protocol": "HTTP/1.1",
-        "requestTime": datetime.datetime.utcnow(),
+        "requestTime": pytz.utc.localize(datetime.datetime.utcnow()).strftime(
+            REQUEST_TIME_DATE_FORMAT
+        ),
         "requestTimeEpoch": int(time.time() * 1000),
     }
 
