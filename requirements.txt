@@ -14,7 +14,7 @@ dataclasses; python_version < '3.7'
 #dnspython==1.16.0
 #docopt>=0.6.2
 docker==5.0.0
-localstack-client>=1.24
+localstack-client>=1.28
 localstack-ext>=0.13.0.11
 localstack-plugin-loader>=0.1.0
 psutil>=5.4.8,<6.0.0

@@ -105,7 +105,7 @@ class TestRoute53:
 
 
 class TestRoute53Resolver:
-    def test_reusable_delegation_sets(self):
+    def test_create_resolver_endpoint(self):
         ec2 = aws_stack.connect_to_service("ec2")
         resolver = aws_stack.connect_to_service("route53resolver")
 
