@@ -53,16 +53,23 @@ def fix_date_format(response):
 
 def _create_and_register_temp_dir():
     tmp_dir = _get_events_tmp_dir()
-    if tmp_dir not in TMP_FILES:
+    if not os.path.exists(tmp_dir):
         mkdir(tmp_dir)
         TMP_FILES.append(tmp_dir)
+    return tmp_dir
 
 
 def _dump_events_to_files(events_with_added_uuid):
-    current_time_millis = int(round(time.time() * 1000))
-    for event in events_with_added_uuid:
-        target = os.path.join(_get_events_tmp_dir(), "%s_%s" % (current_time_millis, event["uuid"]))
-        save_file(target, json.dumps(event["event"]))
+    try:
+        _create_and_register_temp_dir()
+        current_time_millis = int(round(time.time() * 1000))
+        for event in events_with_added_uuid:
+            target = os.path.join(
+                _get_events_tmp_dir(), "%s_%s" % (current_time_millis, event["uuid"])
+            )
+            save_file(target, json.dumps(event["event"]))
+    except Exception as e:
+        LOG.info("Unable to dump events to tmp dir %s: %s", _get_events_tmp_dir(), e)
 
 
 def _get_events_tmp_dir():

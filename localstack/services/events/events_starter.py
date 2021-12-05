@@ -11,11 +11,7 @@ from moto.events.responses import EventsHandler as events_handler
 
 from localstack import config
 from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
-from localstack.services.events.events_listener import (
-    DEFAULT_EVENT_BUS_NAME,
-    _create_and_register_temp_dir,
-    _dump_events_to_files,
-)
+from localstack.services.events.events_listener import DEFAULT_EVENT_BUS_NAME, _dump_events_to_files
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
@@ -148,7 +144,6 @@ def apply_patches():
         entries = self._get_param("Entries")
         events = list(map(lambda event: {"event": event, "uuid": str(uuid.uuid4())}, entries))
 
-        _create_and_register_temp_dir()
         _dump_events_to_files(events)
         event_rules = self.events_backend.rules
 
