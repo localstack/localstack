@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import time
-from typing import Dict, Set
+from typing import Dict
 
 from localstack import config
 from localstack.constants import ENV_INTERNAL_TEST_RUN, MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
@@ -31,13 +31,10 @@ TEST_EVENTS_CACHE = []
 
 
 class EventsBackend(RegionBackend):
-    # maps event bus name to set of event rules - TODO: check if still required, or available upstream?
-    event_rules: Dict[str, Set]
     # maps rule name to job_id
     rule_scheduled_jobs: Dict[str, str]
 
     def __init__(self):
-        self.event_rules = {DEFAULT_EVENT_BUS_NAME: set()}
         self.rule_scheduled_jobs = {}
 
 
