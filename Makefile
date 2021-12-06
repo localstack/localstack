@@ -213,7 +213,7 @@ test:              		  ## Run automated tests
 
 test-coverage:     		  ## Run automated tests and create coverage report
 	($(VENV_RUN); python -m coverage --version; \
-		DEBUG=$(DEBUG) DEFAULT_REGION=us-gov-east-1 AWS_DEFAULT_REGION=us-gov-east-1 \
+		DEBUG=$(DEBUG) DEFAULT_REGION=us-gov-east-1 AWS_DEFAULT_REGION=us-gov-east-1 KINESIS_PROVIDER=kinesalite \
 		python -m coverage run $(COVERAGE_ARGS) -m \
 		pytest --durations=10 --log-cli-level=$(PYTEST_LOGLEVEL) -s $(PYTEST_ARGS) $(TEST_PATH))
 
