@@ -484,9 +484,9 @@ def install_components(names):
 
 
 def install_all_components():
-    hooks.install.run()
-    # install all components
+    # install dependencies - make sure that install_components(..) is called before hooks.install below!
     install_components(DEFAULT_SERVICE_PORTS.keys())
+    hooks.install.run()
 
 
 def install_debugpy_and_dependencies():
