@@ -4,10 +4,10 @@ import moto.cloudwatch.responses as cloudwatch_responses
 from localstack import config
 from localstack.services.infra import start_moto_server
 from localstack.utils.common import to_unique_items_list
+from localstack.utils.patch import patch
 
 
 def apply_patches():
-
     if "<TreatMissingData>" not in cloudwatch_responses.DESCRIBE_ALARMS_TEMPLATE:
         cloudwatch_responses.DESCRIBE_ALARMS_TEMPLATE = (
             cloudwatch_responses.DESCRIBE_ALARMS_TEMPLATE.replace(
@@ -16,7 +16,8 @@ def apply_patches():
             )
         )
 
-    def list_metrics(self, *args, **kwargs):
+    @patch(cloudwatch_models.CloudWatchBackend.list_metrics)
+    def list_metrics(list_metrics_orig, self, *args, **kwargs):
         # Filter results to return only unique combinations of (Namespace, MetricName, Dimensions)
         # TODO: This is hugely inefficient (!), especially as the number of metric data is growing.
         #       Should be fixed upstream, or we should roll our own implementation!
@@ -28,9 +29,6 @@ def apply_patches():
         token, metric_list = list_metrics_orig(self, *args, **kwargs)
         metric_list = to_unique_items_list(metric_list, comparator=comparator)
         return token, metric_list
-
-    list_metrics_orig = cloudwatch_models.CloudWatchBackend.list_metrics
-    cloudwatch_models.CloudWatchBackend.list_metrics = list_metrics
 
     # add put_composite_alarm
 

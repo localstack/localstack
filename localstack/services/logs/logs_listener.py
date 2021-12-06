@@ -74,17 +74,13 @@ def publish_log_metrics_for_events(data):
                 for tf in transformations:
                     value = tf.get("metricValue") or "1"
                     if "$size" in value:
-                        LOG.info(
-                            "Expression not yet supported for log filter metricValue: %s" % value
-                        )
+                        LOG.info("Expression not yet supported for log filter metricValue", value)
                     value = float(value) if is_number(value) else 1
                     data = [{"MetricName": tf["metricName"], "Value": value}]
                     try:
                         client.put_metric_data(Namespace=tf["metricNamespace"], MetricData=data)
                     except Exception as e:
-                        LOG.info(
-                            "Unable to put metric data for matching CloudWatch log events: %s" % e
-                        )
+                        LOG.info("Unable to put metric data for matching CloudWatch log events", e)
 
 
 def get_pattern_matcher(_):
