@@ -3,7 +3,11 @@ import os
 import time
 import unittest
 
+<<<<<<< HEAD
 import pytest
+=======
+import pytest as pytest
+>>>>>>> 79b0613d (skip test for regions without AMI mapping)
 from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
