@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 
 import pytest
 
@@ -8,6 +9,8 @@ from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
 from tests.integration.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON3
+
+LOG = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -35,6 +38,7 @@ class TestCloudWatchLogs:
         logs_client.create_log_group(logGroupName=test_name)
 
         log_groups_between = logs_client.describe_log_groups().get("logGroups", [])
+        LOG.info(f"{log_groups_between=}")
         assert poll_condition(
             lambda: len(log_groups_before) + 1 == len(log_groups_between), timeout=5.0, interval=0.5
         )
@@ -42,6 +46,7 @@ class TestCloudWatchLogs:
         logs_client.delete_log_group(logGroupName=test_name)
 
         log_groups_after = logs_client.describe_log_groups().get("logGroups", [])
+        LOG.info(f"{log_groups_after=}")
         assert poll_condition(
             lambda: len(log_groups_between) - 1 == len(log_groups_after), timeout=5.0, interval=0.5
         )
