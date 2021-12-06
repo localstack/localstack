@@ -39,7 +39,7 @@ class TestCloudWatchLogs:
             logGroupNamePrefix="test-log-group-"
         ).get("logGroups", [])
         assert poll_condition(
-            lambda: len(log_groups_before) + 1 == len(log_groups_between), timeout=5.0, interval=0.5
+            lambda: len(log_groups_between) == len(log_groups_before) + 1, timeout=5.0, interval=0.5
         )
 
         logs_client.delete_log_group(logGroupName=test_name)
@@ -48,18 +48,18 @@ class TestCloudWatchLogs:
             logGroupNamePrefix="test-log-group-"
         ).get("logGroups", [])
         assert poll_condition(
-            lambda: len(log_groups_between) - 1 == len(log_groups_after), timeout=5.0, interval=0.5
+            lambda: len(log_groups_after) == len(log_groups_between) - 1, timeout=5.0, interval=0.5
         )
-        assert len(log_groups_before) == len(log_groups_after)
+        assert len(log_groups_after) == len(log_groups_before)
 
     def test_list_tags_log_group(self, logs_client):
         test_name = f"test-log-group-{short_uid()}"
         logs_client.create_log_group(logGroupName=test_name, tags={"env": "testing1"})
 
         response = logs_client.list_tags_log_group(logGroupName=test_name)
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert "tags" in response
-        assert "testing1" == response["tags"]["env"]
+        assert response["tags"]["env"] == "testing1"
 
         # clean up
         logs_client.delete_log_group(logGroupName=test_name)
@@ -76,11 +76,10 @@ class TestCloudWatchLogs:
             "logStreams", []
         )
         assert poll_condition(
-            lambda: len(log_streams_before) + 1 == len(log_streams_between),
+            lambda: len(log_streams_between) == len(log_streams_before) + 1,
             timeout=5.0,
             interval=0.5,
         )
-        assert len(log_streams_before) + 1 == len(log_streams_between)
 
         logs_client.delete_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
 
@@ -92,7 +91,7 @@ class TestCloudWatchLogs:
             timeout=5.0,
             interval=0.5,
         )
-        assert len(log_streams_before) == len(log_streams_after)
+        assert len(log_streams_after) == len(log_streams_before)
 
     def test_put_events_multi_bytes_msg(self, logs_client, logs_log_group, logs_log_stream):
         body_msg = "🙀 - 参よ - 日本語"
@@ -100,12 +99,12 @@ class TestCloudWatchLogs:
         response = logs_client.put_log_events(
             logGroupName=logs_log_group, logStreamName=logs_log_stream, logEvents=events
         )
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         events = logs_client.get_log_events(
             logGroupName=logs_log_group, logStreamName=logs_log_stream
         )["events"]
-        assert body_msg == events[0]["message"]
+        assert events[0]["message"] == body_msg
 
     def test_filter_log_events_response_header(self, logs_client, logs_log_group, logs_log_stream):
         events = [
@@ -115,12 +114,12 @@ class TestCloudWatchLogs:
         response = logs_client.put_log_events(
             logGroupName=logs_log_group, logStreamName=logs_log_stream, logEvents=events
         )
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         response = logs_client.filter_log_events(logGroupName=logs_log_group)
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert (
-            APPLICATION_AMZ_JSON_1_1 == response["ResponseMetadata"]["HTTPHeaders"]["content-type"]
+            response["ResponseMetadata"]["HTTPHeaders"]["content-type"] == APPLICATION_AMZ_JSON_1_1
         )
 
     def test_put_subscription_filter_lambda(
@@ -158,11 +157,11 @@ class TestCloudWatchLogs:
         )
 
         response = logs_client.describe_subscription_filters(logGroupName=log_group_name)
-        assert 1 == len(response["subscriptionFilters"])
+        assert len(response["subscriptionFilters"]) == 1
 
         def check_invocation():
             events = testutil.get_lambda_log_events(test_lambda_name)
-            assert 2 == len(events)
+            assert len(events) == 2
 
         retry(check_invocation, retries=6, sleep=3.0)
 
@@ -207,7 +206,7 @@ class TestCloudWatchLogs:
         )
 
         response = s3_client.list_objects(Bucket=s3_bucket)
-        assert 2 == len(response["Contents"])
+        assert len(response["Contents"]) == 2
 
         # clean up
         firehose_client.delete_delivery_stream(
@@ -251,7 +250,7 @@ class TestCloudWatchLogs:
         )["ShardIterator"]
 
         response = kinesis_client.get_records(ShardIterator=shard_iterator)
-        assert 1 == len(response["Records"])
+        assert len(response["Records"]) == 1
 
         # clean up
         kinesis_client.delete_stream(StreamName=kinesis_name, EnforceConsumerDeletion=True)
@@ -290,7 +289,7 @@ class TestCloudWatchLogs:
         response = logs_client.describe_metric_filters(
             logGroupName=logs_log_group, filterNamePrefix="test-filter-"
         )
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         filter_names = [_filter["filterName"] for _filter in response["metricFilters"]]
         assert basic_filter_name in filter_names
         assert json_filter_name in filter_names
@@ -306,7 +305,7 @@ class TestCloudWatchLogs:
 
         # list metrics
         response = cloudwatch_client.list_metrics(Namespace=namespace_name)
-        assert 2 == len(response["Metrics"])
+        assert len(response["Metrics"]) == 2
 
         # delete filters
         logs_client.delete_metric_filter(logGroupName=logs_log_group, filterName=basic_filter_name)
@@ -315,7 +314,7 @@ class TestCloudWatchLogs:
         response = logs_client.describe_metric_filters(
             logGroupName=logs_log_group, filterNamePrefix="test-filter-"
         )
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         filter_names = [_filter["filterName"] for _filter in response["metricFilters"]]
         assert basic_filter_name not in filter_names
         assert json_filter_name not in filter_names
@@ -333,6 +332,6 @@ class TestCloudWatchLogs:
 
         def log_group_exists():
             response = logs_client.describe_log_streams(logGroupName=logs_group_name)
-            assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
+            assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         retry(log_group_exists)
