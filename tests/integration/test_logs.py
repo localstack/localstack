@@ -29,19 +29,24 @@ class TestCloudWatchLogs:
     # TODO make creation and description atomic to avoid possible flake?
     def test_create_and_delete_log_group(self, logs_client):
         test_name = f"test-log-group-{short_uid()}"
-        log_groups_before = logs_client.describe_log_groups().get("logGroups", [])
+        log_groups_before = logs_client.describe_log_groups(
+            logGroupNamePrefix="test-log-group-"
+        ).get("logGroups", [])
 
         logs_client.create_log_group(logGroupName=test_name)
 
-        log_groups_between = logs_client.describe_log_groups().get("logGroups", [])
-        assert log_groups_between == []
+        log_groups_between = logs_client.describe_log_groups(
+            logGroupNamePrefix="test-log-group-"
+        ).get("logGroups", [])
         assert poll_condition(
             lambda: len(log_groups_before) + 1 == len(log_groups_between), timeout=5.0, interval=0.5
         )
 
         logs_client.delete_log_group(logGroupName=test_name)
 
-        log_groups_after = logs_client.describe_log_groups().get("logGroups", [])
+        log_groups_after = logs_client.describe_log_groups(
+            logGroupNamePrefix="test-log-group-"
+        ).get("logGroups", [])
         assert poll_condition(
             lambda: len(log_groups_between) - 1 == len(log_groups_after), timeout=5.0, interval=0.5
         )
