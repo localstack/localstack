@@ -43,7 +43,7 @@ cachetools>=3.1.1,<4.0.0
 cbor2>=5.2.0
 crontab>=0.22.6
 cryptography
-elasticsearch>=7.0.0,<8.0.0
+elasticsearch>=7.0.0,<7.14.0
 flask>=1.0.2
 flask-cors>=3.0.3,<3.1.0
 flask_swagger==0.2.12
