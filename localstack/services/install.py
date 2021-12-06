@@ -552,6 +552,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
 
 
+# kept here for backwards compatibility (installed on "make init" - TODO should be removed)
 installers = {
     "cloudformation": install_cloudformation_libs,
     "dynamodb": install_dynamodb_local,
@@ -617,7 +618,7 @@ class InstallerManager:
 
 def main():
     if len(sys.argv) > 1:
-        # set API key so pro install hooks are called
+        # set test API key so pro install hooks are called
         os.environ["LOCALSTACK_API_KEY"] = os.environ.get("LOCALSTACK_API_KEY") or "test"
         if sys.argv[1] == "libs":
             print("Initializing installation.")
