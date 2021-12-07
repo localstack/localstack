@@ -1,7 +1,11 @@
+variable "region_name" {
+  type = string
+}
+
 provider "aws" {
-  region                      = "us-east-1"
-  access_key                  = "aws_mock_key"
-  secret_key                  = "aws_mock_key"
+  region                      = var.region_name
+  access_key                  = "test"
+  secret_key                  = "test"
   skip_credentials_validation = true
   skip_requesting_account_id  = true
   skip_metadata_api_check     = true

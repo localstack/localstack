@@ -6,10 +6,12 @@ import unittest
 import pytest
 from packaging import version
 
+from localstack import config
 from localstack.services.install import TERRAFORM_BIN, install_terraform
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import is_command_available, rm_rf, run, start_worker_thread
 
+#  TODO: remove all of these
 BUCKET_NAME = "tf-bucket"
 QUEUE_NAME = "tf-queue"
 QUEUE_ARN = "arn:aws:sqs:us-east-1:000000000000:tf-queue"
@@ -35,10 +37,16 @@ def check_terraform_version():
     return version.parse(ver_string) < version.parse("0.15"), ver_string
 
 
+# TODO: replace "clouddrove/api-gateway/aws" with normal apigateway module and update terraform
+# TODO: rework this setup for multiple (potentially parallel) terraform tests by providing variables (see .auto.tfvars)
+# TODO: fetch generated ARNs from terraform instead of static/building ARNs
+# TODO: migrate to pytest
 class TestTerraform(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with INIT_LOCK:
+            if config.DEFAULT_REGION != "us-east-1":
+                pytest.skip("Currently only support us-east-1")
             available, version = check_terraform_version()
 
             if not available:
@@ -73,7 +81,11 @@ class TestTerraform(unittest.TestCase):
                 ]:
                     rm_rf(os.path.join(base_dir, tf_file))
                 # create TF plan
-                run("cd %s; %s plan -out=tfplan -input=false" % (base_dir, TERRAFORM_BIN))
+                run(
+                    "cd %s; %s plan -out=tfplan -input=false -var='region_name=eu-west-1'"
+                    % (base_dir, TERRAFORM_BIN)
+                )
+                # run("cd %s; %s plan -out=tfplan -input=false -var='region_name=\"eu-west-1\"'" % (base_dir, TERRAFORM_BIN))
 
         start_worker_thread(_run)
 

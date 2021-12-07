@@ -6,8 +6,11 @@ resource "aws_vpc" "main-vpc" {
   }
 }
 
-resource "aws_security_group" "test-sg-5249" {
-  name        = "test-sg-5249"
-  description = "Test Security Group test-sg-5249"
+variable "sg_name" {
+  type = string
+}
+resource "aws_security_group" "test-sg" {
+  name        = var.sg_name
+  description = "Test Security Group test-sg"
   vpc_id      = aws_vpc.main-vpc.id
 }

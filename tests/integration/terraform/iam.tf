@@ -1,5 +1,9 @@
+variable "role_name" {
+  type = string
+}
+
 resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
+  name = var.role_name
 
   assume_role_policy = <<EOF
 {
