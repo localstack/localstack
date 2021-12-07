@@ -473,7 +473,7 @@ class ContainerClient(metaclass=ABCMeta):
         command: Union[List[str], str],
         interactive: bool = False,
         detach: bool = False,
-        env_vars: Optional[Dict[str, str]] = None,
+        env_vars: Optional[Dict[str, Optional[str]]] = None,
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
@@ -774,7 +774,7 @@ class CmdDockerClient(ContainerClient):
         command: Union[List[str], str],
         interactive=False,
         detach=False,
-        env_vars: Optional[Dict[str, str]] = None,
+        env_vars: Optional[Dict[str, Optional[str]]] = None,
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
@@ -917,6 +917,12 @@ class CmdDockerClient(ContainerClient):
 class Util:
     MAX_ENV_ARGS_LENGTH = 20000
 
+    @staticmethod
+    def format_env_vars(key: str, value: Optional[str]):
+        if value is None:
+            return key
+        return f"{key}={value}"
+
     @classmethod
     def create_env_vars_file_flag(cls, env_vars: Dict) -> Tuple[List[str], Optional[str]]:
         if not env_vars:
@@ -934,11 +940,13 @@ class Util:
                     continue
                 env_vars.pop(name)
                 value = value.replace("\n", "\\")
-                env_content += "%s=%s\n" % (name, value)
+                env_content += f"{cls.format_env_vars(name, value)}\n"
             save_file(env_file, env_content)
             result += ["--env-file", env_file]
 
-        env_vars_res = [item for k, v in env_vars.items() for item in ["-e", "{}={}".format(k, v)]]
+        env_vars_res = [
+            item for k, v in env_vars.items() for item in ["-e", cls.format_env_vars(k, v)]
+        ]
         result += env_vars_res
         return result, env_file
 
@@ -1431,9 +1439,10 @@ class SdkDockerClient(ContainerClient):
         workdir: Optional[str] = None,
     ) -> str:
         LOG.debug(
-            "Creating container with image %s, command '%s', volumes %s, env vars %s",
+            "Creating container with image %s, command '%s', entrypoint '%s', volumes %s, env vars %s",
             image_name,
             command,
+            entrypoint,
             mount_volumes,
             env_vars,
         )
@@ -1546,7 +1555,7 @@ class SdkDockerClient(ContainerClient):
         command: Union[List[str], str],
         interactive=False,
         detach=False,
-        env_vars: Optional[Dict[str, str]] = None,
+        env_vars: Optional[Dict[str, Optional[str]]] = None,
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:

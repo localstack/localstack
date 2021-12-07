@@ -178,7 +178,7 @@ class InvocationContext:
     event: LambdaEvent
     lambda_command: Union[str, List[str]]  # TODO: change to List[str] ?
     docker_flags: Union[str, List[str]]  # TODO: change to List[str] ?
-    environment: Dict[str, str]
+    environment: Dict[str, Optional[str]]
     context: LambdaContext
     invocation_type: str  # "Event" or "RequestResponse"
 
@@ -802,6 +802,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         if not self._should_use_stay_open_mode(lambda_docker_ip, check_port=True):
             LOG.debug("Using 'docker exec' to run invocation in docker-reuse Lambda container")
+            # disable stay open mode for this one, to prevent starting runtime API server
+            env_vars["DOCKER_LAMBDA_STAY_OPEN"] = None
             return DOCKER_CLIENT.exec_in_container(
                 container_name_or_id=container_info.name,
                 command=inv_context.lambda_command,
@@ -852,7 +854,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         is defined, and if the target API endpoint is available (optionally, if check_port is True)."""
         should_use = lambda_docker_ip and in_docker()
         if not should_use or not check_port:
-            return False
+            return should_use
         full_url = self._get_lambda_stay_open_url(lambda_docker_ip)
         return is_port_open(full_url)
 
@@ -983,6 +985,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         if in_docker():
             env_vars["DOCKER_LAMBDA_STAY_OPEN"] = "1"
+            # clear docker lambda use stdin since not relevant with stay open
+            env_vars.pop("DOCKER_LAMBDA_USE_STDIN", None)
             entrypoint = None
             command = [lambda_function.handler]
             interactive = False
