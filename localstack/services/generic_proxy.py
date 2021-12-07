@@ -162,8 +162,8 @@ class ProxyListener(object):
 
 
 class MessageModifyingProxyListener(ProxyListener):
-    # Special request class that can be used to modify an inbound/outbound message
-    # and forward it to the next listener in the chain (instead of forwarding
+    # Special handler that can be used to modify an inbound/outbound message
+    # and forward it to the next handler in the chain (instead of forwarding
     # to the backend directly, which is the default for regular ProxyListeners)
     # TODO: to be replaced with listener chain in ASF Gateway, once integrated
 
@@ -180,7 +180,7 @@ class MessageModifyingProxyListener(ProxyListener):
         data: MessagePayload,
         headers: Headers,
         response: Response,
-    ) -> Optional[RoutingRequest]:
+    ) -> Optional[RoutingResponse]:
         """Return a RoutingResponse with modified response data, or None to forward the response unmodified"""
         return None
 
