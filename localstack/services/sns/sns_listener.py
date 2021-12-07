@@ -452,7 +452,11 @@ async def message_to_subscriber(
             sqs_client = aws_stack.connect_to_service("sqs")
 
             # TODO remove this kwargs if we stop using ElasticMQ entirely
-            kwargs = {"MessageGroupId": message_group_id} if SQS_BACKEND_IMPL == "moto" else {}
+            kwargs = (
+                {"MessageGroupId": message_group_id}
+                if message_group_id and SQS_BACKEND_IMPL == "moto"
+                else {}
+            )
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=create_sns_message_body(subscriber, req_data, message_id),

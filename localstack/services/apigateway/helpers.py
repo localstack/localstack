@@ -1096,7 +1096,7 @@ def import_api_from_openapi_spec(
         child_id = create_resource_id()
         path = path or "/"
         child = apigateway_models.Resource(
-            id=child_id,
+            resource_id=child_id,
             region_name=rest_api.region_name,
             api_id=rest_api.id,
             path_part=parts[-1] or "/",
