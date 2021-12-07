@@ -527,6 +527,7 @@ CONFIG_ENV_VARS = [
     "REQUESTS_CA_BUNDLE",
     "LEGACY_DOCKER_CLIENT",
     "EAGER_SERVICE_LOADING",
+    "LAMBDA_STAY_OPEN_MODE",
 ]
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
@@ -646,6 +647,9 @@ except socket.error:
 # make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
 if is_in_docker and not os.environ.get("LAMBDA_REMOTE_DOCKER", "").strip():
     LAMBDA_REMOTE_DOCKER = True
+
+# whether lambdas should use stay open mode if executed in "docker-reuse" executor
+LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE")
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ",".join(set((LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]")))
