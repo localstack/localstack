@@ -182,7 +182,7 @@ class ProxyListenerEdge(ProxyListener):
                 )
             return result
 
-    def return_response(self, method, path, data, headers, response, request_handler=None):
+    def return_response(self, method, path, data, headers, response):
         api = headers.get(HEADER_TARGET_API) or ""
 
         if is_trace_logging_enabled(headers):
@@ -251,7 +251,6 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
         headers=headers,
         forward_base_url=forward_url,
         listeners=[listener],
-        request_handler=None,
         client_address=client_address,
         server_address=server_address,
     )

@@ -5,7 +5,7 @@ from localstack.utils.common import to_bytes, to_str
 
 
 class ProxyListenerSES(ProxyListener):
-    def return_response(self, method, path, data, headers, response, request_handler=None):
+    def return_response(self, method, path, data, headers, response):
         xml = to_str(response.content)
         has_xmlns = self.response_has_xmlns(xml)
         if xml and xml[0] == "<" and not has_xmlns:
