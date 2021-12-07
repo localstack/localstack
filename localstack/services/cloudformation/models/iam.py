@@ -214,6 +214,8 @@ class IAMRole(GenericBaseModel, MotoRole):
     @staticmethod
     def _post_create(resource_id, resources, resource_type, func, stack_name):
         """attaches managed policies from the template to the role"""
+        from localstack.utils.cloudformation.template_deployer import resolve_refs_recursively
+
         iam = aws_stack.connect_to_service("iam")
         resource = resources[resource_id]
         props = resource["Properties"]
@@ -239,7 +241,11 @@ class IAMRole(GenericBaseModel, MotoRole):
                 )
                 continue
             pol_name = policy.get("PolicyName")
+
+            # get policy document - make sure we're resolving references in the policy doc
             doc = dict(policy["PolicyDocument"])
+            doc = resolve_refs_recursively(stack_name, doc, resources)
+
             doc["Version"] = doc.get("Version") or IAM_POLICY_VERSION
             statements = ensure_list(doc["Statement"])
             for statement in statements:

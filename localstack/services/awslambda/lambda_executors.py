@@ -56,6 +56,7 @@ from localstack.utils.common import (
     timestamp,
     to_bytes,
     to_str,
+    truncate,
     wait_for_port_open,
 )
 from localstack.utils.docker_utils import (
@@ -637,11 +638,8 @@ class LambdaExecutorContainers(LambdaExecutor):
                 additional_logs = "\n".join(lines[:idx] + lines[idx + 1 :])
                 log_output += "\n%s" % additional_logs
 
-        log_formatted = log_output.strip().replace("\n", "\n> ")
         func_arn = lambda_function and lambda_function.arn()
-        LOG.debug(
-            "Lambda %s result / log output:\n%s\n> %s" % (func_arn, result.strip(), log_formatted)
-        )
+        log_lambda_result(func_arn, result, log_output)
 
         # store log output - TODO get live logs from `process` above?
         store_lambda_logs(lambda_function, log_output)
@@ -1252,11 +1250,8 @@ class LambdaExecutorLocal(LambdaExecutor):
                 additional_logs = "\n".join(lines[:idx] + lines[idx + 1 :])
                 log_output += "\n%s" % additional_logs
 
-        log_formatted = log_output.strip().replace("\n", "\n> ")
         func_arn = lambda_function and lambda_function.arn()
-        LOG.debug(
-            "Lambda %s result / log output:\n%s\n> %s" % (func_arn, result.strip(), log_formatted)
-        )
+        log_lambda_result(func_arn, result, log_output)
 
         # store log output - TODO get live logs from `process` above?
         # store_lambda_logs(lambda_function, log_output)
@@ -1552,6 +1547,15 @@ class Util:
         if not env_vars.get("LOCALSTACK_HOSTNAME"):
             env_vars["LOCALSTACK_HOSTNAME"] = main_endpoint
         return env_vars
+
+
+def log_lambda_result(func_arn, result, log_output):
+    result = to_str(result or "")
+    log_output = truncate(to_str(log_output or ""), max_length=1000)
+    log_formatted = truncate(log_output.strip().replace("\n", "\n> "), max_length=1000)
+    LOG.debug(
+        "Lambda %s result / log output:\n%s\n> %s" % (func_arn, result.strip(), log_formatted)
+    )
 
 
 # --------------

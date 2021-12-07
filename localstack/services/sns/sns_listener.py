@@ -28,6 +28,7 @@ from localstack.utils.aws.aws_responses import create_sqs_system_attributes, res
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.common import (
+    json_safe,
     long_uid,
     md5,
     not_none_or,
@@ -452,7 +453,11 @@ async def message_to_subscriber(
             sqs_client = aws_stack.connect_to_service("sqs")
 
             # TODO remove this kwargs if we stop using ElasticMQ entirely
-            kwargs = {"MessageGroupId": message_group_id} if SQS_BACKEND_IMPL == "moto" else {}
+            kwargs = (
+                {"MessageGroupId": message_group_id}
+                if message_group_id and SQS_BACKEND_IMPL == "moto"
+                else {}
+            )
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=create_sns_message_body(subscriber, req_data, message_id),
@@ -491,11 +496,12 @@ async def message_to_subscriber(
                 subject=req_data.get("Subject", [None])[0],
             )
 
-            delivery = {
-                "statusCode": response.status_code,
-                "providerResponse": response.get_data(),
-            }
-            store_delivery_log(subscriber, True, message, message_id, delivery)
+            if response is not None:
+                delivery = {
+                    "statusCode": response.status_code,
+                    "providerResponse": response.get_data(),
+                }
+                store_delivery_log(subscriber, True, message, message_id, delivery)
 
             if isinstance(response, Response):
                 response.raise_for_status()
@@ -1004,6 +1010,6 @@ def store_delivery_log(
         "status": "SUCCESS" if success else "FAILURE",
     }
 
-    log_output = json.dumps(delivery_log)
+    log_output = json.dumps(json_safe(delivery_log))
 
     return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)

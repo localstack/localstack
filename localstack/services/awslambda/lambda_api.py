@@ -23,7 +23,7 @@ from six.moves.urllib.parse import urlparse
 from localstack import config
 from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_executors
-from localstack.services.awslambda.lambda_executors import LambdaContext
+from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     DOTNET_LAMBDA_RUNTIMES,
@@ -376,7 +376,7 @@ class EventSourceListenerSQS(EventSourceListener):
             asynchronous=True,
             callback=delete_messages,
         )
-        if isinstance(res, lambda_executors.InvocationResult):
+        if isinstance(res, InvocationResult):
             status_code = getattr(res.result, "status_code", 0)
             if status_code >= 400:
                 return False
@@ -788,7 +788,7 @@ def run_lambda(
     asynchronous=False,
     callback=None,
     lock_discriminator: str = None,
-):
+) -> InvocationResult:
     region_name = func_arn.split(":")[3]
     region = LambdaRegion.get(region_name)
     if suppress_output:
@@ -803,7 +803,7 @@ def run_lambda(
         if not lambda_function:
             LOG.debug("Unable to find details for Lambda %s in region %s" % (func_arn, region_name))
             result = not_found_error(msg="The resource specified in the request does not exist.")
-            return lambda_executors.InvocationResult(result)
+            return InvocationResult(result)
 
         context = LambdaContext(lambda_function, version, context)
         result = LAMBDA_EXECUTOR.execute(
@@ -829,9 +829,7 @@ def run_lambda(
             "Error executing Lambda function %s: %s %s" % (func_arn, e, traceback.format_exc())
         )
         log_output = e.log_output if isinstance(e, lambda_executors.InvocationException) else ""
-        return lambda_executors.InvocationResult(
-            Response(json.dumps(response), status=500), log_output
-        )
+        return InvocationResult(Response(json.dumps(response), status=500), log_output)
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -1770,8 +1768,8 @@ def invoke_function(function):
 
     def _create_response(invocation_result, status_code=200, headers={}):
         """Create the final response for the given invocation result."""
-        if not isinstance(invocation_result, lambda_executors.InvocationResult):
-            invocation_result = lambda_executors.InvocationResult(invocation_result)
+        if not isinstance(invocation_result, InvocationResult):
+            invocation_result = InvocationResult(invocation_result)
         result = invocation_result.result
         log_output = invocation_result.log_output
         details = {"StatusCode": status_code, "Payload": result, "Headers": headers}
