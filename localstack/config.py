@@ -365,6 +365,9 @@ EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
+# whether to enable legacy record&replay persistence mechanism (default true, but will be disabled in a future release!)
+LEGACY_PERSISTENCE = is_env_not_false("LEGACY_PERSISTENCE")
+
 # Adding Stepfunctions default port
 LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 8083)
 # Stepfunctions lambda endpoint override

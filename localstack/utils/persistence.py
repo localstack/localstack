@@ -99,8 +99,12 @@ def should_record(method):
     return method in ["PUT", "POST", "DELETE", "PATCH"]
 
 
+# TODO: deprecated - to be disabled in future release
 def record(api, method=None, path=None, data=None, headers=None, response=None, request=None):
     """Record a given API call to a persistent file on disk"""
+    if not config.LEGACY_PERSISTENCE:
+        return
+
     file_path = get_file_path(api)
     if CURRENTLY_REPLAYING or not file_path:
         return
@@ -170,7 +174,11 @@ def replay_command(command):
     return response
 
 
+# TODO: deprecated - to be disabled in future release
 def replay(api):
+    if not config.LEGACY_PERSISTENCE:
+        return
+
     file_path = get_file_path(api)
     if not file_path:
         return
