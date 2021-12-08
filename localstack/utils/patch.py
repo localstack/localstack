@@ -1,6 +1,6 @@
 import functools
 import inspect
-from typing import Any, Callable
+from typing import Any, Callable, List
 
 
 def get_defining_object(method):
@@ -76,6 +76,39 @@ class Patch:
             new = fn
 
         return Patch(obj, name, new)
+
+
+class Patches:
+    patches: List[Patch]
+
+    def __init__(self, patches: List[Patch] = None) -> None:
+        super().__init__()
+
+        self.patches = list()
+        if patches:
+            self.patches.extend(patches)
+
+    def apply(self):
+        for p in self.patches:
+            p.apply()
+
+    def undo(self):
+        for p in self.patches:
+            p.undo()
+
+    def __enter__(self):
+        self.apply()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.undo()
+        return self
+
+    def add(self, patch: Patch):
+        self.patches.append(patch)
+
+    def function(self, target: Callable, fn: Callable, pass_target: bool = True):
+        self.add(Patch.function(target, fn, pass_target))
 
 
 def patch(target, pass_target=True):
