@@ -1,4 +1,3 @@
-import inspect
 import json
 import logging
 import os
@@ -7,7 +6,7 @@ import socket
 import ssl
 import threading
 from asyncio.selector_events import BaseSelectorEventLoop
-from typing import Dict
+from typing import Dict, List, Optional, Union
 
 import requests
 from flask_cors import CORS
@@ -29,10 +28,12 @@ from localstack.config import (
     EXTRA_CORS_EXPOSE_HEADERS,
 )
 from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
+from localstack.services.messages import Headers, MessagePayload
+from localstack.services.messages import Request as RoutingRequest
+from localstack.services.messages import Response as RoutingResponse
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.common import (
-    Mock,
     generate_ssl_cert,
     json_safe,
     path_from_url,
@@ -108,10 +109,15 @@ if EXTRA_CORS_ALLOWED_ORIGINS:
 
 
 class ProxyListener(object):
-    # List of `ProxyListener` instances that are enabled by default for all requests
+    # List of `ProxyListener` instances that are enabled by default for all requests.
+    # For inbound flows, the default listeners are applied *before* forwarding requests
+    # to the backend; for outbound flows, the default listeners are applied *after* the
+    # response has been received from the backend service.
     DEFAULT_LISTENERS = []
 
-    def forward_request(self, method, path, data, headers):
+    def forward_request(
+        self, method: str, path: str, data: MessagePayload, headers: Headers
+    ) -> Union[int, Response, Request, dict, bool]:
         """This interceptor method is called by the proxy when receiving a new request
         (*before* forwarding the request to the backend service). It receives details
         of the incoming request, and returns either of the following results:
@@ -128,7 +134,14 @@ class ProxyListener(object):
         """
         return True
 
-    def return_response(self, method, path, data, headers, response, request_handler=None):
+    def return_response(
+        self,
+        method: str,
+        path: str,
+        data: MessagePayload,
+        headers: Headers,
+        response: Response,
+    ) -> Optional[Response]:
         """This interceptor method is called by the proxy when returning a response
         (*after* having forwarded the request and received a response from the backend
         service). It receives details of the incoming request as well as the response
@@ -141,10 +154,34 @@ class ProxyListener(object):
         """
         return None
 
-    def get_forward_url(self, method, path, data, headers):
+    def get_forward_url(self, method: str, path: str, data, headers):
         """Return a custom URL to forward the given request to. If a falsy value is returned,
         then the default URL will be used.
         """
+        return None
+
+
+class MessageModifyingProxyListener(ProxyListener):
+    # Special handler that can be used to modify an inbound/outbound message
+    # and forward it to the next handler in the chain (instead of forwarding
+    # to the backend directly, which is the default for regular ProxyListeners)
+    # TODO: to be replaced with listener chain in ASF Gateway, once integrated
+
+    def forward_request(
+        self, method: str, path: str, data: MessagePayload, headers: Headers
+    ) -> Optional[RoutingRequest]:
+        """Return a RoutingRequest with modified request data, or None to forward the request unmodified"""
+        return None
+
+    def return_response(
+        self,
+        method: str,
+        path: str,
+        data: MessagePayload,
+        headers: Headers,
+        response: Response,
+    ) -> Optional[RoutingResponse]:
+        """Return a RoutingResponse with modified response data, or None to forward the response unmodified"""
         return None
 
 
@@ -288,18 +325,19 @@ def should_enforce_self_managed_service(method, path, headers, data):
 
 
 def modify_and_forward(
-    method=None,
-    path=None,
-    data_bytes=None,
-    headers=None,
-    forward_base_url=None,
-    listeners=None,
-    request_handler=None,
-    client_address=None,
-    server_address=None,
+    method: str = None,
+    path: str = None,
+    data_bytes: bytes = None,
+    headers: Headers = None,
+    forward_base_url: str = None,
+    listeners: List[ProxyListener] = None,
+    client_address: str = None,
+    server_address: str = None,
 ):
     """This is the central function that coordinates the incoming/outgoing messages
     with the proxy listeners (message interceptors)."""
+    from localstack.services.edge import ProxyListenerEdge
+
     # Check origin / referer header before anything else happens.
     if (
         not config.DISABLE_CORS_CHECKS
@@ -312,20 +350,33 @@ def modify_and_forward(
         )
         return cors_error_response()
 
-    listeners = ProxyListener.DEFAULT_LISTENERS + (listeners or [])
-    listeners = [lis for lis in listeners if lis]
+    listeners = [lis for lis in listeners or [] if lis]
+    default_listeners = list(ProxyListener.DEFAULT_LISTENERS)
+    # ensure that MessageModifyingProxyListeners are not applied in the edge proxy request chain
+    # TODO: find a better approach for this!
+    is_edge_request = [lis for lis in listeners if isinstance(lis, ProxyListenerEdge)]
+    if is_edge_request:
+        default_listeners = [
+            lis for lis in default_listeners if not isinstance(lis, MessageModifyingProxyListener)
+        ]
+
+    listeners_inbound = default_listeners + listeners
+    listeners_outbound = listeners + default_listeners
     data = data_bytes
+    original_request = RoutingRequest(method=method, path=path, data=data, headers=headers)
 
     def is_full_url(url):
         return re.match(r"[a-zA-Z]+://.+", url)
 
-    if is_full_url(path):
-        path = path.split("://", 1)[1]
-        path = "/%s" % (path.split("/", 1)[1] if "/" in path else "")
-    proxy_url = "%s%s" % (forward_base_url, path)
-
-    for listener in listeners:
-        proxy_url = listener.get_forward_url(method, path, data, headers) or proxy_url
+    def get_proxy_backend_url(_path, run_listeners=False):
+        if is_full_url(_path):
+            _path = _path.split("://", 1)[1]
+            _path = "/%s" % (_path.split("/", 1)[1] if "/" in _path else "")
+        result = "%s%s" % (forward_base_url, _path)
+        if run_listeners:
+            for listener in listeners_inbound:
+                result = listener.get_forward_url(method, path, data, headers) or result
+        return result
 
     target_url = path
     if not is_full_url(target_url):
@@ -337,18 +388,34 @@ def modify_and_forward(
     headers["X-Forwarded-For"] = build_x_forwarded_for(headers, client_address, server_address)
 
     response = None
-    modified_request = None
+    handler_chain_request = original_request.copy()
+    modified_request_to_backend = None
 
-    # update listener (pre-invocation)
-    for listener in listeners:
+    # run inbound handlers (pre-invocation)
+    for listener in listeners_inbound:
         try:
             listener_result = listener.forward_request(
-                method=method, path=path, data=data, headers=headers
+                method=handler_chain_request.method,
+                path=handler_chain_request.path,
+                data=handler_chain_request.data,
+                headers=handler_chain_request.headers,
             )
         except HTTPException as e:
             # TODO: implement properly using exception handlers
             return http_exception_to_response(e)
 
+        if isinstance(listener, MessageModifyingProxyListener):
+            if isinstance(listener_result, RoutingRequest):
+                # update the modified request details, then call next listener
+                handler_chain_request.method = (
+                    listener_result.method or handler_chain_request.method
+                )
+                handler_chain_request.path = listener_result.path or handler_chain_request.path
+                if listener_result.data is not None:
+                    handler_chain_request.data = listener_result.data
+                if listener_result.headers is not None:
+                    handler_chain_request.headers = listener_result.headers
+            continue
         if isinstance(listener_result, Response):
             response = listener_result
             break
@@ -362,9 +429,8 @@ def modify_and_forward(
             response.status_code = 200
             break
         elif isinstance(listener_result, Request):
-            modified_request = listener_result
-            data = modified_request.data
-            headers = modified_request.headers
+            # TODO: unify modified_request_to_backend (requests.Request) and handler_chain_request (ls.routing.Request)
+            modified_request_to_backend = listener_result
             break
         elif http2_server.get_async_generator_result(listener_result):
             return listener_result
@@ -380,18 +446,26 @@ def modify_and_forward(
 
     # perform the actual invocation of the backend service
     if response is None:
-        headers["Connection"] = headers.get("Connection") or "close"
-        data_to_send = data_bytes
-        request_url = proxy_url
-        if modified_request:
-            if modified_request.url:
-                request_url = "%s%s" % (forward_base_url, modified_request.url)
-            data_to_send = modified_request.data
+        headers_to_send = handler_chain_request.headers
+        headers_to_send["Connection"] = headers_to_send.get("Connection") or "close"
+        data_to_send = handler_chain_request.data
+        method_to_send = handler_chain_request.method
+        request_url = get_proxy_backend_url(handler_chain_request.path, run_listeners=True)
+        if modified_request_to_backend:
+            if modified_request_to_backend.url:
+                request_url = get_proxy_backend_url(modified_request_to_backend.url)
+            data_to_send = modified_request_to_backend.data
+            method_to_send = modified_request_to_backend.method
 
         # make sure we drop "chunked" transfer encoding from the headers to be forwarded
-        headers.pop("Transfer-Encoding", None)
+        headers_to_send.pop("Transfer-Encoding", None)
         response = requests.request(
-            method, request_url, data=data_to_send, headers=headers, stream=True, verify=False
+            method_to_send,
+            request_url,
+            data=data_to_send,
+            headers=headers_to_send,
+            stream=True,
+            verify=False,
         )
 
     # prevent requests from processing response body (e.g., to pass-through gzip encoded content unmodified)
@@ -403,22 +477,22 @@ def modify_and_forward(
         if new_content:
             response._content = new_content
 
-    # update listener (post-invocation)
-    if listeners:
-        update_listener = listeners[-1]
-        kwargs = {
-            "method": method,
-            "path": path,
-            "data": data_bytes,
-            "headers": headers,
-            "response": response,
-        }
-        if "request_handler" in inspect.getfullargspec(update_listener.return_response).args:
-            # some listeners (e.g., sqs_listener.py) require additional details like the original
-            # request port, hence we pass in a reference to this request handler as well.
-            kwargs["request_handler"] = request_handler
-
-        updated_response = update_listener.return_response(**kwargs)
+    # run outbound handlers (post-invocation)
+    for listener in listeners_outbound:
+        updated_response = listener.return_response(
+            method=original_request.method,
+            path=original_request.path,
+            data=original_request.data,
+            headers=original_request.headers,
+            response=response,
+        )
+        message_modifier = isinstance(listener, MessageModifyingProxyListener)
+        if message_modifier and isinstance(updated_response, RoutingResponse):
+            # update the fields from updated_response in final response
+            response.status_code = updated_response.status_code or response.status_code
+            response.headers = updated_response.headers or response.headers
+            if isinstance(updated_response.content, (str, bytes)):
+                response._content = updated_response.content
         if isinstance(updated_response, Response):
             response = updated_response
 
@@ -671,9 +745,6 @@ def start_proxy_server(
         headers = request.headers
         headers[HEADER_LOCALSTACK_REQUEST_URL] = str(request.url)
 
-        request_handler = Mock()
-        request_handler.proxy = Mock()
-        request_handler.proxy.port = port
         response = modify_and_forward(
             method=method,
             path=path_with_params,
@@ -681,7 +752,6 @@ def start_proxy_server(
             headers=headers,
             forward_base_url=forward_url,
             listeners=[update_listener],
-            request_handler=None,
             client_address=request.remote_addr,
             server_address=parsed_url.netloc,
         )

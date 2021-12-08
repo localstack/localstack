@@ -253,7 +253,7 @@ def format_list_dl_source_queues_response(queues):
 
 
 # extract the external port used by the client to make the request
-def get_external_port(headers, request_handler):
+def get_external_port(headers):
     host = headers.get("Host", "")
 
     if not host:
@@ -263,13 +263,10 @@ def get_external_port(headers, request_handler):
     if ":" in host:
         return int(host.split(":")[1])
 
-    if not request_handler or not request_handler.proxy:
-        return config.PORT_SQS
-
-    # If we cannot find the Host header, then fall back to the port of the proxy.
-    # (note that this could be incorrect, e.g., if running in Docker with a host port that
-    # is different from the internal container port, but there is not much else we can do.)
-    return request_handler.proxy.port
+    # If we cannot find the Host header, then fall back to the port of SQS itself (i.e., edge proxy).
+    # (Note that this could be incorrect, e.g., if running in Docker with a host port that
+    #  is different from the internal container port, but there is not much else we can do.)
+    return config.PORT_SQS
 
 
 def validate_empty_message_batch(data, req_data):
@@ -367,11 +364,9 @@ class ProxyListenerSQS(PersistingProxyListener):
 
         return True
 
-    def return_response(self, method, path, data, headers, response, request_handler):
+    def return_response(self, method, path, data, headers, response):
         # persist requests to disk
-        super(ProxyListenerSQS, self).return_response(
-            method, path, data, headers, response, request_handler
-        )
+        super(ProxyListenerSQS, self).return_response(method, path, data, headers, response)
 
         if method == "OPTIONS" and path == "/":
             # Allow CORS preflight requests to succeed.
@@ -415,7 +410,7 @@ class ProxyListenerSQS(PersistingProxyListener):
                 # return https://... if we're supposed to use SSL
                 content_str = re.sub(r"<QueueUrl>\s*http://", r"<QueueUrl>https://", content_str)
             # expose external hostname:port
-            external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
+            external_port = SQS_PORT_EXTERNAL or get_external_port(headers)
             content_str = re.sub(
                 r"<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>",
                 r"<QueueUrl>\1://%s:%s/\3</QueueUrl>" % (config.HOSTNAME_EXTERNAL, external_port),

@@ -1368,15 +1368,13 @@ class ProxyListenerS3(PersistingProxyListener):
             )
         return True
 
-    def return_response(self, method, path, data, headers, response, request_handler=None):
+    def return_response(self, method, path, data, headers, response):
         path = to_str(path)
         method = to_str(method)
         path = path.replace("#", "%23")
 
         # persist this API call to disk
-        super(ProxyListenerS3, self).return_response(
-            method, path, data, headers, response, request_handler
-        )
+        super(ProxyListenerS3, self).return_response(method, path, data, headers, response)
 
         bucket_name = extract_bucket_name(headers, path)
 

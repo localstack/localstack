@@ -2,18 +2,22 @@ import io
 import json
 import os
 import time
-import unittest
 
 import requests
 
 from localstack import config
-from localstack.services.generic_proxy import ProxyListener, start_proxy_server
+from localstack.services.generic_proxy import (
+    MessageModifyingProxyListener,
+    ProxyListener,
+    start_proxy_server,
+)
+from localstack.services.messages import Request, Response
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.common import get_free_tcp_port, get_service_protocol, short_uid, to_str
 
 
-class TestEdgeAPI(unittest.TestCase):
+class TestEdgeAPI:
     def test_invoke_apis_via_edge(self):
         edge_url = config.get_edge_url()
 
@@ -34,22 +38,22 @@ class TestEdgeAPI(unittest.TestCase):
     def _invoke_kinesis_via_edge(self, edge_url):
         client = aws_stack.connect_to_service("kinesis", endpoint_url=edge_url)
         result = client.list_streams()
-        self.assertIn("StreamNames", result)
+        assert "StreamNames" in result
 
     def _invoke_dynamodbstreams_via_edge(self, edge_url):
         client = aws_stack.connect_to_service("dynamodbstreams", endpoint_url=edge_url)
         result = client.list_streams()
-        self.assertIn("Streams", result)
+        assert "Streams" in result
 
     def _invoke_firehose_via_edge(self, edge_url):
         client = aws_stack.connect_to_service("firehose", endpoint_url=edge_url)
         result = client.list_delivery_streams()
-        self.assertIn("DeliveryStreamNames", result)
+        assert "DeliveryStreamNames" in result
 
     def _invoke_stepfunctions_via_edge(self, edge_url):
         client = aws_stack.connect_to_service("stepfunctions", endpoint_url=edge_url)
         result = client.list_state_machines()
-        self.assertIn("stateMachines", result)
+        assert "stateMachines" in result
 
     def _invoke_dynamodb_via_edge_go_sdk(self, edge_url):
         client = aws_stack.connect_to_service("dynamodb")
@@ -68,7 +72,7 @@ class TestEdgeAPI(unittest.TestCase):
         }
         data = json.dumps({"TableName": table_name})
         response = requests.post(edge_url, data=data, headers=headers)
-        self.assertEqual(200, response.status_code)
+        assert response.status_code == 200
         content = json.loads(to_str(response.content))
         assert content.get("Table")
 
@@ -81,16 +85,16 @@ class TestEdgeAPI(unittest.TestCase):
 
         client.create_bucket(Bucket=bucket_name)
         result = client.head_bucket(Bucket=bucket_name)
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
         client.delete_bucket(Bucket=bucket_name)
 
         bucket_name = "edge-%s" % short_uid()
         object_name = "testobject"
         bucket_url = "%s/%s" % (edge_url, bucket_name)
         result = requests.put(bucket_url, verify=False)
-        self.assertEqual(200, result.status_code)
+        assert result.status_code == 200
         result = client.head_bucket(Bucket=bucket_name)
-        self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 200
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         result = requests.post(
             bucket_url,
@@ -98,15 +102,15 @@ class TestEdgeAPI(unittest.TestCase):
             headers=headers,
             verify=False,
         )
-        self.assertEqual(204, result.status_code)
+        assert result.status_code == 204
 
         bucket_url = "%s/example" % bucket_url
         result = requests.put(bucket_url, data="hello", verify=False)
-        self.assertEqual(200, result.status_code)
+        assert result.status_code == 200
 
         result = io.BytesIO()
         client.download_fileobj(bucket_name, object_name, result)
-        self.assertEqual("file_content_123", to_str(result.getvalue()))
+        assert to_str(result.getvalue()) == "file_content_123"
 
     def _invoke_s3_via_edge_multipart_form(self, edge_url):
         client = aws_stack.connect_to_service("s3", endpoint_url=edge_url)
@@ -124,11 +128,11 @@ class TestEdgeAPI(unittest.TestCase):
             files=files,
             verify=False,
         )
-        self.assertEqual(204, r.status_code)
+        assert r.status_code == 204
 
         result = io.BytesIO()
         client.download_fileobj(bucket_name, object_name, result)
-        self.assertEqual(to_str(object_data), to_str(result.getvalue()))
+        assert to_str(result.getvalue()) == to_str(object_data)
 
         client.delete_object(Bucket=bucket_name, Key=object_name)
         client.delete_bucket(Bucket=bucket_name)
@@ -146,10 +150,8 @@ class TestEdgeAPI(unittest.TestCase):
         proxy = start_proxy_server(port, update_listener=listener, use_ssl=True)
         time.sleep(1)
         response = requests.post(url, verify=False)
-        self.assertEqual(
-            {"method": "POST", "path": "/foo/bar", "data": ""},
-            json.loads(to_str(response.content)),
-        )
+        expected = {"method": "POST", "path": "/foo/bar", "data": ""}
+        assert json.loads(to_str(response.content)) == expected
         proxy.stop()
 
     def test_invoke_sns_sqs_integration_using_edge_port(self):
@@ -177,8 +179,40 @@ class TestEdgeAPI(unittest.TestCase):
             VisibilityTimeout=2,
             WaitTimeSeconds=2,
         )
-        self.assertEqual(1, len(response["Messages"]))
+        assert len(response["Messages"]) == 1
 
         os.environ.pop("DEFAULT_REGION")
         if region_original is not None:
             os.environ["DEFAULT_REGION"] = region_original
+
+    def test_message_modifying_handler(self, s3_client, monkeypatch):
+        class MessageModifier(MessageModifyingProxyListener):
+            def forward_request(self, method, path: str, data, headers):
+                if method != "HEAD":
+                    return Request(path=path.replace(bucket_name, f"{bucket_name}-patched"))
+
+            def return_response(self, method, path, data, headers, response):
+                if method == "HEAD":
+                    return Response(status_code=201)
+                content = to_str(response.content or "")
+                if "test content" in content:
+                    return Response(content=content + " patched")
+
+        updated_handlers = list(ProxyListener.DEFAULT_LISTENERS) + [MessageModifier()]
+        monkeypatch.setattr(ProxyListener, "DEFAULT_LISTENERS", updated_handlers)
+
+        # create S3 bucket, assert that patched bucket name is used
+        bucket_name = f"b-{short_uid()}"
+        s3_client.create_bucket(Bucket=bucket_name)
+        buckets = [b["Name"] for b in s3_client.list_buckets()["Buckets"]]
+        assert f"{bucket_name}-patched" in buckets
+        assert f"{bucket_name}" not in buckets
+        result = s3_client.head_bucket(Bucket=f"{bucket_name}-patched")
+        assert result["ResponseMetadata"]["HTTPStatusCode"] == 201
+
+        # put content, assert that patched content is returned
+        key = "test/1/2/3"
+        s3_client.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
+        result = s3_client.get_object(Bucket=bucket_name, Key=key)
+        content = to_str(result["Body"].read())
+        assert " patched" in content

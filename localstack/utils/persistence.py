@@ -50,9 +50,9 @@ class PersistingProxyListener(ProxyListener):
 
     SKIP_PERSISTENCE_TARGET_METHOD_REGEX = re.compile(r".*\.List|.*\.Describe|.*\.Get")
 
-    def return_response(self, method, path, data, headers, response, request_handler=None):
+    def return_response(self, method, path, data, headers, response):
         res = super(PersistingProxyListener, self).return_response(
-            method, path, data, headers, response, request_handler
+            method, path, data, headers, response
         )
 
         if self.should_persist(method, path, data, headers, response):

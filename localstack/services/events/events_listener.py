@@ -181,7 +181,7 @@ class ProxyListenerEvents(ProxyListener):
 
         return True
 
-    def return_response(self, method, path, data, headers, response, request_handler=None):
+    def return_response(self, method, path, data, headers, response):
         if response.content:
             # fix hardcoded account ID in ARNs returned from this API
             fix_account_id(response)
