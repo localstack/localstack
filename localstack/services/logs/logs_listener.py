@@ -220,6 +220,38 @@ def moto_put_subscription_filter(put_subscription_filter, *args, **kwargs):
     log_group.put_subscription_filter(filter_name, filter_pattern, destination_arn, role_arn)
 
 
+def moto_filter_log_events(
+    filter_log_events,
+    self,
+    log_group_name,
+    log_stream_names,
+    start_time,
+    end_time,
+    limit,
+    next_token,
+    filter_pattern,
+    interleaved,
+):
+    # moto currently raises an exception if filter_patterns is None, so we skip it
+    events = filter_log_events(
+        self,
+        log_group_name,
+        log_stream_names,
+        start_time,
+        end_time,
+        limit,
+        next_token,
+        None,
+        interleaved,
+    )
+
+    if not filter_pattern:
+        return events
+
+    matches = get_pattern_matcher(filter_pattern)
+    return [event for event in events if matches(filter_pattern, event)]
+
+
 def add_patches(patches: Patches):
     for lambda_backend in lambda_models.lambda_backends.values():
         patches.function(lambda_backend.get_function, moto_lambda_get_function)
@@ -228,6 +260,7 @@ def add_patches(patches: Patches):
         patches.function(logs_backend.put_subscription_filter, moto_put_subscription_filter)
 
     patches.function(LogStream.put_log_events, moto_put_log_events)
+    patches.function(LogStream.filter_log_events, moto_filter_log_events)
 
 
 # instantiate listener
