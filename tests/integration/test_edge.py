@@ -4,12 +4,15 @@ import os
 import time
 
 import requests
+from requests.models import Request as RequestsRequest
 
 from localstack import config
+from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.generic_proxy import (
     MessageModifyingProxyListener,
     ProxyListener,
     start_proxy_server,
+    update_path_in_url,
 )
 from localstack.services.messages import Request, Response
 from localstack.utils.aws import aws_stack
@@ -216,3 +219,41 @@ class TestEdgeAPI:
         result = s3_client.get_object(Bucket=bucket_name, Key=key)
         content = to_str(result["Body"].read())
         assert " patched" in content
+
+    def test_handler_returning_none_method(self, s3_client, monkeypatch):
+        class MessageModifier(ProxyListener):
+            def forward_request(self, method, path: str, data, headers):
+                # simple heuristic to determine whether we are in the context of an edge call, or service request
+                is_edge_request = not headers.get(HEADER_LOCALSTACK_EDGE_URL)
+                if not is_edge_request and method == "PUT" and len(path.split("/")) > 3:
+                    # simple test that asserts we can forward a Request object with only URL and empty/None method
+                    return RequestsRequest(method=None, data=to_str(data) + " patched")
+                return True
+
+        updated_handlers = list(ProxyListener.DEFAULT_LISTENERS) + [MessageModifier()]
+        monkeypatch.setattr(ProxyListener, "DEFAULT_LISTENERS", updated_handlers)
+
+        # prepare bucket and test object
+        bucket_name = f"b-{short_uid()}"
+        key = "test/1/2/3"
+        s3_client.create_bucket(Bucket=bucket_name)
+        s3_client.put_object(Bucket=bucket_name, Key=key, Body=b"test content 123")
+
+        # get content, assert that content has been patched
+        result = s3_client.get_object(Bucket=bucket_name, Key=key)
+        content = to_str(result["Body"].read())
+        assert " patched" in content
+
+    def test_update_path_in_url(self):
+        assert update_path_in_url("http://foo:123", "/bar/1/2/3") == "http://foo:123/bar/1/2/3"
+        assert update_path_in_url("http://foo:123/", "/bar/1/2/3") == "http://foo:123/bar/1/2/3"
+        assert (
+            update_path_in_url("http://foo:123/test", "/bar/1/2/3?p1#h")
+            == "http://foo:123/bar/1/2/3?p1#h"
+        )
+        assert update_path_in_url("http://foo:123/test", "bar/1/2/3") == "http://foo:123/bar/1/2/3"
+        assert (
+            update_path_in_url("https://foo:123/test", "bar/1/2/3") == "https://foo:123/bar/1/2/3"
+        )
+        assert update_path_in_url("http://foo:123/test", "/") == "http://foo:123/"
+        assert update_path_in_url("//foo:123/test/123", "bar/1/2/3") == "//foo:123/bar/1/2/3"
