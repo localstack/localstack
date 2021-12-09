@@ -743,51 +743,16 @@ coverage html
 
 Please refer to [`CHANGELOG.md`](CHANGELOG.md) to see the complete list of changes for each release.
 
-## Contributing
+## Contributions
 
-We welcome feedback, bug reports, and pull requests!
+If you are interested in contributing to LocalStack:
 
-For pull requests, please stick to the following guidelines:
+- Start by reading our [contributing guide](doc/contribute/CONTRIBUTING.md).
+- Check out our [developer guide](doc/developer_guides/README.md).
+- Look through our [roadmap](doc/roadmap/README.md).
+- Navigate our codebase and [open issues](https://github.com/localstack/localstack/issues).
 
-* Add tests for any new features and bug fixes. Ideally, each PR should increase the test coverage.
-* Follow the existing code style. Run `make format` and `make lint` before checking in your code.
-* Put a reasonable amount of comments into the code.
-* Fork localstack on your GitHub user account, do your changes there and then create a PR against main localstack repository.
-* Separate unrelated changes into multiple pull requests.
-
-Please note that by contributing any code or documentation to this repository (by
-raising pull requests, or otherwise) you explicitly agree to
-the [**Contributor License Agreement**](doc/contributor_license_agreement).
-
-## Contributors
-
-This project exists thanks to all the people who contribute.
-<a href="https://github.com/localstack/localstack/graphs/contributors"><img src="https://opencollective.com/localstack/contributors.svg?width=890" /></a>
-
-
-## Backers
-
-Thank you to all our backers! 🙏 [Become a backer](https://opencollective.com/localstack#backer).
-
-<a href="https://opencollective.com/localstack#backers" target="_blank"><img src="https://opencollective.com/localstack/backers.svg?width=890"></a>
-
-
-## Sponsors
-
-Support this project by becoming a sponsor.
-Your logo will show up here with a link to your website.
-[Become a sponsor](https://opencollective.com/localstack#sponsor).
-
-<a href="https://opencollective.com/localstack/sponsor/0/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/0/avatar.svg"></a>
-<a href="https://opencollective.com/localstack/sponsor/1/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/1/avatar.svg"></a>
-<a href="https://opencollective.com/localstack/sponsor/2/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/2/avatar.svg"></a>
-<a href="https://opencollective.com/localstack/sponsor/3/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/3/avatar.svg"></a>
-<a href="https://opencollective.com/localstack/sponsor/4/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/4/avatar.svg"></a>
-<a href="https://opencollective.com/localstack/sponsor/5/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/5/avatar.svg"></a>
-<a href="https://opencollective.com/localstack/sponsor/6/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/6/avatar.svg"></a>
-<a href="https://opencollective.com/localstack/sponsor/7/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/7/avatar.svg"></a>
-<a href="https://opencollective.com/localstack/sponsor/8/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/8/avatar.svg"></a>
-<a href="https://opencollective.com/localstack/sponsor/9/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/9/avatar.svg"></a>
+We are thankful for all the contributions and feedback we receive. Have a look at all our [contributors](doc/contribute/CONTRIBUTORS.md).
 
 ## Stargazers over time
 
