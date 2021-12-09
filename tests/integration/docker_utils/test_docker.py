@@ -185,7 +185,6 @@ class TestDockerClient:
         output, _ = docker_client.exec_in_container(
             container_info.container_id, env_vars=env, command=["env"]
         )
-        print(output)
         output = output.decode(config.DEFAULT_ENCODING)
         assert "MYVAR" not in output
 
