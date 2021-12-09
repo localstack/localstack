@@ -2868,3 +2868,83 @@ def test_put_object_with_md5_and_chunk_signature_bad_headers(s3_client):
 
     # cleanup
     s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_s3_copy_content_type_and_metadata(s3_client):
+    bucket_name = f"bucket-source-{short_uid()}"
+    object_key = "source-object"
+
+    s3_client.create_bucket(Bucket=bucket_name)
+    s3_client.put_object(
+        Bucket=bucket_name,
+        Key=object_key,
+        Body='{"key": "value"}',
+        ContentType="application/json",
+        Metadata={"key": "value"},
+    )
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+    assert head_object["ContentType"] == "application/json"
+    assert head_object["Metadata"] == {"key": "value"}
+
+    object_key_copy = f"{object_key}-copy"
+    resp = s3_client.copy_object(
+        Bucket=bucket_name, CopySource=f"{bucket_name}/{object_key}", Key=object_key_copy
+    )
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
+    assert head_object["ContentType"] == "application/json"
+    assert head_object["Metadata"] == {"key": "value"}
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key_copy}]})
+
+    object_key_copy = f"{object_key}-second-copy"
+    resp = s3_client.copy_object(
+        Bucket=bucket_name,
+        CopySource=f"{bucket_name}/{object_key}",
+        Key=object_key_copy,
+        Metadata={"another-key": "value"},
+        ContentType="application/javascript",
+    )
+    assert "CopyObjectResult" in resp
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
+    assert head_object["ContentType"] == "application/json"
+    assert head_object["Metadata"] == {"key": "value"}
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key_copy}]})
+
+    # cleanup
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key}]})
+    s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_s3_copy_metadata_replace(s3_client):
+    bucket_name = f"bucket-{short_uid()}"
+    object_key = "source-object"
+
+    s3_client.create_bucket(Bucket=bucket_name)
+    s3_client.put_object(
+        Bucket=bucket_name,
+        Key=object_key,
+        Body='{"key": "value"}',
+        ContentType="application/json",
+        Metadata={"key": "value"},
+    )
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+    assert head_object["ContentType"] == "application/json"
+    assert head_object["Metadata"] == {"key": "value"}
+
+    object_key_copy = f"{object_key}-copy"
+    resp = s3_client.copy_object(
+        Bucket=bucket_name,
+        CopySource=f"{bucket_name}/{object_key}",
+        Key=object_key_copy,
+        Metadata={"another-key": "value"},
+        ContentType="application/javascript",
+        MetadataDirective="REPLACE",
+    )
+    assert "CopyObjectResult" in resp
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
+    assert head_object["ContentType"] == "application/javascript"
+    assert head_object["Metadata"] == {"another-key": "value"}
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key_copy}]})
+
+    # cleanup
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key}]})
+    s3_client.delete_bucket(Bucket=bucket_name)
