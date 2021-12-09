@@ -6,7 +6,7 @@ import socket
 import ssl
 import threading
 from asyncio.selector_events import BaseSelectorEventLoop
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Match, Optional, Union
 
 import requests
 from flask_cors import CORS
@@ -28,7 +28,12 @@ from localstack.config import (
     EXTRA_CORS_EXPOSE_HEADERS,
     is_env_true,
 )
-from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
+from localstack.constants import (
+    APPLICATION_JSON,
+    AWS_REGION_US_EAST_1,
+    BIND_HOST,
+    HEADER_LOCALSTACK_REQUEST_URL,
+)
 from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
 from localstack.services.messages import Response as RoutingResponse
@@ -184,6 +189,113 @@ class MessageModifyingProxyListener(ProxyListener):
     ) -> Optional[RoutingResponse]:
         """Return a RoutingResponse with modified response data, or None to forward the response unmodified"""
         return None
+
+
+class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
+    """
+    Intercepts requests and responses and tries to adjust the partitions in ARNs within the intercepted requests
+    (both in the payload and in the metadata).
+    The partition is selected based on the region in the ARN, or by the default region if the ARN does not contain a
+    region.
+    This listener is used to support other partitions than the default "aws" partition (f.e. aws-us-gov) without
+    rewriting all the cases where the ARN is parsed or constructed within LocalStack or moto.
+    """
+
+    class InvalidRegionException(Exception):
+        """An exception indicating that a region could not be matched to a partition."""
+
+        pass
+
+    arn_regex = re.compile(
+        r"arn:"  # Prefix
+        r"(?P<Partition>(aws|aws-cn|aws-iso|aws-iso-b|aws-us-gov)*):"  # Partition
+        r"(?P<Service>[\w-]*):"  # Service (lambda, s3, ecs,...)
+        r"(?P<Region>[\w-]*):"  # Region (us-east-1, us-gov-west-1,...)
+        r"(?P<AccountID>[\w-]*):"  # AccountID
+        r"(?P<ResourcePath>"  # Combine the resource type and id to the ResourcePath
+        r"((?P<ResourceType>[\w-]*)[:/])?"  # ResourceType (optional, f.e. S3 bucket name)
+        r"(?P<ResourceID>[\w\-/*]*)"  # Resource ID (f.e. file name in S3)
+        r")"
+    )
+
+    def forward_request(
+        self, method: str, path: str, data: MessagePayload, headers: Headers
+    ) -> Optional[RoutingRequest]:
+        # TODO handle URL-encoded query parameters in the path
+        return RoutingRequest(
+            method=method,
+            path=self._adjust_partition(path),
+            data=self._adjust_partition(data),
+            headers=self._adjust_partition(headers),
+        )
+
+    def return_response(
+        self,
+        method: str,
+        path: str,
+        data: MessagePayload,
+        headers: Headers,
+        response: Response,
+    ) -> Optional[RoutingResponse]:
+        return RoutingResponse(
+            status_code=response.status_code,
+            content=self._adjust_partition(response.content),
+            headers=self._adjust_partition(response.headers),
+        )
+
+    def _adjust_partition(self, source):
+        # Call this function recursively if we get a dictionary
+        if isinstance(source, dict):
+            result = {}
+            for k, v in source.items():
+                result[k] = self._adjust_partition(v)
+            return result
+        elif not isinstance(source, str):
+            # TODO this assumption might be wrong.
+            # Ignore any non-strings (ARNs should not be contained in byte data)
+            return source
+        return self.arn_regex.sub(PartitionAdjustingProxyListener._adjust_match, source)
+
+    @staticmethod
+    def _adjust_match(match: Match):
+        region = match.group("Region")
+        try:
+            partition = PartitionAdjustingProxyListener._get_partition_for_region(region)
+        except PartitionAdjustingProxyListener.InvalidRegionException:
+            try:
+                # If the region is not properly set (f.e. because it is set to a wildcard),
+                # the partition is determined based on the default region.
+                partition = PartitionAdjustingProxyListener._get_partition_for_region(
+                    config.DEFAULT_REGION
+                )
+            except PartitionAdjustingProxyListener.InvalidRegionException:
+                # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
+                partition = PartitionAdjustingProxyListener._get_partition_for_region(
+                    AWS_REGION_US_EAST_1
+                )
+        service = match.group("Service")
+        account_id = match.group("AccountID")
+        resource_path = match.group("ResourcePath")
+        return f"arn:{partition}:{service}:{region}:{account_id}:{resource_path}"
+
+    @staticmethod
+    def _get_partition_for_region(region: str) -> str:
+        # Region-Partition matching is based on the "regionRegex" definitions in the endpoints.json
+        # in the botocore package.
+        if region.startswith("us-gov-"):
+            return "aws-us-gov"
+        elif region.startswith("us-iso-"):
+            return "aws-iso"
+        elif region.startswith("us-isob-"):
+            return "aws-iso-b"
+        elif region.startswith("cn-"):
+            return "aws-cn"
+        elif re.match(r"^(us|eu|ap|sa|ca|me|af)-\w+-\d+$", region):
+            return "aws"
+        else:
+            raise PartitionAdjustingProxyListener.InvalidRegionException(
+                f"Region ({region}) could not be matched to a partition."
+            )
 
 
 # -------------------

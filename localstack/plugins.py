@@ -13,3 +13,14 @@ def configure_edge_port(container):
     for port in ports:
         if port:
             container.ports.add(port)
+
+
+# Register the PartitionAdjustingProxyListener only if the default region is a region in the AWS GovCloud partition
+@hooks.on_infra_start(should_load=lambda: config.DEFAULT_REGION.startswith("us-gov-"))
+def register_partition_adjusting_proxy_listener():
+    LOG.info(
+        "Registering PartitionAdjustingProxyListener to dynamically replace partitions in requests and responses."
+    )
+    from localstack.services.generic_proxy import PartitionAdjustingProxyListener, ProxyListener
+
+    ProxyListener.DEFAULT_LISTENERS.append(PartitionAdjustingProxyListener())
