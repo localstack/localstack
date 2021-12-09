@@ -4,23 +4,11 @@ This document contains a few essential instructions for developing new features 
 
 ## General Application Architecture
 
-The coarse-grained system architecture is illustrated in the figure below. The LocalStack components are
-either installed on the local machine, or the entire application runs in a Docker container. The application
-exposes a set of external network ports (see defaults in
-[constants.py](https://github.com/localstack/localstack/blob/master/localstack/constants.py)).
-Client applications can use the standard AWS SDKs to connect to LocalStack; most SDKs have a configuration
-option to configure the endpoint URLs of the target services (e.g., configure `http://localhost:4572`
-as endpoint URL to connect to local DynamoDB).
+The coarse-grained system architecture is illustrated in the figure below. The LocalStack components are either installed on the local machine, or the entire application runs in a Docker container. The application exposes a set of external network ports (see defaults in [constants.py](https://github.com/localstack/localstack/blob/master/localstack/constants.py)). Client applications can use the standard AWS SDKs to connect to LocalStack; most SDKs have a configuration option to configure the endpoint URLs of the target services (e.g., configure `http://localhost:4572` as endpoint URL to connect to local DynamoDB).
 
 ![architecture](architecture.png)
 
-To handle incoming requests on the external network ports, LocalStack uses proxy threads which inspect
-the incoming request message, forward the requests to corresponding backend service processes, and
-perform any additional processing. The additional processing is required because some of the backend
-services only provide the basic "CRUD" functionality for maintaining API state, and LocalStack
-provides integrations on top of these services. This makes the backend services easily replaceable
-with best-of-breed implementations.
-
+To handle incoming requests on the external network ports, LocalStack uses proxy threads which inspect the incoming request message, forward the requests to corresponding backend service processes, and perform any additional processing. The additional processing is required because some of the backend services only provide the basic "CRUD" functionality for maintaining API state, and LocalStack provides integrations on top of these services. This makes the backend services easily replaceable with best-of-breed implementations.
 
 ## Proxy Interceptors
 
@@ -28,7 +16,7 @@ For the basic "CRUD" functionality of most services we're using a mock implement
 
 The figure below illustrates the proxy mechanism and ports for the API Gateway service. (The default ports can be found in https://github.com/localstack/localstack/blob/master/localstack/constants.py )
 
-```
+```sh
  --------      -------------      -------------
 | Client | -> |    Proxy    | -> |   Backend   |
 |        |    | (port 4567) |    | (port 4566) |
@@ -45,7 +33,7 @@ To enable a fast release cycle of *LocalStack*, we're using forked versions of v
 
 ## Development Environment Setup Guide
 
-#### Tools Required
+### Tools Required
 
 * Python 3.7
 * Sasl
@@ -59,8 +47,7 @@ To enable a fast release cycle of *LocalStack*, we're using forked versions of v
 * Docker
 * Docker-Compose
 
-
-#### Installation instructions
+### Installation instructions
 
 __Python 3.7+__
 
@@ -117,3 +104,111 @@ __Docker-Compose__
     sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
     sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+## Building the Docker image
+
+Please note that there are a few commands we need to run on the host to prepare the local environment for the Docker build - specifically, downloading some dependencies like the StepFunctions local binary. Therefore, simply running `docker build .` in a fresh clone of the repo may not work.
+
+We generally recommend using this command to build the Docker image locally (works on Linux/MacOS):
+
+```sh
+make docker-build
+```
+
+## Multi-arch Docker image building
+
+LocalStack is now built for multiple architectures. The Docker images are built natively in our CI environment. However, if you need to cross-build the Docker image (i.e. build the `amd64` image on an `arm64` host, or vice versa), you need to setup the cross-platform emulation for Docker's buildx builder.
+
+    # Load the emulators (Careful! This modifies your machine host machine!)
+    docker run --privileged --rm tonistiigi/binfmt --install all
+    # Create a new buildx builder
+    docker buildx create --name multiarch-builder --use
+    # Build the multiarch image
+    make docker-build-multiarch
+
+You cannot load the result to your host-machine since your local Docker daemon does not have a notion of multiple platforms.
+If you want to build and export the image of another platform than your host-machine, you can use the following command:
+
+```sh
+# target-platform can be `linux/amd64` or `linux/arm64`
+make DOCKER_BUILD_FLAGS="--platform <target-platform> --load" docker-build
+```
+
+## Development Environment
+
+If you pull the repo in order to extend/modify LocalStack, run this command to install all the dependencies:
+
+```sh
+make install
+```
+
+This will install the required pip dependencies in a local Python virtualenv directory `.venv` (your global python packages will remain untouched), as well as some node modules
+in `./localstack/node_modules/`. Depending on your system, some pip/npm modules may require additional native libs installed.
+
+The Makefile contains a target to conveniently run the local infrastructure for development:
+
+```sh
+make start
+```
+
+### Code style
+
+We use the [Black](https://github.com/psf/black) code formatter to keep code formatting consistent. Before checking in your code, make sure to run `make format` and `make lint`.
+You can also initialize the pre-commit hooks into your local repository with `make init-precommit`.
+
+### Starting LocalStack using Vagrant (Centos 8)
+
+This is similar to `make docker-mount-run`, but instead of Docker, CentOS VM will be started and source code will be mounted inside.
+
+#### Pre-requirements
+
+- Vagrant
+- `vagrant plugin install vagrant-vbguest`
+
+#### Starting Vagrant
+
+- `make vagrant-start` (be ready to provide system password)
+
+#### Using Vagrant
+
+- `vagrant ssh`
+- `sudo -s`
+- `cd /localstack`
+- `SERVICES=dynamodb DEBUG=1 make docker-mount-run`
+
+#### Stopping Vagrant
+
+- `make vagrant-stop` or `vagrant halt`
+
+#### Deleting Vagrant VM
+
+- `vagrant destroy`
+
+### Testing
+
+The project contains a set of unit and integration tests that can be kicked off via a `make` target:
+
+```sh
+make test
+```
+
+to run a specific test, you can use the `TEST_PATH` variable, for example:
+
+```sh
+TEST_PATH='tests/unit/sns_test.py' make test
+```
+
+### Code coverage
+
+Pull requests should ideally increase the [test coverage](https://coveralls.io/github/localstack/localstack). You can run the tests and collect a coverage report locally:
+
+```sh
+# To run the particular test file (sample)
+TEST_PATH='tests/unit/sns_test.py' make test-coverage
+
+# To check the coverage in the console
+coverage report
+
+# To check the coverage as html (output will be redirected to the html folder)
+coverage html
+```
