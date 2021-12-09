@@ -7,6 +7,7 @@ from typing import NamedTuple
 import pytest
 
 from localstack import config
+from localstack.config import in_docker
 from localstack.utils.common import safe_run, short_uid, to_str
 from localstack.utils.docker_utils import (
     ContainerClient,
@@ -131,6 +132,7 @@ class TestDockerClient:
         # it takes a while for it to be removed
         assert "foobar" in output
 
+    @pytest.mark.skip_offline
     def test_create_container_non_existing_image(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchImage):
             docker_client.create_container("this_image_does_hopefully_not_exist_42069")
@@ -245,6 +247,9 @@ class TestDockerClient:
         ports.add(45180, 80)
         create_container("alpine", ports=ports)
 
+    @pytest.mark.skipif(
+        condition=in_docker(), reason="cannot test volume mounts from host when in docker"
+    )
     def test_create_with_volume(self, tmpdir, docker_client: ContainerClient, create_container):
         mount_volumes = [(tmpdir.realpath(), "/tmp/mypath")]
 
@@ -254,7 +259,6 @@ class TestDockerClient:
             mount_volumes=mount_volumes,
         )
         docker_client.start_container(c.container_id)
-
         assert tmpdir.join("foo.log").isfile(), "foo.log was not created in mounted dir"
 
     def test_copy_into_container(self, tmpdir, docker_client: ContainerClient, create_container):
@@ -582,6 +586,7 @@ class TestDockerClient:
             "container_hopefully_does_not_exist", safe=True
         )
 
+    @pytest.mark.skip_offline
     def test_pull_docker_image(self, docker_client: ContainerClient):
         try:
             docker_client.get_image_cmd("alpine")
@@ -593,10 +598,12 @@ class TestDockerClient:
         docker_client.pull_image("alpine")
         assert "/bin/sh" == docker_client.get_image_cmd("alpine").strip()
 
+    @pytest.mark.skip_offline
     def test_pull_non_existent_docker_image(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchImage):
             docker_client.pull_image("localstack_non_existing_image_for_tests")
 
+    @pytest.mark.skip_offline
     def test_pull_docker_image_with_tag(self, docker_client: ContainerClient):
         try:
             docker_client.get_image_cmd("alpine")
@@ -609,6 +616,7 @@ class TestDockerClient:
         assert "/bin/sh" == docker_client.get_image_cmd("alpine:3.13").strip()
         assert "alpine:3.13" in docker_client.inspect_image("alpine:3.13")["RepoTags"]
 
+    @pytest.mark.skip_offline
     def test_pull_docker_image_with_hash(self, docker_client: ContainerClient):
         try:
             docker_client.get_image_cmd("alpine")
@@ -633,6 +641,7 @@ class TestDockerClient:
             )["RepoDigests"]
         )
 
+    @pytest.mark.skip_offline
     def test_run_container_automatic_pull(self, docker_client: ContainerClient):
         try:
             safe_run([config.DOCKER_CMD, "rmi", "alpine"])
@@ -642,6 +651,7 @@ class TestDockerClient:
         stdout, _ = docker_client.run_container("alpine", command=["echo", message], remove=True)
         assert message == stdout.decode(config.DEFAULT_ENCODING).strip()
 
+    @pytest.mark.skip_offline
     def test_run_container_non_existent_image(self, docker_client: ContainerClient):
         try:
             safe_run([config.DOCKER_CMD, "rmi", "alpine"])
@@ -666,6 +676,7 @@ class TestDockerClient:
         docker_client.stop_container(name)
         assert not docker_client.is_container_running(name)
 
+    @pytest.mark.skip_offline
     def test_docker_image_names(self, docker_client: ContainerClient):
         try:
             safe_run([config.DOCKER_CMD, "rmi", "alpine"])
@@ -711,6 +722,7 @@ class TestDockerClient:
                 == docker_client.inspect_container(identifier)["Name"]
             )
 
+    @pytest.mark.skip_offline
     def test_inspect_image(self, docker_client: ContainerClient):
         docker_client.pull_image("alpine")
         assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]

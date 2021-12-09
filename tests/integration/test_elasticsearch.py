@@ -329,6 +329,7 @@ class TestEdgeProxiedElasticsearchCluster:
 
 
 class TestMultiClusterManager:
+    @pytest.mark.skip_offline
     def test_multi_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "ES_MULTI_CLUSTER", True)
@@ -391,6 +392,7 @@ class TestElasticsearchApi:
 
 
 class TestMultiplexingClusterManager:
+    @pytest.mark.skip_offline
     def test_multiplexing_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "ES_MULTI_CLUSTER", False)

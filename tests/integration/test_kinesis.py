@@ -6,6 +6,7 @@ from datetime import datetime
 from time import sleep
 
 import cbor2
+import pytest
 import requests
 
 from localstack import config, constants
@@ -236,6 +237,7 @@ class TestKinesis(unittest.TestCase):
 
 
 class TestKinesisPythonClient(unittest.TestCase):
+    @pytest.mark.skip_offline
     def test_run_kcl(self):
         result = []
 

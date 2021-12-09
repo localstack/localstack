@@ -81,6 +81,7 @@ class TestTerraform(unittest.TestCase):
     def get_base_dir(cls):
         return os.path.join(os.path.dirname(__file__), "terraform")
 
+    @pytest.mark.skip_offline
     def test_bucket_exists(self):
         s3_client = aws_stack.connect_to_service("s3")
 
@@ -101,6 +102,7 @@ class TestTerraform(unittest.TestCase):
         response = s3_client.get_bucket_versioning(Bucket=BUCKET_NAME)
         self.assertEqual("Enabled", response["Status"])
 
+    @pytest.mark.skip_offline
     def test_sqs(self):
         sqs_client = aws_stack.connect_to_service("sqs")
         queue_url = sqs_client.get_queue_url(QueueName=QUEUE_NAME)["QueueUrl"]
@@ -111,6 +113,7 @@ class TestTerraform(unittest.TestCase):
         self.assertEqual("86400", response["Attributes"]["MessageRetentionPeriod"])
         self.assertEqual("10", response["Attributes"]["ReceiveMessageWaitTimeSeconds"])
 
+    @pytest.mark.skip_offline
     def test_lambda(self):
         lambda_client = aws_stack.connect_to_service("lambda")
         response = lambda_client.get_function(FunctionName=LAMBDA_NAME)
@@ -119,6 +122,7 @@ class TestTerraform(unittest.TestCase):
         self.assertEqual(LAMBDA_RUNTIME, response["Configuration"]["Runtime"])
         self.assertEqual(LAMBDA_ROLE, response["Configuration"]["Role"])
 
+    @pytest.mark.skip_offline
     def test_event_source_mapping(self):
         lambda_client = aws_stack.connect_to_service("lambda")
         all_mappings = lambda_client.list_event_source_mappings(
@@ -128,6 +132,7 @@ class TestTerraform(unittest.TestCase):
         assert function_mapping["FunctionArn"] == LAMBDA_ARN
         assert function_mapping["EventSourceArn"] == QUEUE_ARN
 
+    @pytest.mark.skip_offline
     def test_apigateway(self):
         apigateway_client = aws_stack.connect_to_service("apigateway")
         rest_apis = apigateway_client.get_rest_apis()
@@ -159,6 +164,7 @@ class TestTerraform(unittest.TestCase):
         )
         self.assertTrue(res2[0]["resourceMethods"]["GET"]["methodIntegration"]["uri"])
 
+    @pytest.mark.skip_offline
     def test_route53(self):
         route53 = aws_stack.connect_to_service("route53")
 
@@ -169,6 +175,7 @@ class TestTerraform(unittest.TestCase):
         response = route53.get_change(Id=change_id)
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
+    @pytest.mark.skip_offline
     def test_acm(self):
         acm = aws_stack.connect_to_service("acm")
 
@@ -176,6 +183,7 @@ class TestTerraform(unittest.TestCase):
         certs = [c for c in certs if c.get("DomainName") == "example.com"]
         self.assertEqual(1, len(certs))
 
+    @pytest.mark.skip_offline
     def test_apigateway_escaped_policy(self):
         apigateway_client = aws_stack.connect_to_service("apigateway")
         rest_apis = apigateway_client.get_rest_apis()
@@ -188,6 +196,7 @@ class TestTerraform(unittest.TestCase):
 
         self.assertEqual(1, len(service_apis))
 
+    @pytest.mark.skip_offline
     def test_dynamodb(self):
         def _table_exists(tablename, dynamotables):
             return any(name for name in dynamotables["TableNames"] if name == tablename)

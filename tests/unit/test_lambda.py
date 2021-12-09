@@ -455,7 +455,8 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result["PackageType"] = None
             expected_result["ImageConfig"] = {}
             expected_result["Architectures"] = ["x86_64"]
-            self.assertDictEqual(expected_result, result)
+            # Check that the result contains the expected fields (some pro extensions could add additional fields)
+            self.assertDictContainsSubset(expected_result, result)
 
     def test_publish_update_version_increment(self):
         with self.app.test_request_context():
@@ -489,7 +490,8 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result["PackageType"] = None
             expected_result["ImageConfig"] = {}
             expected_result["Architectures"] = ["x86_64"]
-            self.assertDictEqual(expected_result, result)
+            # Check that the result contains the expected fields (some pro extensions could add additional fields)
+            self.assertDictContainsSubset(expected_result, result)
 
     def test_publish_non_existant_function_version_returns_error(self):
         with self.app.test_request_context():
@@ -537,10 +539,17 @@ class TestLambdaAPI(unittest.TestCase):
             version1 = dict(latest_version)
             version1["FunctionArn"] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ":1"
             version1["Version"] = "1"
-            expected_result = {
-                "Versions": sorted([latest_version, version], key=lambda k: str(k.get("Version")))
-            }
-            self.assertDictEqual(expected_result, result)
+            expected_versions = sorted(
+                [latest_version, version], key=lambda k: str(k.get("Version"))
+            )
+
+            # Check if the result contains the same amount of versions and that they contain at least the defined fields
+            # (some pro extensions could add additional fields)
+            self.assertIn("Versions", result)
+            result_versions = result["Versions"]
+            self.assertEqual(len(result_versions), len(expected_versions))
+            for i in range(len(expected_versions)):
+                self.assertDictContainsSubset(expected_versions[i], result_versions[i])
 
     def test_list_non_existant_function_versions_returns_error(self):
         with self.app.test_request_context():
