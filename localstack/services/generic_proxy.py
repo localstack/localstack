@@ -325,6 +325,15 @@ def should_enforce_self_managed_service(method, path, headers, data):
     return True
 
 
+def update_path_in_url(base_url: str, path: str) -> str:
+    """Construct a URL from the given base URL and path"""
+    parsed = urlparse(base_url)
+    path = path or ""
+    path = path if path.startswith("/") else f"/{path}"
+    protocol = f"{parsed.scheme}:" if parsed.scheme else ""
+    return f"{protocol}//{parsed.netloc}{path}"
+
+
 def modify_and_forward(
     method: str = None,
     path: str = None,
@@ -369,11 +378,12 @@ def modify_and_forward(
     def is_full_url(url):
         return re.match(r"[a-zA-Z]+://.+", url)
 
-    def get_proxy_backend_url(_path, run_listeners=False):
+    def get_proxy_backend_url(_path, original_url=None, run_listeners=False):
         if is_full_url(_path):
             _path = _path.split("://", 1)[1]
             _path = "/%s" % (_path.split("/", 1)[1] if "/" in _path else "")
-        result = "%s%s" % (forward_base_url, _path)
+        base_url = forward_base_url or original_url
+        result = update_path_in_url(base_url, _path)
         if run_listeners:
             for listener in listeners_inbound:
                 result = listener.get_forward_url(method, path, data, headers) or result
@@ -454,9 +464,12 @@ def modify_and_forward(
         request_url = get_proxy_backend_url(handler_chain_request.path, run_listeners=True)
         if modified_request_to_backend:
             if modified_request_to_backend.url:
-                request_url = get_proxy_backend_url(modified_request_to_backend.url)
+                request_url = get_proxy_backend_url(
+                    modified_request_to_backend.url, original_url=request_url
+                )
             data_to_send = modified_request_to_backend.data
-            method_to_send = modified_request_to_backend.method
+            if modified_request_to_backend.method:
+                method_to_send = modified_request_to_backend.method
 
         # make sure we drop "chunked" transfer encoding from the headers to be forwarded
         headers_to_send.pop("Transfer-Encoding", None)
