@@ -2098,7 +2098,6 @@ class TestSqsProvider:
     def test_send_with_delay(self):
         pass
 
-    @pytest.mark.skip
     def test_posting_to_queue_via_queue_name(self, sqs_client, sqs_create_queue):
         # TODO: behaviour diverges from AWS
         queue_name = f"queue-{short_uid()}"
@@ -2107,7 +2106,8 @@ class TestSqsProvider:
         result_send = sqs_client.send_message(
             QueueUrl=queue_name, MessageBody="Using name instead of URL"
         )
-        assert result_send
+        assert result_send["MD5OfMessageBody"] == "86a83f96652a1bfad3891e7d523750cb"
+        assert result_send["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     def test_invalid_string_attributes_cause_invalid_parameter_value_error(
         self, sqs_client, sqs_create_queue

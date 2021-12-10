@@ -586,11 +586,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     queues: Dict[QueueKey, SqsQueue]
     queue_url_index: Dict[str, SqsQueue]
+    queue_name_index: Dict[str, str]
 
     def __init__(self) -> None:
         super().__init__()
         self.queues = dict()
         self.queue_url_index = dict()
+        self.queue_name_index = dict()
         self._mutex = threading.RLock()
         self._inflight_worker = InflightUpdateWorker(self.queues)
 
@@ -610,6 +612,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         with self._mutex:
             self.queues[queue.key] = queue
             self.queue_url_index[queue.url] = queue
+            self.queue_name_index[queue.name] = queue.url
 
     def _require_queue_by_url(self, queue_url: str) -> SqsQueue:
         """
@@ -623,7 +626,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             try:
                 return self.queue_url_index[queue_url]
             except KeyError:
-                raise NonExistentQueue()
+                try:
+                    # try to access via name only
+                    return self.queue_url_index[self.queue_name_index[queue_url]]
+                except KeyError:
+                    raise NonExistentQueue()
 
     def create_queue(
         self,
@@ -745,6 +752,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             self._assert_permission(context, queue)
             del self.queues[queue.key]
             del self.queue_url_index[queue_url]
+            del self.queue_name_index[queue.name]
 
     def get_queue_attributes(
         self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None
