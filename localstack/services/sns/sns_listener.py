@@ -165,6 +165,12 @@ class ProxyListenerSNS(PersistingProxyListener):
             elif req_action == "Publish":
                 if req_data.get("Subject") == [""]:
                     return make_error(code=400, code_string="InvalidParameter", message="Subject")
+                if not req_data.get("Message") or all(
+                    not message for message in req_data.get("Message")
+                ):
+                    return make_error(
+                        code=400, code_string="InvalidParameter", message="Empty message"
+                    )
                 sns_backend = SNSBackend.get()
                 # No need to create a topic to send SMS or single push notifications with SNS
                 # but we can't mock a sending so we only return that it went well

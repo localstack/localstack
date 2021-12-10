@@ -1068,3 +1068,20 @@ class SNSTest(unittest.TestCase):
         # cleanup
         self.sns_client.delete_topic(TopicArn=topic_arn)
         self.sqs_client.delete_queue(QueueUrl=queue_url)
+
+
+def test_empty_sns_message(sns_client, sqs_client, sns_topic, sqs_queue):
+    topic_arn = sns_topic["Attributes"]["TopicArn"]
+    queue_arn = sqs_client.get_queue_attributes(QueueUrl=sqs_queue, AttributeNames=["QueueArn"])[
+        "Attributes"
+    ]["QueueArn"]
+    sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+    with pytest.raises(ClientError) as e:
+        sns_client.publish(Message="", TopicArn=topic_arn)
+    assert e.match("Empty message")
+    assert (
+        sqs_client.get_queue_attributes(
+            QueueUrl=sqs_queue, AttributeNames=["ApproximateNumberOfMessages"]
+        )["Attributes"]["ApproximateNumberOfMessages"]
+        == "0"
+    )

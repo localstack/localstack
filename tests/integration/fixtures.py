@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from mypy_boto3_secretsmanager import SecretsManagerClient
     from mypy_boto3_ses import SESClient
     from mypy_boto3_sns import SNSClient
+    from mypy_boto3_sns.type_defs import GetTopicAttributesResponseTypeDef
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
     from mypy_boto3_stepfunctions import SFNClient
@@ -229,13 +230,29 @@ def sqs_queue(sqs_create_queue):
 
 
 @pytest.fixture
-def sns_topic(sns_client):
-    # TODO: add fixture factories
-    topic_name = "test-topic-%s" % short_uid()
-    response = sns_client.create_topic(Name=topic_name)
-    topic_arn = response["TopicArn"]
-    yield sns_client.get_topic_attributes(TopicArn=topic_arn)
-    sns_client.delete_topic(TopicArn=topic_arn)
+def sns_create_topic(sns_client):
+    topic_arns = []
+
+    def _create_topic(**kwargs):
+        if "Name" not in kwargs:
+            kwargs["Name"] = "test-topic-%s" % short_uid()
+        response = sns_client.create_topic(**kwargs)
+        topic_arns.append(response["TopicArn"])
+        return response
+
+    yield _create_topic
+
+    for topic_arn in topic_arns:
+        try:
+            sns_client.delete_topic(TopicArn=topic_arn)
+        except Exception as e:
+            LOG.debug("error cleaning up topic %s: %s", topic_arn, e)
+
+
+@pytest.fixture
+def sns_topic(sns_client, sns_create_topic) -> "GetTopicAttributesResponseTypeDef":
+    topic_arn = sns_create_topic()["TopicArn"]
+    return sns_client.get_topic_attributes(TopicArn=topic_arn)
 
 
 @pytest.fixture
