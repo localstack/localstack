@@ -453,6 +453,9 @@ OUTBOUND_HTTP_PROXY = os.environ.get("OUTBOUND_HTTP_PROXY", "")
 # Equivalent to HTTPS_PROXY, but only applicable for external connections
 OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 
+# Whether to enable the partition adjustment listener (in order to support other partitions that the default)
+PARTITION_ADJUSTMENT = is_env_true("PARTITION_ADJUSTMENT")
+
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
