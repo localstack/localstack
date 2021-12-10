@@ -136,3 +136,23 @@ class TestKMS:
         _verify(result["Signature"])
         with pytest.raises(InvalidSignature):
             _verify(result["Signature"] + b"foobar")
+
+    def test_get_and_list_sign_key(self, kms_client):
+        response = kms_client.create_key(
+            Description="test key 123",
+            KeyUsage="SIGN_VERIFY",
+            CustomerMasterKeySpec="ECC_NIST_P256",
+        )
+
+        key_id = response["KeyMetadata"]["KeyId"]
+        describe_response = kms_client.describe_key(KeyId=key_id)["KeyMetadata"]
+        assert describe_response["KeyId"] == key_id
+
+        list_response = kms_client.list_keys()
+        found = False
+        for keyData in list_response["Keys"]:
+            if keyData["KeyId"] == key_id:
+                found = True
+                break
+
+        assert found is True
