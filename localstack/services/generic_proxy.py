@@ -18,7 +18,7 @@ from flask_cors.core import (
     ACL_REQUEST_HEADERS,
 )
 from requests.models import Request, Response
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import parse_qs, urlencode, urlparse
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
@@ -44,6 +44,8 @@ from localstack.utils.common import (
     json_safe,
     path_from_url,
     start_thread,
+    to_bytes,
+    to_str,
     wait_for_port_open,
 )
 from localstack.utils.server import http2_server
@@ -221,10 +223,9 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
     def forward_request(
         self, method: str, path: str, data: MessagePayload, headers: Headers
     ) -> Optional[RoutingRequest]:
-        # TODO handle URL-encoded query parameters in the path
         return RoutingRequest(
             method=method,
-            path=self._adjust_partition(path),
+            path=self._adjust_partition_in_path(path),
             data=self._adjust_partition(data),
             headers=self._adjust_partition(headers),
         )
@@ -243,16 +244,33 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
             headers=self._adjust_partition(response.headers),
         )
 
+    def _adjust_partition_in_path(self, path: str):
+        """Adjusts the (still url encoded) URL path"""
+        parsed_url = urlparse(path)
+        decoded_query = parse_qs(parsed_url.query)
+        adjusted_path = self._adjust_partition(parsed_url.path)
+        adjusted_query = self._adjust_partition(decoded_query)
+        encoded_query = urlencode(adjusted_query, doseq=True)
+        return f"{adjusted_path}{('?' + encoded_query) if encoded_query else ''}"
+
     def _adjust_partition(self, source):
-        # Call this function recursively if we get a dictionary
+        # Call this function recursively if we get a dictionary or a list
         if isinstance(source, dict):
             result = {}
             for k, v in source.items():
                 result[k] = self._adjust_partition(v)
             return result
+        if isinstance(source, list):
+            result = []
+            for v in source:
+                result.append(self._adjust_partition(v))
+            return result
+        elif isinstance(source, bytes):
+            decoded = to_str(source)
+            adjusted = self._adjust_partition(decoded)
+            return to_bytes(adjusted)
         elif not isinstance(source, str):
-            # TODO this assumption might be wrong.
-            # Ignore any non-strings (ARNs should not be contained in byte data)
+            # Ignore any other types
             return source
         return self.arn_regex.sub(PartitionAdjustingProxyListener._adjust_match, source)
 
