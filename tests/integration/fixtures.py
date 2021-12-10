@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, List
 import boto3
 import botocore.config
 import pytest
-from mypy_boto3_sns.type_defs import GetTopicAttributesResponseTypeDef
 
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -30,6 +29,7 @@ if TYPE_CHECKING:
     from mypy_boto3_secretsmanager import SecretsManagerClient
     from mypy_boto3_ses import SESClient
     from mypy_boto3_sns import SNSClient
+    from mypy_boto3_sns.type_defs import GetTopicAttributesResponseTypeDef
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
     from mypy_boto3_stepfunctions import SFNClient
