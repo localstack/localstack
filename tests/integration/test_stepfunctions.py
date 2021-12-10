@@ -318,6 +318,9 @@ class TestStateMachine(unittest.TestCase):
         self.cleanup(sm_arn, state_machines_before)
 
     def test_try_catch_state_machine(self):
+        if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
+            pytest.skip("skipping non us-east-1 temporarily")
+
         state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
 
         # create state machine
@@ -354,6 +357,9 @@ class TestStateMachine(unittest.TestCase):
         self.cleanup(sm_arn, state_machines_before)
 
     def test_intrinsic_functions(self):
+        if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
+            pytest.skip("skipping non us-east-1 temporarily")
+
         state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
 
         # create state machine
