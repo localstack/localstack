@@ -15,7 +15,6 @@ from typing import Dict, List, NamedTuple, Optional, Set
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
-from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sqs import (
     ActionNameList,
@@ -650,7 +649,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         if fifo:
             queue = FifoQueue(k, attributes, tags)
         else:
-            # TODO: this needs the base implementation?
             queue = StandardQueue(k, attributes, tags)
         LOG.debug("creating queue key=%s attributes=%s tags=%s", k, attributes, tags)
         self._add_queue(queue)
@@ -1199,8 +1197,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _require_queue_by_arn(self, dead_letter_target_arn):
         arn_parts = dead_letter_target_arn.split(":")
-        url = "http://localhost:{}/{}/{}".format(
-            config.EDGE_PORT, arn_parts[len(arn_parts) - 2], arn_parts[len(arn_parts) - 1]
+        # FIXME: make the port variable
+        url = "{}/{}/{}".format(
+            get_edge_url(), arn_parts[len(arn_parts) - 2], arn_parts[len(arn_parts) - 1]
         )
         queue = self._require_queue_by_url(url)
         return queue
