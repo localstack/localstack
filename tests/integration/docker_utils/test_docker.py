@@ -168,6 +168,28 @@ class TestDockerClient:
         output = output.decode(config.DEFAULT_ENCODING)
         assert "MYVAR=foo_var" in output
 
+    def test_exec_in_container_with_env_deletion(
+        self, docker_client: ContainerClient, create_container
+    ):
+        container_info = create_container(
+            "alpine",
+            command=["sh", "-c", "env; while true; do sleep 1; done"],
+            env_vars={"MYVAR": "SHOULD_BE_OVERWRITTEN"},
+        )
+        docker_client.start_container(container_info.container_id)
+        log_output = docker_client.get_container_logs(
+            container_name_or_id=container_info.container_id
+        )
+        assert "MYVAR=SHOULD_BE_OVERWRITTEN" in log_output
+
+        env = {"MYVAR": None}
+
+        output, _ = docker_client.exec_in_container(
+            container_info.container_id, env_vars=env, command=["env"]
+        )
+        output = output.decode(config.DEFAULT_ENCODING)
+        assert "MYVAR" not in output
+
     def test_exec_error_in_container(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
 

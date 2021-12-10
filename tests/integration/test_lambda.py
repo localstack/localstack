@@ -35,6 +35,8 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PROVIDED,
     LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON37,
+    LAMBDA_RUNTIME_PYTHON38,
+    LAMBDA_RUNTIME_PYTHON39,
     LAMBDA_RUNTIME_RUBY27,
 )
 from localstack.services.generic_proxy import ProxyListener
@@ -78,6 +80,7 @@ from .lambdas import lambda_integration
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
+TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "lambdas", "lambda_python_version.py")
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "lambdas", "lambda_python3.py")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.js")
 TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "lambdas", "golang", "handler.zip")
@@ -1485,6 +1488,33 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertIn("Statement", resp)
         # delete lambda
         testutil.delete_lambda_function(TEST_LAMBDA_PYTHON)
+
+
+@pytest.mark.skipif(
+    not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
+)
+@pytest.mark.parametrize(
+    "runtime",
+    [
+        LAMBDA_RUNTIME_PYTHON36,
+        LAMBDA_RUNTIME_PYTHON37,
+        LAMBDA_RUNTIME_PYTHON38,
+        LAMBDA_RUNTIME_PYTHON39,
+    ],
+)
+def test_python_runtimes(lambda_client, create_lambda_function, runtime):
+    function_name = f"test_python_executor_{short_uid()}"
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=TEST_LAMBDA_PYTHON_VERSION,
+        runtime=runtime,
+    )
+    result = lambda_client.invoke(
+        FunctionName=function_name,
+        Payload=b"{}",
+    )
+    result = json.loads(to_str(result["Payload"].read()))
+    assert result["version"] == runtime
 
 
 class TestNodeJSRuntimes:
