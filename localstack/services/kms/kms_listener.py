@@ -445,12 +445,11 @@ class ProxyListenerKMS(ProxyListener):
                     return generate_data_key_pair_without_plaintext(parsed_data, response)
                 if action == "Sign":
                     return sign(parsed_data, response)
-            if response.status_code == 400:
+            if response.status_code == 400 and action == "DescribeKey":
                 return search_key_pair(parsed_data, response)
 
             if action == "ListKeys":
                 add_key_pairs(response)
-                # ADD KEY PAIRS TO LIST
 
 
 # instantiate listener
