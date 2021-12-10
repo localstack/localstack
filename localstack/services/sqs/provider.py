@@ -243,9 +243,9 @@ class SqsQueue:
     def default_attributes(self) -> QueueAttributeMap:
         return {
             QueueAttributeName.QueueArn: self.arn,
-            QueueAttributeName.ApproximateNumberOfMessages: "0",
-            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: "0",
-            QueueAttributeName.ApproximateNumberOfMessagesDelayed: "0",
+            QueueAttributeName.ApproximateNumberOfMessages: lambda: self.visible._qsize,
+            QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: len(self.inflight),
+            QueueAttributeName.ApproximateNumberOfMessagesDelayed: "0",  # FIXME: this should also be callable
             QueueAttributeName.CreatedTimestamp: str(now()),
             QueueAttributeName.LastModifiedTimestamp: str(now()),
             QueueAttributeName.VisibilityTimeout: "30",
@@ -772,7 +772,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             except AttributeError:
                 raise InvalidAttributeName("Unknown attribute %s." % attr)
 
-            result[attr] = queue.attributes.get(attr)
+            if callable(queue.attributes.get(attr)):
+                func = queue.attributes.get(attr)()
+                result[attr] = func()
+            else:
+                result[attr] = queue.attributes.get(attr)
 
         return GetQueueAttributesResult(Attributes=result)
 
@@ -893,7 +897,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         if int(delay_seconds):
             # FIXME: this is a pretty bad implementation (one thread per message...). polling on a priority queue
-            #  would probably be better.
+            #  would probably be better. We also need access to delayed messages for the
+            #  ApproximateNumberrOfDelayedMessages attribute.
             threading.Timer(
                 int(delay_seconds),
                 queue.put,
