@@ -12,52 +12,56 @@ string_encoding = to_str
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_partition_adjustment_in_request(encoding):
+@pytest.mark.parametrize("origin_partition", ["aws", "aws-us-gov"])
+def test_partition_adjustment_in_request(encoding, origin_partition):
     listener = PartitionAdjustingProxyListener()
     data = encoding(
         json.dumps(
-            {"some-data-with-arn": "arn:aws:apigateway:us-gov-west-1::/restapis/arn-in-body/*"}
+            {
+                "some-data-with-arn": f"arn:{origin_partition}:apigateway:us-gov-west-1::/restapis/arn-in-body/*"
+            }
         )
     )
     headers = {
-        "some-header-with-arn": "arn:aws:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
+        "some-header-with-arn": f"arn:{origin_partition}:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
     }
     result = listener.forward_request(
         method="POST",
-        path="/?arn=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A&"
-        "arn2=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path2%2F%2A",
+        path=f"/?arn=arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A&"
+        f"arn2=arn%3A{origin_partition}%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path2%2F%2A",
         data=data,
         headers=headers,
     )
     assert result.method == "POST"
     assert (
         result.path
-        == "/?arn=arn%3Aaws-us-gov%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A&"
-        "arn2=arn%3Aaws-us-gov%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path2%2F%2A"
+        == "/?arn=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path%2F%2A&"
+        "arn2=arn%3Aaws%3Aapigateway%3Aus-gov-west-1%3A%3A%2Frestapis%2Farn-in-path2%2F%2A"
     )
     assert result.data == encoding(
         json.dumps(
-            {
-                "some-data-with-arn": "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/arn-in-body/*"
-            }
+            {"some-data-with-arn": "arn:aws:apigateway:us-gov-west-1::/restapis/arn-in-body/*"}
         )
     )
     assert result.headers == {
-        "some-header-with-arn": "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
+        "some-header-with-arn": "arn:aws:apigateway:us-gov-west-1::/restapis/arn-in-header/*"
     }
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_partition_adjustment_in_request_without_region_and_without_default_partition(encoding):
+@pytest.mark.parametrize("origin_partition", ["aws", "aws-us-gov"])
+def test_partition_adjustment_in_request_without_region_and_without_default_partition(
+    encoding, origin_partition
+):
     listener = PartitionAdjustingProxyListener()
     data = encoding(
-        json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
+        json.dumps({"some-data-with-arn": f"arn:{origin_partition}:iam::123456789012:ArnInData"})
     )
-    headers = {"some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"}
+    headers = {"some-header-with-arn": f"arn:{origin_partition}:iam::123456789012:ArnInHeader"}
     result = listener.forward_request(
         method="POST",
-        path="/?arn=arn%3Aaws%3Aiam%3A%3A123456789012%3AArnInPath&"
-        "arn2=arn%3Aaws%3Aiam%3A%3A123456789012%3AArnInPath2",
+        path=f"/?arn=arn%3A{origin_partition}%3Aiam%3A%3A123456789012%3AArnInPath&"
+        f"arn2=arn%3A{origin_partition}%3Aiam%3A%3A123456789012%3AArnInPath2",
         data=data,
         headers=headers,
     )
@@ -73,27 +77,30 @@ def test_partition_adjustment_in_request_without_region_and_without_default_part
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
+@pytest.mark.parametrize("origin_partition", ["aws", "aws-us-gov"])
 def test_partition_adjustment_in_request_without_region_and_with_default_region(
-    encoding, switch_region
+    encoding, switch_region, origin_partition
 ):
     with switch_region("us-gov-east-1"):
         listener = PartitionAdjustingProxyListener()
-        data = encoding(json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"}))
-        headers = {"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"}
+        data = encoding(
+            json.dumps(
+                {"some-data-with-arn": f"arn:{origin_partition}:iam::123456789012:ArnInData"}
+            )
+        )
+        headers = {"some-header-with-arn": f"arn:{origin_partition}:iam::123456789012:ArnInHeader"}
         result = listener.forward_request(
             method="POST",
-            path="/?arn=arn%3Aaws%3Aiam%3A%3A123456789012%3AArnInPath",
+            path=f"/?arn=arn%3A{origin_partition}%3Aiam%3A%3A123456789012%3AArnInPath",
             data=data,
             headers=headers,
         )
         assert result.method == "POST"
-        assert result.path == "/?arn=arn%3Aaws-us-gov%3Aiam%3A%3A123456789012%3AArnInPath"
+        assert result.path == "/?arn=arn%3Aaws%3Aiam%3A%3A123456789012%3AArnInPath"
         assert result.data == encoding(
-            json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
+            json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})
         )
-        assert result.headers == {
-            "some-header-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInHeader"
-        }
+        assert result.headers == {"some-header-with-arn": "arn:aws:iam::123456789012:ArnInHeader"}
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])

@@ -49,7 +49,6 @@ from localstack.services.install import (
 )
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import lambda_function_arn
 from localstack.utils.common import (
     cp_r,
     get_arch,
@@ -227,10 +226,12 @@ def _check_lambda_logs(func_name, expected_lines=None):
         assert line in log_messages
 
 
-def test_create_lambda_function():
+def test_create_lambda_function(lambda_client):
     """Basic test that creates and deletes a Lambda function"""
     func_name = "lambda_func-{}".format(short_uid())
-    kms_key_arn = f"arn:aws:kms:{aws_stack.get_region()}:{TEST_AWS_ACCOUNT_ID}:key11"
+    kms_key_arn = (
+        f"arn:{aws_stack.get_partition()}:kms:{aws_stack.get_region()}:{TEST_AWS_ACCOUNT_ID}:key11"
+    )
     vpc_config = {
         "SubnetIds": ["subnet-123456789"],
         "SecurityGroupIds": ["sg-123456789"],
@@ -252,23 +253,23 @@ def test_create_lambda_function():
         "Environment": {"Variables": {"foo": "bar"}},
     }
 
-    client = aws_stack.connect_to_service("lambda")
-    client.create_function(**kwargs)
+    result = lambda_client.create_function(**kwargs)
+    function_arn = result["FunctionArn"]
+    assert testutil.response_arn_matches_partition(lambda_client, function_arn)
 
-    function_arn = lambda_function_arn(func_name)
     partial_function_arn = ":".join(function_arn.split(":")[3:])
 
     # Get function by Name, ARN and partial ARN
     for func_ref in [func_name, function_arn, partial_function_arn]:
-        rs = client.get_function(FunctionName=func_ref)
+        rs = lambda_client.get_function(FunctionName=func_ref)
         assert rs["Configuration"].get("KMSKeyArn", "") == kms_key_arn
         assert rs["Configuration"].get("VpcConfig", {}) == vpc_config
         assert rs["Tags"] == tags
 
     # clean up
-    client.delete_function(FunctionName=func_name)
+    lambda_client.delete_function(FunctionName=func_name)
     with pytest.raises(Exception) as exc:
-        client.delete_function(FunctionName=func_name)
+        lambda_client.delete_function(FunctionName=func_name)
     assert "ResourceNotFoundException" in str(exc)
 
 

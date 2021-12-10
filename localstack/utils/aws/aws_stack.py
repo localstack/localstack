@@ -209,6 +209,10 @@ def get_region():
     return get_local_region()
 
 
+def get_partition():
+    return boto3.session.Session().get_partition_for_region(get_region())
+
+
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
@@ -839,7 +843,6 @@ def inject_region_into_auth_headers(region, headers):
         regex = r"Credential=([^/]+)/([^/]+)/([^/]+)/"
         auth_header = re.sub(regex, r"Credential=\1/\2/%s/" % region, auth_header)
         headers["Authorization"] = auth_header
-    return headers
 
 
 def dynamodb_get_item_raw(request):
