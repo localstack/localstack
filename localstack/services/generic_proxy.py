@@ -203,6 +203,9 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
     rewriting all the cases where the ARN is parsed or constructed within LocalStack or moto.
     """
 
+    # Partition which should be statically set for incoming requests
+    DEFAULT_INBOUND_PARTITION = "aws"
+
     class InvalidRegionException(Exception):
         """An exception indicating that a region could not be matched to a partition."""
 
@@ -225,9 +228,9 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
     ) -> Optional[RoutingRequest]:
         return RoutingRequest(
             method=method,
-            path=self._adjust_partition_in_path(path),
-            data=self._adjust_partition(data),
-            headers=self._adjust_partition(headers),
+            path=self._adjust_partition_in_path(path, self.DEFAULT_INBOUND_PARTITION),
+            data=self._adjust_partition(data, self.DEFAULT_INBOUND_PARTITION),
+            headers=self._adjust_partition(headers, self.DEFAULT_INBOUND_PARTITION),
         )
 
     def return_response(
@@ -244,60 +247,58 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
             headers=self._adjust_partition(response.headers),
         )
 
-    def _adjust_partition_in_path(self, path: str):
+    def _adjust_partition_in_path(self, path: str, static_partition: str = None):
         """Adjusts the (still url encoded) URL path"""
         parsed_url = urlparse(path)
         decoded_query = parse_qs(parsed_url.query)
-        adjusted_path = self._adjust_partition(parsed_url.path)
-        adjusted_query = self._adjust_partition(decoded_query)
+        adjusted_path = self._adjust_partition(parsed_url.path, static_partition)
+        adjusted_query = self._adjust_partition(decoded_query, static_partition)
         encoded_query = urlencode(adjusted_query, doseq=True)
         return f"{adjusted_path}{('?' + encoded_query) if encoded_query else ''}"
 
-    def _adjust_partition(self, source):
+    def _adjust_partition(self, source, static_partition: str = None):
         # Call this function recursively if we get a dictionary or a list
         if isinstance(source, dict):
             result = {}
             for k, v in source.items():
-                result[k] = self._adjust_partition(v)
+                result[k] = self._adjust_partition(v, static_partition)
             return result
         if isinstance(source, list):
             result = []
             for v in source:
-                result.append(self._adjust_partition(v))
+                result.append(self._adjust_partition(v, static_partition))
             return result
         elif isinstance(source, bytes):
             decoded = to_str(source)
-            adjusted = self._adjust_partition(decoded)
+            adjusted = self._adjust_partition(decoded, static_partition)
             return to_bytes(adjusted)
         elif not isinstance(source, str):
             # Ignore any other types
             return source
-        return self.arn_regex.sub(PartitionAdjustingProxyListener._adjust_match, source)
+        return self.arn_regex.sub(lambda m: self._adjust_match(m, static_partition), source)
 
-    @staticmethod
-    def _adjust_match(match: Match):
+    def _adjust_match(self, match: Match, static_partition: str = None):
         region = match.group("Region")
-        try:
-            partition = PartitionAdjustingProxyListener._get_partition_for_region(region)
-        except PartitionAdjustingProxyListener.InvalidRegionException:
-            try:
-                # If the region is not properly set (f.e. because it is set to a wildcard),
-                # the partition is determined based on the default region.
-                partition = PartitionAdjustingProxyListener._get_partition_for_region(
-                    config.DEFAULT_REGION
-                )
-            except PartitionAdjustingProxyListener.InvalidRegionException:
-                # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
-                partition = PartitionAdjustingProxyListener._get_partition_for_region(
-                    AWS_REGION_US_EAST_1
-                )
+        partition = self._partition_lookup(region) if static_partition is None else static_partition
         service = match.group("Service")
         account_id = match.group("AccountID")
         resource_path = match.group("ResourcePath")
         return f"arn:{partition}:{service}:{region}:{account_id}:{resource_path}"
 
-    @staticmethod
-    def _get_partition_for_region(region: str) -> str:
+    def _partition_lookup(self, region: str):
+        try:
+            partition = self._get_partition_for_region(region)
+        except PartitionAdjustingProxyListener.InvalidRegionException:
+            try:
+                # If the region is not properly set (f.e. because it is set to a wildcard),
+                # the partition is determined based on the default region.
+                partition = self._get_partition_for_region(config.DEFAULT_REGION)
+            except self.InvalidRegionException:
+                # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
+                partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
+        return partition
+
+    def _get_partition_for_region(self, region: str) -> str:
         # Region-Partition matching is based on the "regionRegex" definitions in the endpoints.json
         # in the botocore package.
         if region.startswith("us-gov-"):
