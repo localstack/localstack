@@ -292,7 +292,7 @@ def _generate_data_key_pair(data, create_cipher=True):
         "Policy": data.get("Policy"),
         "Region": region,
         "Description": data.get("Description"),
-        "Arn": "arn:aws:kms:%s:000000000000:key/%s" % (region, key_id),
+        "Arn": aws_stack.kms_key_arn(key_id),
         "_key_": key,
     }
     region_details.key_pairs[key_id] = result
