@@ -8,20 +8,14 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from moto.kms.exceptions import ValidationException
-from moto.kms.models import kms_backends
+from moto.kms.models import Key, kms_backends
 
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
+from localstack.services.kms.kms_starter import KMS_PROVIDER
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import set_response_content
-from localstack.utils.common import (
-    json_safe,
-    long_uid,
-    select_attributes,
-    short_uid,
-    to_bytes,
-    to_str,
-)
+from localstack.utils.common import json_safe, long_uid, select_attributes, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -250,7 +244,7 @@ def _generate_data_key_pair(data, create_cipher=True):
     kms = aws_stack.connect_to_service("kms")
 
     key_id = data.get("KeyId")
-    key_spec = data.get("KeyPairSpec") or data.get("KeySpec")
+    key_spec = data.get("KeyPairSpec") or data.get("KeySpec") or data.get("CustomerMasterKeySpec")
     key = None
     public_format = None
     if key_spec.startswith("RSA"):
@@ -285,6 +279,8 @@ def _generate_data_key_pair(data, create_cipher=True):
     if create_cipher:
         cipher_text = kms.encrypt(KeyId=key_id, Plaintext=private_key)["CiphertextBlob"]
         cipher_text_blob = base64.b64encode(cipher_text)
+
+    region = region_details.get_current_request_region()
     result = {
         "PrivateKeyCiphertextBlob": cipher_text_blob,
         "PrivateKeyPlaintext": base64.b64encode(private_key),
@@ -292,10 +288,19 @@ def _generate_data_key_pair(data, create_cipher=True):
         "KeyId": key_id,
         "KeyPairSpec": key_spec,
         "KeySpec": key_spec,
+        "KeyUsage": "SIGN_VERIFY",
+        "Policy": data.get("Policy"),
+        "Region": region,
+        "Description": data.get("Description"),
+        "Arn": aws_stack.kms_key_arn(key_id),
         "_key_": key,
     }
     region_details.key_pairs[key_id] = result
-    return result
+
+    key = Key("", result["KeyUsage"], key_spec, result["Description"], region)
+    key.id = key_id
+
+    return {**key.to_dict()["KeyMetadata"], **result}
 
 
 def set_key_managed(key_id: str) -> None:
@@ -312,9 +317,10 @@ def set_key_managed(key_id: str) -> None:
 
 def create_key(data: Dict):
     key_usage = data.get("KeyUsage")
-    if key_usage != "SIGN_VERIFY":
+    if key_usage != "SIGN_VERIFY" or KMS_PROVIDER == "local-kms":
         return
-    data["KeyId"] = short_uid()
+
+    data["KeyId"] = long_uid()
     result = _generate_data_key_pair(data, create_cipher=False)
     result = {"KeyMetadata": json_safe(result)}
     return result
@@ -362,6 +368,41 @@ def sign(data, response):
     return response
 
 
+def search_key_pair(data, response):
+    key_pairs = KMSBackend.get().key_pairs
+    key = key_pairs.get(data.get("KeyId"))
+    if not key:
+        return response
+
+    key_object = Key(
+        key["Policy"], key["KeyUsage"], key["KeySpec"], key["Description"], key["Region"]
+    )
+    key_object.id = key["KeyId"]
+
+    response.status_code = 200
+    set_response_content(response, json.dumps(key_object.to_dict()))
+    return response
+
+
+def add_key_pairs(response):
+    key_pairs = KMSBackend.get().key_pairs
+    response.status_code = 200
+    content = json.loads(to_str(response.content))
+    prev_keys = content["Keys"]
+
+    for id in key_pairs:
+        prev_keys.append(
+            {
+                "KeyId": key_pairs[id]["KeyId"],
+                "KeyArn": key_pairs[id]["Arn"],
+            }
+        )
+
+    content["Keys"] = prev_keys
+    set_response_content(response, json.dumps(content))
+    return response
+
+
 class ProxyListenerKMS(ProxyListener):
     def forward_request(self, method, path, data, headers):
         action = headers.get("X-Amz-Target") or ""
@@ -390,6 +431,7 @@ class ProxyListenerKMS(ProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response):
+
         if method == "POST" and path == "/":
             parsed_data = json.loads(to_str(data))
             action = headers.get("X-Amz-Target") or ""
@@ -403,6 +445,11 @@ class ProxyListenerKMS(ProxyListener):
                     return generate_data_key_pair_without_plaintext(parsed_data, response)
                 if action == "Sign":
                     return sign(parsed_data, response)
+            if response.status_code == 400 and action == "DescribeKey":
+                return search_key_pair(parsed_data, response)
+
+            if action == "ListKeys":
+                add_key_pairs(response)
 
 
 # instantiate listener
