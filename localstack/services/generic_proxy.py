@@ -18,7 +18,7 @@ from flask_cors.core import (
     ACL_REQUEST_HEADERS,
 )
 from requests.models import Request, Response
-from six.moves.urllib.parse import parse_qs, urlencode, urlparse
+from six.moves.urllib.parse import parse_qs, unquote, urlencode, urlparse
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
@@ -270,7 +270,7 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
             return result
         elif isinstance(source, bytes):
             try:
-                decoded = to_str(source)
+                decoded = unquote(to_str(source))
                 adjusted = self._adjust_partition(decoded, static_partition)
                 return to_bytes(adjusted)
             except UnicodeDecodeError:
