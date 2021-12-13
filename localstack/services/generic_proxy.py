@@ -269,9 +269,13 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
                 result.append(self._adjust_partition(v, static_partition))
             return result
         elif isinstance(source, bytes):
-            decoded = to_str(source)
-            adjusted = self._adjust_partition(decoded, static_partition)
-            return to_bytes(adjusted)
+            try:
+                decoded = to_str(source)
+                adjusted = self._adjust_partition(decoded, static_partition)
+                return to_bytes(adjusted)
+            except UnicodeDecodeError:
+                # If the body can't be decoded to a string, we return the initial source
+                return source
         elif not isinstance(source, str):
             # Ignore any other types
             return source
