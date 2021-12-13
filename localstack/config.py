@@ -118,7 +118,7 @@ class Directories:
             static_libs=INSTALL_DIR_INFRA,
             var_libs=var_libs,
             cache=cache,
-            tmp=TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
+            tmp=TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp - or /tmp/localstack
             functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
             data=DATA_DIR,  # TODO: move to /var/lib/localstack/data
             config=None,  # config directory is host-only
