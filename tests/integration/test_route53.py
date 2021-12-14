@@ -54,6 +54,11 @@ class TestRoute53:
         result = route53.list_hosted_zones_by_name(DNSName="%s." % name).get("HostedZones")
         assert result[0]["Name"] == "zone123."
 
+        # assert that VPC is attached in Zone response
+        result = route53.get_hosted_zone(Id=zone_id)
+        assert result["VPCs"] == [{"VPCRegion": vpc_region, "VPCId": vpc_id}]
+
+        # disassociate
         route53.disassociate_vpc_from_hosted_zone(
             HostedZoneId=zone_id,
             VPC={"VPCRegion": aws_stack.get_region(), "VPCId": vpc_id},
