@@ -1958,11 +1958,13 @@ class CloudFormationTest(unittest.TestCase):
         cw_client = aws_stack.connect_to_service("cloudwatch")
 
         # list resources before stack deployment
+        # TODO: avoid fetching resources before/after, to make tests parallelizable!
         metric_alarms = cw_client.describe_alarms().get("MetricAlarms", [])
         composite_alarms = cw_client.describe_alarms().get("CompositeAlarms", [])
 
         def _assert_resources_created():
             exports = cfn_client.list_exports()["Exports"]
+            # TODO: we should use named stack outputs/exports here, to make tests parallelizable!
             subnets = [export for export in exports if export["Name"] == "public-sn-a"]
             instances = [export for export in exports if export["Name"] == "RegmonEc2InstanceId"]
 
