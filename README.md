@@ -40,7 +40,7 @@
 
 LocalStack supports a growing number of AWS services, like AWS Lambda, S3, Dynamodb, Kinesis, SQS, SNS, and **many** more! The [**Pro version** of LocalStack](https://localstack.cloud/pricing) supports additional APIs and advanced features. You can find a comprehensive list of supported APIs on our [☑️ Feature Coverage](doc/feature_coverage.md) page.
 
-LocalStack also provides additional features to make your life as a cloud developer easier! Check out LocalStack's [Cloud Developer Tools](doc/cloud-developer-tools/README.md).
+LocalStack also provides additional features to make your life as a cloud developer easier! Check out LocalStack's [Cloud Developer Tools](https://docs.localstack.cloud/tools/) for more information.
 
 ## Requirements
 
@@ -58,62 +58,25 @@ pip install localstack
 
 **Note**: Please do **not** use `sudo` or the `root` user - LocalStack should be installed and started entirely under a local non-root user. If you have problems with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
+It installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime.
+
 ## Running
 
-By default, LocalStack is started inside a Docker container by running:
+You can run LocalStack through the following options as well:
 
-```
-localstack start
-```
-
-(Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR localstack start --docker` if `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
-
-**Note**: From 2020-07-11 onwards, the default image `localstack/localstack` in Docker Hub refers to the "light version", which has some large dependency files like Elasticsearch removed (and lazily downloads them, if required). (Note that the `localstack/localstack-light` image alias may get removed in the future). In case you need the full set of dependencies, the `localstack/localstack-full` image can be used instead. Please also refer to the `USE_LIGHT_IMAGE` configuration below.
-
-**Note**: By default, LocalStack uses the image tagged `latest` that is cached on your machine, and will **not** pull the latest image automatically from Docker Hub (i.e., the image needs to be pulled manually if needed).
-
-**Note**: Although we strongly recommend to use Docker, the infrastructure can also be spun up directly on the host machine using the `--host` startup flag. Note that this will require [additional dependencies](doc/developer_guides/README.md##development-environment-setup-guide), and is not supported on some operating systems, including Windows.
-
-### Using `docker`
-
-You can also use docker directly and use the following command to get started with localstack
-
-```shell
-docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack
-```
-
-Note that this will pull the current nightly build from the master branch and **not** the latest supported version to run a throw-away container without any external volumes. To start a subset of services use `-e "SERVICES=dynamodb,s3"`.
-
-### Using `docker-compose`
-
-You can also use the `docker-compose.yml` file from the repository and use this command (currently requires `docker-compose` version 1.9.0+):
-
-```shell
-docker-compose up
-```
-
-(Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR docker-compose up` if `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
-
-To facilitate interoperability, configuration variables can be prefixed with `LOCALSTACK_` in docker. For instance, setting `LOCALSTACK_SERVICES=s3` is equivalent to `SERVICES=s3`.
-
-### Using Helm
-
-You can use [Helm](https://helm.sh/) to install LocalStack in a Kubernetes cluster by running these commands (the Helm charts are maintained in [this repo](https://github.com/localstack/helm-charts)):
-
-```shell
-helm repo add localstack-repo https://helm.localstack.cloud
-
-helm upgrade --install localstack localstack-repo/localstack
-```
+- [LocalStack CLI](https://docs.localstack.cloud/get-started/#localstack-cli)
+- [Docker](https://docs.localstack.cloud/get-started/#docker)
+- [Docker Compose](https://docs.localstack.cloud/get-started/#docker-compose)
+- [Helm](https://docs.localstack.cloud/get-started/#helm)
 
 ## Usage
 
-To start using LocalStack, check out our documentation on [docs.localstack.cloud](https://docs.localstack.cloud). We have hosted our developer-focused documentation on this repository as well:
+To start using LocalStack, check out our documentation on [docs.localstack.cloud](https://docs.localstack.cloud).
 
-- [Configuration](doc/configuration/README.md)
-- [Interaction](doc/interaction/README.md)
-- [Integrations](doc/integrations/README.md)
-- [Cloud Developer Tools](doc/cloud-developer-tools/README.md)
+- [LocalStack Configuration](https://docs.localstack.cloud/localstack/configuration/)
+- [LocalStack Interaction](doc/interaction/README.md)
+- [LocalStack Integrations](https://docs.localstack.cloud/integrations/)
+- [LocalStack Tools](https://docs.localstack.cloud/tools/)
 - [Advanced topics](doc/advanced-topics/README.md)
 - [Troubleshoot](doc/troubleshoot/README.md)
 
