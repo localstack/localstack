@@ -1958,43 +1958,51 @@ class CloudFormationTest(unittest.TestCase):
         cw_client = aws_stack.connect_to_service("cloudwatch")
 
         # list resources before stack deployment
+        # TODO: avoid fetching resources before/after, to make tests parallelizable!
         metric_alarms = cw_client.describe_alarms().get("MetricAlarms", [])
         composite_alarms = cw_client.describe_alarms().get("CompositeAlarms", [])
 
+        def _assert_resources_created():
+            exports = cfn_client.list_exports()["Exports"]
+            # TODO: we should use named stack outputs/exports here, to make tests parallelizable!
+            subnets = [export for export in exports if export["Name"] == "public-sn-a"]
+            instances = [export for export in exports if export["Name"] == "RegmonEc2InstanceId"]
+
+            self.assertEqual(1, len(subnets))
+            self.assertEqual(1, len(instances))
+
+            subnet_id = subnets[0]["Value"]
+            instance_id = instances[0]["Value"]
+
+            ec2_client = aws_stack.connect_to_service("ec2")
+            resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
+            self.assertEqual(1, len(resp["Subnets"]))
+
+            resp = ec2_client.describe_instances(InstanceIds=[instance_id])
+            self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
+
+            # assert creation of further resources
+            resp = sns_client.list_topics()
+            topic_arns = [tp["TopicArn"] for tp in resp["Topics"]]
+            self.assertIn(aws_stack.sns_topic_arn("companyname-slack-topic"), topic_arns)
+            metric_alarms_after = cw_client.describe_alarms().get("MetricAlarms", [])
+            composite_alarms_after = cw_client.describe_alarms().get("CompositeAlarms", [])
+            self.assertEqual(len(metric_alarms) + 1, len(metric_alarms_after))
+            self.assertEqual(len(composite_alarms) + 1, len(composite_alarms_after))
+
+            iam_client = aws_stack.connect_to_service("iam")
+            profiles = iam_client.list_instance_profiles().get("InstanceProfiles", [])
+            assert len(profiles) > 0
+            profile = profiles[0]
+            assert len(profile["Roles"]) > 0
+
         # deploy stack
         create_and_await_stack(StackName=stack_name, TemplateBody=template)
-        exports = cfn_client.list_exports()["Exports"]
+        _assert_resources_created()
 
-        subnets = [export for export in exports if export["Name"] == "public-sn-a"]
-        instances = [export for export in exports if export["Name"] == "RegmonEc2InstanceId"]
-
-        self.assertEqual(1, len(subnets))
-        self.assertEqual(1, len(instances))
-
-        subnet_id = subnets[0]["Value"]
-        instance_id = instances[0]["Value"]
-
-        ec2_client = aws_stack.connect_to_service("ec2")
-        resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
-        self.assertEqual(1, len(resp["Subnets"]))
-
-        resp = ec2_client.describe_instances(InstanceIds=[instance_id])
-        self.assertEqual(1, len(resp["Reservations"][0]["Instances"]))
-
-        # assert creation of further resources
-        resp = sns_client.list_topics()
-        topic_arns = [tp["TopicArn"] for tp in resp["Topics"]]
-        self.assertIn(aws_stack.sns_topic_arn("companyname-slack-topic"), topic_arns)
-        metric_alarms_after = cw_client.describe_alarms().get("MetricAlarms", [])
-        composite_alarms_after = cw_client.describe_alarms().get("CompositeAlarms", [])
-        self.assertEqual(len(metric_alarms) + 1, len(metric_alarms_after))
-        self.assertEqual(len(composite_alarms) + 1, len(composite_alarms_after))
-
-        iam_client = aws_stack.connect_to_service("iam")
-        profiles = iam_client.list_instance_profiles().get("InstanceProfiles", [])
-        assert len(profiles) > 0
-        profile = profiles[0]
-        assert len(profile["Roles"]) > 0
+        # update stack
+        update_and_await_stack(stack_name, TemplateBody=template)
+        _assert_resources_created()
 
         # clean up
         self.cleanup(stack_name)
