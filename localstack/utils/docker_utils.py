@@ -825,6 +825,14 @@ class CmdDockerClient(ContainerClient):
             "stderr": subprocess.PIPE,
             "outfile": self.default_run_outfile or subprocess.PIPE,
         }
+        if os.environ.get("DOCKER_DEBUG"):
+            # TODO: to see
+            # - more errors
+            # - docker image download progress
+            # - etc.
+            subprocess.call(cmd)
+            return
+
         if stdin:
             kwargs["stdin"] = True
         try:
@@ -882,7 +890,9 @@ class CmdDockerClient(ContainerClient):
         if mount_volumes:
             cmd += [
                 volume
-                for host_path, docker_path in mount_volumes
+                # TODO: seems this fix is just fine, or check the cause of duplication
+                # Error: /tmp/localstack: duplicate mount destination
+                for host_path, docker_path in dict(mount_volumes).items()
                 for volume in ["-v", f"{host_path}:{docker_path}"]
             ]
         if interactive:
@@ -1226,7 +1236,11 @@ class SdkDockerClient(ContainerClient):
                 map(
                     lambda container: {
                         "id": container.id,
-                        "image": container.image,
+                        # TODO: seems we don't use image, with local image (after podman commit) I get such error
+                        # also we can wrap it with try..except
+                        # ERR: docker.errors.ImageNotFound: 404 Client Error for
+                        # http+docker://localhost/v1.40/images/latest/json: Not Found ("failed to find image latest: latest: No such image")
+                        # "image": container.image,
                         "name": container.name,
                         "status": container.status,
                         "labels": container.labels,
