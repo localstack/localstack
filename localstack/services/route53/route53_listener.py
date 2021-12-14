@@ -1,13 +1,22 @@
 import re
+from typing import Dict, List
 
 import xmltodict
+from requests import Response
 from six.moves.urllib.parse import urlparse
 
 from localstack import constants
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import requests_response
-from localstack.utils.common import parse_request_data, short_uid, timestamp_millis, to_str
+from localstack.utils.aws.aws_responses import requests_response, set_response_content
+from localstack.utils.common import (
+    clone,
+    parse_request_data,
+    recurse_object,
+    short_uid,
+    timestamp_millis,
+    to_str,
+)
 from localstack.utils.persistence import PersistingProxyListener
 
 PATH_PREFIX = "/2013-04-01"
@@ -16,10 +25,13 @@ XMLNS_ROUTE53 = "https://route53.amazonaws.com/doc/2013-04-01/"
 
 
 class Route53Backend(RegionBackend):
+    # maps zone ID to list of association details
+    vpc_hosted_zone_associations: Dict[str, List[Dict]]
+    # maps delegation set ID to reusable delegation set details
+    reusable_delegation_sets: Dict[str, Dict]
+
     def __init__(self):
-        # maps zone ID to association details
         self.vpc_hosted_zone_associations = {}
-        # maps delegation set ID to reusable delegation set details
         self.reusable_delegation_sets = {}
 
 
@@ -49,7 +61,10 @@ class ProxyListenerRoute53(PersistingProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response):
-        if response.status_code < 400 or response.status_code >= 500:
+        if response.status_code >= 500:
+            return
+        if response.ok:
+            add_vpc_info_to_response(path, response)
             return
 
         updated_response = None
@@ -105,7 +120,7 @@ def handle_delegation_sets_request(match, method, data):
         return {"DeleteReusableDelegationSetResponse": {}}
 
 
-def handle_hosted_zones_by_vpc_request(method, path, data):
+def handle_hosted_zones_by_vpc_request(method: str, path: str, data: Dict):
     def _zone(z):
         zone_id = z["HostedZoneId"]
         hosted_zone = client.get_hosted_zone(Id=zone_id).get("HostedZone", {})
@@ -130,9 +145,8 @@ def handle_hosted_zones_by_vpc_request(method, path, data):
 def handle_associate_vpc_request(method, path, data):
     is_associate = path.endswith("/associatevpc")
     region_details = Route53Backend.get()
-    path_parts = path.lstrip("/").split("/")
-    zone_id = path_parts[2]
-    req_data = xmltodict.parse(to_str(data))
+    zone_id = extract_zone_id(path)
+    req_data = clone(xmltodict.parse(to_str(data)))
     zone_details = region_details.vpc_hosted_zone_associations.get(zone_id) or []
     if is_associate:
         assoc_id = short_uid()
@@ -155,6 +169,7 @@ def handle_associate_vpc_request(method, path, data):
         zone_data = req_data.get("DisassociateVPCFromHostedZoneRequest", {})
         response_entry = [z for z in zone_details if _match(z)]
         zone_details = [z for z in zone_details if not _match(z)]
+
         if not response_entry:
             return 404
         response_entry = response_entry[0]
@@ -163,6 +178,40 @@ def handle_associate_vpc_request(method, path, data):
 
     response_tag = "%sVPCWithHostedZoneResponse" % ("Associate" if is_associate else "Disassociate")
     return {response_tag: response_entry}
+
+
+def add_vpc_info_to_response(path: str, response: Response):
+    content = to_str(response.content or "")
+    if "<HostedZone>" not in content:
+        return
+    if "GetHostedZoneResponse" not in content and "CreateHostedZoneResponse" not in content:
+        return
+    content = clone(xmltodict.parse(content))
+    region_details = Route53Backend.get()
+
+    def _insert(obj, **_):
+        if not isinstance(obj, dict) or "HostedZone" not in obj or "VPCs" in obj:
+            return obj
+        zone_id = obj["HostedZone"].get("Id", "").replace("/hostedzone/", "")
+        zone_details = region_details.vpc_hosted_zone_associations.get(zone_id) or []
+        vpcs = [zone["VPC"] for zone in zone_details if zone.get("VPC")]
+        if vpcs:
+            obj["VPCs"] = [{"VPC": vpc} for vpc in vpcs]
+        return obj
+
+    recurse_object(content, _insert)
+    set_response_content(response, xmltodict.unparse(content))
+
+
+# ---------------
+# UTIL FUNCTIONS
+# ---------------
+
+
+def extract_zone_id(path: str) -> str:
+    path_parts = path.lstrip("/").split("/")
+    zone_id = path_parts[2]
+    return zone_id
 
 
 # instantiate listener
