@@ -616,9 +616,8 @@ def configure_container(container: LocalstackContainer):
 
     configure_volume_mounts(container)
 
-    # TODO: no need in podman container (docker runs inside podman without this)
     # mount docker socket
-    # container.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
+    container.volumes.append((config.DOCKER_SOCK, config.DOCKER_SOCK))
 
     container.additional_flags.append("--privileged")
 
