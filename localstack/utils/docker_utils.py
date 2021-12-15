@@ -882,7 +882,7 @@ class CmdDockerClient(ContainerClient):
         if mount_volumes:
             cmd += [
                 volume
-                for host_path, docker_path in mount_volumes
+                for host_path, docker_path in dict(mount_volumes).items()
                 for volume in ["-v", f"{host_path}:{docker_path}"]
             ]
         if interactive:
@@ -1222,18 +1222,21 @@ class SdkDockerClient(ContainerClient):
         LOG.debug("Listing containers with filters: %s", filter)
         try:
             container_list = self.client().containers.list(filters=filter, all=all)
-            return list(
-                map(
-                    lambda container: {
-                        "id": container.id,
-                        "image": container.image,
-                        "name": container.name,
-                        "status": container.status,
-                        "labels": container.labels,
-                    },
-                    container_list,
-                )
-            )
+            result = []
+            for container in container_list:
+                try:
+                    result.append(
+                        {
+                            "id": container.id,
+                            "image": container.image,
+                            "name": container.name,
+                            "status": container.status,
+                            "labels": container.labels,
+                        }
+                    )
+                except Exception as e:
+                    LOG.error(f"Error checking container {container}: {e}")
+            return result
         except APIError:
             raise ContainerException()
 
