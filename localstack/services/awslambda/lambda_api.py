@@ -29,14 +29,18 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_DEFAULT_STARTING_POSITION,
+    ClientError,
+    error_response,
+    event_source_arn_matches,
     get_handler_file_from_name,
     get_lambda_runtime,
-    multi_value_dict_for_list, ClientError, error_response, get_zip_bytes, event_source_arn_matches,
+    get_zip_bytes,
+    multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import install_go_lambda_runtime
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws import aws_responses, aws_stack
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
 from localstack.utils.common import (
@@ -901,7 +905,7 @@ def get_java_handler(zip_file_content, main_file, lambda_function=None):
     )
 
 
-def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes=None) -> Optional[str]:
+def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = None) -> Optional[str]:
     region = LambdaRegion.get()
     # get metadata
     lambda_arn = func_arn(lambda_name)
@@ -956,10 +960,12 @@ def set_function_code(lambda_function: LambdaFunction):
     return {"FunctionName": lambda_function.name()}
 
 
-def store_and_get_lambda_code_archive(lambda_function: LambdaFunction, zip_file_content:bytes = None) -> Optional[Tuple[str, str, bytes]]:
+def store_and_get_lambda_code_archive(
+    lambda_function: LambdaFunction, zip_file_content: bytes = None
+) -> Optional[Tuple[str, str, bytes]]:
     """Store the Lambda code referenced in the LambdaFunction details to disk as a zip file,
-        and return the Lambda CWD, file name, and zip bytes content. May optionally return None
-        in case this is a Lambda with the special bucket marker __local__, used for code mounting."""
+    and return the Lambda CWD, file name, and zip bytes content. May optionally return None
+    in case this is a Lambda with the special bucket marker __local__, used for code mounting."""
     code_passed = lambda_function.code
     is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
     lambda_cwd = lambda_function.cwd
@@ -989,7 +995,8 @@ def store_and_get_lambda_code_archive(lambda_function: LambdaFunction, zip_file_
 
 def do_set_function_code(lambda_function: LambdaFunction):
     """Main function that creates the local zip archive for the given Lambda function, and
-        optionally creates the handler function references (for LAMBDA_EXECUTOR=local)"""
+    optionally creates the handler function references (for LAMBDA_EXECUTOR=local)"""
+
     def generic_handler(*_):
         raise ClientError(
             (

@@ -8,6 +8,7 @@ from io import BytesIO
 from typing import Any, Dict, List, Union
 
 from flask import Response
+
 from localstack import config
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
@@ -190,7 +191,6 @@ def get_record_from_event(event: Dict, key: str) -> Any:
         return event["Records"][0][key]
     except KeyError:
         return None
-
 
 
 def get_zip_bytes(function_code):
