@@ -1831,6 +1831,7 @@ class TestS3(unittest.TestCase):
                 QueueUrl=queue_url,
                 AttributeNames=["AWSTraceHeader"],
                 MessageAttributeNames=["All"],
+                VisibilityTimeout=0,
             )
 
             self.assertEqual(

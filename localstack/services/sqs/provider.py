@@ -773,7 +773,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 raise InvalidAttributeName("Unknown attribute %s." % attr)
 
             if callable(queue.attributes.get(attr)):
-                func = queue.attributes.get(attr)()
+                func = queue.attributes.get(attr)
                 result[attr] = func()
             else:
                 result[attr] = queue.attributes.get(attr)
@@ -786,10 +786,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue_url: String,
         message_body: String,
         delay_seconds: Integer = None,
-        message_attributes: MessageBodyAttributeMap = None,  # TODO
-        message_system_attributes: MessageBodySystemAttributeMap = None,  # TODO
-        message_deduplication_id: String = None,  # TODO
-        message_group_id: String = None,  # TODO
+        message_attributes: MessageBodyAttributeMap = None,
+        message_system_attributes: MessageBodySystemAttributeMap = None,
+        message_deduplication_id: String = None,
+        message_group_id: String = None,
     ) -> SendMessageResult:
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -807,11 +807,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         return SendMessageResult(
             MessageId=message["MessageId"],
             MD5OfMessageBody=message["MD5OfBody"],
-            MD5OfMessageAttributes=message.get("MD5OfMessageAttributes"),  # TODO
-            SequenceNumber=None,  # TODO
-            MD5OfMessageSystemAttributes=_create_message_attribute_hash(
-                message_system_attributes
-            ),  # TODO
+            MD5OfMessageAttributes=message.get("MD5OfMessageAttributes"),
+            SequenceNumber=_create_mock_sequence_number(),
+            MD5OfMessageSystemAttributes=_create_message_attribute_hash(message_system_attributes),
         )
 
     def send_message_batch(
@@ -844,9 +842,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                             Id=entry["Id"],
                             MessageId=message.get("MessageId"),
                             MD5OfMessageBody=message.get("MD5OfBody"),
-                            MD5OfMessageAttributes="",  # TODO
-                            MD5OfMessageSystemAttributes=None,  # TODO
-                            SequenceNumber=None,  # TODO
+                            MD5OfMessageAttributes=message.get("MD5OfMessageAttributes"),
+                            MD5OfMessageSystemAttributes=_create_message_attribute_hash(
+                                message.get("message_system_attributes")
+                            ),
+                            SequenceNumber=_create_mock_sequence_number(),
                         )
                     )
                 except Exception as e:
@@ -870,10 +870,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         context: RequestContext,
         message_body: String,
         delay_seconds: Integer = None,
-        message_attributes: MessageBodyAttributeMap = None,  # TODO
-        message_system_attributes: MessageBodySystemAttributeMap = None,  # TODO
-        message_deduplication_id: String = None,  # TODO
-        message_group_id: String = None,  # TODO
+        message_attributes: MessageBodyAttributeMap = None,
+        message_system_attributes: MessageBodySystemAttributeMap = None,
+        message_deduplication_id: String = None,
+        message_group_id: String = None,
     ) -> Message:
         # TODO: default message attributes (SenderId, ApproximateFirstReceiveTimestamp, ...)
 
@@ -1147,7 +1147,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         }
 
         if message_system_attributes is not None:
-            result.update(message_system_attributes)
+            for attr in message_system_attributes:
+                result[attr] = message_system_attributes[attr]["StringValue"]
 
         return result
 
@@ -1202,12 +1203,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _require_queue_by_arn(self, dead_letter_target_arn):
         arn_parts = dead_letter_target_arn.split(":")
-        # FIXME: make the port variable
         url = "{}/{}/{}".format(
             get_edge_url(), arn_parts[len(arn_parts) - 2], arn_parts[len(arn_parts) - 1]
         )
         queue = self._require_queue_by_url(url)
         return queue
+
+
+def _create_mock_sequence_number():
+    return "".join(random.choice(string.digits) for _ in range(20))
 
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
