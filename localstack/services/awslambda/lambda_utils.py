@@ -1,12 +1,19 @@
+import base64
 import logging
 import os
+import re
 import time
 from collections import defaultdict
+from io import BytesIO
 from typing import Any, Dict, List, Union
+
+from flask import Response
 
 from localstack import config
 from localstack.utils import bootstrap
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
+from localstack.utils.aws.aws_responses import flask_error_response_json
 from localstack.utils.common import in_docker, short_uid, to_str
 from localstack.utils.docker_utils import DOCKER_CLIENT
 
@@ -55,7 +62,19 @@ DOTNET_LAMBDA_RUNTIMES = [
 DOCKER_MAIN_CONTAINER_IP = None
 
 
-def multi_value_dict_for_list(elements: List) -> Dict:
+class ClientError(Exception):
+    def __init__(self, msg, code=400):
+        super(ClientError, self).__init__(msg)
+        self.code = code
+        self.msg = msg
+
+    def get_response(self):
+        if isinstance(self.msg, Response):
+            return self.msg
+        return error_response(self.msg, self.code)
+
+
+def multi_value_dict_for_list(elements: Union[List, Dict]) -> Dict:
     temp_mv_dict = defaultdict(list)
     for key in elements:
         if isinstance(key, (list, tuple)):
@@ -172,3 +191,54 @@ def get_record_from_event(event: Dict, key: str) -> Any:
         return event["Records"][0][key]
     except KeyError:
         return None
+
+
+def get_zip_bytes(function_code):
+    """Returns the ZIP file contents from a FunctionCode dict.
+
+    :type function_code: dict
+    :param function_code: https://docs.aws.amazon.com/lambda/latest/dg/API_FunctionCode.html
+    :returns: bytes of the Zip file.
+    """
+    function_code = function_code or {}
+    if "S3Bucket" in function_code:
+        s3_client = aws_stack.connect_to_service("s3")
+        bytes_io = BytesIO()
+        try:
+            s3_client.download_fileobj(function_code["S3Bucket"], function_code["S3Key"], bytes_io)
+            zip_file_content = bytes_io.getvalue()
+        except Exception as e:
+            raise ClientError("Unable to fetch Lambda archive from S3: %s" % e, 404)
+    elif "ZipFile" in function_code:
+        zip_file_content = function_code["ZipFile"]
+        zip_file_content = base64.b64decode(zip_file_content)
+    elif "ImageUri" in function_code:
+        zip_file_content = None
+    else:
+        raise ClientError("No valid Lambda archive specified: %s" % list(function_code.keys()))
+    return zip_file_content
+
+
+def event_source_arn_matches(mapped: str, searched: str) -> bool:
+    if not mapped:
+        return False
+    if not searched or mapped == searched:
+        return True
+    # Some types of ARNs can end with a path separated by slashes, for
+    # example the ARN of a DynamoDB stream is tableARN/stream/ID. It's
+    # a little counterintuitive that a more specific mapped ARN can
+    # match a less specific ARN on the event, but some integration tests
+    # rely on it for things like subscribing to a stream and matching an
+    # event labeled with the table ARN.
+    if re.match(r"^%s$" % searched, mapped):
+        return True
+    if mapped.startswith(searched):
+        suffix = mapped[len(searched) :]
+        return suffix[0] == "/"
+    return False
+
+
+def error_response(msg, code=500, error_type="InternalFailure"):
+    if code != 404:
+        LOG.debug(msg)
+    return flask_error_response_json(msg, code=code, error_type=error_type)

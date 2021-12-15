@@ -12,9 +12,8 @@ import time
 import traceback
 import uuid
 from datetime import datetime
-from io import BytesIO
 from threading import BoundedSemaphore
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
@@ -30,14 +29,18 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_DEFAULT_STARTING_POSITION,
+    ClientError,
+    error_response,
+    event_source_arn_matches,
     get_handler_file_from_name,
     get_lambda_runtime,
+    get_zip_bytes,
     multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import install_go_lambda_runtime
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws import aws_responses, aws_stack
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
 from localstack.utils.aws.aws_responses import ResourceNotFoundException
 from localstack.utils.common import (
@@ -146,18 +149,6 @@ class LambdaRegion(RegionBackend):
         self.lambdas = {}
         self.code_signing_configs = {}
         self.event_source_mappings = []
-
-
-class ClientError(Exception):
-    def __init__(self, msg, code=400):
-        super(ClientError, self).__init__(msg)
-        self.code = code
-        self.msg = msg
-
-    def get_response(self):
-        if isinstance(self.msg, Response):
-            return self.msg
-        return error_response(self.msg, self.code)
 
 
 class EventSourceListener:
@@ -543,13 +534,14 @@ def message_attributes_to_lower(message_attrs):
     return message_attrs
 
 
+# TODO - refactor to use ApiInvocationContext as input
 def process_apigateway_invocation(
     func_arn,
     path,
     payload,
     stage,
     api_id,
-    headers={},
+    headers=None,
     is_base64_encoded=False,
     resource_path=None,
     method=None,
@@ -591,7 +583,7 @@ def process_apigateway_invocation(
 
 
 def construct_invocation_event(
-    method, path, headers, data, query_string_params={}, is_base64_encoded=False
+    method, path, headers, data, query_string_params=None, is_base64_encoded=False
 ):
     query_string_params = query_string_params or parse_request_data(method, path, "")
     # AWS canonicalizes header names, converting them to lower-case
@@ -707,28 +699,9 @@ def get_event_sources(func_name=None, source_arn=None):
     for region, details in LambdaRegion.regions().items():
         for m in details.event_source_mappings:
             if not func_name or (m["FunctionArn"] in [func_name, func_arn(func_name)]):
-                if _arn_match(mapped=m.get("EventSourceArn"), searched=source_arn):
+                if event_source_arn_matches(mapped=m.get("EventSourceArn"), searched=source_arn):
                     result.append(m)
     return result
-
-
-def _arn_match(mapped, searched):
-    if not mapped:
-        return False
-    if not searched or mapped == searched:
-        return True
-    # Some types of ARNs can end with a path separated by slashes, for
-    # example the ARN of a DynamoDB stream is tableARN/stream/ID. It's
-    # a little counterintuitive that a more specific mapped ARN can
-    # match a less specific ARN on the event, but some integration tests
-    # rely on it for things like subscribing to a stream and matching an
-    # event labeled with the table ARN.
-    if re.match(r"^%s$" % searched, mapped):
-        return True
-    if mapped.startswith(searched):
-        suffix = mapped[len(searched) :]
-        return suffix[0] == "/"
-    return False
 
 
 def get_function_version(arn, version):
@@ -901,37 +874,6 @@ def get_handler_function_from_name(handler_name, runtime=None):
     return handler_name.split(".")[-1]
 
 
-def error_response(msg, code=500, error_type="InternalFailure"):
-    LOG.debug(msg)
-    return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
-
-
-def get_zip_bytes(function_code):
-    """Returns the ZIP file contents from a FunctionCode dict.
-
-    :type function_code: dict
-    :param function_code: https://docs.aws.amazon.com/lambda/latest/dg/API_FunctionCode.html
-    :returns: bytes of the Zip file.
-    """
-    function_code = function_code or {}
-    if "S3Bucket" in function_code:
-        s3_client = aws_stack.connect_to_service("s3")
-        bytes_io = BytesIO()
-        try:
-            s3_client.download_fileobj(function_code["S3Bucket"], function_code["S3Key"], bytes_io)
-            zip_file_content = bytes_io.getvalue()
-        except Exception as e:
-            raise ClientError("Unable to fetch Lambda archive from S3: %s" % e, 404)
-    elif "ZipFile" in function_code:
-        zip_file_content = function_code["ZipFile"]
-        zip_file_content = base64.b64decode(zip_file_content)
-    elif "ImageUri" in function_code:
-        zip_file_content = None
-    else:
-        raise ClientError("No valid Lambda archive specified: %s" % list(function_code.keys()))
-    return zip_file_content
-
-
 def get_java_handler(zip_file_content, main_file, lambda_function=None):
     """Creates a Java handler from an uploaded ZIP or JAR.
 
@@ -963,7 +905,7 @@ def get_java_handler(zip_file_content, main_file, lambda_function=None):
     )
 
 
-def set_archive_code(code, lambda_name, zip_file_content=None):
+def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = None) -> Optional[str]:
     region = LambdaRegion.get()
     # get metadata
     lambda_arn = func_arn(lambda_name)
@@ -1018,7 +960,43 @@ def set_function_code(lambda_function: LambdaFunction):
     return {"FunctionName": lambda_function.name()}
 
 
+def store_and_get_lambda_code_archive(
+    lambda_function: LambdaFunction, zip_file_content: bytes = None
+) -> Optional[Tuple[str, str, bytes]]:
+    """Store the Lambda code referenced in the LambdaFunction details to disk as a zip file,
+    and return the Lambda CWD, file name, and zip bytes content. May optionally return None
+    in case this is a Lambda with the special bucket marker __local__, used for code mounting."""
+    code_passed = lambda_function.code
+    is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
+    lambda_cwd = lambda_function.cwd
+
+    if code_passed:
+        lambda_cwd = lambda_cwd or set_archive_code(code_passed, lambda_function.name())
+        if not zip_file_content and not is_local_mount:
+            # Save the zip file to a temporary file that the lambda executors can reference
+            zip_file_content = get_zip_bytes(code_passed)
+    else:
+        lambda_details = LambdaRegion.get().lambdas[lambda_function.arn()]
+        lambda_cwd = lambda_cwd or lambda_details.cwd
+
+    if not lambda_cwd:
+        return
+
+    # construct archive name
+    archive_file = os.path.join(lambda_cwd, LAMBDA_ZIP_FILE_NAME)
+
+    if not zip_file_content:
+        zip_file_content = load_file(archive_file, mode="rb")
+    else:
+        # override lambda archive with fresh code if we got an update
+        save_file(archive_file, zip_file_content)
+    return lambda_cwd, archive_file, zip_file_content
+
+
 def do_set_function_code(lambda_function: LambdaFunction):
+    """Main function that creates the local zip archive for the given Lambda function, and
+    optionally creates the handler function references (for LAMBDA_EXECUTOR=local)"""
+
     def generic_handler(*_):
         raise ClientError(
             (
@@ -1037,32 +1015,17 @@ def do_set_function_code(lambda_function: LambdaFunction):
     handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
     code_passed = lambda_function.code
     is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
-    zip_file_content = None
-    lambda_cwd = lambda_function.cwd
 
+    # cleanup any left-over Lambda executor instances
     LAMBDA_EXECUTOR.cleanup(arn)
 
-    if code_passed:
-        lambda_cwd = lambda_cwd or set_archive_code(code_passed, lambda_name)
-        if not is_local_mount:
-            # Save the zip file to a temporary file that the lambda executors can reference
-            zip_file_content = get_zip_bytes(code_passed)
-    else:
-        lambda_cwd = lambda_cwd or lambda_details.cwd
-
-    if not lambda_cwd:
+    # get local Lambda code archive path
+    _result = store_and_get_lambda_code_archive(lambda_function)
+    if not _result:
         return
+    lambda_cwd, archive_file, zip_file_content = _result
 
-    # get local lambda code archive path
-    tmp_file = os.path.join(lambda_cwd, LAMBDA_ZIP_FILE_NAME)
-
-    if not zip_file_content:
-        zip_file_content = load_file(tmp_file, mode="rb")
-    else:
-        # override lambda archive with fresh code if we got an update
-        save_file(tmp_file, zip_file_content)
-
-    # Set the appropriate lambda handler.
+    # Set the appropriate Lambda handler.
     lambda_handler = generic_handler
     is_java = lambda_executors.is_java_lambda(runtime)
 
@@ -1072,7 +1035,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
         # directory as part of the classpath. Obtain a Java handler function below.
         try:
             lambda_handler = get_java_handler(
-                zip_file_content, tmp_file, lambda_function=lambda_details
+                zip_file_content, archive_file, lambda_function=lambda_details
             )
         except Exception as e:
             # this can happen, e.g., for Lambda code mounted via __local__ -> ignore
@@ -1083,7 +1046,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
         if not is_zip_file(zip_file_content):
             raise ClientError(f"Uploaded Lambda code for runtime ({runtime}) is not in Zip format")
         # Unzip the Lambda archive contents
-        unzip(tmp_file, lambda_cwd)
+        unzip(archive_file, lambda_cwd)
 
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
@@ -1111,6 +1074,8 @@ def do_set_function_code(lambda_function: LambdaFunction):
                         error_type="ValidationError",
                     )
                 )
+
+        # TODO: init code below should be moved into LambdaExecutorLocal!
 
         if runtime.startswith("python") and not use_docker():
             try:

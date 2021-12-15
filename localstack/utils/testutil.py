@@ -218,13 +218,14 @@ def create_lambda_function(
     libs=[],
     delete=False,
     layers=None,
+    client=None,
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API"""
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
-    client = aws_stack.connect_to_service("lambda")
+    client = client or aws_stack.connect_to_service("lambda")
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:
