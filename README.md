@@ -21,6 +21,7 @@
 <p align="center">
   <a href="#overview">Overview</a> •
   <a href="#installing">Install</a> •
+  <a href="#example">Example</a> •
   <a href="#running">Run</a> •
   <a href="#usage">Usage</a> •
   <a href="#change-log">Changelog</a> •
@@ -58,11 +59,57 @@ pip install localstack
 
 **Note**: Please do **not** use `sudo` or the `root` user - LocalStack should be installed and started entirely under a local non-root user. If you have problems with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
-It installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime.
+It installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime. 
+
+## Example
+
+Start LocalStack inside a Docker container by running:
+
+```shell
+ % localstack start -d
+
+     __                     _______ __             __
+    / /   ____  _________ _/ / ___// /_____ ______/ /__
+   / /   / __ \/ ___/ __ `/ /\__ \/ __/ __ `/ ___/ //_/
+  / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
+ /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
+
+ 💻 LocalStack CLI 0.13.0.11
+
+[20:22:20] starting LocalStack in Docker mode 🐳
+[20:22:21] detaching
+```
+
+You can query the status of respective services on LocalStack by running:
+
+```shell
+% localstack status services
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ Service                  ┃ Status      ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ acm                      │ ✔ available │
+│ apigateway               │ ✔ available │
+│ cloudformation           │ ✔ available │
+│ cloudwatch               │ ✔ available │
+│ config                   │ ✔ available │
+│ dynamodb                 │ ✔ available │
+...
+```
+
+To use SQS, a fully managed distributed message queuing service, on LocalStack run:
+
+```shell
+% awslocal sqs create-queue --queue-name sample-queue
+{
+    "QueueUrl": "http://localhost:4566/000000000000/sample-queue"
+}
+```
+
+Learn more about [LocalStack AWS services](https://docs.localstack.cloud/aws/) and using them with LocalStack's `awslocal` CLI.
 
 ## Running
 
-You can run LocalStack through the following options as well:
+You can run LocalStack through the following options:
 
 - [LocalStack CLI](https://docs.localstack.cloud/get-started/#localstack-cli)
 - [Docker](https://docs.localstack.cloud/get-started/#docker)
@@ -74,10 +121,10 @@ You can run LocalStack through the following options as well:
 To start using LocalStack, check out our documentation on [docs.localstack.cloud](https://docs.localstack.cloud).
 
 - [LocalStack Configuration](https://docs.localstack.cloud/localstack/configuration/)
-- [LocalStack Interaction](doc/interaction/README.md)
+- [LocalStack in CI](https://docs.localstack.cloud/ci/)
 - [LocalStack Integrations](https://docs.localstack.cloud/integrations/)
 - [LocalStack Tools](https://docs.localstack.cloud/tools/)
-- [Advanced topics](doc/advanced-topics/README.md)
+- [Understanding LocalStack](https://docs.localstack.cloud/localstack/)
 - [Troubleshoot](doc/troubleshoot/README.md)
 
 To use LocalStack with a graphical user interface, you can use the following UI clients:
@@ -94,7 +141,7 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) to see the complete list of chang
 If you are interested in contributing to LocalStack:
 
 - Start by reading our [contributing guide](CONTRIBUTING.md).
-- Check out our [developer guide](doc/developer_guides/README.md).
+- Check out our [developer guide](https://docs.localstack.cloud/developer-guide/).
 - Look through our [roadmap](doc/roadmap/README.md).
 - Navigate our codebase and [open issues](https://github.com/localstack/localstack/issues).
 
@@ -126,10 +173,6 @@ You can also support this project by becoming a sponsor on [Open Collective](htt
 <a href="https://opencollective.com/localstack/sponsor/7/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/7/avatar.svg"></a>
 <a href="https://opencollective.com/localstack/sponsor/8/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/8/avatar.svg"></a>
 <a href="https://opencollective.com/localstack/sponsor/9/website" target="_blank"><img src="https://opencollective.com/localstack/sponsor/9/avatar.svg"></a>
-
-## Stargazers over time
-
-[![Stargazers over time](https://starchart.cc/localstack/localstack.svg)](https://starchart.cc/localstack/localstack)
 
 ## License
 
