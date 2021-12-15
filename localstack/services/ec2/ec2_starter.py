@@ -179,8 +179,8 @@ def patch_ec2():
         search_filters = self._get_multi_param("Filter")
         for filter in search_filters:
             filter["Values"] = []
-            for i in range(1, 100):
-                val = filter.get("Value.%s" % i)
+            values = filter["Value"]
+            for val in values:
                 if val is None:
                     break
                 filter["Values"].append(val)
