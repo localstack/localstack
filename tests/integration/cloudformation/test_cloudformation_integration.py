@@ -54,5 +54,6 @@ def test_s3_sns_lambda(
         assert len(msgs["Messages"]) > 0
 
     finally:
-        cleanup_changesets([change_set_id])
-        cleanup_stacks([stack_id])
+        pass
+        # cleanup_changesets([change_set_id])
+        # cleanup_stacks([stack_id])
