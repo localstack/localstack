@@ -50,6 +50,19 @@ def test_s3_sns_lambda(
             ]
         )
 
+        # queue_url = [o["OutputValue"] for o in stack["Outputs"] if o["OutputKey"] == "QueueUrl"][0]
+        # event_bus_name = [
+        #     o["OutputValue"] for o in stack["Outputs"] if o["OutputKey"] == "EventBusName"
+        # ][0]
+        # events_client.put_events(Entries=[
+        #     {
+        #         "Source": 'enterprise-test',
+        #         "DetailType": 'test',
+        #         "Detail": "something",
+        #         "EventBusName": event_bus_name,
+        #     },
+        # ])
+
         msgs = sqs_client.receive_message(QueueUrl=queue_url)
         assert len(msgs["Messages"]) > 0
 
