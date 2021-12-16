@@ -1,6 +1,5 @@
 import json
 
-import mypy_boto3_sns
 from botocore.exceptions import ClientError
 
 from localstack.services.cloudformation.deployment_utils import (
@@ -176,7 +175,7 @@ class SNSTopicPolicy(GenericBaseModel):
     @classmethod
     def get_deploy_templates(cls):
         def _create(resource_id, resources, resource_type, func, stack_name):
-            sns_client: mypy_boto3_sns.SNSClient = aws_stack.connect_to_service("sns")
+            sns_client = aws_stack.connect_to_service("sns")
             resource = cls(resources[resource_id])
             props = resource.props
 
