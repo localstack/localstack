@@ -228,13 +228,13 @@ class SqsQueue:
         self.key = key
         self.tags = tags or dict()
 
-        self.attributes = self.default_attributes()
-        if attributes:
-            self.attributes.update(attributes)
-
         self.visible = PriorityQueue()
         self.inflight = set()
         self.receipts = dict()
+
+        self.attributes = self.default_attributes()
+        if attributes:
+            self.attributes.update(attributes)
 
         self.purge_in_progress = False
         self.permissions = set()
@@ -243,7 +243,7 @@ class SqsQueue:
     def default_attributes(self) -> QueueAttributeMap:
         return {
             QueueAttributeName.QueueArn: self.arn,
-            QueueAttributeName.ApproximateNumberOfMessages: lambda: self.visible._qsize,
+            QueueAttributeName.ApproximateNumberOfMessages: self.visible._qsize,
             QueueAttributeName.ApproximateNumberOfMessagesNotVisible: lambda: len(self.inflight),
             QueueAttributeName.ApproximateNumberOfMessagesDelayed: "0",  # FIXME: this should also be callable
             QueueAttributeName.CreatedTimestamp: str(now()),
