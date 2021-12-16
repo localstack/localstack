@@ -579,6 +579,12 @@ def in_docker():
     """
     if OVERRIDE_IN_DOCKER:
         return True
+
+    # check things from Dockerfile
+    # TODO: is it enough? can we remove all the checks bellow?
+    if __file__.startswith("/opt/code/localstack/") and os.environ.get("USER") == "localstack":
+        return True
+
     if os.path.exists("/.dockerenv"):
         return True
     if not os.path.exists("/proc/1/cgroup"):

@@ -14,7 +14,7 @@ from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.aws_responses import flask_error_response_json
-from localstack.utils.common import in_docker, short_uid, to_str
+from localstack.utils.common import short_uid, to_str
 from localstack.utils.docker_utils import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ def get_main_endpoint_from_container():
     if not config.HOSTNAME_FROM_LAMBDA and DOCKER_MAIN_CONTAINER_IP is None:
         DOCKER_MAIN_CONTAINER_IP = False
         try:
-            if in_docker():
+            if config.is_in_docker:
                 DOCKER_MAIN_CONTAINER_IP = bootstrap.get_main_container_ip()
                 LOG.info("Determined main container target IP: %s" % DOCKER_MAIN_CONTAINER_IP)
         except Exception as e:
