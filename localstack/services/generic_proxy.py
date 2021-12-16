@@ -39,6 +39,7 @@ from localstack.services.messages import Request as RoutingRequest
 from localstack.services.messages import Response as RoutingResponse
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
+from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.common import (
     generate_ssl_cert,
     json_safe,
@@ -241,6 +242,9 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
         headers: Headers,
         response: Response,
     ) -> Optional[RoutingResponse]:
+        # Only handle responses for calls from external clients
+        if is_internal_call_context(headers):
+            return None
         return RoutingResponse(
             status_code=response.status_code,
             content=self._adjust_partition(response.content),
