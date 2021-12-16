@@ -1448,7 +1448,7 @@ class LambdaExecutorLocal(LambdaExecutor):
             LOG.warning("Unable to get function details for local execution of Golang Lambda")
 
         cmd = GO_LAMBDA_RUNTIME
-        LOG.info(cmd)
+        LOG.debug("Running Golang Lambda with runtime: %s", cmd)
         result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
         return result
 
@@ -1471,8 +1471,10 @@ class LambdaExecutorLocal(LambdaExecutor):
     @classmethod
     def get_lambda_callable(cls, function: LambdaFunction, qualifier: str = None) -> Callable:
         """Returns the function Callable for invoking the given function locally"""
-        qualifier = qualifier or LambdaFunction.QUALIFIER_LATEST
-        callable = cls.FUNCTION_CALLABLES.get(function.arn(), {}).get(qualifier)
+        qualifier = function.get_qualifier_version(qualifier)
+        func_dict = cls.FUNCTION_CALLABLES.get(function.arn()) or {}
+        # TODO: function versioning and qualifiers should be refactored and designed properly!
+        callable = func_dict.get(qualifier) or func_dict.get(LambdaFunction.QUALIFIER_LATEST)
         if not callable:
             raise Exception(
                 f"Unable to find callable for Lambda function {function.arn()} - {qualifier}"
@@ -1483,7 +1485,8 @@ class LambdaExecutorLocal(LambdaExecutor):
     def add_function_callable(cls, function: LambdaFunction, lambda_handler: Callable):
         """Sets the function Callable for invoking the $LATEST version of the Lambda function."""
         func_dict = cls.FUNCTION_CALLABLES.setdefault(function.arn(), {})
-        func_dict[LambdaFunction.QUALIFIER_LATEST] = lambda_handler
+        qualifier = function.get_qualifier_version(LambdaFunction.QUALIFIER_LATEST)
+        func_dict[qualifier] = lambda_handler
 
 
 class Util:
