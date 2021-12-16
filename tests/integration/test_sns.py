@@ -654,6 +654,7 @@ class SNSTest(unittest.TestCase):
     def test_create_topic_test_arn(self):
         response = self.sns_client.create_topic(Name=TEST_TOPIC_NAME)
         topic_arn_params = response["TopicArn"].split(":")
+        testutil.response_arn_matches_partition(self.sns_client, response["TopicArn"])
         self.assertEqual(topic_arn_params[4], TEST_AWS_ACCOUNT_ID)
         self.assertEqual(topic_arn_params[5], TEST_TOPIC_NAME)
 

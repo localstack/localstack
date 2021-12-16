@@ -1149,6 +1149,7 @@ class TestSqsProvider:
         attrs = result["Attributes"]
         assert len(attrs) == 3
         assert "test-queue-" in attrs["QueueArn"]
+        assert testutil.response_arn_matches_partition(sqs_client, attrs["QueueArn"])
         assert int(float(attrs["CreatedTimestamp"])) == pytest.approx(int(time.time()), 30)
         assert int(attrs["VisibilityTimeout"]) == 30, "visibility timeout is not the default value"
 

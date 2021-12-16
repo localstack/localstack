@@ -209,8 +209,9 @@ def get_region():
     return get_local_region()
 
 
-def get_partition():
-    return boto3.session.Session().get_partition_for_region(get_region())
+def get_partition(region_name: str = None):
+    region_name = region_name or get_region()
+    return boto3.session.Session().get_partition_for_region(region_name)
 
 
 def get_local_region():

@@ -603,6 +603,9 @@ def modify_and_forward(
             return response
 
     # perform the actual invocation of the backend service
+    headers_to_send = None
+    data_to_send = None
+    method_to_send = None
     if response is None:
         headers_to_send = handler_chain_request.headers
         headers_to_send["Connection"] = headers_to_send.get("Connection") or "close"
@@ -641,10 +644,10 @@ def modify_and_forward(
     # run outbound handlers (post-invocation)
     for listener in listeners_outbound:
         updated_response = listener.return_response(
-            method=original_request.method,
-            path=original_request.path,
-            data=original_request.data,
-            headers=original_request.headers,
+            method=method_to_send or handler_chain_request.method,
+            path=handler_chain_request.path,
+            data=data_to_send or handler_chain_request.data,
+            headers=headers_to_send or handler_chain_request.headers,
             response=response,
         )
         message_modifier = isinstance(listener, MessageModifyingProxyListener)
