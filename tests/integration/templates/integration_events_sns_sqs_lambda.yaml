@@ -48,11 +48,19 @@ Resources:
         Fn::GetAtt:
           - LogFnServiceRoleA176C900
           - Arn
+      FunctionName: enterprise-fn
       Handler: index.handler
       Runtime: python3.8
     DependsOn:
       - LogFnServiceRoleDefaultPolicy9B17FD14
       - LogFnServiceRoleA176C900
+  LogFnEventInvokeConfigD2016CD9:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName:
+        Ref: LogFn234F4FB3
+      Qualifier: $LATEST
+      MaximumRetryAttempts: 0
   LogFnSqsEventSourceGovTestEventsStackqueue8C97EB0598728401:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
@@ -62,6 +70,27 @@ Resources:
       EventSourceArn:
         Fn::GetAtt:
           - queue276F7297
+          - Arn
+  LogFnAllowInvokeGovTestEventsStacktopic8E8111AE4FC418DD:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - LogFn234F4FB3
+          - Arn
+      Principal: sns.amazonaws.com
+      SourceArn:
+        Ref: topic69831491
+  LogFntopic224FEF02:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: lambda
+      TopicArn:
+        Ref: topic69831491
+      Endpoint:
+        Fn::GetAtt:
+          - LogFn234F4FB3
           - Arn
   queue276F7297:
     Type: AWS::SQS::Queue
