@@ -3,7 +3,7 @@ import json
 import pytest
 from requests.models import Response
 
-from localstack.services.generic_proxy import PartitionAdjustingProxyListener
+from localstack.services.generic_proxy import ArnPartitionRewritingListener
 from localstack.utils.common import to_bytes, to_str
 
 # Define the callables used to convert the payload to the appropriate encoding for the tests
@@ -12,8 +12,8 @@ string_encoding = to_str
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_no_partition_adjustment_in_request(encoding):
-    listener = PartitionAdjustingProxyListener()
+def test_no_arn_partition_rewriting_in_request(encoding):
+    listener = ArnPartitionRewritingListener()
     data = encoding(json.dumps({"some-data-without-arn": "nothing to see here"}))
     headers = {"some-header-without-arn": "nothing to see here"}
     result = listener.forward_request(
@@ -30,8 +30,8 @@ def test_no_partition_adjustment_in_request(encoding):
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 @pytest.mark.parametrize("origin_partition", ["aws", "aws-us-gov"])
-def test_partition_adjustment_in_request(encoding, origin_partition):
-    listener = PartitionAdjustingProxyListener()
+def test_arn_partition_rewriting_in_request(encoding, origin_partition):
+    listener = ArnPartitionRewritingListener()
     data = encoding(
         json.dumps(
             {
@@ -67,10 +67,10 @@ def test_partition_adjustment_in_request(encoding, origin_partition):
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 @pytest.mark.parametrize("origin_partition", ["aws", "aws-us-gov"])
-def test_partition_adjustment_in_request_without_region_and_without_default_partition(
+def test_arn_partition_rewriting_in_request_without_region_and_without_default_partition(
     encoding, origin_partition
 ):
-    listener = PartitionAdjustingProxyListener()
+    listener = ArnPartitionRewritingListener()
     data = encoding(
         json.dumps({"some-data-with-arn": f"arn:{origin_partition}:iam::123456789012:ArnInData"})
     )
@@ -94,8 +94,8 @@ def test_partition_adjustment_in_request_without_region_and_without_default_part
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_partition_adjustment_in_response(encoding):
-    listener = PartitionAdjustingProxyListener()
+def test_arn_partition_rewriting_in_response(encoding):
+    listener = ArnPartitionRewritingListener()
     response = Response()
     response._content = encoding(
         json.dumps(
@@ -125,8 +125,8 @@ def test_partition_adjustment_in_response(encoding):
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_partition_adjustment_in_response_without_region_and_without_default_region(encoding):
-    listener = PartitionAdjustingProxyListener()
+def test_arn_partition_rewriting_in_response_without_region_and_without_default_region(encoding):
+    listener = ArnPartitionRewritingListener()
     response = Response()
     response._content = encoding(
         json.dumps({"some-data-with-arn": "arn:aws-us-gov:iam::123456789012:ArnInData"})
@@ -146,11 +146,11 @@ def test_partition_adjustment_in_response_without_region_and_without_default_reg
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
-def test_partition_adjustment_in_response_without_region_and_with_default_region(
+def test_arn_partition_rewriting_in_response_without_region_and_with_default_region(
     encoding, switch_region
 ):
     with switch_region("us-gov-east-1"):
-        listener = PartitionAdjustingProxyListener()
+        listener = ArnPartitionRewritingListener()
         response = Response()
         response._content = encoding(
             json.dumps({"some-data-with-arn": "arn:aws:iam::123456789012:ArnInData"})

@@ -454,7 +454,7 @@ OUTBOUND_HTTP_PROXY = os.environ.get("OUTBOUND_HTTP_PROXY", "")
 OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 
 # Whether to enable the partition adjustment listener (in order to support other partitions that the default)
-PARTITION_ADJUSTMENT = is_env_true("PARTITION_ADJUSTMENT")
+ARN_PARTITION_REWRITING = is_env_true("ARN_PARTITION_REWRITING")
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!

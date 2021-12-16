@@ -194,14 +194,16 @@ class MessageModifyingProxyListener(ProxyListener):
         return None
 
 
-class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
+class ArnPartitionRewritingListener(MessageModifyingProxyListener):
     """
-    Intercepts requests and responses and tries to adjust the partitions in ARNs within the intercepted requests
-    (both in the payload and in the metadata).
-    The partition is selected based on the region in the ARN, or by the default region if the ARN does not contain a
-    region.
+    Intercepts requests and responses and tries to adjust the partitions in ARNs within the intercepted requests.
+    For incoming requests, the default partition is set ("aws").
+    For outgoing responses, the partition is adjusted based on the region in the ARN, or by the default region
+    if the ARN does not contain a region.
     This listener is used to support other partitions than the default "aws" partition (f.e. aws-us-gov) without
     rewriting all the cases where the ARN is parsed or constructed within LocalStack or moto.
+    In other words, this listener makes sure that internally the ARNs are always in the partition "aws", while the
+    client gets ARNs with the proper partition.
     """
 
     # Partition which should be statically set for incoming requests
@@ -302,7 +304,7 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
     def _partition_lookup(self, region: str):
         try:
             partition = self._get_partition_for_region(region)
-        except PartitionAdjustingProxyListener.InvalidRegionException:
+        except ArnPartitionRewritingListener.InvalidRegionException:
             try:
                 # If the region is not properly set (f.e. because it is set to a wildcard),
                 # the partition is determined based on the default region.
@@ -326,7 +328,7 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
         elif re.match(r"^(us|eu|ap|sa|ca|me|af)-\w+-\d+$", region):
             return "aws"
         else:
-            raise PartitionAdjustingProxyListener.InvalidRegionException(
+            raise ArnPartitionRewritingListener.InvalidRegionException(
                 f"Region ({region}) could not be matched to a partition."
             )
 
