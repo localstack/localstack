@@ -1660,7 +1660,7 @@ class TestSqsProvider:
         url_parts = dl_queue_url.split("/")
         region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         conf = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 50}
@@ -1683,7 +1683,7 @@ class TestSqsProvider:
         url_parts = dl_queue_url.split("/")
         region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
@@ -1701,7 +1701,7 @@ class TestSqsProvider:
         # create arn
         url_parts = queue_url.split("/")
         queue_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
         lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=lambda_name
@@ -1731,7 +1731,7 @@ class TestSqsProvider:
         url_parts = dl_queue_url.split("/")
         region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
@@ -1792,7 +1792,7 @@ class TestSqsProvider:
         )
         # asserts
         constructed_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
         redrive_policy = json.loads(get_two_attributes.get("Attributes").get("RedrivePolicy"))
         assert message_retention_period == get_two_attributes.get("Attributes").get(
@@ -1988,7 +1988,7 @@ class TestSqsProvider:
         url_parts = dl_queue_url.split("/")
         region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
@@ -2006,7 +2006,7 @@ class TestSqsProvider:
         # create arn
         url_parts = queue_url.split("/")
         queue_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
         lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=lambda_name
