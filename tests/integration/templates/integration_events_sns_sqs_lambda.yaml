@@ -182,6 +182,9 @@ Outputs:
       Fn::GetAtt:
         - LogFn234F4FB3
         - Arn
+  FnName:
+    Value:
+      Ref: LogFn234F4FB3
   EventBusArn:
     Value:
       Fn::GetAtt:
