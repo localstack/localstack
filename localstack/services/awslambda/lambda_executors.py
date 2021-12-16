@@ -1217,6 +1217,10 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
 
 class LambdaExecutorLocal(LambdaExecutor):
+
+    # maps functionARN -> functionVersion -> callable used to invoke a Lambda function locally
+    FUNCTION_CALLABLES: Dict[str, Dict[str, Callable]] = {}
+
     def _execute_in_custom_runtime(
         self, cmd: Union[str, List[str]], lambda_function: LambdaFunction = None
     ) -> InvocationResult:
@@ -1295,7 +1299,9 @@ class LambdaExecutorLocal(LambdaExecutor):
         # execute the Lambda function in a forked sub-process, sync result via queue
         queue = Queue()
 
-        lambda_function_callable = lambda_function.function(inv_context.function_version)
+        lambda_function_callable = self.get_lambda_callable(
+            lambda_function, qualifier=inv_context.function_version
+        )
 
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
@@ -1433,6 +1439,19 @@ class LambdaExecutorLocal(LambdaExecutor):
         result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
         return result
 
+    def execute_go_lambda(self, event, context, main_file, lambda_function: LambdaFunction = None):
+
+        if lambda_function:
+            lambda_function.envvars["AWS_LAMBDA_FUNCTION_HANDLER"] = main_file
+            lambda_function.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
+        else:
+            LOG.warning("Unable to get function details for local execution of Golang Lambda")
+
+        cmd = GO_LAMBDA_RUNTIME
+        LOG.debug("Running Golang Lambda with runtime: %s", cmd)
+        result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
+        return result
+
     @staticmethod
     def set_default_env_variables():
         # set default env variables required for most Lambda handlers
@@ -1449,18 +1468,25 @@ class LambdaExecutorLocal(LambdaExecutor):
             if env_value_before is None:
                 os.environ.pop(env_name, None)
 
-    def execute_go_lambda(self, event, context, main_file, lambda_function: LambdaFunction = None):
+    @classmethod
+    def get_lambda_callable(cls, function: LambdaFunction, qualifier: str = None) -> Callable:
+        """Returns the function Callable for invoking the given function locally"""
+        qualifier = function.get_qualifier_version(qualifier)
+        func_dict = cls.FUNCTION_CALLABLES.get(function.arn()) or {}
+        # TODO: function versioning and qualifiers should be refactored and designed properly!
+        callable = func_dict.get(qualifier) or func_dict.get(LambdaFunction.QUALIFIER_LATEST)
+        if not callable:
+            raise Exception(
+                f"Unable to find callable for Lambda function {function.arn()} - {qualifier}"
+            )
+        return callable
 
-        if lambda_function:
-            lambda_function.envvars["AWS_LAMBDA_FUNCTION_HANDLER"] = main_file
-            lambda_function.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
-        else:
-            LOG.warning("Unable to get function details for local execution of Golang Lambda")
-
-        cmd = GO_LAMBDA_RUNTIME
-        LOG.info(cmd)
-        result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
-        return result
+    @classmethod
+    def add_function_callable(cls, function: LambdaFunction, lambda_handler: Callable):
+        """Sets the function Callable for invoking the $LATEST version of the Lambda function."""
+        func_dict = cls.FUNCTION_CALLABLES.setdefault(function.arn(), {})
+        qualifier = function.get_qualifier_version(LambdaFunction.QUALIFIER_LATEST)
+        func_dict[qualifier] = lambda_handler
 
 
 class Util:

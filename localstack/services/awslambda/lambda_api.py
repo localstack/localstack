@@ -89,7 +89,7 @@ LAMBDA_JAR_FILE_NAME = "original_lambda_archive.jar"
 LAMBDA_DEFAULT_TIMEOUT = 3
 
 INVALID_PARAMETER_VALUE_EXCEPTION = "InvalidParameterValueException"
-VERSION_LATEST = "$LATEST"
+VERSION_LATEST = LambdaFunction.QUALIFIER_LATEST
 FUNCTION_MAX_SIZE = 69905067
 
 BATCH_SIZE_RANGES = {
@@ -949,8 +949,7 @@ def set_archive_code(code: Dict, lambda_name: str, zip_file_content: bytes = Non
 
 def set_function_code(lambda_function: LambdaFunction):
     def _set_and_configure():
-        lambda_handler = do_set_function_code(lambda_function)
-        lambda_function.versions.get(VERSION_LATEST)["Function"] = lambda_handler
+        do_set_function_code(lambda_function)
         # initialize function code via plugins
         for plugin in lambda_executors.LambdaExecutorPlugin.get_plugins():
             plugin.init_function_code(lambda_function)
@@ -1006,13 +1005,11 @@ def do_set_function_code(lambda_function: LambdaFunction):
             % lambda_name
         )
 
-    region = LambdaRegion.get()
     lambda_name = lambda_function.name()
     arn = lambda_function.arn()
-    lambda_details = region.lambdas[arn]
-    runtime = get_lambda_runtime(lambda_details)
-    lambda_environment = lambda_details.envvars
-    handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
+    runtime = get_lambda_runtime(lambda_function)
+    lambda_environment = lambda_function.envvars
+    handler_name = lambda_function.handler = lambda_function.handler or LAMBDA_DEFAULT_HANDLER
     code_passed = lambda_function.code
     is_local_mount = code_passed.get("S3Bucket") == config.BUCKET_MARKER_LOCAL
 
@@ -1035,7 +1032,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
         # directory as part of the classpath. Obtain a Java handler function below.
         try:
             lambda_handler = get_java_handler(
-                zip_file_content, archive_file, lambda_function=lambda_details
+                zip_file_content, archive_file, lambda_function=lambda_function
             )
         except Exception as e:
             # this can happen, e.g., for Lambda code mounted via __local__ -> ignore
@@ -1115,6 +1112,9 @@ def do_set_function_code(lambda_function: LambdaFunction):
                 return result
 
             lambda_handler = execute_go
+
+    if lambda_handler:
+        lambda_executors.LambdaExecutorLocal.add_function_callable(lambda_function, lambda_handler)
 
     return lambda_handler
 

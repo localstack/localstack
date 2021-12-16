@@ -1177,7 +1177,7 @@ def disk_usage(path: str) -> int:
 
 def file_exists_not_empty(path: str) -> bool:
     """Return whether the given file or directory exists and is non-empty (i.e., >0 bytes content)"""
-    return disk_usage(path) > 0
+    return path and disk_usage(path) > 0
 
 
 def format_bytes(count: float, default: str = "n/a"):
