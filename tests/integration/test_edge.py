@@ -187,6 +187,9 @@ class TestEdgeAPI:
         os.environ.pop("DEFAULT_REGION")
         if region_original is not None:
             os.environ["DEFAULT_REGION"] = region_original
+        # cleanup
+        sns_client.delete_topic(TopicArn=topic_arn)
+        sqs_client.delete_queue(QueueUrl=queue_url)
 
     def test_message_modifying_handler(self, s3_client, monkeypatch):
         class MessageModifier(MessageModifyingProxyListener):
