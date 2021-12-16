@@ -27,7 +27,7 @@ JjZ91eQ0hjkCMHw2U/Aw5WJjOpnitqM7mzT6HtoQknFekROn3aRukswy1vUhZscv
 
 class TestACM(unittest.TestCase):
     def test_import_certificate(self):
-        acm = aws_stack.connect_to_service("acm")
+        acm = aws_stack.create_external_boto_client("acm")
 
         certs_before = acm.list_certificates().get("CertificateSummaryList", [])
 
@@ -49,7 +49,7 @@ class TestACM(unittest.TestCase):
         self.assertEqual(len(certs_before) + 1, len(certs_after))
 
     def test_domain_validation(self):
-        acm = aws_stack.connect_to_service("acm")
+        acm = aws_stack.create_external_boto_client("acm")
 
         domain_name = "example-%s.com" % short_uid()
         options = [{"DomainName": domain_name, "ValidationDomain": domain_name}]

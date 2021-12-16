@@ -47,8 +47,8 @@ TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 class SNSTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.sqs_client = aws_stack.connect_to_service("sqs")
-        cls.sns_client = aws_stack.connect_to_service("sns")
+        cls.sqs_client = aws_stack.create_external_boto_client("sqs")
+        cls.sns_client = aws_stack.create_external_boto_client("sns")
         cls.topic_arn = cls.sns_client.create_topic(Name=TEST_TOPIC_NAME)["TopicArn"]
         cls.queue_url = cls.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)["QueueUrl"]
         cls.dlq_url = cls.sqs_client.create_queue(QueueName=TEST_QUEUE_DLQ_NAME)["QueueUrl"]
@@ -712,7 +712,7 @@ class SNSTest(unittest.TestCase):
 
         # clean up
         self.sns_client.delete_topic(TopicArn=topic_arn)
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=func_name)
 
     def test_publish_message_after_subscribe_topic(self):

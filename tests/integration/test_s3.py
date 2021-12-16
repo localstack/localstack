@@ -97,10 +97,10 @@ class PutRequest(Request):
 #     def wrapper(self):
 #         try:
 #             # test via path based addressing
-#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'virtual'})
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.create_external_boto_client('s3', config={'addressing_style': 'virtual'})
 #             wrapped()
 #             # test via host based addressing
-#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'path'})
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.create_external_boto_client('s3', config={'addressing_style': 'path'})
 #             wrapped()
 #         finally:
 #             # reset client
@@ -112,8 +112,8 @@ class TestS3(unittest.TestCase):
     OVERWRITTEN_CLIENT = None
 
     def setUp(self):
-        self._s3_client = aws_stack.connect_to_service("s3")
-        self.sqs_client = aws_stack.connect_to_service("sqs")
+        self._s3_client = aws_stack.create_external_boto_client("s3")
+        self.sqs_client = aws_stack.create_external_boto_client("sqs")
 
     @property
     def s3_client(self):
@@ -970,7 +970,7 @@ class TestS3(unittest.TestCase):
         # Test setup
         bucket = "test-bucket-%s" % short_uid()
 
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
         s3_client.create_bucket(Bucket=bucket)
         s3_client.put_bucket_cors(
             Bucket=bucket,
@@ -1643,10 +1643,10 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [table_name])
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=function_name)
 
-        dynamodb_client = aws_stack.connect_to_service("dynamodb")
+        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
         dynamodb_client.delete_table(TableName=table_name)
 
     def test_s3_put_object_notification_with_sns_topic(self):
@@ -1655,7 +1655,7 @@ class TestS3(unittest.TestCase):
         queue_name = "queue-%s" % short_uid()
         key_name = "bucket-key-%s" % short_uid()
 
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = aws_stack.create_external_boto_client("sns")
 
         self.s3_client.create_bucket(Bucket=bucket_name)
         queue_url = self.sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
@@ -1876,7 +1876,7 @@ class TestS3(unittest.TestCase):
             request.url += "requestedBy=abcDEF123"
 
         bucket_name = short_uid()
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
         s3_presign = boto3.client(
             "s3",
             endpoint_url=config.get_edge_url(),
@@ -2325,7 +2325,7 @@ class TestS3(unittest.TestCase):
             ),
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.invoke(FunctionName=function_name, InvocationType="Event")
 
         retry(
@@ -2361,8 +2361,8 @@ class TestS3(unittest.TestCase):
         run("cd %s; npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner" % temp_folder)
 
         function_name = "func-integration-%s" % short_uid()
-        lambda_client = aws_stack.connect_to_service("lambda")
-        s3_client = aws_stack.connect_to_service("s3")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
+        s3_client = aws_stack.create_external_boto_client("s3")
 
         testutil.create_lambda_function(
             func_name=function_name,
@@ -2387,7 +2387,7 @@ class TestS3(unittest.TestCase):
         bucket_name = short_uid()
         port1 = 443
         port2 = 4566
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
 
         s3_presign = boto3.client(
             "s3",
@@ -2651,7 +2651,7 @@ class TestS3New:
 )
 @pytest.mark.skipif(os.environ.get("LOCALSTACK_API_KEY", "") != "", reason="replay skipped in pro")
 def test_replay_s3_call(api_version, bucket_name, payload):
-    s3_client = aws_stack.connect_to_service("s3")
+    s3_client = aws_stack.create_external_boto_client("s3")
 
     with pytest.raises(ClientError) as error:
         s3_client.head_bucket(Bucket=bucket_name)

@@ -17,7 +17,7 @@ class TestServerless(unittest.TestCase):
             # install dependencies
             run("cd %s; npm install" % base_dir)
         # list apigateway before sls deployment
-        apigw_client = aws_stack.connect_to_service("apigateway")
+        apigw_client = aws_stack.create_external_boto_client("apigateway")
         apis = apigw_client.get_rest_apis()["items"]
         cls.api_ids = [api["id"] for api in apis]
 
@@ -36,7 +36,7 @@ class TestServerless(unittest.TestCase):
 
     @pytest.mark.skip_offline
     def test_event_rules_deployed(self):
-        events = aws_stack.connect_to_service("events")
+        events = aws_stack.create_external_boto_client("events")
         rules = events.list_rules()["Rules"]
 
         rule = ([r for r in rules if r["Name"] == "sls-test-cf-event"] or [None])[0]
@@ -55,8 +55,8 @@ class TestServerless(unittest.TestCase):
         function_name = "sls-test-local-dynamodbStreamHandler"
         table_name = "Test"
 
-        lambda_client = aws_stack.connect_to_service("lambda")
-        dynamodb_client = aws_stack.connect_to_service("dynamodb")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
+        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -76,8 +76,8 @@ class TestServerless(unittest.TestCase):
         function_name2 = "sls-test-local-kinesisConsumerHandler"
         stream_name = "KinesisTestStream"
 
-        lambda_client = aws_stack.connect_to_service("lambda")
-        kinesis_client = aws_stack.connect_to_service("kinesis")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
+        kinesis_client = aws_stack.create_external_boto_client("kinesis")
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -104,8 +104,8 @@ class TestServerless(unittest.TestCase):
         function_name = "sls-test-local-queueHandler"
         queue_name = "sls-test-local-CreateQueue"
 
-        lambda_client = aws_stack.connect_to_service("lambda")
-        sqs_client = aws_stack.connect_to_service("sqs")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -130,7 +130,7 @@ class TestServerless(unittest.TestCase):
     def test_lambda_with_configs_deployed(self):
         function_name = "sls-test-local-test"
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
@@ -147,13 +147,13 @@ class TestServerless(unittest.TestCase):
     def test_apigateway_deployed(self):
         function_name = "sls-test-local-router"
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         resp = lambda_client.list_functions()
         function = [fn for fn in resp["Functions"] if fn["FunctionName"] == function_name][0]
         self.assertEqual("handler.createHttpRouter", function["Handler"])
 
-        apigw_client = aws_stack.connect_to_service("apigateway")
+        apigw_client = aws_stack.create_external_boto_client("apigateway")
         apis = apigw_client.get_rest_apis()["items"]
         api_ids = [api["id"] for api in apis if api["id"] not in self.api_ids]
         self.assertEqual(1, len(api_ids))

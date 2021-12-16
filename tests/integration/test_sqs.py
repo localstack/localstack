@@ -75,7 +75,7 @@ TEST_REGION = "us-east-1"
 class SQSTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.client = aws_stack.connect_to_service("sqs")
+        cls.client = aws_stack.create_external_boto_client("sqs")
 
     def test_list_queue_tags(self):
         queue_info = self.client.create_queue(QueueName=TEST_QUEUE_NAME)
@@ -394,7 +394,7 @@ class SQSTest(unittest.TestCase):
         self.client.delete_queue(QueueUrl=dlq_info["QueueUrl"])
 
     def test_dead_letter_queue_execution(self):
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         # create SQS queue with DLQ redrive policy
         queue_name1 = "dlq-%s" % short_uid()
@@ -581,7 +581,7 @@ class SQSTest(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(
             EventSourceArn=aws_stack.sqs_queue_arn(queue_name),
             FunctionName=function_name,
@@ -685,7 +685,7 @@ class SQSTest(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=function_name
         )
@@ -779,7 +779,7 @@ class SQSTest(unittest.TestCase):
             func_name=func_name, zip_file=zip_file, handler=handler, runtime=runtime
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(EventSourceArn=queue_arn, FunctionName=func_name)
 
         self.client.send_message(

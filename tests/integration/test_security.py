@@ -39,7 +39,7 @@ class TestCSRF(unittest.TestCase):
 
     @patch.object(config, "DISABLE_CUSTOM_CORS_S3", True)
     def test_cors_s3_override(self):
-        client = aws_stack.connect_to_service("s3")
+        client = aws_stack.create_external_boto_client("s3")
 
         BUCKET_CORS_CONFIG = {
             "CORSRules": [

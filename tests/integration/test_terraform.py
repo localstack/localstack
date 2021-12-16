@@ -83,7 +83,7 @@ class TestTerraform(unittest.TestCase):
 
     @pytest.mark.skip_offline
     def test_bucket_exists(self):
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
 
         response = s3_client.head_bucket(Bucket=BUCKET_NAME)
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
@@ -104,7 +104,7 @@ class TestTerraform(unittest.TestCase):
 
     @pytest.mark.skip_offline
     def test_sqs(self):
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.get_queue_url(QueueName=QUEUE_NAME)["QueueUrl"]
         response = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["All"])
 
@@ -115,7 +115,7 @@ class TestTerraform(unittest.TestCase):
 
     @pytest.mark.skip_offline
     def test_lambda(self):
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         response = lambda_client.get_function(FunctionName=LAMBDA_NAME)
         self.assertEqual(LAMBDA_NAME, response["Configuration"]["FunctionName"])
         self.assertEqual(LAMBDA_HANDLER, response["Configuration"]["Handler"])
@@ -124,7 +124,7 @@ class TestTerraform(unittest.TestCase):
 
     @pytest.mark.skip_offline
     def test_event_source_mapping(self):
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         all_mappings = lambda_client.list_event_source_mappings(
             EventSourceArn=QUEUE_ARN, FunctionName=LAMBDA_NAME
         )
@@ -134,7 +134,7 @@ class TestTerraform(unittest.TestCase):
 
     @pytest.mark.skip_offline
     def test_apigateway(self):
-        apigateway_client = aws_stack.connect_to_service("apigateway")
+        apigateway_client = aws_stack.create_external_boto_client("apigateway")
         rest_apis = apigateway_client.get_rest_apis()
 
         rest_id = None
@@ -166,7 +166,7 @@ class TestTerraform(unittest.TestCase):
 
     @pytest.mark.skip_offline
     def test_route53(self):
-        route53 = aws_stack.connect_to_service("route53")
+        route53 = aws_stack.create_external_boto_client("route53")
 
         response = route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
         self.assertEqual(201, response["ResponseMetadata"]["HTTPStatusCode"])
@@ -177,7 +177,7 @@ class TestTerraform(unittest.TestCase):
 
     @pytest.mark.skip_offline
     def test_acm(self):
-        acm = aws_stack.connect_to_service("acm")
+        acm = aws_stack.create_external_boto_client("acm")
 
         certs = acm.list_certificates()["CertificateSummaryList"]
         certs = [c for c in certs if c.get("DomainName") == "example.com"]
@@ -185,7 +185,7 @@ class TestTerraform(unittest.TestCase):
 
     @pytest.mark.skip_offline
     def test_apigateway_escaped_policy(self):
-        apigateway_client = aws_stack.connect_to_service("apigateway")
+        apigateway_client = aws_stack.create_external_boto_client("apigateway")
         rest_apis = apigateway_client.get_rest_apis()
 
         service_apis = []
@@ -201,7 +201,7 @@ class TestTerraform(unittest.TestCase):
         def _table_exists(tablename, dynamotables):
             return any(name for name in dynamotables["TableNames"] if name == tablename)
 
-        dynamo_client = aws_stack.connect_to_service("dynamodb")
+        dynamo_client = aws_stack.create_external_boto_client("dynamodb")
         tables = dynamo_client.list_tables()
         self.assertTrue(_table_exists("tf_dynamotable1", tables))
         self.assertTrue(_table_exists("tf_dynamotable2", tables))

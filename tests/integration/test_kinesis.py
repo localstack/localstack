@@ -17,7 +17,7 @@ from localstack.utils.kinesis import kinesis_connector
 
 class TestKinesis(unittest.TestCase):
     def test_stream_consumers(self):
-        client = aws_stack.connect_to_service("kinesis")
+        client = aws_stack.create_external_boto_client("kinesis")
         stream_name = "test-%s" % short_uid()
         stream_arn = aws_stack.kinesis_stream_arn(stream_name)
 
@@ -69,7 +69,7 @@ class TestKinesis(unittest.TestCase):
         client.delete_stream(StreamName=stream_name)
 
     def test_subscribe_to_shard(self):
-        client = aws_stack.connect_to_service("kinesis")
+        client = aws_stack.create_external_boto_client("kinesis")
         stream_name = "test-%s" % short_uid()
         stream_arn = aws_stack.kinesis_stream_arn(stream_name)
 
@@ -125,7 +125,7 @@ class TestKinesis(unittest.TestCase):
         client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
 
     def test_subscribe_to_shard_with_sequence_number_as_iterator(self):
-        client = aws_stack.connect_to_service("kinesis")
+        client = aws_stack.create_external_boto_client("kinesis")
         stream_name = "test-%s" % short_uid()
         stream_arn = aws_stack.kinesis_stream_arn(stream_name)
 
@@ -181,7 +181,7 @@ class TestKinesis(unittest.TestCase):
         client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
 
     def test_get_records(self):
-        client = aws_stack.connect_to_service("kinesis")
+        client = aws_stack.create_external_boto_client("kinesis")
         stream_name = "test-%s" % short_uid()
 
         client.create_stream(StreamName=stream_name, ShardCount=1)
@@ -218,7 +218,7 @@ class TestKinesis(unittest.TestCase):
         client.delete_stream(StreamName=stream_name)
 
     def _get_shard_iterator(self, stream_name):
-        client = aws_stack.connect_to_service("kinesis")
+        client = aws_stack.create_external_boto_client("kinesis")
         response = client.describe_stream(StreamName=stream_name)
         sequence_number = (
             response.get("StreamDescription")
@@ -254,7 +254,7 @@ class TestKinesisPythonClient(unittest.TestCase):
             wait_until_started=True,
         )
 
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = aws_stack.create_external_boto_client("kinesis")
 
         stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
         self.assertEqual(1, stream_summary["StreamDescriptionSummary"]["OpenShardCount"])
