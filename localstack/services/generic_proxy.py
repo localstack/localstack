@@ -194,7 +194,7 @@ class MessageModifyingProxyListener(ProxyListener):
         return None
 
 
-class ArnPartitionRewritingListener(MessageModifyingProxyListener):
+class ArnPartitionRewriteListener(MessageModifyingProxyListener):
     """
     Intercepts requests and responses and tries to adjust the partitions in ARNs within the intercepted requests.
     For incoming requests, the default partition is set ("aws").
@@ -304,7 +304,7 @@ class ArnPartitionRewritingListener(MessageModifyingProxyListener):
     def _partition_lookup(self, region: str):
         try:
             partition = self._get_partition_for_region(region)
-        except ArnPartitionRewritingListener.InvalidRegionException:
+        except ArnPartitionRewriteListener.InvalidRegionException:
             try:
                 # If the region is not properly set (f.e. because it is set to a wildcard),
                 # the partition is determined based on the default region.
@@ -328,7 +328,7 @@ class ArnPartitionRewritingListener(MessageModifyingProxyListener):
         elif re.match(r"^(us|eu|ap|sa|ca|me|af)-\w+-\d+$", region):
             return "aws"
         else:
-            raise ArnPartitionRewritingListener.InvalidRegionException(
+            raise ArnPartitionRewriteListener.InvalidRegionException(
                 f"Region ({region}) could not be matched to a partition."
             )
 

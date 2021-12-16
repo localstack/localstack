@@ -15,12 +15,12 @@ def configure_edge_port(container):
             container.ports.add(port)
 
 
-# Register the ArnPartitionRewritingListener only if the feature flag is enabled
+# Register the ArnPartitionRewriteListener only if the feature flag is enabled
 @hooks.on_infra_start(should_load=lambda: config.ARN_PARTITION_REWRITING)
 def register_partition_adjusting_proxy_listener():
     LOG.info(
-        "Registering ArnPartitionRewritingListener to dynamically replace partitions in requests and responses."
+        "Registering ArnPartitionRewriteListener to dynamically replace partitions in requests and responses."
     )
-    from localstack.services.generic_proxy import ArnPartitionRewritingListener, ProxyListener
+    from localstack.services.generic_proxy import ArnPartitionRewriteListener, ProxyListener
 
-    ProxyListener.DEFAULT_LISTENERS.append(ArnPartitionRewritingListener())
+    ProxyListener.DEFAULT_LISTENERS.append(ArnPartitionRewriteListener())
