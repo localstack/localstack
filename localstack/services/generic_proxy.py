@@ -250,10 +250,16 @@ class PartitionAdjustingProxyListener(MessageModifyingProxyListener):
     def _adjust_partition_in_path(self, path: str, static_partition: str = None):
         """Adjusts the (still url encoded) URL path"""
         parsed_url = urlparse(path)
-        decoded_query = parse_qs(parsed_url.query)
+        # Make sure to keep blank values, otherwise we drop query params which do not have a value (f.e. "/?policy")
+        decoded_query = parse_qs(qs=parsed_url.query, keep_blank_values=True)
         adjusted_path = self._adjust_partition(parsed_url.path, static_partition)
         adjusted_query = self._adjust_partition(decoded_query, static_partition)
         encoded_query = urlencode(adjusted_query, doseq=True)
+
+        # Make sure to avoid empty equals signs (in between and in the end)
+        encoded_query = encoded_query.replace("=&", "&")
+        encoded_query = re.sub(r"=$", "", encoded_query)
+
         return f"{adjusted_path}{('?' + encoded_query) if encoded_query else ''}"
 
     def _adjust_partition(self, source, static_partition: str = None):

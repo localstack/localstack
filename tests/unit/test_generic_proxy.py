@@ -12,6 +12,23 @@ string_encoding = to_str
 
 
 @pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
+def test_no_partition_adjustment_in_request(encoding):
+    listener = PartitionAdjustingProxyListener()
+    data = encoding(json.dumps({"some-data-without-arn": "nothing to see here"}))
+    headers = {"some-header-without-arn": "nothing to see here"}
+    result = listener.forward_request(
+        method="POST",
+        path="/?nothingtoseehere",
+        data=data,
+        headers=headers,
+    )
+    assert result.method == "POST"
+    assert result.path == "/?nothingtoseehere"
+    assert result.data == encoding(json.dumps({"some-data-without-arn": "nothing to see here"}))
+    assert result.headers == {"some-header-without-arn": "nothing to see here"}
+
+
+@pytest.mark.parametrize("encoding", [byte_encoding, string_encoding])
 @pytest.mark.parametrize("origin_partition", ["aws", "aws-us-gov"])
 def test_partition_adjustment_in_request(encoding, origin_partition):
     listener = PartitionAdjustingProxyListener()
