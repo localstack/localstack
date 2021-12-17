@@ -48,7 +48,7 @@ def _client(service):
         if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
         else None
     )
-    return aws_stack.connect_to_service(service, config=config)
+    return aws_stack.create_external_boto_client(service, config=config)
 
 
 @pytest.fixture(scope="class")

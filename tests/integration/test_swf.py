@@ -8,7 +8,7 @@ DEFAULT_TASK_LIST = {"name": "default"}
 
 class TestSwf(unittest.TestCase):
     def setUp(self):
-        self.swf_client = aws_stack.connect_to_service("swf")
+        self.swf_client = aws_stack.create_external_boto_client("swf")
 
         self.swf_unique_id = datetime.datetime.now().isoformat()
         self.swf_version = "1.0"

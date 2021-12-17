@@ -11,6 +11,7 @@ import zipfile
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import boto3
 import requests
 from six import iteritems
 
@@ -734,3 +735,12 @@ def list_all_resources(
         collected_items += result.get(list_attr_name, [])
 
     return collected_items
+
+
+def response_arn_matches_partition(client, response_arn: str) -> bool:
+    parsed_arn = aws_stack.parse_arn(response_arn)
+    return (
+        client.meta.partition
+        == boto3.session.Session().get_partition_for_region(parsed_arn["region"])
+        and client.meta.partition == parsed_arn["partition"]
+    )

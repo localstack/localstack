@@ -123,7 +123,7 @@ def handler(event, context):
                 kinesis_record["Data"] = json.dumps(ddb_new_image["data"])
                 forward_event_to_target_stream(kinesis_record, target_name)
             elif forwarding_target.startswith("s3:"):
-                s3_client = connect_to_service("s3")
+                s3_client = create_external_boto_client("s3")
                 test_data = to_bytes(json.dumps({"test_data": ddb_new_image["data"]["test_data"]}))
                 s3_client.upload_fileobj(BytesIO(test_data), TEST_BUCKET_NAME, target_name)
         else:
@@ -166,16 +166,16 @@ def deserialize_event(event):
 def forward_events(records):
     if not records:
         return
-    kinesis = connect_to_service("kinesis")
+    kinesis = create_external_boto_client("kinesis")
     kinesis.put_records(StreamName=KINESIS_STREAM_NAME, Records=records)
 
 
 def forward_event_to_target_stream(record, stream_name):
-    kinesis = connect_to_service("kinesis")
+    kinesis = create_external_boto_client("kinesis")
     kinesis.put_record(
         StreamName=stream_name, Data=record["Data"], PartitionKey=record["PartitionKey"]
     )
 
 
-def connect_to_service(service):
+def create_external_boto_client(service):
     return boto3.client(service, endpoint_url=ENDPOINT_URL)

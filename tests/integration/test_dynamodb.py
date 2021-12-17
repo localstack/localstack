@@ -143,7 +143,7 @@ class TestDynamoDB(unittest.TestCase):
 
     def test_list_tags_of_resource(self):
         table_name = "ddb-table-%s" % short_uid()
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
 
         rs = dynamodb.create_table(
             TableName=table_name,
@@ -178,8 +178,8 @@ class TestDynamoDB(unittest.TestCase):
         delete_table(table_name)
 
     def test_stream_spec_and_region_replacement(self):
-        ddbstreams = aws_stack.connect_to_service("dynamodbstreams")
-        kinesis = aws_stack.connect_to_service("kinesis")
+        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+        kinesis = aws_stack.create_external_boto_client("kinesis")
         table_name = "ddb-%s" % short_uid()
         aws_stack.create_dynamodb_table(
             table_name,
@@ -214,7 +214,7 @@ class TestDynamoDB(unittest.TestCase):
         self.assertNotIn(stream_name, kinesis.list_streams()["StreamNames"])
 
     def test_multiple_update_expressions(self):
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = self.dynamodb.Table(TEST_DDB_TABLE_NAME)
 
@@ -310,12 +310,12 @@ class TestDynamoDB(unittest.TestCase):
         def wait_for_stream_created(table_name):
             stream_name = get_kinesis_stream_name(table_name)
             stream = KinesisStream(id=stream_name, num_shards=1)
-            kinesis = aws_stack.connect_to_service("kinesis", env=get_environment(None))
+            kinesis = aws_stack.create_external_boto_client("kinesis", env=get_environment(None))
             stream.connect(kinesis)
             stream.wait_for()
 
-        dynamodb = aws_stack.connect_to_service("dynamodb")
-        ddbstreams = aws_stack.connect_to_service("dynamodbstreams")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
 
         table_name = "table_with_stream-%s" % short_uid()
         table = dynamodb.create_table(
@@ -351,8 +351,8 @@ class TestDynamoDB(unittest.TestCase):
         self.assertIn("ShardIterator", response)
 
     def test_dynamodb_stream_stream_view_type(self):
-        dynamodb = aws_stack.connect_to_service("dynamodb")
-        ddbstreams = aws_stack.connect_to_service("dynamodbstreams")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
         table_name = "table_with_stream-%s" % short_uid()
         # create table
         table = dynamodb.create_table(
@@ -418,8 +418,8 @@ class TestDynamoDB(unittest.TestCase):
         delete_table(table_name)
 
     def test_dynamodb_with_kinesis_stream(self):
-        dynamodb = aws_stack.connect_to_service("dynamodb")
-        kinesis = aws_stack.connect_to_service("kinesis")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        kinesis = aws_stack.create_external_boto_client("kinesis")
 
         # create kinesis datastream
         kinesis.create_stream(StreamName="kinesis_dest_stream", ShardCount=1)
@@ -509,7 +509,7 @@ class TestDynamoDB(unittest.TestCase):
 
     def test_global_tables(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
 
         # create global table
         regions = [
@@ -554,7 +554,7 @@ class TestDynamoDB(unittest.TestCase):
 
     def test_create_duplicate_table(self):
         table_name = "duplicateTable"
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
 
         dynamodb.create_table(
             TableName=table_name,
@@ -579,7 +579,7 @@ class TestDynamoDB(unittest.TestCase):
 
     def test_delete_table(self):
         table_name = "test-ddb-table-%s" % short_uid()
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
 
         tables_before = len(dynamodb.list_tables()["TableNames"])
 
@@ -605,7 +605,7 @@ class TestDynamoDB(unittest.TestCase):
 
     def test_transaction_write_items(self):
         table_name = "test-ddb-table-%s" % short_uid()
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
 
         dynamodb.create_table(
             TableName=table_name,
@@ -647,7 +647,7 @@ class TestDynamoDB(unittest.TestCase):
 
     def test_batch_write_items(self):
         table_name = "test-ddb-table-%s" % short_uid()
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
         dynamodb.create_table(
             TableName=table_name,
             KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
@@ -671,8 +671,8 @@ class TestDynamoDB(unittest.TestCase):
 
     def test_dynamodb_stream_records_with_update_item(self):
         table_name = "test-ddb-table-%s" % short_uid()
-        dynamodb = aws_stack.connect_to_service("dynamodb")
-        ddbstreams = aws_stack.connect_to_service("dynamodbstreams")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
+        ddbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
 
         aws_stack.create_dynamodb_table(
             table_name,
@@ -750,7 +750,7 @@ class TestDynamoDB(unittest.TestCase):
         table_name = "ddb-table-%s" % short_uid()
         partition_key = "username"
 
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
         aws_stack.create_dynamodb_table(table_name, partition_key)
 
         rs = dynamodb.query(
@@ -790,7 +790,7 @@ class TestDynamoDB(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(
             EventSourceArn=latest_stream_arn, FunctionName=function_name
         )
@@ -816,11 +816,11 @@ class TestDynamoDB(unittest.TestCase):
         self.assertEqual({"SK": {"S": item["SK"]}}, dynamodb_event["Keys"])
         self.assertEqual({"S": item["Name"]}, dynamodb_event["NewImage"]["Name"])
 
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
         dynamodb.delete_table(TableName=table_name)
 
     def test_dynamodb_batch_write_item(self):
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
         table_name = "ddb-table-%s" % short_uid()
 
         dynamodb.create_table(
@@ -844,7 +844,7 @@ class TestDynamoDB(unittest.TestCase):
         self.assertEqual({}, result.get("UnprocessedItems"))
 
     def test_dynamodb_create_table_with_sse_specification(self):
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
         table_name = "ddb-table-%s" % short_uid()
 
         kms_master_key_id = long_uid()
@@ -870,7 +870,7 @@ class TestDynamoDB(unittest.TestCase):
         delete_table(table_name)
 
     def test_dynamodb_create_table_with_partial_sse_specification(self):
-        dynamodb = aws_stack.connect_to_service("dynamodb")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb")
         table_name = "ddb-table-%s" % short_uid()
 
         sse_specification = {"Enabled": True}
@@ -889,7 +889,7 @@ class TestDynamoDB(unittest.TestCase):
         self.assertEqual("KMS", result["TableDescription"]["SSEDescription"]["SSEType"])
         self.assertIn("KMSMasterKeyArn", result["TableDescription"]["SSEDescription"])
         kms_master_key_arn = result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"]
-        kms_client = aws_stack.connect_to_service("kms")
+        kms_client = aws_stack.create_external_boto_client("kms")
         result = kms_client.describe_key(KeyId=kms_master_key_arn)
         self.assertEqual("AWS", result["KeyMetadata"]["KeyManager"])
 
@@ -897,5 +897,5 @@ class TestDynamoDB(unittest.TestCase):
 
 
 def delete_table(name):
-    dynamodb_client = aws_stack.connect_to_service("dynamodb")
+    dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
     dynamodb_client.delete_table(TableName=name)

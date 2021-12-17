@@ -1,5 +1,7 @@
 import json
 
+from botocore.exceptions import ClientError
+
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     is_none_or_empty_value,
@@ -161,5 +163,49 @@ class SNSSubscription(GenericBaseModel):
             "delete": {
                 "function": "unsubscribe",
                 "parameters": {"SubscriptionArn": sns_subscription_arn},
+            },
+        }
+
+
+class SNSTopicPolicy(GenericBaseModel):
+    @classmethod
+    def cloudformation_type(cls):
+        return "AWS::SNS::TopicPolicy"
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, resource_type, func, stack_name):
+            sns_client = aws_stack.connect_to_service("sns")
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            resources[resource_id]["PhysicalResourceId"] = generate_default_name(
+                stack_name, resource_id
+            )
+
+            policy = json.dumps(props["PolicyDocument"])
+            for topic_arn in props["Topics"]:
+                sns_client.set_topic_attributes(
+                    TopicArn=topic_arn, AttributeName="Policy", AttributeValue=policy
+                )
+
+        def _delete(resource_id, resources, *args, **kwargs):
+            sns_client = aws_stack.connect_to_service("sns")
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            for topic_arn in props["Topics"]:
+                try:
+                    sns_client.set_topic_attributes(
+                        TopicArn=topic_arn, AttributeName="Policy", AttributeValue=""
+                    )
+                except ClientError as err:
+                    if "NotFound" not in err.response["Error"]["Code"]:
+                        raise
+
+        return {
+            "create": {"function": _create},
+            "delete": {
+                "function": _delete,
             },
         }

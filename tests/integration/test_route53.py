@@ -9,7 +9,7 @@ from localstack.utils.common import short_uid
 
 class TestRoute53:
     def test_create_hosted_zone(self):
-        route53 = aws_stack.connect_to_service("route53")
+        route53 = aws_stack.create_external_boto_client("route53")
 
         response = route53.create_hosted_zone(Name="zone123", CallerReference="ref123")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 201
@@ -18,8 +18,8 @@ class TestRoute53:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     def test_associate_vpc_with_hosted_zone(self):
-        ec2 = aws_stack.connect_to_service("ec2")
-        route53 = aws_stack.connect_to_service("route53")
+        ec2 = aws_stack.create_external_boto_client("ec2")
+        route53 = aws_stack.create_external_boto_client("route53")
 
         name = "zone123"
         response = route53.create_hosted_zone(Name=name, CallerReference="ref123")
@@ -73,7 +73,7 @@ class TestRoute53:
             )
 
     def test_reusable_delegation_sets(self):
-        client = aws_stack.connect_to_service("route53")
+        client = aws_stack.create_external_boto_client("route53")
 
         sets_before = client.list_reusable_delegation_sets().get("DelegationSets", [])
 
@@ -111,8 +111,8 @@ class TestRoute53:
 
 class TestRoute53Resolver:
     def test_create_resolver_endpoint(self):
-        ec2 = aws_stack.connect_to_service("ec2")
-        resolver = aws_stack.connect_to_service("route53resolver")
+        ec2 = aws_stack.create_external_boto_client("ec2")
+        resolver = aws_stack.create_external_boto_client("route53resolver")
 
         # getting list of existing (default) subnets
         subnets = ec2.describe_subnets()["Subnets"]
