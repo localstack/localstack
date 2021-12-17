@@ -579,8 +579,13 @@ def in_docker():
     """
     if OVERRIDE_IN_DOCKER:
         return True
+
+    # details: https://github.com/localstack/localstack/pull/4352
     if os.path.exists("/.dockerenv"):
         return True
+    if os.path.exists("/run/.containerenv"):
+        return True
+
     if not os.path.exists("/proc/1/cgroup"):
         return False
     try:
