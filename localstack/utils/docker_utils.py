@@ -395,9 +395,13 @@ class ContainerClient(metaclass=ABCMeta):
         """
         pass
 
-    def get_image_cmd(self, docker_image: str) -> str:
-        """Get the command for the given image"""
-        cmd_list = self.inspect_image(docker_image)["Config"]["Cmd"] or []
+    def get_image_cmd(self, docker_image: str, pull: bool = True) -> str:
+        """Get the command for the given image
+        :param docker_image: Docker image to inspect
+        :param pull: Whether to pull if image is not present
+        :return: Image command
+        """
+        cmd_list = self.inspect_image(docker_image, pull)["Config"]["Cmd"] or []
         return " ".join(cmd_list)
 
     def get_image_entrypoint(self, docker_image: str, pull: bool = True) -> str:
@@ -407,7 +411,7 @@ class ContainerClient(metaclass=ABCMeta):
         :return: Image entrypoint
         """
         LOG.debug("Getting the entrypoint for image: %s", docker_image)
-        entrypoint_list = self.inspect_image(docker_image)["Config"]["Entrypoint"] or []
+        entrypoint_list = self.inspect_image(docker_image, pull)["Config"]["Entrypoint"] or []
         return " ".join(entrypoint_list)
 
     @abstractmethod
