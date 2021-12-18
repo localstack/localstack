@@ -32,7 +32,7 @@ def run(
     env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)
-    env_dict = dict([(k, to_str(str(v))) for k, v in env_dict.items()])
+    env_dict = {k: to_str(str(v)) for k, v in env_dict.items()}
 
     if isinstance(cmd, list):
         # See docs of subprocess.Popen(...):

@@ -147,7 +147,7 @@ class SNSSubscription(GenericBaseModel):
                 "RawMessageDelivery",
                 "RedrivePolicy",
             ]
-            result = dict([(a, attr_val(params[a])) for a in attrs if a in params])
+            result = {a: attr_val(params[a]) for a in attrs if a in params}
             return result
 
         return {
