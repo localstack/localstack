@@ -489,7 +489,25 @@ class TestDockerClient:
         with pytest.raises(NoSuchImage):
             docker_client.get_image_entrypoint("thisdoesnotexist")
 
+    def test_get_container_entrypoint_not_pulled_image(self, docker_client: ContainerClient):
+        try:
+            docker_client.get_image_cmd("alpine", pull=False)
+            safe_run([config.DOCKER_CMD, "rmi", "alpine"])
+        except ContainerException:
+            pass
+        entrypoint = docker_client.get_image_entrypoint("alpine")
+        assert "" == entrypoint
+
     def test_get_container_command(self, docker_client: ContainerClient):
+        command = docker_client.get_image_cmd("alpine")
+        assert "/bin/sh" == command
+
+    def test_get_container_command_not_pulled_image(self, docker_client: ContainerClient):
+        try:
+            docker_client.get_image_cmd("alpine", pull=False)
+            safe_run([config.DOCKER_CMD, "rmi", "alpine"])
+        except ContainerException:
+            pass
         command = docker_client.get_image_cmd("alpine")
         assert "/bin/sh" == command
 
@@ -611,14 +629,14 @@ class TestDockerClient:
     @pytest.mark.skip_offline
     def test_pull_docker_image(self, docker_client: ContainerClient):
         try:
-            docker_client.get_image_cmd("alpine")
+            docker_client.get_image_cmd("alpine", pull=False)
             safe_run([config.DOCKER_CMD, "rmi", "alpine"])
         except ContainerException:
             pass
         with pytest.raises(NoSuchImage):
-            docker_client.get_image_cmd("alpine")
+            docker_client.get_image_cmd("alpine", pull=False)
         docker_client.pull_image("alpine")
-        assert "/bin/sh" == docker_client.get_image_cmd("alpine").strip()
+        assert "/bin/sh" == docker_client.get_image_cmd("alpine", pull=False).strip()
 
     @pytest.mark.skip_offline
     def test_pull_non_existent_docker_image(self, docker_client: ContainerClient):
@@ -628,38 +646,40 @@ class TestDockerClient:
     @pytest.mark.skip_offline
     def test_pull_docker_image_with_tag(self, docker_client: ContainerClient):
         try:
-            docker_client.get_image_cmd("alpine")
+            docker_client.get_image_cmd("alpine", pull=False)
             safe_run([config.DOCKER_CMD, "rmi", "alpine"])
         except ContainerException:
             pass
         with pytest.raises(NoSuchImage):
-            docker_client.get_image_cmd("alpine")
+            docker_client.get_image_cmd("alpine", pull=False)
         docker_client.pull_image("alpine:3.13")
-        assert "/bin/sh" == docker_client.get_image_cmd("alpine:3.13").strip()
-        assert "alpine:3.13" in docker_client.inspect_image("alpine:3.13")["RepoTags"]
+        assert "/bin/sh" == docker_client.get_image_cmd("alpine:3.13", pull=False).strip()
+        assert "alpine:3.13" in docker_client.inspect_image("alpine:3.13", pull=False)["RepoTags"]
 
     @pytest.mark.skip_offline
     def test_pull_docker_image_with_hash(self, docker_client: ContainerClient):
         try:
-            docker_client.get_image_cmd("alpine")
+            docker_client.get_image_cmd("alpine", pull=False)
             safe_run([config.DOCKER_CMD, "rmi", "alpine"])
         except ContainerException:
             pass
         with pytest.raises(NoSuchImage):
-            docker_client.get_image_cmd("alpine")
+            docker_client.get_image_cmd("alpine", pull=False)
         docker_client.pull_image(
             "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
         )
         assert (
             "/bin/sh"
             == docker_client.get_image_cmd(
-                "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
+                "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a",
+                pull=False,
             ).strip()
         )
         assert (
             "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
             in docker_client.inspect_image(
-                "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
+                "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a",
+                pull=False,
             )["RepoDigests"]
         )
 
@@ -871,5 +891,5 @@ class TestDockerClient:
         assert "127.0.0.1" != ip
 
     def test_set_container_workdir(self, docker_client: ContainerClient):
-        result = docker_client.run_container("alpine", command=["pwd"], workdir="/tmp")
+        result = docker_client.run_container("alpine", command=["pwd"], workdir="/tmp", remove=True)
         assert "/tmp" == to_str(result[0]).strip()

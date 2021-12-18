@@ -362,9 +362,11 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
         """Get detailed attributes of an image.
 
+        :param image_name: Image name to inspect
+        :param pull: Whether to pull image if not existent
         :return: Dict containing docker attributes as returned by the daemon
         """
         pass
@@ -393,15 +395,23 @@ class ContainerClient(metaclass=ABCMeta):
         """
         pass
 
-    def get_image_cmd(self, docker_image: str) -> str:
-        """Get the command for the given image"""
-        cmd_list = self.inspect_image(docker_image)["Config"]["Cmd"] or []
+    def get_image_cmd(self, docker_image: str, pull: bool = True) -> str:
+        """Get the command for the given image
+        :param docker_image: Docker image to inspect
+        :param pull: Whether to pull if image is not present
+        :return: Image command
+        """
+        cmd_list = self.inspect_image(docker_image, pull)["Config"]["Cmd"] or []
         return " ".join(cmd_list)
 
-    def get_image_entrypoint(self, docker_image: str) -> str:
-        """Get the entry point for the given image"""
+    def get_image_entrypoint(self, docker_image: str, pull: bool = True) -> str:
+        """Get the entry point for the given image
+        :param docker_image: Docker image to inspect
+        :param pull: Whether to pull if image is not present
+        :return: Image entrypoint
+        """
         LOG.debug("Getting the entrypoint for image: %s", docker_image)
-        entrypoint_list = self.inspect_image(docker_image)["Config"]["Entrypoint"] or []
+        entrypoint_list = self.inspect_image(docker_image, pull)["Config"]["Entrypoint"] or []
         return " ".join(entrypoint_list)
 
     @abstractmethod
@@ -707,10 +717,13 @@ class CmdDockerClient(ContainerClient):
         except NoSuchObject as e:
             raise NoSuchContainer(container_name_or_id=e.object_id)
 
-    def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
         try:
             return self._inspect_object(image_name)
         except NoSuchObject as e:
+            if pull:
+                self.pull_image(image_name)
+                return self.inspect_image(image_name, pull=False)
             raise NoSuchImage(image_name=e.object_id)
 
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
@@ -1315,10 +1328,13 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             raise ContainerException()
 
-    def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
         try:
             return self.client().images.get(image_name).attrs
         except NotFound:
+            if pull:
+                self.pull_image(image_name)
+                return self.inspect_image(image_name, pull=False)
             raise NoSuchImage(image_name)
         except APIError:
             raise ContainerException()
