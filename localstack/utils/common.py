@@ -631,7 +631,7 @@ def md5(string: Union[str, bytes]) -> str:
 def select_attributes(obj: Dict, attributes: List[str]) -> Dict:
     """Select a subset of attributes from the given dict (returns a copy)"""
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
-    return dict([(k, v) for k, v in obj.items() if k in attributes])
+    return {k: v for k, v in obj.items() if k in attributes}
 
 
 def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False) -> Dict:
@@ -1282,7 +1282,7 @@ def parse_request_data(method: str, path: str, data=None, headers=None) -> Dict:
             pass  # probably binary / JSON / non-URL encoded payload - ignore
 
     # select first elements from result lists (this is assuming we are not using parameter lists!)
-    result = dict([(k, v[0]) for k, v in result.items()])
+    result = {k: v[0] for k, v in result.items()}
     return result
 
 

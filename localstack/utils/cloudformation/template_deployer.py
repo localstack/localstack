@@ -546,7 +546,7 @@ def _resolve_refs_recursively(stack_name, value, resources):
         if stripped_fn_lower == "sub":
             item_to_sub = value[keys_list[0]]
 
-            attr_refs = dict([(r, {"Ref": r}) for r in STATIC_REFS])
+            attr_refs = {r: {"Ref": r} for r in STATIC_REFS}
             if not isinstance(item_to_sub, list):
                 item_to_sub = [item_to_sub, {}]
             result = item_to_sub[0]
@@ -1214,7 +1214,7 @@ class TemplateDeployer(object):
         self.stack.set_stack_status("DELETE_IN_PROGRESS")
         stack_resources = list(self.stack.resources.values())
         stack_name = self.stack.stack_name
-        resources = dict([(r["LogicalResourceId"], common.clone_safe(r)) for r in stack_resources])
+        resources = {r["LogicalResourceId"]: common.clone_safe(r) for r in stack_resources}
         for key, resource in resources.items():
             resource["Properties"] = resource.get("Properties", common.clone_safe(resource))
             resource["ResourceType"] = resource.get("ResourceType") or resource.get("Type")
