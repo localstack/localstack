@@ -65,7 +65,7 @@ It installs the `localstack-cli` which is used to run the Docker image that host
 
 Start LocalStack inside a Docker container by running:
 
-```shell
+```
  % localstack start -d
 
      __                     _______ __             __
@@ -82,7 +82,7 @@ Start LocalStack inside a Docker container by running:
 
 You can query the status of respective services on LocalStack by running:
 
-```shell
+```
 % localstack status services
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
 ┃ Service                  ┃ Status      ┃
