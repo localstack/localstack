@@ -1,5 +1,8 @@
+variable "bucket_name" {
+  type = string
+}
 resource "aws_s3_bucket" "tf_bucket" {
-  bucket = "tf-bucket"
+  bucket = var.bucket_name
   acl    = "public-read"
 
   cors_rule {
@@ -15,7 +18,7 @@ resource "aws_s3_bucket" "tf_bucket" {
   }
 
   tags = {
-    Name        = "tf-bucket"
+    Name        = var.bucket_name
     Environment = "Dev"
   }
 }

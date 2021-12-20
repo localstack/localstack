@@ -1,5 +1,6 @@
 import re
 
+from localstack.utils import testutil
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
@@ -45,7 +46,11 @@ def test_logstream(
         )["logStreams"]
         assert len(streams) == 1
         assert streams[0]["logStreamName"] == stream_name
-        assert re.match(r"arn:aws:logs:.+:.+:log-group:.+:log-stream:.+", streams[0]["arn"])
+        assert re.match(
+            r"arn:(aws|aws-cn|aws-iso|aws-iso-b|aws-us-gov):logs:.+:.+:log-group:.+:log-stream:.+",
+            streams[0]["arn"],
+        )
+        assert testutil.response_arn_matches_partition(cfn_client, streams[0]["arn"])
 
     finally:
         cleanup_changesets([change_set_id])
