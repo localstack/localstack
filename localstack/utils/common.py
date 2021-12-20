@@ -1328,7 +1328,7 @@ def is_linux() -> bool:
 
 
 def is_windows() -> bool:
-    return platform.system().lower() == "windows"
+    return localstack.utils.run.is_windows()
 
 
 def is_debian() -> bool:
