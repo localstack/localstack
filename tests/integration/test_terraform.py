@@ -82,7 +82,6 @@ class TestTerraform(unittest.TestCase):
                     rm_rf(os.path.join(base_dir, tf_file))
                 # create TF plan
                 run(f"cd {base_dir}; {TERRAFORM_BIN} plan -out=tfplan -input=false")
-                # run("cd %s; %s plan -out=tfplan -input=false -var='region_name=\"eu-west-1\"'" % (base_dir, TERRAFORM_BIN))
 
         start_worker_thread(_run)
 
