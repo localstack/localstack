@@ -192,13 +192,7 @@ def test_query_parser_flattened_list_structure():
 
 
 def _botocore_parser_integration_test(
-    service: str,
-    action: str,
-    method: str = None,
-    request_uri: str = None,
-    headers: dict = None,
-    expected: dict = None,
-    **kwargs
+    service: str, action: str, headers: dict = None, expected: dict = None, **kwargs
 ):
     # Load the appropriate service
     service = load_service(service)
@@ -215,7 +209,13 @@ def _botocore_parser_integration_test(
     # Use our parser to parse the serialized body
     parser = create_parser(service)
     operation_model, parsed_request = parser.parse(
-        HttpRequest(method=method or "GET", path=request_uri or "", headers=headers, body=body)
+        HttpRequest(
+            method=serialized_request.get("method") or "GET",
+            path=serialized_request.get("url_path") or "",
+            query_string=serialized_request.get("query_string") or "",
+            headers=headers,
+            body=body,
+        )
     )
 
     # Check if the result is equal to the given "expected" dict or the kwargs (if "expected" has not been set)
@@ -318,8 +318,6 @@ def test_restxml_parser_route53_with_botocore():
     _botocore_parser_integration_test(
         service="route53",
         action="CreateHostedZone",
-        method="POST",
-        request_uri="/2013-04-01/hostedzone",
         Name="string",
         VPC={"VPCRegion": "us-east-1", "VPCId": "string"},
         CallerReference="string",
@@ -332,8 +330,6 @@ def test_json_parser_cognito_with_botocore():
     _botocore_parser_integration_test(
         service="cognito-idp",
         action="CreateUserPool",
-        method="POST",
-        request_uri="/",
         headers={"X-Amz-Target": "AWSCognitoIdentityProviderService.CreateUserPool"},
         PoolName="string",
         Policies={
@@ -430,8 +426,6 @@ def test_restjson_parser_xray_with_botocore():
     _botocore_parser_integration_test(
         service="xray",
         action="PutTelemetryRecords",
-        method="POST",
-        request_uri="/TelemetryRecords",
         TelemetryRecords=[
             {
                 "Timestamp": datetime(2015, 1, 1),
@@ -452,6 +446,23 @@ def test_restjson_parser_xray_with_botocore():
         EC2InstanceId="string",
         Hostname="string",
         ResourceARN="string",
+    )
+
+
+def test_restjson_path_location_opensearch_with_botocore():
+    _botocore_parser_integration_test(
+        service="opensearch",
+        action="DeleteDomain",
+        DomainName="test-domain",
+    )
+
+
+def test_restjson_query_location_opensearch_with_botocore():
+    _botocore_parser_integration_test(
+        service="opensearch",
+        action="ListVersions",
+        NextToken="test-token",
+        MaxResults=123,
     )
 
 

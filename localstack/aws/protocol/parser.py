@@ -73,7 +73,7 @@ import re
 from abc import ABC
 from collections import defaultdict
 from email.utils import parsedate_to_datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Tuple, Union
 from urllib.parse import parse_qs
 from xml.etree import ElementTree as ETree
 
@@ -428,23 +428,41 @@ class BaseRestRequestParser(RequestParser):
     def __init__(self, service: ServiceModel) -> None:
         super().__init__(service)
         # When parsing a request, we need to lookup the operation based on the HTTP method and URI.
-        # Therefore we create a mapping when the parser is initialized.
-        self.operation_lookup = defaultdict(lambda: defaultdict(OperationModel))
+        # We create a mapping when the parser is initialized.
+        # Since the path can contain URI path parameters, the key of the dict is a regex.
+        self.operation_lookup: DefaultDict[
+            str, DefaultDict[Pattern[str], OperationModel]
+        ] = defaultdict(lambda: defaultdict())
         for operation in service.operation_names:
             operation_model = service.operation_model(operation)
             http = operation_model.http
             if len(http) > 0:
                 method = http.get("method")
                 request_uri = http.get("requestUri")
-                self.operation_lookup[method][request_uri] = operation_model
+                # Replace the variable place holder (f.e. {ConnectionId} in "/fuu/{ConnectionId}/bar/")
+                # with a named regex group.
+                request_uri_regex = re.sub(
+                    "{(?P<VariableName>[^/]*)}", "(?P<\\g<VariableName>>[^/]*)", request_uri
+                )
+                # Put regex in fences to make sure that we do not match any substrings
+                request_uri_regex = f"^{request_uri_regex}$"
+                # The result is a regex itself.
+                request_uri_regex = re.compile(request_uri_regex)
+                self.operation_lookup[method][request_uri_regex] = operation_model
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        operation = self.operation_lookup[request.method][request.path]
+        # Find the regex which matches the given path (as well as its operation)
+        path_regex, operation = next(
+            filter(
+                lambda item: item[0].match(request.path),
+                self.operation_lookup[request.method].items(),
+            )
+        )
         shape: StructureShape = operation.input_shape
         final_parsed = {}
         if shape is not None:
             member_shapes = shape.members
-            self._parse_non_payload_attrs(request, member_shapes, final_parsed)
+            self._parse_non_payload_attrs(request, member_shapes, path_regex, final_parsed)
             self._parse_payload(request, shape, member_shapes, final_parsed)
         return operation, final_parsed
 
@@ -477,10 +495,18 @@ class BaseRestRequestParser(RequestParser):
         else:
             original_parsed = self._initial_body_parse(request.data)
             body_parsed = self._parse_shape(request, shape, original_parsed)
+            # Overwrite values in body_parsed with those in final_parsed. Afterwards, overwrite values from
+            # final_parsed with values in body_parsed.
+            # This ensures that we use all values that have not been present in the final_parsed dict before.
+            body_parsed.update(final_parsed)
             final_parsed.update(body_parsed)
 
     def _parse_non_payload_attrs(
-        self, request: HttpRequest, member_shapes: dict, final_parsed: dict
+        self,
+        request: HttpRequest,
+        member_shapes: dict,
+        path_regex: Pattern[str],
+        final_parsed: dict,
     ) -> None:
         """Parses all attributes which are not located in the payload."""
         headers = request.headers
@@ -497,6 +523,13 @@ class BaseRestRequestParser(RequestParser):
                     final_parsed[name] = self._parse_shape(
                         request, member_shape, headers[header_name]
                     )
+            elif location == "uri":
+                regex_group_name = member_shape.serialization.get("name", name)
+                match = path_regex.match(request.path)
+                final_parsed[name] = match.group(regex_group_name)
+            elif location == "querystring":
+                query_name = member_shape.serialization.get("name", name)
+                final_parsed[name] = request.query_string.get(query_name)
             else:
                 raise RequestParserError("Unknown shape location '%s'." % location)
 
