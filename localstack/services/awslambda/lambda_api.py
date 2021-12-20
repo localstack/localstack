@@ -1048,7 +1048,6 @@ def do_set_function_code(lambda_function: LambdaFunction):
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
-
         main_file = "%s/%s" % (lambda_cwd, handler_file)
 
         if CHECK_HANDLER_ON_CREATION and not os.path.exists(main_file):
@@ -1065,8 +1064,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
                 LOG.debug("Lambda archive content:\n%s" % file_list)
                 raise ClientError(
                     error_response(
-                        "Unable to find handler script (%s) in Lambda archive. %s"
-                        % (main_file, config_debug),
+                        f"Unable to find handler script ({main_file}) in Lambda archive. {config_debug}",
                         400,
                         error_type="ValidationError",
                     )
