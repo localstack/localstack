@@ -70,8 +70,8 @@ class ElasticsearchServiceBackend(RegionBackend):
     TAGS = TaggingService()
 
     def __init__(self):
-        self.es_clusters = dict()
-        self.es_domains = dict()
+        self.es_clusters = {}
+        self.es_domains = {}
 
 
 def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str):

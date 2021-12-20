@@ -547,14 +547,14 @@ def collect_config_items() -> List[Tuple[str, Any]]:
     none = object()  # sentinel object
 
     # collect which keys to print
-    keys = list()
+    keys = []
     keys.extend(CONFIG_ENV_VARS)
     keys.append("DATA_DIR")
     keys.sort()
 
     values = globals()
 
-    result = list()
+    result = []
     for k in keys:
         v = values.get(k, none)
         if v is none:
@@ -797,7 +797,7 @@ class ServiceProviderConfig(Mapping[str, str]):
     default_value: str
 
     def __init__(self, default_value: str):
-        self._provider_config = dict()
+        self._provider_config = {}
         self.default_value = default_value
 
     def get_provider(self, service: str) -> str:

@@ -236,7 +236,7 @@ class VolumeBind:
     options: Optional[List[str]] = None
 
     def to_str(self) -> str:
-        args = list()
+        args = []
 
         if self.host_dir:
             args.append(self.host_dir)
@@ -256,7 +256,7 @@ class VolumeMappings:
     mappings: List[Union[SimpleVolumeBind, VolumeBind]]
 
     def __init__(self, mappings: List[Union[SimpleVolumeBind, VolumeBind]] = None):
-        self.mappings = mappings if mappings is not None else list()
+        self.mappings = mappings if mappings is not None else []
 
     def add(self, mapping: Union[SimpleVolumeBind, VolumeBind]):
         self.append(mapping)

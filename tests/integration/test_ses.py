@@ -16,7 +16,7 @@ TEST_TEMPLATE_ATTRIBUTES = {
 
 @pytest.fixture
 def create_template(ses_client):
-    created_template_names = list()
+    created_template_names = []
 
     def _create_template(Template):
         ses_client.create_template(Template=Template)

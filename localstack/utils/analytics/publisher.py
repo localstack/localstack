@@ -142,7 +142,7 @@ class PublisherBuffer(EventHandler):
 
     def _do_flush(self):
         queue = self._queue
-        events = list()
+        events = []
 
         for _ in range(queue.qsize()):
             event = queue.get_nowait()

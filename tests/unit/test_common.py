@@ -192,7 +192,7 @@ class TestCommon(unittest.TestCase):
         )
 
     def test_retry(self):
-        exceptions = list()
+        exceptions = []
         count = itertools.count()
 
         def fn():
@@ -210,7 +210,7 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(3, len(exceptions))
 
     def test_retry_raises_last_exception(self):
-        exceptions = list()
+        exceptions = []
         count = itertools.count()
 
         def fn():

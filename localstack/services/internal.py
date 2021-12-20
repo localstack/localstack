@@ -31,7 +31,7 @@ class HealthResource:
     def __init__(self, service_manager) -> None:
         super().__init__()
         self.service_manager = service_manager
-        self.state = dict()
+        self.state = {}
 
     def on_post(self, request):
         data = request.json()

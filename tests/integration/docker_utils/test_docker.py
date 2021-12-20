@@ -51,7 +51,7 @@ def create_container(docker_client: ContainerClient, create_network):
 
     Depends on create network for correct cleanup order
     """
-    containers = list()
+    containers = []
 
     def _create_container(image_name: str, **kwargs):
         kwargs["name"] = kwargs.get("name", _random_container_name())
@@ -75,7 +75,7 @@ def create_network():
     Uses the factory as fixture pattern to wrap the creation of networks as a factory that
     removes the networks after the fixture is cleaned up.
     """
-    networks = list()
+    networks = []
 
     def _create_network(network_name: str):
         network_id = safe_run([config.DOCKER_CMD, "network", "create", network_name]).strip()
