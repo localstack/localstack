@@ -462,7 +462,86 @@ def test_restjson_query_location_opensearch_with_botocore():
         service="opensearch",
         action="ListVersions",
         NextToken="test-token",
-        MaxResults=123,
+    )
+
+
+def test_restjson_opensearch_with_botocore():
+    _botocore_parser_integration_test(
+        service="opensearch",
+        action="UpdateDomainConfig",
+        DomainName="string",
+        ClusterConfig={
+            "InstanceType": "m3.medium.search",
+            "InstanceCount": 123,
+            "DedicatedMasterEnabled": True,
+            "ZoneAwarenessEnabled": True,
+            "ZoneAwarenessConfig": {"AvailabilityZoneCount": 123},
+            "DedicatedMasterType": "m3.medium.search",
+            "DedicatedMasterCount": 123,
+            "WarmEnabled": True,
+            "WarmType": "ultrawarm1.medium.search",
+            "WarmCount": 123,
+            "ColdStorageOptions": {"Enabled": True},
+        },
+        EBSOptions={"EBSEnabled": False, "VolumeType": "standard", "VolumeSize": 123, "Iops": 123},
+        SnapshotOptions={"AutomatedSnapshotStartHour": 123},
+        VPCOptions={
+            "SubnetIds": [
+                "string",
+            ],
+            "SecurityGroupIds": [
+                "string",
+            ],
+        },
+        CognitoOptions={
+            "Enabled": True,
+            "UserPoolId": "string",
+            "IdentityPoolId": "string",
+            "RoleArn": "12345678901234567890",
+        },
+        AdvancedOptions={"string": "string"},
+        AccessPolicies="string",
+        LogPublishingOptions={
+            "string": {"CloudWatchLogsLogGroupArn": "12345678901234567890", "Enabled": True}
+        },
+        EncryptionAtRestOptions={"Enabled": False, "KmsKeyId": "string"},
+        DomainEndpointOptions={
+            "EnforceHTTPS": True,
+            "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07",
+            "CustomEndpointEnabled": True,
+            "CustomEndpoint": "string",
+            "CustomEndpointCertificateArn": "12345678901234567890",
+        },
+        NodeToNodeEncryptionOptions={"Enabled": True},
+        AdvancedSecurityOptions={
+            "Enabled": True,
+            "InternalUserDatabaseEnabled": True,
+            "MasterUserOptions": {
+                "MasterUserARN": "12345678901234567890",
+                "MasterUserName": "string",
+                "MasterUserPassword": "12345678",
+            },
+            "SAMLOptions": {
+                "Enabled": True,
+                "Idp": {"MetadataContent": "string", "EntityId": "12345678"},
+                "MasterUserName": "string",
+                "MasterBackendRole": "string",
+                "SubjectKey": "string",
+                "RolesKey": "string",
+                "SessionTimeoutMinutes": 123,
+            },
+        },
+        AutoTuneOptions={
+            "DesiredState": "ENABLED",
+            "RollbackOnDisable": "DEFAULT_ROLLBACK",
+            "MaintenanceSchedules": [
+                {
+                    "StartAt": datetime(2015, 1, 1),
+                    "Duration": {"Value": 123, "Unit": "HOURS"},
+                    "CronExpressionForRecurrence": "string",
+                },
+            ],
+        },
     )
 
 

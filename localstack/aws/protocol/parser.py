@@ -170,7 +170,7 @@ class RequestParser(abc.ABC):
                         request, shape, request.headers[header_name], path_regex
                     )
             elif location == "headers":
-                return self._parse_header_map(shape, request.headers)
+                payload = self._parse_header_map(shape, request.headers)
             elif location == "querystring":
                 query_name = shape.serialization.get("name")
                 payload = request.query_string.get(query_name)
@@ -186,7 +186,7 @@ class RequestParser(abc.ABC):
 
         fn_name = "_parse_%s" % shape.type_name
         handler = getattr(self, fn_name, self._noop_parser)
-        return handler(request, shape, payload, path_regex)
+        return handler(request, shape, payload, path_regex) if payload is not None else None
 
     # The parsing functions for primitive types, lists, and timestamps are shared among subclasses.
 
@@ -253,6 +253,25 @@ class RequestParser(abc.ABC):
         return parsedate_to_datetime(datetime_string)
 
     @staticmethod
+    def _get_request_uri_regex(operation: OperationModel) -> Optional[Pattern[str]]:
+        """
+        Tries to extract the request URI from a given operation.
+        If a request URI can be found, it is transformed to a regular expression which can be used to try to match
+        incoming requests (i.e. their paths).
+
+        :param operation: to extract the requestUri and convert to a regex of
+        :return: extracted requestUri, converted to a regular expression
+        """
+        if operation is None:
+            return None
+        request_uri_regex = None
+        http = operation.http
+        if len(http) > 0:
+            request_uri = http.get("requestUri")
+            request_uri_regex = RequestParser._convert_request_uri_to_regex(request_uri)
+        return request_uri_regex
+
+    @staticmethod
     def _convert_request_uri_to_regex(request_uri: str) -> Optional[Pattern[str]]:
         """
         Converts the given request_uri to a regular expression.
@@ -307,12 +326,9 @@ class QueryRequestParser(RequestParser):
         # Therefore we take the first element of each entry in the dict.
         instance = {k: self._get_first(v) for k, v in instance.items()}
         operation: OperationModel = self.service.operation_model(instance["Action"])
-        http = operation.http
-        if len(http) > 0:
-            request_uri = http.get("requestUri")
-            request_uri_regex = self._convert_request_uri_to_regex(request_uri)
+        # Extract the URI for the operation and convert it to a regex
+        request_uri_regex = self._get_request_uri_regex(operation)
         input_shape: StructureShape = operation.input_shape
-
         return operation, self._parse_shape(request, input_shape, instance, request_uri_regex)
 
     def _process_member(
@@ -782,17 +798,20 @@ class JSONRequestParser(BaseJSONRequestParser):
         _, operation_name = target.split(".")
         operation = self.service.operation_model(operation_name)
         shape = operation.input_shape
-        final_parsed = self._do_parse(request, shape)
+        path_regex = self._get_request_uri_regex(operation)
+        final_parsed = self._do_parse(request, shape, path_regex)
         return operation, final_parsed
 
-    def _do_parse(self, request: HttpRequest, shape: Shape) -> dict:
+    def _do_parse(
+        self, request: HttpRequest, shape: Shape, path_regex: Pattern[str] = None
+    ) -> dict:
         parsed = {}
         if shape is not None:
             event_name = shape.event_stream_name
             if event_name:
                 parsed = self._handle_event_stream(request, shape, event_name)
             else:
-                parsed = self._handle_json_body(request, request.data, shape)
+                parsed = self._handle_json_body(request, request.data, shape, path_regex)
         return parsed
 
     def _handle_event_stream(self, request: HttpRequest, shape: Shape, event_name: str):

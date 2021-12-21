@@ -189,7 +189,7 @@ class ResponseSerializer(abc.ABC):
         shape_members: dict,
         operation_model: OperationModel,
     ) -> None:
-        # TODO implement the handling of location traits (where "location" is "header", "headers", or "path")
+        # TODO implement the handling of location traits (where "location" is "header", "headers")
         # TODO implement the handling of eventstreams (where "streaming" is True)
         raise NotImplementedError
 
