@@ -8,6 +8,12 @@
     "pinDigests": true,
     "ignorePaths": ["bin/lambda/Dockerfile.nodejs14x"]
   },
+  "major": {
+    "enabled": false
+  },
+  "minor": {
+    "enabled": false
+  },
   "packageRules": [
     {
       "managers": ["dockerfile"],
@@ -16,17 +22,6 @@
       "digest": {
         "commitMessageTopic": "Docker base image ({{{depName}}}{{#if currentValue}}:{{{currentValue}}}{{/if}}) digest"
       }
-    },
-    {
-      "matchDatasources": [
-        "dockerfile"
-      ],
-      "matchPackageNames": ["python"],
-      "matchUpdateTypes": [
-        "major",
-        "minor"
-      ],
-      "enabled": false
     }
   ]
 }
