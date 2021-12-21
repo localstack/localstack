@@ -373,6 +373,8 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = "resourcegroupstaggingapi", config.PORT_RESOURCEGROUPSTAGGINGAPI
     elif result[0] == "resource-groups":
         result = "resource-groups", config.PORT_RESOURCE_GROUPS
+    elif "/opensearch/" in path and result[0] == "es":
+        result = "opensearch", None
 
     return result[0], result_before[1] or result[1], path, host
 

@@ -139,6 +139,15 @@ def logs():
 
 
 @aws_provider()
+def opensearch():
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.opensearch.provider import OpensearchProvider
+
+    provider = OpensearchProvider()
+    return Service("opensearch", listener=AwsApiListener("opensearch", provider))
+
+
+@aws_provider()
 def redshift():
     from localstack.services.redshift import redshift_starter
 
