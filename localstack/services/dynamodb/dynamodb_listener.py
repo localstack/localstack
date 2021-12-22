@@ -616,7 +616,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         # Note: We need to ensure that the same access key is used here for all requests,
         # otherwise DynamoDBLocal stores tables/items in separate namespaces
-        _replace(r"Credential=[^/]+/", r"Credential=%s/" % constants.TEST_AWS_ACCESS_KEY_ID)
+        _replace(r"Credential=[^/]+/", r"Credential=%s/" % constants.INTERNAL_AWS_ACCESS_KEY_ID)
         # Note: The NoSQL Workbench sends "localhost" as the region name, which we need to correct here
         _replace(
             r"Credential=([^/]+/[^/]+)/localhost",

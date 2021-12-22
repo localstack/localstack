@@ -1,6 +1,7 @@
 import inspect
 import logging
 import os
+import platform
 import select
 import subprocess
 import sys
@@ -32,7 +33,7 @@ def run(
     env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)
-    env_dict = dict([(k, to_str(str(v))) for k, v in env_dict.items()])
+    env_dict = {k: to_str(str(v)) for k, v in env_dict.items()}
 
     if isinstance(cmd, list):
         # See docs of subprocess.Popen(...):
@@ -112,18 +113,15 @@ def run(
 
 
 def is_mac_os() -> bool:
-    return "Darwin" in get_uname()
+    return "darwin" == platform.system().lower()
 
 
 def is_linux() -> bool:
-    return "Linux" in get_uname()
+    return "linux" == platform.system().lower()
 
 
-def get_uname() -> str:
-    try:
-        return to_str(subprocess.check_output("uname -a", shell=True))
-    except Exception:
-        return ""
+def is_windows() -> bool:
+    return "windows" == platform.system().lower()
 
 
 def to_str(obj: Union[str, bytes], errors="strict"):

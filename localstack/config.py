@@ -453,6 +453,9 @@ OUTBOUND_HTTP_PROXY = os.environ.get("OUTBOUND_HTTP_PROXY", "")
 # Equivalent to HTTPS_PROXY, but only applicable for external connections
 OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 
+# Whether to enable the partition adjustment listener (in order to support other partitions that the default)
+ARN_PARTITION_REWRITING = is_env_true("ARN_PARTITION_REWRITING")
+
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
@@ -544,14 +547,14 @@ def collect_config_items() -> List[Tuple[str, Any]]:
     none = object()  # sentinel object
 
     # collect which keys to print
-    keys = list()
+    keys = []
     keys.extend(CONFIG_ENV_VARS)
     keys.append("DATA_DIR")
     keys.sort()
 
     values = globals()
 
-    result = list()
+    result = []
     for k in keys:
         v = values.get(k, none)
         if v is none:
@@ -579,8 +582,13 @@ def in_docker():
     """
     if OVERRIDE_IN_DOCKER:
         return True
+
+    # details: https://github.com/localstack/localstack/pull/4352
     if os.path.exists("/.dockerenv"):
         return True
+    if os.path.exists("/run/.containerenv"):
+        return True
+
     if not os.path.exists("/proc/1/cgroup"):
         return False
     try:
@@ -789,7 +797,7 @@ class ServiceProviderConfig(Mapping[str, str]):
     default_value: str
 
     def __init__(self, default_value: str):
-        self._provider_config = dict()
+        self._provider_config = {}
         self.default_value = default_value
 
     def get_provider(self, service: str) -> str:

@@ -200,7 +200,7 @@ class LambdaEventSourceMapping(GenericBaseModel):
             )
 
         client = aws_stack.connect_to_service("lambda")
-        lambda_arn = aws_stack.lambda_function_arn(function_name)
+        lambda_arn = client.get_function(FunctionName=function_name)["Configuration"]["FunctionArn"]
         kwargs = {"EventSourceArn": source_arn} if source_arn else {}
         mappings = client.list_event_source_mappings(FunctionName=function_name, **kwargs)
         mapping = list(filter(lambda m: _matches(m), mappings["EventSourceMappings"]))

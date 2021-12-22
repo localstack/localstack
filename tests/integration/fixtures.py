@@ -48,7 +48,7 @@ def _client(service):
         if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
         else None
     )
-    return aws_stack.connect_to_service(service, config=config)
+    return aws_stack.create_external_boto_client(service, config=config)
 
 
 @pytest.fixture(scope="class")
@@ -148,7 +148,7 @@ def cloudwatch_client() -> "CloudWatchClient":
 
 @pytest.fixture
 def dynamodb_create_table(dynamodb_client):
-    tables = list()
+    tables = []
 
     def factory(**kwargs):
         kwargs["client"] = dynamodb_client
@@ -175,7 +175,7 @@ def dynamodb_create_table(dynamodb_client):
 
 @pytest.fixture
 def s3_create_bucket(s3_client):
-    buckets = list()
+    buckets = []
 
     def factory(**kwargs) -> str:
         if "Bucket" not in kwargs:
@@ -202,7 +202,7 @@ def s3_bucket(s3_create_bucket) -> str:
 
 @pytest.fixture
 def sqs_create_queue(sqs_client):
-    queue_urls = list()
+    queue_urls = []
 
     def factory(**kwargs):
         if "QueueName" not in kwargs:
@@ -359,7 +359,7 @@ def is_change_set_finished(cfn_client):
 
 @pytest.fixture
 def create_lambda_function(lambda_client: "LambdaClient"):
-    lambda_arns = list()
+    lambda_arns = []
 
     def _create_lambda_function(*args, **kwargs):
         # TODO move create function logic here to use lambda_client fixture

@@ -1,0 +1,11 @@
+# TODO: set these from the tests
+region_name = "us-east-1"
+function_name = "tf-lambda"
+role_name = "iam_for_lambda"
+table1_name = "tf_dynamotable1"
+table2_name = "tf_dynamotable2"
+table3_name = "tf_dynamotable3"
+restapi_name = "service_api"
+sg_name = "test-sg-5249"
+bucket_name = "tf-bucket"
+sqs_name = "tf-queue"

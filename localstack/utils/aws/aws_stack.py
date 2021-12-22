@@ -209,6 +209,11 @@ def get_region():
     return get_local_region()
 
 
+def get_partition(region_name: str = None):
+    region_name = region_name or get_region()
+    return boto3.session.Session().get_partition_for_region(region_name)
+
+
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
@@ -343,6 +348,34 @@ def connect_to_service(
             BOTO_CLIENTS_CACHE[cache_key] = new_client
 
         return new_client
+
+
+def create_external_boto_client(
+    service_name,
+    client=True,
+    env=None,
+    region_name=None,
+    endpoint_url=None,
+    config: botocore.config.Config = None,
+    verify=False,
+    cache=True,
+    *args,
+    **kwargs,
+):
+    return connect_to_service(
+        service_name,
+        client,
+        env,
+        region_name,
+        endpoint_url,
+        config,
+        verify,
+        cache,
+        aws_access_key_id="__test_call__",
+        aws_secret_access_key="__test_key__",
+        *args,
+        **kwargs,
+    )
 
 
 def get_s3_hostname():
@@ -839,7 +872,6 @@ def inject_region_into_auth_headers(region, headers):
         regex = r"Credential=([^/]+)/([^/]+)/([^/]+)/"
         auth_header = re.sub(regex, r"Credential=\1/\2/%s/" % region, auth_header)
         headers["Authorization"] = auth_header
-    return headers
 
 
 def dynamodb_get_item_raw(request):

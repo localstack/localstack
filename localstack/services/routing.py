@@ -106,7 +106,7 @@ class ResourceRouter:
     routes: List[Tuple[RoutingRule, Dispatcher]]
 
     def __init__(self):
-        self.routes = list()
+        self.routes = []
 
     def add_route(self, uri_template: str, resource: Any, suffix: str = None):
         """

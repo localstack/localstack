@@ -73,7 +73,7 @@ class IntegrationTest(unittest.TestCase):
 
         # create scheduled Lambda function
         rule_name = "rule-%s" % short_uid()
-        events = aws_stack.connect_to_service("events")
+        events = aws_stack.create_external_boto_client("events")
         events.put_rule(Name=rule_name, ScheduleExpression="rate(1 minutes)")
         events.put_targets(
             Rule=rule_name, Targets=[{"Id": "target-%s" % short_uid(), "Arn": func_arn}]
@@ -85,7 +85,7 @@ class IntegrationTest(unittest.TestCase):
 
     def test_firehose_s3(self):
         s3_resource = aws_stack.connect_to_resource("s3")
-        firehose = aws_stack.connect_to_service("firehose")
+        firehose = aws_stack.create_external_boto_client("firehose")
 
         s3_prefix = "/testdata"
         test_data = '{"test": "firehose_data_%s"}' % short_uid()
@@ -119,9 +119,9 @@ class IntegrationTest(unittest.TestCase):
             self.assertRegex(key, r".*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*")
 
     def test_firehose_kinesis_to_s3(self):
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = aws_stack.create_external_boto_client("kinesis")
         s3_resource = aws_stack.connect_to_resource("s3")
-        firehose = aws_stack.connect_to_service("firehose")
+        firehose = aws_stack.create_external_boto_client("firehose")
 
         aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
 
@@ -173,11 +173,11 @@ class IntegrationTest(unittest.TestCase):
         lambda_ddb_name = "lambda-ddb-%s" % short_uid()
         queue_name = "queue-%s" % short_uid()
         dynamodb = aws_stack.connect_to_resource("dynamodb")
-        dynamodb_service = aws_stack.connect_to_service("dynamodb")
-        dynamodbstreams = aws_stack.connect_to_service("dynamodbstreams")
-        kinesis = aws_stack.connect_to_service("kinesis")
-        sns = aws_stack.connect_to_service("sns")
-        sqs = aws_stack.connect_to_service("sqs")
+        dynamodb_service = aws_stack.create_external_boto_client("dynamodb")
+        dynamodbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
+        kinesis = aws_stack.create_external_boto_client("kinesis")
+        sns = aws_stack.create_external_boto_client("sns")
+        sqs = aws_stack.create_external_boto_client("sqs")
 
         LOGGER.info("Creating test streams...")
         run_safe(
@@ -386,9 +386,9 @@ class IntegrationTest(unittest.TestCase):
         table_name = TEST_TABLE_NAME + "lsbat" + ddb_lease_table_suffix
         stream_name = TEST_STREAM_NAME
         lambda_ddb_name = "lambda-ddb-%s" % short_uid()
-        dynamodb = aws_stack.connect_to_service("dynamodb", client=True)
-        dynamodb_service = aws_stack.connect_to_service("dynamodb")
-        dynamodbstreams = aws_stack.connect_to_service("dynamodbstreams")
+        dynamodb = aws_stack.create_external_boto_client("dynamodb", client=True)
+        dynamodb_service = aws_stack.create_external_boto_client("dynamodb")
+        dynamodbstreams = aws_stack.create_external_boto_client("dynamodbstreams")
 
         LOGGER.info("Creating test streams...")
         run_safe(
@@ -845,7 +845,7 @@ def test_kinesis_lambda_forward_chain(kinesis_client, s3_client, create_lambda_f
 
 
 def get_event_source_arn(stream_name):
-    kinesis = aws_stack.connect_to_service("kinesis")
+    kinesis = aws_stack.create_external_boto_client("kinesis")
     return kinesis.describe_stream(StreamName=stream_name)["StreamDescription"]["StreamARN"]
 
 
@@ -860,7 +860,7 @@ def get_lambda_invocations_count(
 
 def get_lambda_metrics(func_name, metric=None, period=None, start_time=None, end_time=None):
     metric = metric or "Invocations"
-    cloudwatch = aws_stack.connect_to_service("cloudwatch")
+    cloudwatch = aws_stack.create_external_boto_client("cloudwatch")
     period = period or 600
     end_time = end_time or datetime.now()
     if start_time is None:

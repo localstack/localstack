@@ -86,7 +86,7 @@ def _format_attributes_names(req_data):
 
 
 def _get_attributes_forward_request(method, path, headers, req_data, forward_attrs):
-    req_data_new = dict([(k, v) for k, v in req_data.items() if not k.startswith("Attribute.")])
+    req_data_new = {k: v for k, v in req_data.items() if not k.startswith("Attribute.")}
     i = 1
     for k, v in forward_attrs.items():
         req_data_new["Attribute.%s.Name" % i] = [k]
@@ -117,7 +117,7 @@ def _set_queue_attributes(queue_url, req_data):
 
     QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
     QUEUE_ATTRIBUTES[queue_url].update(local_attrs)
-    forward_attrs = dict([(k, v) for k, v in attrs.items() if k not in UNSUPPORTED_ATTRIBUTE_NAMES])
+    forward_attrs = {k: v for k, v in attrs.items() if k not in UNSUPPORTED_ATTRIBUTE_NAMES}
     return forward_attrs
 
 
@@ -476,7 +476,7 @@ class ProxyListenerSQS(PersistingProxyListener):
                         ]
 
         # moto parse_message_attributes(..) expects params to be passed as dict of lists
-        req_data_lists = dict([(k, [v]) for k, v in req_data.items()])
+        req_data_lists = {k: [v] for k, v in req_data.items()}
         moto_message = Message("dummy_msg_id", "dummy_body")
         moto_message.message_attributes = parse_message_attributes(req_data_lists)
         for key, data_type in orig_types.items():

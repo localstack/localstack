@@ -600,7 +600,7 @@ class InstallerManager:
 
     @functools.lru_cache()
     def get_installers(self) -> Dict[str, Callable]:
-        installer: List[Installer] = list()
+        installer: List[Installer] = []
 
         for repo in self.repositories.load_all():
             installer.extend(repo.get_installer())

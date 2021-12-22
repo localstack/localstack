@@ -66,7 +66,7 @@ class AnalyticsClient:
         if not events:
             return
 
-        docs = list()
+        docs = []
         for event in events:
             try:
                 docs.append(event.asdict())

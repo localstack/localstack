@@ -39,27 +39,27 @@ class TestEdgeAPI:
             self._invoke_stepfunctions_via_edge(edge_url)
 
     def _invoke_kinesis_via_edge(self, edge_url):
-        client = aws_stack.connect_to_service("kinesis", endpoint_url=edge_url)
+        client = aws_stack.create_external_boto_client("kinesis", endpoint_url=edge_url)
         result = client.list_streams()
         assert "StreamNames" in result
 
     def _invoke_dynamodbstreams_via_edge(self, edge_url):
-        client = aws_stack.connect_to_service("dynamodbstreams", endpoint_url=edge_url)
+        client = aws_stack.create_external_boto_client("dynamodbstreams", endpoint_url=edge_url)
         result = client.list_streams()
         assert "Streams" in result
 
     def _invoke_firehose_via_edge(self, edge_url):
-        client = aws_stack.connect_to_service("firehose", endpoint_url=edge_url)
+        client = aws_stack.create_external_boto_client("firehose", endpoint_url=edge_url)
         result = client.list_delivery_streams()
         assert "DeliveryStreamNames" in result
 
     def _invoke_stepfunctions_via_edge(self, edge_url):
-        client = aws_stack.connect_to_service("stepfunctions", endpoint_url=edge_url)
+        client = aws_stack.create_external_boto_client("stepfunctions", endpoint_url=edge_url)
         result = client.list_state_machines()
         assert "stateMachines" in result
 
     def _invoke_dynamodb_via_edge_go_sdk(self, edge_url):
-        client = aws_stack.connect_to_service("dynamodb")
+        client = aws_stack.create_external_boto_client("dynamodb")
         table_name = f"t-{short_uid()}"
         aws_stack.create_dynamodb_table(table_name, "id")
 
@@ -83,7 +83,7 @@ class TestEdgeAPI:
         client.delete_table(TableName=table_name)
 
     def _invoke_s3_via_edge(self, edge_url):
-        client = aws_stack.connect_to_service("s3", endpoint_url=edge_url)
+        client = aws_stack.create_external_boto_client("s3", endpoint_url=edge_url)
         bucket_name = "edge-%s" % short_uid()
 
         client.create_bucket(Bucket=bucket_name)
@@ -116,7 +116,7 @@ class TestEdgeAPI:
         assert to_str(result.getvalue()) == "file_content_123"
 
     def _invoke_s3_via_edge_multipart_form(self, edge_url):
-        client = aws_stack.connect_to_service("s3", endpoint_url=edge_url)
+        client = aws_stack.create_external_boto_client("s3", endpoint_url=edge_url)
         bucket_name = "edge-%s" % short_uid()
         object_name = "testobject"
         object_data = b"testdata"
@@ -162,8 +162,8 @@ class TestEdgeAPI:
         region_original = os.environ.get("DEFAULT_REGION")
         os.environ["DEFAULT_REGION"] = "us-southeast-2"
         edge_url = "%s://localhost:%s" % (get_service_protocol(), edge_port)
-        sns_client = aws_stack.connect_to_service("sns", endpoint_url=edge_url)
-        sqs_client = aws_stack.connect_to_service("sqs", endpoint_url=edge_url)
+        sns_client = aws_stack.create_external_boto_client("sns", endpoint_url=edge_url)
+        sqs_client = aws_stack.create_external_boto_client("sqs", endpoint_url=edge_url)
 
         topic = sns_client.create_topic(Name="test_topic3")
         topic_arn = topic["TopicArn"]

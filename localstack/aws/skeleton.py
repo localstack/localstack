@@ -48,7 +48,7 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
     # scan class tree for @handler wrapped functions (reverse class tree so that inherited functions overwrite parent
     # functions)
     cls_tree = inspect.getmro(delegate.__class__)
-    handlers: Dict[str, HandlerAttributes] = dict()
+    handlers: Dict[str, HandlerAttributes] = {}
     cls_tree = reversed(list(cls_tree))
     for cls in cls_tree:
         if cls == object:
@@ -64,7 +64,7 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
                 pass
 
     # create dispatch table from operation handlers by resolving bound functions on the delegate
-    dispatch_table: DispatchTable = dict()
+    dispatch_table: DispatchTable = {}
     for handler in handlers.values():
         # resolve the bound function of the delegate
         bound_function = getattr(delegate, handler.function_name)
@@ -154,7 +154,7 @@ class Skeleton:
             handler = self.dispatch_table[operation.name]
 
             # Call the appropriate handler
-            result = handler(context, instance) or dict()
+            result = handler(context, instance) or {}
             # Serialize result dict to an HTTPResponse and return it
             return serializer.serialize_to_response(result, operation)
         except ServiceException as e:

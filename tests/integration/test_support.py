@@ -13,7 +13,10 @@ TEST_SUPPORT_CASE = {
 
 class TestConfigService(unittest.TestCase):
     def setUp(self):
-        self.support_client = aws_stack.connect_to_service("support")
+        # support is only available in us-east-1
+        self.support_client = aws_stack.create_external_boto_client(
+            "support", region_name="us-east-1"
+        )
 
     def create_case(self):
         response = self.support_client.create_case(

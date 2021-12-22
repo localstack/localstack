@@ -1,6 +1,10 @@
+variable "function_name" {
+  type = string
+}
+
 resource "aws_lambda_function" "tf_lambda" {
   filename      = "../lambdas/dotnetcore2/dotnetcore2.zip"
-  function_name = "tf-lambda"
+  function_name = var.function_name
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler"
 

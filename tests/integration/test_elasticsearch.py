@@ -135,7 +135,7 @@ class ElasticsearchTest(unittest.TestCase):
         cls._delete_document(TEST_DOC_ID)
 
         # make sure domain deletion works
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
         es_client.delete_elasticsearch_domain(DomainName=cls.domain_name)
         assert cls.domain_name not in [
             d["DomainName"] for d in es_client.list_domain_names()["DomainNames"]
@@ -150,14 +150,14 @@ class ElasticsearchTest(unittest.TestCase):
             self._create_domain(name=self.domain_name, es_cluster_config=ES_CLUSTER_CONFIG)
 
     def test_describe_elasticsearch_domains(self):
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
 
         result = es_client.describe_elasticsearch_domains(DomainNames=[self.domain_name])
         self.assertEqual(1, len(result["DomainStatusList"]))
         self.assertEqual(result["DomainStatusList"][0]["DomainName"], self.domain_name)
 
     def test_domain_es_version(self):
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
 
         status = es_client.describe_elasticsearch_domain(DomainName=self.domain_name)[
             "DomainStatus"
@@ -182,7 +182,7 @@ class ElasticsearchTest(unittest.TestCase):
             self.assertIn(req_result[0]["health"], ["green", "yellow"])
             self.assertIn(req_result[0]["index"], indexes)
 
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
         test_domain_name_1 = "test1-%s" % short_uid()
         test_domain_name_2 = "test2-%s" % short_uid()
         self._create_domain(name=test_domain_name_1, version="6.8")
@@ -197,7 +197,7 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertFalse(status_test_domain_name_2["DomainStatus"]["Processing"])
 
     def test_domain_creation(self):
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
 
         # make sure we cannot re-create same domain name
         self.assertRaises(
@@ -269,7 +269,7 @@ class ElasticsearchTest(unittest.TestCase):
 
     @classmethod
     def _create_domain(cls, name=None, version=None, es_cluster_config=None):
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
         name = name or cls.domain_name
         kwargs = {}
         if version:

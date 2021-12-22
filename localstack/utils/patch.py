@@ -84,7 +84,7 @@ class Patches:
     def __init__(self, patches: List[Patch] = None) -> None:
         super().__init__()
 
-        self.patches = list()
+        self.patches = []
         if patches:
             self.patches.extend(patches)
 

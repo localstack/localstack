@@ -168,7 +168,7 @@ def get_bucket_website_hostname(bucket_name):
 
 def get_forwarded_for_host(headers):
     x_forwarded_header = re.split(r",\s?", headers.get("X-Forwarded-For", ""))
-    host = x_forwarded_header[len(x_forwarded_header) - 1]
+    host = x_forwarded_header[-1]
     return host
 
 

@@ -177,6 +177,9 @@ class CodeSigningConfig:
 
 
 class LambdaFunction(Component):
+
+    QUALIFIER_LATEST: str = "$LATEST"
+
     def __init__(self, arn):
         super(LambdaFunction, self).__init__(arn)
         self.event_sources = []
@@ -306,7 +309,7 @@ class LambdaFunction(Component):
         return self.versions.get(version)
 
     def max_version(self):
-        versions = [int(key) for key in self.versions.keys() if key != "$LATEST"]
+        versions = [int(key) for key in self.versions.keys() if key != self.QUALIFIER_LATEST]
         return versions and max(versions) or 0
 
     def name(self):
@@ -319,12 +322,9 @@ class LambdaFunction(Component):
     def arn(self):
         return self.id
 
-    def function(self, qualifier: str = None):
-        return self.versions.get(self.get_qualifier_version(qualifier)).get("Function")
-
     def get_qualifier_version(self, qualifier: str = None) -> str:
         if not qualifier:
-            qualifier = "$LATEST"
+            qualifier = self.QUALIFIER_LATEST
         return (
             qualifier
             if qualifier in self.versions

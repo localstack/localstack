@@ -6,7 +6,7 @@ import socket
 import ssl
 import threading
 from asyncio.selector_events import BaseSelectorEventLoop
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Match, Optional, Union
 
 import requests
 from flask_cors import CORS
@@ -18,7 +18,7 @@ from flask_cors.core import (
     ACL_REQUEST_HEADERS,
 )
 from requests.models import Request, Response
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import parse_qs, unquote, urlencode, urlparse
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
@@ -28,17 +28,25 @@ from localstack.config import (
     EXTRA_CORS_EXPOSE_HEADERS,
     is_env_true,
 )
-from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
+from localstack.constants import (
+    APPLICATION_JSON,
+    AWS_REGION_US_EAST_1,
+    BIND_HOST,
+    HEADER_LOCALSTACK_REQUEST_URL,
+)
 from localstack.services.messages import Headers, MessagePayload
 from localstack.services.messages import Request as RoutingRequest
 from localstack.services.messages import Response as RoutingResponse
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
+from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.common import (
     generate_ssl_cert,
     json_safe,
     path_from_url,
     start_thread,
+    to_bytes,
+    to_str,
     wait_for_port_open,
 )
 from localstack.utils.server import http2_server
@@ -184,6 +192,145 @@ class MessageModifyingProxyListener(ProxyListener):
     ) -> Optional[RoutingResponse]:
         """Return a RoutingResponse with modified response data, or None to forward the response unmodified"""
         return None
+
+
+class ArnPartitionRewriteListener(MessageModifyingProxyListener):
+    """
+    Intercepts requests and responses and tries to adjust the partitions in ARNs within the intercepted requests.
+    For incoming requests, the default partition is set ("aws").
+    For outgoing responses, the partition is adjusted based on the region in the ARN, or by the default region
+    if the ARN does not contain a region.
+    This listener is used to support other partitions than the default "aws" partition (f.e. aws-us-gov) without
+    rewriting all the cases where the ARN is parsed or constructed within LocalStack or moto.
+    In other words, this listener makes sure that internally the ARNs are always in the partition "aws", while the
+    client gets ARNs with the proper partition.
+    """
+
+    # Partition which should be statically set for incoming requests
+    DEFAULT_INBOUND_PARTITION = "aws"
+
+    class InvalidRegionException(Exception):
+        """An exception indicating that a region could not be matched to a partition."""
+
+        pass
+
+    arn_regex = re.compile(
+        r"arn:"  # Prefix
+        r"(?P<Partition>(aws|aws-cn|aws-iso|aws-iso-b|aws-us-gov)*):"  # Partition
+        r"(?P<Service>[\w-]*):"  # Service (lambda, s3, ecs,...)
+        r"(?P<Region>[\w-]*):"  # Region (us-east-1, us-gov-west-1,...)
+        r"(?P<AccountID>[\w-]*):"  # AccountID
+        r"(?P<ResourcePath>"  # Combine the resource type and id to the ResourcePath
+        r"((?P<ResourceType>[\w-]*)[:/])?"  # ResourceType (optional, f.e. S3 bucket name)
+        r"(?P<ResourceID>[\w\-/*]*)"  # Resource ID (f.e. file name in S3)
+        r")"
+    )
+
+    def forward_request(
+        self, method: str, path: str, data: MessagePayload, headers: Headers
+    ) -> Optional[RoutingRequest]:
+        return RoutingRequest(
+            method=method,
+            path=self._adjust_partition_in_path(path, self.DEFAULT_INBOUND_PARTITION),
+            data=self._adjust_partition(data, self.DEFAULT_INBOUND_PARTITION),
+            headers=self._adjust_partition(headers, self.DEFAULT_INBOUND_PARTITION),
+        )
+
+    def return_response(
+        self,
+        method: str,
+        path: str,
+        data: MessagePayload,
+        headers: Headers,
+        response: Response,
+    ) -> Optional[RoutingResponse]:
+        # Only handle responses for calls from external clients
+        if is_internal_call_context(headers):
+            return None
+        return RoutingResponse(
+            status_code=response.status_code,
+            content=self._adjust_partition(response.content),
+            headers=self._adjust_partition(response.headers),
+        )
+
+    def _adjust_partition_in_path(self, path: str, static_partition: str = None):
+        """Adjusts the (still url encoded) URL path"""
+        parsed_url = urlparse(path)
+        # Make sure to keep blank values, otherwise we drop query params which do not have a value (f.e. "/?policy")
+        decoded_query = parse_qs(qs=parsed_url.query, keep_blank_values=True)
+        adjusted_path = self._adjust_partition(parsed_url.path, static_partition)
+        adjusted_query = self._adjust_partition(decoded_query, static_partition)
+        encoded_query = urlencode(adjusted_query, doseq=True)
+
+        # Make sure to avoid empty equals signs (in between and in the end)
+        encoded_query = encoded_query.replace("=&", "&")
+        encoded_query = re.sub(r"=$", "", encoded_query)
+
+        return f"{adjusted_path}{('?' + encoded_query) if encoded_query else ''}"
+
+    def _adjust_partition(self, source, static_partition: str = None):
+        # Call this function recursively if we get a dictionary or a list
+        if isinstance(source, dict):
+            result = {}
+            for k, v in source.items():
+                result[k] = self._adjust_partition(v, static_partition)
+            return result
+        if isinstance(source, list):
+            result = []
+            for v in source:
+                result.append(self._adjust_partition(v, static_partition))
+            return result
+        elif isinstance(source, bytes):
+            try:
+                decoded = unquote(to_str(source))
+                adjusted = self._adjust_partition(decoded, static_partition)
+                return to_bytes(adjusted)
+            except UnicodeDecodeError:
+                # If the body can't be decoded to a string, we return the initial source
+                return source
+        elif not isinstance(source, str):
+            # Ignore any other types
+            return source
+        return self.arn_regex.sub(lambda m: self._adjust_match(m, static_partition), source)
+
+    def _adjust_match(self, match: Match, static_partition: str = None):
+        region = match.group("Region")
+        partition = self._partition_lookup(region) if static_partition is None else static_partition
+        service = match.group("Service")
+        account_id = match.group("AccountID")
+        resource_path = match.group("ResourcePath")
+        return f"arn:{partition}:{service}:{region}:{account_id}:{resource_path}"
+
+    def _partition_lookup(self, region: str):
+        try:
+            partition = self._get_partition_for_region(region)
+        except ArnPartitionRewriteListener.InvalidRegionException:
+            try:
+                # If the region is not properly set (f.e. because it is set to a wildcard),
+                # the partition is determined based on the default region.
+                partition = self._get_partition_for_region(config.DEFAULT_REGION)
+            except self.InvalidRegionException:
+                # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
+                partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
+        return partition
+
+    def _get_partition_for_region(self, region: str) -> str:
+        # Region-Partition matching is based on the "regionRegex" definitions in the endpoints.json
+        # in the botocore package.
+        if region.startswith("us-gov-"):
+            return "aws-us-gov"
+        elif region.startswith("us-iso-"):
+            return "aws-iso"
+        elif region.startswith("us-isob-"):
+            return "aws-iso-b"
+        elif region.startswith("cn-"):
+            return "aws-cn"
+        elif re.match(r"^(us|eu|ap|sa|ca|me|af)-\w+-\d+$", region):
+            return "aws"
+        else:
+            raise ArnPartitionRewriteListener.InvalidRegionException(
+                f"Region ({region}) could not be matched to a partition."
+            )
 
 
 # -------------------
@@ -456,6 +603,9 @@ def modify_and_forward(
             return response
 
     # perform the actual invocation of the backend service
+    headers_to_send = None
+    data_to_send = None
+    method_to_send = None
     if response is None:
         headers_to_send = handler_chain_request.headers
         headers_to_send["Connection"] = headers_to_send.get("Connection") or "close"
@@ -494,10 +644,10 @@ def modify_and_forward(
     # run outbound handlers (post-invocation)
     for listener in listeners_outbound:
         updated_response = listener.return_response(
-            method=original_request.method,
-            path=original_request.path,
-            data=original_request.data,
-            headers=original_request.headers,
+            method=method_to_send or handler_chain_request.method,
+            path=handler_chain_request.path,
+            data=data_to_send or handler_chain_request.data,
+            headers=headers_to_send or handler_chain_request.headers,
             response=response,
         )
         message_modifier = isinstance(listener, MessageModifyingProxyListener)

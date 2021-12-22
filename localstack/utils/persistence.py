@@ -247,7 +247,7 @@ def save_startup_info():
 
 def _append_startup_info(file_path, startup_info: StartupInfo):
     if not os.path.exists(file_path):
-        infos = list()
+        infos = []
     else:
         with open(file_path, "r") as fd:
             infos = json.load(fd)

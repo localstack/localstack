@@ -75,7 +75,7 @@ TEST_REGION = "us-east-1"
 class SQSTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.client = aws_stack.connect_to_service("sqs")
+        cls.client = aws_stack.create_external_boto_client("sqs")
 
     def test_list_queue_tags(self):
         queue_info = self.client.create_queue(QueueName=TEST_QUEUE_NAME)
@@ -394,7 +394,7 @@ class SQSTest(unittest.TestCase):
         self.client.delete_queue(QueueUrl=dlq_info["QueueUrl"])
 
     def test_dead_letter_queue_execution(self):
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         # create SQS queue with DLQ redrive policy
         queue_name1 = "dlq-%s" % short_uid()
@@ -581,7 +581,7 @@ class SQSTest(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(
             EventSourceArn=aws_stack.sqs_queue_arn(queue_name),
             FunctionName=function_name,
@@ -685,7 +685,7 @@ class SQSTest(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=function_name
         )
@@ -779,7 +779,7 @@ class SQSTest(unittest.TestCase):
             func_name=func_name, zip_file=zip_file, handler=handler, runtime=runtime
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(EventSourceArn=queue_arn, FunctionName=func_name)
 
         self.client.send_message(
@@ -1149,6 +1149,7 @@ class TestSqsProvider:
         attrs = result["Attributes"]
         assert len(attrs) == 3
         assert "test-queue-" in attrs["QueueArn"]
+        assert testutil.response_arn_matches_partition(sqs_client, attrs["QueueArn"])
         assert int(float(attrs["CreatedTimestamp"])) == pytest.approx(int(time.time()), 30)
         assert int(attrs["VisibilityTimeout"]) == 30, "visibility timeout is not the default value"
 
@@ -1660,7 +1661,7 @@ class TestSqsProvider:
         url_parts = dl_queue_url.split("/")
         region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         conf = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 50}
@@ -1683,7 +1684,7 @@ class TestSqsProvider:
         url_parts = dl_queue_url.split("/")
         region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
@@ -1701,7 +1702,7 @@ class TestSqsProvider:
         # create arn
         url_parts = queue_url.split("/")
         queue_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
         lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=lambda_name
@@ -1731,7 +1732,7 @@ class TestSqsProvider:
         url_parts = dl_queue_url.split("/")
         region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
@@ -1792,7 +1793,7 @@ class TestSqsProvider:
         )
         # asserts
         constructed_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
         redrive_policy = json.loads(get_two_attributes.get("Attributes").get("RedrivePolicy"))
         assert message_retention_period == get_two_attributes.get("Attributes").get(
@@ -1988,7 +1989,7 @@ class TestSqsProvider:
         url_parts = dl_queue_url.split("/")
         region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
@@ -2006,7 +2007,7 @@ class TestSqsProvider:
         # create arn
         url_parts = queue_url.split("/")
         queue_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region, url_parts[len(url_parts) - 2], url_parts[len(url_parts) - 1]
+            region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
         lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=lambda_name

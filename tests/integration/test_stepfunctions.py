@@ -168,9 +168,9 @@ STATE_MACHINE_EVENTS = {
 class TestStateMachine(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.lambda_client = aws_stack.connect_to_service("lambda")
-        cls.s3_client = aws_stack.connect_to_service("s3")
-        cls.sfn_client = aws_stack.connect_to_service("stepfunctions")
+        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
+        cls.s3_client = aws_stack.create_external_boto_client("s3")
+        cls.sfn_client = aws_stack.create_external_boto_client("stepfunctions")
 
         zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True)
         zip_file2 = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ECHO), get_content=True)
@@ -318,6 +318,9 @@ class TestStateMachine(unittest.TestCase):
         self.cleanup(sm_arn, state_machines_before)
 
     def test_try_catch_state_machine(self):
+        if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
+            pytest.skip("skipping non us-east-1 temporarily")
+
         state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
 
         # create state machine
@@ -354,6 +357,9 @@ class TestStateMachine(unittest.TestCase):
         self.cleanup(sm_arn, state_machines_before)
 
     def test_intrinsic_functions(self):
+        if os.environ.get("AWS_DEFAULT_REGION") != "us-east-1":
+            pytest.skip("skipping non us-east-1 temporarily")
+
         state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
 
         # create state machine
@@ -391,7 +397,7 @@ class TestStateMachine(unittest.TestCase):
         self.cleanup(sm_arn, state_machines_before)
 
     def test_events_state_machine(self):
-        events = aws_stack.connect_to_service("events")
+        events = aws_stack.create_external_boto_client("events")
         state_machines_before = self.sfn_client.list_state_machines()["stateMachines"]
 
         # create event bus
@@ -476,8 +482,8 @@ TEST_STATE_MACHINE = {
 def test_multiregion(region_name):
     other_region = "us-east-1" if region_name != "us-east-1" else "us-east-2"
     # TODO: create client factory fixture
-    client1 = aws_stack.connect_to_service("stepfunctions", region_name=region_name)
-    client2 = aws_stack.connect_to_service("stepfunctions", region_name=other_region)
+    client1 = aws_stack.create_external_boto_client("stepfunctions", region_name=region_name)
+    client2 = aws_stack.create_external_boto_client("stepfunctions", region_name=other_region)
 
     # create state machine
     name = "sf-%s" % short_uid()

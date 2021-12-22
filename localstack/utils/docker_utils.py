@@ -236,7 +236,7 @@ class VolumeBind:
     options: Optional[List[str]] = None
 
     def to_str(self) -> str:
-        args = list()
+        args = []
 
         if self.host_dir:
             args.append(self.host_dir)
@@ -256,7 +256,7 @@ class VolumeMappings:
     mappings: List[Union[SimpleVolumeBind, VolumeBind]]
 
     def __init__(self, mappings: List[Union[SimpleVolumeBind, VolumeBind]] = None):
-        self.mappings = mappings if mappings is not None else list()
+        self.mappings = mappings if mappings is not None else []
 
     def add(self, mapping: Union[SimpleVolumeBind, VolumeBind]):
         self.append(mapping)
@@ -362,9 +362,11 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
         """Get detailed attributes of an image.
 
+        :param image_name: Image name to inspect
+        :param pull: Whether to pull image if not existent
         :return: Dict containing docker attributes as returned by the daemon
         """
         pass
@@ -393,15 +395,23 @@ class ContainerClient(metaclass=ABCMeta):
         """
         pass
 
-    def get_image_cmd(self, docker_image: str) -> str:
-        """Get the command for the given image"""
-        cmd_list = self.inspect_image(docker_image)["Config"]["Cmd"] or []
+    def get_image_cmd(self, docker_image: str, pull: bool = True) -> str:
+        """Get the command for the given image
+        :param docker_image: Docker image to inspect
+        :param pull: Whether to pull if image is not present
+        :return: Image command
+        """
+        cmd_list = self.inspect_image(docker_image, pull)["Config"]["Cmd"] or []
         return " ".join(cmd_list)
 
-    def get_image_entrypoint(self, docker_image: str) -> str:
-        """Get the entry point for the given image"""
+    def get_image_entrypoint(self, docker_image: str, pull: bool = True) -> str:
+        """Get the entry point for the given image
+        :param docker_image: Docker image to inspect
+        :param pull: Whether to pull if image is not present
+        :return: Image entrypoint
+        """
         LOG.debug("Getting the entrypoint for image: %s", docker_image)
-        entrypoint_list = self.inspect_image(docker_image)["Config"]["Entrypoint"] or []
+        entrypoint_list = self.inspect_image(docker_image, pull)["Config"]["Entrypoint"] or []
         return " ".join(entrypoint_list)
 
     @abstractmethod
@@ -707,10 +717,13 @@ class CmdDockerClient(ContainerClient):
         except NoSuchObject as e:
             raise NoSuchContainer(container_name_or_id=e.object_id)
 
-    def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
         try:
             return self._inspect_object(image_name)
         except NoSuchObject as e:
+            if pull:
+                self.pull_image(image_name)
+                return self.inspect_image(image_name, pull=False)
             raise NoSuchImage(image_name=e.object_id)
 
     def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
@@ -882,7 +895,7 @@ class CmdDockerClient(ContainerClient):
         if mount_volumes:
             cmd += [
                 volume
-                for host_path, docker_path in mount_volumes
+                for host_path, docker_path in dict(mount_volumes).items()
                 for volume in ["-v", f"{host_path}:{docker_path}"]
             ]
         if interactive:
@@ -1222,18 +1235,21 @@ class SdkDockerClient(ContainerClient):
         LOG.debug("Listing containers with filters: %s", filter)
         try:
             container_list = self.client().containers.list(filters=filter, all=all)
-            return list(
-                map(
-                    lambda container: {
-                        "id": container.id,
-                        "image": container.image,
-                        "name": container.name,
-                        "status": container.status,
-                        "labels": container.labels,
-                    },
-                    container_list,
-                )
-            )
+            result = []
+            for container in container_list:
+                try:
+                    result.append(
+                        {
+                            "id": container.id,
+                            "image": container.image,
+                            "name": container.name,
+                            "status": container.status,
+                            "labels": container.labels,
+                        }
+                    )
+                except Exception as e:
+                    LOG.error(f"Error checking container {container}: {e}")
+            return result
         except APIError:
             raise ContainerException()
 
@@ -1312,10 +1328,13 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             raise ContainerException()
 
-    def inspect_image(self, image_name: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_image(self, image_name: str, pull: bool = True) -> Dict[str, Union[Dict, str]]:
         try:
             return self.client().images.get(image_name).attrs
         except NotFound:
+            if pull:
+                self.pull_image(image_name)
+                return self.inspect_image(image_name, pull=False)
             raise NoSuchImage(image_name)
         except APIError:
             raise ContainerException()
