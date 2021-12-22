@@ -461,7 +461,7 @@ async def message_to_subscriber(
             # TODO remove this kwargs if we stop using ElasticMQ entirely
             kwargs = (
                 {"MessageGroupId": message_group_id}
-                if message_group_id and SQS_BACKEND_IMPL == "moto"
+                if message_group_id or SQS_BACKEND_IMPL == "moto"
                 else {}
             )
             sqs_client.send_message(
