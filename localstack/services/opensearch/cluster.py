@@ -1,12 +1,22 @@
 import logging
 import os
 from typing import Dict, List, NamedTuple, Optional
+from urllib.parse import urlparse
 
 import requests
 
 from localstack import config, constants
 from localstack.services import install
-from localstack.utils.common import ShellCommandThread, chmod_r, is_root, mkdir, rm_rf
+from localstack.services.generic_proxy import EndpointProxy
+from localstack.services.infra import DEFAULT_BACKEND_HOST, start_proxy_for_service
+from localstack.utils.common import (
+    ShellCommandThread,
+    chmod_r,
+    get_free_tcp_port,
+    is_root,
+    mkdir,
+    rm_rf,
+)
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 
@@ -197,3 +207,156 @@ class OpensearchCluster(Server):
 
     def _init_directories(self):
         init_directories(self.directories)
+
+
+class ProxiedOpensearchCluster(Server):
+    """
+    Starts an OpensearchCluster behind a localstack service proxy. The OpnsearchCluster
+    backend will be assigned a random port.
+    """
+
+    def __init__(
+        self, port=9200, host="localhost", version=None, directories: Directories = None
+    ) -> None:
+        super().__init__(port, host)
+        self._version = version or constants.OPENSEARCH_DEFAULT_VERSION
+
+        self.cluster = None
+        self.cluster_port = None
+        self.directories = directories
+
+    @property
+    def version(self):
+        return self._version
+
+    def is_up(self):
+        # check service lifecycle
+        if not self.cluster:
+            return False
+
+        if not self.cluster.is_up():
+            return False
+
+        return super().is_up()
+
+    def health(self):
+        """
+        calls the health endpoint of elasticsearch through the proxy, making sure implicitly that
+        both are running
+        """
+        return get_opensearch_health_status(self.url)
+
+    def do_start_thread(self) -> FuncThread:
+        # start elasticsearch backend
+        if not self.cluster_port:
+            self.cluster_port = get_free_tcp_port()
+
+        self.cluster = OpensearchCluster(
+            port=self.cluster_port,
+            host=DEFAULT_BACKEND_HOST,
+            version=self.version,
+            directories=self.directories,
+        )
+        self.cluster.start()
+
+        self.cluster.wait_is_up()
+        LOG.info("opensearch cluster on %s is ready", self.cluster.url)
+
+        # start front-facing proxy
+        return start_proxy_for_service(
+            "opensearch",
+            self.port,
+            self.cluster_port,
+            update_listener=None,
+            quiet=True,
+            # TODO: check if protocol_version still needed - doesn't seem to be used in start_proxy_server(..)
+            params={"protocol_version": "HTTP/1.0"},
+        )
+
+    def do_shutdown(self):
+        self.cluster.shutdown()
+
+
+class CustomEndpoint:
+    enabled: bool
+    endpoint: str
+
+    def __init__(self, enabled: bool, endpoint: str) -> None:
+        self.enabled = enabled
+        self.endpoint = endpoint
+
+        if self.endpoint:
+            self.url = urlparse(endpoint)
+        else:
+            self.url = None
+
+
+class EdgeProxiedOpensearchCluster(Server):
+    """
+    Opensearch-backed Server that can be routed through the edge proxy using an UrlMatchingForwarder to forward
+    requests to the backend cluster.
+    """
+
+    def __init__(self, url: str, version=None, directories: Directories = None) -> None:
+        self._url = urlparse(url)
+
+        super().__init__(
+            host=self._url.hostname,
+            port=self._url.port,
+        )
+        self._version = version or constants.OPENSEARCH_DEFAULT_VERSION
+
+        self.cluster = None
+        self.cluster_port = None
+        self.proxy = None
+        self.directories = directories
+
+    @property
+    def version(self):
+        return self._version
+
+    @property
+    def url(self) -> str:
+        return self._url.geturl()
+
+    def is_up(self):
+        # check service lifecycle
+        if not self.cluster:
+            return False
+
+        if not self.cluster.is_up():
+            return False
+
+        return super().is_up()
+
+    def health(self):
+        """
+        calls the health endpoint of opensearch through the proxy, making sure implicitly that
+        both are running
+        """
+        return get_opensearch_health_status(self.url)
+
+    def do_run(self):
+        self.cluster_port = get_free_tcp_port()
+        self.cluster = OpensearchCluster(
+            port=self.cluster_port,
+            host=DEFAULT_BACKEND_HOST,
+            version=self.version,
+            directories=self.directories,
+        )
+        self.cluster.start()
+
+        self.proxy = EndpointProxy(self.url, self.cluster.url)
+        LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
+        self.proxy.register()
+
+        self.cluster.wait_is_up()
+        LOG.info("opensearch cluster on %s is ready", self.cluster.url)
+
+        return self.cluster.join()
+
+    def do_shutdown(self):
+        if self.proxy:
+            self.proxy.unregister()
+        if self.cluster:
+            self.cluster.shutdown()
