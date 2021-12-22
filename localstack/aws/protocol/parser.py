@@ -299,7 +299,7 @@ class QueryRequestParser(RequestParser):
         return self._parse_shape(request, member_shape, sub_node) if sub_node is not None else None
 
     def _parse_structure(self, request: HttpRequest, shape: StructureShape, node: dict) -> dict:
-        result = dict()
+        result = {}
 
         for member, member_shape in shape.members.items():
             # The key in the node is either the serialization config "name" of the shape, or the name of the member
@@ -340,7 +340,7 @@ class QueryRequestParser(RequestParser):
         # https://awslabs.github.io/smithy/1.0/spec/core/xml-traits.html#xmlflattened-trait
         if not shape.serialization.get("flattened"):
             key_prefix += "entry."
-        result = dict()
+        result = {}
 
         i = 0
         while True:
@@ -385,7 +385,7 @@ class QueryRequestParser(RequestParser):
 
         # We collect the list value as well as the integer indicating the list position so we can
         # later sort the list by the position, in case they attribute values are unordered
-        result: List[Tuple[int, Any]] = list()
+        result: List[Tuple[int, Any]] = []
 
         i = 0
         while True:

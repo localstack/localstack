@@ -227,7 +227,7 @@ def resolve_apis(services: Iterable[str]) -> Set[str]:
     :param services: a collection of services that can include composites (e.g., "serverless").
     :returns a set of canonical service names
     """
-    stack = list()
+    stack = []
     result = set()
 
     # perform a graph search
@@ -460,14 +460,14 @@ class LocalstackContainer:
         self.image_name = get_docker_image_to_start()
         self.ports = PortMappings(bind_host=config.EDGE_BIND_HOST)
         self.volumes = VolumeMappings()
-        self.env_vars = dict()
-        self.additional_flags = list()
+        self.env_vars = {}
+        self.additional_flags = []
 
         self.logfile = os.path.join(config.dirs.tmp, f"{self.name}_container.log")
 
     def _get_mount_volumes(self) -> List[SimpleVolumeBind]:
         # FIXME: VolumeMappings should be supported by the docker client
-        mount_volumes = list()
+        mount_volumes = []
         for volume in self.volumes:
             if isinstance(volume, tuple):
                 mount_volumes.append(volume)

@@ -225,7 +225,7 @@ def generate_service_types(output, service: ServiceModel, doc=True):
     output.write("\n")
 
     # ==================================== print type declarations
-    nodes: Dict[str, ShapeNode] = dict()
+    nodes: Dict[str, ShapeNode] = {}
 
     for shape_name in service.shape_names:
         shape = service.shape_for(shape_name)

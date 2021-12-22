@@ -228,7 +228,7 @@ def test_dispatch_common_service_exception():
     def delete_queue(_context: RequestContext, _request: ServiceRequest):
         raise CommonServiceException("NonExistentQueue", "No such queue")
 
-    table: DispatchTable = dict()
+    table: DispatchTable = {}
     table["DeleteQueue"] = delete_queue
 
     sqs_service = load_service("sqs")
@@ -262,7 +262,7 @@ def test_dispatch_common_service_exception():
 
 
 def test_dispatch_missing_method_returns_internal_failure():
-    table: DispatchTable = dict()
+    table: DispatchTable = {}
 
     sqs_service = load_service("sqs")
     skeleton = Skeleton(sqs_service, table)

@@ -116,7 +116,7 @@ class ClusterManager:
     clusters: Dict[str, Server]
 
     def __init__(self) -> None:
-        self.clusters = dict()
+        self.clusters = {}
 
     def create(self, arn: str, create_domain_request: Dict) -> Server:
         version = versions.get_install_version(
@@ -246,7 +246,7 @@ class MultiplexingClusterManager(ClusterManager):
     def __init__(self) -> None:
         super().__init__()
         self.cluster = None
-        self.endpoints = dict()
+        self.endpoints = {}
         self.mutex = threading.RLock()
 
     def _create_cluster(self, arn, url, version, create_domain_request) -> Server:

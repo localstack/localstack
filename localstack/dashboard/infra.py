@@ -271,7 +271,7 @@ def get_dynamo_dbs(filter=".*", pool={}, env=None, region=None):
 def parse_notification_configuration(notification_config: Dict, pool=None) -> List[S3Notification]:
     # notification_config returned by:
     # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.get_bucket_notification_configuration
-    notifications = list()
+    notifications = []
 
     arn_selectors = {
         "QueueConfigurations": "QueueArn",

@@ -86,7 +86,7 @@ def test_run_cmd_as_str_or_list():
 @pytest.mark.parametrize("tail_engine", ["command", "tailer"])
 class TestFileListener:
     def test_basic_usage(self, tail_engine, tmp_path):
-        lines = list()
+        lines = []
 
         file = tmp_path / "log.txt"
         file.touch()
@@ -118,7 +118,7 @@ class TestFileListener:
             fd.close()
 
     def test_callback_exception_ignored(self, tail_engine, tmp_path):
-        lines = list()
+        lines = []
 
         def callback(line):
             if "throw" in line:
@@ -152,7 +152,7 @@ class TestFileListener:
             listener.close()
 
     def test_open_missing_file(self, tail_engine):
-        lines = list()
+        lines = []
 
         listener = FileListener("/tmp/does/not/exist", lines.append)
         listener.use_tail_command = tail_engine != "tailer"

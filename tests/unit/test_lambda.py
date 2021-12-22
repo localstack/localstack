@@ -434,7 +434,7 @@ class TestLambdaAPI(unittest.TestCase):
                 "RevisionId", None
             )  # we need to remove this, since this is random, so we cannot know its value
 
-            expected_result = dict()
+            expected_result = {}
             expected_result["CodeSize"] = self.CODE_SIZE
             expected_result["CodeSha256"] = self.CODE_SHA_256
             expected_result["FunctionArn"] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ":1"
@@ -469,7 +469,7 @@ class TestLambdaAPI(unittest.TestCase):
                 "RevisionId", None
             )  # we need to remove this, since this is random, so we cannot know its value
 
-            expected_result = dict()
+            expected_result = {}
             expected_result["CodeSize"] = self.CODE_SIZE
             expected_result["CodeSha256"] = self.UPDATED_CODE_SHA_256
             expected_result["FunctionArn"] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ":2"
@@ -513,7 +513,7 @@ class TestLambdaAPI(unittest.TestCase):
                 # we need to remove this, since this is random, so we cannot know its value
                 version.pop("RevisionId", None)
 
-            latest_version = dict()
+            latest_version = {}
             latest_version["CodeSize"] = self.CODE_SIZE
             latest_version["CodeSha256"] = self.CODE_SHA_256
             latest_version["FunctionArn"] = (
@@ -878,7 +878,7 @@ class TestLambdaAPI(unittest.TestCase):
             ).get_data()
         )
 
-        expected_response = dict()
+        expected_response = {}
         expected_response["LastUpdateStatus"] = "Successful"
         expected_response["FunctionName"] = str(self.FUNCTION_NAME)
         expected_response["Runtime"] = str(self.RUNTIME)
