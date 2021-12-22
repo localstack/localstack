@@ -221,15 +221,17 @@ class TestEc2Integrations(unittest.TestCase):
         ec2.detach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
         ec2.delete_vpn_gateway(VpnGatewayId=gateway_id)
         ec2.delete_vpc(VpcId=vpc_id)
+
     def test_describe_vpc_endpoints_with_filter(self):
+
         ec2 = self.ec2_client
         vpc = ec2.create_vpc(CidrBlock="10.0.0.0/16")
         vpc_id = vpc["Vpc"]["VpcId"]
 
-        #test filter of Gateway endpoint services
+        # test filter of Gateway endpoint services
         vpc_endpoint_gateway_services = ec2.describe_vpc_endpoint_services(
             Filters=[
-              {"Name": "service-type", "Values": ["Gateway"]},
+                {"Name": "service-type", "Values": ["Gateway"]},
             ],
         )
 
@@ -238,12 +240,10 @@ class TestEc2Integrations(unittest.TestCase):
         self.assertEqual(2, len(services))
         self.assertTrue('com.amazonaws.us-east-1.dynamodb' in services)
         self.assertTrue('com.amazonaws.us-east-1.s3' in services)
-
-
-        #test filter of Interface endpoint services
+        # test filter of Interface endpoint services
         vpc_endpoint_interface_services = ec2.describe_vpc_endpoint_services(
             Filters=[
-              {"Name": "service-type", "Values": ["Interface"]},
+                {"Name": "service-type", "Values": ["Interface"]},
             ],
         )
 
@@ -254,7 +254,7 @@ class TestEc2Integrations(unittest.TestCase):
         self.assertTrue('com.amazonaws.us-east-1.s3' in services)
         self.assertTrue('com.amazonaws.us-east-1.firehose' in services)
 
-        #test filter that does not exist
+        # test filter that does not exist
         vpc_endpoint_interface_services = ec2.describe_vpc_endpoint_services(
             Filters=[
                 {"Name": "service-type", "Values": ["fake"]},
