@@ -143,7 +143,7 @@ If you are interested in contributing to LocalStack:
 
 - Start by reading our [contributing guide](CONTRIBUTING.md).
 - Check out our [developer guide](https://docs.localstack.cloud/developer-guide/).
-- Look through our [roadmap](doc/roadmap/README.md).
+- Look through our [roadmap](https://roadmap.localstack.cloud/).
 - Navigate our codebase and [open issues](https://github.com/localstack/localstack/issues).
 
 We are thankful for all the contributions and feedback we receive.
