@@ -178,14 +178,14 @@ class EventSourceListener(SubtypesInstanceManager):
             )
             if self_managed_endpoints.get("KAFKA_BOOTSTRAP_SERVERS"):
                 service_type = "kafka"
-        instance = EventSourceListener.get(service_type)
+        instance = EventSourceListener.get(service_type, raise_if_missing=False)
         if instance:
             instance.start()
 
     @staticmethod
     def process_event_via_listener(service_type: str, event: Any):
         """Process event for the given service type (for reactive mode)"""
-        instance = EventSourceListener.get(service_type)
+        instance = EventSourceListener.get(service_type, raise_if_missing=False)
         if not instance:
             return
 
