@@ -122,13 +122,10 @@ class ClusterManager:
     def __init__(self) -> None:
         self.clusters = dict()
 
-    def create(self, arn: str, create_domain_request: Dict) -> Server:
-        version = versions.get_install_version(
-            create_domain_request.get("ElasticsearchVersion") or OPENSEARCH_DEFAULT_VERSION
-        )
+    def create(self, arn: str, version: str, endpoint_options) -> Server:
+        version = versions.get_install_version(version or OPENSEARCH_DEFAULT_VERSION)
 
         # determine custom domain endpoint
-        endpoint_options = create_domain_request.get("DomainEndpointOptions")
         custom_endpoint = determine_custom_endpoint(endpoint_options)
 
         # build final endpoint and cluster url
@@ -136,7 +133,7 @@ class ClusterManager:
         url = f"http://{endpoint}" if "://" not in endpoint else endpoint
 
         # call abstract cluster factory
-        cluster = self._create_cluster(arn, url, version, create_domain_request)
+        cluster = self._create_cluster(arn, url, version)
         cluster.start()
 
         # save cluster into registry and return
@@ -157,7 +154,7 @@ class ClusterManager:
         cluster = self.get(arn)
         return cluster.is_up() if cluster else False
 
-    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
+    def _create_cluster(self, arn, url, version) -> Server:
         """
         Abstract cluster factory.
         """
@@ -189,11 +186,11 @@ class SingletonClusterManager(ClusterManager):
         self.mutex = threading.RLock()
         self.cluster = None
 
-    def create(self, arn: str, create_domain_request: Dict) -> Server:
+    def create(self, arn: str, version: str, endpoint_options) -> Server:
         with self.mutex:
-            return super().create(arn, create_domain_request)
+            return super().create(arn, version, endpoint_options)
 
-    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
+    def _create_cluster(self, arn, url, version) -> Server:
         if not self.cluster:
             # FIXME: if remove() is called, then immediately after, create() (without letting time pass for the proxy to
             #  shut down) there's a chance that there will be a bind exception when trying to start the proxy again

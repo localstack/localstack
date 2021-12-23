@@ -1,9 +1,10 @@
+import threading
+
 from localstack.aws.api import RequestContext
 from localstack.aws.api.opensearch import (
     AdvancedOptions,
     AdvancedSecurityOptions,
     AdvancedSecurityOptionsInput,
-    AutoTuneOptions,
     AutoTuneOptionsInput,
     AutoTuneOptionsOutput,
     AutoTuneState,
@@ -41,6 +42,80 @@ from localstack.aws.api.opensearch import (
     VPCOptions,
 )
 
+# mutex for domains
+from localstack.services.opensearch.cluster_manager import ClusterManager, create_cluster_manager
+from localstack.utils.common import synchronized
+
+_domain_mutex = threading.RLock()
+
+# cluster manager singleton
+_cluster_manager = None
+
+
+@synchronized(_domain_mutex)
+def cluster_manager() -> ClusterManager:
+    global _cluster_manager
+    if not _cluster_manager:
+        _cluster_manager = create_cluster_manager()
+    return _cluster_manager
+
+
+def _create_cluster(domain_name: str, version_string: str, domain_endpoint_options):
+    manager = cluster_manager()
+    cluster = manager.create(domain_name, version_string, domain_endpoint_options)
+
+    # TODO handle state
+
+
+def get_domain_status(domain_name, deleted=False) -> DomainStatus:
+    # TODO save config and use in return
+    return DomainStatus(
+        DomainId=f"0000000000000/{domain_name}",
+        DomainName=domain_name,
+        Created=True,
+        Deleted=deleted,
+        Processing=True,
+        UpgradeProcessing=False,
+        EngineVersion="OpenSearch_1.0",
+        ClusterConfig=ClusterConfig(
+            InstanceType=OpenSearchPartitionInstanceType.t2_medium_search,
+            InstanceCount=1,
+            DedicatedMasterEnabled=False,
+            ZoneAwarenessEnabled=False,
+            WarmEnabled=False,
+            ColdStorageOptions=ColdStorageOptions(Enabled=False),
+        ),
+        EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10),
+        AccessPolicies="",
+        SnapshotOptions=SnapshotOptions(AutomatedSnapshotStartHour=0),
+        CognitoOptions=CognitoOptions(Enabled=False),
+        EncryptionAtRestOptions=EncryptionAtRestOptions(Enabled=False),
+        NodeToNodeEncryptionOptions=NodeToNodeEncryptionOptions(Enabled=False),
+        AdvancedOptions={
+            "override_main_response_version": "false",
+            "rest.action.multi.allow_explicit_index": "true",
+        },
+        ServiceSoftwareOptions=ServiceSoftwareOptions(
+            CurrentVersion="",
+            NewVersion="",
+            UpdateAvailable=False,
+            Cancellable=False,
+            UpdateStatus=DeploymentStatus.COMPLETED,
+            Description="There is no software update available for this domain.",
+            AutomatedUpdateDate="0.0",
+            OptionalDeployment=True,
+        ),
+        DomainEndpointOptions=DomainEndpointOptions(
+            EnforceHTTPS=False,
+            TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
+            CustomEndpointEnabled=False,
+        ),
+        AdvancedSecurityOptions=AdvancedSecurityOptions(
+            Enabled=False, InternalUserDatabaseEnabled=False
+        ),
+        AutoTuneOptions=AutoTuneOptionsOutput(State=AutoTuneState.ENABLE_IN_PROGRESS),
+    )
+
 
 class OpensearchProvider(OpensearchApi):
     def create_domain(
@@ -63,52 +138,14 @@ class OpensearchProvider(OpensearchApi):
         tag_list: TagList = None,
         auto_tune_options: AutoTuneOptionsInput = None,
     ) -> CreateDomainResponse:
-        status = DomainStatus(
-            DomainId=f"0000000000000/{domain_name}",
-            DomainName=domain_name,
-            Created=True,
-            Deleted=False,
-            Processing=True,
-            UpgradeProcessing=False,
-            EngineVersion="OpenSearch_1.0",
-            ClusterConfig=ClusterConfig(
-                InstanceType=OpenSearchPartitionInstanceType.t2_medium_search,
-                InstanceCount=1,
-                DedicatedMasterEnabled=False,
-                ZoneAwarenessEnabled=False,
-                WarmEnabled=False,
-                ColdStorageOptions=ColdStorageOptions(Enabled=False),
-            ),
-            EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10),
-            AccessPolicies="",
-            SnapshotOptions=SnapshotOptions(AutomatedSnapshotStartHour=0),
-            CognitoOptions=CognitoOptions(Enabled=False),
-            EncryptionAtRestOptions=EncryptionAtRestOptions(Enabled=False),
-            NodeToNodeEncryptionOptions=NodeToNodeEncryptionOptions(Enabled=False),
-            AdvancedOptions={
-                "override_main_response_version": "false",
-                "rest.action.multi.allow_explicit_index": "true",
-            },
-            ServiceSoftwareOptions=ServiceSoftwareOptions(
-                CurrentVersion="",
-                NewVersion="",
-                UpdateAvailable=False,
-                Cancellable=False,
-                UpdateStatus=DeploymentStatus.COMPLETED,
-                Description="There is no software update available for this domain.",
-                AutomatedUpdateDate="0.0",
-                OptionalDeployment=True,
-            ),
-            DomainEndpointOptions=DomainEndpointOptions(
-                EnforceHTTPS=False,
-                TLSSecurityPolicy=TLSSecurityPolicy.Policy_Min_TLS_1_0_2019_07,
-                CustomEndpointEnabled=False,
-            ),
-            AdvancedSecurityOptions=AdvancedSecurityOptions(
-                Enabled=False, InternalUserDatabaseEnabled=False
-            ),
-            AutoTuneOptions=AutoTuneOptionsOutput(State=AutoTuneState.ENABLE_IN_PROGRESS),
-        )
+
+        with _domain_mutex:
+            # todo regions? and save config
+
+            _create_cluster(domain_name, engine_version, domain_endpoint_options)
+
+            status = get_domain_status(domain_name)
+
         return CreateDomainResponse(DomainStatus=status)
 
     def delete_domain(
