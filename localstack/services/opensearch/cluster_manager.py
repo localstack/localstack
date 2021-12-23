@@ -6,6 +6,7 @@ from typing import Dict, Optional
 from botocore.utils import ArnParser
 
 from localstack import config, constants
+from localstack.aws.api.opensearch import DomainEndpointOptions
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
 from localstack.services.opensearch import versions
@@ -24,27 +25,30 @@ LOG = logging.getLogger(__name__)
 OPENSEARCH_BASE_DOMAIN = f"opensearch.{constants.LOCALHOST_HOSTNAME}"
 
 
-# TODO introduce extra opensearch variables or keep the ES ones?
 def create_cluster_manager() -> "ClusterManager":
-    if config.ES_CUSTOM_BACKEND:
+    """Creates the cluster manager according to the configuration."""
+
+    if config.OPENSEARCH_CUSTOM_BACKEND:
         return CustomBackendManager()
 
-    if config.ES_ENDPOINT_STRATEGY == "off" and not config.ES_MULTI_CLUSTER:
+    if config.OPENSEARCH_ENDPOINT_STRATEGY == "off" and not config.OPENSEARCH_MULTI_CLUSTER:
         return SingletonClusterManager()
 
-    if config.ES_ENDPOINT_STRATEGY != "off":
-        if config.ES_MULTI_CLUSTER:
+    if config.OPENSEARCH_ENDPOINT_STRATEGY != "off":
+        if config.OPENSEARCH_MULTI_CLUSTER:
             return MultiClusterManager()
         else:
             return MultiplexingClusterManager()
 
     raise ValueError(
-        "cannot manage clusters with ES_ENDPOINT_STRATEGY=off and ES_MULTI_CLUSTER=True"
+        "cannot manage clusters with OPENSEARCH_ENDPOINT_STRATEGY=off and OPENSEARCH_MULTI_CLUSTER=True"
     )
 
 
 @dataclasses.dataclass
 class DomainKey:
+    """Uniquely identifies an OpenSearch domain."""
+
     domain_name: str
     region: str
     account: str
@@ -56,7 +60,6 @@ class DomainKey:
     @staticmethod
     def from_arn(arn: str) -> "DomainKey":
         parsed = ArnParser().parse_arn(arn)
-        # todo is arn updated to opensearch?
         if parsed["service"] != "es":
             raise ValueError("not an opensearch arn: %s", arn)
 
@@ -71,20 +74,21 @@ def build_cluster_endpoint(
     domain_key: DomainKey, custom_endpoint: Optional[CustomEndpoint] = None
 ) -> str:
     """
-    Builds the cluster endpoint from and optional custom_endpoint and the localstack elasticsearch config. Example
+    Builds the cluster endpoint from and optional custom_endpoint and the localstack opensearch config. Example
     values:
 
-    - my-domain.us-east-1.es.localhost.localstack.cloud:4566 (endpoint strategy = domain (default))
+    - my-domain.us-east-1.opensearch.localhost.localstack.cloud:4566 (endpoint strategy = domain (default))
     - localhost:4566/us-east-1/my-domain (endpoint strategy = path)
     - localhost:4751 (endpoint strategy = off)
     - my.domain:443/foo (arbitrary endpoints (technically not allowed by AWS, but there are no rules in localstack))
     """
+    # TODO check if the different modes are working correctly
     if custom_endpoint and custom_endpoint.enabled:
         return custom_endpoint.endpoint
 
-    if config.ES_ENDPOINT_STRATEGY == "off":
+    if config.OPENSEARCH_ENDPOINT_STRATEGY == "off":
         return "%s:%s" % (config.LOCALSTACK_HOSTNAME, config.PORT_OPENSEARCH)
-    if config.ES_ENDPOINT_STRATEGY == "path":
+    if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
         return "%s:%s/es/%s/%s" % (
             config.LOCALSTACK_HOSTNAME,
             config.EDGE_PORT,
@@ -97,7 +101,9 @@ def build_cluster_endpoint(
     )
 
 
-def determine_custom_endpoint(domain_endpoint_options: Dict) -> Optional[CustomEndpoint]:
+def determine_custom_endpoint(
+    domain_endpoint_options: DomainEndpointOptions,
+) -> Optional[CustomEndpoint]:
     if not domain_endpoint_options:
         return
 
@@ -168,7 +174,7 @@ class ClusterManager:
 
 class SingletonClusterManager(ClusterManager):
     """
-    Manages a single cluster and always returns that cluster. Using this, we lie to the client about the the
+    Manages a single cluster and always returns that cluster. Using this, we lie to the client about the
     elasticsearch domain version. The first call to create_domain with a specific version will create the cluster
     with that version. Subsequent calls will believe they created a cluster with the version they specified. It keeps
     the cluster running until the last domain was removed. It only works with a single endpoint.
@@ -194,7 +200,7 @@ class SingletonClusterManager(ClusterManager):
         if not self.cluster:
             # FIXME: if remove() is called, then immediately after, create() (without letting time pass for the proxy to
             #  shut down) there's a chance that there will be a bind exception when trying to start the proxy again
-            #  (which is currently always bound to PORT_ELASTICSEARCH)
+            #  (which is currently always bound to PORT_OPENSEARCH)
             self.cluster = ProxiedOpensearchCluster(
                 port=config.PORT_OPENSEARCH,
                 host=constants.LOCALHOST,
@@ -250,7 +256,7 @@ class MultiplexingClusterManager(ClusterManager):
         self.endpoints = dict()
         self.mutex = threading.RLock()
 
-    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
+    def _create_cluster(self, arn, url, version) -> Server:
         with self.mutex:
             if not self.cluster:
                 # startup routine for the singleton cluster instance
@@ -285,12 +291,12 @@ class MultiClusterManager(ClusterManager):
     Manages one cluster and endpoint per domain.
     """
 
-    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
+    def _create_cluster(self, arn, url, version) -> Server:
         return EdgeProxiedOpensearchCluster(
             url, version, directories=resolve_directories(version, arn)
         )
 
 
 class CustomBackendManager(ClusterManager):
-    def _create_cluster(self, arn, url, version, create_domain_request) -> Server:
-        return FakeEndpointProxyServer(EndpointProxy(url, config.ES_CUSTOM_BACKEND))
+    def _create_cluster(self, arn, url, version) -> Server:
+        return FakeEndpointProxyServer(EndpointProxy(url, config.OPENSEARCH_CUSTOM_BACKEND))

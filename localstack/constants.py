@@ -195,5 +195,8 @@ DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
 # user that starts the elasticsearch process if the current user is root
 OS_USER_ELASTICSEARCH = "localstack"
 
+# user that starts the opensearch process if the current user is root
+OS_USER_OPENSEARCH = "localstack"
+
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."

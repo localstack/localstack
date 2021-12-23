@@ -136,8 +136,7 @@ class OpensearchCluster(Server):
         cmd = self._create_run_command(additional_settings=self.command_settings)
         cmd = " ".join(cmd)
 
-        # todo opensearch
-        user = constants.OS_USER_ELASTICSEARCH
+        user = constants.OS_USER_OPENSEARCH
         if is_root() and user:
             # run the elasticsearch process as a non-root user (when running in docker)
             cmd = f"su {user} -c '{cmd}'"
@@ -211,7 +210,7 @@ class OpensearchCluster(Server):
 
 class ProxiedOpensearchCluster(Server):
     """
-    Starts an OpensearchCluster behind a localstack service proxy. The OpnsearchCluster
+    Starts an OpensearchCluster behind a localstack service proxy. The OpenSearchCluster
     backend will be assigned a random port.
     """
 
