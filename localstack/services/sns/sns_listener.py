@@ -179,7 +179,7 @@ class ProxyListenerSNS(PersistingProxyListener):
                         code=400, code_string="InvalidParameter", message="Empty message"
                     )
 
-                if ".fifo" in topic_arn and not req_data.get("MessageGroupId"):
+                if topic_arn and ".fifo" in topic_arn and not req_data.get("MessageGroupId"):
                     return make_error(
                         code=400,
                         code_string="InvalidParameter",
