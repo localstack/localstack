@@ -13,7 +13,7 @@ import traceback
 import uuid
 from datetime import datetime
 from threading import BoundedSemaphore
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
@@ -48,7 +48,6 @@ from localstack.utils.common import (
     empty_context_manager,
     ensure_readable,
     first_char_to_lower,
-    get_all_subclasses,
     is_zip_file,
     isoformat_milliseconds,
     json_safe,
@@ -70,6 +69,7 @@ from localstack.utils.common import (
     unzip,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.generic.singleton_utils import SubtypesInstanceManager
 from localstack.utils.http_utils import canonicalize_headers, parse_chunked_data
 from localstack.utils.run import FuncThread
 
@@ -151,16 +151,8 @@ class LambdaRegion(RegionBackend):
         self.event_source_mappings = []
 
 
-class EventSourceListener:
+class EventSourceListener(SubtypesInstanceManager):
     INSTANCES: Dict[str, "EventSourceListener"] = {}
-
-    @classmethod
-    def get(cls, source_type):
-        # TODO: potentially to be replaced with new plugin loading mechanism...
-        if not cls.INSTANCES:
-            for clazz in get_all_subclasses(EventSourceListener):
-                cls.INSTANCES[clazz.source_type()] = clazz()
-        return cls.INSTANCES.get(source_type)
 
     @staticmethod
     def source_type() -> str:
@@ -186,14 +178,14 @@ class EventSourceListener:
             )
             if self_managed_endpoints.get("KAFKA_BOOTSTRAP_SERVERS"):
                 service_type = "kafka"
-        instance = EventSourceListener.get(service_type)
+        instance = EventSourceListener.get(service_type, raise_if_missing=False)
         if instance:
             instance.start()
 
     @staticmethod
     def process_event_via_listener(service_type: str, event: Any):
         """Process event for the given service type (for reactive mode)"""
-        instance = EventSourceListener.get(service_type)
+        instance = EventSourceListener.get(service_type, raise_if_missing=False)
         if not instance:
             return
 
@@ -202,6 +194,14 @@ class EventSourceListener:
 
         # start processing in background
         start_worker_thread(_process)
+
+    @classmethod
+    def impl_name(cls) -> str:
+        return cls.source_type()
+
+    @classmethod
+    def get_base_type(cls) -> Type:
+        return EventSourceListener
 
 
 class EventSourceListenerSQS(EventSourceListener):
