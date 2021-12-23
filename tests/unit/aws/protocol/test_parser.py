@@ -201,6 +201,7 @@ def _botocore_parser_integration_test(
 
     serialized_request = serializer.serialize_to_request(kwargs, service.operation_model(action))
     body = serialized_request["body"]
+    query_string = urlencode(serialized_request.get("query_string") or "", doseq=False)
 
     if service.protocol in ["query", "ec2"]:
         # Serialize the body as query parameter
@@ -212,7 +213,7 @@ def _botocore_parser_integration_test(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
             path=serialized_request.get("url_path") or "",
-            query_string=serialized_request.get("query_string") or "",
+            query_string=query_string,
             headers=headers,
             body=body,
         )

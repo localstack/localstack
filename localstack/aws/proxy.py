@@ -1,6 +1,8 @@
 import logging
 from typing import Any, Optional
 
+from urllib.parse import urlsplit
+
 from botocore.model import ServiceModel
 from requests.models import Response
 from werkzeug.datastructures import Headers
@@ -34,9 +36,11 @@ class AwsApiListener(ProxyListener):
         self.skeleton = Skeleton(self.service, delegate)
 
     def forward_request(self, method, path, data, headers):
+        split_url = urlsplit(path)
         request = HttpRequest(
             method=method,
-            path=path,
+            path=split_url.path,
+            query_string=split_url.query,
             headers=headers,
             body=data,
         )

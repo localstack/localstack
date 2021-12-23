@@ -81,6 +81,7 @@ import dateutil.parser
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 
 from localstack.aws.api import HttpRequest
+from localstack.utils.common import to_str
 
 
 def _text_content(func):
@@ -173,7 +174,14 @@ class RequestParser(abc.ABC):
                 payload = self._parse_header_map(shape, request.headers)
             elif location == "querystring":
                 query_name = shape.serialization.get("name")
-                payload = request.query_string.get(query_name)
+                parsed_query = parse_qs(to_str(request.query_string))
+                # If the query param is in the parsed dict, take the first element of the value
+                # (the parsed query params are always lists, even if only a single value).
+                payload = (
+                    next(iter(parsed_query[query_name]), None)
+                    if query_name in parsed_query
+                    else None
+                )
             elif location == "uri":
                 regex_group_name = shape.serialization.get("name")
                 match = path_regex.match(request.path)
