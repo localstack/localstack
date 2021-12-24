@@ -51,7 +51,7 @@ class TestResourceRouter:
         assert router.dispatch(Request("GET", "/health", b"", {})) == ResourceRouter.NO_ROUTE
 
     def test_dispatch_to_correct_function(self):
-        requests = list()
+        requests = []
 
         class TestResource:
             def on_get(self, req):

@@ -84,7 +84,7 @@ def test_firehose_http():
     wait_for_port_open(local_port)
 
     # create firehose stream with http destination
-    firehose = aws_stack.connect_to_service("firehose")
+    firehose = aws_stack.create_external_boto_client("firehose")
     stream_name = "firehose_" + short_uid()
     stream = firehose.create_delivery_stream(
         DeliveryStreamName=stream_name,

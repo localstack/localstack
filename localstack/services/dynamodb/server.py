@@ -52,7 +52,7 @@ class DynamodbServer(Server):
             "-jar",
             self.jar_path,
         ]
-        parameters = list()
+        parameters = []
 
         parameters.extend(["-port", str(self.port)])
         if self.in_memory:

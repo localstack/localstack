@@ -21,7 +21,7 @@ RESOURCE_POLICY = {
 
 class SecretsManagerTest(unittest.TestCase):
     def setUp(self):
-        self.secretsmanager_client = aws_stack.connect_to_service("secretsmanager")
+        self.secretsmanager_client = aws_stack.create_external_boto_client("secretsmanager")
 
     def test_create_and_update_secret(self):
         secret_name = "s-%s" % short_uid()

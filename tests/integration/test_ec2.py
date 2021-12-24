@@ -5,7 +5,7 @@ from localstack.utils.aws import aws_stack
 
 class TestEc2Integrations(unittest.TestCase):
     def setUp(self):
-        self.ec2_client = aws_stack.connect_to_service("ec2")
+        self.ec2_client = aws_stack.create_external_boto_client("ec2")
 
     def test_create_route_table_association(self):
         ec2 = self.ec2_client
@@ -112,8 +112,8 @@ class TestEc2Integrations(unittest.TestCase):
     def test_vcp_peering_difference_regions(self):
         # Note: different regions currently not supported due to set_default_region_in_headers(..) in edge.py
         region1 = region2 = aws_stack.get_region()
-        ec2_client1 = aws_stack.connect_to_service(service_name="ec2", region_name=region1)
-        ec2_client2 = aws_stack.connect_to_service(service_name="ec2", region_name=region2)
+        ec2_client1 = aws_stack.create_external_boto_client(service_name="ec2", region_name=region1)
+        ec2_client2 = aws_stack.create_external_boto_client(service_name="ec2", region_name=region2)
 
         cidr_block1 = "192.168.1.2/24"
         cidr_block2 = "192.168.1.2/24"

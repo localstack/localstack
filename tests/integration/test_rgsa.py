@@ -5,8 +5,8 @@ from localstack.utils.aws import aws_stack
 
 class TestRGSAIntegrations(unittest.TestCase):
     def setUp(self):
-        self.rgsa_client = aws_stack.connect_to_service("resourcegroupstaggingapi")
-        self.ec2_client = aws_stack.connect_to_service("ec2")
+        self.rgsa_client = aws_stack.create_external_boto_client("resourcegroupstaggingapi")
+        self.ec2_client = aws_stack.create_external_boto_client("ec2")
 
     def test_get_resources(self):
         vpc = self.ec2_client.create_vpc(CidrBlock="10.0.0.0/16")

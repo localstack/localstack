@@ -56,6 +56,7 @@ from localstack.utils.common import (
     timestamp,
     to_bytes,
     to_str,
+    truncate,
     wait_for_port_open,
 )
 from localstack.utils.docker_utils import (
@@ -177,7 +178,7 @@ class InvocationContext:
     event: LambdaEvent
     lambda_command: Union[str, List[str]]  # TODO: change to List[str] ?
     docker_flags: Union[str, List[str]]  # TODO: change to List[str] ?
-    environment: Dict[str, str]
+    environment: Dict[str, Optional[str]]
     context: LambdaContext
     invocation_type: str  # "Event" or "RequestResponse"
 
@@ -637,11 +638,8 @@ class LambdaExecutorContainers(LambdaExecutor):
                 additional_logs = "\n".join(lines[:idx] + lines[idx + 1 :])
                 log_output += "\n%s" % additional_logs
 
-        log_formatted = log_output.strip().replace("\n", "\n> ")
         func_arn = lambda_function and lambda_function.arn()
-        LOG.debug(
-            "Lambda %s result / log output:\n%s\n> %s" % (func_arn, result.strip(), log_formatted)
-        )
+        log_lambda_result(func_arn, result, log_output)
 
         # store log output - TODO get live logs from `process` above?
         store_lambda_logs(lambda_function, log_output)
@@ -804,6 +802,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         if not self._should_use_stay_open_mode(lambda_docker_ip, check_port=True):
             LOG.debug("Using 'docker exec' to run invocation in docker-reuse Lambda container")
+            # disable stay open mode for this one, to prevent starting runtime API server
+            env_vars["DOCKER_LAMBDA_STAY_OPEN"] = None
             return DOCKER_CLIENT.exec_in_container(
                 container_name_or_id=container_info.name,
                 command=inv_context.lambda_command,
@@ -852,9 +852,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     ) -> bool:
         """Return whether to use stay-open execution mode - if we're running in Docker, the given IP
         is defined, and if the target API endpoint is available (optionally, if check_port is True)."""
-        should_use = lambda_docker_ip and in_docker()
+        should_use = lambda_docker_ip and config.LAMBDA_STAY_OPEN_MODE
         if not should_use or not check_port:
-            return False
+            return should_use
         full_url = self._get_lambda_stay_open_url(lambda_docker_ip)
         return is_port_open(full_url)
 
@@ -983,8 +983,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         entrypoint = "/bin/bash"
         interactive = True
 
-        if in_docker():
+        if config.LAMBDA_STAY_OPEN_MODE:
             env_vars["DOCKER_LAMBDA_STAY_OPEN"] = "1"
+            # clear docker lambda use stdin since not relevant with stay open
+            env_vars.pop("DOCKER_LAMBDA_USE_STDIN", None)
             entrypoint = None
             command = [lambda_function.handler]
             interactive = False
@@ -1215,6 +1217,10 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
 
 class LambdaExecutorLocal(LambdaExecutor):
+
+    # maps functionARN -> functionVersion -> callable used to invoke a Lambda function locally
+    FUNCTION_CALLABLES: Dict[str, Dict[str, Callable]] = {}
+
     def _execute_in_custom_runtime(
         self, cmd: Union[str, List[str]], lambda_function: LambdaFunction = None
     ) -> InvocationResult:
@@ -1252,11 +1258,8 @@ class LambdaExecutorLocal(LambdaExecutor):
                 additional_logs = "\n".join(lines[:idx] + lines[idx + 1 :])
                 log_output += "\n%s" % additional_logs
 
-        log_formatted = log_output.strip().replace("\n", "\n> ")
         func_arn = lambda_function and lambda_function.arn()
-        LOG.debug(
-            "Lambda %s result / log output:\n%s\n> %s" % (func_arn, result.strip(), log_formatted)
-        )
+        log_lambda_result(func_arn, result, log_output)
 
         # store log output - TODO get live logs from `process` above?
         # store_lambda_logs(lambda_function, log_output)
@@ -1296,7 +1299,9 @@ class LambdaExecutorLocal(LambdaExecutor):
         # execute the Lambda function in a forked sub-process, sync result via queue
         queue = Queue()
 
-        lambda_function_callable = lambda_function.function(inv_context.function_version)
+        lambda_function_callable = self.get_lambda_callable(
+            lambda_function, qualifier=inv_context.function_version
+        )
 
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
@@ -1434,6 +1439,19 @@ class LambdaExecutorLocal(LambdaExecutor):
         result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
         return result
 
+    def execute_go_lambda(self, event, context, main_file, lambda_function: LambdaFunction = None):
+
+        if lambda_function:
+            lambda_function.envvars["AWS_LAMBDA_FUNCTION_HANDLER"] = main_file
+            lambda_function.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
+        else:
+            LOG.warning("Unable to get function details for local execution of Golang Lambda")
+
+        cmd = GO_LAMBDA_RUNTIME
+        LOG.debug("Running Golang Lambda with runtime: %s", cmd)
+        result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
+        return result
+
     @staticmethod
     def set_default_env_variables():
         # set default env variables required for most Lambda handlers
@@ -1450,18 +1468,25 @@ class LambdaExecutorLocal(LambdaExecutor):
             if env_value_before is None:
                 os.environ.pop(env_name, None)
 
-    def execute_go_lambda(self, event, context, main_file, lambda_function: LambdaFunction = None):
+    @classmethod
+    def get_lambda_callable(cls, function: LambdaFunction, qualifier: str = None) -> Callable:
+        """Returns the function Callable for invoking the given function locally"""
+        qualifier = function.get_qualifier_version(qualifier)
+        func_dict = cls.FUNCTION_CALLABLES.get(function.arn()) or {}
+        # TODO: function versioning and qualifiers should be refactored and designed properly!
+        callable = func_dict.get(qualifier) or func_dict.get(LambdaFunction.QUALIFIER_LATEST)
+        if not callable:
+            raise Exception(
+                f"Unable to find callable for Lambda function {function.arn()} - {qualifier}"
+            )
+        return callable
 
-        if lambda_function:
-            lambda_function.envvars["AWS_LAMBDA_FUNCTION_HANDLER"] = main_file
-            lambda_function.envvars["AWS_LAMBDA_EVENT_BODY"] = json.dumps(json_safe(event))
-        else:
-            LOG.warning("Unable to get function details for local execution of Golang Lambda")
-
-        cmd = GO_LAMBDA_RUNTIME
-        LOG.info(cmd)
-        result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
-        return result
+    @classmethod
+    def add_function_callable(cls, function: LambdaFunction, lambda_handler: Callable):
+        """Sets the function Callable for invoking the $LATEST version of the Lambda function."""
+        func_dict = cls.FUNCTION_CALLABLES.setdefault(function.arn(), {})
+        qualifier = function.get_qualifier_version(LambdaFunction.QUALIFIER_LATEST)
+        func_dict[qualifier] = lambda_handler
 
 
 class Util:
@@ -1552,6 +1577,15 @@ class Util:
         if not env_vars.get("LOCALSTACK_HOSTNAME"):
             env_vars["LOCALSTACK_HOSTNAME"] = main_endpoint
         return env_vars
+
+
+def log_lambda_result(func_arn, result, log_output):
+    result = to_str(result or "")
+    log_output = truncate(to_str(log_output or ""), max_length=1000)
+    log_formatted = truncate(log_output.strip().replace("\n", "\n> "), max_length=1000)
+    LOG.debug(
+        "Lambda %s result / log output:\n%s\n> %s" % (func_arn, result.strip(), log_formatted)
+    )
 
 
 # --------------

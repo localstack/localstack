@@ -155,6 +155,13 @@ def route53():
 
 
 @aws_provider()
+def route53resolver():
+    from localstack.services.route53 import route53_starter
+
+    return Service("route53resolver", start=route53_starter.start_route53_resolver)
+
+
+@aws_provider()
 def s3():
     from localstack.services.s3 import s3_listener, s3_starter
 
@@ -199,6 +206,16 @@ def sqs():
         start=sqs_starter.start_sqs,
         check=sqs_starter.check_sqs,
     )
+
+
+@aws_provider(api="sqs", name="asf")
+def sqs_asf():
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.sqs.provider import SqsProvider
+
+    provider = SqsProvider()
+
+    return Service("sqs", listener=AwsApiListener("sqs", provider), lifecycle_hook=provider)
 
 
 @aws_provider()

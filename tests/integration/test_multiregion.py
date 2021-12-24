@@ -18,8 +18,8 @@ REGION4 = "eu-central-1"
 
 class TestMultiRegion(unittest.TestCase):
     def test_multi_region_sns(self):
-        sns_1 = aws_stack.connect_to_service("sns", region_name=REGION1)
-        sns_2 = aws_stack.connect_to_service("sns", region_name=REGION2)
+        sns_1 = aws_stack.create_external_boto_client("sns", region_name=REGION1)
+        sns_2 = aws_stack.create_external_boto_client("sns", region_name=REGION2)
         len_1 = len(sns_1.list_topics()["Topics"])
         len_2 = len(sns_2.list_topics()["Topics"])
 
@@ -38,8 +38,8 @@ class TestMultiRegion(unittest.TestCase):
         self.assertIn(REGION2, result2[0]["TopicArn"])
 
     def test_multi_region_sqs(self):
-        sqs_1 = aws_stack.connect_to_service("sqs", region_name=REGION1)
-        sqs_2 = aws_stack.connect_to_service("sqs", region_name=REGION2)
+        sqs_1 = aws_stack.create_external_boto_client("sqs", region_name=REGION1)
+        sqs_2 = aws_stack.create_external_boto_client("sqs", region_name=REGION2)
         len_1 = len(sqs_1.list_queues().get("QueueUrls", []))
         len_2 = len(sqs_2.list_queues().get("QueueUrls", []))
 
@@ -58,10 +58,10 @@ class TestMultiRegion(unittest.TestCase):
         self.assertNotIn(REGION2, result2[0])
 
     def test_multi_region_api_gateway(self):
-        gw_1 = aws_stack.connect_to_service("apigateway", region_name=REGION1)
-        gw_2 = aws_stack.connect_to_service("apigateway", region_name=REGION2)
-        gw_3 = aws_stack.connect_to_service("apigateway", region_name=REGION3)
-        sqs_1 = aws_stack.connect_to_service("sqs", region_name=REGION1)
+        gw_1 = aws_stack.create_external_boto_client("apigateway", region_name=REGION1)
+        gw_2 = aws_stack.create_external_boto_client("apigateway", region_name=REGION2)
+        gw_3 = aws_stack.create_external_boto_client("apigateway", region_name=REGION3)
+        sqs_1 = aws_stack.create_external_boto_client("sqs", region_name=REGION1)
         len_1 = len(gw_1.get_rest_apis()["items"])
         len_2 = len(gw_2.get_rest_apis()["items"])
 

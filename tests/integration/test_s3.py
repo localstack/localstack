@@ -97,10 +97,10 @@ class PutRequest(Request):
 #     def wrapper(self):
 #         try:
 #             # test via path based addressing
-#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'virtual'})
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.create_external_boto_client('s3', config={'addressing_style': 'virtual'})
 #             wrapped()
 #             # test via host based addressing
-#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'path'})
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.create_external_boto_client('s3', config={'addressing_style': 'path'})
 #             wrapped()
 #         finally:
 #             # reset client
@@ -112,8 +112,8 @@ class TestS3(unittest.TestCase):
     OVERWRITTEN_CLIENT = None
 
     def setUp(self):
-        self._s3_client = aws_stack.connect_to_service("s3")
-        self.sqs_client = aws_stack.connect_to_service("sqs")
+        self._s3_client = aws_stack.create_external_boto_client("s3")
+        self.sqs_client = aws_stack.create_external_boto_client("sqs")
 
     @property
     def s3_client(self):
@@ -970,7 +970,7 @@ class TestS3(unittest.TestCase):
         # Test setup
         bucket = "test-bucket-%s" % short_uid()
 
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
         s3_client.create_bucket(Bucket=bucket)
         s3_client.put_bucket_cors(
             Bucket=bucket,
@@ -1643,10 +1643,10 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [table_name])
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=function_name)
 
-        dynamodb_client = aws_stack.connect_to_service("dynamodb")
+        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
         dynamodb_client.delete_table(TableName=table_name)
 
     def test_s3_put_object_notification_with_sns_topic(self):
@@ -1655,7 +1655,7 @@ class TestS3(unittest.TestCase):
         queue_name = "queue-%s" % short_uid()
         key_name = "bucket-key-%s" % short_uid()
 
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = aws_stack.create_external_boto_client("sns")
 
         self.s3_client.create_bucket(Bucket=bucket_name)
         queue_url = self.sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
@@ -1831,6 +1831,7 @@ class TestS3(unittest.TestCase):
                 QueueUrl=queue_url,
                 AttributeNames=["AWSTraceHeader"],
                 MessageAttributeNames=["All"],
+                VisibilityTimeout=0,
             )
 
             self.assertEqual(
@@ -1876,7 +1877,7 @@ class TestS3(unittest.TestCase):
             request.url += "requestedBy=abcDEF123"
 
         bucket_name = short_uid()
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
         s3_presign = boto3.client(
             "s3",
             endpoint_url=config.get_edge_url(),
@@ -2241,6 +2242,7 @@ class TestS3(unittest.TestCase):
         client.delete_object(Bucket=bucket, Key="foo")
         client.delete_bucket(Bucket=bucket)
 
+    @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
     def test_cors_configurations(self):
         client = self._get_test_client()
         bucket = "test-cors"
@@ -2263,8 +2265,6 @@ class TestS3(unittest.TestCase):
 
         client.put_object(Bucket=bucket, Key=object_key, Body="<h1>Index</html>")
 
-        old_config = config.DISABLE_CUSTOM_CORS_S3
-        config.DISABLE_CUSTOM_CORS_S3 = False
         response = requests.get(
             url, headers={"Origin": config.get_edge_url(), "Content-Type": "text/html"}
         )
@@ -2302,7 +2302,6 @@ class TestS3(unittest.TestCase):
         self.assertNotIn("Access-Control-MaxAge", response.headers)
 
         # cleaning
-        config.DISABLE_CUSTOM_CORS_S3 = old_config
         client.delete_object(Bucket=bucket, Key=object_key)
         client.delete_bucket(Bucket=bucket)
 
@@ -2327,7 +2326,7 @@ class TestS3(unittest.TestCase):
             ),
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.invoke(FunctionName=function_name, InvocationType="Event")
 
         retry(
@@ -2353,6 +2352,7 @@ class TestS3(unittest.TestCase):
         # Cleanup
         self._delete_bucket(bucket, key_by_path)
 
+    @pytest.mark.skip_offline
     def test_s3_lambda_integration(self):
         if not use_docker():
             return
@@ -2362,8 +2362,8 @@ class TestS3(unittest.TestCase):
         run("cd %s; npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner" % temp_folder)
 
         function_name = "func-integration-%s" % short_uid()
-        lambda_client = aws_stack.connect_to_service("lambda")
-        s3_client = aws_stack.connect_to_service("s3")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
+        s3_client = aws_stack.create_external_boto_client("s3")
 
         testutil.create_lambda_function(
             func_name=function_name,
@@ -2388,7 +2388,7 @@ class TestS3(unittest.TestCase):
         bucket_name = short_uid()
         port1 = 443
         port2 = 4566
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
 
         s3_presign = boto3.client(
             "s3",
@@ -2441,9 +2441,7 @@ class TestS3(unittest.TestCase):
         return open(filename, "r")
 
     def _create_test_queue(self):
-        queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)[
-            "QueueUrl"
-        ]
+        queue_url = self.sqs_client.create_queue(QueueName=f"queue-{short_uid()}")["QueueUrl"]
         queue_attributes = self.sqs_client.get_queue_attributes(
             QueueUrl=queue_url, AttributeNames=["QueueArn"]
         )
@@ -2652,7 +2650,7 @@ class TestS3New:
 )
 @pytest.mark.skipif(os.environ.get("LOCALSTACK_API_KEY", "") != "", reason="replay skipped in pro")
 def test_replay_s3_call(api_version, bucket_name, payload):
-    s3_client = aws_stack.connect_to_service("s3")
+    s3_client = aws_stack.create_external_boto_client("s3")
 
     with pytest.raises(ClientError) as error:
         s3_client.head_bucket(Bucket=bucket_name)
@@ -2869,4 +2867,84 @@ def test_put_object_with_md5_and_chunk_signature_bad_headers(s3_client):
     assert b"SignatureDoesNotMatch" in result.content
 
     # cleanup
+    s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_s3_copy_content_type_and_metadata(s3_client):
+    bucket_name = f"bucket-source-{short_uid()}"
+    object_key = "source-object"
+
+    s3_client.create_bucket(Bucket=bucket_name)
+    s3_client.put_object(
+        Bucket=bucket_name,
+        Key=object_key,
+        Body='{"key": "value"}',
+        ContentType="application/json",
+        Metadata={"key": "value"},
+    )
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+    assert head_object["ContentType"] == "application/json"
+    assert head_object["Metadata"] == {"key": "value"}
+
+    object_key_copy = f"{object_key}-copy"
+    resp = s3_client.copy_object(
+        Bucket=bucket_name, CopySource=f"{bucket_name}/{object_key}", Key=object_key_copy
+    )
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
+    assert head_object["ContentType"] == "application/json"
+    assert head_object["Metadata"] == {"key": "value"}
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key_copy}]})
+
+    object_key_copy = f"{object_key}-second-copy"
+    resp = s3_client.copy_object(
+        Bucket=bucket_name,
+        CopySource=f"{bucket_name}/{object_key}",
+        Key=object_key_copy,
+        Metadata={"another-key": "value"},
+        ContentType="application/javascript",
+    )
+    assert "CopyObjectResult" in resp
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
+    assert head_object["ContentType"] == "application/json"
+    assert head_object["Metadata"] == {"key": "value"}
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key_copy}]})
+
+    # cleanup
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key}]})
+    s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_s3_copy_metadata_replace(s3_client):
+    bucket_name = f"bucket-{short_uid()}"
+    object_key = "source-object"
+
+    s3_client.create_bucket(Bucket=bucket_name)
+    s3_client.put_object(
+        Bucket=bucket_name,
+        Key=object_key,
+        Body='{"key": "value"}',
+        ContentType="application/json",
+        Metadata={"key": "value"},
+    )
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key)
+    assert head_object["ContentType"] == "application/json"
+    assert head_object["Metadata"] == {"key": "value"}
+
+    object_key_copy = f"{object_key}-copy"
+    resp = s3_client.copy_object(
+        Bucket=bucket_name,
+        CopySource=f"{bucket_name}/{object_key}",
+        Key=object_key_copy,
+        Metadata={"another-key": "value"},
+        ContentType="application/javascript",
+        MetadataDirective="REPLACE",
+    )
+    assert "CopyObjectResult" in resp
+    head_object = s3_client.head_object(Bucket=bucket_name, Key=object_key_copy)
+    assert head_object["ContentType"] == "application/javascript"
+    assert head_object["Metadata"] == {"another-key": "value"}
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key_copy}]})
+
+    # cleanup
+    s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": object_key}]})
     s3_client.delete_bucket(Bucket=bucket_name)

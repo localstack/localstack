@@ -24,7 +24,7 @@ class TestErrorInjection(unittest.TestCase):
             pytest.skip("skipping TestErrorInjection (TEST_ERROR_INJECTION not set or false)")
 
     def test_kinesis_error_injection(self):
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = aws_stack.create_external_boto_client("kinesis")
         aws_stack.create_kinesis_stream(TEST_STREAM_NAME)
 
         records = [{"Data": "0", "ExplicitHashKey": "0", "PartitionKey": "0"}]

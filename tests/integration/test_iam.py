@@ -14,7 +14,7 @@ from localstack.utils.kinesis import kinesis_connector
 
 class TestIAMIntegrations(unittest.TestCase):
     def setUp(self):
-        self.iam_client = aws_stack.connect_to_service("iam")
+        self.iam_client = aws_stack.create_external_boto_client("iam")
 
     def test_run_kcl_with_iam_assume_role(self):
         env_vars = {}

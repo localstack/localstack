@@ -11,6 +11,9 @@ class TestBuildClusterEndpoint:
         endpoint = build_cluster_endpoint(DomainKey("my-domain", "us-east-1", TEST_AWS_ACCOUNT_ID))
         assert endpoint == "localhost:4571"
 
+    @pytest.mark.skipif(
+        condition=config.in_docker(), reason="port mapping differs when being run in the container"
+    )
     def test_endpoint_strategy_path(self, monkeypatch):
         monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "path")
 
@@ -22,6 +25,9 @@ class TestBuildClusterEndpoint:
         )
         assert endpoint == "localhost:4566/es/eu-central-1/my-domain-1"
 
+    @pytest.mark.skipif(
+        condition=config.in_docker(), reason="port mapping differs when being run in the container"
+    )
     def test_endpoint_strategy_domain(self, monkeypatch):
         monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
 

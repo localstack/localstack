@@ -12,9 +12,11 @@ from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT
 from localstack.services.es import es_api
 from localstack.services.es.cluster import EdgeProxiedElasticsearchCluster
 from localstack.services.es.cluster_manager import (
+    CustomBackendManager,
     MultiClusterManager,
     MultiplexingClusterManager,
     SingletonClusterManager,
+    create_cluster_manager,
 )
 from localstack.services.es.es_api import get_domain_arn
 from localstack.services.install import install_elasticsearch
@@ -133,7 +135,7 @@ class ElasticsearchTest(unittest.TestCase):
         cls._delete_document(TEST_DOC_ID)
 
         # make sure domain deletion works
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
         es_client.delete_elasticsearch_domain(DomainName=cls.domain_name)
         assert cls.domain_name not in [
             d["DomainName"] for d in es_client.list_domain_names()["DomainNames"]
@@ -148,14 +150,14 @@ class ElasticsearchTest(unittest.TestCase):
             self._create_domain(name=self.domain_name, es_cluster_config=ES_CLUSTER_CONFIG)
 
     def test_describe_elasticsearch_domains(self):
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
 
         result = es_client.describe_elasticsearch_domains(DomainNames=[self.domain_name])
         self.assertEqual(1, len(result["DomainStatusList"]))
         self.assertEqual(result["DomainStatusList"][0]["DomainName"], self.domain_name)
 
     def test_domain_es_version(self):
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
 
         status = es_client.describe_elasticsearch_domain(DomainName=self.domain_name)[
             "DomainStatus"
@@ -180,7 +182,7 @@ class ElasticsearchTest(unittest.TestCase):
             self.assertIn(req_result[0]["health"], ["green", "yellow"])
             self.assertIn(req_result[0]["index"], indexes)
 
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
         test_domain_name_1 = "test1-%s" % short_uid()
         test_domain_name_2 = "test2-%s" % short_uid()
         self._create_domain(name=test_domain_name_1, version="6.8")
@@ -195,7 +197,7 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertFalse(status_test_domain_name_2["DomainStatus"]["Processing"])
 
     def test_domain_creation(self):
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
 
         # make sure we cannot re-create same domain name
         self.assertRaises(
@@ -267,7 +269,7 @@ class ElasticsearchTest(unittest.TestCase):
 
     @classmethod
     def _create_domain(cls, name=None, version=None, es_cluster_config=None):
-        es_client = aws_stack.connect_to_service("es")
+        es_client = aws_stack.create_external_boto_client("es")
         name = name or cls.domain_name
         kwargs = {}
         if version:
@@ -327,6 +329,7 @@ class TestEdgeProxiedElasticsearchCluster:
 
 
 class TestMultiClusterManager:
+    @pytest.mark.skip_offline
     def test_multi_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "ES_MULTI_CLUSTER", True)
@@ -389,6 +392,7 @@ class TestElasticsearchApi:
 
 
 class TestMultiplexingClusterManager:
+    @pytest.mark.skip_offline
     def test_multiplexing_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
         monkeypatch.setattr(config, "ES_MULTI_CLUSTER", False)
@@ -429,3 +433,68 @@ class TestMultiplexingClusterManager:
         finally:
             call_safe(cluster0.shutdown)
             call_safe(cluster1.shutdown)
+
+
+class TestCustomBackendManager:
+    def test_custom_backend(self, httpserver, monkeypatch):
+        monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", "domain")
+        monkeypatch.setattr(config, "ES_CUSTOM_BACKEND", httpserver.url_for("/"))
+
+        # create fake elasticsearch cluster
+        httpserver.expect_request("/").respond_with_json(
+            {
+                "name": "om",
+                "cluster_name": "elasticsearch",
+                "cluster_uuid": "gREewvVZR0mIswR-8-6VRQ",
+                "version": {
+                    "number": "7.10.0",
+                    "build_flavor": "default",
+                    "build_type": "tar",
+                    "build_hash": "51e9d6f22758d0374a0f3f5c6e8f3a7997850f96",
+                    "build_date": "2020-11-09T21:30:33.964949Z",
+                    "build_snapshot": False,
+                    "lucene_version": "8.7.0",
+                    "minimum_wire_compatibility_version": "6.8.0",
+                    "minimum_index_compatibility_version": "6.0.0-beta1",
+                },
+                "tagline": "You Know, for Search",
+            }
+        )
+        httpserver.expect_request("/_cluster/health").respond_with_json(
+            {
+                "cluster_name": "elasticsearch",
+                "status": "green",
+                "timed_out": False,
+                "number_of_nodes": 1,
+                "number_of_data_nodes": 1,
+                "active_primary_shards": 0,
+                "active_shards": 0,
+                "relocating_shards": 0,
+                "initializing_shards": 0,
+                "unassigned_shards": 0,
+                "delayed_unassigned_shards": 0,
+                "number_of_pending_tasks": 0,
+                "number_of_in_flight_fetch": 0,
+                "task_max_waiting_in_queue_millis": 0,
+                "active_shards_percent_as_number": 100,
+            }
+        )
+
+        manager = create_cluster_manager()
+        assert isinstance(manager, CustomBackendManager)
+
+        domain_name = f"domain-{short_uid()}"
+        cluster_arn = get_domain_arn(domain_name)
+
+        cluster = manager.create(cluster_arn, dict(DomainName=domain_name))
+        # check that we're using the domain endpoint strategy
+        assert f"{domain_name}." in cluster.url
+
+        try:
+            assert cluster.wait_is_up(10)
+            retry(lambda: try_cluster_health(cluster.url), retries=3, sleep=5)
+
+        finally:
+            call_safe(cluster.shutdown)
+
+        httpserver.check()

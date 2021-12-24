@@ -86,7 +86,7 @@ def _format_attributes_names(req_data):
 
 
 def _get_attributes_forward_request(method, path, headers, req_data, forward_attrs):
-    req_data_new = dict([(k, v) for k, v in req_data.items() if not k.startswith("Attribute.")])
+    req_data_new = {k: v for k, v in req_data.items() if not k.startswith("Attribute.")}
     i = 1
     for k, v in forward_attrs.items():
         req_data_new["Attribute.%s.Name" % i] = [k]
@@ -117,7 +117,7 @@ def _set_queue_attributes(queue_url, req_data):
 
     QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
     QUEUE_ATTRIBUTES[queue_url].update(local_attrs)
-    forward_attrs = dict([(k, v) for k, v in attrs.items() if k not in UNSUPPORTED_ATTRIBUTE_NAMES])
+    forward_attrs = {k: v for k, v in attrs.items() if k not in UNSUPPORTED_ATTRIBUTE_NAMES}
     return forward_attrs
 
 
@@ -253,7 +253,7 @@ def format_list_dl_source_queues_response(queues):
 
 
 # extract the external port used by the client to make the request
-def get_external_port(headers, request_handler):
+def get_external_port(headers):
     host = headers.get("Host", "")
 
     if not host:
@@ -263,13 +263,10 @@ def get_external_port(headers, request_handler):
     if ":" in host:
         return int(host.split(":")[1])
 
-    if not request_handler or not request_handler.proxy:
-        return config.PORT_SQS
-
-    # If we cannot find the Host header, then fall back to the port of the proxy.
-    # (note that this could be incorrect, e.g., if running in Docker with a host port that
-    # is different from the internal container port, but there is not much else we can do.)
-    return request_handler.proxy.port
+    # If we cannot find the Host header, then fall back to the port of SQS itself (i.e., edge proxy).
+    # (Note that this could be incorrect, e.g., if running in Docker with a host port that
+    #  is different from the internal container port, but there is not much else we can do.)
+    return config.PORT_SQS
 
 
 def validate_empty_message_batch(data, req_data):
@@ -367,11 +364,9 @@ class ProxyListenerSQS(PersistingProxyListener):
 
         return True
 
-    def return_response(self, method, path, data, headers, response, request_handler):
+    def return_response(self, method, path, data, headers, response):
         # persist requests to disk
-        super(ProxyListenerSQS, self).return_response(
-            method, path, data, headers, response, request_handler
-        )
+        super(ProxyListenerSQS, self).return_response(method, path, data, headers, response)
 
         if method == "OPTIONS" and path == "/":
             # Allow CORS preflight requests to succeed.
@@ -415,7 +410,7 @@ class ProxyListenerSQS(PersistingProxyListener):
                 # return https://... if we're supposed to use SSL
                 content_str = re.sub(r"<QueueUrl>\s*http://", r"<QueueUrl>https://", content_str)
             # expose external hostname:port
-            external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
+            external_port = SQS_PORT_EXTERNAL or get_external_port(headers)
             content_str = re.sub(
                 r"<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>",
                 r"<QueueUrl>\1://%s:%s/\3</QueueUrl>" % (config.HOSTNAME_EXTERNAL, external_port),
@@ -481,7 +476,7 @@ class ProxyListenerSQS(PersistingProxyListener):
                         ]
 
         # moto parse_message_attributes(..) expects params to be passed as dict of lists
-        req_data_lists = dict([(k, [v]) for k, v in req_data.items()])
+        req_data_lists = {k: [v] for k, v in req_data.items()}
         moto_message = Message("dummy_msg_id", "dummy_body")
         moto_message.message_attributes = parse_message_attributes(req_data_lists)
         for key, data_type in orig_types.items():

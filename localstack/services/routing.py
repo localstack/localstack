@@ -1,25 +1,9 @@
 import dataclasses
-import json
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.common import to_str
-
-
-@dataclasses.dataclass
-class Request:
-    method: str
-    path: str
-    data: Union[str, bytes]
-    headers: Dict
-
-    @property
-    def host(self) -> Optional[str]:
-        return self.headers.get("Host")
-
-    def json(self):
-        return json.loads(to_str(self.data or "{}"))
+from localstack.services.messages import Request
 
 
 @dataclasses.dataclass
@@ -115,7 +99,6 @@ class _NoRoute:
 class ResourceRouter:
     """
     Matches requests to routing rules and calls the respective dispatchers.
-
     """
 
     NO_ROUTE = _NoRoute()  # sentinel object to indicate that there is no route available
@@ -123,7 +106,7 @@ class ResourceRouter:
     routes: List[Tuple[RoutingRule, Dispatcher]]
 
     def __init__(self):
-        self.routes = list()
+        self.routes = []
 
     def add_route(self, uri_template: str, resource: Any, suffix: str = None):
         """

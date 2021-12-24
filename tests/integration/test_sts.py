@@ -6,7 +6,7 @@ from localstack.utils.aws import aws_stack
 
 class TestSTSIntegrations(unittest.TestCase):
     def setUp(self):
-        self.sts_client = aws_stack.connect_to_service("sts")
+        self.sts_client = aws_stack.create_external_boto_client("sts")
 
     def test_assume_role(self):
         test_role_session_name = "s3-access-example"

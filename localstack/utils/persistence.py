@@ -50,9 +50,9 @@ class PersistingProxyListener(ProxyListener):
 
     SKIP_PERSISTENCE_TARGET_METHOD_REGEX = re.compile(r".*\.List|.*\.Describe|.*\.Get")
 
-    def return_response(self, method, path, data, headers, response, request_handler=None):
+    def return_response(self, method, path, data, headers, response):
         res = super(PersistingProxyListener, self).return_response(
-            method, path, data, headers, response, request_handler
+            method, path, data, headers, response
         )
 
         if self.should_persist(method, path, data, headers, response):
@@ -99,8 +99,12 @@ def should_record(method):
     return method in ["PUT", "POST", "DELETE", "PATCH"]
 
 
+# TODO: deprecated - to be disabled in future release
 def record(api, method=None, path=None, data=None, headers=None, response=None, request=None):
     """Record a given API call to a persistent file on disk"""
+    if not config.LEGACY_PERSISTENCE:
+        return
+
     file_path = get_file_path(api)
     if CURRENTLY_REPLAYING or not file_path:
         return
@@ -170,7 +174,11 @@ def replay_command(command):
     return response
 
 
+# TODO: deprecated - to be disabled in future release
 def replay(api):
+    if not config.LEGACY_PERSISTENCE:
+        return
+
     file_path = get_file_path(api)
     if not file_path:
         return
@@ -239,7 +247,7 @@ def save_startup_info():
 
 def _append_startup_info(file_path, startup_info: StartupInfo):
     if not os.path.exists(file_path):
-        infos = list()
+        infos = []
     else:
         with open(file_path, "r") as fd:
             infos = json.load(fd)

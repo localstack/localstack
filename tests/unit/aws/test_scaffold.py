@@ -4,6 +4,7 @@ from click.testing import CliRunner
 from localstack.aws.scaffold import generate
 
 
+@pytest.mark.skip_offline
 @pytest.mark.parametrize(
     "service", ["apigateway", "autoscaling", "cloudformation", "dynamodb", "sqs"]
 )

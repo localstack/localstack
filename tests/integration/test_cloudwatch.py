@@ -18,7 +18,7 @@ class CloudWatchTest(unittest.TestCase):
         metric_name = "metric-%s" % short_uid()
         namespace = "namespace-%s" % short_uid()
 
-        client = aws_stack.connect_to_service("cloudwatch")
+        client = aws_stack.create_external_boto_client("cloudwatch")
 
         # Put metric data without value
         data = [
@@ -76,14 +76,14 @@ class CloudWatchTest(unittest.TestCase):
         request = Request(url, encoded_data, headers, method="POST")
         urlopen(request)
 
-        client = aws_stack.connect_to_service("cloudwatch")
+        client = aws_stack.create_external_boto_client("cloudwatch")
         rs = client.list_metrics(Namespace=namespace, MetricName=metric_name)
         self.assertEqual(1, len(rs["Metrics"]))
         self.assertEqual(namespace, rs["Metrics"][0]["Namespace"])
 
     def test_get_metric_data(self):
 
-        conn = aws_stack.connect_to_service("cloudwatch")
+        conn = aws_stack.create_external_boto_client("cloudwatch")
 
         conn.put_metric_data(
             Namespace="some/thing", MetricData=[dict(MetricName="someMetric", Value=23)]
@@ -169,7 +169,7 @@ class CloudWatchTest(unittest.TestCase):
         self.assertGreaterEqual(len(result["metrics"]), 3)
 
     def test_multiple_dimensions(self):
-        client = aws_stack.connect_to_service("cloudwatch")
+        client = aws_stack.create_external_boto_client("cloudwatch")
 
         namespaces = [
             "ns1-%s" % short_uid(),
@@ -202,7 +202,7 @@ class CloudWatchTest(unittest.TestCase):
         self.assertEqual(len(metrics), len(namespaces) * num_dimensions)
 
     def test_store_tags(self):
-        cloudwatch = aws_stack.connect_to_service("cloudwatch")
+        cloudwatch = aws_stack.create_external_boto_client("cloudwatch")
 
         alarm_name = "a-%s" % short_uid()
         response = cloudwatch.put_metric_alarm(

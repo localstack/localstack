@@ -19,9 +19,9 @@ PUBLICATION_RETRIES = 4
 
 class TestNotifications(unittest.TestCase):
     def setUp(self):
-        self.s3_client = aws_stack.connect_to_service("s3")
-        self.sqs_client = aws_stack.connect_to_service("sqs")
-        self.sns_client = aws_stack.connect_to_service("sns")
+        self.s3_client = aws_stack.create_external_boto_client("s3")
+        self.sqs_client = aws_stack.create_external_boto_client("sqs")
+        self.sns_client = aws_stack.create_external_boto_client("sns")
 
     def test_sqs_queue_names(self):
         sqs_client = self.sqs_client
@@ -262,7 +262,7 @@ class TestNotifications(unittest.TestCase):
         #
         # Tests s3->sns->sqs notifications
         #
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = aws_stack.create_external_boto_client("sns")
         topic_info = sns_client.create_topic(Name=TEST_S3_TOPIC_NAME)
 
         s3_client.put_bucket_notification_configuration(
@@ -307,7 +307,7 @@ class TestNotifications(unittest.TestCase):
         self._delete_notification_config()
 
     def _delete_notification_config(self):
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
         s3_client.put_bucket_notification_configuration(
             Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS, NotificationConfiguration={}
         )
@@ -319,7 +319,7 @@ class TestNotifications(unittest.TestCase):
 
     def _receive_assert_delete(self, queue_url, assertions, sqs_client=None, required_subject=None):
         if not sqs_client:
-            sqs_client = aws_stack.connect_to_service("sqs")
+            sqs_client = aws_stack.create_external_boto_client("sqs")
 
         response = sqs_client.receive_message(QueueUrl=queue_url)
 

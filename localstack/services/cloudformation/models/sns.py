@@ -1,5 +1,7 @@
 import json
 
+from botocore.exceptions import ClientError
+
 from localstack.services.cloudformation.deployment_utils import (
     generate_default_name,
     is_none_or_empty_value,
@@ -7,12 +9,6 @@ from localstack.services.cloudformation.deployment_utils import (
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import canonicalize_bool_to_str
-
-
-def retrieve_topic_arn(sns_client, topic_name):
-    topics = sns_client.list_topics()["Topics"]
-    topic_arns = [t["TopicArn"] for t in topics if t["TopicArn"].endswith(":%s" % topic_name)]
-    return topic_arns[0]
 
 
 class SNSTopic(GenericBaseModel):
@@ -67,8 +63,23 @@ class SNSTopic(GenericBaseModel):
             resource = cls(resources[resource_id])
             return resource.physical_resource_id or resource.get_physical_resource_id()
 
+        def _list_all_topics(sns_client):
+            rs = sns_client.list_topics()
+            topics = rs.get("Topics", [])
+            key = rs.get("NextToken")
+
+            while key and key != "":
+                rs = sns_client.list_topics(NextToken=key)
+                topics.extend(rs.get("Topics", []))
+                key = rs.get("NextToken")
+
+            return topics
+
         def _add_topics(resource_id, resources, resource_type, func, stack_name):
-            sns = aws_stack.connect_to_service("sns")
+            sns_client = aws_stack.connect_to_service("sns")
+            topics = _list_all_topics(sns_client)
+            topics_by_name = {t["TopicArn"].split(":")[-1]: t for t in topics}
+
             resource = cls(resources[resource_id])
             props = resource.props
 
@@ -77,8 +88,8 @@ class SNSTopic(GenericBaseModel):
                 if is_none_or_empty_value(subscription):
                     continue
                 endpoint = subscription["Endpoint"]
-                topic_arn = retrieve_topic_arn(sns, props["TopicName"])
-                sns.subscribe(
+                topic_arn = topics_by_name[props["TopicName"]]["TopicArn"]
+                sns_client.subscribe(
                     TopicArn=topic_arn, Protocol=subscription["Protocol"], Endpoint=endpoint
                 )
 
@@ -136,7 +147,7 @@ class SNSSubscription(GenericBaseModel):
                 "RawMessageDelivery",
                 "RedrivePolicy",
             ]
-            result = dict([(a, attr_val(params[a])) for a in attrs if a in params])
+            result = {a: attr_val(params[a]) for a in attrs if a in params}
             return result
 
         return {
@@ -152,5 +163,49 @@ class SNSSubscription(GenericBaseModel):
             "delete": {
                 "function": "unsubscribe",
                 "parameters": {"SubscriptionArn": sns_subscription_arn},
+            },
+        }
+
+
+class SNSTopicPolicy(GenericBaseModel):
+    @classmethod
+    def cloudformation_type(cls):
+        return "AWS::SNS::TopicPolicy"
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, resource_type, func, stack_name):
+            sns_client = aws_stack.connect_to_service("sns")
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            resources[resource_id]["PhysicalResourceId"] = generate_default_name(
+                stack_name, resource_id
+            )
+
+            policy = json.dumps(props["PolicyDocument"])
+            for topic_arn in props["Topics"]:
+                sns_client.set_topic_attributes(
+                    TopicArn=topic_arn, AttributeName="Policy", AttributeValue=policy
+                )
+
+        def _delete(resource_id, resources, *args, **kwargs):
+            sns_client = aws_stack.connect_to_service("sns")
+            resource = cls(resources[resource_id])
+            props = resource.props
+
+            for topic_arn in props["Topics"]:
+                try:
+                    sns_client.set_topic_attributes(
+                        TopicArn=topic_arn, AttributeName="Policy", AttributeValue=""
+                    )
+                except ClientError as err:
+                    if "NotFound" not in err.response["Error"]["Code"]:
+                        raise
+
+        return {
+            "create": {"function": _create},
+            "delete": {
+                "function": _delete,
             },
         }

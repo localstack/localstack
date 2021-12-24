@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import requests
 
@@ -36,8 +37,9 @@ class TestCSRF(unittest.TestCase):
         )
         self.assertIn("GET", response.headers["access-control-allow-methods"].split(","))
 
+    @patch.object(config, "DISABLE_CUSTOM_CORS_S3", True)
     def test_cors_s3_override(self):
-        client = aws_stack.connect_to_service("s3")
+        client = aws_stack.create_external_boto_client("s3")
 
         BUCKET_CORS_CONFIG = {
             "CORSRules": [
@@ -66,8 +68,6 @@ class TestCSRF(unittest.TestCase):
                 },
                 ExpiresIn=3600,
             )
-            old_config = config.DISABLE_CUSTOM_CORS_S3
-            config.DISABLE_CUSTOM_CORS_S3 = True
             result = requests.put(
                 url,
                 data="something",
@@ -80,7 +80,6 @@ class TestCSRF(unittest.TestCase):
             self.assertEqual(403, result.status_code)
         finally:
             # cleanup
-            config.DISABLE_CUSTOM_CORS_S3 = old_config
             client.delete_object(
                 Bucket=bucket_name,
                 Key="424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf",
@@ -88,21 +87,13 @@ class TestCSRF(unittest.TestCase):
             client.delete_bucket(Bucket=bucket_name)
 
     def test_cors_disable(self):
-        old_config = config.DISABLE_CORS_CHECKS
-        try:
-            headers = {"Origin": "https://invalid.localstack.cloud"}
-            response = requests.get(
-                f"{config.get_edge_url()}/2015-03-31/functions/", headers=headers
-            )
-            self.assertEqual(403, response.status_code)
+        headers = {"Origin": "https://invalid.localstack.cloud"}
+        url = f"{config.get_edge_url()}/2015-03-31/functions/"
+        response = requests.get(url, headers=headers)
+        self.assertEqual(403, response.status_code)
 
-            config.DISABLE_CORS_CHECKS = True
-            response = requests.get(
-                f"{config.get_edge_url()}/2015-03-31/functions/", headers=headers
-            )
+        with patch.object(config, "DISABLE_CORS_CHECKS", True):
+            response = requests.get(url, headers=headers)
             self.assertEqual(200, response.status_code)
             self.assertEqual(headers["Origin"], response.headers["access-control-allow-origin"])
             self.assertIn("GET", response.headers["access-control-allow-methods"].split(","))
-        finally:
-            # cleanup
-            config.DISABLE_CORS_CHECKS = old_config

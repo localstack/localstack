@@ -1,5 +1,8 @@
+variable "restapi_name" {
+  type = string
+}
 resource "aws_api_gateway_rest_api" "service_api" {
-  name               = "service_api"
+  name               = var.restapi_name
 
   policy = <<EOF
 {

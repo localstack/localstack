@@ -1,4 +1,3 @@
-import inspect
 import json
 import logging
 import os
@@ -7,7 +6,7 @@ import socket
 import ssl
 import threading
 from asyncio.selector_events import BaseSelectorEventLoop
-from typing import Dict
+from typing import Dict, List, Match, Optional, Union
 
 import requests
 from flask_cors import CORS
@@ -19,7 +18,7 @@ from flask_cors.core import (
     ACL_REQUEST_HEADERS,
 )
 from requests.models import Request, Response
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import parse_qs, unquote, urlencode, urlparse
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
@@ -27,11 +26,29 @@ from localstack.config import (
     EXTRA_CORS_ALLOWED_HEADERS,
     EXTRA_CORS_ALLOWED_ORIGINS,
     EXTRA_CORS_EXPOSE_HEADERS,
+    is_env_true,
 )
-from localstack.constants import APPLICATION_JSON, BIND_HOST, HEADER_LOCALSTACK_REQUEST_URL
+from localstack.constants import (
+    APPLICATION_JSON,
+    AWS_REGION_US_EAST_1,
+    BIND_HOST,
+    HEADER_LOCALSTACK_REQUEST_URL,
+)
+from localstack.services.messages import Headers, MessagePayload
+from localstack.services.messages import Request as RoutingRequest
+from localstack.services.messages import Response as RoutingResponse
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
-from localstack.utils.common import Mock, generate_ssl_cert, json_safe, path_from_url, start_thread
+from localstack.utils.aws.aws_stack import is_internal_call_context
+from localstack.utils.common import (
+    generate_ssl_cert,
+    json_safe,
+    path_from_url,
+    start_thread,
+    to_bytes,
+    to_str,
+    wait_for_port_open,
+)
 from localstack.utils.server import http2_server
 from localstack.utils.serving import Server
 
@@ -101,10 +118,15 @@ if EXTRA_CORS_ALLOWED_ORIGINS:
 
 
 class ProxyListener(object):
-    # List of `ProxyListener` instances that are enabled by default for all requests
+    # List of `ProxyListener` instances that are enabled by default for all requests.
+    # For inbound flows, the default listeners are applied *before* forwarding requests
+    # to the backend; for outbound flows, the default listeners are applied *after* the
+    # response has been received from the backend service.
     DEFAULT_LISTENERS = []
 
-    def forward_request(self, method, path, data, headers):
+    def forward_request(
+        self, method: str, path: str, data: MessagePayload, headers: Headers
+    ) -> Union[int, Response, Request, dict, bool]:
         """This interceptor method is called by the proxy when receiving a new request
         (*before* forwarding the request to the backend service). It receives details
         of the incoming request, and returns either of the following results:
@@ -121,7 +143,14 @@ class ProxyListener(object):
         """
         return True
 
-    def return_response(self, method, path, data, headers, response, request_handler=None):
+    def return_response(
+        self,
+        method: str,
+        path: str,
+        data: MessagePayload,
+        headers: Headers,
+        response: Response,
+    ) -> Optional[Response]:
         """This interceptor method is called by the proxy when returning a response
         (*after* having forwarded the request and received a response from the backend
         service). It receives details of the incoming request as well as the response
@@ -134,11 +163,174 @@ class ProxyListener(object):
         """
         return None
 
-    def get_forward_url(self, method, path, data, headers):
+    def get_forward_url(self, method: str, path: str, data, headers):
         """Return a custom URL to forward the given request to. If a falsy value is returned,
         then the default URL will be used.
         """
         return None
+
+
+class MessageModifyingProxyListener(ProxyListener):
+    # Special handler that can be used to modify an inbound/outbound message
+    # and forward it to the next handler in the chain (instead of forwarding
+    # to the backend directly, which is the default for regular ProxyListeners)
+    # TODO: to be replaced with listener chain in ASF Gateway, once integrated
+
+    def forward_request(
+        self, method: str, path: str, data: MessagePayload, headers: Headers
+    ) -> Optional[RoutingRequest]:
+        """Return a RoutingRequest with modified request data, or None to forward the request unmodified"""
+        return None
+
+    def return_response(
+        self,
+        method: str,
+        path: str,
+        data: MessagePayload,
+        headers: Headers,
+        response: Response,
+    ) -> Optional[RoutingResponse]:
+        """Return a RoutingResponse with modified response data, or None to forward the response unmodified"""
+        return None
+
+
+class ArnPartitionRewriteListener(MessageModifyingProxyListener):
+    """
+    Intercepts requests and responses and tries to adjust the partitions in ARNs within the intercepted requests.
+    For incoming requests, the default partition is set ("aws").
+    For outgoing responses, the partition is adjusted based on the region in the ARN, or by the default region
+    if the ARN does not contain a region.
+    This listener is used to support other partitions than the default "aws" partition (f.e. aws-us-gov) without
+    rewriting all the cases where the ARN is parsed or constructed within LocalStack or moto.
+    In other words, this listener makes sure that internally the ARNs are always in the partition "aws", while the
+    client gets ARNs with the proper partition.
+    """
+
+    # Partition which should be statically set for incoming requests
+    DEFAULT_INBOUND_PARTITION = "aws"
+
+    class InvalidRegionException(Exception):
+        """An exception indicating that a region could not be matched to a partition."""
+
+        pass
+
+    arn_regex = re.compile(
+        r"arn:"  # Prefix
+        r"(?P<Partition>(aws|aws-cn|aws-iso|aws-iso-b|aws-us-gov)*):"  # Partition
+        r"(?P<Service>[\w-]*):"  # Service (lambda, s3, ecs,...)
+        r"(?P<Region>[\w-]*):"  # Region (us-east-1, us-gov-west-1,...)
+        r"(?P<AccountID>[\w-]*):"  # AccountID
+        r"(?P<ResourcePath>"  # Combine the resource type and id to the ResourcePath
+        r"((?P<ResourceType>[\w-]*)[:/])?"  # ResourceType (optional, f.e. S3 bucket name)
+        r"(?P<ResourceID>[\w\-/*]*)"  # Resource ID (f.e. file name in S3)
+        r")"
+    )
+
+    def forward_request(
+        self, method: str, path: str, data: MessagePayload, headers: Headers
+    ) -> Optional[RoutingRequest]:
+        return RoutingRequest(
+            method=method,
+            path=self._adjust_partition_in_path(path, self.DEFAULT_INBOUND_PARTITION),
+            data=self._adjust_partition(data, self.DEFAULT_INBOUND_PARTITION),
+            headers=self._adjust_partition(headers, self.DEFAULT_INBOUND_PARTITION),
+        )
+
+    def return_response(
+        self,
+        method: str,
+        path: str,
+        data: MessagePayload,
+        headers: Headers,
+        response: Response,
+    ) -> Optional[RoutingResponse]:
+        # Only handle responses for calls from external clients
+        if is_internal_call_context(headers):
+            return None
+        return RoutingResponse(
+            status_code=response.status_code,
+            content=self._adjust_partition(response.content),
+            headers=self._adjust_partition(response.headers),
+        )
+
+    def _adjust_partition_in_path(self, path: str, static_partition: str = None):
+        """Adjusts the (still url encoded) URL path"""
+        parsed_url = urlparse(path)
+        # Make sure to keep blank values, otherwise we drop query params which do not have a value (f.e. "/?policy")
+        decoded_query = parse_qs(qs=parsed_url.query, keep_blank_values=True)
+        adjusted_path = self._adjust_partition(parsed_url.path, static_partition)
+        adjusted_query = self._adjust_partition(decoded_query, static_partition)
+        encoded_query = urlencode(adjusted_query, doseq=True)
+
+        # Make sure to avoid empty equals signs (in between and in the end)
+        encoded_query = encoded_query.replace("=&", "&")
+        encoded_query = re.sub(r"=$", "", encoded_query)
+
+        return f"{adjusted_path}{('?' + encoded_query) if encoded_query else ''}"
+
+    def _adjust_partition(self, source, static_partition: str = None):
+        # Call this function recursively if we get a dictionary or a list
+        if isinstance(source, dict):
+            result = {}
+            for k, v in source.items():
+                result[k] = self._adjust_partition(v, static_partition)
+            return result
+        if isinstance(source, list):
+            result = []
+            for v in source:
+                result.append(self._adjust_partition(v, static_partition))
+            return result
+        elif isinstance(source, bytes):
+            try:
+                decoded = unquote(to_str(source))
+                adjusted = self._adjust_partition(decoded, static_partition)
+                return to_bytes(adjusted)
+            except UnicodeDecodeError:
+                # If the body can't be decoded to a string, we return the initial source
+                return source
+        elif not isinstance(source, str):
+            # Ignore any other types
+            return source
+        return self.arn_regex.sub(lambda m: self._adjust_match(m, static_partition), source)
+
+    def _adjust_match(self, match: Match, static_partition: str = None):
+        region = match.group("Region")
+        partition = self._partition_lookup(region) if static_partition is None else static_partition
+        service = match.group("Service")
+        account_id = match.group("AccountID")
+        resource_path = match.group("ResourcePath")
+        return f"arn:{partition}:{service}:{region}:{account_id}:{resource_path}"
+
+    def _partition_lookup(self, region: str):
+        try:
+            partition = self._get_partition_for_region(region)
+        except ArnPartitionRewriteListener.InvalidRegionException:
+            try:
+                # If the region is not properly set (f.e. because it is set to a wildcard),
+                # the partition is determined based on the default region.
+                partition = self._get_partition_for_region(config.DEFAULT_REGION)
+            except self.InvalidRegionException:
+                # If it also fails with the DEFAULT_REGION, we use us-east-1 as a fallback
+                partition = self._get_partition_for_region(AWS_REGION_US_EAST_1)
+        return partition
+
+    def _get_partition_for_region(self, region: str) -> str:
+        # Region-Partition matching is based on the "regionRegex" definitions in the endpoints.json
+        # in the botocore package.
+        if region.startswith("us-gov-"):
+            return "aws-us-gov"
+        elif region.startswith("us-iso-"):
+            return "aws-iso"
+        elif region.startswith("us-isob-"):
+            return "aws-iso-b"
+        elif region.startswith("cn-"):
+            return "aws-cn"
+        elif re.match(r"^(us|eu|ap|sa|ca|me|af)-\w+-\d+$", region):
+            return "aws"
+        else:
+            raise ArnPartitionRewriteListener.InvalidRegionException(
+                f"Region ({region}) could not be matched to a partition."
+            )
 
 
 # -------------------
@@ -280,19 +472,29 @@ def should_enforce_self_managed_service(method, path, headers, data):
     return True
 
 
+def update_path_in_url(base_url: str, path: str) -> str:
+    """Construct a URL from the given base URL and path"""
+    parsed = urlparse(base_url)
+    path = path or ""
+    path = path if path.startswith("/") else f"/{path}"
+    protocol = f"{parsed.scheme}:" if parsed.scheme else ""
+    return f"{protocol}//{parsed.netloc}{path}"
+
+
 def modify_and_forward(
-    method=None,
-    path=None,
-    data_bytes=None,
-    headers=None,
-    forward_base_url=None,
-    listeners=None,
-    request_handler=None,
-    client_address=None,
-    server_address=None,
+    method: str = None,
+    path: str = None,
+    data_bytes: bytes = None,
+    headers: Headers = None,
+    forward_base_url: str = None,
+    listeners: List[ProxyListener] = None,
+    client_address: str = None,
+    server_address: str = None,
 ):
     """This is the central function that coordinates the incoming/outgoing messages
     with the proxy listeners (message interceptors)."""
+    from localstack.services.edge import ProxyListenerEdge
+
     # Check origin / referer header before anything else happens.
     if (
         not config.DISABLE_CORS_CHECKS
@@ -305,20 +507,34 @@ def modify_and_forward(
         )
         return cors_error_response()
 
-    listeners = ProxyListener.DEFAULT_LISTENERS + (listeners or [])
-    listeners = [lis for lis in listeners if lis]
+    listeners = [lis for lis in listeners or [] if lis]
+    default_listeners = list(ProxyListener.DEFAULT_LISTENERS)
+    # ensure that MessageModifyingProxyListeners are not applied in the edge proxy request chain
+    # TODO: find a better approach for this!
+    is_edge_request = [lis for lis in listeners if isinstance(lis, ProxyListenerEdge)]
+    if is_edge_request:
+        default_listeners = [
+            lis for lis in default_listeners if not isinstance(lis, MessageModifyingProxyListener)
+        ]
+
+    listeners_inbound = default_listeners + listeners
+    listeners_outbound = listeners + default_listeners
     data = data_bytes
+    original_request = RoutingRequest(method=method, path=path, data=data, headers=headers)
 
     def is_full_url(url):
         return re.match(r"[a-zA-Z]+://.+", url)
 
-    if is_full_url(path):
-        path = path.split("://", 1)[1]
-        path = "/%s" % (path.split("/", 1)[1] if "/" in path else "")
-    proxy_url = "%s%s" % (forward_base_url, path)
-
-    for listener in listeners:
-        proxy_url = listener.get_forward_url(method, path, data, headers) or proxy_url
+    def get_proxy_backend_url(_path, original_url=None, run_listeners=False):
+        if is_full_url(_path):
+            _path = _path.split("://", 1)[1]
+            _path = "/%s" % (_path.split("/", 1)[1] if "/" in _path else "")
+        base_url = forward_base_url or original_url
+        result = update_path_in_url(base_url, _path)
+        if run_listeners:
+            for listener in listeners_inbound:
+                result = listener.get_forward_url(method, path, data, headers) or result
+        return result
 
     target_url = path
     if not is_full_url(target_url):
@@ -330,18 +546,34 @@ def modify_and_forward(
     headers["X-Forwarded-For"] = build_x_forwarded_for(headers, client_address, server_address)
 
     response = None
-    modified_request = None
+    handler_chain_request = original_request.copy()
+    modified_request_to_backend = None
 
-    # update listener (pre-invocation)
-    for listener in listeners:
+    # run inbound handlers (pre-invocation)
+    for listener in listeners_inbound:
         try:
             listener_result = listener.forward_request(
-                method=method, path=path, data=data, headers=headers
+                method=handler_chain_request.method,
+                path=handler_chain_request.path,
+                data=handler_chain_request.data,
+                headers=handler_chain_request.headers,
             )
         except HTTPException as e:
             # TODO: implement properly using exception handlers
             return http_exception_to_response(e)
 
+        if isinstance(listener, MessageModifyingProxyListener):
+            if isinstance(listener_result, RoutingRequest):
+                # update the modified request details, then call next listener
+                handler_chain_request.method = (
+                    listener_result.method or handler_chain_request.method
+                )
+                handler_chain_request.path = listener_result.path or handler_chain_request.path
+                if listener_result.data is not None:
+                    handler_chain_request.data = listener_result.data
+                if listener_result.headers is not None:
+                    handler_chain_request.headers = listener_result.headers
+            continue
         if isinstance(listener_result, Response):
             response = listener_result
             break
@@ -355,9 +587,8 @@ def modify_and_forward(
             response.status_code = 200
             break
         elif isinstance(listener_result, Request):
-            modified_request = listener_result
-            data = modified_request.data
-            headers = modified_request.headers
+            # TODO: unify modified_request_to_backend (requests.Request) and handler_chain_request (ls.routing.Request)
+            modified_request_to_backend = listener_result
             break
         elif http2_server.get_async_generator_result(listener_result):
             return listener_result
@@ -372,19 +603,33 @@ def modify_and_forward(
             return response
 
     # perform the actual invocation of the backend service
+    headers_to_send = None
+    data_to_send = None
+    method_to_send = None
     if response is None:
-        headers["Connection"] = headers.get("Connection") or "close"
-        data_to_send = data_bytes
-        request_url = proxy_url
-        if modified_request:
-            if modified_request.url:
-                request_url = "%s%s" % (forward_base_url, modified_request.url)
-            data_to_send = modified_request.data
+        headers_to_send = handler_chain_request.headers
+        headers_to_send["Connection"] = headers_to_send.get("Connection") or "close"
+        data_to_send = handler_chain_request.data
+        method_to_send = handler_chain_request.method
+        request_url = get_proxy_backend_url(handler_chain_request.path, run_listeners=True)
+        if modified_request_to_backend:
+            if modified_request_to_backend.url:
+                request_url = get_proxy_backend_url(
+                    modified_request_to_backend.url, original_url=request_url
+                )
+            data_to_send = modified_request_to_backend.data
+            if modified_request_to_backend.method:
+                method_to_send = modified_request_to_backend.method
 
         # make sure we drop "chunked" transfer encoding from the headers to be forwarded
-        headers.pop("Transfer-Encoding", None)
+        headers_to_send.pop("Transfer-Encoding", None)
         response = requests.request(
-            method, request_url, data=data_to_send, headers=headers, stream=True, verify=False
+            method_to_send,
+            request_url,
+            data=data_to_send,
+            headers=headers_to_send,
+            stream=True,
+            verify=False,
         )
 
     # prevent requests from processing response body (e.g., to pass-through gzip encoded content unmodified)
@@ -396,22 +641,22 @@ def modify_and_forward(
         if new_content:
             response._content = new_content
 
-    # update listener (post-invocation)
-    if listeners:
-        update_listener = listeners[-1]
-        kwargs = {
-            "method": method,
-            "path": path,
-            "data": data_bytes,
-            "headers": headers,
-            "response": response,
-        }
-        if "request_handler" in inspect.getfullargspec(update_listener.return_response).args:
-            # some listeners (e.g., sqs_listener.py) require additional details like the original
-            # request port, hence we pass in a reference to this request handler as well.
-            kwargs["request_handler"] = request_handler
-
-        updated_response = update_listener.return_response(**kwargs)
+    # run outbound handlers (post-invocation)
+    for listener in listeners_outbound:
+        updated_response = listener.return_response(
+            method=method_to_send or handler_chain_request.method,
+            path=handler_chain_request.path,
+            data=data_to_send or handler_chain_request.data,
+            headers=headers_to_send or handler_chain_request.headers,
+            response=response,
+        )
+        message_modifier = isinstance(listener, MessageModifyingProxyListener)
+        if message_modifier and isinstance(updated_response, RoutingResponse):
+            # update the fields from updated_response in final response
+            response.status_code = updated_response.status_code or response.status_code
+            response.headers = updated_response.headers or response.headers
+            if isinstance(updated_response.content, (str, bytes)):
+                response._content = updated_response.content
         if isinstance(updated_response, Response):
             response = updated_response
 
@@ -651,8 +896,9 @@ def start_proxy_server(
     use_ssl=None,
     update_listener=None,
     quiet=False,
-    params=None,
+    params=None,  # TODO: not being used - should be investigated/removed
     asynchronous=True,
+    check_port=True,
 ):
     bind_address = bind_address if bind_address else BIND_HOST
 
@@ -663,9 +909,6 @@ def start_proxy_server(
         headers = request.headers
         headers[HEADER_LOCALSTACK_REQUEST_URL] = str(request.url)
 
-        request_handler = Mock()
-        request_handler.proxy = Mock()
-        request_handler.proxy.port = port
         response = modify_and_forward(
             method=method,
             path=path_with_params,
@@ -673,7 +916,6 @@ def start_proxy_server(
             headers=headers,
             forward_base_url=forward_url,
             listeners=[update_listener],
-            request_handler=None,
             client_address=request.remote_addr,
             server_address=parsed_url.netloc,
         )
@@ -686,15 +928,21 @@ def start_proxy_server(
         _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
         ssl_creds = (cert_file_name, key_file_name)
 
-    return http2_server.run_server(
+    result = http2_server.run_server(
         port, bind_address, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds
     )
+    if asynchronous and check_port:
+        wait_for_port_open(port, sleep_time=0.2, retries=12)
+    return result
 
 
 def install_predefined_cert_if_available():
     try:
         from localstack_ext.bootstrap import install
 
+        if is_env_true("SKIP_SSL_CERT_DOWNLOAD"):
+            LOG.debug("Skipping download of local SSL cert, as SKIP_SSL_CERT_DOWNLOAD=1")
+            return
         install.setup_ssl_cert()
     except Exception:
         pass

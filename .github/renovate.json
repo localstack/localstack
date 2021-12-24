@@ -1,23 +1,27 @@
 {
   "extends": [
-    "schedule:earlyMondays"
+    "schedule:earlyMondays",
+    ":semanticCommitsDisabled"
   ],
   "enabledManagers": ["dockerfile"],
-  "dockerfile": {
+  "docker": {
     "pinDigests": true,
     "ignorePaths": ["bin/lambda/Dockerfile.nodejs14x"]
   },
+  "major": {
+    "enabled": false
+  },
+  "minor": {
+    "enabled": false
+  },
   "packageRules": [
     {
-      "matchDatasources": [
-        "docker"
-      ],
-      "matchPackageNames": ["python"],
-      "matchUpdateTypes": [
-        "major",
-        "minor"
-      ],
-      "enabled": false
+      "managers": ["dockerfile"],
+      "commitMessageAction": "update",
+      "commitMessageTopic": "Docker base image ({{{depName}}}) tag",
+      "digest": {
+        "commitMessageTopic": "Docker base image ({{{depName}}}{{#if currentValue}}:{{{currentValue}}}{{/if}}) digest"
+      }
     }
   ]
 }

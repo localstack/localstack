@@ -5,5 +5,3 @@ recursive-include localstack/ext *.java
 recursive-include localstack/ext pom.xml
 recursive-include localstack/utils/kinesis *.java
 recursive-include localstack/utils/kinesis *.py
-recursive-include localstack/dashboard/web *
-prune localstack/dashboard/web/node_modules

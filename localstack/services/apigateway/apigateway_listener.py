@@ -7,6 +7,7 @@ import time
 from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
 
+import pytz
 import requests
 from flask import Response as FlaskResponse
 from moto.apigateway.models import apigateway_backends
@@ -78,6 +79,8 @@ HOST_REGEX_EXECUTE_API = (
     r"(?:.*://)?([a-zA-Z0-9-]+)\.execute-api\.(%s|([^\.]+)\.amazonaws\.com)(.*)"
     % LOCALHOST_HOSTNAME
 )
+
+REQUEST_TIME_DATE_FORMAT = "%d/%b/%Y:%H:%M:%S %z"
 
 
 class ApiGatewayVersion(Enum):
@@ -801,11 +804,15 @@ def invoke_rest_api_integration_backend(
                 template = integration["requestTemplates"][APPLICATION_JSON]
                 account_id, queue = uri.split("/")[-2:]
                 region_name = uri.split(":")[3]
-
-                new_request = "%s&QueueName=%s" % (
-                    aws_stack.render_velocity_template(template, data),
-                    queue,
-                )
+                if "GetQueueUrl" in template or "CreateQueue" in template:
+                    new_request = (
+                        f"{aws_stack.render_velocity_template(template, data)}&QueueName={queue}"
+                    )
+                else:
+                    queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
+                    new_request = (
+                        f"{aws_stack.render_velocity_template(template, data)}&QueueUrl={queue_url}"
+                    )
                 headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
 
                 url = urljoin(config.TEST_SQS_URL, "%s/%s" % (TEST_AWS_ACCOUNT_ID, queue))
@@ -956,7 +963,9 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         },
         "httpMethod": method,
         "protocol": "HTTP/1.1",
-        "requestTime": datetime.datetime.utcnow(),
+        "requestTime": pytz.utc.localize(datetime.datetime.utcnow()).strftime(
+            REQUEST_TIME_DATE_FORMAT
+        ),
         "requestTimeEpoch": int(time.time() * 1000),
     }
 

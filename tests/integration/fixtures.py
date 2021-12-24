@@ -15,9 +15,11 @@ from localstack.utils.testutil import start_http_server
 if TYPE_CHECKING:
     from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
+    from mypy_boto3_cloudwatch import CloudWatchClient
     from mypy_boto3_dynamodb import DynamoDBClient
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
+    from mypy_boto3_firehose import FirehoseClient
     from mypy_boto3_iam import IAMClient
     from mypy_boto3_kinesis import KinesisClient
     from mypy_boto3_kms import KMSClient
@@ -27,6 +29,7 @@ if TYPE_CHECKING:
     from mypy_boto3_secretsmanager import SecretsManagerClient
     from mypy_boto3_ses import SESClient
     from mypy_boto3_sns import SNSClient
+    from mypy_boto3_sns.type_defs import GetTopicAttributesResponseTypeDef
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
     from mypy_boto3_stepfunctions import SFNClient
@@ -45,7 +48,7 @@ def _client(service):
         if os.environ.get("TEST_DISABLE_RETRIES_AND_TIMEOUTS")
         else None
     )
-    return aws_stack.connect_to_service(service, config=config)
+    return aws_stack.create_external_boto_client(service, config=config)
 
 
 @pytest.fixture(scope="class")
@@ -133,9 +136,19 @@ def es_client() -> "ElasticsearchServiceClient":
     return _client("es")
 
 
+@pytest.fixture(scope="class")
+def firehose_client() -> "FirehoseClient":
+    return _client("firehose")
+
+
+@pytest.fixture(scope="class")
+def cloudwatch_client() -> "CloudWatchClient":
+    return _client("cloudwatch")
+
+
 @pytest.fixture
 def dynamodb_create_table(dynamodb_client):
-    tables = list()
+    tables = []
 
     def factory(**kwargs):
         kwargs["client"] = dynamodb_client
@@ -162,7 +175,7 @@ def dynamodb_create_table(dynamodb_client):
 
 @pytest.fixture
 def s3_create_bucket(s3_client):
-    buckets = list()
+    buckets = []
 
     def factory(**kwargs) -> str:
         if "Bucket" not in kwargs:
@@ -189,7 +202,7 @@ def s3_bucket(s3_create_bucket) -> str:
 
 @pytest.fixture
 def sqs_create_queue(sqs_client):
-    queue_urls = list()
+    queue_urls = []
 
     def factory(**kwargs):
         if "QueueName" not in kwargs:
@@ -217,13 +230,29 @@ def sqs_queue(sqs_create_queue):
 
 
 @pytest.fixture
-def sns_topic(sns_client):
-    # TODO: add fixture factories
-    topic_name = "test-topic-%s" % short_uid()
-    response = sns_client.create_topic(Name=topic_name)
-    topic_arn = response["TopicArn"]
-    yield sns_client.get_topic_attributes(TopicArn=topic_arn)
-    sns_client.delete_topic(TopicArn=topic_arn)
+def sns_create_topic(sns_client):
+    topic_arns = []
+
+    def _create_topic(**kwargs):
+        if "Name" not in kwargs:
+            kwargs["Name"] = "test-topic-%s" % short_uid()
+        response = sns_client.create_topic(**kwargs)
+        topic_arns.append(response["TopicArn"])
+        return response
+
+    yield _create_topic
+
+    for topic_arn in topic_arns:
+        try:
+            sns_client.delete_topic(TopicArn=topic_arn)
+        except Exception as e:
+            LOG.debug("error cleaning up topic %s: %s", topic_arn, e)
+
+
+@pytest.fixture
+def sns_topic(sns_client, sns_create_topic) -> "GetTopicAttributesResponseTypeDef":
+    topic_arn = sns_create_topic()["TopicArn"]
+    return sns_client.get_topic_attributes(TopicArn=topic_arn)
 
 
 @pytest.fixture
@@ -330,7 +359,7 @@ def is_change_set_finished(cfn_client):
 
 @pytest.fixture
 def create_lambda_function(lambda_client: "LambdaClient"):
-    lambda_arns = list()
+    lambda_arns = []
 
     def _create_lambda_function(*args, **kwargs):
         # TODO move create function logic here to use lambda_client fixture

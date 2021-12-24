@@ -7,7 +7,7 @@ from datetime import datetime
 
 from localstack import config
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
-from localstack.services.events.events_listener import EVENTS_TMP_DIR
+from localstack.services.events.events_listener import _get_events_tmp_dir
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
@@ -37,11 +37,11 @@ TEST_EVENT_PATTERN = {
 
 class EventsTest(unittest.TestCase):
     def setUp(self):
-        self.events_client = aws_stack.connect_to_service("events")
-        self.iam_client = aws_stack.connect_to_service("iam")
-        self.sns_client = aws_stack.connect_to_service("sns")
-        self.sfn_client = aws_stack.connect_to_service("stepfunctions")
-        self.sqs_client = aws_stack.connect_to_service("sqs")
+        self.events_client = aws_stack.create_external_boto_client("events")
+        self.iam_client = aws_stack.create_external_boto_client("iam")
+        self.sns_client = aws_stack.create_external_boto_client("sns")
+        self.sfn_client = aws_stack.create_external_boto_client("stepfunctions")
+        self.sqs_client = aws_stack.create_external_boto_client("sqs")
 
     def assertIsValidEvent(self, event):
         expected_fields = (
@@ -88,13 +88,14 @@ class EventsTest(unittest.TestCase):
                 ]
             )
 
+        events_tmp_dir = _get_events_tmp_dir()
         sorted_events_written_to_disk = map(
-            lambda filename: json.loads(str(load_file(os.path.join(EVENTS_TMP_DIR, filename)))),
-            sorted(os.listdir(EVENTS_TMP_DIR)),
+            lambda filename: json.loads(str(load_file(os.path.join(events_tmp_dir, filename)))),
+            sorted(os.listdir(events_tmp_dir)),
         )
         sorted_events = list(
             filter(
-                lambda event: event["DetailType"] == event_type,
+                lambda event: event.get("DetailType") == event_type,
                 sorted_events_written_to_disk,
             )
         )
@@ -136,7 +137,7 @@ class EventsTest(unittest.TestCase):
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
@@ -188,7 +189,7 @@ class EventsTest(unittest.TestCase):
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
@@ -259,8 +260,8 @@ class EventsTest(unittest.TestCase):
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sns_client = aws_stack.connect_to_service("sns")
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sns_client = aws_stack.create_external_boto_client("sns")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
         topic_name = "topic-{}".format(short_uid())
         topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
 
@@ -319,7 +320,7 @@ class EventsTest(unittest.TestCase):
         bus_name_1 = "bus1-{}".format(short_uid())
         bus_name_2 = "bus2-{}".format(short_uid())
 
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
@@ -492,7 +493,8 @@ class EventsTest(unittest.TestCase):
 
         queue_url = self.sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         fifo_queue_url = self.sqs_client.create_queue(
-            QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"}
+            QueueName=fifo_queue_name,
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"},
         )["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
         fifo_queue_arn = aws_stack.sqs_queue_arn(fifo_queue_name)
@@ -580,7 +582,7 @@ class EventsTest(unittest.TestCase):
         proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
         wait_for_port_open(local_port)
 
-        events_client = aws_stack.connect_to_service("events")
+        events_client = aws_stack.create_external_boto_client("events")
         connection_arn = events_client.create_connection(
             Name="TestConnection",
             AuthorizationType="BASIC",
@@ -637,11 +639,11 @@ class EventsTest(unittest.TestCase):
         bus_name = "bus-{}".format(short_uid())
 
         # create firehose target bucket
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
         s3_client.create_bucket(Bucket=s3_bucket)
 
         # create firehose delivery stream to s3
-        firehose_client = aws_stack.connect_to_service("firehose")
+        firehose_client = aws_stack.create_external_boto_client("firehose")
         stream = firehose_client.create_delivery_stream(
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration={
@@ -697,13 +699,15 @@ class EventsTest(unittest.TestCase):
         self.cleanup(bus_name, rule_name, target_id)
 
     def test_put_events_with_target_sqs_new_region(self):
-        self.events_client = aws_stack.connect_to_service("events", region_name="eu-west-1")
+        self.events_client = aws_stack.create_external_boto_client(
+            "events", region_name="eu-west-1"
+        )
         queue_name = "queue-{}".format(short_uid())
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sqs_client = aws_stack.connect_to_service("sqs", region_name="eu-west-1")
+        sqs_client = aws_stack.create_external_boto_client("sqs", region_name="eu-west-1")
         sqs_client.create_queue(QueueName=queue_name)
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
@@ -742,7 +746,7 @@ class EventsTest(unittest.TestCase):
         stream_name = "stream-{}".format(short_uid())
         stream_arn = aws_stack.kinesis_stream_arn(stream_name)
 
-        kinesis_client = aws_stack.connect_to_service("kinesis")
+        kinesis_client = aws_stack.create_external_boto_client("kinesis")
         kinesis_client.create_stream(StreamName=stream_name, ShardCount=1)
 
         self.events_client.create_event_bus(Name=bus_name)
@@ -812,7 +816,7 @@ class EventsTest(unittest.TestCase):
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
@@ -872,7 +876,7 @@ class EventsTest(unittest.TestCase):
         target_id_1 = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
@@ -940,13 +944,17 @@ class EventsTest(unittest.TestCase):
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
 
     def test_put_event_without_source(self):
-        self.events_client = aws_stack.connect_to_service("events", region_name="eu-west-1")
+        self.events_client = aws_stack.create_external_boto_client(
+            "events", region_name="eu-west-1"
+        )
 
         response = self.events_client.put_events(Entries=[{"DetailType": "Test", "Detail": "{}"}])
         self.assertIn("Entries", response)
 
     def test_put_event_without_detail(self):
-        self.events_client = aws_stack.connect_to_service("events", region_name="eu-west-1")
+        self.events_client = aws_stack.create_external_boto_client(
+            "events", region_name="eu-west-1"
+        )
 
         response = self.events_client.put_events(
             Entries=[
@@ -958,8 +966,8 @@ class EventsTest(unittest.TestCase):
         self.assertIn("Entries", response)
 
     def test_trigger_event_on_ssm_change(self):
-        sqs = aws_stack.connect_to_service("sqs")
-        ssm = aws_stack.connect_to_service("ssm")
+        sqs = aws_stack.create_external_boto_client("sqs")
+        ssm = aws_stack.create_external_boto_client("ssm")
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
 
@@ -1013,7 +1021,7 @@ class EventsTest(unittest.TestCase):
         rule_name = "rule-{}".format(short_uid())
         target_id = "target-{}".format(short_uid())
 
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
@@ -1113,5 +1121,5 @@ class EventsTest(unittest.TestCase):
         if bus_name:
             self.events_client.delete_event_bus(Name=bus_name)
         if queue_url:
-            sqs_client = aws_stack.connect_to_service("sqs")
+            sqs_client = aws_stack.create_external_boto_client("sqs")
             sqs_client.delete_queue(QueueUrl=queue_url)

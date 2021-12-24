@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import os
 import re
 import shutil
@@ -7,6 +8,7 @@ import time
 import unittest
 from datetime import datetime
 from io import BytesIO
+from unittest.mock import patch
 
 import pytest
 from botocore.exceptions import ClientError
@@ -33,6 +35,8 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PROVIDED,
     LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON37,
+    LAMBDA_RUNTIME_PYTHON38,
+    LAMBDA_RUNTIME_PYTHON39,
     LAMBDA_RUNTIME_RUBY27,
 )
 from localstack.services.generic_proxy import ProxyListener
@@ -45,7 +49,6 @@ from localstack.services.install import (
 )
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_stack import lambda_function_arn
 from localstack.utils.common import (
     cp_r,
     get_arch,
@@ -76,6 +79,7 @@ from .lambdas import lambda_integration
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
+TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "lambdas", "lambda_python_version.py")
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "lambdas", "lambda_python3.py")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.js")
 TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "lambdas", "golang", "handler.zip")
@@ -129,7 +133,6 @@ TEST_STAGE_NAME = "testing"
 TEST_GOLANG_LAMBDA_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/example-handler-{os}-{arch}.tar.gz"
 
 TEST_LAMBDA_LIBS = [
-    "localstack",
     "localstack_client",
     "requests",
     "psutil",
@@ -143,7 +146,7 @@ TEST_LAMBDA_LIBS = [
 
 
 def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_requests=3):
-    lambda_client = aws_stack.connect_to_service("lambda")
+    lambda_client = aws_stack.create_external_boto_client("lambda")
     if fallback:
         config.LAMBDA_FALLBACK_URL = url
     else:
@@ -169,8 +172,8 @@ def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_reque
 
 
 def _assess_lambda_destination_invocation(condition, payload, test):
-    sqs_client = aws_stack.connect_to_service("sqs")
-    lambda_client = aws_stack.connect_to_service("lambda")
+    sqs_client = aws_stack.create_external_boto_client("sqs")
+    lambda_client = aws_stack.create_external_boto_client("lambda")
 
     # create DLQ and Lambda function
     queue_name = "test-%s" % short_uid()
@@ -223,10 +226,12 @@ def _check_lambda_logs(func_name, expected_lines=None):
         assert line in log_messages
 
 
-def test_create_lambda_function():
+def test_create_lambda_function(lambda_client):
     """Basic test that creates and deletes a Lambda function"""
     func_name = "lambda_func-{}".format(short_uid())
-    kms_key_arn = f"arn:aws:kms:{aws_stack.get_region()}:{TEST_AWS_ACCOUNT_ID}:key11"
+    kms_key_arn = (
+        f"arn:{aws_stack.get_partition()}:kms:{aws_stack.get_region()}:{TEST_AWS_ACCOUNT_ID}:key11"
+    )
     vpc_config = {
         "SubnetIds": ["subnet-123456789"],
         "SecurityGroupIds": ["sg-123456789"],
@@ -248,23 +253,23 @@ def test_create_lambda_function():
         "Environment": {"Variables": {"foo": "bar"}},
     }
 
-    client = aws_stack.connect_to_service("lambda")
-    client.create_function(**kwargs)
+    result = lambda_client.create_function(**kwargs)
+    function_arn = result["FunctionArn"]
+    assert testutil.response_arn_matches_partition(lambda_client, function_arn)
 
-    function_arn = lambda_function_arn(func_name)
     partial_function_arn = ":".join(function_arn.split(":")[3:])
 
     # Get function by Name, ARN and partial ARN
     for func_ref in [func_name, function_arn, partial_function_arn]:
-        rs = client.get_function(FunctionName=func_ref)
+        rs = lambda_client.get_function(FunctionName=func_ref)
         assert rs["Configuration"].get("KMSKeyArn", "") == kms_key_arn
         assert rs["Configuration"].get("VpcConfig", {}) == vpc_config
         assert rs["Tags"] == tags
 
     # clean up
-    client.delete_function(FunctionName=func_name)
+    lambda_client.delete_function(FunctionName=func_name)
     with pytest.raises(Exception) as exc:
-        client.delete_function(FunctionName=func_name)
+        lambda_client.delete_function(FunctionName=func_name)
     assert "ResourceNotFoundException" in str(exc)
 
 
@@ -283,7 +288,7 @@ class LambdaTestBase(unittest.TestCase):
 
     @staticmethod
     def get_lambda_logs(func_name):
-        logs_client = aws_stack.connect_to_service("logs")
+        logs_client = aws_stack.create_external_boto_client("logs")
         log_group_name = "/aws/lambda/%s" % func_name
         streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
         streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
@@ -294,9 +299,13 @@ class LambdaTestBase(unittest.TestCase):
 
 
 class TestLambdaBaseFeatures(unittest.TestCase):
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self._caplog = caplog
+
     def test_forward_to_fallback_url_dynamodb(self):
         db_table = "lambda-records"
-        ddb_client = aws_stack.connect_to_service("dynamodb")
+        ddb_client = aws_stack.create_external_boto_client("dynamodb")
 
         def num_items():
             return len((run_safe(ddb_client.scan, TableName=db_table) or {"Items": []})["Items"])
@@ -354,13 +363,13 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual(lambda_result, json.loads(response_payload))
 
         # clean up / shutdown
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.delete_function(FunctionName=lambda_name)
         proxy.stop()
 
     def test_adding_fallback_function_name_in_headers(self):
-        lambda_client = aws_stack.connect_to_service("lambda")
-        ddb_client = aws_stack.connect_to_service("dynamodb")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
+        ddb_client = aws_stack.create_external_boto_client("dynamodb")
 
         db_table = "lambda-records"
         config.LAMBDA_FALLBACK_URL = "dynamodb://%s" % db_table
@@ -375,8 +384,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual("non-existing-lambda", result["Items"][0]["function_name"]["S"])
 
     def test_dead_letter_queue(self):
-        sqs_client = aws_stack.connect_to_service("sqs")
-        lambda_client = aws_stack.connect_to_service("lambda")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         # create DLQ and Lambda function
         queue_name = "test-%s" % short_uid()
@@ -450,8 +459,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
-        iam_client = aws_stack.connect_to_service("iam")
-        lambda_client = aws_stack.connect_to_service("lambda")
+        iam_client = aws_stack.create_external_boto_client("iam")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         # create lambda permission
         action = "lambda:InvokeFunction"
@@ -497,13 +506,16 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_large_payloads(self):
+        # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
+        self._caplog.set_level(logging.INFO)
+
         function_name = "large_payload-{}".format(short_uid())
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_ECHO_FILE,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
         payload_bytes = to_bytes(json.dumps(payload))
         result = lambda_client.invoke(FunctionName=function_name, Payload=payload_bytes)
@@ -530,7 +542,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
                 libs=TEST_LAMBDA_LIBS,
                 func_name=function_name,
             )
-            lambda_client = aws_stack.connect_to_service("lambda")
+            lambda_client = aws_stack.create_external_boto_client("lambda")
             result = lambda_client.invoke(FunctionName=function_name, Payload="{}")
             self.assertEqual(200, result["ResponseMetadata"]["HTTPStatusCode"])
             result_data = result["Payload"].read()
@@ -549,8 +561,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
-        iam_client = aws_stack.connect_to_service("iam")
-        lambda_client = aws_stack.connect_to_service("lambda")
+        iam_client = aws_stack.create_external_boto_client("iam")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         # create lambda permissions
         action = "lambda:InvokeFunction"
@@ -607,7 +619,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         # adding event invoke config
         response = lambda_client.put_function_event_invoke_config(
@@ -670,9 +682,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
         queue_url_1 = sqs_client.create_queue(QueueName=queue_name_1)["QueueUrl"]
         queue_arn_1 = aws_stack.sqs_queue_arn(queue_name_1)
 
@@ -718,7 +730,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual(BATCH_SIZE_RANGES["dynamodb"][0], rs["BatchSize"])
 
         # clean up
-        dynamodb_client = aws_stack.connect_to_service("dynamodb")
+        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
         dynamodb_client.delete_table(TableName=ddb_table)
         sqs_client.delete_queue(QueueUrl=queue_url_1)
         sqs_client.delete_queue(QueueUrl=queue_url_2)
@@ -738,7 +750,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             "TableDescription"
         ]["TableArn"]
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         rs = lambda_client.create_event_source_mapping(
             FunctionName=function_name, EventSourceArn=table_arn
@@ -769,7 +781,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual(1, len(events[0]["Records"]))
 
         # clean up
-        dynamodb_client = aws_stack.connect_to_service("dynamodb")
+        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
         dynamodb_client.delete_table(TableName=ddb_table)
 
         lambda_client.delete_function(FunctionName=function_name)
@@ -787,13 +799,13 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         table_arn = aws_stack.create_dynamodb_table(ddb_table, partition_key="id")[
             "TableDescription"
         ]["TableArn"]
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
 
         lambda_client.create_event_source_mapping(
             FunctionName=function_name, EventSourceArn=table_arn
         )
 
-        dynamodb_client = aws_stack.connect_to_service("dynamodb")
+        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
         dynamodb_client.delete_table(TableName=ddb_table)
 
         result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
@@ -802,8 +814,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_event_source_mapping_with_sqs(self):
-        lambda_client = aws_stack.connect_to_service("lambda")
-        sqs_client = aws_stack.connect_to_service("sqs")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
 
         function_name = "lambda_func-{}".format(short_uid())
         queue_name_1 = "queue-{}-1".format(short_uid())
@@ -845,7 +857,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         arn = aws_stack.kinesis_stream_arn(stream_name, account_id="000000000000")
 
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         lambda_client.create_event_source_mapping(EventSourceArn=arn, FunctionName=function_name)
 
         def process_records(record):
@@ -859,7 +871,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             wait_until_started=True,
         )
 
-        kinesis = aws_stack.connect_to_service("kinesis")
+        kinesis = aws_stack.create_external_boto_client("kinesis")
         stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
         self.assertEqual(1, stream_summary["StreamDescriptionSummary"]["OpenShardCount"])
         num_events_kinesis = 10
@@ -883,7 +895,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertIn("kinesis", events[0]["Records"][0])
 
     def test_function_concurrency(self):
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         function_name = "lambda_func-{}".format(short_uid())
 
         testutil.create_lambda_function(
@@ -904,7 +916,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         testutil.delete_lambda_function(name=function_name)
 
     def test_function_code_signing_config(self):
-        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         function_name = "lambda_func-{}".format(short_uid())
 
         testutil.create_lambda_function(
@@ -969,9 +981,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
-        cls.lambda_client = aws_stack.connect_to_service("lambda")
-        cls.s3_client = aws_stack.connect_to_service("s3")
-        cls.sns_client = aws_stack.connect_to_service("sns")
+        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
+        cls.s3_client = aws_stack.create_external_boto_client("s3")
+        cls.sns_client = aws_stack.create_external_boto_client("sns")
 
         Util.create_function(TEST_LAMBDA_PYTHON, TEST_LAMBDA_NAME_PY, libs=TEST_LAMBDA_LIBS)
 
@@ -1302,7 +1314,7 @@ class TestPythonRuntimes(LambdaTestBase):
         function_name = "{}-{}".format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
         queue_name = "lambda-queue-{}".format(short_uid())
 
-        sqs_client = aws_stack.connect_to_service("sqs")
+        sqs_client = aws_stack.create_external_boto_client("sqs")
 
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_SEND_MESSAGE_FILE,
@@ -1366,7 +1378,7 @@ class TestPythonRuntimes(LambdaTestBase):
         # clean up
         testutil.delete_lambda_function(function_name)
 
-        dynamodb_client = aws_stack.connect_to_service("dynamodb")
+        dynamodb_client = aws_stack.create_external_boto_client("dynamodb")
         dynamodb_client.delete_table(TableName=table_name)
 
     def test_lambda_start_stepfunctions_execution(self):
@@ -1398,7 +1410,7 @@ class TestPythonRuntimes(LambdaTestBase):
             },
         }
 
-        sfn_client = aws_stack.connect_to_service("stepfunctions")
+        sfn_client = aws_stack.create_external_boto_client("stepfunctions")
         rs = sfn_client.create_state_machine(
             name=state_machine_name,
             definition=json.dumps(state_machine_def),
@@ -1431,8 +1443,8 @@ class TestPythonRuntimes(LambdaTestBase):
         sfn_client.delete_state_machine(stateMachineArn=sm_arn)
 
     def create_multiple_lambda_permissions(self):
-        iam_client = aws_stack.connect_to_service("iam")
-        lambda_client = aws_stack.connect_to_service("lambda")
+        iam_client = aws_stack.create_external_boto_client("iam")
+        lambda_client = aws_stack.create_external_boto_client("lambda")
         role_name = "role-{}".format(short_uid())
         assume_policy_document = {
             "Version": "2012-10-17",
@@ -1477,6 +1489,33 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertIn("Statement", resp)
         # delete lambda
         testutil.delete_lambda_function(TEST_LAMBDA_PYTHON)
+
+
+@pytest.mark.skipif(
+    not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
+)
+@pytest.mark.parametrize(
+    "runtime",
+    [
+        LAMBDA_RUNTIME_PYTHON36,
+        LAMBDA_RUNTIME_PYTHON37,
+        LAMBDA_RUNTIME_PYTHON38,
+        LAMBDA_RUNTIME_PYTHON39,
+    ],
+)
+def test_python_runtimes(lambda_client, create_lambda_function, runtime):
+    function_name = f"test_python_executor_{short_uid()}"
+    create_lambda_function(
+        func_name=function_name,
+        handler_file=TEST_LAMBDA_PYTHON_VERSION,
+        runtime=runtime,
+    )
+    result = lambda_client.invoke(
+        FunctionName=function_name,
+        Payload=b"{}",
+    )
+    result = json.loads(to_str(result["Payload"].read()))
+    assert result["version"] == runtime
 
 
 class TestNodeJSRuntimes:
@@ -1566,7 +1605,7 @@ class TestNodeJSRuntimes:
 class TestCustomRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
-        cls.lambda_client = aws_stack.connect_to_service("lambda")
+        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
 
     def test_provided_runtime_running_in_docker(self):
         if not use_docker():
@@ -1606,7 +1645,7 @@ class TestCustomRuntimes(LambdaTestBase):
 class TestDotNetCoreRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
-        cls.lambda_client = aws_stack.connect_to_service("lambda")
+        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
         cls.zip_file_content2 = load_file(TEST_LAMBDA_DOTNETCORE2, mode="rb")
         cls.zip_file_content31 = load_file(TEST_LAMBDA_DOTNETCORE31, mode="rb")
 
@@ -1649,7 +1688,7 @@ class TestDotNetCoreRuntimes(LambdaTestBase):
 class TestRubyRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
-        cls.lambda_client = aws_stack.connect_to_service("lambda")
+        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
 
     def test_ruby_lambda_running_in_docker(self):
         if not use_docker():
@@ -1708,9 +1747,13 @@ class TestGolangRuntimes:
 
 
 class TestJavaRuntimes(LambdaTestBase):
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self._caplog = caplog
+
     @classmethod
     def setUpClass(cls):
-        cls.lambda_client = aws_stack.connect_to_service("lambda")
+        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
 
         # deploy Lambda - default handler
         # The TEST_LAMBDA_JAVA jar file is downloaded with `make init-testlibs`.
@@ -1780,6 +1823,9 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertIsNotNone(result_data)
 
     def test_java_runtime_with_large_payload(self):
+        # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
+        self._caplog.set_level(logging.INFO)
+
         self.assertIsNotNone(self.test_java_jar)
 
         payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
@@ -1915,10 +1961,10 @@ class TestJavaRuntimes(LambdaTestBase):
         key = "key-%s" % short_uid()
         function_name = TEST_LAMBDA_NAME_JAVA
 
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = aws_stack.create_external_boto_client("sns")
         topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
 
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
 
         s3_client.create_bucket(Bucket=bucket_name)
         s3_client.put_bucket_notification_configuration(
@@ -1991,8 +2037,8 @@ def test_java_custom_handler_method_specification(
 class TestDockerBehaviour(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
-        cls.lambda_client = aws_stack.connect_to_service("lambda")
-        cls.s3_client = aws_stack.connect_to_service("s3")
+        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
+        cls.s3_client = aws_stack.create_external_boto_client("s3")
 
     def test_code_updated_on_redeployment(self):
         lambda_api.LAMBDA_EXECUTOR.cleanup()
@@ -2137,16 +2183,8 @@ class TestDockerBehaviour(LambdaTestBase):
         testutil.delete_lambda_function(func_name)
 
 
+@patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
 def test_kinesis_lambda_parallelism(lambda_client, kinesis_client):
-    old_config = config.SYNCHRONOUS_KINESIS_EVENTS
-    config.SYNCHRONOUS_KINESIS_EVENTS = False
-    try:
-        _run_kinesis_lambda_parallelism(lambda_client, kinesis_client)
-    finally:
-        config.SYNCHRONOUS_KINESIS_EVENTS = old_config
-
-
-def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
     function_name = "lambda_func-{}".format(short_uid())
     stream_name = "test-foobar-{}".format(short_uid())
 
@@ -2170,7 +2208,7 @@ def _run_kinesis_lambda_parallelism(lambda_client, kinesis_client):
         wait_until_started=True,
     )
 
-    kinesis = aws_stack.connect_to_service("kinesis")
+    kinesis = aws_stack.create_external_boto_client("kinesis")
     stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
     assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
     num_events_kinesis = 10

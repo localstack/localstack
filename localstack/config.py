@@ -118,7 +118,7 @@ class Directories:
             static_libs=INSTALL_DIR_INFRA,
             var_libs=var_libs,
             cache=cache,
-            tmp=TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
+            tmp=TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp - or /tmp/localstack
             functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
             data=DATA_DIR,  # TODO: move to /var/lib/localstack/data
             config=None,  # config directory is host-only
@@ -365,6 +365,9 @@ EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
+# whether to enable legacy record&replay persistence mechanism (default true, but will be disabled in a future release!)
+LEGACY_PERSISTENCE = is_env_not_false("LEGACY_PERSISTENCE")
+
 # Adding Stepfunctions default port
 LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get("LOCAL_PORT_STEPFUNCTIONS") or 8083)
 # Stepfunctions lambda endpoint override
@@ -424,7 +427,7 @@ LAMBDA_FALLBACK_URL = os.environ.get("LAMBDA_FALLBACK_URL", "").strip()
 # endpoint (can use useful for advanced test setups)
 LAMBDA_FORWARD_URL = os.environ.get("LAMBDA_FORWARD_URL", "").strip()
 # Time in seconds to wait at max while extracting Lambda code.
-# By default it is 25 seconds for limiting the execution time
+# By default, it is 25 seconds for limiting the execution time
 # to avoid client/network timeout issues
 LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 
@@ -432,6 +435,10 @@ LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 # initialize during startup.
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
+
+# URL to a custom elasticsearch backend cluster. If this is set to a valid URL, then localstack will not create
+# elasticsearch cluster instances, but instead forward all domains to the given backend.
+ES_CUSTOM_BACKEND = os.environ.get("ES_CUSTOM_BACKEND", "").strip()
 
 # Strategy used when creating elasticsearch domain endpoints routed through the edge proxy
 # valid values: domain | path | off
@@ -445,6 +452,9 @@ OUTBOUND_HTTP_PROXY = os.environ.get("OUTBOUND_HTTP_PROXY", "")
 
 # Equivalent to HTTPS_PROXY, but only applicable for external connections
 OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
+
+# Whether to enable the partition adjustment listener (in order to support other partitions that the default)
+ARN_PARTITION_REWRITING = is_env_true("ARN_PARTITION_REWRITING")
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
@@ -466,6 +476,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_ERROR_PROBABILITY",
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
+    "ES_CUSTOM_BACKEND",
     "ES_ENDPOINT_STRATEGY",
     "ES_MULTI_CLUSTER",
     "DOCKER_BRIDGE_IP",
@@ -519,6 +530,7 @@ CONFIG_ENV_VARS = [
     "REQUESTS_CA_BUNDLE",
     "LEGACY_DOCKER_CLIENT",
     "EAGER_SERVICE_LOADING",
+    "LAMBDA_STAY_OPEN_MODE",
 ]
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
@@ -535,14 +547,14 @@ def collect_config_items() -> List[Tuple[str, Any]]:
     none = object()  # sentinel object
 
     # collect which keys to print
-    keys = list()
+    keys = []
     keys.extend(CONFIG_ENV_VARS)
     keys.append("DATA_DIR")
     keys.sort()
 
     values = globals()
 
-    result = list()
+    result = []
     for k in keys:
         v = values.get(k, none)
         if v is none:
@@ -570,8 +582,13 @@ def in_docker():
     """
     if OVERRIDE_IN_DOCKER:
         return True
+
+    # details: https://github.com/localstack/localstack/pull/4352
     if os.path.exists("/.dockerenv"):
         return True
+    if os.path.exists("/run/.containerenv"):
+        return True
+
     if not os.path.exists("/proc/1/cgroup"):
         return False
     try:
@@ -638,6 +655,9 @@ except socket.error:
 # make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
 if is_in_docker and not os.environ.get("LAMBDA_REMOTE_DOCKER", "").strip():
     LAMBDA_REMOTE_DOCKER = True
+
+# whether lambdas should use stay open mode if executed in "docker-reuse" executor
+LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE")
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ",".join(set((LOCALSTACK_HOSTNAME, LOCALHOST, LOCALHOST_IP, "[::1]")))
@@ -777,7 +797,7 @@ class ServiceProviderConfig(Mapping[str, str]):
     default_value: str
 
     def __init__(self, default_value: str):
-        self._provider_config = dict()
+        self._provider_config = {}
         self.default_value = default_value
 
     def get_provider(self, service: str) -> str:

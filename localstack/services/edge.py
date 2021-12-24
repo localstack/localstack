@@ -182,7 +182,7 @@ class ProxyListenerEdge(ProxyListener):
                 )
             return result
 
-    def return_response(self, method, path, data, headers, response, request_handler=None):
+    def return_response(self, method, path, data, headers, response):
         api = headers.get(HEADER_TARGET_API) or ""
 
         if is_trace_logging_enabled(headers):
@@ -251,7 +251,6 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
         headers=headers,
         forward_base_url=forward_url,
         listeners=[listener],
-        request_handler=None,
         client_address=client_address,
         server_address=server_address,
     )
@@ -397,6 +396,10 @@ def is_s3_form_data(data_bytes):
 def get_api_from_custom_rules(method, path, data, headers):
     """Determine backend port based on custom rules."""
 
+    # API Gateway invocation URLs
+    if ("/%s/" % PATH_USER_REQUEST) in path:
+        return "apigateway", config.PORT_APIGATEWAY
+
     # detect S3 presigned URLs
     if "AWSAccessKeyId=" in path or "Signature=" in path:
         return "s3", config.PORT_S3
@@ -408,10 +411,6 @@ def get_api_from_custom_rules(method, path, data, headers):
     # DynamoDB shell URLs
     if path.startswith("/shell") or path.startswith("/dynamodb/shell"):
         return "dynamodb", config.PORT_DYNAMODB
-
-    # API Gateway invocation URLs
-    if ("/%s/" % PATH_USER_REQUEST) in path:
-        return "apigateway", config.PORT_APIGATEWAY
 
     data_bytes = to_bytes(data or "")
     version, action = extract_version_and_action(path, data_bytes)
@@ -529,6 +528,7 @@ def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
         bind_address=bind_address,
         use_ssl=True,
         update_listener=PROXY_LISTENER_EDGE,
+        check_port=False,
     )
     if not asynchronous:
         proxy.join()

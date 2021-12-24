@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.utils.common import (
     PEM_CERT_END,
     PEM_CERT_START,
@@ -14,7 +15,9 @@ from localstack.utils.common import (
     PEM_KEY_START_REGEX,
     FileListener,
     FileMappedDocument,
+    download,
     generate_ssl_cert,
+    get_free_tcp_port,
     is_none_or_empty,
     load_file,
     new_tmp_file,
@@ -83,7 +86,7 @@ def test_run_cmd_as_str_or_list():
 @pytest.mark.parametrize("tail_engine", ["command", "tailer"])
 class TestFileListener:
     def test_basic_usage(self, tail_engine, tmp_path):
-        lines = list()
+        lines = []
 
         file = tmp_path / "log.txt"
         file.touch()
@@ -115,7 +118,7 @@ class TestFileListener:
             fd.close()
 
     def test_callback_exception_ignored(self, tail_engine, tmp_path):
-        lines = list()
+        lines = []
 
         def callback(line):
             if "throw" in line:
@@ -149,7 +152,7 @@ class TestFileListener:
             listener.close()
 
     def test_open_missing_file(self, tail_engine):
-        lines = list()
+        lines = []
 
         listener = FileListener("/tmp/does/not/exist", lines.append)
         listener.use_tail_command = tail_engine != "tailer"
@@ -257,3 +260,24 @@ def test_generate_ssl_cert():
     # clean up
     rm_rf(cert_file_name)
     rm_rf(key_file_name)
+
+
+def test_download_with_timeout():
+    class DownloadListener(ProxyListener):
+        def forward_request(self, method, path, data, headers):
+            if path == "/sleep":
+                time.sleep(2)
+            return {}
+
+    port = get_free_tcp_port()
+    proxy = start_proxy_server(port, update_listener=DownloadListener())
+
+    tmp_file = new_tmp_file()
+    download(f"http://localhost:{port}/", tmp_file)
+    assert load_file(tmp_file) == "{}"
+    with pytest.raises(TimeoutError):
+        download(f"http://localhost:{port}/sleep", tmp_file, timeout=1)
+
+    # clean up
+    proxy.stop()
+    rm_rf(tmp_file)

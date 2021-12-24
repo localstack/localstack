@@ -2,6 +2,7 @@ from unittest import mock
 
 import requests
 
+from localstack.constants import VERSION
 from localstack.services.internal import HealthResource, LocalstackResourceHandler
 from localstack.services.plugins import ServiceManager, ServiceState
 from localstack.services.routing import Request
@@ -34,6 +35,7 @@ class TestHealthResource:
             "services": {
                 "foo": "available",
             },
+            "version": VERSION,
         }
 
     def test_put_overwrite_and_get(self):
@@ -63,6 +65,7 @@ class TestHealthResource:
             "services": {
                 "foo": "available",
             },
+            "version": VERSION,
         }
 
 

@@ -631,7 +631,7 @@ def md5(string: Union[str, bytes]) -> str:
 def select_attributes(obj: Dict, attributes: List[str]) -> Dict:
     """Select a subset of attributes from the given dict (returns a copy)"""
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
-    return dict([(k, v) for k, v in obj.items() if k in attributes])
+    return {k: v for k, v in obj.items() if k in attributes}
 
 
 def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False) -> Dict:
@@ -682,7 +682,13 @@ def path_from_url(url: str) -> str:
     return "/%s" % str(url).partition("://")[2].partition("/")[2] if "://" in url else url
 
 
-def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=None):
+def is_port_open(
+    port_or_url: Union[int, str],
+    http_path: str = None,
+    expect_success: bool = True,
+    protocols: Optional[List[str]] = None,
+    quiet: bool = True,
+):
     protocols = protocols or ["tcp"]
     port = port_or_url
     if is_number(port):
@@ -715,10 +721,16 @@ def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=Non
                         sock.sendto(bytes(), (host, port))
                         sock.recvfrom(1024)
                 except Exception:
+                    if not quiet:
+                        LOG.exception("Error connecting to UDP port %s:%s", host, port)
                     return False
             elif nw_protocol == socket.SOCK_STREAM:
                 result = sock.connect_ex((host, port))
                 if result != 0:
+                    if not quiet:
+                        LOG.warning(
+                            "Error connecting to TCP port %s:%s (result=%s)", host, port, result
+                        )
                     return False
     if "tcp" not in protocols or not http_path:
         return True
@@ -1145,6 +1157,8 @@ def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=F
 
 
 def disk_usage(path: str) -> int:
+    """Return the disk usage of the given file or directory."""
+
     if not os.path.exists(path):
         return 0
 
@@ -1159,6 +1173,11 @@ def disk_usage(path: str) -> int:
             if not os.path.islink(fp):
                 total_size += os.path.getsize(fp)
     return total_size
+
+
+def file_exists_not_empty(path: str) -> bool:
+    """Return whether the given file or directory exists and is non-empty (i.e., >0 bytes content)"""
+    return path and disk_usage(path) > 0
 
 
 def format_bytes(count: float, default: str = "n/a"):
@@ -1186,23 +1205,27 @@ def get_proxies() -> Dict[str, str]:
     return proxy_map
 
 
-def download(url: str, path: str, verify_ssl=True):
-    """Downloads file at url to the given path"""
-    # make sure we're creating a new session here to
-    # enable parallel file downloads during installation!
+def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None):
+    """Downloads file at url to the given path. Raises TimeoutError if the optional timeout (in secs) is reached."""
+
+    # make sure we're creating a new session here to enable parallel file downloads
     s = requests.Session()
     proxies = get_proxies()
     if proxies:
         s.proxies.update(proxies)
+
     # Use REQUESTS_CA_BUNDLE path. If it doesn't exist, use the method provided settings.
     # Note that a value that is not False, will result to True and will get the bundle file.
-    r = s.get(url, stream=True, verify=os.getenv("REQUESTS_CA_BUNDLE", verify_ssl))
-    # check status code before attempting to read body
-    if r.status_code >= 400:
-        raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
+    _verify = os.getenv("REQUESTS_CA_BUNDLE", verify_ssl)
 
-    total = 0
+    r = None
     try:
+        r = s.get(url, stream=True, verify=_verify, timeout=timeout)
+        # check status code before attempting to read body
+        if not r.ok:
+            raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
+
+        total = 0
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         LOG.debug(
@@ -1231,8 +1254,11 @@ def download(url: str, path: str, verify_ssl=True):
         LOG.debug(
             "Done downloading %s, response code %s, total bytes %d" % (url, r.status_code, total)
         )
+    except requests.exceptions.ReadTimeout as e:
+        raise TimeoutError(f"Timeout ({timeout}) reached on download: {url} - {e}")
     finally:
-        r.close()
+        if r is not None:
+            r.close()
         s.close()
 
 
@@ -1256,7 +1282,7 @@ def parse_request_data(method: str, path: str, data=None, headers=None) -> Dict:
             pass  # probably binary / JSON / non-URL encoded payload - ignore
 
     # select first elements from result lists (this is assuming we are not using parameter lists!)
-    result = dict([(k, v[0]) for k, v in result.items()])
+    result = {k: v[0] for k, v in result.items()}
     return result
 
 
@@ -1302,7 +1328,7 @@ def is_linux() -> bool:
 
 
 def is_windows() -> bool:
-    return platform.system().lower() == "windows"
+    return localstack.utils.run.is_windows()
 
 
 def is_debian() -> bool:

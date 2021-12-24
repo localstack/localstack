@@ -31,7 +31,7 @@ class HealthResource:
     def __init__(self, service_manager) -> None:
         super().__init__()
         self.service_manager = service_manager
-        self.state = dict()
+        self.state = {}
 
     def on_post(self, request):
         data = request.json()
@@ -54,6 +54,7 @@ class HealthResource:
         # build state dict from internal state and merge into it the service states
         result = dict(self.state)
         result = merge_recursive({"services": services}, result)
+        result["version"] = constants.VERSION
         return result
 
     def on_put(self, request):

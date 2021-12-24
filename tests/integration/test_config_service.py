@@ -10,10 +10,10 @@ TEST_RESOURCE_TYPES = "AWS::EC2::Instance"
 
 class TestConfigService(unittest.TestCase):
     def setUp(self):
-        self.config_service_client = aws_stack.connect_to_service("config")
+        self.config_service_client = aws_stack.create_external_boto_client("config")
 
     def create_iam_role(self, iam_role_name):
-        self.iam_client = aws_stack.connect_to_service("iam")
+        self.iam_client = aws_stack.create_external_boto_client("iam")
         assume_policy_document = {
             "Version": "2012-10-17",
             "Statement": [
@@ -67,11 +67,11 @@ class TestConfigService(unittest.TestCase):
 
         self.create_configuration_recorder(iam_role_arn)
 
-        s3_client = aws_stack.connect_to_service("s3")
+        s3_client = aws_stack.create_external_boto_client("s3")
         test_bucket_name = "test-bucket"
         s3_client.create_bucket(Bucket=test_bucket_name)
 
-        sns_client = aws_stack.connect_to_service("sns")
+        sns_client = aws_stack.create_external_boto_client("sns")
         sns_topic_arn = sns_client.create_topic(Name="test-sns-topic")["TopicArn"]
 
         delivery_channel_name = "test-delivery-channel"

@@ -65,3 +65,14 @@ def start_route53(port=None, asynchronous=False, update_listener=None):
         asynchronous=asynchronous,
         update_listener=update_listener,
     )
+
+
+def start_route53_resolver(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_ROUTE53RESOLVER
+    return start_moto_server(
+        "route53resolver",
+        port,
+        name="Route53 Resolver",
+        asynchronous=asynchronous,
+        update_listener=update_listener,
+    )

@@ -146,7 +146,7 @@ def do_run(
     cmd: Union[str, List],
     asynchronous: bool,
     print_output: bool = None,
-    env_vars: Dict[str, str] = {},
+    env_vars: Dict[str, str] = None,
     auto_restart=False,
     strip_color: bool = False,
 ):
@@ -201,8 +201,16 @@ def start_proxy_for_service(
     )
 
 
-def start_proxy(port, backend_url=None, update_listener=None, quiet=False, params={}, use_ssl=None):
+def start_proxy(
+    port: int,
+    backend_url: str = None,
+    update_listener=None,
+    quiet: bool = False,
+    params: Dict = None,
+    use_ssl: bool = None,
+):
     use_ssl = config.USE_SSL if use_ssl is None else use_ssl
+    params = {} if params is None else params
     proxy_thread = start_proxy_server(
         port=port,
         forward_url=backend_url,
@@ -210,6 +218,7 @@ def start_proxy(port, backend_url=None, update_listener=None, quiet=False, param
         update_listener=update_listener,
         quiet=quiet,
         params=params,
+        check_port=False,
     )
     return proxy_thread
 
@@ -496,8 +505,11 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
         # TODO: properly encapsulate starting/stopping of edge server in a class
         if not poll_condition(
-            lambda: is_port_open(config.get_edge_port_http()), timeout=5, interval=0.1
+            lambda: is_port_open(config.get_edge_port_http()), timeout=15, interval=0.3
         ):
+            if LOG.isEnabledFor(logging.DEBUG):
+                # make another call with quiet=False to print detailed error logs
+                is_port_open(config.get_edge_port_http(), quiet=False)
             raise TimeoutError(
                 f"gave up waiting for edge server on {config.EDGE_BIND_HOST}:{config.EDGE_PORT}"
             )
