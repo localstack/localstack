@@ -20,13 +20,11 @@ PROCESS_THREAD = None
 def get_command(backend_port):
     cmd = (
         "cd %s; PORT=%s java -Dcom.amazonaws.sdk.disableCertChecking -Xmx%s "
-        "-jar StepFunctionsLocal.jar --aws-region %s --aws-account %s"
+        "-jar StepFunctionsLocal.jar --aws-account %s"
     ) % (
         install.INSTALL_DIR_STEPFUNCTIONS,
         backend_port,
         MAX_HEAP_SIZE,
-        # doesn't matter, because we patch multi-region. just needs to correspond to patches in stepfunctions_listener
-        stepfunctions_listener.default_region,
         TEST_AWS_ACCOUNT_ID,
     )
     if config.STEPFUNCTIONS_LAMBDA_ENDPOINT.lower() != "default":
