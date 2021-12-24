@@ -376,11 +376,19 @@ def apply_template(
     integration: Dict[str, Any],
     req_res_type: str,
     data: InvocationPayload,
-    path_params={},
-    query_params={},
-    headers={},
-    context={},
+    path_params=None,
+    query_params=None,
+    headers=None,
+    context=None,
 ):
+    if path_params is None:
+        path_params = {}
+    if query_params is None:
+        query_params = {}
+    if headers is None:
+        headers = {}
+    if context is None:
+        context = {}
     integration_type = integration.get("type") or integration.get("integrationType")
     if integration_type in ["HTTP", "AWS"]:
         # apply custom request template

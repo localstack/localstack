@@ -907,7 +907,9 @@ def poll_condition(condition, timeout: float = None, interval: float = 0.5) -> b
     return True
 
 
-def merge_recursive(source, destination, none_values=[None], overwrite=False):
+def merge_recursive(source, destination, none_values=None, overwrite=False):
+    if none_values is None:
+        none_values = [None]
     for key, value in source.items():
         if isinstance(value, dict):
             # get node or create one

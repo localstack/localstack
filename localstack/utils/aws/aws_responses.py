@@ -266,7 +266,9 @@ def get_response_payload(response, as_json=False):
     return result
 
 
-def requests_response(content, status_code=200, headers={}):
+def requests_response(content, status_code=200, headers=None):
+    if headers is None:
+        headers = {}
     resp = RequestsResponse()
     headers = CaseInsensitiveDict(dict(headers or {}))
     if isinstance(content, dict):
@@ -280,7 +282,9 @@ def requests_response(content, status_code=200, headers={}):
     return resp
 
 
-def request_response_stream(stream, status_code=200, headers={}):
+def request_response_stream(stream, status_code=200, headers=None):
+    if headers is None:
+        headers = {}
     resp = RequestsResponse()
     resp.raw = stream
     resp.status_code = int(status_code)

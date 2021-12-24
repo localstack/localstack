@@ -25,7 +25,7 @@ def get_kcl_jar_path():
     return jars
 
 
-def get_kcl_classpath(properties=None, paths=[]):
+def get_kcl_classpath(properties=None, paths=None):
     """
     Generates a classpath that includes the location of the kcl jars, the
     properties file and the optional paths.
@@ -41,6 +41,8 @@ def get_kcl_classpath(properties=None, paths=[]):
              found and the MultiLangDaemon and its deps and
         any custom paths you provided.
     """
+    if paths is None:
+        paths = []
     # First make all the user provided paths absolute
     paths = [os.path.abspath(p) for p in paths]
     # We add our paths after the user provided paths because this permits users to
@@ -70,7 +72,7 @@ def get_kcl_classpath(properties=None, paths=[]):
     return ":".join([p for p in paths if p != ""])
 
 
-def get_kcl_app_command(java, multi_lang_daemon_class, properties, paths=[]):
+def get_kcl_app_command(java, multi_lang_daemon_class, properties, paths=None):
     """
     Generates a command to run the MultiLangDaemon.
 
@@ -91,6 +93,8 @@ def get_kcl_app_command(java, multi_lang_daemon_class, properties, paths=[]):
     :return: A command that will run the MultiLangDaemon with your
              properties and custom paths and java.
     """
+    if paths is None:
+        paths = []
     logging_config = os.path.join(get_dir_of_file(__file__), "java", "logging.properties")
     sys_props = '"-Djava.util.logging.config.file=%s"' % logging_config
     return "{java} -cp {cp} {sys_props} {daemon} {props}".format(

@@ -276,7 +276,9 @@ def test_create_lambda_function(lambda_client):
 class LambdaTestBase(unittest.TestCase):
 
     # TODO remove once refactoring to pytest is complete
-    def check_lambda_logs(self, func_name, expected_lines=[]):
+    def check_lambda_logs(self, func_name, expected_lines=None):
+        if expected_lines is None:
+            expected_lines = []
         log_events = LambdaTestBase.get_lambda_logs(func_name)
         log_messages = [e["message"] for e in log_events]
         for line in expected_lines:

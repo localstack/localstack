@@ -278,8 +278,10 @@ def get_stream_info(
     env=None,
     endpoint_url=None,
     ddb_lease_table_suffix=None,
-    env_vars={},
+    env_vars=None,
 ):
+    if env_vars is None:
+        env_vars = {}
     if not ddb_lease_table_suffix:
         ddb_lease_table_suffix = DEFAULT_DDB_LEASE_TABLE_SUFFIX
     # construct stream info
@@ -319,14 +321,20 @@ def start_kcl_client_process(
     listener_script,
     log_file=None,
     env=None,
-    configs={},
+    configs=None,
     endpoint_url=None,
     ddb_lease_table_suffix=None,
-    env_vars={},
+    env_vars=None,
     region_name=None,
     kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
-    log_subscribers=[],
+    log_subscribers=None,
 ):
+    if configs is None:
+        configs = {}
+    if env_vars is None:
+        env_vars = {}
+    if log_subscribers is None:
+        log_subscribers = []
     env = aws_stack.get_environment(env)
     # make sure to convert stream ARN to stream name
     stream_name = aws_stack.kinesis_stream_name(stream_name)
@@ -477,12 +485,12 @@ def listen_to_kinesis(
     events_file=None,
     endpoint_url=None,
     log_file=None,
-    configs={},
+    configs=None,
     env=None,
     ddb_lease_table_suffix=None,
-    env_vars={},
+    env_vars=None,
     kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
-    log_subscribers=[],
+    log_subscribers=None,
     wait_until_started=False,
     fh_d_stream=None,
     region_name=None,
@@ -492,6 +500,12 @@ def listen_to_kinesis(
     and receive events in a listener function. A KCL client process is
     automatically started in the background.
     """
+    if configs is None:
+        configs = {}
+    if env_vars is None:
+        env_vars = {}
+    if log_subscribers is None:
+        log_subscribers = []
     env = aws_stack.get_environment(env)
     if not events_file:
         events_file = EVENTS_FILE_PATTERN.replace("*", short_uid())

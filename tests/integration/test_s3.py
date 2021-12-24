@@ -2470,7 +2470,9 @@ class TestS3(unittest.TestCase):
         )
         return queue_attributes["Attributes"]["ApproximateNumberOfMessages"]
 
-    def _delete_bucket(self, bucket_name, keys=[]):
+    def _delete_bucket(self, bucket_name, keys=None):
+        if keys is None:
+            keys = []
         keys = keys if isinstance(keys, list) else [keys]
         objects = [{"Key": k} for k in keys]
         if objects:

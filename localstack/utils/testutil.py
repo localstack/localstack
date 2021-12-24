@@ -77,12 +77,14 @@ def rm_dir(dir):
 def create_lambda_archive(
     script: str,
     get_content: bool = False,
-    libs: List[str] = [],
+    libs: List[str] = None,
     runtime: str = None,
     file_name: str = None,
     exclude_func: Callable[[str], bool] = None,
 ):
     """Utility method to create a Lambda function archive"""
+    if libs is None:
+        libs = []
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
 
     with tempfile.TemporaryDirectory(prefix=ARCHIVE_DIR_PREFIX) as tmp_dir:
@@ -214,15 +216,21 @@ def create_lambda_function(
     handler=None,
     starting_position=None,
     runtime=None,
-    envvars={},
-    tags={},
-    libs=[],
+    envvars=None,
+    tags=None,
+    libs=None,
     delete=False,
     layers=None,
     client=None,
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API"""
+    if envvars is None:
+        envvars = {}
+    if tags is None:
+        tags = {}
+    if libs is None:
+        libs = []
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
@@ -297,12 +305,14 @@ def connect_api_gateway_to_http_with_lambda_proxy(
     gateway_name,
     target_uri,
     stage_name=None,
-    methods=[],
+    methods=None,
     path=None,
     auth_type=None,
     auth_creator_func=None,
     http_method=None,
 ):
+    if methods is None:
+        methods = []
     if not methods:
         methods = ["GET", "POST", "DELETE"]
     if not path:
@@ -334,13 +344,15 @@ def create_lambda_api_gateway_integration(
     gateway_name,
     func_name,
     handler_file,
-    methods=[],
+    methods=None,
     path=None,
     runtime=None,
     stage_name=None,
     auth_type=None,
     auth_creator_func=None,
 ):
+    if methods is None:
+        methods = []
     path = path or "/test"
     auth_type = auth_type or "REQUEST"
     stage_name = stage_name or "test"

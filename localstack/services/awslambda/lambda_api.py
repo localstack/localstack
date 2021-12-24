@@ -545,12 +545,20 @@ def process_apigateway_invocation(
     is_base64_encoded=False,
     resource_path=None,
     method=None,
-    path_params={},
+    path_params=None,
     query_string_params=None,
-    stage_variables={},
-    request_context={},
-    event_context={},
+    stage_variables=None,
+    request_context=None,
+    event_context=None,
 ):
+    if path_params is None:
+        path_params = {}
+    if stage_variables is None:
+        stage_variables = {}
+    if request_context is None:
+        request_context = {}
+    if event_context is None:
+        event_context = {}
     try:
         resource_path = resource_path or path
         event = construct_invocation_event(
@@ -755,13 +763,15 @@ def do_update_alias(arn, alias, version, description=None):
 def run_lambda(
     func_arn,
     event,
-    context={},
+    context=None,
     version=None,
     suppress_output=False,
     asynchronous=False,
     callback=None,
     lock_discriminator: str = None,
 ) -> InvocationResult:
+    if context is None:
+        context = {}
     region_name = func_arn.split(":")[3]
     region = LambdaRegion.get(region_name)
     if suppress_output:
@@ -1729,8 +1739,10 @@ def invoke_function(function):
     invocation_type = request.headers.get("X-Amz-Invocation-Type", "RequestResponse")
     log_type = request.headers.get("X-Amz-Log-Type")
 
-    def _create_response(invocation_result, status_code=200, headers={}):
+    def _create_response(invocation_result, status_code=200, headers=None):
         """Create the final response for the given invocation result."""
+        if headers is None:
+            headers = {}
         if not isinstance(invocation_result, InvocationResult):
             invocation_result = InvocationResult(invocation_result)
         result = invocation_result.result

@@ -1203,8 +1203,12 @@ class TestAPIGateway(unittest.TestCase):
         )
 
         def _prepare_method_integration(
-            integr_kwargs={}, resp_templates={}, action="StartExecution", overwrite=False
+            integr_kwargs=None, resp_templates=None, action="StartExecution", overwrite=False
         ):
+            if integr_kwargs is None:
+                integr_kwargs = {}
+            if resp_templates is None:
+                resp_templates = {}
             if overwrite:
                 client.delete_integration(
                     restApiId=rest_api["id"],
@@ -1506,8 +1510,10 @@ class TestAPIGateway(unittest.TestCase):
         )
 
     def connect_api_gateway_to_http(
-        self, int_type, gateway_name, target_url, methods=[], path=None
+        self, int_type, gateway_name, target_url, methods=None, path=None
     ):
+        if methods is None:
+            methods = []
         if not methods:
             methods = ["GET", "POST"]
         if not path:

@@ -687,7 +687,9 @@ def fix_delete_objects_response(bucket_name, method, parsed_path, data, headers,
     response._content = xmltodict.unparse({"DeleteResult": result})
 
 
-def fix_metadata_key_underscores(request_headers={}, response=None):
+def fix_metadata_key_underscores(request_headers=None, response=None):
+    if request_headers is None:
+        request_headers = {}
     # fix for https://github.com/localstack/localstack/issues/1790
     underscore_replacement = "---"
     meta_header_prefix = "x-amz-meta-"
