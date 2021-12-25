@@ -178,8 +178,10 @@ class MotoServerProperties:
 
 
 def start_proxy_for_service(
-    service_name, port, backend_port, update_listener, quiet=False, params={}
+    service_name, port, backend_port, update_listener, quiet=False, params=None
 ):
+    if params is None:
+        params = {}
     # TODO: remove special switch for Elasticsearch (see also note in service_port(...) in config.py)
     if config.FORWARD_EDGE_INMEM and service_name != "elasticsearch":
         if backend_port:

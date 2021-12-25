@@ -52,7 +52,9 @@ def _connect(service, env=None, region=None):
     return aws_stack.connect_to_service(service, region_name=region)
 
 
-def get_kinesis_streams(filter=".*", pool={}, env=None, region=None):
+def get_kinesis_streams(filter=".*", pool=None, env=None, region=None):
+    if pool is None:
+        pool = {}
     if MOCK_OBJ:
         return []
     result = []
@@ -86,7 +88,9 @@ def get_kinesis_shards(stream_name=None, stream_details=None, env=None, region=N
     return result
 
 
-def get_sqs_queues(filter=".*", pool={}, env=None, region=None):
+def get_sqs_queues(filter=".*", pool=None, env=None, region=None):
+    if pool is None:
+        pool = {}
     result = []
     try:
         sqs_client = _connect("sqs", env=env, region=region)
@@ -124,7 +128,9 @@ def get_sns_topics(filter=".*", pool=None, env=None, region=None):
     return result
 
 
-def get_lambda_functions(filter=".*", details=False, pool={}, env=None, region=None):
+def get_lambda_functions(filter=".*", details=False, pool=None, env=None, region=None):
+    if pool is None:
+        pool = {}
     if MOCK_OBJ:
         return []
 
@@ -220,7 +226,9 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None, region=None
     return result
 
 
-def get_elasticsearch_domains(filter=".*", pool={}, env=None, region=None):
+def get_elasticsearch_domains(filter=".*", pool=None, env=None, region=None):
+    if pool is None:
+        pool = {}
     result = []
     try:
         es_client = _connect("es", env=env, region=region)
@@ -244,7 +252,9 @@ def get_elasticsearch_domains(filter=".*", pool={}, env=None, region=None):
     return result
 
 
-def get_dynamo_dbs(filter=".*", pool={}, env=None, region=None):
+def get_dynamo_dbs(filter=".*", pool=None, env=None, region=None):
+    if pool is None:
+        pool = {}
     result = []
     try:
         dynamodb_client = _connect("dynamodb", env=env, region=region)
@@ -296,7 +306,9 @@ def parse_notification_configuration(notification_config: Dict, pool=None) -> Li
     return notifications
 
 
-def get_s3_buckets(filter=".*", pool={}, details=False, env=None, region=None):
+def get_s3_buckets(filter=".*", pool=None, details=False, env=None, region=None):
+    if pool is None:
+        pool = {}
     result = []
     s3_client = _connect("s3", env=env, region=region)
 
@@ -326,7 +338,9 @@ def get_s3_buckets(filter=".*", pool={}, details=False, env=None, region=None):
     return result
 
 
-def get_firehose_streams(filter=".*", pool={}, env=None, region=None):
+def get_firehose_streams(filter=".*", pool=None, env=None, region=None):
+    if pool is None:
+        pool = {}
     result = []
     try:
         firehose_client = _connect("firehose", env=env, region=region)
@@ -466,7 +480,9 @@ def get_graph(name_filter=".*", env=None, **kwargs):
 
 
 # TODO: Move to utils.common
-def extract_endpoints(code_map, pool={}):
+def extract_endpoints(code_map, pool=None):
+    if pool is None:
+        pool = {}
     result = []
     identifiers = []
     for key, code in iteritems(code_map):

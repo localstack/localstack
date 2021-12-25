@@ -1003,7 +1003,9 @@ class TestLambdaAPI(unittest.TestCase):
         date_part = "/".join(parts[:3])
         self.assertEqual(date_part, today)
 
-    def _create_function(self, function_name, tags={}):
+    def _create_function(self, function_name, tags=None):
+        if tags is None:
+            tags = {}
         region = lambda_api.LambdaRegion.get()
         arn = lambda_api.func_arn(function_name)
         region.lambdas[arn] = LambdaFunction(arn)
@@ -1023,7 +1025,9 @@ class TestLambdaAPI(unittest.TestCase):
         region.lambdas[arn].role = self.ROLE
         region.lambdas[arn].memory_size = self.MEMORY_SIZE
 
-    def _update_function_code(self, function_name, tags={}):
+    def _update_function_code(self, function_name, tags=None):
+        if tags is None:
+            tags = {}
         region = lambda_api.LambdaRegion.get()
         arn = lambda_api.func_arn(function_name)
         region.lambdas[arn].versions.update(
@@ -1056,7 +1060,9 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
     DL_QUEUE = "arn:aws:sqs:us-east-1:000000000000:dlQueue"
     LAMBDA_OBJ = LambdaFunction(lambda_api.func_arn("test1"))
 
-    def _create_function(self, function_name, tags={}):
+    def _create_function(self, function_name, tags=None):
+        if tags is None:
+            tags = {}
         self.LAMBDA_OBJ.versions = {
             "$LATEST": {
                 "CodeSize": self.CODE_SIZE,
