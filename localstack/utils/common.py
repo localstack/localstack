@@ -961,7 +961,7 @@ def keys_to_lower(obj: JsonComplexType, skip_children_of: List[str] = None) -> J
     skip_children_of = ensure_list(skip_children_of or [])
 
     def fix_keys(o, path="", **kwargs):
-        if any([re.match(r"(^|.*\.)%s($|[.\[].*)" % k, path) for k in skip_children_of]):
+        if any(re.match(r"(^|.*\.)%s($|[.\[].*)" % k, path) for k in skip_children_of):
             return o
         if isinstance(o, dict):
             for k, v in dict(o).items():
@@ -1764,7 +1764,7 @@ def generate_ssl_cert(
     from OpenSSL import crypto
 
     def all_exist(*files):
-        return all([os.path.exists(f) for f in files])
+        return all(os.path.exists(f) for f in files)
 
     def store_cert_key_files(base_filename):
         key_file_name = "%s.key" % base_filename

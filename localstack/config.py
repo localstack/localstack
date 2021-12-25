@@ -596,17 +596,13 @@ def in_docker():
             [
                 os.path.exists("/sys/fs/cgroup/memory/docker/"),
                 any(
-                    [
-                        "docker-" in file_names
-                        for file_names in os.listdir("/sys/fs/cgroup/memory/system.slice")
-                    ]
+                    "docker-" in file_names
+                    for file_names in os.listdir("/sys/fs/cgroup/memory/system.slice")
                 ),
                 os.path.exists("/sys/fs/cgroup/docker/"),
                 any(
-                    [
-                        "docker-" in file_names
-                        for file_names in os.listdir("/sys/fs/cgroup/system.slice/")
-                    ]
+                    "docker-" in file_names
+                    for file_names in os.listdir("/sys/fs/cgroup/system.slice/")
                 ),
             ]
         ):

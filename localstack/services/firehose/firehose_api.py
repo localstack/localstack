@@ -86,9 +86,7 @@ def get_delivery_stream_tags(
     start_i = -1
     if exclusive_start_tag_key is not None:
         start_i = next(
-            iter(
-                [i for i, tag in enumerate(stream["Tags"]) if tag["Key"] == exclusive_start_tag_key]
-            )
+            iter(i for i, tag in enumerate(stream["Tags"]) if tag["Key"] == exclusive_start_tag_key)
         )
 
     response["Tags"] = [tag for i, tag in enumerate(stream["Tags"]) if start_i < i < limit]
@@ -380,7 +378,7 @@ def get_stream(stream_name: str, format_s3_dest: bool = False) -> Optional[Dict]
 
 
 def is_extended_s3_destination(s3_dest: Dict) -> bool:
-    return any([s3_dest.get(attr) is not None for attr in S3_EXTENDED_DEST_ATTRS])
+    return any(s3_dest.get(attr) is not None for attr in S3_EXTENDED_DEST_ATTRS)
 
 
 def error_not_found(stream_name: str):

@@ -126,7 +126,7 @@ class SecretsManagerTest(unittest.TestCase):
         )
 
         self.assertEqual(120, len(random_password["RandomPassword"]))
-        self.assertTrue(all([c not in "xyzDje@?!." for c in random_password["RandomPassword"]]))
+        self.assertTrue(all(c not in "xyzDje@?!." for c in random_password["RandomPassword"]))
 
     def test_resource_policy(self):
         secret_name = "s-%s" % short_uid()
