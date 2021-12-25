@@ -65,10 +65,12 @@ def apply_patches():
         http_method,
         request_templates=None,
         pass_through_behavior="WHEN_NO_MATCH",
-        cache_key_parameters=[],
+        cache_key_parameters=None,
         *args,
         **kwargs,
     ):
+        if cache_key_parameters is None:
+            cache_key_parameters = []
         apigateway_models_Integration_init_orig(
             self,
             integration_type=integration_type,

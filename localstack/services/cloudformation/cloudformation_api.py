@@ -41,7 +41,9 @@ XMLNS_CF = "http://cloudformation.amazonaws.com/doc/2010-05-15/"
 class StackSet(object):
     """A stack set contains multiple stack instances."""
 
-    def __init__(self, metadata={}):
+    def __init__(self, metadata=None):
+        if metadata is None:
+            metadata = {}
         self.metadata = metadata
         # list of stack instances
         self.stack_instances = []
@@ -56,7 +58,9 @@ class StackSet(object):
 class StackInstance(object):
     """A stack instance belongs to a stack set and is specific to a region / account ID."""
 
-    def __init__(self, metadata={}):
+    def __init__(self, metadata=None):
+        if metadata is None:
+            metadata = {}
         self.metadata = metadata
         # reference to the deployed stack belonging to this stack instance
         self.stack = None

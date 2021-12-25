@@ -80,7 +80,9 @@ class VelocityUtil(object):
         return json.dumps(s)
 
 
-def render_velocity_template(template, context, variables={}, as_json=False):
+def render_velocity_template(template, context, variables=None, as_json=False):
+    if variables is None:
+        variables = {}
     import airspeed
 
     if not template:

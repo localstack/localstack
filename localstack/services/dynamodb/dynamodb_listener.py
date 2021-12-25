@@ -908,7 +908,9 @@ def is_index_query_valid(table_name, index_query_type):
     return True
 
 
-def has_event_sources_or_streams_enabled(table_name, cache={}):
+def has_event_sources_or_streams_enabled(table_name, cache=None):
+    if cache is None:
+        cache = {}
     if not table_name:
         return
     table_arn = aws_stack.dynamodb_table_arn(table_name)

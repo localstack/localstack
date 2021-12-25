@@ -995,12 +995,14 @@ def create_api_gateway(
     description=None,
     resources=None,
     stage_name=None,
-    enabled_api_keys=[],
+    enabled_api_keys=None,
     env=None,
     usage_plan_name=None,
     region_name=None,
     auth_creator_func=None,  # function that receives an api_id and returns an authorizer_id
 ):
+    if enabled_api_keys is None:
+        enabled_api_keys = []
     client = connect_to_service("apigateway", env=env, region_name=region_name)
     resources = resources or []
     stage_name = stage_name or "testing"
@@ -1054,8 +1056,10 @@ def create_api_gateway(
 
 
 def create_api_gateway_integrations(
-    api_id, resource_id, method, integrations=[], env=None, region_name=None
+    api_id, resource_id, method, integrations=None, env=None, region_name=None
 ):
+    if integrations is None:
+        integrations = []
     client = connect_to_service("apigateway", env=env, region_name=region_name)
     for integration in integrations:
         req_templates = integration.get("requestTemplates") or {}
