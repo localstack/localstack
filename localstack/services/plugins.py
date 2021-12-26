@@ -288,7 +288,7 @@ class ServiceManager:
             return self.get_service_container(name).check()
 
     def check_all(self):
-        return any([self.check(service_name) for service_name in self.list_available()])
+        return any(self.check(service_name) for service_name in self.list_available())
 
     def get_state(self, name: str) -> Optional[ServiceState]:
         container = self.get_service_container(name)

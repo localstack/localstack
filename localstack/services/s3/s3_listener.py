@@ -1243,8 +1243,8 @@ class ProxyListenerS3(PersistingProxyListener):
             )
 
         # Detecting pre-sign url and checking signature
-        if any([p in query_params for p in SIGNATURE_V2_PARAMS]) or any(
-            [p in query_params for p in SIGNATURE_V4_PARAMS]
+        if any(p in query_params for p in SIGNATURE_V2_PARAMS) or any(
+            p in query_params for p in SIGNATURE_V4_PARAMS
         ):
             response = authenticate_presign_url(
                 method=method, path=path, data=data, headers=headers

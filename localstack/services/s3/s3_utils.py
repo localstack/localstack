@@ -203,8 +203,8 @@ def authenticate_presign_url(method, path, headers, data=None):
     sign_headers = {}
     query_string = {}
 
-    is_v2 = all([p in query_params for p in SIGNATURE_V2_PARAMS])
-    is_v4 = all([p in query_params for p in SIGNATURE_V4_PARAMS])
+    is_v2 = all(p in query_params for p in SIGNATURE_V2_PARAMS)
+    is_v4 = all(p in query_params for p in SIGNATURE_V4_PARAMS)
 
     # Add overrided headers to the query string params
     for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
@@ -298,7 +298,7 @@ def authenticate_presign_url(method, path, headers, data=None):
             else request_dict["url"]
         )
 
-    if not is_v2 and any([p in query_params for p in SIGNATURE_V2_PARAMS]):
+    if not is_v2 and any(p in query_params for p in SIGNATURE_V2_PARAMS):
         response = requests_error_response_xml_signature_calculation(
             code=403,
             message="Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters",
@@ -309,7 +309,7 @@ def authenticate_presign_url(method, path, headers, data=None):
             method, path, headers, data, url, query_params, request_dict
         )
 
-    if not is_v4 and any([p in query_params for p in SIGNATURE_V4_PARAMS]):
+    if not is_v4 and any(p in query_params for p in SIGNATURE_V4_PARAMS):
         response = requests_error_response_xml_signature_calculation(
             code=403,
             message="Query-string authentication requires the X-Amz-Algorithm, \

@@ -664,7 +664,7 @@ def modify_and_forward(
     from localstack.services.s3.s3_listener import ProxyListenerS3
 
     is_s3_listener = any(
-        [isinstance(service_listener, ProxyListenerS3) for service_listener in listeners]
+        isinstance(service_listener, ProxyListenerS3) for service_listener in listeners
     )
     if not is_s3_listener:
         append_cors_headers(request_headers=headers, response=response)

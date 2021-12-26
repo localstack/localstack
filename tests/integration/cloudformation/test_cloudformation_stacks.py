@@ -34,7 +34,7 @@ def test_create_stack_with_ssm_parameters(
 
         topics = sns_client.list_topics()
         topic_arns = [t["TopicArn"] for t in topics["Topics"]]
-        assert any([parameter_value in t for t in topic_arns])
+        assert any(parameter_value in t for t in topic_arns)
     finally:
         cleanup_stacks([stack_id])
         # TODO: cleanup parameter
