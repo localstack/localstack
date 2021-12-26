@@ -66,8 +66,7 @@ class LambdaFunction(GenericBaseModel):
             code = props["Code"] or {}
             if not code.get("ZipFile"):
                 LOG.debug(
-                    'Updating code for Lambda "%s" from location: %s'
-                    % (props["FunctionName"], code)
+                    'Updating code for Lambda "%s" from location: %s', props["FunctionName"], code
                 )
             code = LambdaFunction.get_lambda_code_param(props, _include_arch=True)
             client.update_function_code(FunctionName=props["FunctionName"], **code)

@@ -22,8 +22,9 @@ class ProxyListenerSecretsManager(PersistingProxyListener):
             parts = secret_id.split(":")
             if parts[3] != aws_stack.get_region():
                 LOG.info(
-                    'Unexpected request region %s for secret "%s"'
-                    % (aws_stack.get_region(), secret_id)
+                    'Unexpected request region %s for secret "%s"',
+                    aws_stack.get_region(),
+                    secret_id,
                 )
             # secret ARN ends with "-<randomId>" which we remove in the request for upstream compatibility
             # if the full arn is being sent then we remove the string in the end

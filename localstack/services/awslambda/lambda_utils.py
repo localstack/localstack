@@ -159,11 +159,11 @@ def get_main_endpoint_from_container():
         try:
             if config.is_in_docker:
                 DOCKER_MAIN_CONTAINER_IP = bootstrap.get_main_container_ip()
-                LOG.info("Determined main container target IP: %s" % DOCKER_MAIN_CONTAINER_IP)
+                LOG.info("Determined main container target IP: %s", DOCKER_MAIN_CONTAINER_IP)
         except Exception as e:
             container_name = bootstrap.get_main_container_name()
             LOG.info(
-                'Unable to get IP address of main Docker container "%s": %s' % (container_name, e)
+                'Unable to get IP address of main Docker container "%s": %s', container_name, e
             )
     # return (1) predefined endpoint host, or (2) main container IP, or (3) Docker host (e.g., bridge IP)
     return (

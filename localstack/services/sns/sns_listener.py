@@ -407,8 +407,7 @@ async def message_to_subscriber(
     message_attributes = get_message_attributes(req_data)
     if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
         LOG.info(
-            "SNS filter policy %s does not match attributes %s"
-            % (filter_policy, message_attributes)
+            "SNS filter policy %s does not match attributes %s", filter_policy, message_attributes
         )
         return
     if subscriber["Protocol"] == "sms":
@@ -473,13 +472,14 @@ async def message_to_subscriber(
             )
             store_delivery_log(subscriber, True, message, message_id)
         except Exception as exc:
-            LOG.info("Unable to forward SNS message to SQS: %s %s" % (exc, traceback.format_exc()))
+            LOG.info("Unable to forward SNS message to SQS: %s %s", exc, traceback.format_exc())
             store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
             if "NonExistentQueue" in str(exc):
                 LOG.info(
-                    'Removing non-existent queue "%s" subscribed to topic "%s"'
-                    % (queue_url, topic_arn)
+                    'Removing non-existent queue "%s" subscribed to topic "%s"',
+                    queue_url,
+                    topic_arn,
                 )
                 subscriptions.remove(subscriber)
         return
@@ -518,8 +518,7 @@ async def message_to_subscriber(
                     )
         except Exception as exc:
             LOG.info(
-                "Unable to run Lambda function on SNS message: %s %s"
-                % (exc, traceback.format_exc())
+                "Unable to run Lambda function on SNS message: %s %s", exc, traceback.format_exc()
             )
             store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
@@ -556,7 +555,7 @@ async def message_to_subscriber(
             response.raise_for_status()
         except Exception as exc:
             LOG.info(
-                "Received error on sending SNS message, putting to DLQ (if configured): %s" % exc
+                "Received error on sending SNS message, putting to DLQ (if configured): %s", exc
             )
             store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
@@ -569,8 +568,9 @@ async def message_to_subscriber(
             store_delivery_log(subscriber, True, message, message_id)
         except Exception as exc:
             LOG.warning(
-                "Unable to forward SNS message to SNS platform app: %s %s"
-                % (exc, traceback.format_exc())
+                "Unable to forward SNS message to SNS platform app: %s %s",
+                exc,
+                traceback.format_exc(),
             )
             store_delivery_log(subscriber, False, message, message_id)
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
@@ -592,7 +592,7 @@ async def message_to_subscriber(
             )
             store_delivery_log(subscriber, True, message, message_id)
     else:
-        LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber["Protocol"])
+        LOG.warning('Unexpected protocol "%s" for SNS subscription', subscriber["Protocol"])
 
 
 def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
@@ -607,7 +607,7 @@ def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_ch
         )
         cache.append(req_data)
 
-    LOG.debug("Publishing message to TopicArn: %s | Message: %s" % (topic_arn, message))
+    LOG.debug("Publishing message to TopicArn: %s | Message: %s", topic_arn, message)
     start_thread(
         lambda _: message_to_subscribers(
             message_id,

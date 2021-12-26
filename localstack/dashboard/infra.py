@@ -152,7 +152,7 @@ def get_lambda_functions(filter=".*", details=False, pool=None, env=None, region
                     code_map = get_lambda_code(func_name, env=env)
                     f.targets = extract_endpoints(code_map, pool)
                 except Exception:
-                    LOG.warning("Unable to get code for lambda '%s'" % func_name)
+                    LOG.warning("Unable to get code for lambda '%s'", func_name)
 
     try:
         lambda_client = _connect("lambda", env=env, region=region)

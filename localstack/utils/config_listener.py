@@ -21,7 +21,7 @@ def trigger_config_listeners(variable, new_value):
 
 def update_config_variable(variable, new_value):
     if new_value is not None:
-        LOG.info('Updating value of config variable "%s": %s' % (variable, new_value))
+        LOG.info('Updating value of config variable "%s": %s', variable, new_value)
         setattr(config, variable, new_value)
         trigger_config_listeners(variable, new_value)
 

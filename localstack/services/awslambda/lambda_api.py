@@ -244,8 +244,10 @@ class EventSourceListenerSQS(EventSourceListener):
                 return False
 
             LOG.debug(
-                "Found %s source mappings for event from SQS queue %s: %s"
-                % (len(arns), queue_arn, arns)
+                "Found %s source mappings for event from SQS queue %s: %s",
+                len(arns),
+                queue_arn,
+                arns,
             )
             # TODO: support message BatchSize here, same as for polling mode below
             messages = event["Messages"]
@@ -293,9 +295,7 @@ class EventSourceListenerSQS(EventSourceListener):
                     except Exception as e:
                         if "NonExistentQueue" not in str(e):
                             # TODO: remove event source if queue does no longer exist?
-                            LOG.debug(
-                                "Unable to poll SQS messages for queue %s: %s" % (queue_arn, e)
-                            )
+                            LOG.debug("Unable to poll SQS messages for queue %s: %s", queue_arn, e)
 
             except Exception:
                 pass
@@ -307,7 +307,7 @@ class EventSourceListenerSQS(EventSourceListener):
         queue_arn = source["EventSourceArn"]
         region_name = queue_arn.split(":")[3]
         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-        LOG.debug("Sending event from event source %s to Lambda %s" % (queue_arn, lambda_arn))
+        LOG.debug("Sending event from event source %s to Lambda %s", queue_arn, lambda_arn)
         res = self._send_event_to_lambda(
             queue_arn,
             queue_url,
@@ -508,8 +508,8 @@ def use_docker():
                         "Lambda executor configured as LAMBDA_EXECUTOR=%s but Docker "
                         "is not accessible. Please make sure to mount the Docker socket "
                         "/var/run/docker.sock into the container."
-                    )
-                    % config.LAMBDA_EXECUTOR
+                    ),
+                    config.LAMBDA_EXECUTOR,
                 )
             DO_USE_DOCKER = has_docker
     return DO_USE_DOCKER
@@ -572,8 +572,10 @@ def process_apigateway_invocation(
         if stage_variables:
             event["stageVariables"] = stage_variables
         LOG.debug(
-            "Running Lambda function %s from API Gateway invocation: %s %s"
-            % (func_arn, method or "GET", path)
+            "Running Lambda function %s from API Gateway invocation: %s %s",
+            func_arn,
+            method or "GET",
+            path,
         )
         asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
         inv_result = run_lambda(
@@ -585,8 +587,7 @@ def process_apigateway_invocation(
         return inv_result.result
     except Exception as e:
         LOG.warning(
-            "Unable to run Lambda function on API Gateway message: %s %s"
-            % (e, traceback.format_exc())
+            "Unable to run Lambda function on API Gateway message: %s %s", e, traceback.format_exc()
         )
 
 
@@ -698,7 +699,7 @@ def process_kinesis_records(records, stream_name):
                 )
     except Exception as e:
         LOG.warning(
-            "Unable to run Lambda function on Kinesis records: %s %s" % (e, traceback.format_exc())
+            "Unable to run Lambda function on Kinesis records: %s %s", e, traceback.format_exc()
         )
 
 
@@ -784,7 +785,7 @@ def run_lambda(
         func_arn = aws_stack.fix_arn(func_arn)
         lambda_function = region.lambdas.get(func_arn)
         if not lambda_function:
-            LOG.debug("Unable to find details for Lambda %s in region %s" % (func_arn, region_name))
+            LOG.debug("Unable to find details for Lambda %s in region %s", func_arn, region_name)
             result = not_found_error(msg="The resource specified in the request does not exist.")
             return InvocationResult(result)
 
@@ -808,9 +809,7 @@ def run_lambda(
             "errorMessage": str(e),
             "stackTrace": traceback.format_tb(exc_traceback),
         }
-        LOG.info(
-            "Error executing Lambda function %s: %s %s" % (func_arn, e, traceback.format_exc())
-        )
+        LOG.info("Error executing Lambda function %s: %s %s", func_arn, e, traceback.format_exc())
         log_output = e.log_output if isinstance(e, lambda_executors.InvocationException) else ""
         return InvocationResult(Response(json.dumps(response), status=500), log_output)
     finally:
@@ -861,7 +860,7 @@ def exec_lambda_code(script, handler_function="handler", lambda_cwd=None, lambda
                     if key not in pre_sys_modules_keys:
                         sys.modules.pop(key)
         except Exception as e:
-            LOG.error("Unable to exec: %s %s" % (script, traceback.format_exc()))
+            LOG.error("Unable to exec: %s %s", script, traceback.format_exc())
             raise e
         finally:
             if lambda_cwd or lambda_env:
@@ -1071,7 +1070,7 @@ def do_set_function_code(lambda_function: LambdaFunction):
                     use_docker(),
                     config.LAMBDA_REMOTE_DOCKER,
                 )
-                LOG.debug("Lambda archive content:\n%s" % file_list)
+                LOG.debug("Lambda archive content:\n%s", file_list)
                 raise ClientError(
                     error_response(
                         f"Unable to find handler script ({main_file}) in Lambda archive. {config_debug}",
@@ -1802,7 +1801,7 @@ def invoke_function(function):
             if forward_result is not None:
                 return _create_response(forward_result)
         except Exception as e:
-            LOG.debug('Unable to forward Lambda invocation to fallback URL: "%s" - %s' % (data, e))
+            LOG.debug('Unable to forward Lambda invocation to fallback URL: "%s" - %s', data, e)
         return not_found
 
     if invocation_type == "RequestResponse":

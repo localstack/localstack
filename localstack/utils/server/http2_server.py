@@ -161,8 +161,11 @@ def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=No
                     raise result
             except Exception as e:
                 LOG.warning(
-                    "Error in proxy handler for request %s %s: %s %s"
-                    % (request.method, request.url, e, traceback.format_exc())
+                    "Error in proxy handler for request %s %s: %s %s",
+                    request.method,
+                    request.url,
+                    e,
+                    traceback.format_exc(),
                 )
                 response.status_code = 500
                 if isinstance(e, HTTPErrorResponse):
@@ -223,8 +226,10 @@ def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=No
                 return loop.run_until_complete(serve(app, config, **run_kwargs))
             except Exception as e:
                 LOG.info(
-                    "Error running server event loop on port %s: %s %s"
-                    % (port, e, traceback.format_exc())
+                    "Error running server event loop on port %s: %s %s",
+                    port,
+                    e,
+                    traceback.format_exc(),
                 )
                 if "SSL" in str(e):
                     c_exists = os.path.exists(cert_file_name)
@@ -232,15 +237,13 @@ def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=No
                     c_size = len(load_file(cert_file_name)) if c_exists else 0
                     k_size = len(load_file(key_file_name)) if k_exists else 0
                     LOG.warning(
-                        "Unable to create SSL context. Cert files exist: %s %s (%sB), %s %s (%sB)"
-                        % (
-                            cert_file_name,
-                            c_exists,
-                            c_size,
-                            key_file_name,
-                            k_exists,
-                            k_size,
-                        )
+                        "Unable to create SSL context. Cert files exist: %s %s (%sB), %s %s (%sB)",
+                        cert_file_name,
+                        c_exists,
+                        c_size,
+                        key_file_name,
+                        k_exists,
+                        k_size,
                     )
                 raise
         finally:

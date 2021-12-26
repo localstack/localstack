@@ -678,7 +678,7 @@ class CmdDockerClient(ContainerClient):
                 Util.append_without_latest(image_names)
             return image_names
         except Exception as e:
-            LOG.info('Unable to list Docker images via "%s": %s' % (cmd, e))
+            LOG.info('Unable to list Docker images via "%s": %s', cmd, e)
             return []
 
     def get_container_logs(self, container_name_or_id: str, safe=False) -> str:

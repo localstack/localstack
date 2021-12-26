@@ -198,7 +198,7 @@ def authenticate_presign_url(method, path, headers, data=None):
     if forwarded_for:
         url = re.sub("://[^/]+", "://%s" % forwarded_for, url)
 
-    LOGGER.debug("Received presign S3 URL: %s" % url)
+    LOGGER.debug("Received presign S3 URL: %s", url)
 
     sign_headers = {}
     query_string = {}
@@ -324,7 +324,7 @@ def authenticate_presign_url(method, path, headers, data=None):
         )
 
     if response is not None:
-        LOGGER.info("Presign signature calculation failed: %s" % response)
+        LOGGER.info("Presign signature calculation failed: %s", response)
         return response
     LOGGER.debug("Valid presign url.")
 

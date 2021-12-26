@@ -52,7 +52,7 @@ def lambda_error_to_dead_letter_queue(func_details: LambdaFunction, event: Dict,
 def _send_to_dead_letter_queue(source_type: str, source_arn: str, dlq_arn: str, event: Dict, error):
     if not dlq_arn:
         return
-    LOG.info("Sending failed execution %s to dead letter queue %s" % (source_arn, dlq_arn))
+    LOG.info("Sending failed execution %s to dead letter queue %s", source_arn, dlq_arn)
     messages = _prepare_messages_to_dlq(source_arn, event, error)
     if ":sqs:" in dlq_arn:
         queue_url = aws_stack.get_sqs_queue_url(dlq_arn)
@@ -83,7 +83,7 @@ def _send_to_dead_letter_queue(source_type: str, source_arn: str, dlq_arn: str, 
                 MessageAttributes=message["MessageAttributes"],
             )
     else:
-        LOG.warning("Unsupported dead letter queue type: %s" % dlq_arn)
+        LOG.warning("Unsupported dead letter queue type: %s", dlq_arn)
     return dlq_arn
 
 

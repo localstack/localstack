@@ -110,15 +110,14 @@ class ProxyListenerEdge(ProxyListener):
         if api and should_log_trace:
             # print request trace for debugging, if enabled
             LOG.debug(
-                'IN(%s): "%s %s" - headers: %s - data: %s'
-                % (api, method, path, dict(headers), data)
+                'IN(%s): "%s %s" - headers: %s - data: %s', api, method, path, dict(headers), data
             )
 
         if not port:
             if method == "OPTIONS":
                 if api and should_log_trace:
                     # print request trace for debugging, if enabled
-                    LOG.debug('IN(%s): "%s %s" - status: %s' % (api, method, path, 200))
+                    LOG.debug('IN(%s): "%s %s" - status: %s', api, method, path, 200)
                 return 200
 
             if api in ["", None, API_UNKNOWN]:
@@ -128,16 +127,21 @@ class ProxyListenerEdge(ProxyListener):
                         (
                             'Unable to find forwarding rule for host "%s", path "%s %s", '
                             'target header "%s", auth header "%s", data "%s"'
-                        )
-                        % (host, method, path, target, auth_header, truncated)
+                        ),
+                        host,
+                        method,
+                        path,
+                        target,
+                        auth_header,
+                        truncated,
                     )
             else:
                 LOG.info(
                     (
                         'Unable to determine forwarding port for API "%s" - please '
                         "make sure this API is enabled via the SERVICES configuration"
-                    )
-                    % api
+                    ),
+                    api,
                 )
             response = Response()
             response.status_code = 404
