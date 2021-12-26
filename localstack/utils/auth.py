@@ -1,11 +1,12 @@
 import logging
-from botocore.exceptions import NoCredentialsError
+
 from botocore.auth import HmacV1Auth, SigV4QueryAuth
+from botocore.exceptions import NoCredentialsError
 
 logger = logging.getLogger(__name__)
 
-SIGV4_TIMESTAMP = '%Y%m%dT%H%M%SZ'
-UNSIGNED_PAYLOAD = 'UNSIGNED-PAYLOAD'
+SIGV4_TIMESTAMP = "%Y%m%dT%H%M%SZ"
+UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD"
 
 
 class HmacV1QueryAuth(HmacV1Auth):
@@ -18,6 +19,7 @@ class HmacV1QueryAuth(HmacV1Auth):
     #RESTAuthenticationQueryStringAuth
 
     """
+
     DEFAULT_EXPIRES = 3600
 
     def __init__(self, credentials, expires=DEFAULT_EXPIRES):
@@ -30,14 +32,10 @@ class HmacV1QueryAuth(HmacV1Auth):
     def get_signature(self, string_to_sign):
         return self.sign_string(string_to_sign)
 
-    def get_string_to_sign(self, method, split, headers, expires=None,
-                      auth_path=None):
+    def get_string_to_sign(self, method, split, headers, expires=None, auth_path=None):
         if self.credentials.token:
-            headers['x-amz-security-token'] = self.credentials.token
-        string_to_sign = self.canonical_string(method,
-                                               split,
-                                               headers,
-                                               auth_path=auth_path)
+            headers["x-amz-security-token"] = self.credentials.token
+        string_to_sign = self.canonical_string(method, split, headers, auth_path=auth_path)
         return string_to_sign
 
 
@@ -52,10 +50,11 @@ class S3SigV4QueryAuth(SigV4QueryAuth):
     http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
 
     """
+
     def add_auth(self, request, x_amz_date):
         if self.credentials is None:
             raise NoCredentialsError
-        request.context['timestamp'] = x_amz_date
+        request.context["timestamp"] = x_amz_date
         # This could be a retry.  Make sure the previous
         # authorization header is removed first.
         self._modify_request_before_signing(request)

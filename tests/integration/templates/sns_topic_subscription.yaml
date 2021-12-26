@@ -1,0 +1,21 @@
+Resources:
+  queue276F7297:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: {{ queue_name }}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  topic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint:
+            Fn::GetAtt:
+              - queue276F7297
+              - Arn
+          Protocol: sqs
+      TopicName: {{ topic_name }}
+Outputs:
+  TopicArnOutput:
+    Value:
+      Ref: topic

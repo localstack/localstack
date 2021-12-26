@@ -1,0 +1,127 @@
+name: integration-tests-against-pro
+on:
+  workflow_dispatch:
+    inputs:
+      targetRef:
+        description: 'LocalStack Pro Ref to test with'
+        required: true
+        default: 'master'
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+jobs:
+  run-integration-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: localstack-ext
+    environment: localstack-ext-tests
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository  # skip job if fork PR
+    steps:
+      - name: Checkout Pro
+        uses: actions/checkout@v2
+        with:
+          repository: localstack/localstack-ext
+          ref: ${{ github.event.inputs.targetRef }}
+          token: ${{ secrets.PRO_ACCESS_TOKEN }}
+          path: localstack-ext
+      - name: Checkout Open Source
+        uses: actions/checkout@v2
+        with:
+          path: localstack
+      - name: Set up Python 3.8
+        id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Set up Node 14.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14.x
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 0.13.7
+      - name: Set up system wide dependencies
+        run: |
+          sudo apt-get install libsasl2-dev jq
+      - name: Cache LocalStack-ext dependencies (venv)
+        uses: actions/cache@v2
+        id: ext-cache
+        with:
+          path: localstack-ext/.venv
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/localstack/services/install.py', 'localstack/requirements.txt', 'localstack/localstack/constants.py') }}
+      - name: Install Python Dependencies for LocalStack Pro
+        run: make install
+      - name: Cache LocalStack community dependencies (venv, infra)
+        uses: actions/cache@v2
+        id: os-cache
+        with:
+          path: |
+            localstack/.venv
+            localstack/localstack/infra
+            localstack/localstack/node_modules
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/setup.cfg', 'localstack-ext/pyproject.toml', 'localstack/localstack/services/install.py', 'localstack/requirements.txt', 'localstack/localstack/constants.py') }}
+      - name: Install Dependencies for LocalStack Community # lambda tests look for libraries in this virtualenv
+        working-directory: localstack
+        run: |
+          make install
+      - name: Link community LocalStack into Pro venv
+        run: |
+          source .venv/bin/activate
+          pip install -e ../localstack
+      - name: Test LocalStack Pro startup
+        env:
+          DEBUG: 1
+          DNS_ADDRESS: 0
+          LOCALSTACK_API_KEY: "test"
+        run: |
+          source .venv/bin/activate
+          bin/test_localstack_pro.sh
+      - name: Run community integration tests
+        env:
+          DEBUG: 0
+          DNS_ADDRESS: 0
+          LAMBDA_EXECUTOR: "local"
+          LOCALSTACK_API_KEY: "test"
+          AWS_SECRET_ACCESS_KEY: "test"
+          AWS_ACCESS_KEY_ID: "test"
+          AWS_DEFAULT_REGION: "us-east-1"
+          HOST_TMP_FOLDER: /tmp/localstack
+        run: |
+          source .venv/bin/activate
+          python -m pytest --reruns 2 --durations=10 --junitxml=target/reports/pytest.xml --show-capture=no ../localstack/tests/integration/
+      - name: Run Lambda Tests for lambda executor docker
+        env:
+          DEBUG: 0
+          DNS_ADDRESS: 0
+          LAMBDA_EXECUTOR: "docker"
+          LOCALSTACK_API_KEY: "test"
+          HOST_TMP_FOLDER: /tmp/localstack
+        run: |
+          source .venv/bin/activate
+          python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker' ../localstack/tests/integration/test_lambda.py ../localstack/tests/integration/test_integration.py
+      - name: Run Lambda Tests for lambda executor docker-reuse
+        env:
+          DEBUG: 0
+          DNS_ADDRESS: 0
+          LAMBDA_EXECUTOR: "docker-reuse"
+          LOCALSTACK_API_KEY: "test"
+          HOST_TMP_FOLDER: /tmp/localstack
+        run: |
+          source .venv/bin/activate
+          python -m pytest --reruns 2 --durations=10 --show-capture=no --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse' ../localstack/tests/integration/test_lambda.py ../localstack/tests/integration/test_integration.py
+      - name: Publish LocalStack Community Integration Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: localstack-ext/target/reports/*.xml
+          check_name: LocalStack integration with Pro

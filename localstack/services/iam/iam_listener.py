@@ -1,15 +1,21 @@
 from requests.models import Request
+
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import MessageConversion
 
 BOOL_ATTRS = [
-    'RequireLowercaseCharacters', 'RequireUppercaseCharacters', 'HardExpiry', 'RequireSymbols', 'ExpirePasswords'
+    "RequireLowercaseCharacters",
+    "RequireUppercaseCharacters",
+    "HardExpiry",
+    "RequireSymbols",
+    "ExpirePasswords",
+    "IsTruncated",
 ]
 
 
 class ProxyListenerIAM(ProxyListener):
     def forward_request(self, method, path, data, headers):
-        if method == 'POST' and path == '/':
+        if method == "POST" and path == "/":
             data = MessageConversion._reset_account_id(data)
             return Request(data=data, headers=headers, method=method)
 
@@ -23,8 +29,10 @@ class ProxyListenerIAM(ProxyListener):
             MessageConversion.fix_date_format(response)
             MessageConversion.fix_error_codes(method, data, response)
             MessageConversion.fix_xml_empty_boolean(response, BOOL_ATTRS)
+            MessageConversion.booleans_to_lowercase(response, BOOL_ATTRS)
+
             # fix content-length header
-            response.headers['Content-Length'] = str(len(response._content))
+            response.headers["Content-Length"] = str(len(response._content))
 
 
 # instantiate listener

@@ -1,0 +1,20 @@
+Resources:
+  roleC7B7E775:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS: "*"
+        Version: "2012-10-17"
+      {% if include_policy %}
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AdministratorAccess
+      {% endif %}
+      RoleName: {{ role_name }}

@@ -1,16 +1,14 @@
-import unittest
-from localstack.services.logs.logs_listener import log_events_match_filter_pattern
+from localstack.services.logs.logs_listener import get_pattern_matcher
 
 
-class CloudWatchLogsTest(unittest.TestCase):
+class TestCloudWatchLogs:
+    def test_get_pattern_matcher(self):
+        def assert_match(filter_pattern, log_event, expected):
+            matches = get_pattern_matcher(filter_pattern)
+            assert matches(filter_pattern, log_event) == expected
 
-    def test_filter_expressions(self):
-
-        def assert_match(pattern, log_events, expected):
-            result = log_events_match_filter_pattern(pattern, log_events)
-            self.assertTrue(result) if expected else self.assertFalse(result)
-
-        log_events = [{'message': 'test123'}, {'message': 'foo bar 456'}]
-        assert_match('*', log_events, True)
-        assert_match('', log_events, True)
-        assert_match('INVALID', log_events, False)
+        # expect to always be True until proper filter methods are available
+        assert_match('{$.message = "Failed"}', {"message": '{"message":"Failed"}'}, True)
+        assert_match("ERROR", {"message": "Failed"}, True)
+        assert_match("", {"message": "FooBar"}, True)
+        assert_match("[w1=Failed]", {"message": "Failed"}, True)

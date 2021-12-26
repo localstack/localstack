@@ -1,9 +1,18 @@
-import re
-import json
 import base64
+import json
+import re
+
 from six.moves.urllib.parse import quote_plus, unquote_plus
+
 from localstack import config
-from localstack.utils.common import recurse_object, extract_jsonpath, short_uid
+from localstack.utils.common import (
+    extract_jsonpath,
+    is_number,
+    json_safe,
+    recurse_object,
+    short_uid,
+    to_number,
+)
 
 
 class VelocityInput(object):
@@ -20,13 +29,17 @@ class VelocityInput(object):
         return extract_jsonpath(value, path)
 
     def json(self, path):
-        return json.dumps(self.path(path))
+        path = path or "$"
+        matching = self.path(path)
+        if isinstance(matching, (list, dict)):
+            matching = json_safe(matching)
+        return json.dumps(matching)
 
     def __getattr__(self, name):
         return self.value.get(name)
 
     def __repr__(self):
-        return '$input'
+        return "$input"
 
 
 class VelocityUtil(object):
@@ -55,10 +68,21 @@ class VelocityUtil(object):
         return unquote_plus(s)
 
     def escapeJavaScript(self, s):
-        return str(str(s).replace('"', r'\"')).replace("'", r"\'")
+        try:
+            return json.dumps(json.loads(s))
+        except Exception:
+            primitive_types = (str, int, bool, float, type(None))
+            s = s if isinstance(s, primitive_types) else str(s)
+        if str(s).strip() in ["true", "false"]:
+            s = bool(s)
+        elif s not in [True, False] and is_number(s):
+            s = to_number(s)
+        return json.dumps(s)
 
 
-def render_velocity_template(template, context, variables={}, as_json=False):
+def render_velocity_template(template, context, variables=None, as_json=False):
+    if variables is None:
+        variables = {}
     import airspeed
 
     if not template:
@@ -95,11 +119,16 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     airspeed.SubExpression.calculate = expr_calculate
 
     # fix "#set" commands
-    template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
+    template = re.sub(r"(^|\n)#\s+set(.*)", r"\1#set\2", template, re.MULTILINE)
 
     # enable syntax like "test#${foo.bar}"
-    empty_placeholder = ' __pLaCe-HoLdEr__ '
-    template = re.sub(r'([^\s]+)#\$({)?(.*)', r'\1#%s$\2\3' % empty_placeholder, template, re.MULTILINE)
+    empty_placeholder = " __pLaCe-HoLdEr__ "
+    template = re.sub(
+        r"([^\s]+)#\$({)?(.*)",
+        r"\1#%s$\2\3" % empty_placeholder,
+        template,
+        re.MULTILINE,
+    )
 
     # add extensions for common string functions below
 
@@ -125,18 +154,19 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     recurse_object(variables, apply)
 
     # prepare and render template
-    context_var = {'requestId': short_uid()}
+    context_var = variables.get("context") or {}
+    context_var.setdefault("requestId", short_uid())
     t = airspeed.Template(template)
     var_map = {
-        'input': VelocityInput(context),
-        'util': VelocityUtil(),
-        'context': context_var
+        "input": VelocityInput(context),
+        "util": VelocityUtil(),
+        "context": context_var,
     }
     var_map.update(variables or {})
     replaced = t.merge(var_map)
 
     # revert temporary changes from the fixes above
-    replaced = replaced.replace(empty_placeholder, '')
+    replaced = replaced.replace(empty_placeholder, "")
 
     if as_json:
         replaced = json.loads(replaced)

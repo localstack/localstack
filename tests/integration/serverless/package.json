@@ -8,7 +8,7 @@
     "version": "serverless --version"
   },
   "devDependencies": {
-    "serverless": "^2.35.0",
+    "serverless": "2.48.0",
     "serverless-localstack": "^0.4.30"
   }
 }

@@ -7,7 +7,7 @@ PORT_SWF_BACKEND = None
 
 class ProxyListenerSWF(PersistingProxyListener):
     def api_name(self):
-        return 'swf'
+        return "swf"
 
 
 UPDATE_SWF = ProxyListenerSWF()

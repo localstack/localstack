@@ -1,0 +1,15 @@
+Resources:
+  LsEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: {{ event_bus_name }}
+  LsEventPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      StatementId: {{ statement_id }}
+      Statement:
+        Effect: "Allow"
+        Principal: "*"
+        Action: "events:PutEvents"
+        Resource: !GetAtt LsEventBus.Arn
+      EventBusName: !Ref LsEventBus

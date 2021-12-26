@@ -1,157 +1,313 @@
 #!/usr/bin/env python
-
-import re
-import os
-import sys
+import functools
 import glob
-import time
-import shutil
 import logging
+import os
+import platform
+import re
+import shutil
+import stat
+import sys
 import tempfile
+import time
+from pathlib import Path
+from typing import Callable, Dict, List, Tuple
+
+import requests
+from plugin import Plugin, PluginManager
+
 from localstack import config
-from localstack.constants import MODULE_MAIN_PATH, INSTALL_DIR_INFRA
-from localstack.utils.common import is_windows
-from localstack.utils import bootstrap
-from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
-    ELASTICSEARCH_URLS, ELASTICSEARCH_DEFAULT_VERSION, ELASTICSEARCH_PLUGIN_LIST,
-    ELASTICSEARCH_DELETE_MODULES, DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION,
-    STEPFUNCTIONS_ZIP_URL, KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
-if __name__ == '__main__':
-    bootstrap.bootstrap_installation()
-# flake8: noqa: E402
+from localstack.config import dirs, is_env_true
+from localstack.constants import (
+    DEFAULT_SERVICE_PORTS,
+    DYNAMODB_JAR_URL,
+    ELASTICMQ_JAR_URL,
+    ELASTICSEARCH_DEFAULT_VERSION,
+    ELASTICSEARCH_DELETE_MODULES,
+    ELASTICSEARCH_PLUGIN_LIST,
+    KMS_URL_PATTERN,
+    LOCALSTACK_MAVEN_VERSION,
+    MODULE_MAIN_PATH,
+    STS_JAR_URL,
+)
+from localstack.runtime import hooks
 from localstack.utils.common import (
-    download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf,
-    chmod_r, is_alpine, in_docker, get_arch, new_tmp_file)
+    chmod_r,
+    download,
+    get_arch,
+    get_os,
+    is_windows,
+    load_file,
+    mkdir,
+    new_tmp_file,
+    parallelize,
+    retry,
+    rm_rf,
+    run,
+    safe_run,
+    save_file,
+    untar,
+    unzip,
+)
+from localstack.utils.docker_utils import DOCKER_CLIENT
 
-INSTALL_DIR_NPM = '%s/node_modules' % MODULE_MAIN_PATH
-INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
-INSTALL_DIR_KCL = '%s/amazon-kinesis-client' % INSTALL_DIR_INFRA
-INSTALL_DIR_STEPFUNCTIONS = '%s/stepfunctions' % INSTALL_DIR_INFRA
-INSTALL_DIR_KMS = '%s/kms' % INSTALL_DIR_INFRA
-INSTALL_DIR_ELASTICMQ = '%s/elasticmq' % INSTALL_DIR_INFRA
-INSTALL_PATH_LOCALSTACK_FAT_JAR = '%s/localstack-utils-fat.jar' % INSTALL_DIR_INFRA
-INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, 'DynamoDBLocal.jar')
-INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, 'aws-java-sdk-sts.jar')
-INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, 'StepFunctionsLocal.jar')
-INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, 'local-kms.<arch>.bin')
-INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, 'elasticmq-server.jar')
-INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, 'kinesalite', 'cli.js')
-URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
-    'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
-MARKER_FILE_LIGHT_VERSION = '%s/.light-version' % INSTALL_DIR_INFRA
-IMAGE_NAME_SFN_LOCAL = 'amazon/aws-stepfunctions-local'
-
-# Target version for javac, to ensure compatibility with earlier JREs
-JAVAC_TARGET_VERSION = '1.8'
-
-# SQS backend implementation provider - either "moto" or "elasticmq"
-SQS_BACKEND_IMPL = os.environ.get('SQS_PROVIDER') or 'moto'
-
-# As of 2019-10-09, the DDB fix (see below) doesn't seem to be required anymore
-APPLY_DDB_ALPINE_FIX = False
-# TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
-OVERWRITE_DDB_FILES_IN_DOCKER = False
-
-# set up logger
 LOG = logging.getLogger(__name__)
 
+INSTALL_DIR_NPM = "%s/node_modules" % MODULE_MAIN_PATH  # FIXME: migrate to infra
+INSTALL_DIR_DDB = "%s/dynamodb" % dirs.static_libs
+INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
+INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
+INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
+INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.static_libs
+INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % dirs.static_libs
+INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
+INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
+INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFunctionsLocal.jar")
+INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
+INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
+INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, "kinesalite", "cli.js")
+INSTALL_PATH_KINESIS_MOCK = os.path.join(dirs.static_libs, "kinesis-mock")
+URL_LOCALSTACK_FAT_JAR = (
+    "https://repo1.maven.org/maven2/"
+    + "cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
+).format(v=LOCALSTACK_MAVEN_VERSION)
 
-def get_elasticsearch_install_version(version=None):
+MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
+IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
+ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
+SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
+SFN_PATCH_CLASS2 = (
+    "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
+)
+SFN_PATCH_URL_PREFIX = f"{ARTIFACTS_REPO}/raw/master/stepfunctions-local-patch"
+
+# kinesis-mock version
+KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.0"
+KINESIS_MOCK_RELEASE_URL = (
+    "https://api.github.com/repos/etspaceman/kinesis-mock/releases/tags/" + KINESIS_MOCK_VERSION
+)
+
+# debugpy module
+DEBUGPY_MODULE = "debugpy"
+DEBUGPY_DEPENDENCIES = ["gcc", "python3-dev", "musl-dev"]
+
+# Target version for javac, to ensure compatibility with earlier JREs
+JAVAC_TARGET_VERSION = "1.8"
+
+# SQS backend implementation provider - either "moto" or "elasticmq"
+SQS_BACKEND_IMPL = os.environ.get("SQS_PROVIDER") or "moto"
+
+# GO Lambda runtime
+GO_RUNTIME_VERSION = "0.4.0"
+GO_RUNTIME_DOWNLOAD_URL_TEMPLATE = "https://github.com/localstack/awslamba-go-runtime/releases/download/v{version}/awslamba-go-runtime-{version}-{os}-{arch}.tar.gz"
+GO_INSTALL_FOLDER = os.path.join(config.dirs.var_libs, "awslamba-go-runtime")
+GO_LAMBDA_RUNTIME = os.path.join(GO_INSTALL_FOLDER, "aws-lambda-mock")
+GO_LAMBDA_MOCKSERVER = os.path.join(GO_INSTALL_FOLDER, "mockserver")
+
+# Terraform (used for tests, whose templates require TF < 0.14.0 )
+TERRAFORM_VERSION = "0.13.7"
+TERRAFORM_URL_TEMPLATE = (
+    "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{os}_{arch}.zip"
+)
+TERRAFORM_BIN = os.path.join(dirs.static_libs, f"terraform-{TERRAFORM_VERSION}", "terraform")
+
+# Java Test Jar Download (used for tests)
+TEST_LAMBDA_JAVA = os.path.join(config.dirs.var_libs, "localstack-utils-tests.jar")
+MAVEN_BASE_URL = "https://repo.maven.apache.org/maven2"
+TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar".format(
+    version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
+)
+
+
+def get_elasticsearch_install_version(version: str) -> str:
+    from localstack.services.es import versions
+
     if config.SKIP_INFRA_DOWNLOADS:
         return ELASTICSEARCH_DEFAULT_VERSION
-    return version or ELASTICSEARCH_DEFAULT_VERSION
+
+    return versions.get_install_version(version)
 
 
-def get_elasticsearch_install_dir(version=None):
+def get_elasticsearch_install_dir(version: str) -> str:
     version = get_elasticsearch_install_version(version)
+
     if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         # install the default version into a subfolder of the code base
-        install_dir = os.path.join(INSTALL_DIR_INFRA, 'elasticsearch')
+        install_dir = os.path.join(dirs.static_libs, "elasticsearch")
     else:
-        install_dir = os.path.join(config.TMP_FOLDER, 'elasticsearch', version)
+        # put all other versions into the TMP_FOLDER
+        install_dir = os.path.join(config.dirs.tmp, "elasticsearch", version)
+
     return install_dir
 
 
 def install_elasticsearch(version=None):
+    from localstack.services.es import versions
+
+    if not version:
+        version = ELASTICSEARCH_DEFAULT_VERSION
+
     version = get_elasticsearch_install_version(version)
     install_dir = get_elasticsearch_install_dir(version)
-    installed_executable = os.path.join(install_dir, 'bin', 'elasticsearch')
+    installed_executable = os.path.join(install_dir, "bin", "elasticsearch")
     if not os.path.exists(installed_executable):
-        log_install_msg('Elasticsearch (%s)' % version)
-        es_url = ELASTICSEARCH_URLS.get(version)
-        if not es_url:
-            raise Exception('Unable to find download URL for Elasticsearch version "%s"' % version)
+        log_install_msg("Elasticsearch (%s)" % version)
+        es_url = versions.get_download_url(version)
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
-        tmp_archive = os.path.join(config.TMP_FOLDER, 'localstack.%s' % os.path.basename(es_url))
+        tmp_archive = os.path.join(config.dirs.tmp, "localstack.%s" % os.path.basename(es_url))
         download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
-        elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, 'elasticsearch*'))
+        elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, "elasticsearch*"))
         if not elasticsearch_dir:
-            raise Exception('Unable to find Elasticsearch folder in %s' % install_dir_parent)
+            raise Exception("Unable to find Elasticsearch folder in %s" % install_dir_parent)
         shutil.move(elasticsearch_dir[0], install_dir)
 
-        for dir_name in ('data', 'logs', 'modules', 'plugins', 'config/scripts'):
+        for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
             dir_path = os.path.join(install_dir, dir_name)
             mkdir(dir_path)
             chmod_r(dir_path, 0o777)
 
         # install default plugins
         for plugin in ELASTICSEARCH_PLUGIN_LIST:
-            if is_alpine():
-                # https://github.com/pires/docker-elasticsearch/issues/56
-                os.environ['ES_TMPDIR'] = '/tmp'
-            plugin_binary = os.path.join(install_dir, 'bin', 'elasticsearch-plugin')
-            plugin_dir = os.path.join(install_dir, 'plugins', plugin)
+            plugin_binary = os.path.join(install_dir, "bin", "elasticsearch-plugin")
+            plugin_dir = os.path.join(install_dir, "plugins", plugin)
             if not os.path.exists(plugin_dir):
-                LOG.info('Installing Elasticsearch plugin %s' % (plugin))
-                run('%s install -b %s' % (plugin_binary, plugin))
+                LOG.info("Installing Elasticsearch plugin %s" % plugin)
+
+                def try_install():
+                    safe_run([plugin_binary, "install", "-b", plugin])
+
+                # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
+                download_attempts = 3
+                try:
+                    retry(try_install, retries=download_attempts - 1, sleep=2)
+                except Exception:
+                    LOG.warning(
+                        "Unable to download Elasticsearch plugin '%s' after %s attempts",
+                        plugin,
+                        download_attempts,
+                    )
+                    if not os.environ.get("IGNORE_ES_DOWNLOAD_ERRORS"):
+                        raise
 
     # delete some plugins to free up space
     for plugin in ELASTICSEARCH_DELETE_MODULES:
-        module_dir = os.path.join(install_dir, 'modules', plugin)
+        module_dir = os.path.join(install_dir, "modules", plugin)
         rm_rf(module_dir)
 
     # disable x-pack-ml plugin (not working on Alpine)
-    xpack_dir = os.path.join(install_dir, 'modules', 'x-pack-ml', 'platform')
+    xpack_dir = os.path.join(install_dir, "modules", "x-pack-ml", "platform")
     rm_rf(xpack_dir)
 
     # patch JVM options file - replace hardcoded heap size settings
-    jvm_options_file = os.path.join(install_dir, 'config', 'jvm.options')
+    jvm_options_file = os.path.join(install_dir, "config", "jvm.options")
     if os.path.exists(jvm_options_file):
         jvm_options = load_file(jvm_options_file)
-        jvm_options_replaced = re.sub(r'(^-Xm[sx][a-zA-Z0-9\.]+$)', r'# \1', jvm_options, flags=re.MULTILINE)
+        jvm_options_replaced = re.sub(
+            r"(^-Xm[sx][a-zA-Z0-9\.]+$)", r"# \1", jvm_options, flags=re.MULTILINE
+        )
         if jvm_options != jvm_options_replaced:
             save_file(jvm_options_file, jvm_options_replaced)
 
 
+def install_sqs_provider():
+    if SQS_BACKEND_IMPL == "elasticmq":
+        install_elasticmq()
+
+
 def install_elasticmq():
-    if SQS_BACKEND_IMPL != 'elasticmq':
-        return
     # TODO remove this function if we stop using ElasticMQ entirely
     if not os.path.exists(INSTALL_PATH_ELASTICMQ_JAR):
-        log_install_msg('ElasticMQ')
+        log_install_msg("ElasticMQ")
         mkdir(INSTALL_DIR_ELASTICMQ)
         # download archive
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'elasticmq-server.jar')
+        tmp_archive = os.path.join(config.dirs.tmp, "elasticmq-server.jar")
         if not os.path.exists(tmp_archive):
             download(ELASTICMQ_JAR_URL, tmp_archive)
         shutil.copy(tmp_archive, INSTALL_DIR_ELASTICMQ)
 
 
+def install_kinesis():
+    if config.KINESIS_PROVIDER == "kinesalite":
+        return install_kinesalite()
+    elif config.KINESIS_PROVIDER == "kinesis-mock":
+        return install_kinesis_mock()
+    else:
+        raise ValueError("unknown kinesis provider %s" % config.KINESIS_PROVIDER)
+
+
 def install_kinesalite():
     if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
-        log_install_msg('Kinesis')
+        log_install_msg("Kinesis")
         run('cd "%s" && npm install' % MODULE_MAIN_PATH)
 
 
+def install_kinesis_mock():
+    target_dir = INSTALL_PATH_KINESIS_MOCK
+
+    machine = platform.machine().lower()
+    system = platform.system().lower()
+    version = platform.version().lower()
+
+    is_probably_m1 = system == "darwin" and ("arm64" in version or "arm32" in version)
+
+    LOG.debug("getting kinesis-mock for %s %s", system, machine)
+
+    if is_env_true("KINESIS_MOCK_FORCE_JAVA"):
+        # sometimes the static binaries may have problems, and we want to fal back to Java
+        bin_file = "kinesis-mock.jar"
+    elif (machine == "x86_64" or machine == "amd64") and not is_probably_m1:
+        if system == "windows":
+            bin_file = "kinesis-mock-mostly-static.exe"
+        elif system == "linux":
+            bin_file = "kinesis-mock-linux-amd64-static"
+        elif system == "darwin":
+            bin_file = "kinesis-mock-macos-amd64-dynamic"
+        else:
+            bin_file = "kinesis-mock.jar"
+    else:
+        bin_file = "kinesis-mock.jar"
+
+    bin_file_path = os.path.join(target_dir, bin_file)
+    if os.path.exists(bin_file_path):
+        LOG.debug("kinesis-mock found at %s", bin_file_path)
+        return bin_file_path
+
+    response = requests.get(KINESIS_MOCK_RELEASE_URL)
+    if not response.ok:
+        raise ValueError(
+            "Could not get list of releases from %s: %s" % (KINESIS_MOCK_RELEASE_URL, response.text)
+        )
+
+    github_release = response.json()
+    download_url = None
+    for asset in github_release.get("assets", []):
+        # find the correct binary in the release
+        if asset["name"] == bin_file:
+            download_url = asset["browser_download_url"]
+            break
+
+    if download_url is None:
+        raise ValueError(
+            "could not find required binary %s in release %s" % (bin_file, KINESIS_MOCK_RELEASE_URL)
+        )
+
+    mkdir(target_dir)
+    LOG.info("downloading kinesis-mock binary from %s", download_url)
+    download(download_url, bin_file_path)
+    chmod_r(bin_file_path, 0o777)
+    return bin_file_path
+
+
 def install_local_kms():
-    local_arch = get_arch()
-    binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace('<arch>', local_arch)
+    local_arch = get_os()
+    binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace("<arch>", local_arch)
     if not os.path.exists(binary_path):
-        log_install_msg('KMS')
+        log_install_msg("KMS")
         mkdir(INSTALL_DIR_KMS)
-        kms_url = KMS_URL_PATTERN.replace('<arch>', local_arch)
+        # TODO ARM download platform specific binary
+        kms_url = KMS_URL_PATTERN.replace("<arch>", local_arch)
         download(kms_url, binary_path)
         chmod_r(binary_path, 0o777)
 
@@ -159,43 +315,48 @@ def install_local_kms():
 def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
         # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
-        log_install_msg('Step Functions')
+        # TODO: works only when running on the host, outside of Docker -> add a fallback if running in Docker?
+        log_install_msg("Step Functions")
         mkdir(INSTALL_DIR_STEPFUNCTIONS)
-        run('{dc} pull {img}'.format(dc=config.DOCKER_CMD, img=IMAGE_NAME_SFN_LOCAL))
-        docker_name = 'tmp-ls-sfn'
-        run(('{dc} run --name={dn} --entrypoint= -d --rm {img} sleep 15').format(
-                dc=config.DOCKER_CMD, dn=docker_name, img=IMAGE_NAME_SFN_LOCAL))
+        DOCKER_CLIENT.pull_image(IMAGE_NAME_SFN_LOCAL)
+        docker_name = "tmp-ls-sfn"
+        DOCKER_CLIENT.run_container(
+            IMAGE_NAME_SFN_LOCAL,
+            remove=True,
+            entrypoint="",
+            name=docker_name,
+            detach=True,
+            command=["sleep", "15"],
+        )
         time.sleep(5)
-        run('{dc} cp {dn}:/home/stepfunctionslocal/ {tgt}'.format(dc=config.DOCKER_CMD,
-            dn=docker_name, tgt=INSTALL_DIR_INFRA))
-        run('mv %s/stepfunctionslocal/*.jar %s' % (INSTALL_DIR_INFRA, INSTALL_DIR_STEPFUNCTIONS))
-        rm_rf('%s/stepfunctionslocal' % INSTALL_DIR_INFRA)
+        DOCKER_CLIENT.copy_from_container(
+            docker_name, local_path=dirs.static_libs, container_path="/home/stepfunctionslocal/"
+        )
+
+        path = Path(f"{dirs.static_libs}/stepfunctionslocal/")
+        for file in path.glob("*.jar"):
+            file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
+        rm_rf("%s/stepfunctionslocal" % dirs.static_libs)
+    # apply patches
+    for patch_class in (SFN_PATCH_CLASS1, SFN_PATCH_CLASS2):
+        patch_url = f"{SFN_PATCH_URL_PREFIX}/{patch_class}"
+        add_file_to_jar(patch_class, patch_url, target_jar=INSTALL_PATH_STEPFUNCTIONS_JAR)
+
+
+def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):
+    base_dir = base_dir or os.path.dirname(target_jar)
+    patch_class_file = os.path.join(base_dir, class_file)
+    if not os.path.exists(patch_class_file):
+        download(class_url, patch_class_file)
+        run(["zip", target_jar, class_file], cwd=base_dir)
 
 
 def install_dynamodb_local():
-    if OVERWRITE_DDB_FILES_IN_DOCKER and in_docker():
-        rm_rf(INSTALL_DIR_DDB)
-    is_in_alpine = is_alpine()
     if not os.path.exists(INSTALL_PATH_DDB_JAR):
-        log_install_msg('DynamoDB')
+        log_install_msg("DynamoDB")
         # download and extract archive
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
-        dynamodb_url = DYNAMODB_JAR_URL_ALPINE if is_in_alpine else DYNAMODB_JAR_URL
-        download_and_extract_with_retry(dynamodb_url, tmp_archive, INSTALL_DIR_DDB)
-
-    # fix for Alpine, otherwise DynamoDBLocal fails with:
-    # DynamoDBLocal_lib/libsqlite4java-linux-amd64.so: __memcpy_chk: symbol not found
-    if is_in_alpine:
-        ddb_libs_dir = '%s/DynamoDBLocal_lib' % INSTALL_DIR_DDB
-        patched_marker = '%s/alpine_fix_applied' % ddb_libs_dir
-        if APPLY_DDB_ALPINE_FIX and not os.path.exists(patched_marker):
-            patched_lib = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
-                'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/libsqlite4java-linux-amd64.so')
-            patched_jar = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
-                'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/sqlite4java.jar')
-            run("curl -L -o %s/libsqlite4java-linux-amd64.so '%s'" % (ddb_libs_dir, patched_lib))
-            run("curl -L -o %s/sqlite4java.jar '%s'" % (ddb_libs_dir, patched_jar))
-            save_file(patched_marker, '')
+        tmp_archive = os.path.join(tempfile.gettempdir(), "localstack.ddb.zip")
+        download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, INSTALL_DIR_DDB)
 
     # fix logging configuration for DynamoDBLocal
     log4j2_config = """<Configuration status="WARN">
@@ -208,7 +369,7 @@ def install_dynamodb_local():
         <Root level="WARN"><AppenderRef ref="Console"/></Root>
       </Loggers>
     </Configuration>"""
-    log4j2_file = os.path.join(INSTALL_DIR_DDB, 'log4j2.xml')
+    log4j2_file = os.path.join(INSTALL_DIR_DDB, "log4j2.xml")
     save_file(log4j2_file, log4j2_config)
     run('cd "%s" && zip -u DynamoDBLocal.jar log4j2.xml || true' % INSTALL_DIR_DDB)
 
@@ -217,45 +378,101 @@ def install_amazon_kinesis_client_libs():
     # install KCL/STS JAR files
     if not os.path.exists(INSTALL_PATH_KCL_JAR):
         mkdir(INSTALL_DIR_KCL)
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'aws-java-sdk-sts.jar')
+        tmp_archive = os.path.join(tempfile.gettempdir(), "aws-java-sdk-sts.jar")
         if not os.path.exists(tmp_archive):
             download(STS_JAR_URL, tmp_archive)
         shutil.copy(tmp_archive, INSTALL_DIR_KCL)
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
+
     classpath = kclipy_helper.get_kcl_classpath()
 
     if is_windows():
-        classpath = re.sub(r':([^\\])', r';\1', classpath)
-    java_files = '%s/utils/kinesis/java/cloud/localstack/*.java' % MODULE_MAIN_PATH
-    class_files = '%s/utils/kinesis/java/cloud/localstack/*.class' % MODULE_MAIN_PATH
+        classpath = re.sub(r":([^\\])", r";\1", classpath)
+    java_files = "%s/utils/kinesis/java/cloud/localstack/*.java" % MODULE_MAIN_PATH
+    class_files = "%s/utils/kinesis/java/cloud/localstack/*.class" % MODULE_MAIN_PATH
     if not glob.glob(class_files):
-        run('javac -source %s -target %s -cp "%s" %s' % (
-            JAVAC_TARGET_VERSION, JAVAC_TARGET_VERSION, classpath, java_files))
+        run(
+            'javac -source %s -target %s -cp "%s" %s'
+            % (JAVAC_TARGET_VERSION, JAVAC_TARGET_VERSION, classpath, java_files)
+        )
 
 
 def install_lambda_java_libs():
     # install LocalStack "fat" JAR file (contains all dependencies)
     if not os.path.exists(INSTALL_PATH_LOCALSTACK_FAT_JAR):
-        log_install_msg('LocalStack Java libraries', verbatim=True)
+        log_install_msg("LocalStack Java libraries", verbatim=True)
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
+
+
+def install_lambda_java_testlibs():
+    # Download the LocalStack Utils Test jar file from the maven repo
+    if not os.path.exists(TEST_LAMBDA_JAVA):
+        mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
+        download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
+
+
+def install_go_lambda_runtime():
+    if os.path.isfile(GO_LAMBDA_RUNTIME):
+        return
+
+    log_install_msg("Installing golang runtime")
+
+    system = platform.system().lower()
+    arch = get_arch()
+
+    if system not in ["linux"]:
+        raise ValueError("unsupported os %s for awslambda-go-runtime" % system)
+    if arch not in ["amd64", "arm64"]:
+        raise ValueError("unsupported arch %s for awslambda-go-runtime" % arch)
+
+    url = GO_RUNTIME_DOWNLOAD_URL_TEMPLATE.format(
+        version=GO_RUNTIME_VERSION,
+        os=system,
+        arch=arch,
+    )
+
+    download_and_extract(url, GO_INSTALL_FOLDER)
+
+    st = os.stat(GO_LAMBDA_RUNTIME)
+    os.chmod(GO_LAMBDA_RUNTIME, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+    st = os.stat(GO_LAMBDA_MOCKSERVER)
+    os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def install_cloudformation_libs():
     from localstack.services.cloudformation import deployment_utils
+
     # trigger download of CF module file
     deployment_utils.get_cfn_response_mod_file()
 
 
+def install_terraform() -> str:
+    if os.path.isfile(TERRAFORM_BIN):
+        return TERRAFORM_BIN
+
+    log_install_msg(f"Installing terraform {TERRAFORM_VERSION}")
+
+    system = platform.system().lower()
+    arch = get_arch()
+
+    url = TERRAFORM_URL_TEMPLATE.format(version=TERRAFORM_VERSION, os=system, arch=arch)
+
+    download_and_extract(url, os.path.dirname(TERRAFORM_BIN))
+    chmod_r(TERRAFORM_BIN, 0o777)
+
+    return TERRAFORM_BIN
+
+
+def get_terraform_binary() -> str:
+    if not os.path.isfile(TERRAFORM_BIN):
+        install_terraform()
+
+    return TERRAFORM_BIN
+
+
 def install_component(name):
-    installers = {
-        'cloudformation': install_cloudformation_libs,
-        'dynamodb': install_dynamodb_local,
-        'kinesis': install_kinesalite,
-        'kms': install_local_kms,
-        'sqs': install_elasticmq,
-        'stepfunctions': install_stepfunctions_local,
-    }
     installer = installers.get(name)
     if installer:
         installer()
@@ -267,29 +484,49 @@ def install_components(names):
 
 
 def install_all_components():
-    # load plugins
-    os.environ[LOCALSTACK_INFRA_PROCESS] = '1'
-    bootstrap.load_plugins()
-    # install all components
+    # install dependencies - make sure that install_components(..) is called before hooks.install below!
     install_components(DEFAULT_SERVICE_PORTS.keys())
+    hooks.install.run()
+
+
+def install_debugpy_and_dependencies():
+    try:
+        import debugpy
+
+        assert debugpy
+        logging.debug("Debugpy module already Installed")
+    except ModuleNotFoundError:
+        logging.debug("Installing Debugpy module")
+        import pip
+
+        if hasattr(pip, "main"):
+            pip.main(["install", DEBUGPY_MODULE])
+        else:
+            pip._internal.main(["install", DEBUGPY_MODULE])
 
 
 # -----------------
 # HELPER FUNCTIONS
 # -----------------
 
+
 def log_install_msg(component, verbatim=False):
-    component = component if verbatim else 'local %s server' % component
-    LOG.info('Downloading and installing %s. This may take some time.' % component)
+    component = component if verbatim else "local %s server" % component
+    LOG.info("Downloading and installing %s. This may take some time." % component)
 
 
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
 
+    if tmp_archive:
+        _, ext = os.path.splitext(tmp_archive)
+    else:
+        _, ext = os.path.splitext(archive_url)
+
     tmp_archive = tmp_archive or new_tmp_file()
-    if not os.path.exists(tmp_archive):
+    if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
         # create temporary placeholder file, to avoid duplicate parallel downloads
-        save_file(tmp_archive, '')
+        save_file(tmp_archive, "")
         for i in range(retries + 1):
             try:
                 download(archive_url, tmp_archive)
@@ -297,13 +534,12 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
             except Exception:
                 time.sleep(sleep)
 
-    _, ext = os.path.splitext(tmp_archive)
-    if ext == '.zip':
+    if ext == ".zip":
         unzip(tmp_archive, target_dir)
-    elif ext == '.gz' or ext == '.bz2':
+    elif ext == ".gz" or ext == ".bz2":
         untar(tmp_archive, target_dir)
     else:
-        raise Exception('Unsupported archive format: %s' % ext)
+        raise Exception("Unsupported archive format: %s" % ext)
 
 
 def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
@@ -311,21 +547,90 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
     except Exception as e:
         # try deleting and re-downloading the zip file
-        LOG.info('Unable to extract file, re-downloading ZIP archive %s: %s' % (tmp_archive, e))
+        LOG.info("Unable to extract file, re-downloading ZIP archive %s: %s" % (tmp_archive, e))
         rm_rf(tmp_archive)
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
 
 
-if __name__ == '__main__':
+# kept here for backwards compatibility (installed on "make init" - TODO should be removed)
+installers = {
+    "cloudformation": install_cloudformation_libs,
+    "dynamodb": install_dynamodb_local,
+    "kinesis": install_kinesis,
+    "kms": install_local_kms,
+    "sqs": install_sqs_provider,
+    "stepfunctions": install_stepfunctions_local,
+}
 
+Installer = Tuple[str, Callable]
+
+
+class InstallerRepository(Plugin):
+    namespace = "localstack.installer"
+
+    def get_installer(self) -> List[Installer]:
+        raise NotImplementedError
+
+
+class CommunityInstallerRepository(InstallerRepository):
+    name = "community"
+
+    def get_installer(self) -> List[Installer]:
+        return [
+            ("awslamba-go-runtime", install_go_lambda_runtime),
+            ("cloudformation-libs", install_cloudformation_libs),
+            ("dynamodb-local", install_dynamodb_local),
+            ("elasticmq", install_elasticmq),
+            ("elasticsearch", install_elasticsearch),
+            ("kinesalite", install_kinesalite),
+            ("kinesis-client-libs", install_amazon_kinesis_client_libs),
+            ("kinesis-mock", install_kinesis_mock),
+            ("lambda-java-libs", install_lambda_java_libs),
+            ("local-kms", install_local_kms),
+            ("stepfunctions-local", install_stepfunctions_local),
+            ("terraform", install_terraform),
+        ]
+
+
+class InstallerManager:
+    def __init__(self):
+        self.repositories: PluginManager[InstallerRepository] = PluginManager(
+            InstallerRepository.namespace
+        )
+
+    @functools.lru_cache()
+    def get_installers(self) -> Dict[str, Callable]:
+        installer: List[Installer] = []
+
+        for repo in self.repositories.load_all():
+            installer.extend(repo.get_installer())
+
+        return dict(installer)
+
+    def install(self, package: str, *args, **kwargs):
+        installer = self.get_installers().get(package)
+
+        if not installer:
+            raise ValueError("no installer for package %s" % package)
+
+        return installer(*args, **kwargs)
+
+
+def main():
     if len(sys.argv) > 1:
-        os.environ['LOCALSTACK_API_KEY'] = os.environ.get('LOCALSTACK_API_KEY') or 'test'
-        if sys.argv[1] == 'libs':
-            print('Initializing installation.')
+        # set test API key so pro install hooks are called
+        os.environ["LOCALSTACK_API_KEY"] = os.environ.get("LOCALSTACK_API_KEY") or "test"
+        if sys.argv[1] == "libs":
+            print("Initializing installation.")
             logging.basicConfig(level=logging.INFO)
-            logging.getLogger('requests').setLevel(logging.WARNING)
+            logging.getLogger("requests").setLevel(logging.WARNING)
             install_all_components()
-        if sys.argv[1] in ('libs', 'testlibs'):
+        if sys.argv[1] in ("libs", "testlibs"):
             # Install additional libraries for testing
             install_amazon_kinesis_client_libs()
-        print('Done.')
+            install_lambda_java_testlibs()
+        print("Done.")
+
+
+if __name__ == "__main__":
+    main()

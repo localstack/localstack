@@ -73,6 +73,8 @@ Resources:
       ApiKeyRequired: false
       AuthorizationType: NONE
       HttpMethod: POST
+      RequestParameters:
+        method.request.path.account: True
       Integration:
         ConnectionType: INTERNET
         IntegrationResponses:

@@ -1,4 +1,21 @@
 import re
+from typing import Any, Callable, Dict, List
+
+
+class AccessTrackingDict(dict):
+    """
+    Simple utility class that can be used to track (write) accesses to a dict's attributes.
+    Note: could also be written as a proxy, to preserve the identity of "wrapped" - for now, it
+          simply duplicates the entries of "wrapped" in the constructor, for simplicity.
+    """
+
+    def __init__(self, wrapped, callback: Callable[[Dict, str, List, Dict], Any] = None):
+        super().__init__(wrapped)
+        self.callback = callback
+
+    def __setitem__(self, key, value):
+        self.callback and self.callback(self, "__setitem__", [key, value], {})
+        return super().__setitem__(key, value)
 
 
 def get_safe(dictionary, path, default_value=None):
@@ -23,16 +40,16 @@ def get_safe(dictionary, path, default_value=None):
     if not isinstance(dictionary, dict) or len(dictionary) == 0:
         return default_value
 
-    attribute_path = path if isinstance(path, list) else path.split('.')
-    if len(attribute_path) == 0 or attribute_path[0] != '$':
+    attribute_path = path if isinstance(path, list) else path.split(".")
+    if len(attribute_path) == 0 or attribute_path[0] != "$":
         raise AttributeError('Safe navigation must begin with a root node "$"')
 
     current_value = dictionary
     for path_node in attribute_path:
-        if path_node == '$':
+        if path_node == "$":
             continue
 
-        if re.compile('^\\d+$').search(str(path_node)):
+        if re.compile("^\\d+$").search(str(path_node)):
             path_node = int(path_node)
 
         if isinstance(current_value, dict) and path_node in current_value:
@@ -65,24 +82,26 @@ def set_safe_mutable(dictionary, path, value):
     if not isinstance(dictionary, dict):
         raise AttributeError('"dictionary" must be of type "dict"')
 
-    attribute_path = path if isinstance(path, list) else path.split('.')
+    attribute_path = path if isinstance(path, list) else path.split(".")
     attribute_path_len = len(attribute_path)
 
-    if attribute_path_len == 0 or attribute_path[0] != '$':
+    if attribute_path_len == 0 or attribute_path[0] != "$":
         raise AttributeError('Dict navigation must begin with a root node "$"')
 
     current_pointer = dictionary
     for i in range(attribute_path_len):
         path_node = attribute_path[i]
 
-        if path_node == '$':
+        if path_node == "$":
             continue
 
         if i < attribute_path_len - 1:
             if path_node not in current_pointer:
                 current_pointer[path_node] = {}
             if not isinstance(current_pointer, dict):
-                raise RuntimeError('Error while deeply setting a dict value. Supplied path is not of type "dict"')
+                raise RuntimeError(
+                    'Error while deeply setting a dict value. Supplied path is not of type "dict"'
+                )
         else:
             current_pointer[path_node] = value
 

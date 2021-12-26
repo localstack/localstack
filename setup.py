@@ -1,90 +1,63 @@
 #!/usr/bin/env python
-
 import re
+from collections import defaultdict
+
+from plugin.setuptools import load_entry_points
 from setuptools import find_packages, setup
 
-# marker for extended/ignored and basic libs in requirements.txt
-IGNORED_LIB_MARKER = '#extended-lib'
-BASIC_LIB_MARKER = '#basic-lib'
 
-# parameter variables
-install_requires = []
-extra_requires = []
-dependency_links = []
-package_data = {}
+def parse_requirements(lines):
+    requirements = defaultdict(list)
+    extra = "install"
+
+    for line in lines:
+        line = line.strip()
+        if line.startswith("# extra="):
+            # all subsequent lines are associated with this extra, until a new extra appears
+            extra = line.split("=")[1]
+            continue
+
+        if line and line[0] == "#" and "#egg=" in line:
+            line = re.search(r"#\s*(.*)", line).group(1)
+
+        if line and line[0] != "#":
+            lib_stripped = line.split(" #")[0].strip()
+            requirements[extra].append(lib_stripped)
+
+    return requirements
 
 
-# determine version
-with open('localstack/constants.py') as f:
-    constants = f.read()
-version = re.search(r'^\s*VERSION\s*=\s*[\'"](.+)[\'"]\s*$', constants, re.MULTILINE).group(1)
-
+# define package data
+package_data = {
+    "": ["Makefile", "*.md"],
+    "localstack": [
+        "package.json",
+        "requirements*.txt",
+        "utils/kinesis/java/cloud/localstack/*.*",
+    ],
+}
 
 # determine requirements
-with open('requirements.txt') as f:
-    requirements = f.read()
-for line in re.split('\n', requirements):
-    if line and line[0] == '#' and '#egg=' in line:
-        line = re.search(r'#\s*(.*)', line).group(1)
-    if line and line[0] != '#':
-        # include only basic requirements here
-        if IGNORED_LIB_MARKER not in line:
-            lib_stripped = line.split(' #')[0].strip()
-            if BASIC_LIB_MARKER in line:
-                install_requires.append(lib_stripped)
-            else:
-                extra_requires.append(lib_stripped)
+with open("requirements.txt") as f:
+    req = parse_requirements(f.readlines())
 
-# copy requirements file, to make it available inside the package at runtime
-with open('localstack/requirements.copy.txt', 'w') as f:
-    f.write(requirements)
+install_requires = req["install"]
 
+extras_require = {
+    "cli": req["install"],
+    "runtime": req["runtime"],
+    "test": req["test"],
+    "dev": req["dev"],
+}
+extras_require["full"] = extras_require["cli"] + extras_require["runtime"]  # deprecated
 
-package_data = {
-    '': ['Makefile', '*.md'],
-    'localstack': [
-        'package.json',
-        'requirements*.txt',
-        'dashboard/web/*.*',
-        'dashboard/web/css/*',
-        'dashboard/web/img/*',
-        'dashboard/web/js/*',
-        'dashboard/web/views/*',
-        'utils/kinesis/java/cloud/localstack/*.*'
-    ]}
-
-
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     setup(
-        name='localstack',
-        version=version,
-        description='An easy-to-use test/mocking framework for developing Cloud applications',
-        author='Waldemar Hummer',
-        author_email='waldemar.hummer@gmail.com',
-        url='https://github.com/localstack/localstack',
-        scripts=['bin/localstack', 'bin/localstack.bat'],
-        packages=find_packages(exclude=('tests', 'tests.*')),
+        scripts=["bin/localstack", "bin/localstack.bat"],
+        packages=find_packages(exclude=("tests", "tests.*")),
         package_data=package_data,
         install_requires=install_requires,
-        extras_require={
-            'full': extra_requires
-        },
-        dependency_links=dependency_links,
-        test_suite='tests',
-        license='Apache License 2.0',
-        zip_safe=False,
-        classifiers=[
-            'Programming Language :: Python :: 2',
-            'Programming Language :: Python :: 2.6',
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.3',
-            'Programming Language :: Python :: 3.4',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7',
-            'Programming Language :: Python :: 3.8',
-            'License :: OSI Approved :: Apache Software License',
-            'Topic :: Software Development :: Testing',
-        ]
+        extras_require=extras_require,
+        entry_points=load_entry_points(exclude=("tests", "tests.*")),
+        test_suite="tests",
     )

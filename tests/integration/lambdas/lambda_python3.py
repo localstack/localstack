@@ -4,5 +4,5 @@
 
 def handler(event, context):
     # the following line is Python 3.6+ specific
-    msg = f'Successfully processed {event}'  # noqa This code is Python 3.6+ only
+    msg = f"Successfully processed {event}"  # noqa This code is Python 3.6+ only
     return event

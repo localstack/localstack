@@ -1,27 +1,365 @@
 version: 2.1
 
 jobs:
-  build-test-push:
+  install:
     machine:
-      image: ubuntu-2004:202101-01
+      image: ubuntu-2004:202107-02
+    working_directory: /tmp/workspace/repo
     steps:
       - checkout
+      - restore_cache:
+          key: python-requirements-{{ checksum "requirements.txt" }}
       - run:
+          name: Install prerequisites
           command: |
             sudo apt-get update
-            sudo apt install -y python3.8 libsasl2-dev
-          name: Install prerequisites
+            sudo apt-get install -y libsasl2-dev python3.8-venv python3.8-dev
       - run:
-          command: virtualenv --python=`which python3.8` .venv; make ci-build-prepare
           name: Setup environment
+          environment:
+            VENV_BIN: "/usr/bin/python3.8 -m venv"
+          command: |
+            make install
+            mkdir -p target/reports
+            mkdir -p target/coverage
+      - save_cache:
+          key: python-requirements-{{ checksum "requirements.txt" }}
+          paths:
+            - "~/.cache/pip"
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo
+
+  preflight:
+    docker:
+      - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
-          command: . /opt/circleci/.nvm/nvm.sh; make ci-build-test
-          name: Run integration tests
+          name: Linting
+          command: make lint
       - run:
-          command: make ci-build-push
-          name: Build and push Docker image
+          name: Unit tests
+          command: |
+            source .venv/bin/activate
+            pytest tests/unit --junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests
+      - store_test_results:
+          path: target/reports/
+
+  itest-lambda-docker:
+    machine:
+      image: ubuntu-2004:202107-02
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Pull lambda runtimes
+          command: |
+            sudo useradd localstack -s /bin/bash
+            docker pull -q lambci/lambda:20191117-nodejs8.10
+            docker pull -q lambci/lambda:20191117-ruby2.5
+            docker pull -q lambci/lambda:20210129-ruby2.7
+            docker pull -q lambci/lambda:20191117-python3.6
+            docker pull -q lambci/lambda:20191117-dotnetcore2.0
+            docker pull -q lambci/lambda:dotnetcore3.1
+            docker pull -q lambci/lambda:20191117-provided
+            docker pull -q lambci/lambda:java8
+            docker pull -q lambci/lambda:python3.8
+      - run:
+          name: Initialize Test Libraries
+          command: make init-testlibs
+      - run:
+          name: Test docker client
+          environment:
+            DEBUG: 1
+            TEST_PATH: "tests/integration/docker_utils"
+            TEST_SKIP_LOCALSTACK_START: 1
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/docker-client.xml -o junit_suite_name='docker-client'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Test docker lambda executor
+          environment:
+            DEBUG: 1
+            LAMBDA_EXECUTOR: "docker"
+            USE_SSL: 1
+            TEST_ERROR_INJECTION: 1
+            TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Test docker-reuse lambda executor
+          environment:
+            DEBUG: 1
+            LAMBDA_EXECUTOR: "docker-reuse"
+            TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-sqs-provider:
+    machine:
+      image: ubuntu-2004:202107-02
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Test elasticmq SQS provider
+          environment:
+            DEBUG: 1
+            SQS_PROVIDER: "elasticmq"
+            TEST_PATH: "tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation"
+            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/elasticmq.xml -o junit_suite_name='elasticmq'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Test ASF SQS provider
+          environment:
+            DEBUG: 1
+            PROVIDER_OVERRIDE_SQS: "asf"
+            TEST_PATH: "tests/integration/test_sqs.py"
+            PYTEST_ARGS: "--reruns 3 --junitxml=target/reports/sqs_asf.xml -o junit_suite_name='sqs_asf'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  itest-bootstrap:
+    machine:
+      image: ubuntu-2004:202107-02
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Run bootstrap tests
+          environment:
+            DEBUG: 1
+            TEST_PATH: "tests/bootstrap"
+            PYTEST_ARGS: "--junitxml=target/reports/bootstrap.xml -o junit_suite_name='bootstrap'"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
+      - store_test_results:
+          path: target/reports/
+
+  docker-build:
+    parameters:
+      platform:
+        description: "Platform to build for"
+        default: "amd64"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: "ubuntu-2004:202107-02"
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+      docker_layer_caching: true
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - when:
+          condition:
+            equal: [ arm64, << parameters.platform >> ]
+          steps:
+            - run:
+                # Since we are using an old version of ubuntu, we need to install the latest version of docker
+                name: Update docker engine to most current
+                command: |
+                  # Remove old version
+                  sudo apt-get remove --purge docker docker-engine docker.io containerd runc -y
+                  # Install Docker deb package repo
+                  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+                    sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                  echo "deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+                    | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                  sudo apt-get update
+                  # Install the latest version of Docker and haveged
+                  # (https://github.com/docker/compose/issues/6678#issuecomment-526831488)
+                  sudo apt-get install docker-ce docker-ce-cli containerd.io haveged -y
+                  sudo usermod -aG docker $USER
+            - run:
+                # Install the emulation support before starting to build (resets the build cache)
+                name: Install amd64 emulation support for lambda tests
+                command: |
+                  docker run --rm --privileged tonistiigi/binfmt:latest --install all
+                  docker buildx create --name multiarch-builder --use
+      - run:
+          name: Build full docker image
+          command: make docker-build
+      - run:
+          name: Run tests
+          command: |
+            PYTEST_ARGS='--junitxml=target/reports/test-report-<< parameters.platform >>.xml' \
+            COVERAGE_FILE='target/coverage/.coverage.<< parameters.platform >>' \
+            make docker-run-tests
+      - when:
+          condition:
+            equal: [ master, << pipeline.git.branch >> ]
+          steps:
+            - run:
+                name: Build light docker image
+                command: make docker-build-light
+            - run:
+                name: Run pre-release smoke tests
+                command: make ci-pro-smoke-tests
+            - run:
+                name: Save full docker image
+                command: PLATFORM="<< parameters.platform >>" make docker-save-image
+            - run:
+                name: Save light docker image
+                command: PLATFORM="<< parameters.platform >>" make docker-save-image-light
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/
+      - store_test_results:
+          path: target/reports/
+
+  report:
+    docker:
+      - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Collect coverage
+          command: |
+            source .venv/bin/activate
+            cd target/coverage
+            ls -la
+            coverage combine
+            mv .coverage ../../
+      - run:
+          name: Report coverage statistics
+          command: |
+            source .venv/bin/activate
+            coverage report || true
+            coverage html || true
+            coveralls || true
+      - store_artifacts:
+          path: htmlcov/
+
+  docker-push:
+    machine:
+      image: ubuntu-2004:202107-02
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image - amd64/full
+          command: docker load -i target/localstack-docker-image-amd64.tar
+      - run:
+          name: Load docker image - amd64/light
+          command: docker load -i target/localstack-docker-image-light-amd64.tar
+      - run:
+          name: Push docker images - amd64
+          command: PLATFORM="amd64" make docker-push-master
+      # Load and push per architecture (load overwrites the previous ones)
+      - run:
+          name: Load docker image - arm64/full
+          command: docker load -i target/localstack-docker-image-arm64.tar
+      - run:
+          name: Load docker image - arm64/light
+          command: docker load -i target/localstack-docker-image-light-arm64.tar
+      - run:
+          name: Push docker images - arm64
+          command: PLATFORM="arm64" make docker-push-master
+      - run:
+          name: Create multi-platform manifests - full
+          command: make docker-create-push-manifests
+      - run:
+          name: Create multi-platform manifests - light
+          command: make docker-create-push-manifests-light
 
 workflows:
   main:
     jobs:
-      - build-test-push
+      - install
+      - preflight:
+          requires:
+            - install
+      - itest-lambda-docker:
+          requires:
+            - preflight
+      - itest-sqs-provider:
+          requires:
+            - preflight
+      - itest-bootstrap:
+          requires:
+            - preflight
+      - docker-build:
+          name: docker-build-amd64
+          platform: amd64
+          machine_image: ubuntu-2004:202107-02
+          resource_class: medium
+          requires:
+            - preflight
+      - docker-build:
+          name: docker-build-arm64
+          platform: arm64
+          # The latest version of ubuntu is not yet supported for ARM:
+          # https://circleci.com/docs/2.0/arm-resources/
+          machine_image: ubuntu-2004:202101-01
+          resource_class: arm.medium
+          requires:
+            - preflight
+      - report:
+          requires:
+            - itest-lambda-docker
+            - itest-sqs-provider
+            - itest-bootstrap
+            - docker-build-amd64
+            - docker-build-arm64
+      - docker-push:
+          filters:
+            branches:
+              only: master
+          requires:
+            - itest-lambda-docker
+            - itest-sqs-provider
+            - itest-bootstrap
+            - docker-build-amd64
+            - docker-build-arm64

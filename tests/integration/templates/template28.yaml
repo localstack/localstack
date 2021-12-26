@@ -82,7 +82,7 @@ Resources:
     - InstanceProfile
     # </sensitive>
     Properties:
-      InstanceType: 't3.small'
+      InstanceType: "t3.small"
       ImageId: abc
       KeyName: "ec2-key-pair"
       IamInstanceProfile: !Ref InstanceProfile
@@ -90,6 +90,24 @@ Resources:
       - Ref: PublicSG
       SubnetId:
         Ref: PublicSubnetA
+
+  Ec2InstanceNoSGs:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: "t3.small"
+      ImageId: "ami-c6f321bf"
+
+  CloudWatchAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+
+  CloudWatchCompositeAlarm:
+    Type: AWS::CloudWatch::CompositeAlarm
+    Properties:
+      AlarmName: comp-alarm-7391
+      AlarmRule: 'ALARM("alarm-name or alarm-ARN") is TRUE'
 
 Outputs:
   InstanceId:

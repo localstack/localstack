@@ -5,6 +5,7 @@ shopt -s nullglob
 
 if [[ ! $INIT_SCRIPTS_PATH ]]
 then
+  # FIXME: move
   INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
 fi
 if [[ ! $EDGE_PORT ]]
@@ -23,7 +24,7 @@ term_handler() {
     kill ${send_sig} "$suppid"
     wait "$suppid"
   fi
-  exit 143; # 128 + 15 -- SIGTERM
+  exit 0; # 128 + 15 = 143 -- SIGTERM, but 0 is expected if proper shutdown takes place
 }
 
 # Strip `LOCALSTACK_` prefix in environment variables name (except LOCALSTACK_HOSTNAME)
