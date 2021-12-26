@@ -62,14 +62,8 @@ def get_stream_for_table(table_arn):
 
 
 def forward_events(records):
-
     kinesis = aws_stack.connect_to_service("kinesis")
     for record in records:
-        if "SequenceNumber" not in record["dynamodb"]:
-            record["dynamodb"]["SequenceNumber"] = str(
-                DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER
-            )
-            DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER += 1
         table_arn = record["eventSourceARN"]
         stream = get_stream_for_table(table_arn)
         if stream:
