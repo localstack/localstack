@@ -1441,6 +1441,29 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual("Origin", result.headers.get("vary"))
         self.assertEqual("POST,OPTIONS", result.headers.get("Access-Control-Allow-Methods"))
 
+    def test_api_gateway_update_resource_path_part(self):
+        apigw_client = aws_stack.connect_to_service("apigateway")
+        api = apigw_client.create_rest_api(name="test-api", description="")
+        api_id = api["id"]
+        root_res_id = apigw_client.get_resources(restApiId=api_id)["items"][0]["id"]
+        api_resource = apigw_client.create_resource(
+            restApiId=api_id, parentId=root_res_id, pathPart="test"
+        )
+
+        response = apigw_client.update_resource(
+            restApiId=api_id,
+            resourceId=api_resource.get("id"),
+            patchOperations=[
+                {"op": "replace", "path": "/pathPart", "value": "demo1"},
+            ],
+        )
+        self.assertEqual(response.get("pathPart"), "demo1")
+        response = apigw_client.get_resource(restApiId=api_id, resourceId=api_resource.get("id"))
+        self.assertEqual(response.get("pathPart"), "demo1")
+
+        # clean up
+        apigw_client.delete_rest_api(restApiId=api_id)
+
     # =====================================================================
     # Helper methods
     # =====================================================================

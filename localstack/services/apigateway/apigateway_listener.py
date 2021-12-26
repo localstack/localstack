@@ -257,6 +257,7 @@ class ProxyListenerApiGateway(ProxyListener):
                 "headers": dict(result.headers),
             }
             return result
+
         return True
 
     def return_response(self, method, path, data, headers, response):
