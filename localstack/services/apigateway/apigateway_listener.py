@@ -82,9 +82,6 @@ HOST_REGEX_EXECUTE_API = (
 
 REQUEST_TIME_DATE_FORMAT = "%d/%b/%Y:%H:%M:%S %z"
 
-# regex path patterns - TODO remove if not needed (or move to helpers.py)
-PATH_REGEX_RESOURCES = r"^/restapis/([A-Za-z0-9_\-]+)/resources(/[A-Za-z0-9_\-]+)?(\?.*)?"
-
 
 class ApiGatewayVersion(Enum):
     V1 = "v1"
@@ -237,15 +234,6 @@ class ProxyListenerApiGateway(ProxyListener):
 
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
-
-        if re.match(PATH_REGEX_RESOURCES, path):
-            # TODO check if still needed - can probably be removed
-            # search_match = re.search(PATH_REGEX_RESOURCES, path)
-            # api_id = search_match.group(1)
-            # response_type = (search_match.group(2) or '').lstrip('/')
-            # if method == 'PATCH':
-            #     return put_gateway_response(api_id, response_type, data)
-            pass
 
         if re.match(PATH_REGEX_PATH_MAPPINGS, path):
             return handle_base_path_mappings(method, path, data, headers)
