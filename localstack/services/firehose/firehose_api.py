@@ -195,7 +195,7 @@ def put_records(stream_name: str, records: List[Dict]) -> Dict:
                 try:
                     es.create(index=es_index, doc_type=es_type, id=obj_id, body=body)
                 except Exception as e:
-                    LOG.error("Unable to put record to stream: %s %s" % (e, traceback.format_exc()))
+                    LOG.error("Unable to put record to stream: %s %s", e, traceback.format_exc())
                     raise e
         if "S3DestinationDescription" in dest:
             s3_dest = dest["S3DestinationDescription"]
@@ -209,7 +209,7 @@ def put_records(stream_name: str, records: List[Dict]) -> Dict:
             try:
                 s3.Object(bucket, obj_path).put(Body=batched_data)
             except Exception as e:
-                LOG.error("Unable to put record to stream: %s %s" % (e, traceback.format_exc()))
+                LOG.error("Unable to put record to stream: %s %s", e, traceback.format_exc())
                 raise e
         if "HttpEndpointDestinationDescription" in dest:
             http_dest = dest["HttpEndpointDestinationDescription"]
@@ -230,8 +230,10 @@ def put_records(stream_name: str, records: List[Dict]) -> Dict:
                 requests.post(url, json=record_to_send, headers=headers)
             except Exception as e:
                 LOG.info(
-                    "Unable to put Firehose records to HTTP endpoint %s: %s %s"
-                    % (url, e, traceback.format_exc())
+                    "Unable to put Firehose records to HTTP endpoint %s: %s %s",
+                    url,
+                    e,
+                    traceback.format_exc(),
                 )
                 raise e
     return {"RecordId": str(uuid.uuid4())}

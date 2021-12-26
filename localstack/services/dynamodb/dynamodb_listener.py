@@ -1084,7 +1084,7 @@ def dynamodb_extract_keys(item, table_name):
     result = {}
     table_definitions = DynamoDBRegion.get().table_definitions
     if table_name not in table_definitions:
-        LOGGER.warning("Unknown table: %s not found in %s" % (table_name, table_definitions))
+        LOGGER.warning("Unknown table: %s not found in %s", table_name, table_definitions)
         return None
 
     for key in table_definitions[table_name]["KeySchema"]:
@@ -1105,8 +1105,10 @@ def dynamodb_get_table_stream_specification(table_name):
         return get_table_schema(table_name)["Table"].get("StreamSpecification")
     except Exception as e:
         LOGGER.info(
-            "Unable to get stream specification for table %s : %s %s"
-            % (table_name, e, traceback.format_exc())
+            "Unable to get stream specification for table %s : %s %s",
+            table_name,
+            e,
+            traceback.format_exc(),
         )
         raise e
 

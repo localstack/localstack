@@ -173,7 +173,7 @@ def install_elasticsearch(version=None):
             plugin_binary = os.path.join(install_dir, "bin", "elasticsearch-plugin")
             plugin_dir = os.path.join(install_dir, "plugins", plugin)
             if not os.path.exists(plugin_dir):
-                LOG.info("Installing Elasticsearch plugin %s" % plugin)
+                LOG.info("Installing Elasticsearch plugin %s", plugin)
 
                 def try_install():
                     safe_run([plugin_binary, "install", "-b", plugin])
@@ -512,7 +512,7 @@ def install_debugpy_and_dependencies():
 
 def log_install_msg(component, verbatim=False):
     component = component if verbatim else "local %s server" % component
-    LOG.info("Downloading and installing %s. This may take some time." % component)
+    LOG.info("Downloading and installing %s. This may take some time.", component)
 
 
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
@@ -547,7 +547,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
     except Exception as e:
         # try deleting and re-downloading the zip file
-        LOG.info("Unable to extract file, re-downloading ZIP archive %s: %s" % (tmp_archive, e))
+        LOG.info("Unable to extract file, re-downloading ZIP archive %s: %s", tmp_archive, e)
         rm_rf(tmp_archive)
         download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
 

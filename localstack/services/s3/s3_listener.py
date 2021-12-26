@@ -155,7 +155,7 @@ def filter_rules_match(filters, object_path):
             if not object_path.endswith(rule["Value"]):
                 return False
         else:
-            LOGGER.warning('Unknown filter name: "%s"' % rule["Name"])
+            LOGGER.warning('Unknown filter name: "%s"', rule["Name"])
     return True
 
 
@@ -294,8 +294,10 @@ def send_notification_for_subscriber(
             )
         except Exception as e:
             LOGGER.warning(
-                'Unable to send notification for S3 bucket "%s" to SQS queue "%s": %s'
-                % (bucket_name, notif["Queue"], e)
+                'Unable to send notification for S3 bucket "%s" to SQS queue "%s": %s',
+                bucket_name,
+                notif["Queue"],
+                e,
             )
     if notif.get("Topic"):
         region = aws_stack.extract_region_from_arn(notif["Topic"])
@@ -308,8 +310,10 @@ def send_notification_for_subscriber(
             )
         except Exception as e:
             LOGGER.warning(
-                'Unable to send notification for S3 bucket "%s" to SNS topic "%s": %s'
-                % (bucket_name, notif["Topic"], e)
+                'Unable to send notification for S3 bucket "%s" to SNS topic "%s": %s',
+                bucket_name,
+                notif["Topic"],
+                e,
             )
     # CloudFunction and LambdaFunction are semantically identical
     lambda_function_config = notif.get("CloudFunction") or notif.get("LambdaFunction")
@@ -328,13 +332,14 @@ def send_notification_for_subscriber(
             )
         except Exception:
             LOGGER.warning(
-                'Unable to send notification for S3 bucket "%s" to Lambda function "%s".'
-                % (bucket_name, lambda_function_config)
+                'Unable to send notification for S3 bucket "%s" to Lambda function "%s".',
+                bucket_name,
+                lambda_function_config,
             )
 
     if not filter(lambda x: notif.get(x), NOTIFICATION_DESTINATION_TYPES):
         LOGGER.warning(
-            "Neither of %s defined for S3 notification." % "/".join(NOTIFICATION_DESTINATION_TYPES)
+            "Neither of %s defined for S3 notification.", "/".join(NOTIFICATION_DESTINATION_TYPES)
         )
 
 
@@ -592,18 +597,18 @@ def append_last_modified_headers(response, content=None):
                 )
                 response.headers["Last-Modified"] = last_modified_time_format
     except TypeError as err:
-        LOGGER.debug("No parsable content: %s" % err)
+        LOGGER.debug("No parsable content: %s", err)
     except ValueError as err:
-        LOGGER.error("Failed to parse LastModified: %s" % err)
+        LOGGER.error("Failed to parse LastModified: %s", err)
     except Exception as err:
-        LOGGER.error("Caught generic exception (parsing LastModified): %s" % err)
+        LOGGER.error("Caught generic exception (parsing LastModified): %s", err)
     # if cannot parse any LastModified, just continue
 
     try:
         if response.headers.get("Last-Modified", "") == "":
             response.headers["Last-Modified"] = datetime.datetime.now().strftime(time_format)
     except Exception as err:
-        LOGGER.error("Caught generic exception (setting LastModified header): %s" % err)
+        LOGGER.error("Caught generic exception (setting LastModified header): %s", err)
 
 
 def append_list_objects_marker(method, path, data, response):
@@ -1617,7 +1622,7 @@ def serve_static_website(headers, path, bucket_name):
             path = path.lstrip("/")
             return respond_with_key(status_code=200, key=path)
     except ClientError:
-        LOGGER.debug("No such key found. %s" % path)
+        LOGGER.debug("No such key found. %s", path)
 
     website_config = s3_client.get_bucket_website(Bucket=bucket_name)
     path_suffix = website_config.get("IndexDocument", {}).get("Suffix", "").lstrip("/")

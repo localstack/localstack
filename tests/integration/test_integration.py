@@ -264,7 +264,7 @@ class IntegrationTest(unittest.TestCase):
             num_events_ddb - num_put_new_items - num_put_existing_items - num_batch_items
         )
 
-        LOGGER.info("Putting %s items to table..." % num_events_ddb)
+        LOGGER.info("Putting %s items to table...", num_events_ddb)
         table = dynamodb.Table(table_name)
         for i in range(0, num_put_new_items):
             table.put_item(Item={PARTITION_KEY: "testId%s" % i, "data": "foobar123"})
@@ -294,8 +294,7 @@ class IntegrationTest(unittest.TestCase):
         num_events_kinesis = 1
         num_kinesis_records = 10
         LOGGER.info(
-            "Putting %s records in %s event to stream..."
-            % (num_kinesis_records, num_events_kinesis)
+            "Putting %s records in %s event to stream...", num_kinesis_records, num_events_kinesis
         )
         kinesis.put_records(
             Records=[
@@ -768,14 +767,12 @@ def test_sqs_batch_lambda_forward(lambda_client, sqs_client, create_lambda_funct
 
         delayed_count = int(attributes.get("ApproximateNumberOfMessagesDelayed"))
         if delayed_count != 0:
-            LOGGER.warning(
-                "SQS delayed message count (actual/expected): %s/%s" % (delayed_count, 0)
-            )
+            LOGGER.warning("SQS delayed message count (actual/expected): %s/%s", delayed_count, 0)
 
         not_visible_count = int(attributes.get("ApproximateNumberOfMessagesNotVisible"))
         if not_visible_count != 0:
             LOGGER.warning(
-                "SQS messages not visible (actual/expected): %s/%s" % (not_visible_count, 0)
+                "SQS messages not visible (actual/expected): %s/%s", not_visible_count, 0
             )
 
         assert 0 == delayed_count, "no messages waiting for retry"

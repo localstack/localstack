@@ -138,7 +138,7 @@ def send_event_to_target(
             logEvents=[{"timestamp": now_utc(millis=True), "message": json.dumps(event)}],
         )
     else:
-        LOG.warning('Unsupported Events rule target ARN: "%s"' % target_arn)
+        LOG.warning('Unsupported Events rule target ARN: "%s"', target_arn)
 
 
 def send_event_to_api_destination(target_arn, event):
@@ -156,7 +156,7 @@ def send_event_to_api_destination(target_arn, event):
     endpoint = destination.get("InvocationEndpoint")
     state = destination.get("ApiDestinationState") or "ACTIVE"
 
-    LOG.debug('Calling EventBridge API destination (state "%s"): %s %s' % (state, method, endpoint))
+    LOG.debug('Calling EventBridge API destination (state "%s"): %s %s', state, method, endpoint)
     headers = {
         # default headers AWS sends with every api destination call
         "User-Agent": "Amazon/EventBridge/ApiDestinations",
@@ -175,9 +175,7 @@ def send_event_to_api_destination(target_arn, event):
         method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
     )
     if result.status_code >= 400:
-        LOG.debug(
-            "Received code %s forwarding events: %s %s" % (result.status_code, method, endpoint)
-        )
+        LOG.debug("Received code %s forwarding events: %s %s", result.status_code, method, endpoint)
         if result.status_code == 429 or 500 <= result.status_code <= 600:
             pass  # TODO: retry logic (only retry on 429 and 5xx response status)
 

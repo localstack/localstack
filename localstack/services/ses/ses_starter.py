@@ -62,7 +62,7 @@ def apply_patches():
 
         raw_data = to_str(base64.b64decode(self.querystring.get("RawMessage.Data")[0]))
 
-        LOGGER.debug("Raw email:\n%s" % raw_data)
+        LOGGER.debug("Raw email:\n%s", raw_data)
 
         source = get_source_from_raw(raw_data)
         if not source:
@@ -99,8 +99,11 @@ def apply_patches():
                 "Must specify all of Body, Subject, Source for the email message"
             )
         LOGGER.debug(
-            "Sending email\nFrom: %s\nTo: %s\nSubject: %s\nBody:\n%s"
-            % (source, destinations, subject, body)
+            "Sending email\nFrom: %s\nTo: %s\nSubject: %s\nBody:\n%s",
+            source,
+            destinations,
+            subject,
+            body,
         )
 
         return email_responses_send_email_orig(self)

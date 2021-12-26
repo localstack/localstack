@@ -119,7 +119,7 @@ def _do_start_ssl_proxy(port: int, target: str, target_ssl=False):
 
     if ":" not in str(target):
         target = "127.0.0.1:%s" % target
-    LOG.debug("Starting SSL proxy server %s -> %s" % (port, target))
+    LOG.debug("Starting SSL proxy server %s -> %s", port, target)
 
     # create server and remote connection
     server = pproxy.Server("secure+tunnel://0.0.0.0:%s" % port)

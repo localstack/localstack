@@ -111,7 +111,7 @@ class KinesisProcessor(kcl.RecordProcessorBase):
         try:
             retry(do_checkpoint, retries=CHECKPOINT_RETRIES, sleep=CHECKPOINT_SLEEP_SECS)
         except Exception as e:
-            LOGGER.warning("Unable to checkpoint Kinesis after retries: %s" % e)
+            LOGGER.warning("Unable to checkpoint Kinesis after retries: %s", e)
 
     def should_update_sequence(self, sequence_number, sub_sequence_number):
         return (
@@ -201,7 +201,7 @@ class OutputReaderThread(FuncThread):
                 if re.match(subscriber.regex, line):
                     subscriber.update(line)
             except Exception as e:
-                LOGGER.warning("Unable to notify log subscriber: %s" % e)
+                LOGGER.warning("Unable to notify log subscriber: %s", e)
 
     def start_reading(self, params):
         # FIXME: consider using common.FileListener

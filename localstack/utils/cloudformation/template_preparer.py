@@ -123,8 +123,9 @@ def get_template_body(req_data):
                 parts = parsed_path.partition("/")
                 client = aws_stack.connect_to_service("s3")
                 LOG.debug(
-                    "Download CloudFormation template content from local S3: %s - %s"
-                    % (parts[0], parts[2])
+                    "Download CloudFormation template content from local S3: %s - %s",
+                    parts[0],
+                    parts[2],
                 )
                 result = client.get_object(Bucket=parts[0], Key=parts[2])
                 body = to_str(result["Body"].read())
@@ -149,7 +150,7 @@ def parse_template(template):
             try:
                 return clone_safe(yaml.load(template, Loader=NoDatesSafeLoader))
             except Exception as e:
-                LOG.debug("Unable to parse CloudFormation template (%s): %s" % (e, template))
+                LOG.debug("Unable to parse CloudFormation template (%s): %s", e, template)
                 raise
 
 

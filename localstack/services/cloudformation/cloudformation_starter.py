@@ -98,7 +98,7 @@ def update_physical_resource_id(resource):
         resource.physical_resource_id = resource.id
 
     else:
-        LOG.warning("Unable to determine physical_resource_id for resource %s" % type(resource))
+        LOG.warning("Unable to determine physical_resource_id for resource %s", type(resource))
 
 
 def start_cloudformation(port=None, asynchronous=False):

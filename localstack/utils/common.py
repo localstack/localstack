@@ -185,8 +185,7 @@ class ShellCommandThread(FuncThread):
             ):
                 return self.process.returncode if self.process else None
             LOG.info(
-                "Restarting process (received exit code %s): %s"
-                % (self.process.returncode, self.cmd)
+                "Restarting process (received exit code %s): %s", self.process.returncode, self.cmd
             )
 
     def do_run_cmd(self):
@@ -247,9 +246,9 @@ class ShellCommandThread(FuncThread):
         except Exception as e:
             self.result_future.set_exception(e)
             if self.process and not self.quiet:
-                LOG.warning('Shell command error "%s": %s' % (e, self.cmd))
+                LOG.warning('Shell command error "%s": %s', e, self.cmd)
         if self.process and not self.quiet and self.process.returncode != 0:
-            LOG.warning('Shell command exit code "%s": %s' % (self.process.returncode, self.cmd))
+            LOG.warning('Shell command exit code "%s": %s', self.process.returncode, self.cmd)
 
     def is_killed(self):
         if not self.process:
@@ -267,7 +266,7 @@ class ShellCommandThread(FuncThread):
         if self.stopped:
             return
         if not self.process:
-            LOG.warning("No process found for command '%s'" % self.cmd)
+            LOG.warning("No process found for command '%s'", self.cmd)
             return
 
         parent_pid = self.process.pid
@@ -1052,7 +1051,7 @@ def ensure_readable(file_path: str, default_perms: int = None):
         with open(file_path, "rb"):
             pass
     except Exception:
-        LOG.info("Updating permissions as file is currently not readable: %s" % file_path)
+        LOG.info("Updating permissions as file is currently not readable: %s", file_path)
         os.chmod(file_path, default_perms)
 
 
@@ -1145,14 +1144,7 @@ def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=F
                 os.path.islink(_path),
             )
 
-        LOG.debug(
-            "Error copying files from %s to %s: %s"
-            % (
-                _info(src),
-                _info(dst),
-                e,
-            )
-        )
+        LOG.debug("Error copying files from %s to %s: %s", _info(src), _info(dst), e)
         raise
     finally:
         shutil.copystat = copystat_orig
@@ -1231,8 +1223,7 @@ def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         LOG.debug(
-            "Starting download from %s to %s (%s bytes)"
-            % (url, path, r.headers.get("Content-Length"))
+            "Starting download from %s to %s (%s bytes)", url, path, r.headers.get("Content-Length")
         )
         with open(path, "wb") as f:
             iter_length = 0
@@ -1243,18 +1234,18 @@ def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
                 else:
-                    LOG.debug("Empty chunk %s (total %s) from %s" % (chunk, total, url))
+                    LOG.debug("Empty chunk %s (total %s) from %s", chunk, total, url)
                 if iter_length >= iter_limit:
-                    LOG.debug("Written %s bytes (total %s) to %s" % (iter_length, total, path))
+                    LOG.debug("Written %s bytes (total %s) to %s", iter_length, total, path)
                     iter_length = 0
             f.flush()
             os.fsync(f)
         if os.path.getsize(path) == 0:
-            LOG.warning("Zero bytes downloaded from %s, retrying" % url)
+            LOG.warning("Zero bytes downloaded from %s, retrying", url)
             download(url, path, verify_ssl)
             return
         LOG.debug(
-            "Done downloading %s, response code %s, total bytes %d" % (url, r.status_code, total)
+            "Done downloading %s, response code %s, total bytes %d", url, r.status_code, total
         )
     except requests.exceptions.ReadTimeout as e:
         raise TimeoutError(f"Timeout ({timeout}) reached on download: {url} - {e}")
@@ -1444,8 +1435,10 @@ def assign_to_path(target, path: str, value, delimiter: str = "."):
     parent = extract_from_jsonpointer_path(target, path_to_parent, auto_create=True)
     if not isinstance(parent, dict):
         LOG.debug(
-            'Unable to find parent (type %s) for path "%s" in object: %s'
-            % (type(parent), path, target)
+            'Unable to find parent (type %s) for path "%s" in object: %s',
+            type(parent),
+            path,
+            target,
         )
         return
     path_end = int(parts[-1]) if is_number(parts[-1]) else parts[-1]
@@ -1461,9 +1454,7 @@ def extract_from_jsonpointer_path(target, path: str, delimiter: str = "/", auto_
             if path_part == "-":
                 # special case where path is like /path/to/list/- where "/-" means "append to list"
                 continue
-            LOG.warning(
-                'Attempting to extract non-int index "%s" from list: %s' % (path_part, target)
-            )
+            LOG.warning('Attempting to extract non-int index "%s" from list: %s', path_part, target)
             return None
         target_new = target[path_part] if isinstance(target, list) else target.get(path_part)
         if target_new is None:
@@ -1697,13 +1688,13 @@ def unzip(path, target_dir, overwrite=True):
         except Exception as e:
             error_str = truncate(str(e), max_length=200)
             LOG.info(
-                'Unable to use native "unzip" command (using fallback mechanism): %s' % error_str
+                'Unable to use native "unzip" command (using fallback mechanism): %s', error_str
             )
 
     try:
         zip_ref = zipfile.ZipFile(path, "r")
     except Exception as e:
-        LOG.warning("Unable to open zip file: %s: %s" % (path, e))
+        LOG.warning("Unable to open zip file: %s: %s", path, e)
         raise e
 
     def _unzip_file_entry(zip_ref, file_entry, target_dir):
@@ -1790,7 +1781,7 @@ def generate_ssl_cert(
         except Exception as e:
             # fall back to temporary files if we cannot store/overwrite the files above
             LOG.info(
-                "Error storing key/cert SSL files (falling back to random tmp file names): %s" % e
+                "Error storing key/cert SSL files (falling back to random tmp file names): %s", e
             )
             target_file_tmp = new_tmp_file()
             cert_file_name, key_file_name = store_cert_key_files(target_file_tmp)
@@ -1862,8 +1853,9 @@ def generate_ssl_cert(
                     if i > 0:
                         raise
                     LOG.info(
-                        "Unable to store certificate file under %s, using tmp file instead: %s"
-                        % (target_file, e)
+                        "Unable to store certificate file under %s, using tmp file instead: %s",
+                        target_file,
+                        e,
                     )
                     # Fix for https://github.com/localstack/localstack/issues/1743
                     target_file = "%s.pem" % new_tmp_file()
@@ -1912,7 +1904,7 @@ def run_safe(_python_lambda, *args, _default=None, **kwargs):
         return _python_lambda(*args, **kwargs)
     except Exception as e:
         if print_error:
-            LOG.warning("Unable to execute function: %s" % e)
+            LOG.warning("Unable to execute function: %s", e)
         return _default
 
 

@@ -127,7 +127,7 @@ def record(api, method=None, path=None, data=None, headers=None, response=None, 
                 try:
                     request_data = to_bytes(request_data)
                 except Exception as ex:
-                    LOG.warning("Unable to call to_bytes: %s" % ex)
+                    LOG.warning("Unable to call to_bytes: %s", ex)
                 request_data = to_str(base64.b64encode(request_data))
             return request_data
 
@@ -194,7 +194,7 @@ def replay(api):
     finally:
         CURRENTLY_REPLAYING.pop(0)
     if count:
-        LOG.info("Restored %s API calls from persistent file: %s" % (count, file_path))
+        LOG.info("Restored %s API calls from persistent file: %s", count, file_path)
 
 
 def restore_persisted_data(apis):

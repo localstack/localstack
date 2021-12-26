@@ -424,7 +424,7 @@ def apply_response_parameters(invocation_context: ApiInvocationContext):
     return_code = str(response.status_code)
     if return_code not in entries:
         if len(entries) > 1:
-            LOG.info("Found multiple integration response status codes: %s" % entries)
+            LOG.info("Found multiple integration response status codes: %s", entries)
             return response
         return_code = entries[0]
     response_params = int_responses[return_code].get("responseParameters", {})
@@ -624,7 +624,7 @@ def invoke_rest_api_integration_backend(
                 data_str = base64.b64encode(data_str)
                 is_base64_encoded = True
             except Exception as e:
-                LOG.warning("Unable to convert API Gateway payload to str: %s" % (e))
+                LOG.warning("Unable to convert API Gateway payload to str: %s", (e))
                 pass
 
             # Sample request context:
@@ -678,7 +678,7 @@ def invoke_rest_api_integration_backend(
                             body_bytes = base64.b64decode(body_bytes)
                         response._content = body_bytes
                 except Exception as e:
-                    LOG.warning("Couldn't set Lambda response content: %s" % e)
+                    LOG.warning("Couldn't set Lambda response content: %s", e)
                     response._content = "{}"
                 update_content_length(response)
                 response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
@@ -845,7 +845,7 @@ def invoke_rest_api_integration_backend(
 
                 if response_template is None:
                     msg = "Invalid response template defined in integration response."
-                    LOG.info("%s Existing: %s" % (msg, response_templates))
+                    LOG.info("%s Existing: %s", msg, response_templates)
                     return make_error_response(msg, 404)
 
                 response_template = json.loads(response_template)

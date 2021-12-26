@@ -1027,7 +1027,7 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                 operation["value"] = ""
 
             if operation["op"] != "remove" and operation.get("value") is None:
-                LOG.info('Missing "value" in JSONPatch operation for %s: %s' % (subject, operation))
+                LOG.info('Missing "value" in JSONPatch operation for %s: %s', subject, operation)
                 continue
 
             if operation["op"] == "add":
