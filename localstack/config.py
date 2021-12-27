@@ -539,6 +539,7 @@ for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
         clean_key + "_BACKEND",
         clean_key + "_PORT",
         clean_key + "_PORT_EXTERNAL",
+        "PROVIDER_OVERRIDE_" + clean_key,
     ]
 
 
@@ -827,7 +828,9 @@ SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 
 for key, value in os.environ.items():
     if key.startswith("PROVIDER_OVERRIDE_"):
-        SERVICE_PROVIDER_CONFIG.set_provider(key.lstrip("PROVIDER_OVERRIDE_").lower(), value)
+        SERVICE_PROVIDER_CONFIG.set_provider(
+            key.lstrip("PROVIDER_OVERRIDE_").lower().replace("_", "-"), value
+        )
 
 # initialize directories
 if is_in_docker:
