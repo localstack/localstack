@@ -513,7 +513,7 @@ class ServicePluginManager(ServiceManager):
             return None
 
         with self._mutex:
-            if plugin.service not in self._services:
+            if plugin.service.name() not in self._services:
                 super().add_service(plugin.service)
 
         return super().get_service_container(name)
