@@ -46,8 +46,6 @@ from localstack.aws.api.opensearch import (
     VolumeType,
     VPCOptions,
 )
-
-# mutex for domains
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.opensearch import versions
@@ -56,6 +54,7 @@ from localstack.services.opensearch.cluster_manager import (
     DomainKey,
     create_cluster_manager,
 )
+from localstack.utils import analytics
 from localstack.utils.common import synchronized
 from localstack.utils.serving import Server
 from localstack.utils.tagging import TaggingService
@@ -79,6 +78,9 @@ DEFAULT_OPENSEARCH_CLUSTER_CONFIG = ClusterConfig(
 
 # cluster manager singleton
 _cluster_manager = None
+
+EVENT_CREATE_DOMAIN = "os.cd"
+EVENT_DELETE_DOMAIN = "os.dd"
 
 
 @synchronized(_domain_mutex)
@@ -269,7 +271,8 @@ class OpensearchProvider(OpensearchApi):
             # get the (updated) status
             status = get_domain_status(domain_key)
 
-        # TODO publish event
+        # TODO: hash domain name?
+        analytics.log.event(EVENT_CREATE_DOMAIN, payload={"n": domain_name})
 
         return CreateDomainResponse(DomainStatus=status)
 
@@ -291,6 +294,7 @@ class OpensearchProvider(OpensearchApi):
             _remove_cluster(domain_key)
 
         # TODO publish event
+        analytics.log.event(EVENT_DELETE_DOMAIN, payload={"n": domain_name})
 
         return DeleteDomainResponse(DomainStatus=status)
 
