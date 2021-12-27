@@ -395,25 +395,14 @@ class TestDynamoDB(unittest.TestCase):
         )
 
         # get records
-        record = ddbstreams.get_records(ShardIterator=response["ShardIterator"])
+        records = ddbstreams.get_records(ShardIterator=response["ShardIterator"])["Records"]
 
-        # assert stream_view_type of records forwarded to the stream
-        self.assertEqual("KEYS_ONLY", record["Records"][0]["dynamodb"]["StreamViewType"])
-        self.assertEqual("KEYS_ONLY", record["Records"][1]["dynamodb"]["StreamViewType"])
-        self.assertEqual("KEYS_ONLY", record["Records"][2]["dynamodb"]["StreamViewType"])
-        # assert Keys present in the record for all insert, modify and delete events
-        self.assertEqual({"Username": {"S": "Fred"}}, record["Records"][0]["dynamodb"]["Keys"])
-        self.assertEqual({"Username": {"S": "Fred"}}, record["Records"][1]["dynamodb"]["Keys"])
-        self.assertEqual({"Username": {"S": "Fred"}}, record["Records"][2]["dynamodb"]["Keys"])
-        # assert oldImage not in the records
-        self.assertNotIn("OldImage", record["Records"][0]["dynamodb"])
-        self.assertNotIn("OldImage", record["Records"][1]["dynamodb"])
-        self.assertNotIn("OldImage", record["Records"][2]["dynamodb"])
-        # assert newImage not in the record
-        self.assertNotIn("NewImage", record["Records"][0]["dynamodb"])
-        self.assertNotIn("NewImage", record["Records"][1]["dynamodb"])
-        self.assertNotIn("NewImage", record["Records"][2]["dynamodb"])
-
+        for record in records:
+            self.assertIn("SequenceNumber", record["dynamodb"])
+            self.assertEqual("KEYS_ONLY", record["dynamodb"]["StreamViewType"])
+            self.assertEqual({"Username": {"S": "Fred"}}, record["dynamodb"]["Keys"])
+            self.assertNotIn("OldImage", record["dynamodb"])
+            self.assertNotIn("NewImage", record["dynamodb"])
         # clean up
         delete_table(table_name)
 
@@ -815,6 +804,7 @@ class TestDynamoDB(unittest.TestCase):
         self.assertEqual("NEW_AND_OLD_IMAGES", dynamodb_event["StreamViewType"])
         self.assertEqual({"SK": {"S": item["SK"]}}, dynamodb_event["Keys"])
         self.assertEqual({"S": item["Name"]}, dynamodb_event["NewImage"]["Name"])
+        self.assertIn("SequenceNumber", dynamodb_event)
 
         dynamodb = aws_stack.create_external_boto_client("dynamodb")
         dynamodb.delete_table(TableName=table_name)
