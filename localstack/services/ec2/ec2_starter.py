@@ -121,7 +121,7 @@ def patch_ec2():
                     )
                 ]
             else:
-                LOG.debug('Unsupported VPC endpoint service filter "%s"' % filter["Name"])
+                LOG.debug('Unsupported VPC endpoint service filter "%s"', filter["Name"])
         service_names = [s["serviceName"] for s in services]
         services = [{**s, "serviceType": {"item": s["serviceType"]}} for s in services]
         services = [{**s, "availabilityZones": {"item": s["availabilityZones"]}} for s in services]
@@ -159,7 +159,7 @@ def patch_ec2():
             if filter["Name"] == "prefix-list-name":
                 entries = [s for s in entries if s["prefixListName"] in filter["Values"]]
             else:
-                LOG.debug('Unsupported VPC endpoint service filter "%s"' % filter["Name"])
+                LOG.debug('Unsupported VPC endpoint service filter "%s"', filter["Name"])
         result = {
             "DescribePrefixListsResponse": {
                 "@xmlns": XMLNS_EC2,
@@ -179,8 +179,8 @@ def patch_ec2():
         search_filters = self._get_multi_param("Filter")
         for filter in search_filters:
             filter["Values"] = []
-            for i in range(1, 100):
-                val = filter.get("Value.%s" % i)
+            values = filter["Value"]
+            for val in values:
                 if val is None:
                     break
                 filter["Values"].append(val)

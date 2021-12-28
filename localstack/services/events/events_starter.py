@@ -113,7 +113,7 @@ def filter_event_based_on_event_format(self, rule_name: str, event: Dict[str, An
 
     rule_information = self.events_backend.describe_rule(rule_name)
     if not rule_information:
-        LOG.info('Unable to find rule "%s" in backend: %s' % (rule_name, rule_information))
+        LOG.info('Unable to find rule "%s" in backend: %s', rule_name, rule_information)
         return False
     if rule_information.event_pattern._pattern:
         event_pattern = rule_information.event_pattern._pattern
@@ -221,11 +221,9 @@ def get_two_lists_intersection(lst1, lst2):
 
 def identify_content_base_parameter_in_pattern(parameters):
     if any(
-        [
-            list(param.keys())[0] in CONTENT_BASE_FILTER_KEYWORDS
-            for param in parameters
-            if isinstance(param, dict)
-        ]
+        list(param.keys())[0] in CONTENT_BASE_FILTER_KEYWORDS
+        for param in parameters
+        if isinstance(param, dict)
     ):
         return True
 

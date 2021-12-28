@@ -601,7 +601,7 @@ class GatewayBasePathMapping(GenericBaseModel):
             [self.props.get("BasePath")] if self.props.get("BasePath") else [None, "", "(none)"]
         )
 
-        return next(iter([res for res in resources if res.get("basePath") in comparable]))
+        return next(iter(res for res in resources if res.get("basePath") in comparable))
 
     @classmethod
     def get_deploy_templates(cls):

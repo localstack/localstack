@@ -129,7 +129,7 @@ def handle_put_rule(data: Dict):
     if schedule:
         job_func = get_scheduled_rule_func(data)
         cron = convert_schedule_to_cron(schedule)
-        LOG.debug("Adding new scheduled Events rule with cron schedule %s" % cron)
+        LOG.debug("Adding new scheduled Events rule with cron schedule %s", cron)
 
         job_id = JobScheduler.instance().add_job(job_func, cron, enabled)
         rule_scheduled_jobs = EventsBackend.get().rule_scheduled_jobs

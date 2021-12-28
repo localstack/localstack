@@ -276,7 +276,7 @@ class Stack(object):
                 template_deployer.resolve_refs_recursively(self.stack_name, details, self.resources)
                 value = details["Value"]
             except Exception as e:
-                LOG.debug("Unable to resolve references in stack outputs: %s - %s" % (details, e))
+                LOG.debug("Unable to resolve references in stack outputs: %s - %s", details, e)
             exports = details.get("Export") or {}
             export = exports.get("Name")
             export = template_deployer.resolve_refs_recursively(
@@ -439,8 +439,10 @@ class CloudFormationRegion(RegionBackend):
                 if export_name in output_keys:
                     # TODO: raise exception on stack creation in case of duplicate exports
                     LOG.warning(
-                        "Found duplicate export name %s in stacks: %s %s"
-                        % (export_name, output_keys[export_name], stack.stack_id)
+                        "Found duplicate export name %s in stacks: %s %s",
+                        export_name,
+                        output_keys[export_name],
+                        stack.stack_id,
                     )
                 entry = {
                     "ExportingStackId": stack.stack_id,
@@ -477,8 +479,7 @@ def create_stack(req_params):
 
     state.stacks[stack.stack_id] = stack
     LOG.debug(
-        'Creating stack "%s" with %s resources ...'
-        % (stack.stack_name, len(stack.template_resources))
+        'Creating stack "%s" with %s resources ...', stack.stack_name, len(stack.template_resources)
     )
     deployer = template_deployer.TemplateDeployer(stack)
     try:
@@ -487,7 +488,7 @@ def create_stack(req_params):
     except Exception as e:
         stack.set_stack_status("CREATE_FAILED")
         msg = 'Unable to create stack "%s": %s' % (stack.stack_name, e)
-        LOG.debug("%s %s" % (msg, traceback.format_exc()))
+        LOG.debug("%s %s", msg, traceback.format_exc())
         return error_response(msg, code=400, code_string="ValidationError")
     result = {"StackId": stack.stack_id}
     return result
@@ -521,7 +522,7 @@ def create_stack_instances(req_params):
     for account in accounts:
         for region in regions:
             # deploy new stack
-            LOG.debug('Deploying instance for stack set "%s" in region "%s"' % (set_name, region))
+            LOG.debug('Deploying instance for stack set "%s" in region "%s"', set_name, region)
             cf_client = aws_stack.connect_to_service("cloudformation", region_name=region)
             kwargs = select_attributes(sset_meta, "TemplateBody") or select_attributes(
                 sset_meta, "TemplateURL"
@@ -590,7 +591,7 @@ def update_stack(req_params):
     except Exception as e:
         stack.set_stack_status("UPDATE_FAILED")
         msg = 'Unable to update stack "%s": %s' % (stack_name, e)
-        LOG.debug("%s %s" % (msg, traceback.format_exc()))
+        LOG.debug("%s %s", msg, traceback.format_exc())
         return error_response(msg, code=400, code_string="ValidationError")
     result = {"StackId": stack.stack_id}
     return result
@@ -806,8 +807,10 @@ def execute_change_set(req_params):
             'Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name)
         )
     LOG.debug(
-        'Executing change set "%s" for stack "%s" with %s resources ...'
-        % (cs_name, stack_name, len(change_set.template_resources))
+        'Executing change set "%s" for stack "%s" with %s resources ...',
+        cs_name,
+        stack_name,
+        len(change_set.template_resources),
     )
     deployer = template_deployer.TemplateDeployer(change_set.stack)
     deployer.apply_change_set(change_set)
@@ -866,8 +869,10 @@ def describe_stack_set_operation(req_params):
     result = stack_set.operations.get(op_id)
     if not result:
         LOG.debug(
-            'Unable to find operation ID "%s" for stack set "%s" in list: %s'
-            % (op_id, set_name, list(stack_set.operations.keys()))
+            'Unable to find operation ID "%s" for stack set "%s" in list: %s',
+            op_id,
+            set_name,
+            list(stack_set.operations.keys()),
         )
         return not_found_error(
             'Unable to find operation ID "%s" for stack set "%s"' % (op_id, set_name)
@@ -1050,7 +1055,7 @@ def clone_stack_params(stack_params):
     try:
         return clone(stack_params)
     except Exception as e:
-        LOG.info("Unable to clone stack parameters: %s" % e)
+        LOG.info("Unable to clone stack parameters: %s", e)
         return stack_params
 
 

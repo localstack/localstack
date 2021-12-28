@@ -11,7 +11,7 @@ def fix_creation_date(method, path, response):
     try:
         content = to_str(response._content)
     except Exception:
-        LOG.info("Unable to convert EC2 response to string: %s" % response._content)
+        LOG.info("Unable to convert EC2 response to string: %s", response._content)
         return
     response._content = re.sub(
         r">\s*([0-9-]+) ([0-9:.]+)Z?\s*</creationTimestamp>",

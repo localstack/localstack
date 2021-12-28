@@ -600,9 +600,9 @@ class ProxyListenerDynamoDB(ProxyListener):
             records_to_kinesis = copy.deepcopy(records)
             forward_to_kinesis_stream(records_to_kinesis)
             # forward to lambda and ddb_streams
-            forward_to_lambda(records)
             records = self.prepare_records_to_forward_to_ddb_stream(records)
             forward_to_ddb_stream(records)
+            forward_to_lambda(records)  # lambda receives the same records as the ddb streams
 
     # -------------
     # UTIL METHODS
@@ -760,6 +760,11 @@ class ProxyListenerDynamoDB(ProxyListener):
         # When an item in the table is inserted, updated or deleted
         for record in records:
             if record["dynamodb"].get("StreamViewType"):
+                if "SequenceNumber" not in record["dynamodb"]:
+                    record["dynamodb"]["SequenceNumber"] = str(
+                        dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER
+                    )
+                    dynamodbstreams_api.DynamoDBStreamsBackend.SEQUENCE_NUMBER_COUNTER += 1
                 # KEYS_ONLY  - Only the key attributes of the modified item are written to the stream
                 if record["dynamodb"]["StreamViewType"] == "KEYS_ONLY":
                     record["dynamodb"].pop("OldImage", None)
@@ -1084,7 +1089,7 @@ def dynamodb_extract_keys(item, table_name):
     result = {}
     table_definitions = DynamoDBRegion.get().table_definitions
     if table_name not in table_definitions:
-        LOGGER.warning("Unknown table: %s not found in %s" % (table_name, table_definitions))
+        LOGGER.warning("Unknown table: %s not found in %s", table_name, table_definitions)
         return None
 
     for key in table_definitions[table_name]["KeySchema"]:
@@ -1105,8 +1110,10 @@ def dynamodb_get_table_stream_specification(table_name):
         return get_table_schema(table_name)["Table"].get("StreamSpecification")
     except Exception as e:
         LOGGER.info(
-            "Unable to get stream specification for table %s : %s %s"
-            % (table_name, e, traceback.format_exc())
+            "Unable to get stream specification for table %s : %s %s",
+            table_name,
+            e,
+            traceback.format_exc(),
         )
         raise e
 

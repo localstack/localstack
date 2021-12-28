@@ -308,7 +308,7 @@ class LambdaInvocationForwarderPlugin(LambdaExecutorPlugin):
         data = run_safe(lambda: to_str(event)) or event
         data = json.dumps(json_safe(data)) if isinstance(data, dict) else str(data)
         LOG.debug(
-            "Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s" % config.LAMBDA_FORWARD_URL
+            "Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s", config.LAMBDA_FORWARD_URL
         )
         result = safe_requests.post(url, data, headers=headers)
         if result.status_code >= 400:
@@ -317,8 +317,9 @@ class LambdaInvocationForwarderPlugin(LambdaExecutorPlugin):
             )
         content = run_safe(lambda: to_str(result.content)) or result.content
         LOG.debug(
-            "Received result from external Lambda endpoint (status %s): %s"
-            % (result.status_code, content)
+            "Received result from external Lambda endpoint (status %s): %s",
+            result.status_code,
+            content,
         )
         result = InvocationResult(content)
         return result
@@ -582,8 +583,8 @@ class LambdaExecutorContainers(LambdaExecutor):
         if is_large_event:
             # in case of very large event payloads, we need to pass them via stdin
             LOG.debug(
-                "Received large Lambda event payload (length %s) - passing via stdin"
-                % len(event_body)
+                "Received large Lambda event payload (length %s) - passing via stdin",
+                len(event_body),
             )
             env_vars["DOCKER_LAMBDA_USE_STDIN"] = "1"
 
@@ -679,7 +680,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         # prepare event body
         if not event:
             LOG.info(
-                'Empty event body specified for invocation of Lambda "%s"' % lambda_function.arn()
+                'Empty event body specified for invocation of Lambda "%s"', lambda_function.arn()
             )
             event = {}
         event_body = json.dumps(json_safe(event))
@@ -711,8 +712,8 @@ class LambdaExecutorContainers(LambdaExecutor):
                 )
             else:
                 LOG.debug(
-                    "Passing JVM options to container environment: JAVA_TOOL_OPTIONS=%s"
-                    % config.LAMBDA_JAVA_OPTS
+                    "Passing JVM options to container environment: JAVA_TOOL_OPTIONS=%s",
+                    config.LAMBDA_JAVA_OPTS,
                 )
                 environment["JAVA_TOOL_OPTIONS"] = config.LAMBDA_JAVA_OPTS
 
@@ -721,7 +722,7 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
 
         # run Lambda executor and fetch invocation result
-        LOG.info("Running lambda: %s" % lambda_function.arn())
+        LOG.info("Running lambda: %s", lambda_function.arn())
         result = self.run_lambda_executor(lambda_function=lambda_function, inv_context=inv_context)
 
         return result
@@ -901,7 +902,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             container_name = self.get_container_name(func_arn)
 
             status = self.get_docker_container_status(func_arn)
-            LOG.debug('Priming Docker container (status "%s"): %s' % (status, container_name))
+            LOG.debug('Priming Docker container (status "%s"): %s', status, container_name)
 
             docker_image = Util.docker_image_for_lambda(lambda_function)
 
@@ -911,12 +912,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 self.destroy_docker_container(func_arn)
 
                 # get container startup command and run it
-                LOG.debug("Creating container: %s" % container_name)
+                LOG.debug("Creating container: %s", container_name)
                 self.create_container(lambda_function, env_vars, lambda_cwd, docker_flags)
 
                 if config.LAMBDA_REMOTE_DOCKER:
                     LOG.debug(
-                        'Copying files to container "%s" from "%s".' % (container_name, lambda_cwd)
+                        'Copying files to container "%s" from "%s".', container_name, lambda_cwd
                     )
                     DOCKER_CLIENT.copy_into_container(
                         container_name, "%s/." % lambda_cwd, DOCKER_TASK_FOLDER
@@ -943,8 +944,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             entry_point = DOCKER_CLIENT.get_image_entrypoint(docker_image)
 
             LOG.debug(
-                'Using entrypoint "%s" for container "%s" on network "%s".'
-                % (entry_point, container_name, container_network)
+                'Using entrypoint "%s" for container "%s" on network "%s".',
+                entry_point,
+                container_name,
+                container_network,
             )
 
             return ContainerInfo(container_name, entry_point)
@@ -1021,12 +1024,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             # Get the container name and id.
             container_name = self.get_container_name(func_arn)
             if status == 1:
-                LOG.debug("Stopping container: %s" % container_name)
+                LOG.debug("Stopping container: %s", container_name)
                 DOCKER_CLIENT.stop_container(container_name)
                 status = self.get_docker_container_status(func_arn)
 
             if status == -1:
-                LOG.debug("Removing container: %s" % container_name)
+                LOG.debug("Removing container: %s", container_name)
                 rm_docker_container(container_name, safe=True)
 
             # clean up function invoke times, as some init logic depends on this
@@ -1054,7 +1057,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         with self.docker_container_lock:
             container_names = self.get_all_container_names()
 
-            LOG.debug("Removing %d containers." % len(container_names))
+            LOG.debug("Removing %d containers.", len(container_names))
             for container_name in container_names:
                 DOCKER_CLIENT.remove_container(container_name)
 
@@ -1583,9 +1586,7 @@ def log_lambda_result(func_arn, result, log_output):
     result = to_str(result or "")
     log_output = truncate(to_str(log_output or ""), max_length=1000)
     log_formatted = truncate(log_output.strip().replace("\n", "\n> "), max_length=1000)
-    LOG.debug(
-        "Lambda %s result / log output:\n%s\n> %s" % (func_arn, result.strip(), log_formatted)
-    )
+    LOG.debug("Lambda %s result / log output:\n%s\n> %s", func_arn, result.strip(), log_formatted)
 
 
 # --------------

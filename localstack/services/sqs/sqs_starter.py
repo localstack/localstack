@@ -9,11 +9,7 @@ from moto.sqs.exceptions import QueueDoesNotExist
 from moto.sqs.models import Queue
 
 from localstack import config
-from localstack.services.infra import (
-    log_startup_message,
-    start_moto_server,
-    start_proxy_for_service,
-)
+from localstack.services.infra import start_moto_server, start_proxy_for_service
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.services.sqs.elasticmq import ElasticMQSerer
 from localstack.utils.aws import aws_stack
@@ -62,8 +58,6 @@ def start_sqs(*args, **kwargs):
 
     if _server:
         return _server
-
-    log_startup_message("SQS")
 
     if SQS_BACKEND_IMPL == "elasticmq":
         _server = start_sqs_elasticmq(*args, **kwargs)

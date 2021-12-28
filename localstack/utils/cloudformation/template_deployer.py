@@ -152,7 +152,7 @@ def get_resource_name(resource):
         name = instance.get_resource_name()
 
     if not name:
-        LOG.debug('Unable to extract name for resource type "%s"' % res_type)
+        LOG.debug('Unable to extract name for resource type "%s"', res_type)
     return name
 
 
@@ -169,7 +169,7 @@ def get_client(resource, func_config):
             return aws_stack.connect_to_resource(service)
         return aws_stack.connect_to_service(service)
     except Exception as e:
-        LOG.warning('Unable to get client for "%s" API, skipping deployment: %s' % (service, e))
+        LOG.warning('Unable to get client for "%s" API, skipping deployment: %s', service, e)
         return None
 
 
@@ -182,8 +182,10 @@ def describe_stack_resource(stack_name, logical_resource_id):
         return result["StackResourceDetail"]
     except Exception as e:
         LOG.warning(
-            'Unable to get details for resource "%s" in CloudFormation stack "%s": %s'
-            % (logical_resource_id, stack_name, e)
+            'Unable to get details for resource "%s" in CloudFormation stack "%s": %s',
+            logical_resource_id,
+            stack_name,
+            e,
         )
 
 
@@ -218,8 +220,10 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
         # if is_deployable_resource(resource):
         LOG.warning(
-            "Unexpected resource type %s when resolving references of resource %s: %s"
-            % (resource_type, resource_id, resource)
+            "Unexpected resource type %s when resolving references of resource %s: %s",
+            resource_type,
+            resource_id,
+            resource,
         )
 
     except DependencyNotYetSatisfied:
@@ -244,8 +248,11 @@ def check_not_found_exception(e, resource_type, resource, resource_status=None):
     ]
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning(
-            "Unexpected error retrieving details for resource type %s: Exception: %s - %s - status: %s"
-            % (resource_type, e, resource, resource_status)
+            "Unexpected error retrieving details for resource type %s: Exception: %s - %s - status: %s",
+            resource_type,
+            e,
+            resource,
+            resource_status,
         )
 
         return False
@@ -262,7 +269,7 @@ def extract_resource_attribute(
     resources=None,
     stack_name=None,
 ):
-    LOG.debug("Extract resource attribute: %s %s" % (resource_type, attribute))
+    LOG.debug("Extract resource attribute: %s %s", resource_type, attribute)
     is_ref_attribute = attribute in ["PhysicalResourceId", "Ref"]
     is_ref_attr_or_arn = is_ref_attribute or attribute == "Arn"
     resource = resource or {}
@@ -418,7 +425,7 @@ def get_attr_from_model_instance(resource, attribute, resource_type, resource_id
     model_class = RESOURCE_MODELS.get(resource_type)
     if not model_class:
         if resource_type not in ["AWS::Parameter", "Parameter"]:
-            LOG.debug('Unable to find model class for resource type "%s"' % resource_type)
+            LOG.debug('Unable to find model class for resource type "%s"', resource_type)
         return
     try:
         inst = model_class(resource_name=resource_id, resource_json=resource)
@@ -485,8 +492,10 @@ def resolve_ref(stack_name, ref, resources, attribute):
     )
     if result is None:
         LOG.warning(
-            'Unable to extract reference attribute "%s" from resource: %s %s'
-            % (attribute, resource_new, resource)
+            'Unable to extract reference attribute "%s" from resource: %s %s',
+            attribute,
+            resource_new,
+            resource,
         )
     return result
 
@@ -523,7 +532,7 @@ def _resolve_refs_recursively(stack_name, value, resources):
             ref = resolve_ref(stack_name, value["Ref"], resources, attribute="Ref")
             if ref is None:
                 msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
-                LOG.debug("%s - %s" % (msg, resources.get(value["Ref"]) or set(resources.keys())))
+                LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
             ref = resolve_refs_recursively(stack_name, ref, resources)
             return ref
@@ -583,8 +592,10 @@ def _resolve_refs_recursively(stack_name, value, resources):
             stack_export = stack.exports_map.get(import_value_key) or {}
             if not stack_export.get("Value"):
                 LOG.info(
-                    'Unable to find export "%s" in stack "%s", existing export names: %s'
-                    % (import_value_key, stack_name, list(stack.exports_map.keys()))
+                    'Unable to find export "%s" in stack "%s", existing export names: %s',
+                    import_value_key,
+                    stack_name,
+                    list(stack.exports_map.keys()),
                 )
                 return None
             return stack_export["Value"]
@@ -727,9 +738,9 @@ def update_resource(resource_id, resources, stack_name):
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
     if resource_type not in UPDATEABLE_RESOURCES:
-        LOG.warning('Unable to update resource type "%s", id "%s"' % (resource_type, resource_id))
+        LOG.warning('Unable to update resource type "%s", id "%s"', resource_type, resource_id)
         return
-    LOG.info("Updating resource %s of type %s" % (resource_id, resource_type))
+    LOG.info("Updating resource %s of type %s", resource_id, resource_type)
 
     instance = get_resource_model_instance(resource_id, resources)
     if instance:
@@ -819,7 +830,7 @@ def execute_resource_action_fallback(
     if not clazz:
         LOG.warning(msg)
         return
-    LOG.info("%s - using fallback mechanism" % msg)
+    LOG.info("%s - using fallback mechanism", msg)
     if action_name == ACTION_CREATE:
         resource_name = get_resource_name(resource) or resource_id
         result = clazz.create_from_cloudformation_json(
@@ -841,8 +852,10 @@ def execute_resource_action(resource_id, resources, stack_name, action_name):
         )
 
     LOG.debug(
-        'Running action "%s" for resource type "%s" id "%s"'
-        % (action_name, resource_type, resource_id)
+        'Running action "%s" for resource type "%s" id "%s"',
+        action_name,
+        resource_type,
+        resource_id,
     )
     func_details = func_details[action_name]
     func_details = func_details if isinstance(func_details, list) else [func_details]
@@ -967,8 +980,11 @@ def configure_resource_via_sdk(
     # invoke function
     try:
         LOG.debug(
-            'Request for resource type "%s" in region %s: %s %s'
-            % (resource_type, aws_stack.get_region(), func_details["function"], params)
+            'Request for resource type "%s" in region %s: %s %s',
+            resource_type,
+            aws_stack.get_region(),
+            func_details["function"],
+            params,
         )
         try:
             result = function(**params)
@@ -980,9 +996,7 @@ def configure_resource_via_sdk(
     except Exception as e:
         if action_name == "delete" and check_not_found_exception(e, resource_type, resource):
             return
-        LOG.warning(
-            "Error calling %s with params: %s for resource: %s" % (function, params, resource)
-        )
+        LOG.warning("Error calling %s with params: %s for resource: %s", function, params, resource)
         raise e
 
     return result
@@ -1068,8 +1082,9 @@ def determine_resource_physical_id(
         return result
 
     LOG.info(
-        'Unable to determine PhysicalResourceId for "%s" resource, ID "%s"'
-        % (resource_type, resource_id)
+        'Unable to determine PhysicalResourceId for "%s" resource, ID "%s"',
+        resource_type,
+        resource_id,
     )
 
 
@@ -1181,7 +1196,7 @@ class TemplateDeployer(object):
                 action="CREATE",
             )
         except Exception as e:
-            LOG.info("Unable to create stack %s: %s" % (self.stack.stack_name, e))
+            LOG.info("Unable to create stack %s: %s", self.stack.stack_name, e)
             self.stack.set_stack_status("CREATE_FAILED")
             raise
 
@@ -1197,7 +1212,7 @@ class TemplateDeployer(object):
             )
         except Exception as e:
             LOG.info(
-                "Unable to apply change set %s: %s" % (change_set.metadata.get("ChangeSetName"), e)
+                "Unable to apply change set %s: %s", change_set.metadata.get("ChangeSetName"), e
             )
             change_set.metadata["Status"] = "%s_FAILED" % action
             self.stack.set_stack_status("%s_FAILED" % action)
@@ -1238,7 +1253,7 @@ class TemplateDeployer(object):
             long_res_type = canonical_resource_type(resource_type)
             if long_res_type in parsing.MODEL_MAP:
                 return True
-            LOG.warning('Unable to deploy resource type "%s": %s' % (resource_type, resource))
+            LOG.warning('Unable to deploy resource type "%s": %s', resource_type, resource)
         return bool(entry and entry.get(ACTION_CREATE))
 
     def is_deployed(self, resource):
@@ -1272,8 +1287,10 @@ class TemplateDeployer(object):
             if self.is_deployable_resource(resource):
                 if not self.is_deployed(resource):
                     LOG.debug(
-                        "Dependency for resource %s not yet deployed: %s %s"
-                        % (depending_resource, resource_id, resource)
+                        "Dependency for resource %s not yet deployed: %s %s",
+                        depending_resource,
+                        resource_id,
+                        resource,
                     )
                     result[resource_id] = resource
                     if return_first:
@@ -1506,8 +1523,10 @@ class TemplateDeployer(object):
                 status = "%s_COMPLETE" % action
             except Exception as e:
                 LOG.debug(
-                    'Error applying changes for CloudFormation stack "%s": %s %s'
-                    % (stack.stack_name, e, traceback.format_exc())
+                    'Error applying changes for CloudFormation stack "%s": %s %s',
+                    stack.stack_name,
+                    e,
+                    traceback.format_exc(),
                 )
                 status = "%s_FAILED" % action
             stack.set_stack_status(status)
@@ -1555,16 +1574,14 @@ class TemplateDeployer(object):
                             resource_id, change, stack, new_resources
                         )
                         LOG.debug(
-                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s (should_deploy=%s)'
-                            % (
-                                action,
-                                resource_id,
-                                j + 1,
-                                len(changes),
-                                res_change["ResourceType"],
-                                i + 1,
-                                should_deploy,
-                            )
+                            'Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s (should_deploy=%s)',
+                            action,
+                            resource_id,
+                            j + 1,
+                            len(changes),
+                            res_change["ResourceType"],
+                            i + 1,
+                            should_deploy,
                         )
                         if not should_deploy:
                             del changes[j]
@@ -1580,8 +1597,9 @@ class TemplateDeployer(object):
                     updated = True
                 except DependencyNotYetSatisfied as e:
                     LOG.debug(
-                        'Dependencies for "%s" not yet satisfied, retrying in next loop: %s'
-                        % (resource_id, e)
+                        'Dependencies for "%s" not yet satisfied, retrying in next loop: %s',
+                        resource_id,
+                        e,
                     )
                     j += 1
             if not changes:
@@ -1606,8 +1624,7 @@ class TemplateDeployer(object):
         # check resource condition, if present
         if not evaluate_resource_condition(resource, stack.stack_name, new_resources):
             LOG.debug(
-                'Skipping deployment of "%s", as resource condition evaluates to false'
-                % resource_id
+                'Skipping deployment of "%s", as resource condition evaluates to false', resource_id
             )
             return
 
@@ -1623,8 +1640,8 @@ class TemplateDeployer(object):
                     return False
             if action == "Modify" and not self.is_updateable(resource):
                 LOG.debug(
-                    'Action "update" not yet implemented for CF resource type %s'
-                    % resource.get("Type")
+                    'Action "update" not yet implemented for CF resource type %s',
+                    resource.get("Type"),
                 )
                 return False
         return True

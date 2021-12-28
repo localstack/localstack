@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from typing import Dict, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from moto.apigateway import models as apigateway_models
@@ -95,7 +96,24 @@ def apply_patches():
         rest_api = self.get_rest_api(function_id)
         return import_api_from_openapi_spec(rest_api, function_id, body, query_params)
 
-    # import rest_api
+    def _patch_api_gateway_entity(self, entity: Dict) -> Optional[Tuple[int, Dict, str]]:
+        not_supported_attributes = ["/id", "/region_name", "/create_date"]
+
+        patch_operations = self._get_param("patchOperations")
+
+        model_attributes = list(entity.keys())
+        for operation in patch_operations:
+            if operation["path"].strip("/") in REST_API_ATTRIBUTES:
+                operation["path"] = camelcase_to_underscores(operation["path"])
+            path_start = operation["path"].strip("/").split("/")[0]
+            path_start_usc = camelcase_to_underscores(path_start)
+            if path_start not in model_attributes and path_start_usc in model_attributes:
+                operation["path"] = operation["path"].replace(path_start, path_start_usc)
+            if operation["path"] in not_supported_attributes:
+                msg = "Invalid patch path %s" % (operation["path"])
+                return 400, {}, msg
+
+        apply_json_patch_safe(entity, patch_operations, in_place=True)
 
     def apigateway_response_restapis_individual(self, request, full_url, headers):
         if request.method in ["GET", "DELETE"]:
@@ -105,8 +123,6 @@ def apply_patches():
         function_id = self.path.replace("/restapis/", "", 1).split("/")[0]
 
         if self.method == "PATCH":
-            not_supported_attributes = ["/id", "/region_name", "/createdDate"]
-
             rest_api = self.backend.apis.get(function_id)
             if not rest_api:
                 msg = "Invalid API identifier specified %s:%s" % (
@@ -115,19 +131,12 @@ def apply_patches():
                 )
                 return 404, {}, msg
 
-            patch_operations = self._get_param("patchOperations")
-            model_attributes = list(rest_api.__dict__.keys())
-            for operation in patch_operations:
-                if operation["path"] in not_supported_attributes:
-                    msg = "Invalid patch path %s" % (operation["path"])
-                    return 400, {}, msg
-                path_start = operation["path"].strip("/").split("/")[0]
-                path_start_usc = camelcase_to_underscores(path_start)
-                if path_start not in model_attributes and path_start_usc in model_attributes:
-                    operation["path"] = operation["path"].replace(path_start, path_start_usc)
+            if not isinstance(rest_api.__dict__, DelSafeDict):
+                rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
 
-            rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
-            apply_json_patch_safe(rest_api.__dict__, patch_operations, in_place=True)
+            result = _patch_api_gateway_entity(self, rest_api.__dict__)
+            if result is not None:
+                return result
 
             # fix data types after patches have been applied
             rest_api.minimum_compression_size = int(rest_api.minimum_compression_size or -1)
@@ -144,6 +153,25 @@ def apply_patches():
             return 200, {}, json.dumps(rest_api.to_dict())
 
         return 400, {}, ""
+
+    def apigateway_response_resource_individual(self, request, full_url, headers):
+        if request.method in ["GET", "POST", "DELETE"]:
+            return apigateway_response_resource_individual_orig(self, request, full_url, headers)
+
+        self.setup_class(request, full_url, headers)
+        function_id = self.path.replace("/restapis/", "", 1).split("/")[0]
+
+        if self.method == "PATCH":
+            resource_id = self.path.split("/")[4]
+            resource = self.backend.get_resource(function_id, resource_id)
+            if not isinstance(resource.__dict__, DelSafeDict):
+                resource.__dict__ = DelSafeDict(resource.__dict__)
+            result = _patch_api_gateway_entity(self, resource.__dict__)
+            if result is not None:
+                return result
+            return 200, {}, json.dumps(resource.to_dict())
+
+        return 404, {}, ""
 
     def apigateway_response_resource_methods(self, request, *args, **kwargs):
         result = apigateway_response_resource_methods_orig(self, request, *args, **kwargs)
@@ -411,6 +439,8 @@ def apply_patches():
     if not hasattr(apigateway_models.APIGatewayBackend, "put_rest_api"):
         apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
         APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
+        apigateway_response_resource_individual_orig = APIGatewayResponse.resource_individual
+        APIGatewayResponse.resource_individual = apigateway_response_resource_individual
         apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
 
     if not hasattr(apigateway_models.APIGatewayBackend, "delete_method"):

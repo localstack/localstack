@@ -123,7 +123,7 @@ class GenericBaseModel(CloudFormationModel):
             if not template_deployer.check_not_found_exception(
                 e, self.resource_type, self.properties
             ):
-                LOG.debug("Unable to fetch state for resource %s: %s" % (self, e))
+                LOG.debug("Unable to fetch state for resource %s: %s", self, e)
 
     def fetch_state_if_missing(self, *args, **kwargs):
         if not self.state:

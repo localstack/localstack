@@ -350,8 +350,8 @@ def subscribe_to_shard(data, headers):
             except Exception as e:
                 if "ResourceNotFoundException" in str(e):
                     LOG.debug(
-                        'Kinesis stream "%s" has been deleted, closing shard subscriber'
-                        % stream_name
+                        'Kinesis stream "%s" has been deleted, closing shard subscriber',
+                        stream_name,
                     )
                     return
                 raise

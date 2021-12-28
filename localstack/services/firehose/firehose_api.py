@@ -86,9 +86,7 @@ def get_delivery_stream_tags(
     start_i = -1
     if exclusive_start_tag_key is not None:
         start_i = next(
-            iter(
-                [i for i, tag in enumerate(stream["Tags"]) if tag["Key"] == exclusive_start_tag_key]
-            )
+            iter(i for i, tag in enumerate(stream["Tags"]) if tag["Key"] == exclusive_start_tag_key)
         )
 
     response["Tags"] = [tag for i, tag in enumerate(stream["Tags"]) if start_i < i < limit]
@@ -197,7 +195,7 @@ def put_records(stream_name: str, records: List[Dict]) -> Dict:
                 try:
                     es.create(index=es_index, doc_type=es_type, id=obj_id, body=body)
                 except Exception as e:
-                    LOG.error("Unable to put record to stream: %s %s" % (e, traceback.format_exc()))
+                    LOG.error("Unable to put record to stream: %s %s", e, traceback.format_exc())
                     raise e
         if "S3DestinationDescription" in dest:
             s3_dest = dest["S3DestinationDescription"]
@@ -211,7 +209,7 @@ def put_records(stream_name: str, records: List[Dict]) -> Dict:
             try:
                 s3.Object(bucket, obj_path).put(Body=batched_data)
             except Exception as e:
-                LOG.error("Unable to put record to stream: %s %s" % (e, traceback.format_exc()))
+                LOG.error("Unable to put record to stream: %s %s", e, traceback.format_exc())
                 raise e
         if "HttpEndpointDestinationDescription" in dest:
             http_dest = dest["HttpEndpointDestinationDescription"]
@@ -232,8 +230,10 @@ def put_records(stream_name: str, records: List[Dict]) -> Dict:
                 requests.post(url, json=record_to_send, headers=headers)
             except Exception as e:
                 LOG.info(
-                    "Unable to put Firehose records to HTTP endpoint %s: %s %s"
-                    % (url, e, traceback.format_exc())
+                    "Unable to put Firehose records to HTTP endpoint %s: %s %s",
+                    url,
+                    e,
+                    traceback.format_exc(),
                 )
                 raise e
     return {"RecordId": str(uuid.uuid4())}
@@ -380,7 +380,7 @@ def get_stream(stream_name: str, format_s3_dest: bool = False) -> Optional[Dict]
 
 
 def is_extended_s3_destination(s3_dest: Dict) -> bool:
-    return any([s3_dest.get(attr) is not None for attr in S3_EXTENDED_DEST_ATTRS])
+    return any(s3_dest.get(attr) is not None for attr in S3_EXTENDED_DEST_ATTRS)
 
 
 def error_not_found(stream_name: str):

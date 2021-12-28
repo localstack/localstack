@@ -437,7 +437,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         install.install_debugpy_and_dependencies()
         import debugpy
 
-        LOG.info("Starting debug server at: %s:%s" % (constants.BIND_HOST, config.DEVELOP_PORT))
+        LOG.info("Starting debug server at: %s:%s", constants.BIND_HOST, config.DEVELOP_PORT)
         debugpy.listen((constants.BIND_HOST, config.DEVELOP_PORT))
 
         if config.WAIT_FOR_DEBUGGER:

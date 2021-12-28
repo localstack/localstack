@@ -725,7 +725,7 @@ def fix_arn(arn):
         parts = arn.split(":")
         region = parts[3] if parts[3] in config.VALID_REGIONS else get_region()
         return lambda_function_arn(lambda_function_name(arn), region_name=region)
-    LOG.warning("Unable to fix/canonicalize ARN: %s" % arn)
+    LOG.warning("Unable to fix/canonicalize ARN: %s", arn)
     return arn
 
 
@@ -1009,7 +1009,7 @@ def create_api_gateway(
     usage_plan_name = usage_plan_name or "Basic Usage"
     description = description or 'Test description for API "%s"' % name
 
-    LOG.info('Creating API resources under API Gateway "%s".' % name)
+    LOG.info('Creating API resources under API Gateway "%s".', name)
     api = client.create_rest_api(name=name, description=description)
     api_id = api["id"]
 

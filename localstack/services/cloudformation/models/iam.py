@@ -236,8 +236,7 @@ class IAMRole(GenericBaseModel, MotoRole):
                 continue
             if not isinstance(policy, dict):
                 LOG.info(
-                    'Invalid format of policy for IAM role "%s": %s'
-                    % (props.get("RoleName"), policy)
+                    'Invalid format of policy for IAM role "%s": %s', props.get("RoleName"), policy
                 )
                 continue
             pol_name = policy.get("PolicyName")

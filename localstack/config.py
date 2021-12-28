@@ -539,6 +539,7 @@ for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
         clean_key + "_BACKEND",
         clean_key + "_PORT",
         clean_key + "_PORT_EXTERNAL",
+        "PROVIDER_OVERRIDE_" + clean_key,
     ]
 
 
@@ -596,17 +597,13 @@ def in_docker():
             [
                 os.path.exists("/sys/fs/cgroup/memory/docker/"),
                 any(
-                    [
-                        "docker-" in file_names
-                        for file_names in os.listdir("/sys/fs/cgroup/memory/system.slice")
-                    ]
+                    "docker-" in file_names
+                    for file_names in os.listdir("/sys/fs/cgroup/memory/system.slice")
                 ),
                 os.path.exists("/sys/fs/cgroup/docker/"),
                 any(
-                    [
-                        "docker-" in file_names
-                        for file_names in os.listdir("/sys/fs/cgroup/system.slice/")
-                    ]
+                    "docker-" in file_names
+                    for file_names in os.listdir("/sys/fs/cgroup/system.slice/")
                 ),
             ]
         ):
@@ -788,7 +785,7 @@ if LS_LOG in TRACE_LOG_LEVELS:
     load_end_time = time.time()
     LOG = logging.getLogger(__name__)
     LOG.debug(
-        "Initializing the configuration took %s ms" % int((load_end_time - load_start_time) * 1000)
+        "Initializing the configuration took %s ms", int((load_end_time - load_start_time) * 1000)
     )
 
 
@@ -831,7 +828,9 @@ SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 
 for key, value in os.environ.items():
     if key.startswith("PROVIDER_OVERRIDE_"):
-        SERVICE_PROVIDER_CONFIG.set_provider(key.lstrip("PROVIDER_OVERRIDE_").lower(), value)
+        SERVICE_PROVIDER_CONFIG.set_provider(
+            key.lstrip("PROVIDER_OVERRIDE_").lower().replace("_", "-"), value
+        )
 
 # initialize directories
 if is_in_docker:

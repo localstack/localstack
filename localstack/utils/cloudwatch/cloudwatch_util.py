@@ -41,7 +41,7 @@ def publish_lambda_metric(metric, value, kwargs):
             ],
         )
     except Exception as e:
-        LOG.info('Unable to put metric data for metric "%s" to CloudWatch: %s' % (metric, e))
+        LOG.info('Unable to put metric data for metric "%s" to CloudWatch: %s', metric, e)
 
 
 def publish_lambda_duration(time_before, kwargs):
@@ -133,7 +133,7 @@ def publish_result(ns, time_before, result, kwargs):
         publish_lambda_result(time_before, result, kwargs)
         publish_event(time_before, "success", kwargs)
     else:
-        LOG.info("Unexpected CloudWatch namespace: %s" % ns)
+        LOG.info("Unexpected CloudWatch namespace: %s", ns)
 
 
 def publish_error(ns, time_before, e, kwargs):
@@ -141,7 +141,7 @@ def publish_error(ns, time_before, e, kwargs):
         publish_lambda_error(time_before, kwargs)
         publish_event(time_before, "error", kwargs)
     else:
-        LOG.info("Unexpected CloudWatch namespace: %s" % ns)
+        LOG.info("Unexpected CloudWatch namespace: %s", ns)
 
 
 def cloudwatched(ns):
