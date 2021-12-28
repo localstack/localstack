@@ -1111,34 +1111,32 @@ def apigateway_invocations_arn(lambda_uri):
     )
 
 
-def get_elasticsearch_endpoint(domain=None, region_name=None):
-    env = get_environment(region_name=region_name)
-    if is_local_env(env):
+def get_elasticsearch_endpoint(region_name: str, domain: str = None):
+    if not domain:
         return os.environ["TEST_ELASTICSEARCH_URL"]
     # get endpoint from API
-    es_client = connect_to_service(service_name="es", region_name=env.region)
+    es_client = connect_to_service(service_name="es", region_name=region_name)
+    domain = domain.rpartition("/")[2]
     info = es_client.describe_elasticsearch_domain(DomainName=domain)
-    endpoint = "https://%s" % info["DomainStatus"]["Endpoint"]
+    endpoint = f"http://{info['DomainStatus']['Endpoint']}"
     return endpoint
 
 
-def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None):
+def connect_elasticsearch(endpoint: str = None, domain: str = None, region_name: str = None):
     from elasticsearch import Elasticsearch, RequestsHttpConnection
     from requests_aws4auth import AWS4Auth
 
-    env = get_environment(env, region_name=region_name)
+    region = region_name or get_region()
     verify_certs = False
     use_ssl = False
-    if not endpoint and is_local_env(env):
-        endpoint = os.environ["TEST_ELASTICSEARCH_URL"]
-    if not endpoint and not is_local_env(env) and domain:
-        endpoint = get_elasticsearch_endpoint(domain=domain, region_name=env.region)
+    if not endpoint:
+        endpoint = get_elasticsearch_endpoint(domain=domain, region_name=region)
     # use ssl?
     if "https://" in endpoint:
         use_ssl = True
-        if not is_local_env(env):
-            verify_certs = True
+        verify_certs = True
 
+    LOG.debug("Creating ES client with endpoint %s", endpoint)
     if CUSTOM_BOTO3_SESSION or (ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ):
         access_key = os.environ.get(ENV_ACCESS_KEY)
         secret_key = os.environ.get(ENV_SECRET_KEY)
@@ -1148,7 +1146,7 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
             access_key = credentials.access_key
             secret_key = credentials.secret_key
             session_token = credentials.token
-        awsauth = AWS4Auth(access_key, secret_key, env.region, "es", session_token=session_token)
+        awsauth = AWS4Auth(access_key, secret_key, region, "es", session_token=session_token)
         connection_class = RequestsHttpConnection
         return Elasticsearch(
             hosts=[endpoint],
