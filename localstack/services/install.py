@@ -34,6 +34,7 @@ from localstack.runtime import hooks
 from localstack.utils.common import (
     chmod_r,
     download,
+    file_exists_not_empty,
     get_arch,
     get_os,
     is_windows,
@@ -75,11 +76,24 @@ URL_LOCALSTACK_FAT_JAR = (
 MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
+SFN_PATCH_URL_PREFIX = f"{ARTIFACTS_REPO}/raw/sfn-multiregion/stepfunctions-local-patch"
 SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
 SFN_PATCH_CLASS2 = (
     "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
 )
-SFN_PATCH_URL_PREFIX = f"{ARTIFACTS_REPO}/raw/master/stepfunctions-local-patch"
+SFN_PATCH_CLASS_STARTER = "cloud/localstack/StepFunctionsStarter.class"
+SFN_PATCH_CLASS_REGION = "cloud/localstack/StepFunctionsStarter$RegionAspect.class"
+SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
+
+# additional JAR libs required for multi-region and persistence (PRO only) support
+MAVEN_REPO = "https://repo1.maven.org/maven2"
+URL_ASPECTJRT = f"{MAVEN_REPO}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
+URL_ASPECTJWEAVER = f"{MAVEN_REPO}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
+URL_KRYO = f"{MAVEN_REPO}/com/esotericsoftware/kryo/5.2.0/kryo-5.2.0.jar"
+URL_OBJENESIS = f"{MAVEN_REPO}/org/objenesis/objenesis/3.2/objenesis-3.2.jar"
+URL_MINLOG = f"{MAVEN_REPO}/com/esotericsoftware/minlog/1.3.1/minlog-1.3.1.jar"
+URL_REFLECTASM = f"{MAVEN_REPO}/com/esotericsoftware/reflectasm/1.11.9/reflectasm-1.11.9.jar"
+JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER, URL_KRYO, URL_OBJENESIS, URL_MINLOG, URL_REFLECTASM]
 
 # kinesis-mock version
 KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.0"
@@ -337,10 +351,38 @@ def install_stepfunctions_local():
         for file in path.glob("*.jar"):
             file.rename(Path(INSTALL_DIR_STEPFUNCTIONS) / file.name)
         rm_rf("%s/stepfunctionslocal" % dirs.static_libs)
-    # apply patches
-    for patch_class in (SFN_PATCH_CLASS1, SFN_PATCH_CLASS2):
+
+    classes = [
+        SFN_PATCH_CLASS1,
+        SFN_PATCH_CLASS2,
+        SFN_PATCH_CLASS_REGION,
+        SFN_PATCH_CLASS_STARTER,
+        SFN_PATCH_FILE_METAINF,
+    ]
+    for patch_class in classes:
         patch_url = f"{SFN_PATCH_URL_PREFIX}/{patch_class}"
         add_file_to_jar(patch_class, patch_url, target_jar=INSTALL_PATH_STEPFUNCTIONS_JAR)
+
+    # special case for Manifest file - extract first, replace content, then update in JAR file
+    manifest_file = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "META-INF", "MANIFEST.MF")
+    if not os.path.exists(manifest_file):
+        content = run(["unzip", "-p", INSTALL_PATH_STEPFUNCTIONS_JAR, "META-INF/MANIFEST.MF"])
+        content = re.sub(
+            "Main-Class: .+", "Main-Class: cloud.localstack.StepFunctionsStarter", content
+        )
+        classpath = " ".join([os.path.basename(jar) for jar in JAR_URLS])
+        content = re.sub(r"Class-Path: \. ", f"Class-Path: {classpath} . ", content)
+        save_file(manifest_file, content)
+        run(
+            ["zip", INSTALL_PATH_STEPFUNCTIONS_JAR, "META-INF/MANIFEST.MF"],
+            cwd=INSTALL_DIR_STEPFUNCTIONS,
+        )
+
+    # download additional jar libs
+    for jar_url in JAR_URLS:
+        target = os.path.join(INSTALL_DIR_STEPFUNCTIONS, os.path.basename(jar_url))
+        if not file_exists_not_empty(target):
+            download(jar_url, target)
 
 
 def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):

@@ -496,9 +496,6 @@ TEST_STATE_MACHINE_2 = {
 }
 
 
-@pytest.mark.xfail(
-    reason="will fail until artifacts repo supports multiple regions for nested executions"
-)
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 def test_multiregion_nested(region_name):
     client1: mypy_boto3_stepfunctions.SFNClient = aws_stack.create_external_boto_client(
