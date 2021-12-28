@@ -49,7 +49,8 @@
             }
           },
           "requestParameters": {
-            "integration.request.path.id": "method.request.path.petId"
+            "integration.request.path.id": "method.request.path.petId",
+            "foo.region": {"Fn::Sub": "test - ${AWS::Region}"}
           },
           "uri": "http://petstore-demo-endpoint.execute-api.com/petstore/pets/{id}",
           "passthroughBehavior": "when_no_match",

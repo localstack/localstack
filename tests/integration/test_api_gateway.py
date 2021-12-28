@@ -1128,9 +1128,8 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(200, rs["ResponseMetadata"]["HTTPStatusCode"])
 
         rs = client.get_resources(restApiId=rest_api_id)
-        self.assertEqual(
-            2, len(rs["items"])
-        )  # should contain 2 resources (including the root resource)
+        # should contain 2 resources (including the root resource)
+        self.assertEqual(2, len(rs["items"]))
 
         resource = [res for res in rs["items"] if res["path"] == "/test"][0]
         self.assertIn("GET", resource["resourceMethods"])
@@ -1148,10 +1147,17 @@ class TestAPIGateway(unittest.TestCase):
         resources = rs["items"]
         self.assertEqual(3, len(resources))
 
+        # assert resource paths exist
         paths = [res["path"] for res in resources]
         self.assertIn("/", paths)
         self.assertIn("/pets", paths)
         self.assertIn("/pets/{petId}", paths)
+
+        # assert intrinsic function Fn::Sub is resolved on integration details
+        res = [r for r in resources if r["path"] == "/pets/{petId}"][0]
+        rs = client.get_integration(restApiId=rest_api_id, resourceId=res["id"], httpMethod="GET")
+        req_params = rs["requestParameters"]
+        assert req_params.get("foo.region") == f"test - {aws_stack.get_region()}"
 
         # clean up
         client.delete_rest_api(restApiId=rest_api_id)

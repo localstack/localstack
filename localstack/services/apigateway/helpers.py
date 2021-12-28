@@ -18,6 +18,7 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.aws_stack import parse_arn
+from localstack.utils.cloudformation.template_deployer import resolve_refs_recursively
 
 LOG = logging.getLogger(__name__)
 
@@ -1069,9 +1070,12 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
 
 
 def import_api_from_openapi_spec(
-    rest_api: apigateway_models.RestAPI, function_id: str, body: Dict, query_params: Dict
+    rest_api: apigateway_models.RestAPI, body: Dict, query_params: Dict
 ) -> apigateway_models.RestAPI:
     """Import an API from an OpenAPI spec document"""
+
+    # Note: x-amazon-apigateway-integration and others may contain intrinsic functions like "Fn::Sub": ...
+    body = resolve_refs_recursively(stack_name="_none_", value=body, resources={})
 
     # Remove default root, then add paths from API spec
     rest_api.resources = {}
@@ -1114,6 +1118,7 @@ def import_api_from_openapi_spec(
                 pass_through_behavior=payload.get("passthroughBehavior"),
                 request_templates=payload.get("requestTemplates") or {},
             )
+            integration["requestParameters"] = payload.get("requestParameters")
             integration.create_integration_response(
                 status_code=payload.get("responses", {}).get("default", {}).get("statusCode", 200),
                 selection_pattern=None,

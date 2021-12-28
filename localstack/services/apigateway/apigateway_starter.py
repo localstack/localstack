@@ -94,7 +94,7 @@ def apply_patches():
 
     def apigateway_models_backend_put_rest_api(self, function_id, body, query_params):
         rest_api = self.get_rest_api(function_id)
-        return import_api_from_openapi_spec(rest_api, function_id, body, query_params)
+        return import_api_from_openapi_spec(rest_api, body, query_params)
 
     def _patch_api_gateway_entity(self, entity: Dict) -> Optional[Tuple[int, Dict, str]]:
         not_supported_attributes = ["/id", "/region_name", "/create_date"]
