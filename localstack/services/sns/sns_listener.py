@@ -135,6 +135,13 @@ class ProxyListenerSNS(PersistingProxyListener):
                 if "Endpoint" not in req_data:
                     return make_error(message="Endpoint not specified in subscription", code=400)
 
+                if ".fifo" in req_data["Endpoint"][0] and ".fifo" not in topic_arn:
+                    return make_error(
+                        message="FIFO SQS Queues can not be subscribed to standard SNS topics",
+                        code=400,
+                        code_string="InvalidParameter",
+                    )
+
             elif req_action == "ConfirmSubscription":
                 if "TopicArn" not in req_data:
                     return make_error(
@@ -171,6 +178,14 @@ class ProxyListenerSNS(PersistingProxyListener):
                     return make_error(
                         code=400, code_string="InvalidParameter", message="Empty message"
                     )
+
+                if topic_arn and ".fifo" in topic_arn and not req_data.get("MessageGroupId"):
+                    return make_error(
+                        code=400,
+                        code_string="InvalidParameter",
+                        message="The MessageGroupId parameter is required for FIFO topics",
+                    )
+
                 sns_backend = SNSBackend.get()
                 # No need to create a topic to send SMS or single push notifications with SNS
                 # but we can't mock a sending so we only return that it went well
