@@ -2,7 +2,6 @@ import json
 import os
 import unittest
 
-import mypy_boto3_stepfunctions
 import pytest
 
 from localstack.services.awslambda import lambda_api
@@ -498,9 +497,7 @@ TEST_STATE_MACHINE_2 = {
 
 @pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
 def test_multiregion_nested(region_name):
-    client1: mypy_boto3_stepfunctions.SFNClient = aws_stack.create_external_boto_client(
-        "stepfunctions", region_name=region_name
-    )
+    client1 = aws_stack.create_external_boto_client("stepfunctions", region_name=region_name)
     # create state machine
     child_machine_name = f"sf-child-{short_uid()}"
     role = aws_stack.role_arn("sfn_role")
