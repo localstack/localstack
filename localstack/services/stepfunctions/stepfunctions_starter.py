@@ -19,7 +19,10 @@ PROCESS_THREAD = None
 
 def get_command(backend_port):
     cmd = (
-        "cd %s; PORT=%s java -Dcom.amazonaws.sdk.disableCertChecking -Xmx%s "
+        "cd %s; PORT=%s java "
+        "-javaagent:aspectjweaver-1.9.7.jar "
+        "-Dorg.aspectj.weaver.loadtime.configuration=META-INF/community.xml "
+        "-Dcom.amazonaws.sdk.disableCertChecking -Xmx%s "
         "-jar StepFunctionsLocal.jar --aws-account %s"
     ) % (
         install.INSTALL_DIR_STEPFUNCTIONS,
