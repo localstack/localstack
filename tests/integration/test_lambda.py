@@ -2074,13 +2074,13 @@ class TestDockerBehaviour(LambdaTestBase):
 
         assert payload["Hello"] == "Elon Musk"
 
-    def test_prime_and_destroy_containers(self):
-        # run these tests only for the "reuse containers" Lambda executor
-        if not isinstance(
+    @pytest.mark.skipif(
+        condition=not isinstance(
             lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorReuseContainers
-        ):
-            return
-
+        ),
+        reason="Test only applicable if docker-reuse executor is selected",
+    )
+    def test_prime_and_destroy_containers(self):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_prime_and_destroy_containers"
         func_arn = lambda_api.func_arn(func_name)
@@ -2131,7 +2131,7 @@ class TestDockerBehaviour(LambdaTestBase):
         self.assertEqual(1, status)
 
         container_network = executor.get_docker_container_network(func_arn)
-        self.assertEqual("default", container_network)
+        self.assertEqual("bridge", container_network)
 
         executor.cleanup()
         status = executor.get_docker_container_status(func_arn)
@@ -2142,13 +2142,13 @@ class TestDockerBehaviour(LambdaTestBase):
         # clean up
         testutil.delete_lambda_function(func_name)
 
-    def test_destroy_idle_containers(self):
-        # run these tests only for the "reuse containers" Lambda executor
-        if not isinstance(
+    @pytest.mark.skipif(
+        condition=not isinstance(
             lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorReuseContainers
-        ):
-            pytest.skip("only testing docker reuse executor")
-
+        ),
+        reason="Test only applicable if docker-reuse executor is selected",
+    )
+    def test_destroy_idle_containers(self):
         executor = lambda_api.LAMBDA_EXECUTOR
         func_name = "test_destroy_idle_containers"
         func_arn = lambda_api.func_arn(func_name)
