@@ -1,5 +1,6 @@
 import dataclasses
 import io
+import ipaddress
 import json
 import logging
 import os
@@ -287,17 +288,26 @@ class ContainerClient(metaclass=ABCMeta):
         container_attrs = self.inspect_container(container_name_or_id=container_name)
         return list(container_attrs["NetworkSettings"]["Networks"].keys())
 
-    def get_container_ip_for_network(self, container_name: str, container_network: str) -> str:
-        container_id = self.get_container_id(container_name=container_name)
+    def get_container_ipv4_for_network(
+        self, container_name_or_id: str, container_network: str
+    ) -> str:
+        """
+        Returns the IPv4 address for the container on the interface connected to the given network
+        :param container_name_or_id: Container to inspect
+        :param container_network: Network the IP address will belong to
+        :return: IP address of the given container on the interface connected to the given network
+        """
+        # we always need the ID for this
+        container_id = self.get_container_id(container_name=container_name_or_id)
         network_attrs = self.inspect_network(container_network)
         containers = network_attrs["Containers"]
         if container_id not in containers:
             raise ContainerException(
                 "Container %s is not connected to target network %s",
-                container_name,
+                container_name_or_id,
                 container_network,
             )
-        ip, _, subnet_size = containers[container_id]["IPv4Address"].partition("/")
+        ip = str(ipaddress.IPv4Interface(containers[container_id]["IPv4Address"]).ip)
         return ip
 
     @abstractmethod

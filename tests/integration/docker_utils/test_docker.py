@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import re
 import time
@@ -31,6 +32,9 @@ ContainerInfo = NamedTuple(
 LOG = logging.getLogger(__name__)
 
 container_name_prefix = "lst_test_"
+IP_REGEX = (
+    r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+)
 
 
 def _random_container_name() -> str:
@@ -277,15 +281,19 @@ class TestDockerClient:
         network_id = create_network(network_name)
         safe_run(["docker", "network", "connect", network_id, dummy_container.container_id])
         docker_client.start_container(dummy_container.container_id)
-        result_bridge_network = docker_client.get_container_ip_for_network(
+        result_bridge_network = docker_client.get_container_ipv4_for_network(
             container_name=dummy_container.container_id, container_network="bridge"
         ).strip()
-        assert re.match(r"172\.17\.0\.\d", result_bridge_network)
-        result_custom_network = docker_client.get_container_ip_for_network(
+        assert re.match(IP_REGEX, result_bridge_network)
+        bridge_network = docker_client.inspect_network("bridge")["IPAM"]["Config"][0]["Subnet"]
+        assert ipaddress.IPv4Address(result_bridge_network) in ipaddress.IPv4Network(bridge_network)
+        result_custom_network = docker_client.get_container_ipv4_for_network(
             container_name=dummy_container.container_id, container_network=network_name
         ).strip()
-        assert re.match(r"172\.(\d{1,4})\.0\.(\d{1,4})", result_custom_network)
+        assert re.match(IP_REGEX, result_custom_network)
         assert result_custom_network != result_bridge_network
+        custom_network = docker_client.inspect_network(network_name)["IPAM"]["Config"][0]["Subnet"]
+        assert ipaddress.IPv4Address(result_custom_network) in ipaddress.IPv4Network(custom_network)
 
     def test_get_container_ip_for_network_wrong_network(
         self, docker_client: ContainerClient, dummy_container, create_network
@@ -293,13 +301,23 @@ class TestDockerClient:
         network_name = f"test-network-{short_uid()}"
         create_network(network_name)
         docker_client.start_container(dummy_container.container_id)
-        result_bridge_network = docker_client.get_container_ip_for_network(
+        result_bridge_network = docker_client.get_container_ipv4_for_network(
             container_name=dummy_container.container_id, container_network="bridge"
         ).strip()
         assert re.match(r"172\.17\.0\.\d", result_bridge_network)
 
         with pytest.raises(ContainerException):
-            docker_client.get_container_ip_for_network(
+            docker_client.get_container_ipv4_for_network(
+                container_name=dummy_container.container_id, container_network=network_name
+            )
+
+    def test_get_container_ip_for_network_non_existent_network(
+        self, docker_client: ContainerClient, dummy_container, create_network
+    ):
+        network_name = f"invalid-test-network-{short_uid()}"
+        docker_client.start_container(dummy_container.container_id)
+        with pytest.raises(NoSuchNetwork):
+            docker_client.get_container_ipv4_for_network(
                 container_name=dummy_container.container_id, container_network=network_name
             )
 
@@ -914,7 +932,7 @@ class TestDockerClient:
         docker_client.start_container(dummy_container.container_id)
         ip = docker_client.get_container_ip(dummy_container.container_id)
         assert re.match(
-            r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+            IP_REGEX,
             ip,
         )
         assert "127.0.0.1" != ip
