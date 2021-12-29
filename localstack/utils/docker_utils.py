@@ -282,10 +282,23 @@ class ContainerClient(metaclass=ABCMeta):
         """Returns the status of the container with the given name"""
         pass
 
-    @abstractmethod
     def get_networks(self, container_name: str) -> List[str]:
-        """Returns the networks of the container with the given name"""
-        pass
+        LOG.debug("Getting network type for container: %s", container_name)
+        container_attrs = self.inspect_container(container_name_or_id=container_name)
+        return list(container_attrs["NetworkSettings"]["Networks"].keys())
+
+    def get_container_ip_for_network(self, container_name: str, container_network: str) -> str:
+        container_id = self.get_container_id(container_name=container_name)
+        network_attrs = self.inspect_network(container_network)
+        containers = network_attrs["Containers"]
+        if container_id not in containers:
+            raise ContainerException(
+                "Container %s is not connected to target network %s",
+                container_name,
+                container_network,
+            )
+        ip, _, subnet_size = containers[container_id]["IPv4Address"].partition("/")
+        return ip
 
     @abstractmethod
     def stop_container(self, container_name: str, timeout: int = None):
@@ -540,29 +553,6 @@ class CmdDockerClient(ContainerClient):
         else:
             return DockerContainerStatus.DOWN
 
-    def get_networks(self, container_name: str) -> List[str]:
-        LOG.debug("Getting container network: %s", container_name)
-        cmd = self._docker_cmd()
-        cmd += [
-            "inspect",
-            container_name,
-            "--format",
-            "{{range $p, $_ := .NetworkSettings.Networks }}{{ $p }},{{end}}",
-        ]
-
-        try:
-            cmd_result = safe_run(cmd)
-        except subprocess.CalledProcessError as e:
-            if "No such container" in to_str(e.stdout):
-                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
-            else:
-                raise ContainerException(
-                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
-
-        container_network = cmd_result.strip().strip(",").split(",")
-        return container_network
-
     def stop_container(self, container_name: str, timeout: int = None) -> None:
         if timeout is None:
             timeout = self.STOP_TIMEOUT
@@ -737,11 +727,12 @@ class CmdDockerClient(ContainerClient):
         cmd += [
             "inspect",
             "--format",
-            "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+            "{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}",
             container_name_or_id,
         ]
         try:
-            return safe_run(cmd).strip()
+            result = safe_run(cmd).strip()
+            return result.split(" ")[0] if result else ""
         except subprocess.CalledProcessError as e:
             if "No such object" in to_str(e.stdout):
                 raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
@@ -1189,16 +1180,6 @@ class SdkDockerClient(ContainerClient):
                 return DockerContainerStatus.DOWN
         except NotFound:
             return DockerContainerStatus.NON_EXISTENT
-        except APIError:
-            raise ContainerException()
-
-    def get_networks(self, container_name: str) -> List[str]:
-        LOG.debug("Getting network type for container: %s", container_name)
-        try:
-            container = self.client().containers.get(container_name)
-            return list(container.attrs["NetworkSettings"]["Networks"].keys())
-        except NotFound:
-            raise NoSuchContainer(container_name)
         except APIError:
             raise ContainerException()
 

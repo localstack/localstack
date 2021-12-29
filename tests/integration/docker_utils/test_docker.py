@@ -261,13 +261,31 @@ class TestDockerClient:
     def test_get_network_multiple_networks(
         self, docker_client: ContainerClient, dummy_container, create_network
     ):
-        network_id = create_network("test-network")
+        network_name = f"test-network-{short_uid()}"
+        network_id = create_network(network_name)
         safe_run(["docker", "network", "connect", network_id, dummy_container.container_id])
         docker_client.start_container(dummy_container.container_id)
         networks = docker_client.get_networks(dummy_container.container_id)
-        assert "test-network" in networks
+        assert network_name in networks
         assert "bridge" in networks
         assert len(networks) == 2
+
+    def test_get_container_ip_for_network(
+        self, docker_client: ContainerClient, dummy_container, create_network
+    ):
+        network_name = f"test-network-{short_uid()}"
+        network_id = create_network(network_name)
+        safe_run(["docker", "network", "connect", network_id, dummy_container.container_id])
+        docker_client.start_container(dummy_container.container_id)
+        result_bridge_network = docker_client.get_container_ip_for_network(
+            container_name=dummy_container.container_id, container_network="bridge"
+        ).strip()
+        assert re.match(r"172\.17\.0\.\d", result_bridge_network)
+        result_custom_network = docker_client.get_container_ip_for_network(
+            container_name=dummy_container.container_id, container_network=network_name
+        ).strip()
+        assert re.match(r"172\.(\d{1,4})\.0\.(\d{1,4})", result_custom_network)
+        assert result_custom_network != result_bridge_network
 
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
