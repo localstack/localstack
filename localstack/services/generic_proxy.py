@@ -773,10 +773,13 @@ class UrlMatchingForwarder(ProxyListener):
         return requests.request(method, url, data=data, headers=headers, stream=True, verify=False)
 
     def matches(self, host, path):
-        # TODO: consider matching default ports (80, 443 if scheme is https). Example: http://localhost:80 matches
-        #  http://localhost) check host rule
+        # TODO: refine matching default ports (80, 443 if scheme is https). Example: http://localhost:80 matches
+        #  http://localhost) check host rule. Can lead to problems with 443-4566 edge proxy forwarding if not enabled
         if self.base_url.netloc:
-            if host != self.base_url.netloc:
+            stripped_netloc, _, port = self.base_url.netloc.rpartition(":")
+            if host != self.base_url.netloc and (
+                host != stripped_netloc or port not in ["80", "443"]
+            ):
                 return False
 
         # check path components

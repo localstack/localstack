@@ -256,6 +256,28 @@ def sns_topic(sns_client, sns_create_topic) -> "GetTopicAttributesResponseTypeDe
 
 
 @pytest.fixture
+def kinesis_create_stream(kinesis_client):
+    stream_names = []
+
+    def _create_stream(**kwargs):
+        if "StreamName" not in kwargs:
+            kwargs["StreamName"] = f"test-stream-{short_uid()}"
+        if "ShardCount" not in kwargs:
+            kwargs["ShardCount"] = 2
+        kinesis_client.create_stream(**kwargs)
+        stream_names.append(kwargs["StreamName"])
+        return kwargs["StreamName"]
+
+    yield _create_stream
+
+    for stream_name in stream_names:
+        try:
+            kinesis_client.delete_stream(StreamName=stream_name)
+        except Exception as e:
+            LOG.debug("error cleaning up kinesis stream %s: %s", stream_name, e)
+
+
+@pytest.fixture
 def kms_key(kms_client):
     return kms_client.create_key(
         Policy="policy1", Description="test key 123", KeyUsage="ENCRYPT_DECRYPT"
