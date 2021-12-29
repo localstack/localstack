@@ -282,13 +282,13 @@ class TestDockerClient:
         safe_run(["docker", "network", "connect", network_id, dummy_container.container_id])
         docker_client.start_container(dummy_container.container_id)
         result_bridge_network = docker_client.get_container_ipv4_for_network(
-            container_name=dummy_container.container_id, container_network="bridge"
+            container_name_or_id=dummy_container.container_id, container_network="bridge"
         ).strip()
         assert re.match(IP_REGEX, result_bridge_network)
         bridge_network = docker_client.inspect_network("bridge")["IPAM"]["Config"][0]["Subnet"]
         assert ipaddress.IPv4Address(result_bridge_network) in ipaddress.IPv4Network(bridge_network)
         result_custom_network = docker_client.get_container_ipv4_for_network(
-            container_name=dummy_container.container_id, container_network=network_name
+            container_name_or_id=dummy_container.container_id, container_network=network_name
         ).strip()
         assert re.match(IP_REGEX, result_custom_network)
         assert result_custom_network != result_bridge_network
@@ -302,13 +302,13 @@ class TestDockerClient:
         create_network(network_name)
         docker_client.start_container(dummy_container.container_id)
         result_bridge_network = docker_client.get_container_ipv4_for_network(
-            container_name=dummy_container.container_id, container_network="bridge"
+            container_name_or_id=dummy_container.container_id, container_network="bridge"
         ).strip()
         assert re.match(r"172\.17\.0\.\d", result_bridge_network)
 
         with pytest.raises(ContainerException):
             docker_client.get_container_ipv4_for_network(
-                container_name=dummy_container.container_id, container_network=network_name
+                container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
     def test_get_container_ip_for_network_non_existent_network(
@@ -318,7 +318,7 @@ class TestDockerClient:
         docker_client.start_container(dummy_container.container_id)
         with pytest.raises(NoSuchNetwork):
             docker_client.get_container_ipv4_for_network(
-                container_name=dummy_container.container_id, container_network=network_name
+                container_name_or_id=dummy_container.container_id, container_network=network_name
             )
 
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):

@@ -157,12 +157,15 @@ def get_main_endpoint_from_container():
     global DOCKER_MAIN_CONTAINER_IP
     if not config.HOSTNAME_FROM_LAMBDA and DOCKER_MAIN_CONTAINER_IP is None:
         DOCKER_MAIN_CONTAINER_IP = False
+        container_name = bootstrap.get_main_container_name()
         try:
             if config.is_in_docker:
-                DOCKER_MAIN_CONTAINER_IP = bootstrap.get_main_container_ip()
+                DOCKER_MAIN_CONTAINER_IP = DOCKER_CLIENT.get_container_ipv4_for_network(
+                    container_name_or_id=container_name,
+                    container_network=get_container_network_for_lambda(),
+                )
                 LOG.info("Determined main container target IP: %s", DOCKER_MAIN_CONTAINER_IP)
         except Exception as e:
-            container_name = bootstrap.get_main_container_name()
             LOG.info(
                 'Unable to get IP address of main Docker container "%s": %s', container_name, e
             )
