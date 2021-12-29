@@ -35,6 +35,7 @@ from localstack.utils.common import (
     timestamp,
     to_bytes,
     to_str,
+    truncate,
 )
 from localstack.utils.kinesis import kinesis_connector
 
@@ -156,7 +157,7 @@ def put_records_to_s3_bucket(
     prefix = s3_configuration.get("Prefix", "")
 
     s3 = connect_to_resource("s3")
-    batched_data = b"".join([base64.b64decode(r.get("Data") or r["data"]) for r in records])
+    batched_data = b"".join([base64.b64decode(r.get("Data", r.get("data"))) for r in records])
 
     obj_path = get_s3_object_path(stream_name, prefix)
     try:
@@ -231,7 +232,7 @@ def put_records(stream_name: str, unprocessed_records: List[Dict]) -> Dict:
                     LOG.warning("Elasticsearch only allows json input data!")
                     raise e
 
-                LOG.debug("Publishing to ES destination. Data: %s", data)
+                LOG.debug("Publishing to ES destination. Data: %s", truncate(data, max_length=300))
                 try:
                     es.create(index=es_index, doc_type=es_type, id=obj_id, body=body)
                 except Exception as e:
