@@ -89,11 +89,7 @@ SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
 MAVEN_REPO = "https://repo1.maven.org/maven2"
 URL_ASPECTJRT = f"{MAVEN_REPO}/org/aspectj/aspectjrt/1.9.7/aspectjrt-1.9.7.jar"
 URL_ASPECTJWEAVER = f"{MAVEN_REPO}/org/aspectj/aspectjweaver/1.9.7/aspectjweaver-1.9.7.jar"
-URL_KRYO = f"{MAVEN_REPO}/com/esotericsoftware/kryo/5.2.0/kryo-5.2.0.jar"
-URL_OBJENESIS = f"{MAVEN_REPO}/org/objenesis/objenesis/3.2/objenesis-3.2.jar"
-URL_MINLOG = f"{MAVEN_REPO}/com/esotericsoftware/minlog/1.3.1/minlog-1.3.1.jar"
-URL_REFLECTASM = f"{MAVEN_REPO}/com/esotericsoftware/reflectasm/1.11.9/reflectasm-1.11.9.jar"
-JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER, URL_KRYO, URL_OBJENESIS, URL_MINLOG, URL_REFLECTASM]
+JAR_URLS = [URL_ASPECTJRT, URL_ASPECTJWEAVER]
 
 # kinesis-mock version
 KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.2.0"
