@@ -244,6 +244,7 @@ ci-pro-smoke-tests:
 	awslocal rds describe-db-instances
 	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
 	awslocal lambda list-layers
+	awslocal timestream-write create-database --database-name db1
 	localstack stop
 
 lint:              		  ## Run code linter to check code style
