@@ -287,6 +287,22 @@ class TestDockerClient:
         assert re.match(r"172\.(\d{1,4})\.0\.(\d{1,4})", result_custom_network)
         assert result_custom_network != result_bridge_network
 
+    def test_get_container_ip_for_network_wrong_network(
+        self, docker_client: ContainerClient, dummy_container, create_network
+    ):
+        network_name = f"test-network-{short_uid()}"
+        create_network(network_name)
+        docker_client.start_container(dummy_container.container_id)
+        result_bridge_network = docker_client.get_container_ip_for_network(
+            container_name=dummy_container.container_id, container_network="bridge"
+        ).strip()
+        assert re.match(r"172\.17\.0\.\d", result_bridge_network)
+
+        with pytest.raises(ContainerException):
+            docker_client.get_container_ip_for_network(
+                container_name=dummy_container.container_id, container_network=network_name
+            )
+
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
         network = docker_client.get_networks(info.container_name)
