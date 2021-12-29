@@ -7,6 +7,7 @@ import sys
 import threading
 import time
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -1118,7 +1119,8 @@ def get_elasticsearch_endpoint(region_name: str, domain: str = None):
     es_client = connect_to_service(service_name="es", region_name=region_name)
     domain = domain.rpartition("/")[2]
     info = es_client.describe_elasticsearch_domain(DomainName=domain)
-    endpoint = f"http://{info['DomainStatus']['Endpoint']}"
+    base_domain = info["DomainStatus"]["Endpoint"]
+    endpoint = base_domain if base_domain.startswith("http") else f"https://{base_domain}"
     return endpoint
 
 
@@ -1134,7 +1136,11 @@ def connect_elasticsearch(endpoint: str = None, domain: str = None, region_name:
     # use ssl?
     if "https://" in endpoint:
         use_ssl = True
-        verify_certs = True
+        # TODO remove this condition once ssl certs are available for .es.localhost.localstack.cloud domains
+        endpoint_netloc = urlparse(endpoint).netloc
+        if not re.match(r"^.*(localhost(\.localstack\.cloud)?)(:\d+)?$", endpoint_netloc):
+            LOG.warning("Verifying certs!")
+            verify_certs = True
 
     LOG.debug("Creating ES client with endpoint %s", endpoint)
     if CUSTOM_BOTO3_SESSION or (ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ):
