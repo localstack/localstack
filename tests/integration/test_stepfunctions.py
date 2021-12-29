@@ -9,6 +9,7 @@ from localstack.services.events.events_listener import TEST_EVENTS_CACHE
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, load_file, retry, short_uid
+from localstack.utils.generic.wait_utils import wait_until
 
 from .lambdas import lambda_environment
 
@@ -477,36 +478,68 @@ TEST_STATE_MACHINE = {
     "States": {"s0": {"Type": "Pass", "Result": {}, "End": True}},
 }
 
+TEST_STATE_MACHINE_2 = {
+    "StartAt": "s1",
+    "States": {
+        "s1": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::states:startExecution.sync",
+            "Parameters": {
+                "Input": {"Comment": "Hello world!"},
+                "StateMachineArn": "__machine_arn__",
+                "Name": "ExecutionName",
+            },
+            "End": True,
+        }
+    },
+}
 
-@pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1"))
-def test_multiregion(region_name):
-    other_region = "us-east-1" if region_name != "us-east-1" else "us-east-2"
-    # TODO: create client factory fixture
+
+@pytest.mark.parametrize("region_name", ("us-east-1", "us-east-2", "eu-west-1", "eu-central-1"))
+def test_multiregion_nested(region_name):
     client1 = aws_stack.create_external_boto_client("stepfunctions", region_name=region_name)
-    client2 = aws_stack.create_external_boto_client("stepfunctions", region_name=other_region)
-
     # create state machine
-    name = "sf-%s" % short_uid()
+    child_machine_name = f"sf-child-{short_uid()}"
+    role = aws_stack.role_arn("sfn_role")
+    child_machine_result = client1.create_state_machine(
+        name=child_machine_name, definition=json.dumps(TEST_STATE_MACHINE), roleArn=role
+    )
+    child_machine_arn = child_machine_result["stateMachineArn"]
+
+    # create parent state machine
+    name = f"sf-parent-{short_uid()}"
     role = aws_stack.role_arn("sfn_role")
     result = client1.create_state_machine(
-        name=name, definition=json.dumps(TEST_STATE_MACHINE), roleArn=role
+        name=name,
+        definition=json.dumps(TEST_STATE_MACHINE_2).replace("__machine_arn__", child_machine_arn),
+        roleArn=role,
     )
     machine_arn = result["stateMachineArn"]
+    try:
+        # list state machine
+        result = client1.list_state_machines()["stateMachines"]
+        assert len(result) > 0
+        assert len([sm for sm in result if sm["name"] == name]) == 1
+        assert len([sm for sm in result if sm["name"] == child_machine_name]) == 1
 
-    # list state machine
-    result = client1.list_state_machines()["stateMachines"]
-    result = [sm for sm in result if sm["name"] == name]
-    assert len(result) > 0
+        # start state machine execution
+        result = client1.start_execution(stateMachineArn=machine_arn)
 
-    # start state machine execution
-    result = client1.start_execution(stateMachineArn=machine_arn)
-    assert f":{region_name}:" in result["executionArn"]
-    assert f":{region_name}_" not in result["executionArn"]
+        execution = client1.describe_execution(executionArn=result["executionArn"])
+        assert execution["stateMachineArn"] == machine_arn
+        assert execution["status"] in ["RUNNING", "SUCCEEDED"]
 
-    # assert state machine does not exist in other region
-    result = client2.list_state_machines()["stateMachines"]
-    result = [sm for sm in result if sm["name"] == name]
-    assert len(result) == 0
+        def assert_success():
+            return (
+                client1.describe_execution(executionArn=result["executionArn"])["status"]
+                == "SUCCEEDED"
+            )
 
-    with pytest.raises(Exception):
-        client1.start_execution(stateMachineArn=machine_arn.replace(region_name, other_region))
+        wait_until(assert_success)
+
+        result = client1.describe_state_machine_for_execution(executionArn=result["executionArn"])
+        assert result["stateMachineArn"] == machine_arn
+
+    finally:
+        client1.delete_state_machine(stateMachineArn=machine_arn)
+        client1.delete_state_machine(stateMachineArn=child_machine_arn)
