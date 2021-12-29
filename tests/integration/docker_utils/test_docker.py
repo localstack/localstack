@@ -255,13 +255,16 @@ class TestDockerClient:
             docker_client.start_container("this_container_does_not_exist")
 
     def test_get_network(self, docker_client: ContainerClient, dummy_container):
-        n = docker_client.get_network(dummy_container.container_name)
-        assert "default" == n
+        n = docker_client.get_networks(dummy_container.container_name)
+        assert ["bridge"] == n
+
+    def test_get_network_multiple_networks(self, docker_client: ContainerClient, create_container):
+        pass
 
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
-        network = docker_client.get_network(info.container_name)
-        assert "host" == network
+        network = docker_client.get_networks(info.container_name)
+        assert ["host"] == network
 
     def test_create_with_port_mapping(self, docker_client: ContainerClient, create_container):
         ports = PortMappings()
@@ -421,7 +424,7 @@ class TestDockerClient:
 
     def test_get_network_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(ContainerException):
-            docker_client.get_network("this_container_does_not_exist")
+            docker_client.get_networks("this_container_does_not_exist")
 
     def test_list_containers(self, docker_client: ContainerClient, create_container):
         c1 = create_container("alpine", command=["echo", "1"])

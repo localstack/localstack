@@ -1092,7 +1092,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             # Get the container name.
             container_name = self.get_container_name(func_arn)
 
-            container_network = DOCKER_CLIENT.get_network(container_name)
+            container_network = DOCKER_CLIENT.get_networks(container_name)[0]
 
             return container_network
 

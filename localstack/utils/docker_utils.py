@@ -283,8 +283,8 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_network(self, container_name: str) -> str:
-        """Returns the network mode of the container with the given name"""
+    def get_networks(self, container_name: str) -> List[str]:
+        """Returns the networks of the container with the given name"""
         pass
 
     @abstractmethod
@@ -540,14 +540,14 @@ class CmdDockerClient(ContainerClient):
         else:
             return DockerContainerStatus.DOWN
 
-    def get_network(self, container_name: str) -> str:
+    def get_networks(self, container_name: str) -> List[str]:
         LOG.debug("Getting container network: %s", container_name)
         cmd = self._docker_cmd()
         cmd += [
             "inspect",
             container_name,
             "--format",
-            "{{ .HostConfig.NetworkMode }}",
+            "{{range $p, $_ := .NetworkSettings.Networks }}{{ $p }},{{end}}",
         ]
 
         try:
@@ -560,7 +560,7 @@ class CmdDockerClient(ContainerClient):
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
 
-        container_network = cmd_result.strip()
+        container_network = cmd_result.strip().strip(",").split(",")
         return container_network
 
     def stop_container(self, container_name: str, timeout: int = None) -> None:
@@ -1192,11 +1192,11 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             raise ContainerException()
 
-    def get_network(self, container_name: str) -> str:
+    def get_networks(self, container_name: str) -> List[str]:
         LOG.debug("Getting network type for container: %s", container_name)
         try:
             container = self.client().containers.get(container_name)
-            return container.attrs["HostConfig"]["NetworkMode"]
+            return list(container.attrs["NetworkSettings"]["Networks"].keys())
         except NotFound:
             raise NoSuchContainer(container_name)
         except APIError:
