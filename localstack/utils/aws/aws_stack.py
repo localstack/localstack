@@ -1112,13 +1112,13 @@ def apigateway_invocations_arn(lambda_uri):
     )
 
 
-def get_elasticsearch_endpoint(region_name: str, domain: str = None):
-    if not domain:
+def get_elasticsearch_endpoint(region_name: str, domain_arn: str = None):
+    if not domain_arn:
         return os.environ["TEST_ELASTICSEARCH_URL"]
     # get endpoint from API
     es_client = connect_to_service(service_name="es", region_name=region_name)
-    domain = domain.rpartition("/")[2]
-    info = es_client.describe_elasticsearch_domain(DomainName=domain)
+    domain_name = domain_arn.rpartition("/")[2]
+    info = es_client.describe_elasticsearch_domain(DomainName=domain_name)
     base_domain = info["DomainStatus"]["Endpoint"]
     endpoint = base_domain if base_domain.startswith("http") else f"https://{base_domain}"
     return endpoint
@@ -1132,14 +1132,13 @@ def connect_elasticsearch(endpoint: str = None, domain: str = None, region_name:
     verify_certs = False
     use_ssl = False
     if not endpoint:
-        endpoint = get_elasticsearch_endpoint(domain=domain, region_name=region)
+        endpoint = get_elasticsearch_endpoint(domain_arn=domain, region_name=region)
     # use ssl?
     if "https://" in endpoint:
         use_ssl = True
         # TODO remove this condition once ssl certs are available for .es.localhost.localstack.cloud domains
         endpoint_netloc = urlparse(endpoint).netloc
         if not re.match(r"^.*(localhost(\.localstack\.cloud)?)(:\d+)?$", endpoint_netloc):
-            LOG.warning("Verifying certs!")
             verify_certs = True
 
     LOG.debug("Creating ES client with endpoint %s", endpoint)

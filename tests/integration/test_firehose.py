@@ -193,13 +193,13 @@ class TestFirehoseIntegration:
             )
 
             # wait for ES cluster to be ready
-            def check_service_state():
+            def check_domain_state():
                 result = es_client.describe_elasticsearch_domain(DomainName=domain_name)[
                     "DomainStatus"
                 ]["Processing"]
                 return not result
 
-            assert poll_condition(check_service_state, 30, 1)
+            assert poll_condition(check_domain_state, 30, 1)
 
             # put kinesis stream record
             kinesis_record = {"target": "hello"}

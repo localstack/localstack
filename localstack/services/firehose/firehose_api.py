@@ -115,7 +115,7 @@ def preprocess_records(processor: Dict, records: List[Dict]) -> List[Dict]:
     return records
 
 
-def add_missing_record_attributes(records: List[Dict]) -> List[Dict]:
+def add_missing_record_attributes(records: List[Dict]) -> None:
     def _get_entry(obj, key):
         return obj.get(key) or obj.get(first_char_to_lower(key))
 
@@ -134,7 +134,6 @@ def add_missing_record_attributes(records: List[Dict]) -> List[Dict]:
                 "sequenceNumber": next_sequence_number(),
                 "subsequenceNumber": "",
             }
-    return records
 
 
 def next_sequence_number() -> int:
@@ -229,7 +228,7 @@ def put_records(stream_name: str, unprocessed_records: List[Dict]) -> Dict:
                 try:
                     body = json.loads(data)
                 except Exception as e:
-                    LOG.info("Elasticsearch only allows json input data!")
+                    LOG.warning("Elasticsearch only allows json input data!")
                     raise e
 
                 LOG.debug("Publishing to ES destination. Data: %s", data)
