@@ -1100,6 +1100,37 @@ class SNSTest(unittest.TestCase):
         self.sns_client.delete_topic(TopicArn=topic_arn)
         self.sqs_client.delete_queue(QueueUrl=queue_url)
 
+    def test_validations_for_fifo(self):
+        topic_name = "topic-{}".format(short_uid())
+        fifo_topic_name = "topic-{}.fifo".format(short_uid())
+        fifo_queue_name = "queue-%s.fifo" % short_uid()
+
+        topic_arn = self.sns_client.create_topic(Name=topic_name)["TopicArn"]
+
+        fifo_topic_arn = self.sns_client.create_topic(
+            Name=fifo_topic_name, Attributes={"FifoTopic": "true"}
+        )["TopicArn"]
+
+        fifo_queue_url = self.sqs_client.create_queue(
+            QueueName=fifo_queue_name, Attributes={"FifoQueue": "true"}
+        )["QueueUrl"]
+
+        fifo_queue_arn = aws_stack.sqs_queue_arn(fifo_queue_name)
+
+        with pytest.raises(ClientError) as e:
+            self.sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=fifo_queue_arn)
+
+        assert e.match("standard SNS topic")
+
+        with pytest.raises(ClientError) as e:
+            self.sns_client.publish(TopicArn=fifo_topic_arn, Message="test")
+
+        assert e.match("MessageGroupId")
+
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+        self.sns_client.delete_topic(TopicArn=fifo_topic_arn)
+        self.sqs_client.delete_queue(QueueUrl=fifo_queue_url)
+
 
 def test_empty_sns_message(sns_client, sqs_client, sns_topic, sqs_queue):
     topic_arn = sns_topic["Attributes"]["TopicArn"]
