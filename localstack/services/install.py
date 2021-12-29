@@ -76,7 +76,9 @@ URL_LOCALSTACK_FAT_JAR = (
 MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
-SFN_PATCH_URL_PREFIX = f"{ARTIFACTS_REPO}/raw/sfn-multiregion/stepfunctions-local-patch"
+SFN_PATCH_URL_PREFIX = (
+    f"{ARTIFACTS_REPO}/raw/ae7dbdfced9fb3cc06289c4b370d451bc3dc3250/stepfunctions-local-patch"
+)
 SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
 SFN_PATCH_CLASS2 = (
     "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
