@@ -164,7 +164,12 @@ def get_main_endpoint_from_container():
                     container_name_or_id=container_name,
                     container_network=get_container_network_for_lambda(),
                 )
-                LOG.info("Determined main container target IP: %s", DOCKER_MAIN_CONTAINER_IP)
+            else:
+                # default gateway for the network should be the host
+                DOCKER_MAIN_CONTAINER_IP = DOCKER_CLIENT.inspect_network(
+                    get_container_network_for_lambda()
+                )["IPAM"]["Config"][0]["Gateway"]
+            LOG.info("Determined main container target IP: %s", DOCKER_MAIN_CONTAINER_IP)
         except Exception as e:
             LOG.info(
                 'Unable to get IP address of main Docker container "%s": %s', container_name, e
