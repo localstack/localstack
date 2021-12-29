@@ -258,8 +258,16 @@ class TestDockerClient:
         n = docker_client.get_networks(dummy_container.container_name)
         assert ["bridge"] == n
 
-    def test_get_network_multiple_networks(self, docker_client: ContainerClient, create_container):
-        pass
+    def test_get_network_multiple_networks(
+        self, docker_client: ContainerClient, dummy_container, create_network
+    ):
+        network_id = create_network("test-network")
+        safe_run(["docker", "network", "connect", network_id, dummy_container.container_id])
+        docker_client.start_container(dummy_container.container_id)
+        networks = docker_client.get_networks(dummy_container.container_id)
+        assert "test-network" in networks
+        assert "bridge" in networks
+        assert len(networks) == 2
 
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
