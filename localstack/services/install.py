@@ -82,7 +82,7 @@ SFN_PATCH_CLASS2 = (
     "com/amazonaws/stepfunctions/local/runtime/executors/task/LambdaTaskStateExecutor.class"
 )
 SFN_PATCH_CLASS_STARTER = "cloud/localstack/StepFunctionsStarter.class"
-SFN_PATCH_CLASS_REGION = "cloud/localstack/StepFunctionsStarter$RegionAspect.class"
+SFN_PATCH_CLASS_REGION = "cloud/localstack/RegionAspect.class"
 SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
