@@ -450,6 +450,11 @@ class TestAPIGateway(unittest.TestCase):
         result = requests.post(url, data=json.dumps({"return_raw_body": body_msg}))
         self.assertEqual(body_msg, to_str(result.content))
 
+        # send message with binary data
+        binary_msg = b"\xff \xaa \x11"
+        result = requests.post(url, data=binary_msg)
+        self.assertEqual("/yCqIBE=", json.loads(to_str(result.content))["body"])
+
     def test_api_gateway_lambda_proxy_integration_any_method(self):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD,
