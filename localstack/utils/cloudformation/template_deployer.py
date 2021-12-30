@@ -48,6 +48,7 @@ IAM_POLICY_VERSION = "2012-10-17"
 REGEX_OUTPUT_APIGATEWAY = re.compile(
     rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
 )
+REGEX_DYNAMIC_REF = re.compile("{{resolve:([^:]+):([^:]+)}}")
 
 LOG = logging.getLogger(__name__)
 
@@ -517,6 +518,33 @@ def resolve_refs_recursively(stack_name, value, resources):
             path = api_match[3]
             port = config.service_port("apigateway")
             return f"{prefix}{host}:{port}/{path}"
+
+        # basic dynamic reference support
+        # see: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/dynamic-references.html
+        # technically there are more restrictions for each of these services but checking each of these
+        # isn't really necessary for the current level of emulation
+        dynamic_ref_match = REGEX_DYNAMIC_REF.match(result)
+        if dynamic_ref_match:
+            service_name = dynamic_ref_match[1]
+            reference_key = dynamic_ref_match[2]
+
+            # only these 3 services are supported for dynamic references right now
+            # TODO: consider more detailed patterns with versions, etc.
+            if service_name == "ssm":
+                ssm_client = aws_stack.connect_to_service("ssm")
+                return ssm_client.get_parameter(Name=reference_key)["Parameter"]["Value"]
+            elif service_name == "ssm-secure":
+                ssm_client = aws_stack.connect_to_service("ssm")
+                return ssm_client.get_parameter(Name=reference_key, WithDecryption=True)[
+                    "Parameter"
+                ]["Value"]
+            elif service_name == "secretsmanager":
+                secretsmanager_client = aws_stack.connect_to_service("secretsmanager")
+                return secretsmanager_client.get_secret_value(SecretId=reference_key)[
+                    "SecretString"
+                ]
+            else:
+                LOG.warning(f"Unsupported service for dynamic parameter: {service_name=}")
 
     return result
 
