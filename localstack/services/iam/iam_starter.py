@@ -192,7 +192,6 @@ def apply_patches():
 
     # patch/implement simulate_principal_policy
 
-    @patch(IamResponse.simulate_principal_policy, pass_target=False)
     def iam_response_simulate_principal_policy(self):
         def build_evaluation(action_name, resource_name, policy_statements):
             for statement in policy_statements:
@@ -227,6 +226,9 @@ def apply_patches():
 
         template = self.response_template(SIMULATE_PRINCIPAL_POLICY_RESPONSE)
         return template.render(evaluations=evaluations)
+
+    if not hasattr(IamResponse, "simulate_principal_policy"):
+        IamResponse.simulate_principal_policy = iam_response_simulate_principal_policy
 
     # patch policy __init__ to set document as attribute
 
