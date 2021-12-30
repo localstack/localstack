@@ -4,7 +4,6 @@ import json
 import os
 import random
 import time
-import unittest
 
 import pytest
 import requests
@@ -44,21 +43,27 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 
 
-class SNSTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.sqs_client = aws_stack.create_external_boto_client("sqs")
-        cls.sns_client = aws_stack.create_external_boto_client("sns")
-        cls.topic_arn = cls.sns_client.create_topic(Name=TEST_TOPIC_NAME)["TopicArn"]
-        cls.queue_url = cls.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)["QueueUrl"]
-        cls.dlq_url = cls.sqs_client.create_queue(QueueName=TEST_QUEUE_DLQ_NAME)["QueueUrl"]
+@pytest.fixture(scope="class")
+def setup(request):
+    request.cls.sqs_client = aws_stack.create_external_boto_client("sqs")
+    request.cls.sns_client = aws_stack.create_external_boto_client("sns")
+    request.cls.topic_arn = request.cls.sns_client.create_topic(Name=TEST_TOPIC_NAME)["TopicArn"]
+    request.cls.queue_url = request.cls.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)[
+        "QueueUrl"
+    ]
+    request.cls.dlq_url = request.cls.sqs_client.create_queue(QueueName=TEST_QUEUE_DLQ_NAME)[
+        "QueueUrl"
+    ]
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.sqs_client.delete_queue(QueueUrl=cls.queue_url)
-        cls.sqs_client.delete_queue(QueueUrl=cls.dlq_url)
-        cls.sns_client.delete_topic(TopicArn=cls.topic_arn)
+    yield
 
+    request.cls.sqs_client.delete_queue(QueueUrl=request.cls.queue_url)
+    request.cls.sqs_client.delete_queue(QueueUrl=request.cls.dlq_url)
+    request.cls.sns_client.delete_topic(TopicArn=request.cls.topic_arn)
+
+
+@pytest.mark.usefixtures("setup")
+class TestSNS:
     def test_publish_unicode_chars(self):
         # connect an SNS topic to a new SQS queue
         _, queue_arn, queue_url = self._create_queue()
@@ -106,8 +111,8 @@ class SNSTest(unittest.TestCase):
                 % (external_service_url("sns"), self.topic_arn, token)
             )
 
-            self.assertIn("Signature", records[0][0])
-            self.assertIn("SigningCertURL", records[0][0])
+            assert "Signature" in records[0][0]
+            assert "SigningCertURL" in records[0][0]
 
         retry(received, retries=5, sleep=1)
         proxy.stop()
@@ -681,7 +686,7 @@ class SNSTest(unittest.TestCase):
         )
 
         message = events[0]["Records"][0]
-        self.assertEqual(message["EventSubscriptionArn"], subscription_arn)
+        assert message["EventSubscriptionArn"] == subscription_arn
 
         self.sns_client.publish(
             TargetArn=topic_arn, Message="test_message_2", Subject="test subject"
@@ -750,13 +755,12 @@ class SNSTest(unittest.TestCase):
         topic_name = "test-%s" % short_uid()
         topic_arn = self.sns_client.create_topic(Name=topic_name)["TopicArn"]
 
-        with self.assertRaises(ClientError) as ctx:
+        with pytest.raises(ClientError) as e:
             self.sns_client.create_topic(Name=topic_name, Tags=[{"Key": "456", "Value": "pqr"}])
 
-        e = ctx.exception
-        assert e.response["Error"]["Code"] == "InvalidParameter"
-        assert e.response["Error"]["Message"] == "Topic already exists with different tags"
-        assert e.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidParameter"
+        assert e.value.response["Error"]["Message"] == "Topic already exists with different tags"
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
         # clean up
         self.sns_client.delete_topic(TopicArn=topic_arn)
