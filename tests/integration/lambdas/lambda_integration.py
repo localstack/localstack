@@ -67,6 +67,7 @@ def handler(event, context):
         body["httpMethod"] = event.get("httpMethod")
         body["body"] = event.get("body")
         body["headers"] = event.get("headers")
+        body["isBase64Encoded"] = event.get("isBase64Encoded")
         if body["httpMethod"] == "DELETE":
             return {"statusCode": 204}
 
