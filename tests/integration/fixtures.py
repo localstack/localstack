@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
     from mypy_boto3_ssm import SSMClient
     from mypy_boto3_stepfunctions import SFNClient
+    from mypy_boto3_sts import STSClient
 
 LOG = logging.getLogger(__name__)
 
@@ -144,6 +145,11 @@ def firehose_client() -> "FirehoseClient":
 @pytest.fixture(scope="class")
 def cloudwatch_client() -> "CloudWatchClient":
     return _client("cloudwatch")
+
+
+@pytest.fixture(scope="class")
+def sts_client() -> "STSClient":
+    return _client("sts")
 
 
 @pytest.fixture
