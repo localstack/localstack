@@ -191,6 +191,7 @@ def get_container_network_for_lambda():
                 LAMBDA_CONTAINER_NETWORK = (
                     "bridge"  # use the default bridge network in case of host mode
                 )
+            LOG.info("Determined lambda container network: %s", LAMBDA_CONTAINER_NETWORK)
         except Exception as e:
             container_name = bootstrap.get_main_container_name()
             LOG.info('Unable to get network name of main container "%s": %s', container_name, e)

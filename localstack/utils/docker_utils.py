@@ -221,6 +221,9 @@ class PortMappings(object):
         else:
             range[1] = port - 1
 
+    def __repr__(self):
+        return f"<PortMappings: {self.to_dict()}>"
+
 
 SimpleVolumeBind = Tuple[str, str]
 """Type alias for a simple version of VolumeBind"""
@@ -284,7 +287,7 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     def get_networks(self, container_name: str) -> List[str]:
-        LOG.debug("Getting network type for container: %s", container_name)
+        LOG.debug("Getting networks for container: %s", container_name)
         container_attrs = self.inspect_container(container_name_or_id=container_name)
         return list(container_attrs["NetworkSettings"]["Networks"].keys())
 
@@ -297,6 +300,11 @@ class ContainerClient(metaclass=ABCMeta):
         :param container_network: Network the IP address will belong to
         :return: IP address of the given container on the interface connected to the given network
         """
+        LOG.debug(
+            "Getting ipv4 address for container %s in network %s.",
+            container_name_or_id,
+            container_network,
+        )
         # we always need the ID for this
         container_id = self.get_container_id(container_name=container_name_or_id)
         network_attrs = self.inspect_network(container_network)
@@ -307,7 +315,12 @@ class ContainerClient(metaclass=ABCMeta):
                 container_name_or_id,
                 container_network,
             )
-        ip = str(ipaddress.IPv4Interface(containers[container_id]["IPv4Address"]).ip)
+        try:
+            ip = str(ipaddress.IPv4Interface(containers[container_id]["IPv4Address"]).ip)
+        except Exception:
+            raise ContainerException(
+                f"Unable to detect IP address for container {container_name_or_id} in network {container_network}"
+            )
         return ip
 
     @abstractmethod
@@ -1448,14 +1461,7 @@ class SdkDockerClient(ContainerClient):
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
     ) -> str:
-        LOG.debug(
-            "Creating container with image %s, command '%s', entrypoint '%s', volumes %s, env vars %s",
-            image_name,
-            command,
-            entrypoint,
-            mount_volumes,
-            env_vars,
-        )
+        LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
         if additional_flags:
             env_vars, ports, mount_volumes, extra_hosts, network = Util.parse_additional_flags(

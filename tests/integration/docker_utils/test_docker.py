@@ -304,11 +304,24 @@ class TestDockerClient:
         result_bridge_network = docker_client.get_container_ipv4_for_network(
             container_name_or_id=dummy_container.container_id, container_network="bridge"
         ).strip()
-        assert re.match(r"172\.17\.0\.\d", result_bridge_network)
+        assert re.match(IP_REGEX, result_bridge_network)
 
         with pytest.raises(ContainerException):
             docker_client.get_container_ipv4_for_network(
                 container_name_or_id=dummy_container.container_id, container_network=network_name
+            )
+
+    def test_get_container_ip_for_host_network(
+        self, docker_client: ContainerClient, create_container
+    ):
+        container = create_container(
+            "alpine", command=["sh", "-c", "while true; do sleep 1; done"], network="host"
+        )
+        assert "host" == docker_client.get_networks(container.container_name)[0]
+        # host network containers have no dedicated IP, so it will throw an exception here
+        with pytest.raises(ContainerException):
+            docker_client.get_container_ipv4_for_network(
+                container_name_or_id=container.container_name, container_network="host"
             )
 
     def test_get_container_ip_for_network_non_existent_network(
