@@ -36,7 +36,7 @@ DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 # host to bind to when starting the services
 BIND_HOST = "0.0.0.0"
 
-# AWS user account ID used for tests
+# AWS user account ID used for tests - TODO move to config.py
 if "TEST_AWS_ACCOUNT_ID" not in os.environ:
     os.environ["TEST_AWS_ACCOUNT_ID"] = "000000000000"
 TEST_AWS_ACCOUNT_ID = os.environ["TEST_AWS_ACCOUNT_ID"]

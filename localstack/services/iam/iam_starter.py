@@ -136,6 +136,8 @@ def apply_patches():
 
     IAMPolicyDocumentValidator._validate_resource_syntax = _validate_resource_syntax
 
+    # patch get_user to include tags
+
     def iam_response_get_user(self):
         result = iam_response_get_user_orig(self)
         user_name = re.sub(
@@ -144,7 +146,9 @@ def apply_patches():
             result,
             flags=re.MULTILINE | re.DOTALL,
         )
-        user = moto_iam_backend.users[user_name]
+        user = moto_iam_backend.users.get(user_name)
+        if not user:
+            return result
         tags = moto_iam_backend.tagger.list_tags_for_resource(user.arn)
         if tags and "<Tags>" not in result:
             tags_str = "".join(
@@ -159,6 +163,8 @@ def apply_patches():
     iam_response_get_user_orig = IamResponse.get_user
     IamResponse.get_user = iam_response_get_user
 
+    # patch delete_policy
+
     def iam_response_delete_policy(self):
         policy_arn = self._get_param("PolicyArn")
         if moto_iam_backend.managed_policies.get(policy_arn):
@@ -170,6 +176,8 @@ def apply_patches():
 
     IamResponse.delete_policy = iam_response_delete_policy
 
+    # patch detach_role_policy
+
     def iam_backend_detach_role_policy(policy_arn, role_name):
         try:
             role = moto_iam_backend.get_role(role_name)
@@ -180,7 +188,7 @@ def apply_patches():
 
     moto_iam_backend.detach_role_policy = iam_backend_detach_role_policy
 
-    policy_init_orig = Policy.__init__
+    # patch/implement simulate_principal_policy
 
     def iam_response_simulate_principal_policy(self):
         def build_evaluation(action_name, resource_name, policy_statements):
@@ -217,15 +225,20 @@ def apply_patches():
         template = self.response_template(SIMULATE_PRINCIPAL_POLICY_RESPONSE)
         return template.render(evaluations=evaluations)
 
+    IamResponse.simulate_principal_policy = iam_response_simulate_principal_policy
+
+    # patch policy __init__ to set document as attribute
+
     def policy__init__(
         self, name, default_version_id=None, description=None, document=None, **kwargs
     ):
         policy_init_orig(self, name, default_version_id, description, document, **kwargs)
         self.document = document
 
+    policy_init_orig = Policy.__init__
     Policy.__init__ = policy__init__
 
-    IamResponse.simulate_principal_policy = iam_response_simulate_principal_policy
+    # patch list_roles
 
     def iam_response_list_roles(self):
         roles = moto_iam_backend.get_roles()
@@ -250,7 +263,7 @@ def apply_patches():
 
     IamResponse.list_roles = iam_response_list_roles
 
-    inline_policy_unapply_policy_orig = InlinePolicy.unapply_policy
+    # patch unapply_policy
 
     def inline_policy_unapply_policy(self, backend):
         try:
@@ -259,6 +272,7 @@ def apply_patches():
             # Actually role can be deleted before policy being deleted in cloudformation
             pass
 
+    inline_policy_unapply_policy_orig = InlinePolicy.unapply_policy
     InlinePolicy.unapply_policy = inline_policy_unapply_policy
 
     # support update_group
@@ -292,6 +306,8 @@ def apply_patches():
     if not hasattr(IamResponse, "list_instance_profile_tags"):
         IamResponse.list_instance_profile_tags = list_instance_profile_tags
 
+    # patch/implement tag_instance_profile
+
     def tag_instance_profile(self):
         profile_name = self._get_param("InstanceProfileName")
         tags = self._get_multi_param("Tags.member")
@@ -302,6 +318,8 @@ def apply_patches():
 
     if not hasattr(IamResponse, "tag_instance_profile"):
         IamResponse.tag_instance_profile = tag_instance_profile
+
+    # patch/implement untag_instance_profile
 
     def untag_instance_profile(self):
         profile_name = self._get_param("InstanceProfileName")
