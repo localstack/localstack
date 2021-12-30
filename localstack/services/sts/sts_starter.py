@@ -1,18 +1,23 @@
+import re
+
 from moto.sts.responses import TokenResponse
 
 from localstack import config
 from localstack.services.infra import start_moto_server
+from localstack.utils.patch import patch
 
 
 def apply_patches():
-    def get_caller_identity(self, *args, **kwargs):
-        result = get_caller_identity_orig(self, *args, **kwargs)
+    @patch(TokenResponse.get_caller_identity)
+    def get_caller_identity(fn, self, *args, **kwargs):
+        result = fn(self, *args, **kwargs)
         username = config.TEST_IAM_USER_NAME or "localstack"
         result = result.replace("user/moto", f"user/{username}")
+        if config.TEST_IAM_USER_ID:
+            search = r"(<UserId>)[^<]+(</UserId>)"
+            replace = rf"\g<1>{config.TEST_IAM_USER_ID}\2"
+            result = re.sub(search, replace, result, flags=re.MULTILINE)
         return result
-
-    get_caller_identity_orig = TokenResponse.get_caller_identity
-    TokenResponse.get_caller_identity = get_caller_identity
 
 
 def start_sts(port=None, asynchronous=False, update_listener=None):

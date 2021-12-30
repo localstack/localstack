@@ -154,14 +154,22 @@ class TestSTSIntegrations:
         federated_user_info = response["FederatedUser"]["FederatedUserId"].split(":")
         assert federated_user_info[1] == token_name
 
-    def test_get_caller_identity(self, sts_client, monkeypatch):
+    def test_custom_caller_identity(self, sts_client, iam_client, monkeypatch):
         response = sts_client.get_caller_identity()
         assert ":user/localstack" in response.get("Arn")
 
+        # set custom name/id for default user
         test_name = f"u-{short_uid()}"
         test_id = short_uid()
         monkeypatch.setattr(config, "TEST_IAM_USER_NAME", test_name)
         monkeypatch.setattr(config, "TEST_IAM_USER_ID", test_id)
+
+        # assert STS identity
         response = sts_client.get_caller_identity()
         assert f":user/{test_name}" in response.get("Arn")
-        # assert response.get("UserId") == test_id
+        assert response.get("UserId") == test_id
+
+        # assert IAM user
+        response = iam_client.get_user()
+        assert response["User"]["UserName"] == test_name
+        assert response["User"]["UserId"] == test_id
