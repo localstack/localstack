@@ -1070,6 +1070,36 @@ class SNSTest(unittest.TestCase):
         self.sns_client.delete_topic(TopicArn=topic_arn)
         self.sqs_client.delete_queue(QueueUrl=queue_url)
 
+    def test_message_to_fifo_sqs(self):
+        topic_name = "topic-{}.fifo".format(short_uid())
+        queue_name = "queue-%s.fifo" % short_uid()
+
+        topic_arn = self.sns_client.create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})[
+            "TopicArn"
+        ]
+        queue = self.sqs_client.create_queue(
+            QueueName=queue_name,
+            Attributes={"FifoQueue": "true"},
+        )
+
+        queue_url = queue["QueueUrl"]
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        self.sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+
+        message = "Test"
+        self.sns_client.publish(TopicArn=topic_arn, Message=message, MessageGroupId=short_uid())
+
+        def get_message():
+            received = self.sqs_client.receive_message(QueueUrl=queue_url)["Messages"][0]["Body"]
+            self.assertEqual(json.loads(received)["Message"], message)
+
+        retry(get_message, retries=5, sleep=2)
+
+        # cleanup
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+
 
 def test_empty_sns_message(sns_client, sqs_client, sns_topic, sqs_queue):
     topic_arn = sns_topic["Attributes"]["TopicArn"]
