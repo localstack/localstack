@@ -6,6 +6,7 @@ import re
 import time
 from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
+from urllib.parse import urlencode
 
 import pytz
 import requests
@@ -360,7 +361,9 @@ def update_content_length(response: Response):
         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_request_parameters(uri: str, integration: Dict[str, Any], path_params: Dict[str, str]):
+def apply_request_parameters(
+    uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
+):
     request_parameters = integration.get("requestParameters")
     uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
     if request_parameters:
@@ -370,7 +373,9 @@ def apply_request_parameters(uri: str, integration: Dict[str, Any], path_params:
             request_param_value = f"method.request.path.{key}"
             if request_parameters.get(request_param_key, None) == request_param_value:
                 uri = uri.replace(f"{{{key}}}", path_params[key])
-    return uri
+
+    # include the request query to the uri
+    return f"{uri}?{urlencode(query_params)}"
 
 
 def apply_template(
@@ -556,8 +561,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
     invocation_context.response_templates = response_templates
     invocation_context.integration = integration
 
-    result = invoke_rest_api_integration(invocation_context)
-    return result
+    return invoke_rest_api_integration(invocation_context)
 
 
 def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
@@ -574,6 +578,8 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
         return make_error_response(msg, 400)
 
 
+# TODO: refactor this to have a class per integration type to make it easy to
+# test the encapsulated logic
 def invoke_rest_api_integration_backend(
     invocation_context: ApiInvocationContext, integration: Dict
 ):
@@ -886,7 +892,9 @@ def invoke_rest_api_integration_backend(
         data = apply_template(integration, "request", data)
         if isinstance(data, dict):
             data = json.dumps(data)
-        uri = apply_request_parameters(uri, integration=integration, path_params=path_params)
+        uri = apply_request_parameters(
+            uri, integration=integration, path_params=path_params, query_params=query_string_params
+        )
         result = requests.request(method=method, url=uri, data=data, headers=headers)
         # apply custom response template
         result = apply_template(integration, "response", result)

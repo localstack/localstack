@@ -1550,24 +1550,23 @@ class TestAPIGateway(unittest.TestCase):
             path = "/"
         resources = {}
         resource_path = path.replace("/", "")
-        resources[resource_path] = []
         req_templates = (
             {"application/json": json.dumps({"foo": "bar"})} if int_type == "custom" else {}
         )
-        for method in methods:
-            resources[resource_path].append(
-                {
-                    "httpMethod": method,
-                    "integrations": [
-                        {
-                            "type": "HTTP" if int_type == "custom" else "HTTP_PROXY",
-                            "uri": target_url,
-                            "requestTemplates": req_templates,
-                            "responseTemplates": {},
-                        }
-                    ],
-                }
-            )
+        resources[resource_path] = [
+            {
+                "httpMethod": method,
+                "integrations": [
+                    {
+                        "type": "HTTP" if int_type == "custom" else "HTTP_PROXY",
+                        "uri": target_url,
+                        "requestTemplates": req_templates,
+                        "responseTemplates": {},
+                    }
+                ],
+            }
+            for method in methods
+        ]
         return aws_stack.create_api_gateway(
             name=gateway_name, resources=resources, stage_name=self.TEST_STAGE_NAME
         )
