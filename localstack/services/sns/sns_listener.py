@@ -14,6 +14,7 @@ import xmltodict
 from flask import Response as FlaskResponse
 from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import SNSBackend as MotoSNSBackend
+from moto.sns.responses import SNSResponse as MotoSNSResponse
 from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 
@@ -22,9 +23,14 @@ from localstack.constants import MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import SQS_BACKEND_IMPL
+from localstack.services.sns.sns_starter import PUBLISH_BATCH_TEMPLATE
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import create_sqs_system_attributes, response_regex_replace
+from localstack.utils.aws.aws_responses import (
+    create_sqs_system_attributes,
+    requests_response,
+    response_regex_replace,
+)
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.common import (
@@ -202,6 +208,13 @@ class ProxyListenerSNS(PersistingProxyListener):
                 # return response here because we do not want the request to be forwarded to SNS backend
                 return make_response(req_action, message_id=message_id)
 
+            elif req_action == "PublishBatch":
+                moto_sns_response = MotoSNSResponse()
+                batch_response = publish_batch(topic_arn, req_data, headers)
+                template = moto_sns_response.response_template(PUBLISH_BATCH_TEMPLATE)
+                response = requests_response(template.render(response=batch_response))
+                return response
+
             elif req_action == "ListTagsForResource":
                 tags = do_list_tags_for_resource(topic_arn)
                 content = "<Tags/>"
@@ -376,6 +389,7 @@ def message_to_subscribers(
     headers,
     subscription_arn=None,
     skip_checks=False,
+    message_attributes=None,
 ):
     sns_backend = SNSBackend.get()
     subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
@@ -393,6 +407,7 @@ def message_to_subscribers(
                 sns_backend,
                 subscriber,
                 subscriptions,
+                message_attributes,
             )
             for subscriber in list(subscriptions)
         ]
@@ -413,13 +428,15 @@ async def message_to_subscriber(
     sns_backend,
     subscriber,
     subscriptions,
+    message_attributes,
 ):
 
     if subscription_arn not in [None, subscriber["SubscriptionArn"]]:
         return
 
     filter_policy = json.loads(subscriber.get("FilterPolicy") or "{}")
-    message_attributes = get_message_attributes(req_data)
+    if not message_attributes:
+        message_attributes = get_message_attributes(req_data)
     if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
         LOG.info(
             "SNS filter policy %s does not match attributes %s", filter_policy, message_attributes
@@ -635,6 +652,33 @@ def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_ch
         )
     )
     return message_id
+
+
+def publish_batch(topic_arn, req_data, headers):
+    response = {"Successful": [], "Failed": []}
+    messages = get_publish_batch_messages(req_data)
+    for message in messages:
+        message_id = str(uuid.uuid4())
+        data = {}
+        data["TopicArn"] = [topic_arn]
+        data["Message"] = [message["message_body"]]
+        data["Subject"] = [message["subject"]]
+        try:
+            start_thread(
+                lambda _: message_to_subscribers(
+                    message_id,
+                    message["message_body"],
+                    topic_arn,
+                    data,
+                    headers,
+                    message_attributes=message["attributes"],
+                )
+            )
+
+            response["Successful"].append({"Id": message["id"], "MessageId": message_id})
+        except Exception:
+            response["Failed"].append({"Id": message["id"]})
+    return response
 
 
 def do_delete_topic(topic_arn):
@@ -885,6 +929,81 @@ def get_message_attributes(req_data):
             break
 
     return attributes
+
+
+def get_publish_batch_messages(req_data):
+    messages = []
+    x = 1
+    while True:
+        id = req_data.get("PublishBatchRequestEntries.member." + str(x) + ".Id", [None])[0]
+        if id is not None:
+            message = {}
+            message["id"] = id
+            message["message_body"] = req_data.get(
+                "PublishBatchRequestEntries.member." + str(x) + ".Message", [None]
+            )[0]
+
+            message["subject"] = req_data.get(
+                "PublishBatchRequestEntries.member." + str(x) + ".Subject", [None]
+            )[0]
+            # get publish batch message attributes
+            y = 1
+            message["attributes"] = {}
+            attribute = {}
+            while True:
+
+                name = req_data.get(
+                    "PublishBatchRequestEntries.member."
+                    + str(x)
+                    + ".MessageAttributes.entry."
+                    + str(y)
+                    + ".Name",
+                    [None],
+                )[0]
+                if name is not None:
+                    attribute = {
+                        "Type": req_data.get(
+                            "PublishBatchRequestEntries.member."
+                            + str(x)
+                            + ".MessageAttributes.entry."
+                            + str(y)
+                            + ".Value.DataType",
+                            [None],
+                        )[0]
+                    }
+                    string_value = req_data.get(
+                        "PublishBatchRequestEntries.member."
+                        + str(x)
+                        + ".MessageAttributes.entry."
+                        + str(y)
+                        + ".Value.StringValue",
+                        [None],
+                    )[0]
+                    binary_value = req_data.get(
+                        "PublishBatchRequestEntries.member."
+                        + str(x)
+                        + ".MessageAttributes.entry."
+                        + str(y)
+                        + ".Value.BinaryValue",
+                        [None],
+                    )[0]
+                    if string_value is not None:
+                        attribute["Value"] = string_value
+                    elif binary_value is not None:
+                        attribute["Value"] = binary_value
+
+                    message["attributes"][name] = attribute
+
+                    y += 1
+                else:
+                    break
+
+            messages.append(message)
+            x += 1
+        else:
+            break
+
+    return messages
 
 
 def get_subscribe_attributes(req_data):
