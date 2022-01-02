@@ -1,49 +1,9 @@
-import unittest
 from base64 import b64encode
 
-from localstack.utils.aws import aws_stack
+from localstack import config
+from localstack.utils.common import short_uid
 
-
-class TestSTSIntegrations(unittest.TestCase):
-    def setUp(self):
-        self.sts_client = aws_stack.create_external_boto_client("sts")
-
-    def test_assume_role(self):
-        test_role_session_name = "s3-access-example"
-        test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
-        response = self.sts_client.assume_role(
-            RoleArn=test_role_arn, RoleSessionName=test_role_session_name
-        )
-
-        self.assertTrue(response["Credentials"])
-        self.assertTrue(response["Credentials"]["SecretAccessKey"])
-        if response["AssumedRoleUser"]["AssumedRoleId"]:
-            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
-            self.assertEqual(test_role_session_name, assume_role_id_parts[1])
-
-    def test_assume_role_with_web_identity(self):
-        test_role_session_name = "web_token"
-        test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
-        test_web_identity_token = "token"
-        response = self.sts_client.assume_role_with_web_identity(
-            RoleArn=test_role_arn,
-            RoleSessionName=test_role_session_name,
-            WebIdentityToken=test_web_identity_token,
-        )
-
-        self.assertTrue(response["Credentials"])
-        self.assertTrue(response["Credentials"]["SecretAccessKey"])
-        if response["AssumedRoleUser"]["AssumedRoleId"]:
-            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
-            self.assertEqual(test_role_session_name, assume_role_id_parts[1])
-
-    def test_assume_role_with_saml(self):
-        account_id = "000000000000"
-        role_name = "test-role"
-        provider_name = "TestProvFed"
-        fed_name = "testuser"
-
-        saml_assertion = """
+TEST_SAML_ASSERTION = """
 <?xml version="1.0"?>
 <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     ID="_00000000-0000-0000-0000-000000000000" Version="2.0"
@@ -117,14 +77,52 @@ class TestSTSIntegrations(unittest.TestCase):
       </AuthnContext>
     </AuthnStatement>
   </Assertion>
-</samlp:Response>""".format(
+</samlp:Response>
+"""
+
+
+class TestSTSIntegrations:
+    def test_assume_role(self, sts_client):
+        test_role_session_name = "s3-access-example"
+        test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
+        response = sts_client.assume_role(
+            RoleArn=test_role_arn, RoleSessionName=test_role_session_name
+        )
+
+        assert response["Credentials"]
+        assert response["Credentials"]["SecretAccessKey"]
+        if response["AssumedRoleUser"]["AssumedRoleId"]:
+            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
+            assert assume_role_id_parts[1] == test_role_session_name
+
+    def test_assume_role_with_web_identity(self, sts_client):
+        test_role_session_name = "web_token"
+        test_role_arn = "arn:aws:sts::000000000000:role/rd_role"
+        test_web_identity_token = "token"
+        response = sts_client.assume_role_with_web_identity(
+            RoleArn=test_role_arn,
+            RoleSessionName=test_role_session_name,
+            WebIdentityToken=test_web_identity_token,
+        )
+
+        assert response["Credentials"]
+        assert response["Credentials"]["SecretAccessKey"]
+        if response["AssumedRoleUser"]["AssumedRoleId"]:
+            assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
+            assert assume_role_id_parts[1] == test_role_session_name
+
+    def test_assume_role_with_saml(self, sts_client):
+        account_id = "000000000000"
+        role_name = "test-role"
+        provider_name = "TestProvFed"
+        fed_name = "testuser"
+
+        saml_assertion = TEST_SAML_ASSERTION.format(
             account_id=account_id,
             role_name=role_name,
             provider_name=provider_name,
             fed_name=fed_name,
-        ).replace(
-            "\n", ""
-        )
+        ).replace("\n", "")
 
         role_arn = "arn:aws:iam::{account_id}:role/{role_name}".format(
             account_id=account_id, role_name=role_name
@@ -133,25 +131,45 @@ class TestSTSIntegrations(unittest.TestCase):
             account_id=account_id, provider_name=provider_name
         )
         base64_saml_assertion = b64encode(saml_assertion.encode("utf-8")).decode("utf-8")
-        response = self.sts_client.assume_role_with_saml(
+        response = sts_client.assume_role_with_saml(
             RoleArn=role_arn,
             PrincipalArn=principal_arn,
             SAMLAssertion=base64_saml_assertion,
         )
 
-        self.assertTrue(response["Credentials"])
-        self.assertTrue(response["Credentials"]["SecretAccessKey"])
+        assert response["Credentials"]
+        assert response["Credentials"]["SecretAccessKey"]
         if response["AssumedRoleUser"]["AssumedRoleId"]:
             assume_role_id_parts = response["AssumedRoleUser"]["AssumedRoleId"].split(":")
-            self.assertEqual(fed_name, assume_role_id_parts[1])
+            assert assume_role_id_parts[1] == fed_name
 
-    def test_get_federation_token(self):
+    def test_get_federation_token(self, sts_client):
         token_name = "TestName"
-        response = self.sts_client.get_federation_token(Name=token_name)
+        response = sts_client.get_federation_token(Name=token_name)
 
-        self.assertTrue(response["Credentials"])
-        self.assertTrue(response["Credentials"]["SecretAccessKey"])
-        self.assertTrue(response["Credentials"]["SessionToken"])
-        self.assertTrue(response["Credentials"]["Expiration"])
+        assert response["Credentials"]
+        assert response["Credentials"]["SecretAccessKey"]
+        assert response["Credentials"]["SessionToken"]
+        assert response["Credentials"]["Expiration"]
         federated_user_info = response["FederatedUser"]["FederatedUserId"].split(":")
-        self.assertEqual(token_name, federated_user_info[1])
+        assert federated_user_info[1] == token_name
+
+    def test_custom_caller_identity(self, sts_client, iam_client, monkeypatch):
+        response = sts_client.get_caller_identity()
+        assert ":user/localstack" in response.get("Arn")
+
+        # set custom name/id for default user
+        test_name = f"u-{short_uid()}"
+        test_id = short_uid()
+        monkeypatch.setattr(config, "TEST_IAM_USER_NAME", test_name)
+        monkeypatch.setattr(config, "TEST_IAM_USER_ID", test_id)
+
+        # assert STS identity
+        response = sts_client.get_caller_identity()
+        assert f":user/{test_name}" in response.get("Arn")
+        assert response.get("UserId") == test_id
+
+        # assert IAM user
+        response = iam_client.get_user()
+        assert response["User"]["UserName"] == test_name
+        assert response["User"]["UserId"] == test_id

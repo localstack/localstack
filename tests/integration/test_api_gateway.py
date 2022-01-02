@@ -453,7 +453,9 @@ class TestAPIGateway(unittest.TestCase):
         # send message with binary data
         binary_msg = b"\xff \xaa \x11"
         result = requests.post(url, data=binary_msg)
-        self.assertEqual("/yCqIBE=", json.loads(to_str(result.content))["body"])
+        result_content = json.loads(to_str(result.content))
+        self.assertEqual("/yCqIBE=", result_content["body"])
+        self.assertEqual(True, result_content["isBase64Encoded"])
 
     def test_api_gateway_lambda_proxy_integration_any_method(self):
         self._test_api_gateway_lambda_proxy_integration_any_method(
