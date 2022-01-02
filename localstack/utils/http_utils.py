@@ -1,6 +1,6 @@
 import re
 from typing import Dict, Union
-from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from requests.models import CaseInsensitiveDict
 

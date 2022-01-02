@@ -6,7 +6,6 @@ import re
 import time
 from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
-from urllib.parse import urlencode
 
 import pytz
 import requests
@@ -376,7 +375,14 @@ def apply_request_parameters(
             if request_parameters.get(request_param_key, None) == request_param_value:
                 uri = uri.replace(f"{{{key}}}", path_params[key])
 
-    # include the request query to the uri
+    if integration.get("type") != "HTTP_PROXY" and request_parameters:
+        for key in query_params.copy():
+            request_query_key = f"integration.request.querystring.{key}"
+            request_param_val = f"method.request.querystring.{key}"
+            if request_parameters.get(request_query_key, None) != \
+                request_param_val:
+                query_params.pop(key)
+
     return add_query_params_to_url(uri, query_params)
 
 
