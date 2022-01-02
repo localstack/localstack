@@ -379,8 +379,7 @@ def apply_request_parameters(
         for key in query_params.copy():
             request_query_key = f"integration.request.querystring.{key}"
             request_param_val = f"method.request.querystring.{key}"
-            if request_parameters.get(request_query_key, None) != \
-                request_param_val:
+            if request_parameters.get(request_query_key, None) != request_param_val:
                 query_params.pop(key)
 
     return add_query_params_to_url(uri, query_params)
