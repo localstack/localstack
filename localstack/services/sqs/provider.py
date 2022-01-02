@@ -706,6 +706,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         k = QueueKey(context.region, context.account_id, queue_name)
 
+        # Special Case TODO: why is an emtpy policy passed at all? same in set_queue_attributes
+        if attributes and attributes.get(QueueAttributeName.Policy) == "":
+            del attributes[QueueAttributeName.Policy]
+
         if k in self.queues:
             raise QueueNameExists(queue_name)
         if fifo:
@@ -824,7 +828,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             return GetQueueAttributesResult(Attributes=dict())
 
         if QueueAttributeName.All in attribute_names:
-            return GetQueueAttributesResult(Attributes=queue.attributes)
+            # return GetQueueAttributesResult(Attributes=queue.attributes)
+            attribute_names = queue.attributes.keys()
 
         result: Dict[QueueAttributeName, str] = dict()
 
