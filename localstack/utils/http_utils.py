@@ -3,6 +3,8 @@ from typing import Dict, Union
 
 from requests.models import CaseInsensitiveDict
 
+ACCEPT = "accept"
+
 
 def uses_chunked_encoding(response):
     return response.headers.get("Transfer-Encoding", "").lower() == "chunked"
@@ -44,7 +46,9 @@ def canonicalize_headers(headers: Union[Dict, CaseInsensitiveDict]) -> Dict:
         return headers
 
     def _normalize(name):
-        return name.lower()
+        if name.lower().startswith(ACCEPT):
+            return name.lower()
+        return name
 
     result = {_normalize(k): v for k, v in headers.items()}
     return result
