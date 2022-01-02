@@ -64,6 +64,8 @@ from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, TH
 from localstack.utils.common import camel_to_snake_case, json_safe, long_uid, to_bytes, to_str
 
 # set up logger
+from localstack.utils.http_utils import add_query_params_to_url
+
 LOG = logging.getLogger(__name__)
 
 # target ARN patterns
@@ -360,7 +362,9 @@ def update_content_length(response: Response):
         response.headers["Content-Length"] = str(len(response.content))
 
 
-def apply_request_parameters(uri: str, integration: Dict[str, Any], path_params: Dict[str, str]):
+def apply_request_parameters(
+    uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
+):
     request_parameters = integration.get("requestParameters")
     uri = uri or integration.get("uri") or integration.get("integrationUri") or ""
     if request_parameters:
@@ -370,7 +374,15 @@ def apply_request_parameters(uri: str, integration: Dict[str, Any], path_params:
             request_param_value = f"method.request.path.{key}"
             if request_parameters.get(request_param_key, None) == request_param_value:
                 uri = uri.replace(f"{{{key}}}", path_params[key])
-    return uri
+
+    if integration.get("type") != "HTTP_PROXY" and request_parameters:
+        for key in query_params.copy():
+            request_query_key = f"integration.request.querystring.{key}"
+            request_param_val = f"method.request.querystring.{key}"
+            if request_parameters.get(request_query_key, None) != request_param_val:
+                query_params.pop(key)
+
+    return add_query_params_to_url(uri, query_params)
 
 
 def apply_template(
@@ -556,8 +568,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
     invocation_context.response_templates = response_templates
     invocation_context.integration = integration
 
-    result = invoke_rest_api_integration(invocation_context)
-    return result
+    return invoke_rest_api_integration(invocation_context)
 
 
 def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
@@ -574,6 +585,8 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
         return make_error_response(msg, 400)
 
 
+# TODO: refactor this to have a class per integration type to make it easy to
+# test the encapsulated logic
 def invoke_rest_api_integration_backend(
     invocation_context: ApiInvocationContext, integration: Dict
 ):
@@ -886,7 +899,9 @@ def invoke_rest_api_integration_backend(
         data = apply_template(integration, "request", data)
         if isinstance(data, dict):
             data = json.dumps(data)
-        uri = apply_request_parameters(uri, integration=integration, path_params=path_params)
+        uri = apply_request_parameters(
+            uri, integration=integration, path_params=path_params, query_params=query_string_params
+        )
         result = requests.request(method=method, url=uri, data=data, headers=headers)
         # apply custom response template
         result = apply_template(integration, "response", result)

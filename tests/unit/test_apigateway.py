@@ -76,6 +76,26 @@ class ApiGatewayPathsTest(unittest.TestCase):
         result = apigateway_listener.get_resource_for_path("/foo/bar/baz", path_args)
         self.assertEqual(None, result)
 
+    def test_apply_request_parameters(self):
+        integration = {
+            "type": "HTTP_PROXY",
+            "httpMethod": "ANY",
+            "uri": "https://httpbin.org/anything/{proxy}",
+            "requestParameters": {"integration.request.path.proxy": "method.request.path.proxy"},
+            "passthroughBehavior": "WHEN_NO_MATCH",
+            "timeoutInMillis": 29000,
+            "cacheNamespace": "041fa782",
+            "cacheKeyParameters": [],
+        }
+
+        uri = apigateway_listener.apply_request_parameters(
+            uri="https://httpbin.org/anything/{proxy}",
+            integration=integration,
+            path_params={"proxy": "foo/bar/baz"},
+            query_params={"param": "foobar"},
+        )
+        self.assertEqual("https://httpbin.org/anything/foo/bar/baz?param=foobar", uri)
+
 
 def test_render_template_values():
     util = templating.VelocityUtil()
