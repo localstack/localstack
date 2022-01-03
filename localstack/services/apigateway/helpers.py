@@ -34,10 +34,7 @@ PATH_REGEX_DOC_PARTS = r"^/restapis/([A-Za-z0-9_\-]+)/documentation/parts/?([^?/
 PATH_REGEX_PATH_MAPPINGS = r"/domainnames/([^/]+)/basepathmappings/?(.*)"
 PATH_REGEX_CLIENT_CERTS = r"/clientcertificates/?([^/]+)?$"
 PATH_REGEX_VPC_LINKS = r"/vpclinks/([^/]+)?(.*)"
-PATH_REGEX_TEST_INVOKE_API = (
-    r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/(["
-    r"A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
-)
+PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
@@ -50,9 +47,7 @@ TAG_KEY_CUSTOM_ID = "_custom_id_"
 # map API IDs to region names
 API_REGIONS = {}
 
-
-# TODO: make the CRUD operations in this file generic for the different model types (authorizes,
-#  validators, ...)
+# TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 
 class APIGatewayRegion(RegionBackend):
@@ -392,8 +387,7 @@ def add_base_path_mapping(path, data):
 
     domain_name = get_domain_from_path(path)
     # Note: "(none)" is a special value in API GW:
-    # https://docs.aws.amazon.com/apigateway/api-reference/link-relation/basepathmapping-by-base
-    # -path
+    # https://docs.aws.amazon.com/apigateway/api-reference/link-relation/basepathmapping-by-base-path
     base_path = data["basePath"] = data.get("basePath") or "(none)"
     result = common.clone(data)
 
@@ -724,10 +718,7 @@ def get_gateway_responses(api_id):
     region_details = APIGatewayRegion.get()
     result = region_details.gateway_responses.get(api_id, [])
 
-    href = (
-        "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{"
-        "rel}.html"
-    )
+    href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{rel}.html"
     base_path = "/restapis/%s/gatewayresponses" % api_id
 
     result = {
@@ -742,8 +733,7 @@ def get_gateway_responses(api_id):
             "item": [{"href": "%s/%s" % (base_path, r["responseType"])} for r in result],
         },
         "_embedded": {"item": [gateway_response_to_response_json(i, api_id) for i in result]},
-        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the
-        # docs:
+        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the docs:
         # https://docs.aws.amazon.com/apigateway/api-reference/resource/gateway-responses/
         "item": [gateway_response_to_response_json(i, api_id) for i in result],
     }
@@ -863,8 +853,7 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
         result["_links"] = {}
     result["_links"]["self"] = {"href": self_link}
     result["_links"]["curies"] = {
-        "href": "https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer"
-        "-latest.html",
+        "href": "https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html",
         "name": model_type,
         "templated": True,
     }
@@ -1073,10 +1062,8 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                     common.assign_to_path(subject, path, value=value, delimiter="/")
                 target = common.extract_from_jsonpointer_path(subject, path)
                 if isinstance(target, list) and not path.endswith("/-"):
-                    # if "path" is an attribute name pointing to an array in "subject", and we're
-                    # running
-                    # an "add" operation, then we should use the standard-compliant notation
-                    # "/path/-"
+                    # if "path" is an attribute name pointing to an array in "subject", and we're running
+                    # an "add" operation, then we should use the standard-compliant notation "/path/-"
                     operation["path"] = "%s/-" % path
 
             result = apply_patch(subject, [operation], in_place=in_place)
