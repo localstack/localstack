@@ -9,7 +9,7 @@ import pytest
 
 from localstack import config
 from localstack.config import in_docker
-from localstack.utils.common import safe_run, short_uid, to_str
+from localstack.utils.common import is_ipv4_address, safe_run, short_uid, to_str
 from localstack.utils.docker_utils import (
     ContainerClient,
     ContainerException,
@@ -32,9 +32,6 @@ ContainerInfo = NamedTuple(
 LOG = logging.getLogger(__name__)
 
 container_name_prefix = "lst_test_"
-IP_REGEX = (
-    r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-)
 
 
 def _random_container_name() -> str:
@@ -284,13 +281,13 @@ class TestDockerClient:
         result_bridge_network = docker_client.get_container_ipv4_for_network(
             container_name_or_id=dummy_container.container_id, container_network="bridge"
         ).strip()
-        assert re.match(IP_REGEX, result_bridge_network)
+        assert is_ipv4_address(result_bridge_network)
         bridge_network = docker_client.inspect_network("bridge")["IPAM"]["Config"][0]["Subnet"]
         assert ipaddress.IPv4Address(result_bridge_network) in ipaddress.IPv4Network(bridge_network)
         result_custom_network = docker_client.get_container_ipv4_for_network(
             container_name_or_id=dummy_container.container_id, container_network=network_name
         ).strip()
-        assert re.match(IP_REGEX, result_custom_network)
+        assert is_ipv4_address(result_custom_network)
         assert result_custom_network != result_bridge_network
         custom_network = docker_client.inspect_network(network_name)["IPAM"]["Config"][0]["Subnet"]
         assert ipaddress.IPv4Address(result_custom_network) in ipaddress.IPv4Network(custom_network)
@@ -304,7 +301,7 @@ class TestDockerClient:
         result_bridge_network = docker_client.get_container_ipv4_for_network(
             container_name_or_id=dummy_container.container_id, container_network="bridge"
         ).strip()
-        assert re.match(IP_REGEX, result_bridge_network)
+        assert is_ipv4_address(result_bridge_network)
 
         with pytest.raises(ContainerException):
             docker_client.get_container_ipv4_for_network(
@@ -944,10 +941,7 @@ class TestDockerClient:
     def test_get_container_ip(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         ip = docker_client.get_container_ip(dummy_container.container_id)
-        assert re.match(
-            IP_REGEX,
-            ip,
-        )
+        assert is_ipv4_address(ip)
         assert "127.0.0.1" != ip
 
     def test_get_container_ip_with_network(

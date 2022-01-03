@@ -182,7 +182,9 @@ def get_main_endpoint_from_container():
 
 def get_container_network_for_lambda():
     global LAMBDA_CONTAINER_NETWORK
-    if not config.LAMBDA_DOCKER_NETWORK and LAMBDA_CONTAINER_NETWORK is None:
+    if config.LAMBDA_DOCKER_NETWORK:
+        return config.LAMBDA_DOCKER_NETWORK
+    if LAMBDA_CONTAINER_NETWORK is None:
         try:
             if config.is_in_docker:
                 networks = DOCKER_CLIENT.get_networks(bootstrap.get_main_container_name())
@@ -195,7 +197,7 @@ def get_container_network_for_lambda():
         except Exception as e:
             container_name = bootstrap.get_main_container_name()
             LOG.info('Unable to get network name of main container "%s": %s', container_name, e)
-    return config.LAMBDA_DOCKER_NETWORK or LAMBDA_CONTAINER_NETWORK
+    return LAMBDA_CONTAINER_NETWORK
 
 
 def rm_docker_container(container_name_or_id, check_existence=False, safe=False):

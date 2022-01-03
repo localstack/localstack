@@ -94,6 +94,9 @@ _unprintables = (
 REGEX_UNPRINTABLE_CHARS = re.compile(
     f"[{re.escape(''.join(map(chr, itertools.chain(*_unprintables))))}]"
 )
+IP_REGEX = (
+    r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+)
 
 # user of the currently running process
 CACHED_USER = None
@@ -1670,6 +1673,15 @@ def is_ip_address(addr):
         return True
     except socket.error:
         return False
+
+
+def is_ipv4_address(address: str) -> bool:
+    """
+    Checks if passed string looks like an IPv4 address
+    :param address: Possible IPv4 address
+    :return: True if string looks like IPv4 address, False otherwise
+    """
+    return bool(re.match(IP_REGEX, address))
 
 
 def is_zip_file(content):
