@@ -60,6 +60,7 @@ DOTNET_LAMBDA_RUNTIMES = [
 
 # IP address of main Docker container (lazily initialized)
 DOCKER_MAIN_CONTAINER_IP = None
+LAMBDA_CONTAINER_NETWORK = None
 
 
 class ClientError(Exception):
@@ -156,12 +157,20 @@ def get_main_endpoint_from_container():
     global DOCKER_MAIN_CONTAINER_IP
     if not config.HOSTNAME_FROM_LAMBDA and DOCKER_MAIN_CONTAINER_IP is None:
         DOCKER_MAIN_CONTAINER_IP = False
+        container_name = bootstrap.get_main_container_name()
         try:
             if config.is_in_docker:
-                DOCKER_MAIN_CONTAINER_IP = bootstrap.get_main_container_ip()
-                LOG.info("Determined main container target IP: %s", DOCKER_MAIN_CONTAINER_IP)
+                DOCKER_MAIN_CONTAINER_IP = DOCKER_CLIENT.get_container_ipv4_for_network(
+                    container_name_or_id=container_name,
+                    container_network=get_container_network_for_lambda(),
+                )
+            else:
+                # default gateway for the network should be the host
+                DOCKER_MAIN_CONTAINER_IP = DOCKER_CLIENT.inspect_network(
+                    get_container_network_for_lambda()
+                )["IPAM"]["Config"][0]["Gateway"]
+            LOG.info("Determined main container target IP: %s", DOCKER_MAIN_CONTAINER_IP)
         except Exception as e:
-            container_name = bootstrap.get_main_container_name()
             LOG.info(
                 'Unable to get IP address of main Docker container "%s": %s', container_name, e
             )
@@ -169,6 +178,26 @@ def get_main_endpoint_from_container():
     return (
         config.HOSTNAME_FROM_LAMBDA or DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
     )
+
+
+def get_container_network_for_lambda():
+    global LAMBDA_CONTAINER_NETWORK
+    if config.LAMBDA_DOCKER_NETWORK:
+        return config.LAMBDA_DOCKER_NETWORK
+    if LAMBDA_CONTAINER_NETWORK is None:
+        try:
+            if config.is_in_docker:
+                networks = DOCKER_CLIENT.get_networks(bootstrap.get_main_container_name())
+                LAMBDA_CONTAINER_NETWORK = networks[0]
+            else:
+                LAMBDA_CONTAINER_NETWORK = (
+                    "bridge"  # use the default bridge network in case of host mode
+                )
+            LOG.info("Determined lambda container network: %s", LAMBDA_CONTAINER_NETWORK)
+        except Exception as e:
+            container_name = bootstrap.get_main_container_name()
+            LOG.info('Unable to get network name of main container "%s": %s', container_name, e)
+    return LAMBDA_CONTAINER_NETWORK
 
 
 def rm_docker_container(container_name_or_id, check_existence=False, safe=False):

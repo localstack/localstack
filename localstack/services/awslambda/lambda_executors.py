@@ -19,6 +19,7 @@ from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
+    get_container_network_for_lambda,
     get_main_endpoint_from_container,
     get_record_from_event,
     is_java_lambda,
@@ -968,7 +969,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         # make sure AWS_LAMBDA_EVENT_BODY is not set (otherwise causes issues with "docker exec ..." above)
         env_vars.pop("AWS_LAMBDA_EVENT_BODY", None)
 
-        network = config.LAMBDA_DOCKER_NETWORK
+        network = get_container_network_for_lambda()
         additional_flags = docker_flags
 
         dns = config.LAMBDA_DOCKER_DNS
@@ -1092,7 +1093,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             # Get the container name.
             container_name = self.get_container_name(func_arn)
 
-            container_network = DOCKER_CLIENT.get_network(container_name)
+            container_network = DOCKER_CLIENT.get_networks(container_name)[0]
 
             return container_network
 
@@ -1167,7 +1168,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             inv_context.lambda_command = inv_context.handler
 
         # add Docker Lambda env vars
-        network = config.LAMBDA_DOCKER_NETWORK or None
+        network = get_container_network_for_lambda()
         if network == "host":
             port = get_free_tcp_port()
             env_vars["DOCKER_LAMBDA_API_PORT"] = port

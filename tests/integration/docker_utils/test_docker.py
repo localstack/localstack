@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import re
 import time
@@ -8,7 +9,7 @@ import pytest
 
 from localstack import config
 from localstack.config import in_docker
-from localstack.utils.common import safe_run, short_uid, to_str
+from localstack.utils.common import is_ipv4_address, safe_run, short_uid, to_str
 from localstack.utils.docker_utils import (
     ContainerClient,
     ContainerException,
@@ -255,13 +256,85 @@ class TestDockerClient:
             docker_client.start_container("this_container_does_not_exist")
 
     def test_get_network(self, docker_client: ContainerClient, dummy_container):
-        n = docker_client.get_network(dummy_container.container_name)
-        assert "default" == n
+        n = docker_client.get_networks(dummy_container.container_name)
+        assert ["bridge"] == n
+
+    def test_get_network_multiple_networks(
+        self, docker_client: ContainerClient, dummy_container, create_network
+    ):
+        network_name = f"test-network-{short_uid()}"
+        network_id = create_network(network_name)
+        safe_run(["docker", "network", "connect", network_id, dummy_container.container_id])
+        docker_client.start_container(dummy_container.container_id)
+        networks = docker_client.get_networks(dummy_container.container_id)
+        assert network_name in networks
+        assert "bridge" in networks
+        assert len(networks) == 2
+
+    def test_get_container_ip_for_network(
+        self, docker_client: ContainerClient, dummy_container, create_network
+    ):
+        network_name = f"test-network-{short_uid()}"
+        network_id = create_network(network_name)
+        safe_run(["docker", "network", "connect", network_id, dummy_container.container_id])
+        docker_client.start_container(dummy_container.container_id)
+        result_bridge_network = docker_client.get_container_ipv4_for_network(
+            container_name_or_id=dummy_container.container_id, container_network="bridge"
+        ).strip()
+        assert is_ipv4_address(result_bridge_network)
+        bridge_network = docker_client.inspect_network("bridge")["IPAM"]["Config"][0]["Subnet"]
+        assert ipaddress.IPv4Address(result_bridge_network) in ipaddress.IPv4Network(bridge_network)
+        result_custom_network = docker_client.get_container_ipv4_for_network(
+            container_name_or_id=dummy_container.container_id, container_network=network_name
+        ).strip()
+        assert is_ipv4_address(result_custom_network)
+        assert result_custom_network != result_bridge_network
+        custom_network = docker_client.inspect_network(network_name)["IPAM"]["Config"][0]["Subnet"]
+        assert ipaddress.IPv4Address(result_custom_network) in ipaddress.IPv4Network(custom_network)
+
+    def test_get_container_ip_for_network_wrong_network(
+        self, docker_client: ContainerClient, dummy_container, create_network
+    ):
+        network_name = f"test-network-{short_uid()}"
+        create_network(network_name)
+        docker_client.start_container(dummy_container.container_id)
+        result_bridge_network = docker_client.get_container_ipv4_for_network(
+            container_name_or_id=dummy_container.container_id, container_network="bridge"
+        ).strip()
+        assert is_ipv4_address(result_bridge_network)
+
+        with pytest.raises(ContainerException):
+            docker_client.get_container_ipv4_for_network(
+                container_name_or_id=dummy_container.container_id, container_network=network_name
+            )
+
+    def test_get_container_ip_for_host_network(
+        self, docker_client: ContainerClient, create_container
+    ):
+        container = create_container(
+            "alpine", command=["sh", "-c", "while true; do sleep 1; done"], network="host"
+        )
+        assert "host" == docker_client.get_networks(container.container_name)[0]
+        # host network containers have no dedicated IP, so it will throw an exception here
+        with pytest.raises(ContainerException):
+            docker_client.get_container_ipv4_for_network(
+                container_name_or_id=container.container_name, container_network="host"
+            )
+
+    def test_get_container_ip_for_network_non_existent_network(
+        self, docker_client: ContainerClient, dummy_container, create_network
+    ):
+        network_name = f"invalid-test-network-{short_uid()}"
+        docker_client.start_container(dummy_container.container_id)
+        with pytest.raises(NoSuchNetwork):
+            docker_client.get_container_ipv4_for_network(
+                container_name_or_id=dummy_container.container_id, container_network=network_name
+            )
 
     def test_create_with_host_network(self, docker_client: ContainerClient, create_container):
         info = create_container("alpine", network="host")
-        network = docker_client.get_network(info.container_name)
-        assert "host" == network
+        network = docker_client.get_networks(info.container_name)
+        assert ["host"] == network
 
     def test_create_with_port_mapping(self, docker_client: ContainerClient, create_container):
         ports = PortMappings()
@@ -421,7 +494,7 @@ class TestDockerClient:
 
     def test_get_network_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(ContainerException):
-            docker_client.get_network("this_container_does_not_exist")
+            docker_client.get_networks("this_container_does_not_exist")
 
     def test_list_containers(self, docker_client: ContainerClient, create_container):
         c1 = create_container("alpine", command=["echo", "1"])
@@ -868,10 +941,7 @@ class TestDockerClient:
     def test_get_container_ip(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
         ip = docker_client.get_container_ip(dummy_container.container_id)
-        assert re.match(
-            r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
-            ip,
-        )
+        assert is_ipv4_address(ip)
         assert "127.0.0.1" != ip
 
     def test_get_container_ip_with_network(

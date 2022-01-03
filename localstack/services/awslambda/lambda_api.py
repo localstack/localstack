@@ -39,6 +39,7 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import install_go_lambda_runtime
+from localstack.utils import bootstrap
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
@@ -2331,11 +2332,29 @@ def update_code_signing_config(arn):
     return Response(json.dumps(result), status=200)
 
 
+def validate_lambda_config():
+    """Validates important config variables necessary for flawless lambda execution"""
+    if (
+        config.LAMBDA_DOCKER_NETWORK
+        and config.is_in_docker
+        and config.LAMBDA_DOCKER_NETWORK
+        not in DOCKER_CLIENT.get_networks(bootstrap.get_main_container_name())
+    ):
+        LOG.warning(
+            "Your specified LAMBDA_DOCKER_NETWORK '%s' is not connected to the main LocalStack container '%s'. "
+            "Lambda functionality might be severely limited.",
+            config.LAMBDA_DOCKER_NETWORK,
+            bootstrap.get_main_container_name(),
+        )
+
+
 def serve(port):
     from localstack.services import generic_proxy  # moved here to fix circular import errors
 
     # initialize the Lambda executor
     LAMBDA_EXECUTOR.startup()
+    # print warnings for potentially incorrect config options
+    validate_lambda_config()
 
     # initialize/import plugins - TODO find better place to import plugins! (to be integrated into proper plugin model)
     import localstack.contrib.thundra  # noqa
