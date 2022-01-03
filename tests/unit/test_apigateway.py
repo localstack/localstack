@@ -42,6 +42,11 @@ class ApiGatewayPathsTest(unittest.TestCase):
         )
         self.assertEqual("/foo/{proxy+}", path)
 
+        path, details = apigateway_listener.get_resource_for_path(
+            "/foo/bar/baz", {"/{proxy+}": {}, "/foo/{proxy+}": {}}
+        )
+        self.assertEqual("/foo/{proxy+}", path)
+
         result = apigateway_listener.get_resource_for_path(
             "/foo/bar", {"/foo/bar1": {}, "/foo/bar2": {}}
         )
@@ -75,6 +80,10 @@ class ApiGatewayPathsTest(unittest.TestCase):
         path_args = {"/foo123/{param1}/baz": {}}
         result = apigateway_listener.get_resource_for_path("/foo/bar/baz", path_args)
         self.assertEqual(None, result)
+
+        path_args = {"/foo/{param1}/baz": {}, "/foo/{param1}/{param2}": {}}
+        path, result = apigateway_listener.get_resource_for_path("/foo/bar/baz", path_args)
+        self.assertEqual("/foo/{param1}/baz", path)
 
     def test_apply_request_parameters(self):
         integration = {

@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
@@ -34,7 +34,10 @@ PATH_REGEX_DOC_PARTS = r"^/restapis/([A-Za-z0-9_\-]+)/documentation/parts/?([^?/
 PATH_REGEX_PATH_MAPPINGS = r"/domainnames/([^/]+)/basepathmappings/?(.*)"
 PATH_REGEX_CLIENT_CERTS = r"/clientcertificates/?([^/]+)?$"
 PATH_REGEX_VPC_LINKS = r"/vpclinks/([^/]+)?(.*)"
-PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
+PATH_REGEX_TEST_INVOKE_API = (
+    r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/(["
+    r"A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
+)
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
@@ -47,7 +50,9 @@ TAG_KEY_CUSTOM_ID = "_custom_id_"
 # map API IDs to region names
 API_REGIONS = {}
 
-# TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
+
+# TODO: make the CRUD operations in this file generic for the different model types (authorizes,
+#  validators, ...)
 
 
 class APIGatewayRegion(RegionBackend):
@@ -387,7 +392,8 @@ def add_base_path_mapping(path, data):
 
     domain_name = get_domain_from_path(path)
     # Note: "(none)" is a special value in API GW:
-    # https://docs.aws.amazon.com/apigateway/api-reference/link-relation/basepathmapping-by-base-path
+    # https://docs.aws.amazon.com/apigateway/api-reference/link-relation/basepathmapping-by-base
+    # -path
     base_path = data["basePath"] = data.get("basePath") or "(none)"
     result = common.clone(data)
 
@@ -718,7 +724,10 @@ def get_gateway_responses(api_id):
     region_details = APIGatewayRegion.get()
     result = region_details.gateway_responses.get(api_id, [])
 
-    href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{rel}.html"
+    href = (
+        "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{"
+        "rel}.html"
+    )
     base_path = "/restapis/%s/gatewayresponses" % api_id
 
     result = {
@@ -733,7 +742,8 @@ def get_gateway_responses(api_id):
             "item": [{"href": "%s/%s" % (base_path, r["responseType"])} for r in result],
         },
         "_embedded": {"item": [gateway_response_to_response_json(i, api_id) for i in result]},
-        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the docs:
+        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the
+        # docs:
         # https://docs.aws.amazon.com/apigateway/api-reference/resource/gateway-responses/
         "item": [gateway_response_to_response_json(i, api_id) for i in result],
     }
@@ -853,7 +863,8 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
         result["_links"] = {}
     result["_links"]["self"] = {"href": self_link}
     result["_links"]["curies"] = {
-        "href": "https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html",
+        "href": "https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer"
+        "-latest.html",
         "name": model_type,
         "templated": True,
     }
@@ -936,7 +947,8 @@ def get_rest_api_paths(rest_api_id, region_name=None):
     resource_map = {}
     for resource in resources["items"]:
         path = resource.get("path")
-        # TODO: check if this is still required in the general case (can we rely on "path" being present?)
+        # TODO: check if this is still required in the general case (can we rely on "path" being
+        #  present?)
         path = path or aws_stack.get_apigateway_path_for_resource(
             rest_api_id, resource["id"], region_name=region_name
         )
@@ -944,36 +956,56 @@ def get_rest_api_paths(rest_api_id, region_name=None):
     return resource_map
 
 
-def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Tuple[str, Dict]:
+# TODO: Extract this to a set of rules that have precedence and easy to test individually.
+#
+#  https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings
+#  -method-request.html
+#  https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-routes.html
+def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Optional[Tuple[str, dict]]:
     matches = []
+    # creates a regex from the input path if there are parameters, e.g /foo/{bar}/baz -> /foo/[
+    # ^\]+/baz, otherwise is a direct match.
     for api_path, details in path_map.items():
-        api_path_regex = re.sub(r"\{[^\+]+\+\}", r"[^\?#]+", api_path)
-        api_path_regex = re.sub(r"\{[^\}]+\}", r"[^/]+", api_path_regex)
+        api_path_regex = re.sub(r"{[^+]+\+}", r"[^\?#]+", api_path)
+        api_path_regex = re.sub(r"{[^}]+}", r"[^/]+", api_path_regex)
         if re.match(r"^%s$" % api_path_regex, path):
             matches.append((api_path, details))
+
+    # if there are no matches, it's not worth to proceed, bail here!
     if not matches:
         return None
+
+    # so we have matches and perhaps more than one, e.g
+    # /{proxy+} and /api/{proxy+} for inputs like /api/foo/bar
+    # /foo/{param1}/baz and /foo/{param1}/{param2} for inputs like /for/bar/baz
     if len(matches) > 1:
-        # check if we have an exact match
+        # check if we have an exact match (exact matches take precedence)
         for match in matches:
             if match[0] == path:
                 return match
+            # not an exact match but parameters can fit in
             if path_matches_pattern(path, match[0]):
                 return match
-        raise Exception("Ambiguous API path %s - matches found: %s" % (path, matches))
+
+        # at this stage, we have more than one match but we have an eager example like
+        # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length
+        sorted_matches = sorted(matches, key=lambda x: len(x[0]), reverse=True)
+        return sorted_matches[0]
     return matches[0]
 
 
 def path_matches_pattern(path, api_path):
     api_paths = api_path.split("/")
     paths = path.split("/")
-    reg_check = re.compile(r"\{(.*)\}")
-    results = []
+    reg_check = re.compile(r"{(.*)}")
     if len(api_paths) != len(paths):
         return False
-    for indx, part in enumerate(api_paths):
-        if reg_check.match(part) is None and part:
-            results.append(part == paths[indx])
+    results = [
+        part == paths[indx]
+        for indx, part in enumerate(api_paths)
+        if reg_check.match(part) is None and part
+    ]
+
     return len(results) > 0 and all(results)
 
 
@@ -1014,7 +1046,8 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
 
 
 def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=False):
-    """Apply JSONPatch operations, using some customizations for compatibility with API GW resources."""
+    """Apply JSONPatch operations, using some customizations for compatibility with API GW
+    resources."""
 
     results = []
     patch_operations = (
@@ -1040,8 +1073,10 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                     common.assign_to_path(subject, path, value=value, delimiter="/")
                 target = common.extract_from_jsonpointer_path(subject, path)
                 if isinstance(target, list) and not path.endswith("/-"):
-                    # if "path" is an attribute name pointing to an array in "subject", and we're running
-                    # an "add" operation, then we should use the standard-compliant notation "/path/-"
+                    # if "path" is an attribute name pointing to an array in "subject", and we're
+                    # running
+                    # an "add" operation, then we should use the standard-compliant notation
+                    # "/path/-"
                     operation["path"] = "%s/-" % path
 
             result = apply_patch(subject, [operation], in_place=in_place)
