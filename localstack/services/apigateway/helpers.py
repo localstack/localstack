@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
@@ -936,7 +936,8 @@ def get_rest_api_paths(rest_api_id, region_name=None):
     resource_map = {}
     for resource in resources["items"]:
         path = resource.get("path")
-        # TODO: check if this is still required in the general case (can we rely on "path" being present?)
+        # TODO: check if this is still required in the general case (can we rely on "path" being
+        #  present?)
         path = path or aws_stack.get_apigateway_path_for_resource(
             rest_api_id, resource["id"], region_name=region_name
         )
@@ -944,36 +945,56 @@ def get_rest_api_paths(rest_api_id, region_name=None):
     return resource_map
 
 
-def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Tuple[str, Dict]:
+# TODO: Extract this to a set of rules that have precedence and easy to test individually.
+#
+#  https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-method-settings
+#  -method-request.html
+#  https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-routes.html
+def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Optional[Tuple[str, dict]]:
     matches = []
+    # creates a regex from the input path if there are parameters, e.g /foo/{bar}/baz -> /foo/[
+    # ^\]+/baz, otherwise is a direct match.
     for api_path, details in path_map.items():
-        api_path_regex = re.sub(r"\{[^\+]+\+\}", r"[^\?#]+", api_path)
-        api_path_regex = re.sub(r"\{[^\}]+\}", r"[^/]+", api_path_regex)
+        api_path_regex = re.sub(r"{[^+]+\+}", r"[^\?#]+", api_path)
+        api_path_regex = re.sub(r"{[^}]+}", r"[^/]+", api_path_regex)
         if re.match(r"^%s$" % api_path_regex, path):
             matches.append((api_path, details))
+
+    # if there are no matches, it's not worth to proceed, bail here!
     if not matches:
         return None
+
+    # so we have matches and perhaps more than one, e.g
+    # /{proxy+} and /api/{proxy+} for inputs like /api/foo/bar
+    # /foo/{param1}/baz and /foo/{param1}/{param2} for inputs like /for/bar/baz
     if len(matches) > 1:
-        # check if we have an exact match
+        # check if we have an exact match (exact matches take precedence)
         for match in matches:
             if match[0] == path:
                 return match
+            # not an exact match but parameters can fit in
             if path_matches_pattern(path, match[0]):
                 return match
-        raise Exception("Ambiguous API path %s - matches found: %s" % (path, matches))
+
+        # at this stage, we have more than one match but we have an eager example like
+        # /{proxy+} or /api/{proxy+}, so we pick the best match by sorting by length
+        sorted_matches = sorted(matches, key=lambda x: len(x[0]), reverse=True)
+        return sorted_matches[0]
     return matches[0]
 
 
 def path_matches_pattern(path, api_path):
     api_paths = api_path.split("/")
     paths = path.split("/")
-    reg_check = re.compile(r"\{(.*)\}")
-    results = []
+    reg_check = re.compile(r"{(.*)}")
     if len(api_paths) != len(paths):
         return False
-    for indx, part in enumerate(api_paths):
-        if reg_check.match(part) is None and part:
-            results.append(part == paths[indx])
+    results = [
+        part == paths[indx]
+        for indx, part in enumerate(api_paths)
+        if reg_check.match(part) is None and part
+    ]
+
     return len(results) > 0 and all(results)
 
 
@@ -1014,7 +1035,8 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
 
 
 def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=False):
-    """Apply JSONPatch operations, using some customizations for compatibility with API GW resources."""
+    """Apply JSONPatch operations, using some customizations for compatibility with API GW
+    resources."""
 
     results = []
     patch_operations = (
