@@ -287,13 +287,13 @@ class ContainerConfiguration:
     entrypoint: Optional[str] = None
     additional_flags: Optional[List[str]] = None
     command: Optional[List[str]] = None
+    env_vars: Optional[Dict[str, str]] = None
 
     privileged: Optional[bool] = None
     remove: Optional[bool] = None
     interactive: Optional[bool] = None
     tty: Optional[bool] = None
     detach: Optional[bool] = None
-    inherit_env: Optional[bool] = None
 
     stdin: Optional[str] = None
     user: Optional[str] = None

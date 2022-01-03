@@ -55,6 +55,7 @@ from localstack.utils.common import (
     safe_requests,
     save_file,
     short_uid,
+    start_worker_thread,
     timestamp,
     to_bytes,
     to_str,
@@ -1163,25 +1164,29 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         docker_image = Util.docker_image_for_lambda(lambda_function)
         container_config = ContainerConfiguration(image_name=docker_image)
 
-        env_vars = inv_context.environment
-        entrypoint = None
+        # initialize env vars value - needed so further key assignments will not fail
+        container_config.env_vars = inv_context.environment
         if inv_context.lambda_command:
-            entrypoint = ""
+            container_config.entrypoint = ""
         elif inv_context.handler:
             inv_context.lambda_command = inv_context.handler
 
         # add Docker Lambda env vars
-        network = get_container_network_for_lambda()
-        if network == "host":
+        container_config.network = get_container_network_for_lambda()
+        if container_config.network == "host":
             port = get_free_tcp_port()
-            env_vars["DOCKER_LAMBDA_API_PORT"] = port
-            env_vars["DOCKER_LAMBDA_RUNTIME_PORT"] = port
+            container_config.env_vars["DOCKER_LAMBDA_API_PORT"] = port
+            container_config.env_vars["DOCKER_LAMBDA_RUNTIME_PORT"] = port
 
-        additional_flags = inv_context.docker_flags or ""
-        dns = config.LAMBDA_DOCKER_DNS
+        container_config.additional_flags = inv_context.docker_flags or ""
+        container_config.dns = config.LAMBDA_DOCKER_DNS
         container_config.ports = PortMappings()
         if Util.debug_java_port:
             container_config.ports.add(Util.debug_java_port)
+        container_config.command = inv_context.lambda_command
+        container_config.remove = True
+        container_config.interactive = True
+        container_config.detach = background
 
         transfer_paths = []
 
@@ -1198,44 +1203,58 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         hooks.on_docker_separate_execution.run(lambda_function, transfer_paths, container_config)
 
         # actual execution
+        # TODO make docker client directly accept ContainerConfiguration (?)
         if config.LAMBDA_REMOTE_DOCKER:
             container_id = DOCKER_CLIENT.create_container(
-                image_name=docker_image,
-                interactive=True,
-                entrypoint=entrypoint,
-                remove=True,
-                network=network,
-                env_vars=env_vars,
-                dns=dns,
-                additional_flags=additional_flags,
+                image_name=container_config.image_name,
+                interactive=container_config.interactive,
+                entrypoint=container_config.entrypoint,
+                remove=container_config.remove,
+                network=container_config.network,
+                env_vars=container_config.env_vars,
+                dns=container_config.dns,
+                additional_flags=container_config.additional_flags,
                 ports=container_config.ports,
-                command=inv_context.lambda_command,
+                command=container_config.command,
             )
             for path_tuple in transfer_paths:
                 DOCKER_CLIENT.copy_into_container(container_id, path_tuple[0], path_tuple[1])
             return DOCKER_CLIENT.start_container(
-                container_id, interactive=not background, attach=not background, stdin=stdin
-            )
-        else:
-            mount_volumes = None
-            if transfer_paths:
-                mount_volumes = []
-                for path_tuple in transfer_paths:
-                    mount_volumes += [(path_tuple[0], path_tuple[1])]
-            return DOCKER_CLIENT.run_container(
-                image_name=docker_image,
-                interactive=True,
-                detach=background,
-                entrypoint=entrypoint,
-                remove=True,
-                network=network,
-                env_vars=env_vars,
-                dns=dns,
-                additional_flags=additional_flags,
-                command=inv_context.lambda_command,
-                mount_volumes=mount_volumes,
+                container_id,
+                interactive=not container_config.detach,
+                attach=not container_config.detach,
                 stdin=stdin,
             )
+        else:
+            if transfer_paths:
+                container_config.volumes = container_config.volumes or []
+                for path_tuple in transfer_paths:
+                    container_config.volumes += [(path_tuple[0], path_tuple[1])]
+
+            def _run(container_name=None, *args):
+                return DOCKER_CLIENT.run_container(
+                    image_name=container_config.image_name,
+                    name=container_name,
+                    interactive=container_config.interactive,
+                    detach=container_config.detach,
+                    entrypoint=container_config.entrypoint,
+                    remove=container_config.remove,
+                    network=container_config.network,
+                    env_vars=container_config.env_vars,
+                    dns=container_config.dns,
+                    additional_flags=container_config.additional_flags,
+                    command=container_config.command,
+                    mount_volumes=container_config.volumes,
+                    stdin=stdin,
+                )
+
+            # TODO: workaround until we can get container ID from run_container(.., interactive=True, detach=True)
+            if background:
+                container_name = short_uid() if background else None
+                start_worker_thread(_run, container_name)
+                result_out = to_bytes(f"\n{container_name}")
+                return result_out, b""
+            return _run()
 
 
 class LambdaExecutorLocal(LambdaExecutor):
