@@ -195,6 +195,18 @@ def get_container_network_for_lambda():
         except Exception as e:
             container_name = bootstrap.get_main_container_name()
             LOG.info('Unable to get network name of main container "%s": %s', container_name, e)
+    elif (
+        config.LAMBDA_DOCKER_NETWORK
+        and config.is_in_docker
+        and config.LAMBDA_DOCKER_NETWORK
+        not in DOCKER_CLIENT.get_networks(bootstrap.get_main_container_name())
+    ):
+        LOG.warning(
+            "Your specified LAMBDA_DOCKER_NETWORK '%s' is not connected to the main LocalStack container '%s'. "
+            "Lambda functionality might be severely limited.",
+            config.LAMBDA_DOCKER_NETWORK,
+            bootstrap.get_main_container_name(),
+        )
     return config.LAMBDA_DOCKER_NETWORK or LAMBDA_CONTAINER_NETWORK
 
 
