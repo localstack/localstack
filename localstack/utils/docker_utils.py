@@ -317,7 +317,10 @@ class ContainerClient(metaclass=ABCMeta):
             )
         try:
             ip = str(ipaddress.IPv4Interface(containers[container_id]["IPv4Address"]).ip)
-        except Exception:
+        except Exception as e:
+            raise ContainerException(
+                f"Unable to detect IP address for container {container_name_or_id} in network {container_network}: {e}"
+            )
             raise ContainerException(
                 f"Unable to detect IP address for container {container_name_or_id} in network {container_network}"
             )
