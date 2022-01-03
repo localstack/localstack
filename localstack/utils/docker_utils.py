@@ -321,9 +321,6 @@ class ContainerClient(metaclass=ABCMeta):
             raise ContainerException(
                 f"Unable to detect IP address for container {container_name_or_id} in network {container_network}: {e}"
             )
-            raise ContainerException(
-                f"Unable to detect IP address for container {container_name_or_id} in network {container_network}"
-            )
         return ip
 
     @abstractmethod
