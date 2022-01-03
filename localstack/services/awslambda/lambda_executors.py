@@ -16,6 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
 from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
+from localstack.runtime import hooks
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
@@ -62,6 +63,7 @@ from localstack.utils.common import (
 )
 from localstack.utils.docker_utils import (
     DOCKER_CLIENT,
+    ContainerConfiguration,
     ContainerException,
     DockerContainerStatus,
     PortMappings,
@@ -1158,7 +1160,8 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         stdin=None,
         background=False,
     ) -> Tuple[bytes, bytes]:
-        lambda_cwd = lambda_function.cwd
+        docker_image = Util.docker_image_for_lambda(lambda_function)
+        container_config = ContainerConfiguration(image_name=docker_image)
 
         env_vars = inv_context.environment
         entrypoint = None
@@ -1176,11 +1179,25 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
         additional_flags = inv_context.docker_flags or ""
         dns = config.LAMBDA_DOCKER_DNS
-        docker_java_ports = PortMappings()
+        container_config.ports = PortMappings()
         if Util.debug_java_port:
-            docker_java_ports.add(Util.debug_java_port)
-        docker_image = Util.docker_image_for_lambda(lambda_function)
+            container_config.ports.add(Util.debug_java_port)
 
+        transfer_paths = []
+
+        lambda_cwd = lambda_function.cwd
+        if lambda_cwd:
+            if config.LAMBDA_REMOTE_DOCKER:
+                transfer_paths.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
+            else:
+                transfer_paths.append(
+                    (Util.get_host_path_for_path_in_docker(lambda_cwd), DOCKER_TASK_FOLDER)
+                )
+
+        # running hooks to modify execution parameters
+        hooks.on_docker_separate_execution.run(lambda_function, transfer_paths, container_config)
+
+        # actual execution
         if config.LAMBDA_REMOTE_DOCKER:
             container_id = DOCKER_CLIENT.create_container(
                 image_name=docker_image,
@@ -1191,19 +1208,20 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 env_vars=env_vars,
                 dns=dns,
                 additional_flags=additional_flags,
-                ports=docker_java_ports,
+                ports=container_config.ports,
                 command=inv_context.lambda_command,
             )
-            DOCKER_CLIENT.copy_into_container(container_id, f"{lambda_cwd}/.", DOCKER_TASK_FOLDER)
+            for path_tuple in transfer_paths:
+                DOCKER_CLIENT.copy_into_container(container_id, path_tuple[0], path_tuple[1])
             return DOCKER_CLIENT.start_container(
                 container_id, interactive=not background, attach=not background, stdin=stdin
             )
         else:
             mount_volumes = None
-            if lambda_cwd:
-                mount_volumes = [
-                    (Util.get_host_path_for_path_in_docker(lambda_cwd), DOCKER_TASK_FOLDER)
-                ]
+            if transfer_paths:
+                mount_volumes = []
+                for path_tuple in transfer_paths:
+                    mount_volumes += [(path_tuple[0], path_tuple[1])]
             return DOCKER_CLIENT.run_container(
                 image_name=docker_image,
                 interactive=True,

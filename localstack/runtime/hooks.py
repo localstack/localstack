@@ -8,6 +8,7 @@ HOOKS_INSTALL = "localstack.hooks.install"
 HOOKS_ON_INFRA_READY = "localstack.hooks.on_infra_ready"
 HOOKS_ON_INFRA_START = "localstack.hooks.on_infra_start"
 HOOKS_PREPARE_HOST = "localstack.hooks.prepare_host"
+HOOKS_ON_LAMBDA_DOCKER_SEPARATE_EXECUTION = "localstack.hooks.lambda_docker_separate_execution"
 
 
 def hook(namespace: str, priority: int = 0, **kwargs):
@@ -77,3 +78,6 @@ prepare_host = hook_spec(HOOKS_PREPARE_HOST)
 # infra (runtime) lifecycle hooks
 on_infra_start = hook_spec(HOOKS_ON_INFRA_START)
 on_infra_ready = hook_spec(HOOKS_ON_INFRA_READY)
+
+# lambda (executor) hooks
+on_docker_separate_execution = hook_spec(HOOKS_ON_LAMBDA_DOCKER_SEPARATE_EXECUTION)

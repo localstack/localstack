@@ -278,6 +278,31 @@ class VolumeMappings:
         return self.mappings.__iter__()
 
 
+@dataclasses.dataclass
+class ContainerConfiguration:
+    image_name: str
+    name: Optional[str] = None
+    volumes: Optional[VolumeMappings] = None
+    ports: Optional[PortMappings] = None
+    entrypoint: Optional[str] = None
+    additional_flags: Optional[List[str]] = None
+    command: Optional[List[str]] = None
+
+    privileged: Optional[bool] = None
+    remove: Optional[bool] = None
+    interactive: Optional[bool] = None
+    tty: Optional[bool] = None
+    detach: Optional[bool] = None
+    inherit_env: Optional[bool] = None
+
+    stdin: Optional[str] = None
+    user: Optional[str] = None
+    cap_add: Optional[str] = None
+    network: Optional[str] = None
+    dns: Optional[str] = None
+    workdir: Optional[str] = None
+
+
 class ContainerClient(metaclass=ABCMeta):
     STOP_TIMEOUT = 0
 
