@@ -362,7 +362,9 @@ def extract_url_encoded_param_list(req_data, pattern):
     return result
 
 
-def parse_urlencoded_data(qs_data: Union[Dict, str, bytes], top_level_attribute: str):
+def parse_urlencoded_data(
+    qs_data: Union[Dict, str, bytes], top_level_attribute: str, second_level_attribute: str = ""
+):
     # TODO: potentially find a better way than calling moto here...
     from moto.core.responses import BaseResponse
 
@@ -374,6 +376,16 @@ def parse_urlencoded_data(qs_data: Union[Dict, str, bytes], top_level_attribute:
     response = BaseResponse()
     response.querystring = qs_data
     result = response._get_multi_param(top_level_attribute, skip_result_conversion=True)
+    if second_level_attribute:
+        for r in range(len(result)):
+            second_level_result = response._get_multi_param(
+                f"{top_level_attribute}.{r+1}.{second_level_attribute}", skip_result_conversion=True
+            )
+            inner_key = second_level_attribute.split(".")[
+                0
+            ]  # "MessageAttributes.entry".split('.')[0]
+            if second_level_result:
+                result[r][inner_key] = second_level_result
     return result
 
 
