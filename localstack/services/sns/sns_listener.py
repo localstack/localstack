@@ -7,6 +7,8 @@ import logging
 import time
 import traceback
 import uuid
+from typing import Dict, List
+from urllib.parse import parse_qs, urlparse
 
 import requests
 import six
@@ -15,7 +17,6 @@ from flask import Response as FlaskResponse
 from moto.sns.exceptions import DuplicateSnsEndpointError
 from moto.sns.models import SNSBackend as MotoSNSBackend
 from requests.models import Request, Response
-from six.moves.urllib import parse as urlparse
 
 from localstack.config import external_service_url
 from localstack.constants import MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
@@ -47,25 +48,32 @@ LOG = logging.getLogger(__name__)
 # additional attributes used for HTTP subscriptions
 HTTP_SUBSCRIPTION_ATTRIBUTES = ["UnsubscribeURL"]
 
+# actions to be skipped from persistence
+SKIP_PERSISTENCE_ACTIONS = [
+    "Subscribe",
+    "ConfirmSubscription",
+    "Unsubscribe",
+]
+
 
 class SNSBackend(RegionBackend):
+    # maps topic ARN to list of subscriptions
+    sns_subscriptions: Dict[str, List[Dict]]
+    # maps subscription ARN to subscription status
+    subscription_status: Dict[str, Dict]
+    # maps topic ARN to list of tags
+    sns_tags: Dict[str, List[Dict]]
+    # cache of topic ARN to platform endpoint messages (used primarily for testing)
+    platform_endpoint_messages: Dict[str, List[Dict]]
+    # list of sent SMS messages - TODO: expose via internal API
+    sms_messages: List[Dict]
+
     def __init__(self):
-        # maps topic ARN to list of subscriptions
         self.sns_subscriptions = {}
-        # maps subscription ARN to subscription status
         self.subscription_status = {}
-        # maps topic ARN to list of tags
         self.sns_tags = {}
-        # cache of topic ARN to platform endpoint messages (used primarily for testing)
         self.platform_endpoint_messages = {}
-        # maps phone numbers to list of sent messages
         self.sms_messages = []
-        # actions to be skipped from persistence
-        self.skip_persistence_actions = [
-            "Subscribe",
-            "ConfirmSubscription",
-            "Unsubscribe",
-        ]
 
 
 class ProxyListenerSNS(PersistingProxyListener):
@@ -85,12 +93,12 @@ class ProxyListenerSNS(PersistingProxyListener):
 
         if method == "POST":
             # parse payload and extract fields
-            req_data = urlparse.parse_qs(to_str(data), keep_blank_values=True)
+            req_data = parse_qs(to_str(data), keep_blank_values=True)
 
             # parse data from query path
             if not req_data:
-                parsed_path = urlparse.urlparse(path)
-                req_data = urlparse.parse_qs(parsed_path.query, keep_blank_values=True)
+                parsed_path = urlparse(path)
+                req_data = parse_qs(parsed_path.query, keep_blank_values=True)
 
             req_action = req_data["Action"][0]
             topic_arn = (
@@ -293,7 +301,7 @@ class ProxyListenerSNS(PersistingProxyListener):
             response_regex_replace(response, search, "")
 
             # parse request and extract data
-            req_data = urlparse.parse_qs(to_str(data))
+            req_data = parse_qs(to_str(data))
             req_action = req_data["Action"][0]
             if req_action == "Subscribe" and response.status_code < 400:
                 response_data = xmltodict.parse(response.content)
@@ -326,10 +334,9 @@ class ProxyListenerSNS(PersistingProxyListener):
                 )
 
     def should_persist(self, method, path, data, headers, response):
-        sns_backend = SNSBackend.get()
         req_params = parse_request_data(method, path, data)
         action = req_params.get("Action", "")
-        if action in sns_backend.skip_persistence_actions:
+        if action in SKIP_PERSISTENCE_ACTIONS:
             return False
         return super(ProxyListenerSNS, self).should_persist(method, path, data, headers, response)
 

@@ -79,7 +79,7 @@ ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 # environment variable that flags whether pro was activated. do not use for security purposes!
 ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 
-# content types
+# content types / encodings
 HEADER_CONTENT_TYPE = "Content-Type"
 APPLICATION_AMZ_JSON_1_0 = "application/x-amz-json-1.0"
 APPLICATION_AMZ_JSON_1_1 = "application/x-amz-json-1.1"
@@ -89,6 +89,7 @@ APPLICATION_JSON = "application/json"
 APPLICATION_XML = "application/xml"
 APPLICATION_OCTET_STREAM = "application/octet-stream"
 APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded"
+HEADER_ACCEPT_ENCODING = "Accept-Encoding"
 
 # strings to indicate truthy/falsy values
 TRUE_STRINGS = ("1", "true", "True")
