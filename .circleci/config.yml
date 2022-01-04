@@ -75,15 +75,6 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
-      # TODO tmp for testing - remove!
-      - run:
-          name: Test ECR push
-          command: |
-            aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
-            docker pull alpine
-            docker tag alpine public.ecr.aws/localstack/localstack:tmp
-            docker push public.ecr.aws/localstack/localstack:tmp
-      # TODO tmp for testing -remove!
       - run:
           name: Pull lambda runtimes
           command: |
@@ -378,10 +369,18 @@ jobs:
             PLATFORM="arm64" IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
       - run:
           name: Create multi-platform manifests - full
-          command: make docker-create-push-manifests
+          command: |
+            # push to Docker Hub
+            make docker-create-push-manifests &
+            # push to Amazon ECR
+            IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests
       - run:
           name: Create multi-platform manifests - light
-          command: make docker-create-push-manifests-light
+          command: |
+            # push to Docker Hub
+            make docker-create-push-manifests-light &
+            # push to Amazon ECR
+            IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests-light
 
 workflows:
   main:
