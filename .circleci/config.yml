@@ -75,6 +75,15 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      # TODO tmp for testing - remove!
+      - run:
+          name: Test ECR push
+          command: |
+            aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+            docker pull alpine
+            docker tag alpine public.ecr.aws/localstack/localstack:tmp
+            docker push public.ecr.aws/localstack/localstack:tmp
+      # TODO tmp for testing -remove!
       - run:
           name: Pull lambda runtimes
           command: |
@@ -342,8 +351,16 @@ jobs:
           name: Load docker image - amd64/light
           command: docker load -i target/localstack-docker-image-light-amd64.tar
       - run:
+          name: Log in to ECR registry
+          command: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+      - run:
           name: Push docker images - amd64
-          command: PLATFORM="amd64" make docker-push-master
+          command: |
+            # push to Docker Hub
+            PLATFORM="amd64" make docker-push-master &
+            # push to Amazon ECR
+            docker tag localstack/localstack:latest-amd64 public.ecr.aws/localstack/localstack:latest-amd64
+            PLATFORM="amd64" IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
       # Load and push per architecture (load overwrites the previous ones)
       - run:
           name: Load docker image - arm64/full
@@ -353,7 +370,12 @@ jobs:
           command: docker load -i target/localstack-docker-image-light-arm64.tar
       - run:
           name: Push docker images - arm64
-          command: PLATFORM="arm64" make docker-push-master
+          command: |
+            # push to Docker Hub
+            PLATFORM="arm64" make docker-push-master &
+            # push to Amazon ECR
+            docker tag localstack/localstack:latest-arm64 public.ecr.aws/localstack/localstack:latest-arm64
+            PLATFORM="arm64" IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
       - run:
           name: Create multi-platform manifests - full
           command: make docker-create-push-manifests

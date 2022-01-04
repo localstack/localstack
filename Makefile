@@ -1,6 +1,6 @@
 IMAGE_NAME ?= localstack/localstack
-IMAGE_NAME_LIGHT ?= localstack/localstack-light
-IMAGE_NAME_FULL ?= localstack/localstack-full
+IMAGE_NAME_LIGHT ?= $(IMAGE_NAME)-light
+IMAGE_NAME_FULL ?= $(IMAGE_NAME)-full
 IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
 VENV_BIN ?= python3 -m venv
 VENV_DIR ?= .venv
