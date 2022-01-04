@@ -43,7 +43,7 @@ class HandlerAttributes(NamedTuple):
 def create_dispatch_table(delegate: object) -> DispatchTable:
     """
     Creates a dispatch table for a given object. First, the entire class tree of the object is scanned to find any
-    functions that are decorated with @handler. It then resolve those functions on the delegate.
+    functions that are decorated with @handler. It then resolves those functions on the delegate.
     """
     # scan class tree for @handler wrapped functions (reverse class tree so that inherited functions overwrite parent
     # functions)
@@ -136,11 +136,9 @@ class Skeleton:
             # if the parsed request is already set in the context, re-use them
             operation, instance = context.operation, context.service_request
         else:
-            # otherwise parse the incoming HTTPRequest
+            # otherwise, parse the incoming HTTPRequest
             operation, instance = self.parser.parse(context.request)
             context.operation = operation
-
-        serializer = self.serializer
 
         try:
             # Find the operation's handler in the dispatch table
@@ -151,26 +149,52 @@ class Skeleton:
                     operation.name,
                 )
                 raise NotImplementedError
-            handler = self.dispatch_table[operation.name]
 
-            # Call the appropriate handler
-            result = handler(context, instance) or {}
-            # Serialize result dict to an HTTPResponse and return it
-            return serializer.serialize_to_response(result, operation)
+            return self.dispatch_request(context, instance)
         except ServiceException as e:
-            return serializer.serialize_error_to_response(e, operation)
+            return self.on_service_exception(context, e)
         except NotImplementedError:
-            action_name = operation.name
-            service_name = operation.service_model.service_name
-            message = (
-                f"API action '{action_name}' for service '{service_name}' " f"not yet implemented"
-            )
-            LOG.info(message)
-            error = CommonServiceException("InternalFailure", message, status_code=501)
+            return self.on_not_implemented_error(context)
 
-            # record event
-            analytics.log.event(
-                "services_notimplemented", payload={"s": service_name, "a": action_name}
-            )
+    def dispatch_request(self, context: RequestContext, instance: ServiceRequest) -> HttpResponse:
+        operation = context.operation
 
-            return serializer.serialize_error_to_response(error, operation)
+        handler = self.dispatch_table[operation.name]
+
+        # Call the appropriate handler
+        result = handler(context, instance) or {}
+        # Serialize result dict to an HTTPResponse and return it
+        return self.serializer.serialize_to_response(result, operation)
+
+    def on_service_exception(
+        self, context: RequestContext, exception: ServiceException
+    ) -> HttpResponse:
+        """
+        Called by invoke if the handler of the operation raised a ServiceException.
+
+        :param context: the request context
+        :param exception: the exception that was raised
+        :return: an HttpResponse object
+        """
+        return self.serializer.serialize_error_to_response(exception, context.operation)
+
+    def on_not_implemented_error(self, context: RequestContext) -> HttpResponse:
+        """
+        Called by invoke if either the dispatch table did not contain an entry for the operation, or the service
+        provider raised a NotImplementedError
+        :param context: the request context
+        :return: an HttpResponse object
+        """
+        operation = context.operation
+        serializer = self.serializer
+
+        action_name = operation.name
+        service_name = operation.service_model.service_name
+        message = f"API action '{action_name}' for service '{service_name}' " f"not yet implemented"
+        LOG.info(message)
+        error = CommonServiceException("InternalFailure", message, status_code=501)
+        # record event
+        analytics.log.event(
+            "services_notimplemented", payload={"s": service_name, "a": action_name}
+        )
+        return serializer.serialize_error_to_response(error, operation)
