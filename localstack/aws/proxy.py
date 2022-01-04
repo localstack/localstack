@@ -1,3 +1,5 @@
+from typing import Any
+
 from botocore.model import ServiceModel
 from requests.models import Response
 
@@ -21,7 +23,7 @@ def get_account_id(_: HttpRequest) -> str:
 class AwsApiListener(ProxyListener):
     service: ServiceModel
 
-    def __init__(self, api, delegate):
+    def __init__(self, api: str, delegate: Any):
         self.service = load_service(api)
         self.skeleton = Skeleton(self.service, delegate)
 
@@ -53,3 +55,25 @@ class AwsApiListener(ProxyListener):
         resp.status_code = response.status_code
         resp.headers.update(response.headers)
         return resp
+
+
+class AsfWithFallbackListener(AwsApiListener):
+    """
+    An AwsApiListener that does not return a default error response if a particular method has not been implemented,
+    but instead calls a second ProxyListener. This is useful to migrate service providers to ASF providers.
+    """
+
+    def __init__(self, api: str, delegate: Any, fallback: ProxyListener):
+        super().__init__(api, delegate)
+        self.fallback = fallback
+        self.skeleton.on_not_implemented_error = self._raise_not_implemented_error
+
+    def forward_request(self, method, path, data, headers):
+        try:
+            return super().forward_request(method, path, data, headers)
+        except NotImplementedError:
+            return self.fallback.forward_request(method, path, data, headers)
+
+    @staticmethod
+    def _raise_not_implemented_error(*args, **kwargs):
+        raise NotImplementedError
