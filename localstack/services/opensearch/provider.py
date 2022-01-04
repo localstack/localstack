@@ -94,10 +94,8 @@ def cluster_manager() -> ClusterManager:
 def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str):
     LOG.debug("running cluster startup monitor for cluster %s", cluster)
 
-    # TODO / Initial Implementation: Currently the health check here is never successful.
-    #  Therefore the status is never updated.
-
     # wait until the cluster is started, or the timeout is reached
+    # NOTE: does not work when DNS rebind protection is active for localhost.localstack.cloud
     is_up = cluster.wait_is_up(CLUSTER_STARTUP_TIMEOUT)
 
     LOG.debug("cluster state polling for %s returned! status = %s", domain_name, is_up)

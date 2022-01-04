@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from mypy_boto3_kms import KMSClient
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
+    from mypy_boto3_opensearch import OpenSearchServiceClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_secretsmanager import SecretsManagerClient
     from mypy_boto3_ses import SESClient
@@ -135,6 +136,11 @@ def ses_client() -> "SESClient":
 @pytest.fixture(scope="class")
 def es_client() -> "ElasticsearchServiceClient":
     return _client("es")
+
+
+@pytest.fixture(scope="class")
+def opensearch_client() -> "OpenSearchServiceClient":
+    return _client("opensearch")
 
 
 @pytest.fixture(scope="class")
