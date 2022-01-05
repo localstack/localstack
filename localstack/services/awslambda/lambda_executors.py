@@ -1216,6 +1216,8 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ports=container_config.ports,
                 command=container_config.command,
                 workdir=container_config.workdir,
+                user=container_config.user,
+                cap_add=container_config.cap_add,
             )
             for path_tuple in transfer_paths:
                 DOCKER_CLIENT.copy_into_container(container_id, path_tuple[0], path_tuple[1])
@@ -1246,6 +1248,8 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                     command=container_config.command,
                     mount_volumes=container_config.volumes,
                     workdir=container_config.workdir,
+                    user=container_config.user,
+                    cap_add=container_config.cap_add,
                     stdin=stdin,
                 )
 
