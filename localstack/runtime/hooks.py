@@ -9,6 +9,9 @@ HOOKS_ON_INFRA_READY = "localstack.hooks.on_infra_ready"
 HOOKS_ON_INFRA_START = "localstack.hooks.on_infra_start"
 HOOKS_PREPARE_HOST = "localstack.hooks.prepare_host"
 HOOKS_ON_LAMBDA_DOCKER_SEPARATE_EXECUTION = "localstack.hooks.on_docker_separate_execution"
+HOOKS_ON_LAMBDA_DOCKER_REUSE_CONTAINER_CREATION = (
+    "localstack.hooks.on_docker_reuse_container_creation"
+)
 
 
 def hook(namespace: str, priority: int = 0, **kwargs):
@@ -81,3 +84,4 @@ on_infra_ready = hook_spec(HOOKS_ON_INFRA_READY)
 
 # lambda (executor) hooks
 on_docker_separate_execution = hook_spec(HOOKS_ON_LAMBDA_DOCKER_SEPARATE_EXECUTION)
+on_docker_reuse_container_creation = hook_spec(HOOKS_ON_LAMBDA_DOCKER_REUSE_CONTAINER_CREATION)
