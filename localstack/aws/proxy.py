@@ -1,14 +1,20 @@
-from typing import Any
+import logging
+from typing import Any, Optional
 
 from botocore.model import ServiceModel
 from requests.models import Response
+from werkzeug.datastructures import Headers
 
 from localstack import constants
 from localstack.aws.api import HttpRequest, HttpResponse, RequestContext
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
 from localstack.services.generic_proxy import ProxyListener
+from localstack.services.messages import MessagePayload
 from localstack.utils.aws.request_context import extract_region_from_headers
+from localstack.utils.persistence import PersistingProxyListener
+
+LOG = logging.getLogger(__name__)
 
 
 def get_region(request: HttpRequest) -> str:
@@ -57,23 +63,47 @@ class AwsApiListener(ProxyListener):
         return resp
 
 
+def _raise_not_implemented_error(*args, **kwargs):
+    raise NotImplementedError
+
+
 class AsfWithFallbackListener(AwsApiListener):
     """
     An AwsApiListener that does not return a default error response if a particular method has not been implemented,
     but instead calls a second ProxyListener. This is useful to migrate service providers to ASF providers.
     """
 
+    api: str
+    delegate: Any
+    fallback: ProxyListener
+
     def __init__(self, api: str, delegate: Any, fallback: ProxyListener):
         super().__init__(api, delegate)
         self.fallback = fallback
-        self.skeleton.on_not_implemented_error = self._raise_not_implemented_error
+        self.skeleton.on_not_implemented_error = _raise_not_implemented_error
 
     def forward_request(self, method, path, data, headers):
         try:
             return super().forward_request(method, path, data, headers)
-        except NotImplementedError:
+        except (NotImplementedError, KeyError):
+            # FIXME: KeyError may be an ASF parser error, that indicates that the request cannot be parsed
+            LOG.debug("no ASF handler for %s %s, using fallback listener", method, path)
             return self.fallback.forward_request(method, path, data, headers)
 
-    @staticmethod
-    def _raise_not_implemented_error(*args, **kwargs):
-        raise NotImplementedError
+    def return_response(
+        self, method: str, path: str, data: MessagePayload, headers: Headers, response: Response
+    ) -> Optional[Response]:
+        return self.fallback.return_response(method, path, data, headers, response)
+
+    def get_forward_url(self, method: str, path: str, data, headers):
+        return self.fallback.get_forward_url(method, path, data, headers)
+
+
+class AsfWithPersistingFallbackListener(AsfWithFallbackListener, PersistingProxyListener):
+    fallback: PersistingProxyListener
+
+    def __init__(self, api: str, delegate: Any, fallback: PersistingProxyListener):
+        super().__init__(api, delegate, fallback)
+
+    def api_name(self):
+        return self.fallback.api_name()
