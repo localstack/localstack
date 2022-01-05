@@ -130,7 +130,7 @@ def _create_cluster(
         # the cluster state once it is started, or the CLUSTER_STARTUP_TIMEOUT is reached
         threading.Thread(
             target=_run_cluster_startup_monitor,
-            args=(cluster, domain_key.arn, region.name),
+            args=(cluster, domain_key.domain_name, region.name),
             daemon=True,
         ).start()
 
