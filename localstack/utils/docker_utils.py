@@ -287,7 +287,7 @@ class ContainerConfiguration:
     entrypoint: Optional[str] = None
     additional_flags: Optional[List[str]] = None
     command: Optional[List[str]] = None
-    env_vars: Optional[Dict[str, str]] = None
+    env_vars: Dict[str, str] = dataclasses.field(default_factory=dict)
 
     privileged: Optional[bool] = None
     remove: Optional[bool] = None

@@ -1164,7 +1164,6 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         docker_image = Util.docker_image_for_lambda(lambda_function)
         container_config = ContainerConfiguration(image_name=docker_image)
 
-        # initialize env vars value - needed so further key assignments will not fail
         container_config.env_vars = inv_context.environment
         if inv_context.lambda_command:
             container_config.entrypoint = ""
@@ -1216,6 +1215,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 additional_flags=container_config.additional_flags,
                 ports=container_config.ports,
                 command=container_config.command,
+                workdir=container_config.workdir,
             )
             for path_tuple in transfer_paths:
                 DOCKER_CLIENT.copy_into_container(container_id, path_tuple[0], path_tuple[1])
@@ -1245,6 +1245,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                     additional_flags=container_config.additional_flags,
                     command=container_config.command,
                     mount_volumes=container_config.volumes,
+                    workdir=container_config.workdir,
                     stdin=stdin,
                 )
 
