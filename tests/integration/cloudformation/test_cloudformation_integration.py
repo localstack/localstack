@@ -1,6 +1,7 @@
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
-from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
+from tests.integration.cloudformation.utils import load_template
 
 
 def test_events_sqs_sns_lambda(
@@ -11,13 +12,15 @@ def test_events_sqs_sns_lambda(
     is_change_set_created_and_available,
     is_stack_created,
     events_client,
+    sns_client,
 ):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"change-set-{short_uid()}"
+    ref_id = short_uid()
     response = cfn_client.create_change_set(
         StackName=stack_name,
         ChangeSetName=change_set_name,
-        TemplateBody=load_template_raw("integration_events_sns_sqs_lambda.yaml"),
+        TemplateBody=load_template("integration_events_sns_sqs_lambda.yaml", ref_id=ref_id),
         ChangeSetType="CREATE",
         Capabilities=["CAPABILITY_IAM"],
     )
@@ -36,6 +39,13 @@ def test_events_sqs_sns_lambda(
         bus_name = [o["OutputValue"] for o in stack["Outputs"] if o["OutputKey"] == "EventBusName"][
             0
         ]
+
+        # verify SNS topic policy is present
+        topic_arn = aws_stack.sns_topic_arn(f"topic-{ref_id}")
+        result = sns_client.get_topic_attributes(TopicArn=topic_arn)["Attributes"]
+        assert result.get("Policy")
+
+        # put events
         events_client.put_events(
             Entries=[
                 {

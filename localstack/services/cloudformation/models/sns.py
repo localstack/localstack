@@ -172,6 +172,20 @@ class SNSTopicPolicy(GenericBaseModel):
     def cloudformation_type(cls):
         return "AWS::SNS::TopicPolicy"
 
+    def fetch_state(self, stack_name, resources):
+        sns_client = aws_stack.connect_to_service("sns")
+        result = {}
+        for topic_arn in self.props["Topics"]:
+            topic_arn = self.resolve_refs_recursively(stack_name, topic_arn, resources)
+            attrs = sns_client.get_topic_attributes(TopicArn=topic_arn)
+            policy = attrs["Attributes"].get("Policy")
+            if policy:
+                # TODO: check if existing policy matches policy defined in the template!
+                result[topic_arn] = policy
+        if not all(list(result.values())):
+            return None
+        return result
+
     @classmethod
     def get_deploy_templates(cls):
         def _create(resource_id, resources, resource_type, func, stack_name):
