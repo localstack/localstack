@@ -1,3 +1,5 @@
+import json
+
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
@@ -43,7 +45,18 @@ def test_events_sqs_sns_lambda(
         # verify SNS topic policy is present
         topic_arn = aws_stack.sns_topic_arn(f"topic-{ref_id}")
         result = sns_client.get_topic_attributes(TopicArn=topic_arn)["Attributes"]
-        assert result.get("Policy")
+        assert json.loads(result.get("Policy")) == {
+            "Statement": [
+                {
+                    "Action": "sns:Publish",
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Resource": topic_arn,
+                    "Sid": "0",
+                }
+            ],
+            "Version": "2012-10-17",
+        }
 
         # put events
         events_client.put_events(

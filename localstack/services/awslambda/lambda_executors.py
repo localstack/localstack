@@ -1585,7 +1585,7 @@ class Util:
 
 def log_lambda_result(func_arn, result, log_output):
     result = to_str(result or "")
-    log_output = truncate(to_str(log_output or ""), max_length=1500)
+    log_output = truncate(to_str(log_output or ""), max_length=2000)
     log_formatted = log_output.strip().replace("\n", "\n> ")
     LOG.debug("Lambda %s result / log output:\n%s\n> %s", func_arn, result.strip(), log_formatted)
 

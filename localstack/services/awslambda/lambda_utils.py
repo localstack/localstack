@@ -166,9 +166,11 @@ def get_main_endpoint_from_container():
                 )
             else:
                 # default gateway for the network should be the host
-                DOCKER_MAIN_CONTAINER_IP = DOCKER_CLIENT.inspect_network(
-                    get_container_network_for_lambda()
-                )["IPAM"]["Config"][0]["Gateway"]
+                # (only under Linux - otherwise fall back to DOCKER_HOST_FROM_CONTAINER below)
+                if config.is_in_linux:
+                    DOCKER_MAIN_CONTAINER_IP = DOCKER_CLIENT.inspect_network(
+                        get_container_network_for_lambda()
+                    )["IPAM"]["Config"][0]["Gateway"]
             LOG.info("Determined main container target IP: %s", DOCKER_MAIN_CONTAINER_IP)
         except Exception as e:
             LOG.info(
