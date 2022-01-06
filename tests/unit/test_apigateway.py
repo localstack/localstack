@@ -42,6 +42,11 @@ class ApiGatewayPathsTest(unittest.TestCase):
         )
         self.assertEqual("/foo/{proxy+}", path)
 
+        path, details = apigateway_listener.get_resource_for_path(
+            "/foo/bar/baz", {"/{proxy+}": {}, "/foo/{proxy+}": {}}
+        )
+        self.assertEqual("/foo/{proxy+}", path)
+
         result = apigateway_listener.get_resource_for_path(
             "/foo/bar", {"/foo/bar1": {}, "/foo/bar2": {}}
         )
@@ -75,6 +80,30 @@ class ApiGatewayPathsTest(unittest.TestCase):
         path_args = {"/foo123/{param1}/baz": {}}
         result = apigateway_listener.get_resource_for_path("/foo/bar/baz", path_args)
         self.assertEqual(None, result)
+
+        path_args = {"/foo/{param1}/baz": {}, "/foo/{param1}/{param2}": {}}
+        path, result = apigateway_listener.get_resource_for_path("/foo/bar/baz", path_args)
+        self.assertEqual("/foo/{param1}/baz", path)
+
+    def test_apply_request_parameters(self):
+        integration = {
+            "type": "HTTP_PROXY",
+            "httpMethod": "ANY",
+            "uri": "https://httpbin.org/anything/{proxy}",
+            "requestParameters": {"integration.request.path.proxy": "method.request.path.proxy"},
+            "passthroughBehavior": "WHEN_NO_MATCH",
+            "timeoutInMillis": 29000,
+            "cacheNamespace": "041fa782",
+            "cacheKeyParameters": [],
+        }
+
+        uri = apigateway_listener.apply_request_parameters(
+            uri="https://httpbin.org/anything/{proxy}",
+            integration=integration,
+            path_params={"proxy": "foo/bar/baz"},
+            query_params={"param": "foobar"},
+        )
+        self.assertEqual("https://httpbin.org/anything/foo/bar/baz?param=foobar", uri)
 
 
 def test_render_template_values():

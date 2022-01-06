@@ -438,9 +438,9 @@ class TestAPIGateway(unittest.TestCase):
         # assert that header keys are lowercase (as in AWS)
         headers = parsed_body.get("headers") or {}
         header_names = list(headers.keys())
-        self.assertIn("host", header_names)
-        self.assertIn("content-length", header_names)
-        self.assertIn("user-agent", header_names)
+        self.assertIn("Host", header_names)
+        self.assertIn("Content-Length", header_names)
+        self.assertIn("User-Agent", header_names)
 
         result = requests.delete(url, data=json.dumps(data))
         self.assertEqual(204, result.status_code)
@@ -1550,24 +1550,23 @@ class TestAPIGateway(unittest.TestCase):
             path = "/"
         resources = {}
         resource_path = path.replace("/", "")
-        resources[resource_path] = []
         req_templates = (
             {"application/json": json.dumps({"foo": "bar"})} if int_type == "custom" else {}
         )
-        for method in methods:
-            resources[resource_path].append(
-                {
-                    "httpMethod": method,
-                    "integrations": [
-                        {
-                            "type": "HTTP" if int_type == "custom" else "HTTP_PROXY",
-                            "uri": target_url,
-                            "requestTemplates": req_templates,
-                            "responseTemplates": {},
-                        }
-                    ],
-                }
-            )
+        resources[resource_path] = [
+            {
+                "httpMethod": method,
+                "integrations": [
+                    {
+                        "type": "HTTP" if int_type == "custom" else "HTTP_PROXY",
+                        "uri": target_url,
+                        "requestTemplates": req_templates,
+                        "responseTemplates": {},
+                    }
+                ],
+            }
+            for method in methods
+        ]
         return aws_stack.create_api_gateway(
             name=gateway_name, resources=resources, stage_name=self.TEST_STAGE_NAME
         )

@@ -1,20 +1,11 @@
-import os
-
 import jinja2
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.utils.common import load_file, short_uid
+from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
+from tests.integration.cloudformation.utils import load_template_raw
 from tests.integration.util import is_aws_cloud
-
-
-def load_template_raw(tmpl_path: str) -> str:
-    template = load_file(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "templates", tmpl_path)
-    )
-    return template
-
 
 # TODO: create util function for asserting some common stack/change set verification patterns here
 

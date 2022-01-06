@@ -1,7 +1,10 @@
 import re
 from typing import Dict, Union
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from requests.models import CaseInsensitiveDict
+
+ACCEPT = "accept"
 
 
 def uses_chunked_encoding(response):
@@ -44,7 +47,35 @@ def canonicalize_headers(headers: Union[Dict, CaseInsensitiveDict]) -> Dict:
         return headers
 
     def _normalize(name):
-        return name.lower()
+        if name.lower().startswith(ACCEPT):
+            return name.lower()
+        return name
 
     result = {_normalize(k): v for k, v in headers.items()}
     return result
+
+
+def add_query_params_to_url(uri: str, query_params: Dict) -> str:
+    """
+    Add query parameters to the uri.
+    :param uri: the base uri it can contains path arguments and query parameters
+    :param query_params: new query parameters to be added
+    :return: the resulting URL
+    """
+
+    # parse the incoming uri
+    url = urlparse(uri)
+
+    # parses the query part, if exists, into a dict
+    query_dict = dict(parse_qsl(url.query))
+
+    # updates the dict with new query parameters
+    query_dict.update(query_params)
+
+    # encodes query parameters
+    url_query = urlencode(query_dict)
+
+    # replaces the existing query
+    url_parse = url._replace(query=url_query)
+
+    return urlunparse(url_parse)

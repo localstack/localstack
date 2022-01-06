@@ -1,5 +1,6 @@
 import dataclasses
 import io
+import ipaddress
 import json
 import logging
 import os
@@ -220,6 +221,9 @@ class PortMappings(object):
         else:
             range[1] = port - 1
 
+    def __repr__(self):
+        return f"<PortMappings: {self.to_dict()}>"
+
 
 SimpleVolumeBind = Tuple[str, str]
 """Type alias for a simple version of VolumeBind"""
@@ -282,10 +286,42 @@ class ContainerClient(metaclass=ABCMeta):
         """Returns the status of the container with the given name"""
         pass
 
-    @abstractmethod
-    def get_network(self, container_name: str) -> str:
-        """Returns the network mode of the container with the given name"""
-        pass
+    def get_networks(self, container_name: str) -> List[str]:
+        LOG.debug("Getting networks for container: %s", container_name)
+        container_attrs = self.inspect_container(container_name_or_id=container_name)
+        return list(container_attrs["NetworkSettings"]["Networks"].keys())
+
+    def get_container_ipv4_for_network(
+        self, container_name_or_id: str, container_network: str
+    ) -> str:
+        """
+        Returns the IPv4 address for the container on the interface connected to the given network
+        :param container_name_or_id: Container to inspect
+        :param container_network: Network the IP address will belong to
+        :return: IP address of the given container on the interface connected to the given network
+        """
+        LOG.debug(
+            "Getting ipv4 address for container %s in network %s.",
+            container_name_or_id,
+            container_network,
+        )
+        # we always need the ID for this
+        container_id = self.get_container_id(container_name=container_name_or_id)
+        network_attrs = self.inspect_network(container_network)
+        containers = network_attrs["Containers"]
+        if container_id not in containers:
+            raise ContainerException(
+                "Container %s is not connected to target network %s",
+                container_name_or_id,
+                container_network,
+            )
+        try:
+            ip = str(ipaddress.IPv4Interface(containers[container_id]["IPv4Address"]).ip)
+        except Exception as e:
+            raise ContainerException(
+                f"Unable to detect IP address for container {container_name_or_id} in network {container_network}: {e}"
+            )
+        return ip
 
     @abstractmethod
     def stop_container(self, container_name: str, timeout: int = None):
@@ -540,29 +576,6 @@ class CmdDockerClient(ContainerClient):
         else:
             return DockerContainerStatus.DOWN
 
-    def get_network(self, container_name: str) -> str:
-        LOG.debug("Getting container network: %s", container_name)
-        cmd = self._docker_cmd()
-        cmd += [
-            "inspect",
-            container_name,
-            "--format",
-            "{{ .HostConfig.NetworkMode }}",
-        ]
-
-        try:
-            cmd_result = safe_run(cmd)
-        except subprocess.CalledProcessError as e:
-            if "No such container" in to_str(e.stdout):
-                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
-            else:
-                raise ContainerException(
-                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
-                )
-
-        container_network = cmd_result.strip()
-        return container_network
-
     def stop_container(self, container_name: str, timeout: int = None) -> None:
         if timeout is None:
             timeout = self.STOP_TIMEOUT
@@ -737,11 +750,12 @@ class CmdDockerClient(ContainerClient):
         cmd += [
             "inspect",
             "--format",
-            "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+            "{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}",
             container_name_or_id,
         ]
         try:
-            return safe_run(cmd).strip()
+            result = safe_run(cmd).strip()
+            return result.split(" ")[0] if result else ""
         except subprocess.CalledProcessError as e:
             if "No such object" in to_str(e.stdout):
                 raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
@@ -1192,16 +1206,6 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             raise ContainerException()
 
-    def get_network(self, container_name: str) -> str:
-        LOG.debug("Getting network type for container: %s", container_name)
-        try:
-            container = self.client().containers.get(container_name)
-            return container.attrs["HostConfig"]["NetworkMode"]
-        except NotFound:
-            raise NoSuchContainer(container_name)
-        except APIError:
-            raise ContainerException()
-
     def stop_container(self, container_name: str, timeout: int = None) -> None:
         if timeout is None:
             timeout = self.STOP_TIMEOUT
@@ -1457,14 +1461,7 @@ class SdkDockerClient(ContainerClient):
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
     ) -> str:
-        LOG.debug(
-            "Creating container with image %s, command '%s', entrypoint '%s', volumes %s, env vars %s",
-            image_name,
-            command,
-            entrypoint,
-            mount_volumes,
-            env_vars,
-        )
+        LOG.debug("Creating container with attributes: %s", locals())
         extra_hosts = None
         if additional_flags:
             env_vars, ports, mount_volumes, extra_hosts, network = Util.parse_additional_flags(
