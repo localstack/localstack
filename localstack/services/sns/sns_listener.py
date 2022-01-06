@@ -25,7 +25,12 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import create_sqs_system_attributes, response_regex_replace
+from localstack.utils.aws.aws_responses import (
+    create_sqs_system_attributes,
+    parse_urlencoded_data,
+    requests_response_xml,
+    response_regex_replace,
+)
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.common import (
@@ -210,6 +215,12 @@ class ProxyListenerSNS(PersistingProxyListener):
                 # return response here because we do not want the request to be forwarded to SNS backend
                 return make_response(req_action, message_id=message_id)
 
+            elif req_action == "PublishBatch":
+                response = publish_batch(topic_arn, req_data, headers)
+                return requests_response_xml(
+                    req_action, response, xmlns="http://sns.amazonaws.com/doc/2010-03-31/"
+                )
+
             elif req_action == "ListTagsForResource":
                 tags = do_list_tags_for_resource(topic_arn)
                 content = "<Tags/>"
@@ -383,6 +394,7 @@ def message_to_subscribers(
     headers,
     subscription_arn=None,
     skip_checks=False,
+    message_attributes=None,
 ):
     sns_backend = SNSBackend.get()
     subscriptions = sns_backend.sns_subscriptions.get(topic_arn, [])
@@ -400,6 +412,7 @@ def message_to_subscribers(
                 sns_backend,
                 subscriber,
                 subscriptions,
+                message_attributes,
             )
             for subscriber in list(subscriptions)
         ]
@@ -420,13 +433,15 @@ async def message_to_subscriber(
     sns_backend,
     subscriber,
     subscriptions,
+    message_attributes,
 ):
 
     if subscription_arn not in [None, subscriber["SubscriptionArn"]]:
         return
 
     filter_policy = json.loads(subscriber.get("FilterPolicy") or "{}")
-    message_attributes = get_message_attributes(req_data)
+    if not message_attributes:
+        message_attributes = get_message_attributes(req_data)
     if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
         LOG.info(
             "SNS filter policy %s does not match attributes %s", filter_policy, message_attributes
@@ -644,6 +659,35 @@ def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_ch
     return message_id
 
 
+def publish_batch(topic_arn, req_data, headers):
+    response = {"Successful": [], "Failed": []}
+    messages = parse_urlencoded_data(
+        req_data, "PublishBatchRequestEntries.member", "MessageAttributes.entry"
+    )
+    for message in messages:
+        message_id = str(uuid.uuid4())
+        data = {}
+        data["TopicArn"] = [topic_arn]
+        data["Message"] = [message["Message"]]
+        data["Subject"] = [message["Subject"]]
+        message_attributes = {}
+        for attributes in message.get("MessageAttributes", []):
+            message_attributes[attributes["Name"]] = attributes["Value"]
+        try:
+            message_to_subscribers(
+                message_id,
+                message["Message"],
+                topic_arn,
+                data,
+                headers,
+                message_attributes=message_attributes,
+            )
+            response["Successful"].append({"Id": message["Id"], "MessageId": message_id})
+        except Exception:
+            response["Failed"].append({"Id": message["Id"]})
+    return response
+
+
 def do_delete_topic(topic_arn):
     sns_backend = SNSBackend.get()
     sns_backend.sns_subscriptions.pop(topic_arn, None)
@@ -853,18 +897,22 @@ def create_sqs_message_attributes(subscriber, attributes):
 
     message_attributes = {}
     for key, value in attributes.items():
-        attribute = {"DataType": value["Type"]}
-        if value["Type"] == "Binary":
-            attribute["BinaryValue"] = base64.decodebytes(to_bytes(value["Value"]))
-        else:
-            attribute["StringValue"] = str(value.get("Value", ""))
+        if value.get("Type"):  # attributes got from get_message_attributes()
+            attribute = {"DataType": value["Type"]}
+            if value["Type"] == "Binary":
+                attribute["BinaryValue"] = base64.decodebytes(to_bytes(value["Value"]))
+            else:
+                attribute["StringValue"] = str(value.get("Value", ""))
 
-        message_attributes[key] = attribute
+            message_attributes[key] = attribute
+        else:  # attribute get from parse_urlencoded_data()
+            message_attributes[key] = value
 
     return message_attributes
 
 
 def get_message_attributes(req_data):
+    # TODO : Use parse_urlencoded_data() instead of this
     attributes = {}
     x = 1
     while True:

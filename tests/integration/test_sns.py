@@ -968,6 +968,83 @@ class TestSNS:
 
         retry(get_message_without_attributes, retries=3, sleep=10, queue_url=queue_url)
 
+    def test_publish_batch_messages_from_sns_to_sqs(self):
+        topic = self.sns_client.create_topic(Name="test_topic3")
+        topic_arn = topic["TopicArn"]
+        test_queue = self.sqs_client.create_queue(QueueName="test_queue3")
+
+        queue_url = test_queue["QueueUrl"]
+        self.sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_url,
+            Attributes={"RawMessageDelivery": "true"},
+        )["SubscriptionArn"]
+
+        publish_batch_response = self.sns_client.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=[
+                {
+                    "Id": "1",
+                    "Message": "Test Message with two attributes",
+                    "Subject": "Subject",
+                    "MessageAttributes": {
+                        "attr1": {"DataType": "Number", "StringValue": "99.12"},
+                        "attr2": {"DataType": "Number", "StringValue": "109.12"},
+                    },
+                },
+                {
+                    "Id": "2",
+                    "Message": "Test Message with one attribute",
+                    "Subject": "Subject",
+                    "MessageAttributes": {"attr1": {"DataType": "Number", "StringValue": "19.12"}},
+                },
+                {
+                    "Id": "3",
+                    "Message": "Test Message without attribute",
+                    "Subject": "Subject",
+                },
+            ],
+        )
+
+        self.assertIn("Successful", publish_batch_response)
+        self.assertIn("Failed", publish_batch_response)
+
+        for successful_resp in publish_batch_response["Successful"]:
+            self.assertIn("Id", successful_resp)
+            self.assertIn("MessageId", successful_resp)
+
+        def get_messages(queue_url):
+            response = self.sqs_client.receive_message(
+                QueueUrl=queue_url, MessageAttributeNames=["All"], MaxNumberOfMessages=10
+            )
+            self.assertEqual(3, len(response["Messages"]))
+            for message in response["Messages"]:
+                self.assertIn("Body", message)
+
+                if message["Body"] == "Test Message with two attributes":
+                    self.assertEqual(2, len(message["MessageAttributes"]))
+                    self.assertEqual(
+                        {"StringValue": "99.12", "DataType": "Number"},
+                        message["MessageAttributes"]["attr1"],
+                    )
+                    self.assertEqual(
+                        {"StringValue": "109.12", "DataType": "Number"},
+                        message["MessageAttributes"]["attr2"],
+                    )
+
+                elif message["Body"] == "Test Message with one attribute":
+                    self.assertEqual(1, len(message["MessageAttributes"]))
+                    self.assertEqual(
+                        {"StringValue": "19.12", "DataType": "Number"},
+                        message["MessageAttributes"]["attr1"],
+                    )
+
+                elif message["Body"] == "Test Message without attribute":
+                    self.assertIsNone(message.get("MessageAttributes"))
+
+        retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
+
     def add_xray_header(self, request, **kwargs):
         request.headers[
             "X-Amzn-Trace-Id"
