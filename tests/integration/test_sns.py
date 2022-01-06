@@ -979,7 +979,7 @@ class TestSNS:
             Protocol="sqs",
             Endpoint=queue_url,
             Attributes={"RawMessageDelivery": "true"},
-        )["SubscriptionArn"]
+        )
 
         publish_batch_response = self.sns_client.publish_batch(
             TopicArn=topic_arn,
@@ -1007,41 +1007,41 @@ class TestSNS:
             ],
         )
 
-        self.assertIn("Successful", publish_batch_response)
-        self.assertIn("Failed", publish_batch_response)
+        assert "Successful" in publish_batch_response
+        assert "Failed" in publish_batch_response
 
         for successful_resp in publish_batch_response["Successful"]:
-            self.assertIn("Id", successful_resp)
-            self.assertIn("MessageId", successful_resp)
+            assert "Id" in successful_resp
+            assert "MessageId" in successful_resp
 
         def get_messages(queue_url):
             response = self.sqs_client.receive_message(
                 QueueUrl=queue_url, MessageAttributeNames=["All"], MaxNumberOfMessages=10
             )
-            self.assertEqual(3, len(response["Messages"]))
+            assert len(response["Messages"]) == 3
             for message in response["Messages"]:
-                self.assertIn("Body", message)
+                assert "Body" in message
 
                 if message["Body"] == "Test Message with two attributes":
-                    self.assertEqual(2, len(message["MessageAttributes"]))
-                    self.assertEqual(
-                        {"StringValue": "99.12", "DataType": "Number"},
-                        message["MessageAttributes"]["attr1"],
-                    )
-                    self.assertEqual(
-                        {"StringValue": "109.12", "DataType": "Number"},
-                        message["MessageAttributes"]["attr2"],
-                    )
+                    assert len(message["MessageAttributes"]) == 2
+                    assert message["MessageAttributes"]["attr1"] == {
+                        "StringValue": "99.12",
+                        "DataType": "Number",
+                    }
+                    assert message["MessageAttributes"]["attr2"] == {
+                        "StringValue": "109.12",
+                        "DataType": "Number",
+                    }
 
                 elif message["Body"] == "Test Message with one attribute":
-                    self.assertEqual(1, len(message["MessageAttributes"]))
-                    self.assertEqual(
-                        {"StringValue": "19.12", "DataType": "Number"},
-                        message["MessageAttributes"]["attr1"],
-                    )
+                    assert len(message["MessageAttributes"]) == 1
+                    assert message["MessageAttributes"]["attr1"] == {
+                        "StringValue": "19.12",
+                        "DataType": "Number",
+                    }
 
                 elif message["Body"] == "Test Message without attribute":
-                    self.assertIsNone(message.get("MessageAttributes"))
+                    assert message.get("MessageAttributes") is None
 
         retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
 
