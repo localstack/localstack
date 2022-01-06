@@ -273,7 +273,8 @@ def get_s3_object_path(stream_name, prefix):
     # See https://aws.amazon.com/kinesis/data-firehose/faqs/#Data_delivery
     # Path prefix pattern: myApp/YYYY/MM/DD/HH/
     # Object name pattern: DeliveryStreamName-DeliveryStreamVersion-YYYY-MM-DD-HH-MM-SS-RandomString
-    prefix = "%s%s" % (prefix, "" if prefix.endswith("/") else "/")
+    if not prefix.endswith("/") and prefix != "":
+        prefix = prefix + "/"
     pattern = "{pre}%Y/%m/%d/%H/{name}-%Y-%m-%d-%H-%M-%S-{rand}"
     path = pattern.format(pre=prefix, name=stream_name, rand=str(uuid.uuid4()))
     path = timestamp(format=path)
