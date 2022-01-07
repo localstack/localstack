@@ -753,12 +753,15 @@ def populate_configs(service_ports=None):
 
 
 def service_port(service_key):
+    service_key = service_key.lower()
     if FORWARD_EDGE_INMEM:
         if service_key == "elasticsearch":
             # TODO Elasticsearch domains are a special case - we do not want to route them through
             #  the edge service, as that would require too many route mappings. In the future, we
             #  should integrate them with the port range for external services (4510-4530)
             return SERVICE_PORTS.get(service_key, 0)
+        if service_key == "sqs" and SQS_PORT_EXTERNAL:
+            return SQS_PORT_EXTERNAL
         return get_edge_port_http()
     return SERVICE_PORTS.get(service_key, 0)
 
@@ -772,19 +775,13 @@ def external_service_url(service_key, host=None):
     return "%s://%s:%s" % (get_protocol(), host, service_port(service_key))
 
 
-def get_edge_port_http(service=None):
-    port = EDGE_PORT_HTTP or EDGE_PORT
-    if service:
-        env_variable = f"{service}_PORT_EXTERNAL"
-        port = os.environ.get(env_variable, port)
-    return port
+def get_edge_port_http():
+    return EDGE_PORT_HTTP or EDGE_PORT
 
 
-def get_edge_url(localstack_hostname=None, protocol=None, service=None):
-    port = get_edge_port_http(service)
+def get_edge_url(localstack_hostname=None, protocol=None):
+    port = get_edge_port_http()
     protocol = protocol or get_protocol()
-    if not (HOSTNAME_EXTERNAL == LOCALHOST):
-        localstack_hostname = HOSTNAME_EXTERNAL
     localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
     return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
