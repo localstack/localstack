@@ -16,6 +16,7 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid
 
+from .fixtures import only_localstack
 from .lambdas import lambda_integration
 from .test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 
@@ -360,6 +361,30 @@ class TestSqsProvider:
         batch.append({"Id": "9", "MessageBody": "\x01"})
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
         assert len(result_send["Failed"]) == 1
+
+    @only_localstack
+    def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
+        external_host = "external-host"
+        external_port = "12345"
+        SQS_PORT_EXTERNAL = "SQS_PORT_EXTERNAL"
+
+        monkeypatch.setattr(config, SQS_PORT_EXTERNAL, external_port)
+        monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
+        # TODO: remove once the old provider is discontinued
+        from localstack.services.sqs import sqs_listener as old_sqs_listener
+
+        monkeypatch.setattr(old_sqs_listener, SQS_PORT_EXTERNAL, external_port)
+
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        assert f"{external_host}:{external_port}" in queue_url
+
+        message_body = "external_host_test"
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_body)
+
+        receive_result = sqs_client.receive_message(QueueUrl=queue_url)
+        assert receive_result["Messages"][0]["Body"] == message_body
 
     def test_list_queue_tags(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"

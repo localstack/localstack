@@ -62,7 +62,7 @@ from localstack.aws.api.sqs import (
     Token,
 )
 from localstack.aws.spec import load_service
-from localstack.config import get_edge_url
+from localstack.config import external_service_url
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.common import long_uid, md5, now, start_thread
 from localstack.utils.run import FuncThread
@@ -277,7 +277,7 @@ class SqsQueue:
     @property
     def url(self) -> str:
         return "{host}/{account_id}/{name}".format(
-            host=get_edge_url(),  # FIXME region
+            host=external_service_url(service_key="sqs"),  # FIXME region
             account_id=self.key.account_id,
             name=self.key.name,
         )
@@ -1259,7 +1259,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _require_queue_by_arn(self, dead_letter_target_arn):
         arn_parts = dead_letter_target_arn.split(":")
-        url = f"{get_edge_url()}/{arn_parts[-2]}/{arn_parts[-1]}"
+        url = f"{external_service_url('sqs')}/{arn_parts[-2]}/{arn_parts[-1]}"
         queue = self._require_queue_by_url(url)
         return queue
 
