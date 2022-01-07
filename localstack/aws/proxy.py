@@ -124,7 +124,6 @@ class DefaultListenerHandler(Handler):
                 headers=req.headers,
                 forward_base_url=None,
                 listeners=[_DummyProxyListener()],
-                request_handler=None,
                 client_address=req.remote_addr,
                 server_address=req.host,
             )

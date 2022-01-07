@@ -8,6 +8,9 @@ from typing import Any, Dict, Optional, Union
 from botocore.model import ServiceModel
 from werkzeug.datastructures import Headers
 
+from .. import constants
+from ..services.internal import LocalstackResources
+from ..services.routing import ResourceRouter
 from .api import CommonServiceException, HttpRequest, HttpResponse, RequestContext, ServiceException
 from .api.core import ServiceOperation
 from .chain import ExceptionHandler, Handler, HandlerChain
@@ -255,6 +258,50 @@ class ServiceRequestRouter(Handler):
         return serializer.serialize_error_to_response(error, operation)
 
 
+class ResourceRouterHandler(Handler):
+    """
+    Adapter to serve a ResourceRouter as a Handler.
+    """
+
+    resources: ResourceRouter
+
+    def __init__(self, resources: ResourceRouter) -> None:
+        self.resources = resources
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+        result = self.resources.dispatch(context.request)
+
+        if result is ResourceRouter.NO_ROUTE:
+            response.status_code = 404
+            return
+
+        # serve the content
+        chain.respond(status_code=200, payload=result)
+
+
+class LocalstackResourceHandler(ResourceRouterHandler):
+    """
+    Adapter to serve LocalstackResources as a Handler.
+    """
+
+    resources: LocalstackResources
+
+    def __init__(self, resources: LocalstackResources = None) -> None:
+        super().__init__(resources or LocalstackResources())
+
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+        super().__call__(chain, context, response)
+        path = context.request.path
+
+        if response.status_code == 404:
+            if not path.startswith(constants.INTERNAL_RESOURCE_PATH + "/"):
+                # only return 404 if we're accessing an internal resource, otherwise fall back to the other handlers
+                response.status_code = 0
+                return
+            else:
+                LOG.warning("Unable to find resource handler for path: %s", path)
+
+
 class ExceptionLogger(ExceptionHandler):
     """
     Logs exceptions into a logger.
@@ -415,3 +462,4 @@ log_exception = ExceptionLogger()
 handle_service_exception = ServiceExceptionSerializer()
 handle_internal_failure = InternalFailureHandler()
 handle_empty_response = EmptyResponseHandler()
+serve_localstack_resources = LocalstackResourceHandler()

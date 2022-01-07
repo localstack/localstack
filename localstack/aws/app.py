@@ -28,6 +28,7 @@ class LocalstackAwsGateway(Gateway):
         # the main request handler chain
         self.request_handlers.extend(
             [
+                handlers.serve_localstack_resources,  # try to serve internal resources first
                 DefaultListenerHandler(),  # legacy compatibility with DEFAULT_LISTENERS
                 # start aws handler chain
                 handlers.parse_service_name,

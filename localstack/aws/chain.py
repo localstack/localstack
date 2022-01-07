@@ -2,7 +2,7 @@
 
 """
 import logging
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 from localstack.aws.api import HttpResponse, RequestContext
 
@@ -73,6 +73,20 @@ class HandlerChain:
 
         # call response filters
         self._call_response_handlers(response)
+
+    def respond(self, status_code: int = 200, payload: Any = None):
+        """
+        Convenience method for handlers to stop the chain and set the given status and payload to the current response
+        object.
+        :param status_code: the HTTP status code
+        :param payload: the payload of the response
+        """
+        self.response.status_code = status_code
+        if isinstance(payload, (list, dict)):
+            self.response.set_json(payload)
+        else:
+            self.response.set_response(payload)
+        self.stop()
 
     def stop(self):
         self.stopped = True
