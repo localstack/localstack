@@ -670,9 +670,8 @@ def publish_batch(topic_arn, req_data, headers):
         data["TopicArn"] = [topic_arn]
         data["Message"] = [message["Message"]]
         data["Subject"] = [message["Subject"]]
-        message_attributes = {}
-        for attributes in message.get("MessageAttributes", []):
-            message_attributes[attributes["Name"]] = attributes["Value"]
+
+        message_attributes = prepare_message_attributes(message.get("MessageAttributes", []))
         try:
             message_to_subscribers(
                 message_id,
@@ -897,7 +896,7 @@ def create_sqs_message_attributes(subscriber, attributes):
 
     message_attributes = {}
     for key, value in attributes.items():
-        if value.get("Type"):  # attributes got from get_message_attributes()
+        if value.get("Type"):
             attribute = {"DataType": value["Type"]}
             if value["Type"] == "Binary":
                 attribute["BinaryValue"] = base64.decodebytes(to_bytes(value["Value"]))
@@ -905,41 +904,25 @@ def create_sqs_message_attributes(subscriber, attributes):
                 attribute["StringValue"] = str(value.get("Value", ""))
 
             message_attributes[key] = attribute
-        else:  # attribute get from parse_urlencoded_data()
-            message_attributes[key] = value
 
     return message_attributes
 
 
-def get_message_attributes(req_data):
-    # TODO : Use parse_urlencoded_data() instead of this
+def prepare_message_attributes(message_attributes):
     attributes = {}
-    x = 1
-    while True:
-        name = req_data.get("MessageAttributes.entry." + str(x) + ".Name", [None])[0]
-        if name is not None:
-            attribute = {
-                "Type": req_data.get(
-                    "MessageAttributes.entry." + str(x) + ".Value.DataType", [None]
-                )[0]
-            }
-            string_value = req_data.get(
-                "MessageAttributes.entry." + str(x) + ".Value.StringValue", [None]
-            )[0]
-            binary_value = req_data.get(
-                "MessageAttributes.entry." + str(x) + ".Value.BinaryValue", [None]
-            )[0]
-            if string_value is not None:
-                attribute["Value"] = string_value
-            elif binary_value is not None:
-                attribute["Value"] = binary_value
-
-            attributes[name] = attribute
-            x += 1
-        else:
-            break
-
+    for attr in message_attributes:
+        attributes[attr["Name"]] = {
+            "Type": attr["Value"]["DataType"],
+            "Value": attr["Value"]["StringValue"]
+            if attr["Value"].get("StringValue", None)
+            else attr["Value"]["BinaryValue"],
+        }
     return attributes
+
+
+def get_message_attributes(req_data):
+    extracted_msg_attrs = parse_urlencoded_data(req_data, "MessageAttributes.entry")
+    return prepare_message_attributes(extracted_msg_attrs)
 
 
 def get_subscribe_attributes(req_data):
