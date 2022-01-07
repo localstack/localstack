@@ -361,6 +361,23 @@ class TestSqsProvider:
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
         assert len(result_send["Failed"]) == 1
 
+    def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
+        external_host = "external-host"
+        external_port = 12345
+        monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
+        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        assert f"{external_host}:{external_port}" in queue_url
+
+        message_body = "external_host_test"
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=message_body)
+
+        receive_result = sqs_client.receive_message(QueueUrl=queue_url)
+        assert receive_result["Messages"][0]["Body"] == message_body
+
+        pass
+
     def test_list_queue_tags(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)

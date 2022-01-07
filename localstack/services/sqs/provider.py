@@ -277,7 +277,7 @@ class SqsQueue:
     @property
     def url(self) -> str:
         return "{host}/{account_id}/{name}".format(
-            host=get_edge_url(),  # FIXME region
+            host=get_edge_url(service="SQS"),  # FIXME region
             account_id=self.key.account_id,
             name=self.key.name,
         )

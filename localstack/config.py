@@ -633,6 +633,7 @@ CONFIG_ENV_VARS = [
     "S3_SKIP_SIGNATURE_VALIDATION",
     "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
+    "SQS_PORT_EXTERNAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "SYNCHRONOUS_API_GATEWAY_EVENTS",
     "SYNCHRONOUS_DYNAMODB_EVENTS",
@@ -771,13 +772,23 @@ def external_service_url(service_key, host=None):
     return "%s://%s:%s" % (get_protocol(), host, service_port(service_key))
 
 
-def get_edge_port_http():
-    return EDGE_PORT_HTTP or EDGE_PORT
+def get_edge_port_http(service=None):
+    port = EDGE_PORT_HTTP or EDGE_PORT
+    # TODO: for some reason access to os.environ.get(<SERVICE>_PORT_EXTERNAL) returns None with monkeypatch?
+    if service:
+        env_variable = f"{service}_PORT_EXTERNAL"
+        result = os.environ.get(env_variable, port)
+        port = result
+    if service == "SQS":
+        port = SQS_PORT_EXTERNAL or port
+    return port
 
 
-def get_edge_url(localstack_hostname=None, protocol=None):
-    port = get_edge_port_http()
+def get_edge_url(localstack_hostname=None, protocol=None, service=None):
+    port = get_edge_port_http(service)
     protocol = protocol or get_protocol()
+    if not (HOSTNAME_EXTERNAL == LOCALHOST):
+        localstack_hostname = HOSTNAME_EXTERNAL
     localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
     return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
