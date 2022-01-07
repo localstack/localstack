@@ -47,6 +47,7 @@ requirements.copy.txt
 *.tfstate
 *.tfstate.*
 *tfplan
+*.terraform.lock.hcl
 
 .python-version
 

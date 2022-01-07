@@ -116,8 +116,8 @@ GO_INSTALL_FOLDER = os.path.join(config.dirs.var_libs, "awslamba-go-runtime")
 GO_LAMBDA_RUNTIME = os.path.join(GO_INSTALL_FOLDER, "aws-lambda-mock")
 GO_LAMBDA_MOCKSERVER = os.path.join(GO_INSTALL_FOLDER, "mockserver")
 
-# Terraform (used for tests, whose templates require TF < 0.14.0 )
-TERRAFORM_VERSION = "0.13.7"
+# Terraform (used for tests)
+TERRAFORM_VERSION = "1.1.3"
 TERRAFORM_URL_TEMPLATE = (
     "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{os}_{arch}.zip"
 )
