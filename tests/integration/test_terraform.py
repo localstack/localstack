@@ -4,7 +4,6 @@ import threading
 import unittest
 
 import pytest
-from packaging import version
 
 from localstack import config
 from localstack.services.install import TERRAFORM_BIN, install_terraform
@@ -34,7 +33,7 @@ def check_terraform_version():
     ver_string = re.search(r"v(\d+\.\d+\.\d+)", ver_string).group(1)
     if ver_string is None:
         return False, None
-    return version.parse(ver_string) < version.parse("0.15"), ver_string
+    return True, ver_string
 
 
 # TODO: replace "clouddrove/api-gateway/aws" with normal apigateway module and update terraform
