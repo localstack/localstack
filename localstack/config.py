@@ -774,13 +774,9 @@ def external_service_url(service_key, host=None):
 
 def get_edge_port_http(service=None):
     port = EDGE_PORT_HTTP or EDGE_PORT
-    # TODO: for some reason access to os.environ.get(<SERVICE>_PORT_EXTERNAL) returns None with monkeypatch?
     if service:
         env_variable = f"{service}_PORT_EXTERNAL"
-        result = os.environ.get(env_variable, port)
-        port = result
-    if service == "SQS":
-        port = SQS_PORT_EXTERNAL or port
+        port = os.environ.get(env_variable, port)
     return port
 
 
