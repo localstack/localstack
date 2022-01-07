@@ -16,6 +16,7 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid
 
+from .fixtures import only_localstack
 from .lambdas import lambda_integration
 from .test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 
@@ -361,9 +362,7 @@ class TestSqsProvider:
         result_send = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
         assert len(result_send["Failed"]) == 1
 
-    @pytest.mark.skipif(
-        os.environ.get("TEST_TARGET") == "AWS_CLOUD", reason="Testing LocalStack specific config"
-    )
+    @only_localstack
     def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
         external_host = "external-host"
         external_port = "12345"
@@ -376,7 +375,6 @@ class TestSqsProvider:
 
         monkeypatch.setattr(old_sqs_listener, SQS_PORT_EXTERNAL, external_port)
 
-        os.environ[SQS_PORT_EXTERNAL] = external_port
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
 
