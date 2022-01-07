@@ -815,7 +815,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             queue = self._require_queue_by_url(queue_url)
             self._assert_permission(context, queue)
             del self.queues[queue.key]
-            del self.queue_url_index[queue_url]
+            del self.queue_url_index[queue.url]
             del self.queue_name_index[queue.name]
 
     def get_queue_attributes(
