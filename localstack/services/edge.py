@@ -338,10 +338,21 @@ def is_trace_logging_enabled(headers):
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
+    start_dns_server(asynchronous=True)
+
+    if config.LEGACY_EDGE_PROXY:
+        serve = do_start_edge_proxy
+    else:
+        from localstack.aws.serving.edge import serve_gateway
+
+        serve = serve_gateway
+
+    return serve(bind_address, port, use_ssl, asynchronous)
+
+
+def do_start_edge_proxy(bind_address, port, use_ssl, asynchronous=False):
     from localstack.http.adapters import RouterListener
     from localstack.services.internal import LocalstackResourceHandler
-
-    start_dns_server(asynchronous=True)
 
     listeners = [
         LocalstackResourceHandler(),  # handle internal resources first

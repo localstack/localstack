@@ -125,7 +125,7 @@ def main():
     # serve the LocalStackAwsGateway in a dev app
     logging.basicConfig(level=logging.WARNING)
     gw = LocalstackAwsGateway()
-    wsgi.serve(gw, use_reloader=False)
+    wsgi.serve(gw, use_reloader=True)
 
 
 if __name__ == "__main__":

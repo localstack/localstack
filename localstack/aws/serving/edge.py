@@ -11,6 +11,15 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.request_context import extract_region_from_headers
 
 
+def get_region(request: HttpRequest) -> str:
+    return extract_region_from_headers(request.headers)
+
+
+def get_account_id(_: HttpRequest) -> str:
+    # TODO: at some point we may want to get the account id from credentials
+    return constants.TEST_AWS_ACCOUNT_ID
+
+
 def to_server_response(response: HttpResponse):
     # TODO: creating response objects in this way (re-using the requests library instead of an HTTP server
     #  framework) is a bit ugly, but it's the way that the edge proxy expects them.
@@ -29,9 +38,8 @@ class GatewayListener(ProxyListener):
 
     gateway: Gateway
 
-    def __init__(self, api, delegate):
-        self.service = load_service(api)
-        self.skeleton = Skeleton(self.service, delegate)
+    def __init__(self, gateway: Gateway):
+        self.gateway = gateway
 
     def forward_request(self, method, path, data, headers):
         request = HttpRequest(
@@ -78,21 +86,22 @@ class ServiceListener(ProxyListener):
         context.account_id = get_account_id(request)
         return context
 
-    def to_server_response(self, response: HttpResponse):
-        # TODO: creating response objects in this way (re-using the requests library instead of an HTTP server
-        #  framework) is a bit ugly, but it's the way that the edge proxy expects them.
-        resp = Response()
-        resp._content = response.data
-        resp.status_code = response.status_code
-        resp.headers.update(response.headers)
-        resp.headers["Content-Length"] = str(len(response.data))
-        return resp
 
+def serve_gateway(bind_address, port, use_ssl, asynchronous=False):
+    from localstack.aws.app import LocalstackAwsGateway
+    from localstack.aws.serving.http2_server import serve_threaded
+    from localstack.services.generic_proxy import GenericProxy, install_predefined_cert_if_available
 
-def get_region(request: HttpRequest) -> str:
-    return extract_region_from_headers(request.headers)
+    ssl_creds = (None, None)
+    if use_ssl:
+        install_predefined_cert_if_available()
+        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+        ssl_creds = (cert_file_name, key_file_name)
 
+    thread = serve_threaded(
+        LocalstackAwsGateway(), host=bind_address, port=port, ssl_creds=ssl_creds
+    )
+    if not asynchronous:
+        thread.join()
 
-def get_account_id(_: HttpRequest) -> str:
-    # TODO: at some point we may want to get the account id from credentials
-    return constants.TEST_AWS_ACCOUNT_ID
+    return thread
