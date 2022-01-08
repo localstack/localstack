@@ -17,6 +17,7 @@ from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward
 from localstack.services.messages import MessagePayload
 from localstack.utils.aws.request_context import extract_region_from_headers
+from localstack.utils.common import to_str
 from localstack.utils.persistence import PersistingProxyListener
 
 LOG = logging.getLogger(__name__)
@@ -116,10 +117,15 @@ class DefaultListenerHandler(Handler):
 
         req = context.request
 
+        if req.query_string:
+            path_with_query = req.path + "?" + to_str(req.query_string)
+        else:
+            path_with_query = req.path
+
         try:
             resp = modify_and_forward(
                 method=req.method,
-                path=req.path,  # TODO: should have parameters
+                path=path_with_query,
                 data_bytes=req.data,
                 headers=req.headers,
                 forward_base_url=None,

@@ -66,6 +66,12 @@ def start_sqs(*args, **kwargs):
 
     PORT_SQS_BACKEND = _server.port
 
+    if not config.LEGACY_EDGE_PROXY:
+        from localstack.aws.handlers import process_custom_service_rules
+        from localstack.services.sqs.handlers import SqsQueueActionHandler
+
+        process_custom_service_rules.add(SqsQueueActionHandler())
+
     return _server
 
 

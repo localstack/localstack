@@ -11,9 +11,10 @@ from werkzeug.datastructures import Headers
 from .. import constants
 from ..services.internal import LocalstackResources
 from ..services.routing import ResourceRouter
+from ..utils.common import to_str
 from .api import CommonServiceException, HttpRequest, HttpResponse, RequestContext, ServiceException
 from .api.core import ServiceOperation
-from .chain import ExceptionHandler, Handler, HandlerChain
+from .chain import ExceptionHandler, Handler, HandlerChain, HandlerChainAdapter
 from .protocol.parser import RequestParser, create_parser
 from .protocol.serializer import create_serializer
 from .skeleton import Skeleton, create_skeleton
@@ -119,6 +120,19 @@ class ServiceNameParser(Handler):
             return service
         except Exception:
             return None
+
+
+class CustomServiceRules(HandlerChainAdapter):
+    """
+    HandlerChain that serves as container for custom service rules that can be dynamically added by services,
+    like the SqsQueueActionHandler.
+    """
+
+    def __init__(self):
+        super().__init__()
+        # this makes sure errors are propagated to the outer handler chain, which will the one
+        # built by the AWS gateway.
+        self.chain.raise_on_error = True
 
 
 class ServiceRequestParser(Handler):
@@ -378,7 +392,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
 
 class InternalFailureHandler(ExceptionHandler):
     """
-    Exception handler that returns an generic error message if there is no response set yet.
+    Exception handler that returns a generic error message if there is no response set yet.
     """
 
     def __call__(
@@ -415,11 +429,14 @@ class LegacyPluginHandler(Handler):
 
         api = context.service.service_name
         method = request.method
-        path = request.path  # FIXME: make sure the path also contains the query string
+        if request.query_string:
+            path_with_query = request.path + "?" + to_str(request.query_string)
+        else:
+            path_with_query = request.path
         data = request.data
         headers = request.headers
 
-        result = do_forward_request(api, method, path, data, headers, port=None)
+        result = do_forward_request(api, method, path_with_query, data, headers, port=None)
         # TODO: the edge proxy does a lot more to the result, so this may not work for all corner cases
 
         response.status_code = result.status_code
@@ -456,6 +473,7 @@ class EmptyResponseHandler(Handler):
 
 parse_service_name = ServiceNameParser()
 parse_service_request = ServiceRequestParser()
+process_custom_service_rules = CustomServiceRules()
 add_default_account_id = DefaultAccountIdEnricher()
 add_region_from_header = RegionContextEnricher()
 log_exception = ExceptionLogger()

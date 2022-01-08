@@ -131,8 +131,16 @@ class HandlerChainAdapter(Handler):
 
     chain: HandlerChain
 
-    def __init__(self, chain: HandlerChain):
-        self.chain = chain
+    def __init__(self, chain: HandlerChain = None):
+        self.chain = chain or HandlerChain()
 
     def __call__(self, _: HandlerChain, context: RequestContext, response: HttpResponse):
         self.chain.handle(context, response)
+
+    def add(self, handler: Handler):
+        """
+        Convenience method to add a handler to the underlying HandlerChain.
+        :param handler: the handler to add
+        :return:
+        """
+        self.chain.request_handlers.append(handler)

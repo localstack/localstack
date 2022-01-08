@@ -742,6 +742,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._mutex = threading.RLock()
         self._inflight_worker = InflightUpdateWorker()
 
+    def on_after_init(self):
+        from localstack.aws.handlers import process_custom_service_rules
+        from localstack.services.sqs.handlers import SqsQueueActionHandler
+
+        process_custom_service_rules.add(SqsQueueActionHandler())
+
     def on_before_start(self):
         self._inflight_worker.start()
 

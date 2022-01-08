@@ -25,12 +25,16 @@ class LocalstackAwsGateway(Gateway):
         # the request router used within the handler chain
         self.service_request_router = handlers.ServiceRequestRouter()
 
+        # legacy compatibility with DEFAULT_LISTENERS
+        serve_default_listeners = DefaultListenerHandler()
+
         # the main request handler chain
         self.request_handlers.extend(
             [
                 handlers.serve_localstack_resources,  # try to serve internal resources first
-                DefaultListenerHandler(),  # legacy compatibility with DEFAULT_LISTENERS
+                serve_default_listeners,
                 # start aws handler chain
+                handlers.process_custom_service_rules,  # translate things like GET requests to SQS Queue URLs
                 handlers.parse_service_name,
                 handlers.add_region_from_header,
                 handlers.add_default_account_id,
