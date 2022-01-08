@@ -1059,6 +1059,166 @@ class TestSNS:
 
         retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
 
+    def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(self):
+        topic_name = "topic-{}.fifo".format(short_uid())
+        queue_name = "queue-%s.fifo" % short_uid()
+
+        topic_arn = self.sns_client.create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})[
+            "TopicArn"
+        ]
+        queue = self.sqs_client.create_queue(
+            QueueName=queue_name,
+            Attributes={"FifoQueue": "true"},
+        )
+
+        queue_url = queue["QueueUrl"]
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        self.sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            Attributes={"RawMessageDelivery": "true"},
+        )
+
+        publish_batch_response = self.sns_client.publish_batch(
+            TopicArn=topic_arn,
+            PublishBatchRequestEntries=[
+                {
+                    "Id": "1",
+                    "MessageGroupId": "1",
+                    "Message": "Test Message with two attributes",
+                    "Subject": "Subject",
+                    "MessageAttributes": {
+                        "attr1": {"DataType": "Number", "StringValue": "99.12"},
+                        "attr2": {"DataType": "Number", "StringValue": "109.12"},
+                    },
+                },
+                {
+                    "Id": "2",
+                    "MessageGroupId": "1",
+                    "Message": "Test Message with one attribute",
+                    "Subject": "Subject",
+                    "MessageAttributes": {"attr1": {"DataType": "Number", "StringValue": "19.12"}},
+                },
+                {
+                    "Id": "3",
+                    "MessageGroupId": "1",
+                    "Message": "Test Message without attribute",
+                    "Subject": "Subject",
+                },
+            ],
+        )
+
+        assert "Successful" in publish_batch_response
+        assert "Failed" in publish_batch_response
+
+        for successful_resp in publish_batch_response["Successful"]:
+            assert "Id" in successful_resp
+            assert "MessageId" in successful_resp
+
+        def get_messages(queue_url):
+            response = self.sqs_client.receive_message(
+                QueueUrl=queue_url, MessageAttributeNames=["All"], MaxNumberOfMessages=10
+            )
+            assert len(response["Messages"]) == 3
+            for message in response["Messages"]:
+                assert "Body" in message
+
+                if message["Body"] == "Test Message with two attributes":
+                    assert len(message["MessageAttributes"]) == 2
+                    assert message["MessageAttributes"]["attr1"] == {
+                        "StringValue": "99.12",
+                        "DataType": "Number",
+                    }
+                    assert message["MessageAttributes"]["attr2"] == {
+                        "StringValue": "109.12",
+                        "DataType": "Number",
+                    }
+
+                elif message["Body"] == "Test Message with one attribute":
+                    assert len(message["MessageAttributes"]) == 1
+                    assert message["MessageAttributes"]["attr1"] == {
+                        "StringValue": "19.12",
+                        "DataType": "Number",
+                    }
+
+                elif message["Body"] == "Test Message without attribute":
+                    assert message.get("MessageAttributes") is None
+
+        retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
+
+    def test_publish_batch_exceptions(self):
+        topic_name = "topic-{}.fifo".format(short_uid())
+        queue_name = "queue-%s.fifo" % short_uid()
+
+        topic_arn = self.sns_client.create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})[
+            "TopicArn"
+        ]
+        queue = self.sqs_client.create_queue(
+            QueueName=queue_name,
+            Attributes={"FifoQueue": "true"},
+        )
+
+        queue_url = queue["QueueUrl"]
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        self.sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=queue_arn,
+            Attributes={"RawMessageDelivery": "true"},
+        )
+
+        with pytest.raises(ClientError) as e:
+            self.sns_client.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {
+                        "Id": "1",
+                        "Message": "Test Message with two attributes",
+                    }
+                ],
+            )
+        assert e.value.response["Error"]["Code"] == "InvalidParameter"
+        assert (
+            e.value.response["Error"]["Message"]
+            == "The MessageGroupId parameter is required for FIFO topics"
+        )
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+        with pytest.raises(ClientError) as e:
+            self.sns_client.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {"Id": f"Id_{i}", "Message": f"message_{i}"} for i in range(11)
+                ],
+            )
+        assert e.value.response["Error"]["Code"] == "TooManyEntriesInBatchRequest"
+        assert (
+            e.value.response["Error"]["Message"]
+            == "The batch request contains more entries than permissible"
+        )
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+        with pytest.raises(ClientError) as e:
+            self.sns_client.publish_batch(
+                TopicArn=topic_arn,
+                PublishBatchRequestEntries=[
+                    {"Id": "1", "Message": f"message_{i}"} for i in range(2)
+                ],
+            )
+        assert e.value.response["Error"]["Code"] == "BatchEntryIdsNotDistinct"
+        assert (
+            e.value.response["Error"]["Message"]
+            == "Two or more batch entries in the request have the same Id"
+        )
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+        # cleanup
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+
     def add_xray_header(self, request, **kwargs):
         request.headers[
             "X-Amzn-Trace-Id"
