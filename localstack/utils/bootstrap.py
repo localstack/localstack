@@ -563,10 +563,11 @@ def prepare_docker_start():
     if DOCKER_CLIENT.is_container_running(container_name):
         raise ContainerExists('LocalStack container named "%s" is already running' % container_name)
     if config.dirs.tmp != config.dirs.functions and not config.LAMBDA_REMOTE_DOCKER:
+        # Logger is not initialized at this point, so the warning is displayed via print
         print(
             f"WARNING: The detected temp folder for localstack ({config.dirs.tmp}) is not equal to the "
             f"HOST_TMP_FOLDER environment variable set ({config.dirs.functions})."
-        )  # Logger is not initialized at this point, so the warning is displayed via print
+        )
 
     os.environ[ENV_SCRIPT_STARTING_DOCKER] = "1"
 

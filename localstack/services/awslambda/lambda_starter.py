@@ -33,8 +33,9 @@ def check_lambda(expect_shutdown=False, print_error=False):
         from localstack.utils.common import wait_for_port_open
 
         # wait for port to be opened
+        # TODO get lambda port in a cleaner way
         port = PROXY_LISTENERS.get("lambda")[1]
-        wait_for_port_open(port)  # TODO get lambda port in a cleaner way
+        wait_for_port_open(port, sleep_time=0.5, retries=20)
 
         endpoint_url = f"http://127.0.0.1:{port}"
         out = aws_stack.connect_to_service(
