@@ -263,7 +263,12 @@ class TestCommon(unittest.TestCase):
         self.assertEqual("foo_bar_ed", fn("FooBarEd"))
         self.assertEqual("foo_bar", fn("Foo_Bar"))
         self.assertEqual("foo__bar", fn("Foo__Bar"))
-        self.assertEqual("foo_b_a_r", fn("FooBAR"))
+        self.assertEqual("foo_bar", fn("FooBAR"))
+        self.assertEqual("http_request", fn("HTTPRequest"))
+        self.assertEqual("http_request", fn("HTTP_Request"))
+        self.assertEqual("verify_http_request", fn("VerifyHTTPRequest"))
+        self.assertEqual("is_http", fn("IsHTTP"))
+        self.assertEqual("is_http2_request", fn("IsHTTP2Request"))
 
     def test_snake_to_camel_case(self):
         fn = common.snake_to_camel_case
