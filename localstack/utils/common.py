@@ -2166,6 +2166,10 @@ def get_all_subclasses(clazz: Type) -> List[Type]:
     return result
 
 
+def fully_qualified_class_name(klass: Type) -> str:
+    return f"{klass.__module__}.{klass.__name__}"
+
+
 def parallelize(func: Callable, arr: List, size: int = None):
     if not size:
         size = len(arr)
