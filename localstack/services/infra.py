@@ -404,6 +404,8 @@ def start_infra(asynchronous=False, apis=None):
         # set up logging
         setup_logging()
 
+        # run hooks, to allow them to apply patches and changes
+        hooks.on_infra_start.run()
         # with changes that hooks have made, now start the infrastructure
         thread = do_start_infra(asynchronous, apis, is_in_docker)
 
@@ -426,7 +428,6 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
-    hooks.on_infra_start.run()
 
     event_publisher.fire_event(
         event_publisher.EVENT_START_INFRA,

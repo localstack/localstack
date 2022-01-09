@@ -4,7 +4,6 @@ import os
 import socket
 import threading
 import time
-import unittest
 import zipfile
 from datetime import date, datetime
 
@@ -15,6 +14,8 @@ import yaml
 from localstack import config
 from localstack.utils import common
 from localstack.utils.common import (
+    Mock,
+    fully_qualified_class_name,
     is_empty_dir,
     load_file,
     mkdir,
@@ -26,114 +27,109 @@ from localstack.utils.common import (
 from localstack.utils.testutil import create_zip_file
 
 
-class TestCommon(unittest.TestCase):
+class TestCommon:
     def test_first_char_to_lower(self):
         env = common.first_char_to_lower("Foobar")
-        self.assertEqual("foobar", env)
+        assert env == "foobar"
 
     def test_truncate(self):
         env = common.truncate("foobar", 3)
-        self.assertEqual("foo...", env)
+        assert env == "foo..."
 
     def test_isoformat_milliseconds(self):
         env = common.isoformat_milliseconds(datetime(2010, 3, 20, 7, 24, 00, 0))
-        self.assertEqual("2010-03-20T07:24:00.000", env)
+        assert env == "2010-03-20T07:24:00.000"
 
     def test_base64_to_hex(self):
         env = common.base64_to_hex("Zm9vIGJhcg ==")
-        self.assertEqual(b"666f6f20626172", env)
+        assert env == b"666f6f20626172"
 
     def test_now(self):
         env = common.now()
         test = time.time()
-        self.assertAlmostEqual(test, env, delta=1)
+        assert test == pytest.approx(env, 1)
 
     def test_now_utc(self):
         env = common.now_utc()
         test = datetime.now(pytz.UTC).timestamp()
-        self.assertAlmostEqual(test, env, delta=1)
+        assert test == pytest.approx(env, 1)
 
     def test_is_number(self):
-        env = common.is_number(5)
-        self.assertTrue(env)
+        assert common.is_number(5)
 
     def test_is_ip_address(self):
-        env = common.is_ip_address("10.0.0.1")
-        self.assertTrue(env)
-        env = common.is_ip_address("abcde")
-        self.assertFalse(env)
+        assert common.is_ip_address("10.0.0.1")
+        assert not common.is_ip_address("abcde")
 
     def test_is_base64(self):
-        env = common.is_base64("foobar")
-        self.assertIsNone(env)
+        assert not common.is_base64("foobar")
 
     def test_mktime(self):
         now = common.mktime(datetime.now())
-        self.assertEqual(int(now), int(time.time()))
+        assert int(now) == int(time.time())
 
     def test_mktime_with_tz(self):
         # see https://en.wikipedia.org/wiki/File:1000000000seconds.jpg
         dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.utc)
-        self.assertEqual(1000000000, int(common.mktime(dt)))
+        assert int(common.mktime(dt)) == 1000000000
 
         dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.timezone("EST"))
-        self.assertEqual(1000000000 + (5 * 60 * 60), int(common.mktime(dt)))  # EST is UTC-5
+        assert int(common.mktime(dt)) == 1000000000 + (5 * 60 * 60)  # EST is UTC-5
 
     def test_mktime_millis_with_tz(self):
         # see https://en.wikipedia.org/wiki/File:1000000000
         dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.utc)
-        self.assertEqual(1000000000, int(common.mktime(dt, millis=True) / 1000))
+        assert int(common.mktime(dt, millis=True) / 1000) == 1000000000
 
         dt = datetime(2001, 9, 9, 1, 46, 40, 0, tzinfo=pytz.timezone("EST"))
-        self.assertEqual(
-            1000000000 + (5 * 60 * 60), int(common.mktime(dt, millis=True)) / 1000
+        assert int(common.mktime(dt, millis=True)) / 1000 == 1000000000 + (
+            5 * 60 * 60
         )  # EST is UTC-5
 
     def test_mktime_millis(self):
         now = common.mktime(datetime.now(), millis=True)
-        self.assertEqual(int(now / 1000), int(time.time()))
+        assert int(time.time()) == int(now / 1000)
 
     def test_timestamp_millis(self):
         result = common.timestamp_millis(datetime.now())
-        self.assertIn("T", result)
+        assert "T" in result
         result = common.timestamp_millis(date.today())
-        self.assertIn("00:00:00", result)
-        self.assertIn("T", result)
+        assert "00:00:00" in result
+        assert "T" in result
 
     def test_extract_jsonpath(self):
         obj = {"a": {"b": [{"c": 123}, "foo"]}, "e": 234}
         result = common.extract_jsonpath(obj, "$.a.b")
-        self.assertEqual([{"c": 123}, "foo"], result)
+        assert result == [{"c": 123}, "foo"]
         result = common.extract_jsonpath(obj, "$.a.b.c")
-        self.assertFalse(result)
+        assert not result
         result = common.extract_jsonpath(obj, "$.foobar")
-        self.assertFalse(result)
+        assert not result
         result = common.extract_jsonpath(obj, "$.e")
-        self.assertEqual(234, result)
+        assert result == 234
         result = common.extract_jsonpath(obj, "$.a.b[0]")
-        self.assertEqual({"c": 123}, result)
+        assert result == {"c": 123}
         result = common.extract_jsonpath(obj, "$.a.b[0].c")
-        self.assertEqual(123, result)
+        assert result == 123
         result = common.extract_jsonpath(obj, "$.a.b[1]")
-        self.assertEqual("foo", result)
+        assert result == "foo"
 
     def test_str_to_bool(self):
-        self.assertEqual(True, common.str_to_bool("true"))
-        self.assertEqual(True, common.str_to_bool("True"))
+        assert common.str_to_bool("true") is True
+        assert common.str_to_bool("True") is True
 
-        self.assertEqual(False, common.str_to_bool("1"))
-        self.assertEqual(False, common.str_to_bool("0"))
-        self.assertEqual(False, common.str_to_bool("TRUE"))
-        self.assertEqual(False, common.str_to_bool("false"))
-        self.assertEqual(False, common.str_to_bool("False"))
+        assert common.str_to_bool("1") is False
+        assert common.str_to_bool("0") is False
+        assert common.str_to_bool("TRUE") is False
+        assert common.str_to_bool("false") is False
+        assert common.str_to_bool("False") is False
 
-        self.assertEqual(0, common.str_to_bool(0))
-        self.assertEqual(0, common.str_to_bool(0))
+        assert common.str_to_bool(0) == 0
 
     def test_parse_yaml_nodes(self):
         obj = {"test": yaml.ScalarNode("tag:yaml.org,2002:int", "123")}
         result = common.clone_safe(obj)
-        self.assertEqual({"test": 123}, result)
+        assert result == {"test": 123}
         obj = {
             "foo": [
                 yaml.ScalarNode("tag:yaml.org,2002:str", "value"),
@@ -143,53 +139,51 @@ class TestCommon(unittest.TestCase):
             ]
         }
         result = common.clone_safe(obj)
-        self.assertEqual({"foo": ["value", 123, 1.23, True]}, result)
+        assert result == {"foo": ["value", 123, 1.23, True]}
 
     def test_free_tcp_port_blacklist_raises_exception(self):
         blacklist = range(0, 70000)  # blacklist all existing ports
-        with self.assertRaises(Exception) as ctx:
+        with pytest.raises(Exception) as ctx:
             common.get_free_tcp_port(blacklist)
 
-        self.assertIn("Unable to determine free TCP", str(ctx.exception))
+        assert "Unable to determine free TCP" in str(ctx.value)
 
     def test_port_can_be_bound(self):
         port = common.get_free_tcp_port()
-        self.assertTrue(common.port_can_be_bound(port))
+        assert common.port_can_be_bound(port)
 
     def test_port_can_be_bound_illegal_port(self):
-        self.assertFalse(common.port_can_be_bound(9999999999))
+        assert not common.port_can_be_bound(9999999999)
 
     def test_port_can_be_bound_already_bound(self):
         tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             tcp.bind(("", 0))
             addr, port = tcp.getsockname()
-            self.assertFalse(common.port_can_be_bound(port))
+            assert not common.port_can_be_bound(port)
         finally:
             tcp.close()
 
-        self.assertTrue(common.port_can_be_bound(port))
+        assert common.port_can_be_bound(port)
 
     def test_to_unique_item_list(self):
-        self.assertListEqual([1, 2, 3], common.to_unique_items_list([1, 1, 2, 2, 3]))
-        self.assertListEqual(["a"], common.to_unique_items_list(["a"]))
-        self.assertListEqual(["a", "b"], common.to_unique_items_list(["a", "b", "a"]))
-        self.assertListEqual(["a", "b"], common.to_unique_items_list("aba"))
-        self.assertListEqual([], common.to_unique_items_list([]))
+        assert common.to_unique_items_list([1, 1, 2, 2, 3]) == [1, 2, 3]
+        assert common.to_unique_items_list(["a"]) == ["a"]
+        assert common.to_unique_items_list(["a", "b", "a"]) == ["a", "b"]
+        assert common.to_unique_items_list("aba") == ["a", "b"]
+        assert common.to_unique_items_list([]) == []
 
         def comparator_lower(first, second):
             return first.lower() == second.lower()
 
-        self.assertListEqual(["a", "A"], common.to_unique_items_list(["a", "A", "a"]))
-        self.assertListEqual(["a"], common.to_unique_items_list(["a", "A", "a"], comparator_lower))
-        self.assertListEqual(["a"], common.to_unique_items_list(["a", "A", "a"], comparator_lower))
+        assert common.to_unique_items_list(["a", "A", "a"]) == ["a", "A"]
+        assert common.to_unique_items_list(["a", "A", "a"], comparator_lower) == ["a"]
+        assert common.to_unique_items_list(["a", "A", "a"], comparator_lower) == ["a"]
 
         def comparator_str_int(first, second):
             return int(first) - int(second)
 
-        self.assertListEqual(
-            ["1", "2"], common.to_unique_items_list(["1", "2", "1", "2"], comparator_str_int)
-        )
+        assert common.to_unique_items_list(["1", "2", "1", "2"], comparator_str_int) == ["1", "2"]
 
     def test_retry(self):
         exceptions = []
@@ -206,8 +200,8 @@ class TestCommon(unittest.TestCase):
             raise e
 
         ret = common.retry(fn, retries=3, sleep=0.001)
-        self.assertEqual("two", ret)
-        self.assertEqual(3, len(exceptions))
+        assert ret == "two"
+        assert len(exceptions) == 3
 
     def test_retry_raises_last_exception(self):
         exceptions = []
@@ -220,16 +214,16 @@ class TestCommon(unittest.TestCase):
 
             raise e
 
-        with self.assertRaises(RuntimeError) as ctx:
+        with pytest.raises(RuntimeError) as ctx:
             common.retry(fn, retries=3, sleep=0.001)
 
-        self.assertIs(exceptions[-1], ctx.exception, "did not throw last exception")
-        self.assertEqual(4, len(exceptions))
+        assert exceptions[-1] is ctx.value
+        assert len(exceptions) == 4
 
     def test_run(self):
         cmd = "echo 'foobar'"
         result = common.run(cmd)
-        self.assertEqual("foobar", result.strip())
+        assert result.strip() == "foobar"
 
     def test_run_with_cache(self):
         cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
@@ -237,8 +231,8 @@ class TestCommon(unittest.TestCase):
         d2 = float(common.run(cmd, cache_duration_secs=1))
         d3 = float(common.run(cmd, cache_duration_secs=1))
 
-        self.assertNotEqual(d1, d2)
-        self.assertEqual(d2, d3)
+        assert d1 != d2
+        assert d2 == d3
 
     def test_run_with_cache_expiry(self):
         cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
@@ -248,61 +242,61 @@ class TestCommon(unittest.TestCase):
         time.sleep(0.8)
         d3 = float(common.run(cmd, cache_duration_secs=0.5))
 
-        self.assertEqual(d1, d2)
-        self.assertNotEqual(d2, d3)
+        assert d1 == d2
+        assert d2 != d3
 
     def test_is_command_available(self):
-        self.assertTrue(common.is_command_available("python3"))
-        self.assertFalse(common.is_command_available("hopefullydoesntexist"))
+        assert common.is_command_available("python3")
+        assert not common.is_command_available("hopefullydoesntexist")
 
     def test_camel_to_snake_case(self):
         fn = common.camel_to_snake_case
 
-        self.assertEqual("foo", fn("Foo"))
-        self.assertEqual("foobar_ed", fn("FoobarEd"))
-        self.assertEqual("foo_bar_ed", fn("FooBarEd"))
-        self.assertEqual("foo_bar", fn("Foo_Bar"))
-        self.assertEqual("foo__bar", fn("Foo__Bar"))
-        self.assertEqual("foo_bar", fn("FooBAR"))
-        self.assertEqual("http_request", fn("HTTPRequest"))
-        self.assertEqual("http_request", fn("HTTP_Request"))
-        self.assertEqual("verify_http_request", fn("VerifyHTTPRequest"))
-        self.assertEqual("is_http", fn("IsHTTP"))
-        self.assertEqual("is_http2_request", fn("IsHTTP2Request"))
+        assert fn("Foo") == "foo"
+        assert fn("FoobarEd") == "foobar_ed"
+        assert fn("FooBarEd") == "foo_bar_ed"
+        assert fn("Foo_Bar") == "foo_bar"
+        assert fn("Foo__Bar") == "foo__bar"
+        assert fn("FooBAR") == "foo_bar"
+        assert fn("HTTPRequest") == "http_request"
+        assert fn("HTTP_Request") == "http_request"
+        assert fn("VerifyHTTPRequest") == "verify_http_request"
+        assert fn("IsHTTP") == "is_http"
+        assert fn("IsHTTP2Request") == "is_http2_request"
 
     def test_snake_to_camel_case(self):
         fn = common.snake_to_camel_case
 
-        self.assertEqual("Foo", fn("foo"))
-        self.assertEqual("FoobarEd", fn("foobar_ed"))
-        self.assertEqual("FooBarEd", fn("foo_bar_ed"))
-        self.assertEqual("FooBar", fn("foo_bar"))
-        self.assertEqual("FooBar", fn("foo__bar"))
-        self.assertEqual("FooBAR", fn("foo_b_a_r"))
+        assert fn("foo") == "Foo"
+        assert fn("foobar_ed") == "FoobarEd"
+        assert fn("foo_bar_ed") == "FooBarEd"
+        assert fn("foo_bar") == "FooBar"
+        assert fn("foo__bar") == "FooBar"
+        assert fn("foo_b_a_r") == "FooBAR"
 
     def test_obj_to_xml(self):
         fn = common.obj_to_xml
         # primitive
-        self.assertEqual("42", fn(42))
-        self.assertEqual("False", fn(False))
-        self.assertEqual("a", fn("a"))
+        assert fn(42) == "42"
+        assert fn(False) == "False"
+        assert fn("a") == "a"
         # dict only
-        self.assertEqual("<foo>bar</foo>", fn({"foo": "bar"}))
-        self.assertEqual("<a>42</a>", fn({"a": 42}))
-        self.assertEqual("<a>42</a><foo>bar</foo>", fn({"a": 42, "foo": "bar"}))
+        assert fn({"foo": "bar"}) == "<foo>bar</foo>"
+        assert fn({"a": 42}) == "<a>42</a>"
+        assert fn({"a": 42, "foo": "bar"}) == "<a>42</a><foo>bar</foo>"
         # list of dicts
-        self.assertEqual("<a>42</a><a>43</a>", fn([{"a": 42}, {"a": 43}]))
+        assert fn([{"a": 42}, {"a": 43}]) == "<a>42</a><a>43</a>"
         # dict with lists
-        self.assertEqual("<f><a>42</a><a>43</a></f>", fn({"f": [{"a": 42}, {"a": 43}]}))
+        assert fn({"f": [{"a": 42}, {"a": 43}]}) == "<f><a>42</a><a>43</a></f>"
         # empty types
-        self.assertEqual("None", fn(None))
-        self.assertEqual("", fn(""))
+        assert fn(None) == "None"
+        assert fn("") == ""
 
     def test_parse_json_or_yaml_with_json(self):
         markup = """{"foo": "bar", "why": 42, "mylist": [1,2,3]}"""
 
         doc = common.parse_json_or_yaml(markup)
-        self.assertDictEqual({"foo": "bar", "why": 42, "mylist": [1, 2, 3]}, doc)
+        assert doc == {"foo": "bar", "why": 42, "mylist": [1, 2, 3]}
 
     def test_parse_json_or_yaml_with_yaml(self):
         markup = """
@@ -314,52 +308,52 @@ class TestCommon(unittest.TestCase):
             - 3
         """
         doc = common.parse_json_or_yaml(markup)
-        self.assertDictEqual({"foo": "bar", "why": 42, "mylist": [1, 2, 3]}, doc)
+        assert doc == {"foo": "bar", "why": 42, "mylist": [1, 2, 3]}
 
     def test_parse_json_or_yaml_with_invalid_syntax_returns_content(self):
         markup = "<a href='foobar'>baz</a>"
         doc = common.parse_json_or_yaml(markup)
-        self.assertEqual(markup, doc)  # FIXME: not sure if this is good behavior
+        assert doc == markup  # FIXME: not sure if this is good behavior
 
     def test_parse_json_or_yaml_with_empty_string_returns_none(self):
         doc = common.parse_json_or_yaml("")
-        self.assertIsNone(doc)
+        assert doc is None
 
     def test_format_bytes(self):
         fn = common.format_bytes
 
-        self.assertEqual("1B", fn(1))
-        self.assertEqual("100B", fn(100))
-        self.assertEqual("999B", fn(999))
-        self.assertEqual("1KB", fn(1e3))
-        self.assertEqual("1MB", fn(1e6))
-        self.assertEqual("10MB", fn(1e7))
-        self.assertEqual("100MB", fn(1e8))
-        self.assertEqual("1GB", fn(1e9))
-        self.assertEqual("1TB", fn(1e12))
+        assert fn(1) == "1B"
+        assert fn(100) == "100B"
+        assert fn(999) == "999B"
+        assert fn(1e3) == "1KB"
+        assert fn(1e6) == "1MB"
+        assert fn(1e7) == "10MB"
+        assert fn(1e8) == "100MB"
+        assert fn(1e9) == "1GB"
+        assert fn(1e12) == "1TB"
 
         # comma values
-        self.assertEqual("1.1TB", fn(1e12 + 1e11))
-        self.assertEqual("1000TB", fn(1e15))
+        assert fn(1e12 + 1e11) == "1.1TB"
+        assert fn(1e15) == "1000TB"
 
         # string input
-        self.assertEqual("123B", fn("123"))
+        assert fn("123") == "123B"
         # invalid number
-        self.assertEqual("n/a", fn("abc"))
+        assert fn("abc") == "n/a"
         # negative number
-        self.assertEqual("n/a", fn(-1))  # TODO: seems we could support this case
+        assert fn(-1) == "n/a"  # TODO: seems we could support this case
 
     def test_format_number(self):
         fn = common.format_number
-        self.assertEqual("12", fn(12, decimals=0))
-        self.assertEqual("12", fn(12, decimals=1))
-        self.assertEqual("12", fn(12.421, decimals=0))
-        self.assertEqual("13", fn(12.521, decimals=0))
-        self.assertEqual("12.52", fn(12.521, decimals=2))
-        self.assertEqual("12.521", fn(12.521, decimals=3))
-        self.assertEqual("12.521", fn(12.521, decimals=4))
-        self.assertEqual("-12.521", fn(-12.521, decimals=4))
-        self.assertEqual("-1223.4354", fn(-1.2234354123e3, decimals=4))
+        assert fn(12, decimals=0) == "12"
+        assert fn(12, decimals=1) == "12"
+        assert fn(12.421, decimals=0) == "12"
+        assert fn(12.521, decimals=0) == "13"
+        assert fn(12.521, decimals=2) == "12.52"
+        assert fn(12.521, decimals=3) == "12.521"
+        assert fn(12.521, decimals=4) == "12.521"
+        assert fn(-12.521, decimals=4) == "-12.521"
+        assert fn(-1.2234354123e3, decimals=4) == "-1223.4354"
 
     def test_cleanup_threads_and_processes_calls_shutdown_hooks(self):
         # TODO: move all run/concurrency related tests into separate class
@@ -375,25 +369,28 @@ class TestCommon(unittest.TestCase):
             done.set()
 
         common.start_thread(run_method)
-        self.assertTrue(started.wait(timeout=2))
+        assert started.wait(timeout=2)
         common.cleanup_threads_and_processes()
-        self.assertTrue(done.wait(timeout=2))
+        assert done.wait(timeout=2)
 
     def test_proxy_map(self):
         old_http_proxy = config.OUTBOUND_HTTP_PROXY
         old_https_proxy = config.OUTBOUND_HTTPS_PROXY
         config.OUTBOUND_HTTP_PROXY = "http://localhost"
         config.OUTBOUND_HTTPS_PROXY = "https://localhost"
-        assert {
+        assert common.get_proxies() == {
             "http": config.OUTBOUND_HTTP_PROXY,
             "https": config.OUTBOUND_HTTPS_PROXY,
-        } == common.get_proxies()
+        }
         config.OUTBOUND_HTTP_PROXY = ""
-        assert {"https": config.OUTBOUND_HTTPS_PROXY} == common.get_proxies()
+        assert common.get_proxies() == {"https": config.OUTBOUND_HTTPS_PROXY}
         config.OUTBOUND_HTTPS_PROXY = ""
-        assert {} == common.get_proxies()
+        assert common.get_proxies() == {}
         config.OUTBOUND_HTTP_PROXY = old_http_proxy
         config.OUTBOUND_HTTPS_PROXY = old_https_proxy
+
+    def test_fully_qualified_class_name(self):
+        assert fully_qualified_class_name(Mock) == "localstack.utils.common.Mock"
 
 
 class TestCommonFileOperations:

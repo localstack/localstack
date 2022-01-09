@@ -234,13 +234,14 @@ def do_forward_request(api, method, path, data, headers, port=None):
     return result
 
 
+def get_handler_for_api(api, headers):
+    return PROXY_LISTENERS.get(api)
+
+
 def do_forward_request_inmem(api, method, path, data, headers, port=None):
-    listener_details = PROXY_LISTENERS.get(api)
+    listener_details = get_handler_for_api(api, headers)
     if not listener_details:
-        message = (
-            'Unable to find listener for service "%s" - please make sure to include it in $SERVICES'
-            % api
-        )
+        message = f'Unable to find listener for service "{api}" - please make sure to include it in $SERVICES'
         LOG.warning(message)
         raise HTTPErrorResponse(message, code=400)
     service_name, backend_port, listener = listener_details
