@@ -975,8 +975,11 @@ def keys_to_lower(obj: JsonComplexType, skip_children_of: List[str] = None) -> J
     return result
 
 
+_camel_to_snake_case_sub = re.compile("((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
+
+
 def camel_to_snake_case(string: str) -> str:
-    return re.sub(r"(?<!^)(?=[A-Z])", "_", string).replace("__", "_").lower()
+    return _camel_to_snake_case_sub.sub(r"_\1", string).replace("__", "_").lower()
 
 
 def snake_to_camel_case(string: str, capitalize_first: bool = True) -> str:
