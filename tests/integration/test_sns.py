@@ -117,6 +117,20 @@ class TestSNS:
         retry(received, retries=5, sleep=1)
         proxy.stop()
 
+    def test_subscribe_with_invalid_protocol(self):
+        topic_arn = self.sns_client.create_topic(Name=TEST_TOPIC_NAME_2)["TopicArn"]
+
+        with pytest.raises(ClientError) as e:
+            self.sns_client.subscribe(
+                TopicArn=topic_arn, Protocol="test-protocol", Endpoint="localstack@yopmail.com"
+            )
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert e.value.response["Error"]["Code"] == "InvalidParameter"
+
+        # clean up
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+
     def test_attribute_raw_subscribe(self):
         # create SNS topic and connect it to an SQS queue
         queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME)

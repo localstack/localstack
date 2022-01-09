@@ -60,6 +60,18 @@ SKIP_PERSISTENCE_ACTIONS = [
     "Unsubscribe",
 ]
 
+SNS_PROTOCOLS = [
+    "http",
+    "https",
+    "email",
+    "email-json",
+    "sms",
+    "sqs",
+    "application",
+    "lambda",
+    "firehose",
+]
+
 
 class SNSBackend(RegionBackend):
     # maps topic ARN to list of subscriptions
@@ -147,6 +159,13 @@ class ProxyListenerSNS(PersistingProxyListener):
             elif req_action == "Subscribe":
                 if "Endpoint" not in req_data:
                     return make_error(message="Endpoint not specified in subscription", code=400)
+
+                if req_data["Protocol"][0] not in SNS_PROTOCOLS:
+                    return make_error(
+                        message=f"Invalid parameter: Amazon SNS does not support this protocol string: "
+                        f"{req_data['Protocol'][0]}",
+                        code=400,
+                    )
 
                 if ".fifo" in req_data["Endpoint"][0] and ".fifo" not in topic_arn:
                     return make_error(
