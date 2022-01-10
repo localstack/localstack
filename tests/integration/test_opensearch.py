@@ -128,33 +128,31 @@ class TestOpenSearchProvider:
         assert "EngineVersion" in status
         assert status["EngineVersion"] == "OpenSearch_1.0"
 
-    # TODO: domain creation as fixture?
-    def test_create_indices_and_domains(self, opensearch_client):
+    def test_create_indices(self, opensearch_url):
         indices = ["index1", "index2"]
         for index_name in indices:
-            # FIXME find that URL for opensearch
-            index_path = "{}/{}".format(self.es_url, index_name)
+            index_path = f"{opensearch_url}/{index_name}"
             requests.put(index_path, headers=COMMON_HEADERS)
-            endpoint = "{}/_cat/indices/{}?format=json&pretty".format(self.es_url, index_name)
+            endpoint = f"{opensearch_url}/_cat/indices/{index_name}?format=json&pretty"
             req = requests.get(endpoint)
             assert req.status_code == 200
             req_result = json.loads(req.text)
             assert req_result[0]["health"] in ["green", "yellow"]
             assert req_result[0]["index"] in indices
 
-        test_domain_name_1 = f"opensearch-test1-{short_uid()}"
-        test_domain_name_2 = f"opensearch-test2-{short_uid()}"
-        opensearch_client.create_domain(DomainName=test_domain_name_1)
-        opensearch_client.create_domain(DomainName=test_domain_name_2)
-        status_test_domain_name_1 = opensearch_client.describe_domain(DomainName=test_domain_name_1)
-        status_test_domain_name_2 = opensearch_client.describe_domain(DomainName=test_domain_name_2)
-        assert status_test_domain_name_1["DomainStatus"]["Processing"] is False
-        assert status_test_domain_name_2["DomainStatus"]["Processing"] is False
+    # TODO needs document and domain fixture
+    def test_get_document(self, opensearch_document_path):
+        response = requests.get(opensearch_document_path)
+        assert (
+            "I'm just a simple man" in response.text
+        ), f"document not found({response.status_code}): {response.text}"
 
     # TODO needs document and domain fixture
-    def test_get_document(self):
-        pass
+    def test_search(self, opensearch_url, opensearch_document_path):
+        index = "/".join(opensearch_document_path.split("/")[:-1])
+        search = {"query": {"match": {"last_name": "Fett"}}}
+        response = requests.get(f"{index}/_search", data=json.dumps(search), headers=COMMON_HEADERS)
 
-    # TODO needs document and domain fixture
-    def test_search(self):
-        pass
+        assert (
+            "I'm just a simple man" in response.text
+        ), f"search unsuccessful({response.status_code}): {response.text}"

@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import time
 from typing import TYPE_CHECKING, List
 
 import boto3
@@ -9,6 +11,7 @@ import pytest
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
+from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
 from localstack.utils.testutil import start_http_server
 
@@ -308,6 +311,7 @@ def kms_grant_and_key(kms_client, kms_key):
     ]
 
 
+# TODO wait for domain being up
 @pytest.fixture
 def opensearch_create_domain(opensearch_client):
     domains = []
@@ -317,6 +321,8 @@ def opensearch_create_domain(opensearch_client):
             kwargs["DomainName"] = f"test-domain-{short_uid()}"
 
         opensearch_client.create_domain(**kwargs)
+        # TODO make waiting for domain being up more sophisticated
+        time.sleep(60)
         domains.append(kwargs["DomainName"])
         return kwargs["DomainName"]
 
@@ -333,6 +339,30 @@ def opensearch_create_domain(opensearch_client):
 @pytest.fixture
 def opensearch_domain(opensearch_create_domain) -> str:
     return opensearch_create_domain()
+
+
+@pytest.fixture
+def opensearch_url(opensearch_domain) -> str:
+    return f"http://{opensearch_domain}.us-east-1.opensearch.localhost.localstack.cloud:4566"
+
+
+@pytest.fixture
+def opensearch_document_path(opensearch_client, opensearch_url):
+    document = {
+        "first_name": "Boba",
+        "last_name": "Fett",
+        "age": 41,
+        "about": "I'm just a simple man, trying to make my way in the universe.",
+        "interests": ["mandalorian armor", "tusken culture"],
+    }
+    document_path = f"{opensearch_url}/bounty/hunters/1"
+    response = requests.put(
+        document_path,
+        data=json.dumps(document),
+        headers={"content-type": "application/json", "Accept-encoding": "identity"},
+    )
+    assert response.status_code == 201, f"could not create document at: {document_path}"
+    return document_path
 
 
 # Cleanup fixtures
