@@ -4,6 +4,7 @@ import threading
 
 import pytest
 
+from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.install import install_opensearch
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread
@@ -112,10 +113,20 @@ class TestOpenSearchProvider:
         assert len(response["DomainStatusList"]) == 1
         assert response["DomainStatusList"][0]["DomainName"] == opensearch_domain
 
-    # FIXME
-    def test_domain_version(self, opensearch_client, opensearch_domain):
-        response = opensearch_client.describe_domains(DomainNames=[opensearch_domain])
+    def test_domain_version(self, opensearch_client, opensearch_domain, opensearch_create_domain):
+        response = opensearch_client.describe_domain(DomainName=opensearch_domain)
         assert "DomainStatus" in response
+        status = response["DomainStatus"]
+        assert "EngineVersion" in status
+        assert status["EngineVersion"] == f"OpenSearch_{OPENSEARCH_DEFAULT_VERSION}"
+
+        # FIXME can't create second domain. always `ResourceAlreadyExistsException`
+        domain_name = opensearch_create_domain(EngineVersion="OpenSearch_1.0")
+        response = opensearch_client.describe_domain(DomainName=domain_name)
+        assert "DomainStatus" in response
+        status = response["DomainStatus"]
+        assert "EngineVersion" in status
+        assert status["EngineVersion"] == "OpenSearch_1.0"
 
     # TODO: domain creation as fixture?
     def test_create_indices_and_domains(self, opensearch_client):
