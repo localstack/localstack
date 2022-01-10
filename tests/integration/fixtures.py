@@ -11,6 +11,7 @@ import pytest
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
+from localstack.utils.common import poll_condition
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
 from localstack.utils.testutil import start_http_server
@@ -321,8 +322,17 @@ def opensearch_create_domain(opensearch_client):
             kwargs["DomainName"] = f"test-domain-{short_uid()}"
 
         opensearch_client.create_domain(**kwargs)
-        # TODO make waiting for domain being up more sophisticated
-        time.sleep(60)
+
+        def finished_processing():
+            status = opensearch_client.describe_domain(DomainName=kwargs["DomainName"])[
+                "DomainStatus"
+            ]
+            return status["Processing"] is False
+
+        assert poll_condition(
+            finished_processing, timeout=60
+        ), f"could not start domain: {kwargs['DomainName']}"
+
         domains.append(kwargs["DomainName"])
         return kwargs["DomainName"]
 
