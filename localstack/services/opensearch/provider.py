@@ -1,49 +1,77 @@
 import logging
 import threading
+import time
+from random import randint
 from typing import Dict
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.opensearch import (
+    ARN,
+    AccessPoliciesStatus,
     AdvancedOptions,
+    AdvancedOptionsStatus,
     AdvancedSecurityOptions,
     AdvancedSecurityOptionsInput,
+    AdvancedSecurityOptionsStatus,
+    AutoTuneDesiredState,
+    AutoTuneOptions,
     AutoTuneOptionsInput,
     AutoTuneOptionsOutput,
+    AutoTuneOptionsStatus,
     AutoTuneState,
+    AutoTuneStatus,
     ClusterConfig,
+    ClusterConfigStatus,
     CognitoOptions,
+    CognitoOptionsStatus,
     ColdStorageOptions,
     CreateDomainResponse,
     DeleteDomainResponse,
     DeploymentStatus,
+    DescribeDomainConfigResponse,
     DescribeDomainResponse,
     DescribeDomainsResponse,
+    DomainConfig,
     DomainEndpointOptions,
+    DomainEndpointOptionsStatus,
     DomainInfo,
     DomainName,
     DomainNameList,
     DomainStatus,
     EBSOptions,
+    EBSOptionsStatus,
     EncryptionAtRestOptions,
+    EncryptionAtRestOptionsStatus,
     EngineType,
     GetCompatibleVersionsResponse,
     ListDomainNamesResponse,
+    ListTagsResponse,
     ListVersionsResponse,
     LogPublishingOptions,
+    LogPublishingOptionsStatus,
     MaxResults,
     NextToken,
     NodeToNodeEncryptionOptions,
+    NodeToNodeEncryptionOptionsStatus,
     OpensearchApi,
     OpenSearchPartitionInstanceType,
+    OptionState,
+    OptionStatus,
     PolicyDocument,
     ResourceAlreadyExistsException,
     ResourceNotFoundException,
+    RollbackOnDisable,
     ServiceSoftwareOptions,
     SnapshotOptions,
+    SnapshotOptionsStatus,
+    StringList,
     TagList,
     TLSSecurityPolicy,
+    ValidationException,
+    VersionStatus,
     VersionString,
     VolumeType,
+    VPCDerivedInfoStatus,
     VPCOptions,
 )
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
@@ -151,6 +179,109 @@ class OpenSearchServiceBackend(RegionBackend):
         self.opensearch_domains = {}
 
 
+def get_domain_config(domain_key) -> DomainConfig:
+    status = get_domain_status(domain_key)
+    cluster_cfg = status.get("ClusterConfig") or {}
+    default_cfg = DEFAULT_OPENSEARCH_CLUSTER_CONFIG
+    config_status = get_domain_config_status()
+    return DomainConfig(
+        AccessPolicies=AccessPoliciesStatus(
+            Options=PolicyDocument(""),
+            Status=config_status,
+        ),
+        AdvancedOptions=AdvancedOptionsStatus(
+            Options={
+                "override_main_response_version": "false",
+                "rest.action.multi.allow_explicit_index": "true",
+            },
+            Status=config_status,
+        ),
+        EBSOptions=EBSOptionsStatus(
+            Options=EBSOptions(
+                EBSEnabled=True,
+                VolumeSize=100,
+                VolumeType=VolumeType.gp2,
+            ),
+            Status=config_status,
+        ),
+        ClusterConfig=ClusterConfigStatus(
+            Options=ClusterConfig(
+                DedicatedMasterCount=cluster_cfg.get(
+                    "DedicatedMasterCount", default_cfg["DedicatedMasterCount"]
+                ),
+                DedicatedMasterEnabled=cluster_cfg.get(
+                    "DedicatedMasterEnabled", default_cfg["DedicatedMasterEnabled"]
+                ),
+                DedicatedMasterType=cluster_cfg.get(
+                    "DedicatedMasterType", default_cfg["DedicatedMasterType"]
+                ),
+                InstanceCount=cluster_cfg.get("InstanceCount", default_cfg["InstanceCount"]),
+                InstanceType=cluster_cfg.get("InstanceType", default_cfg["InstanceType"]),
+                ZoneAwarenessEnabled=cluster_cfg.get(
+                    "ZoneAwarenessEnabled", default_cfg["ZoneAwarenessEnabled"]
+                ),
+            ),
+            Status=config_status,
+        ),
+        CognitoOptions=CognitoOptionsStatus(
+            Options=CognitoOptions(Enabled=False), Status=config_status
+        ),
+        EngineVersion=VersionStatus(Options=status.get("EngineVersion"), Status=config_status),
+        EncryptionAtRestOptions=EncryptionAtRestOptionsStatus(
+            Options=EncryptionAtRestOptions(Enabled=False),
+            Status=config_status,
+        ),
+        LogPublishingOptions=LogPublishingOptionsStatus(
+            Options={},
+            Status=config_status,
+        ),
+        SnapshotOptions=SnapshotOptionsStatus(
+            Options=SnapshotOptions(AutomatedSnapshotStartHour=randint(0, 23)),
+            Status=config_status,
+        ),
+        VPCOptions=VPCDerivedInfoStatus(
+            Options={},
+            Status=config_status,
+        ),
+        DomainEndpointOptions=DomainEndpointOptionsStatus(
+            Options=status.get("DomainEndpointOptions", {}),
+            Status=config_status,
+        ),
+        NodeToNodeEncryptionOptions=NodeToNodeEncryptionOptionsStatus(
+            Options=NodeToNodeEncryptionOptions(Enabled=False),
+            Status=config_status,
+        ),
+        AdvancedSecurityOptions=AdvancedSecurityOptionsStatus(
+            Options=status.get("AdvancedSecurityOptions", {}), Status=config_status
+        ),
+        AutoTuneOptions=AutoTuneOptionsStatus(
+            Options=AutoTuneOptions(
+                DesiredState=AutoTuneDesiredState.ENABLED,
+                RollbackOnDisable=RollbackOnDisable.NO_ROLLBACK,
+                MaintenanceSchedules=[],
+            ),
+            Status=AutoTuneStatus(
+                CreationDate=config_status.get("CreationDate"),
+                UpdateDate=config_status.get("UpdateDate"),
+                UpdateVersion=config_status.get("UpdateVersion"),
+                State=AutoTuneState.ENABLED,
+                PendingDeletion=config_status.get("PendingDeletion"),
+            ),
+        ),
+    )
+
+
+def get_domain_config_status() -> OptionStatus:
+    return OptionStatus(
+        # TODO check if the scaffold should be refactored such that it uses a different type than str for timestamps
+        CreationDate="%.3f" % time.time(),
+        PendingDeletion=False,
+        State=OptionState.Active,
+        UpdateDate="%.3f" % time.time(),
+        UpdateVersion=randint(1, 100),
+    )
+
+
 def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
     region = OpenSearchServiceBackend.get(domain_key.region)
     stored_status: DomainStatus = (
@@ -185,6 +316,7 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             WarmEnabled=False,
             ColdStorageOptions=ColdStorageOptions(Enabled=False),
         ),
+        # TODO handle the version properly (make sure it's set correctly if the client requests a specific version)
         EngineVersion=stored_status.get("EngineVersion")
         or f"OpenSearch_{OPENSEARCH_DEFAULT_VERSION}",
         EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10, Iops=0),
@@ -222,6 +354,21 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
     if stored_status.get("Endpoint"):
         new_status["Endpoint"] = new_status.get("Endpoint")
     return new_status
+
+
+def _ensure_domain_exists(arn: ARN) -> None:
+    """
+    Checks if the domain for the given ARN exists. Otherwise, a ValidationException is raised.
+
+    :param arn: ARN string to lookup the domain for
+    :return: None if the domain exists, otherwise raises an exception
+    :raises: ValidationException if the domain for the given ARN cannot be found
+    """
+    domain_key = DomainKey.from_arn(arn)
+    region = OpenSearchServiceBackend.get(domain_key.region)
+    domain_status = region.opensearch_domains.get(domain_key.domain_name)
+    if domain_status is None:
+        raise ValidationException("Invalid ARN. Domain not found.")
 
 
 class OpensearchProvider(OpensearchApi):
@@ -363,3 +510,35 @@ class OpensearchProvider(OpensearchApi):
         # In later iterations, this implementation should handle both engines (OpenSearch and ElasticSearch).
         # In that case, a compatibility matrix would make sense.
         return GetCompatibleVersionsResponse(CompatibleVersions=[])
+
+    def describe_domain_config(
+        self, context: RequestContext, domain_name: DomainName
+    ) -> DescribeDomainConfigResponse:
+        domain_key = DomainKey(
+            domain_name=domain_name,
+            region=context.region,
+            account=context.account_id,
+        )
+        region = OpenSearchServiceBackend.get(domain_key.region)
+        with _domain_mutex:
+            if domain_name not in region.opensearch_domains:
+                raise ResourceNotFoundException(f"Domain not found: {domain_name}")
+            domain_config = get_domain_config(domain_key)
+        return DescribeDomainConfigResponse(DomainConfig=domain_config)
+
+    def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
+        _ensure_domain_exists(arn)
+        OpenSearchServiceBackend.TAGS.tag_resource(arn, tag_list)
+
+    def list_tags(self, context: RequestContext, arn: ARN) -> ListTagsResponse:
+        _ensure_domain_exists(arn)
+
+        # The tagging service returns a dictionary with the given root name
+        tags = OpenSearchServiceBackend.TAGS.list_tags_for_resource(arn=arn, root_name="root")
+        # Extract the actual list of tags for the typed response
+        tag_list: TagList = tags["root"]
+        return ListTagsResponse(TagList=tag_list)
+
+    def remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
+        _ensure_domain_exists(arn)
+        OpenSearchServiceBackend.TAGS.untag_resource(arn, tag_keys)
