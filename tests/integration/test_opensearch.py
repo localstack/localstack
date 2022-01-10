@@ -140,17 +140,16 @@ class TestOpenSearchProvider:
             assert req_result[0]["health"] in ["green", "yellow"]
             assert req_result[0]["index"] in indices
 
-    # TODO needs document and domain fixture
     def test_get_document(self, opensearch_document_path):
         response = requests.get(opensearch_document_path)
         assert (
             "I'm just a simple man" in response.text
         ), f"document not found({response.status_code}): {response.text}"
 
-    # TODO needs document and domain fixture
     def test_search(self, opensearch_url, opensearch_document_path):
         index = "/".join(opensearch_document_path.split("/")[:-1])
         search = {"query": {"match": {"last_name": "Fett"}}}
+        # FIXME doesn't find Boba Fett
         response = requests.get(f"{index}/_search", data=json.dumps(search), headers=COMMON_HEADERS)
 
         assert (
