@@ -801,7 +801,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         lambda_docker_ip = DOCKER_CLIENT.get_container_ip(container_info.name)
 
-        if not self._should_use_stay_open_mode(lambda_docker_ip, check_port=True):
+        if not self._should_use_stay_open_mode(lambda_function, lambda_docker_ip, check_port=True):
             LOG.debug("Using 'docker exec' to run invocation in docker-reuse Lambda container")
             # disable stay open mode for this one, to prevent starting runtime API server
             env_vars["DOCKER_LAMBDA_STAY_OPEN"] = None
@@ -849,10 +849,17 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         return InvocationResult(result, log_output)
 
     def _should_use_stay_open_mode(
-        self, lambda_docker_ip: Optional[str], check_port: bool = False
+        self,
+        lambda_function: LambdaFunction,
+        lambda_docker_ip: Optional[str] = None,
+        check_port: bool = False,
     ) -> bool:
         """Return whether to use stay-open execution mode - if we're running in Docker, the given IP
         is defined, and if the target API endpoint is available (optionally, if check_port is True)."""
+        if not lambda_docker_ip:
+            func_arn = lambda_function.arn()
+            container_name = self.get_container_name(func_arn)
+            lambda_docker_ip = DOCKER_CLIENT.get_container_ip(container_name_or_id=container_name)
         should_use = lambda_docker_ip and config.LAMBDA_STAY_OPEN_MODE
         if not should_use or not check_port:
             return should_use
@@ -925,7 +932,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                         return
                     # if we're executing in Docker using stay-open mode, additionally check if the target is available
                     lambda_docker_ip = DOCKER_CLIENT.get_container_ip(container_name)
-                    if self._should_use_stay_open_mode(lambda_docker_ip):
+                    if self._should_use_stay_open_mode(lambda_function, lambda_docker_ip):
                         full_url = self._get_lambda_stay_open_url(lambda_docker_ip)
                         wait_for_port_open(full_url, sleep_time=0.5, retries=8)
 
