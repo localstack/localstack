@@ -359,4 +359,4 @@ class OpensearchProvider(OpensearchApi):
         # Since there is only a single version of opensearch supported yet (1.0), there is no compatibility matrix.
         # In later iterations, this implementation should handle both engines (OpenSearch and ElasticSearch).
         # In that case, a compatibility matrix would make sense.
-        return GetCompatibleVersionsResponse()
+        return GetCompatibleVersionsResponse(CompatibleVersions=[])

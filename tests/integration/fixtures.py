@@ -308,6 +308,33 @@ def kms_grant_and_key(kms_client, kms_key):
     ]
 
 
+@pytest.fixture
+def opensearch_create_domain(opensearch_client):
+    domains = []
+
+    def factory(**kwargs) -> str:
+        if "DomainName" not in kwargs:
+            kwargs["DomainName"] = f"test-domain-{short_uid()}"
+
+        opensearch_client.create_domain(**kwargs)
+        domains.append(kwargs["DomainName"])
+        return kwargs["DomainName"]
+
+    yield factory
+
+    # cleanup
+    for domain in domains:
+        try:
+            opensearch_client.delete_domain(DomainName=domain)
+        except Exception as e:
+            LOG.debug("error cleaning up domain %s: %s", domain, e)
+
+
+@pytest.fixture
+def opensearch_domain(opensearch_create_domain) -> str:
+    return opensearch_create_domain()
+
+
 # Cleanup fixtures
 @pytest.fixture
 def cleanup_stacks(cfn_client):
