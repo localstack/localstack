@@ -1011,6 +1011,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             dns=container_config.dns,
             mount_volumes=container_config.volumes,
             additional_flags=container_config.additional_flags,
+            workdir=container_config.workdir,
+            user=container_config.user,
+            cap_add=container_config.cap_add,
         )
         if config.LAMBDA_REMOTE_DOCKER and container_config.required_files:
             for source, target in container_config.required_files:
