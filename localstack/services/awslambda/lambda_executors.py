@@ -964,14 +964,15 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         container_config.dns = config.LAMBDA_DOCKER_DNS
 
-        if config.LAMBDA_REMOTE_DOCKER:
-            container_config.required_files.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
-        else:
-            lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
-            # TODO not necessary after Windows 10. Should be deprecated and removed in the future
-            if ":" in lambda_cwd and "\\" in lambda_cwd:
-                lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
-            container_config.required_files.append((lambda_cwd_on_host, DOCKER_TASK_FOLDER))
+        if lambda_cwd:
+            if config.LAMBDA_REMOTE_DOCKER:
+                container_config.required_files.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
+            else:
+                lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
+                # TODO not necessary after Windows 10. Should be deprecated and removed in the future
+                if ":" in lambda_cwd and "\\" in lambda_cwd:
+                    lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
+                container_config.required_files.append((lambda_cwd_on_host, DOCKER_TASK_FOLDER))
 
         container_config.entrypoint = "/bin/bash"
         container_config.interactive = True
@@ -1205,7 +1206,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         hooks.on_docker_separate_execution.run(lambda_function, container_config)
 
         # actual execution
-        # TODO make docker client directly accept ContainerConfiguration (?)
+        # TODO make container client directly accept ContainerConfiguration (?)
         if not config.LAMBDA_REMOTE_DOCKER and container_config.required_files:
             container_config.volumes = container_config.volumes or []
             container_config.volumes += container_config.required_files
