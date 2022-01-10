@@ -1,6 +1,5 @@
 import logging
 from typing import Any, Optional
-
 from urllib.parse import urlsplit
 
 from botocore.model import ServiceModel
