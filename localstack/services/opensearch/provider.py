@@ -54,7 +54,7 @@ from localstack.services.opensearch.cluster_manager import (
     DomainKey,
     create_cluster_manager,
 )
-from localstack.utils import analytics
+from localstack.utils.analytics import event_publisher
 from localstack.utils.common import synchronized
 from localstack.utils.serving import Server
 from localstack.utils.tagging import TaggingService
@@ -78,9 +78,6 @@ DEFAULT_OPENSEARCH_CLUSTER_CONFIG = ClusterConfig(
 
 # cluster manager singleton
 _cluster_manager = None
-
-EVENT_CREATE_DOMAIN = "os.cd"
-EVENT_DELETE_DOMAIN = "os.dd"
 
 
 @synchronized(_domain_mutex)
@@ -269,8 +266,11 @@ class OpensearchProvider(OpensearchApi):
             # get the (updated) status
             status = get_domain_status(domain_key)
 
-        # TODO: hash domain name?
-        analytics.log.event(EVENT_CREATE_DOMAIN, payload={"n": domain_name})
+        # record event
+        event_publisher.fire_event(
+            event_publisher.EVENT_OPENSEARCH_CREATE_DOMAIN,
+            payload={"n": event_publisher.get_hash(domain_name)},
+        )
 
         return CreateDomainResponse(DomainStatus=status)
 
@@ -291,8 +291,11 @@ class OpensearchProvider(OpensearchApi):
             del region.opensearch_domains[domain_name]
             _remove_cluster(domain_key)
 
-        # TODO publish event
-        analytics.log.event(EVENT_DELETE_DOMAIN, payload={"n": domain_name})
+        # record event
+        event_publisher.fire_event(
+            event_publisher.EVENT_OPENSEARCH_DELETE_DOMAIN,
+            payload={"n": event_publisher.get_hash(domain_name)},
+        )
 
         return DeleteDomainResponse(DomainStatus=status)
 
