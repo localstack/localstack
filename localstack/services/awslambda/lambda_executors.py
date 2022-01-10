@@ -1,5 +1,6 @@
 import base64
 import contextlib
+import dataclasses
 import glob
 import json
 import logging
@@ -55,7 +56,6 @@ from localstack.utils.common import (
     safe_requests,
     save_file,
     short_uid,
-    start_worker_thread,
     timestamp,
     to_bytes,
     to_str,
@@ -542,6 +542,12 @@ class ContainerInfo:
         self.entry_point = entry_point
 
 
+@dataclasses.dataclass
+class LambdaContainerConfiguration(ContainerConfiguration):
+    # Files required present in the container for lambda execution
+    required_files: List[Tuple[str, str]] = dataclasses.field(default_factory=list)
+
+
 class LambdaExecutorContainers(LambdaExecutor):
     """Abstract executor class for executing Lambda functions in Docker containers"""
 
@@ -946,7 +952,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         docker_flags: str = None,
     ):
         docker_image = Util.docker_image_for_lambda(lambda_function)
-        container_config = ContainerConfiguration(image_name=docker_image)
+        container_config = LambdaContainerConfiguration(image_name=docker_image)
         container_config.name = self.get_container_name(lambda_function.arn())
 
         # make sure AWS_LAMBDA_EVENT_BODY is not set (otherwise causes issues with "docker exec ..." above)
@@ -958,15 +964,14 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         container_config.dns = config.LAMBDA_DOCKER_DNS
 
-        transfer_list = []
         if config.LAMBDA_REMOTE_DOCKER:
-            transfer_list.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
+            container_config.required_files.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
         else:
             lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
             # TODO not necessary after Windows 10. Should be deprecated and removed in the future
             if ":" in lambda_cwd and "\\" in lambda_cwd:
                 lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
-            transfer_list.append((lambda_cwd_on_host, DOCKER_TASK_FOLDER))
+            container_config.required_files.append((lambda_cwd_on_host, DOCKER_TASK_FOLDER))
 
         container_config.entrypoint = "/bin/bash"
         container_config.interactive = True
@@ -983,10 +988,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         container_config.remove = True
         container_config.detach = True
 
-        # hooks.on_docker_separate_execution(lambda_function, [], container_config)
+        hooks.on_docker_reuse_container_creation.run(lambda_function, container_config)
 
-        if not config.LAMBDA_REMOTE_DOCKER and transfer_list:
-            container_config.volumes = transfer_list
+        if not config.LAMBDA_REMOTE_DOCKER and container_config.required_files:
+            container_config.volumes = container_config.required_files
 
         LOG.debug(
             "Creating docker-reuse Lambda container %s from image %s",
@@ -1007,8 +1012,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             mount_volumes=container_config.volumes,
             additional_flags=container_config.additional_flags,
         )
-        if config.LAMBDA_REMOTE_DOCKER and transfer_list:
-            for source, target in transfer_list:
+        if config.LAMBDA_REMOTE_DOCKER and container_config.required_files:
+            for source, target in container_config.required_files:
                 LOG.debug('Copying "%s" to "%s:%s".', source, container_config.name, target)
                 DOCKER_CLIENT.copy_into_container(container_config.name, source, target)
         return container_id
@@ -1159,7 +1164,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         background=False,
     ) -> Tuple[bytes, bytes]:
         docker_image = Util.docker_image_for_lambda(lambda_function)
-        container_config = ContainerConfiguration(image_name=docker_image)
+        container_config = LambdaContainerConfiguration(image_name=docker_image)
 
         container_config.env_vars = inv_context.environment
         if inv_context.lambda_command:
@@ -1184,79 +1189,49 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         container_config.interactive = True
         container_config.detach = background
 
-        transfer_paths = []
-
         lambda_cwd = lambda_function.cwd
         if lambda_cwd:
             if config.LAMBDA_REMOTE_DOCKER:
-                transfer_paths.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
+                container_config.required_files.append((f"{lambda_cwd}/.", DOCKER_TASK_FOLDER))
             else:
-                transfer_paths.append(
+                container_config.required_files.append(
                     (Util.get_host_path_for_path_in_docker(lambda_cwd), DOCKER_TASK_FOLDER)
                 )
 
         # running hooks to modify execution parameters
-        hooks.on_docker_separate_execution.run(lambda_function, transfer_paths, container_config)
+        hooks.on_docker_separate_execution.run(lambda_function, container_config)
 
         # actual execution
         # TODO make docker client directly accept ContainerConfiguration (?)
-        # TODO refactor so only create/start is used instead of run
+        if not config.LAMBDA_REMOTE_DOCKER and container_config.required_files:
+            container_config.volumes = container_config.volumes or []
+            container_config.volumes += container_config.required_files
+
+        container_id = DOCKER_CLIENT.create_container(
+            image_name=container_config.image_name,
+            interactive=container_config.interactive,
+            entrypoint=container_config.entrypoint,
+            remove=container_config.remove,
+            network=container_config.network,
+            env_vars=container_config.env_vars,
+            dns=container_config.dns,
+            additional_flags=container_config.additional_flags,
+            ports=container_config.ports,
+            command=container_config.command,
+            mount_volumes=container_config.volumes,
+            workdir=container_config.workdir,
+            user=container_config.user,
+            cap_add=container_config.cap_add,
+        )
         if config.LAMBDA_REMOTE_DOCKER:
-            container_id = DOCKER_CLIENT.create_container(
-                image_name=container_config.image_name,
-                interactive=container_config.interactive,
-                entrypoint=container_config.entrypoint,
-                remove=container_config.remove,
-                network=container_config.network,
-                env_vars=container_config.env_vars,
-                dns=container_config.dns,
-                additional_flags=container_config.additional_flags,
-                ports=container_config.ports,
-                command=container_config.command,
-                workdir=container_config.workdir,
-                user=container_config.user,
-                cap_add=container_config.cap_add,
-            )
-            for source, target in transfer_paths:
+            for source, target in container_config.required_files:
                 DOCKER_CLIENT.copy_into_container(container_id, source, target)
-            return DOCKER_CLIENT.start_container(
-                container_id,
-                interactive=not container_config.detach,
-                attach=not container_config.detach,
-                stdin=stdin,
-            )
-        else:
-            if transfer_paths:
-                container_config.volumes = container_config.volumes or []
-                container_config.volumes += transfer_paths
-
-            def _run(container_name=None, *args):
-                return DOCKER_CLIENT.run_container(
-                    image_name=container_config.image_name,
-                    name=container_name,
-                    interactive=container_config.interactive,
-                    detach=container_config.detach,
-                    entrypoint=container_config.entrypoint,
-                    remove=container_config.remove,
-                    network=container_config.network,
-                    env_vars=container_config.env_vars,
-                    dns=container_config.dns,
-                    additional_flags=container_config.additional_flags,
-                    command=container_config.command,
-                    mount_volumes=container_config.volumes,
-                    workdir=container_config.workdir,
-                    user=container_config.user,
-                    cap_add=container_config.cap_add,
-                    stdin=stdin,
-                )
-
-            # TODO: workaround until we can get container ID from run_container(.., interactive=True, detach=True)
-            if background:
-                container_name = short_uid() if background else None
-                start_worker_thread(_run, container_name)
-                result_out = to_bytes(f"\n{container_name}")
-                return result_out, b""
-            return _run()
+        return DOCKER_CLIENT.start_container(
+            container_id,
+            interactive=not container_config.detach,
+            attach=not container_config.detach,
+            stdin=stdin,
+        )
 
 
 class LambdaExecutorLocal(LambdaExecutor):
