@@ -613,7 +613,7 @@ async def message_to_subscriber(
             sns_error_to_dead_letter_queue(subscriber["SubscriptionArn"], req_data, str(exc))
         return
 
-    elif subscriber["Protocol"] == "email":
+    elif subscriber["Protocol"] in ["email", "email-json"]:
         ses_client = aws_stack.connect_to_service("ses")
         if subscriber.get("Endpoint"):
             ses_client.verify_email_address(EmailAddress=subscriber.get("Endpoint"))
@@ -622,7 +622,15 @@ async def message_to_subscriber(
             ses_client.send_email(
                 Source="admin@localstack.com",
                 Message={
-                    "Body": {"Text": {"Data": message}},
+                    "Body": {
+                        "Text": {
+                            "Data": create_sns_message_body(
+                                subscriber=subscriber, req_data=req_data, message_id=message_id
+                            )
+                            if subscriber["Protocol"] == "email-json"
+                            else message
+                        }
+                    },
                     "Subject": {"Data": "SNS-Subscriber-Endpoint"},
                 },
                 Destination={"ToAddresses": [subscriber.get("Endpoint")]},
