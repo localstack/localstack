@@ -124,12 +124,12 @@ def test_domain_version(opensearch_client, opensearch_domain, opensearch_create_
     assert status["EngineVersion"] == "OpenSearch_1.0"
 
 
-def test_create_indices(opensearch_url):
+def test_create_indices(opensearch_endpoint):
     indices = ["index1", "index2"]
     for index_name in indices:
-        index_path = f"{opensearch_url}/{index_name}"
+        index_path = f"{opensearch_endpoint}/{index_name}"
         requests.put(index_path, headers=COMMON_HEADERS)
-        endpoint = f"{opensearch_url}/_cat/indices/{index_name}?format=json&pretty"
+        endpoint = f"{opensearch_endpoint}/_cat/indices/{index_name}?format=json&pretty"
         req = requests.get(endpoint)
         assert req.status_code == 200
         req_result = json.loads(req.text)
@@ -144,10 +144,10 @@ def test_get_document(opensearch_document_path):
     ), f"document not found({response.status_code}): {response.text}"
 
 
-def test_search(opensearch_url, opensearch_document_path):
+def test_search(opensearch_endpoint, opensearch_document_path):
     index = "/".join(opensearch_document_path.split("/")[:-2])
     # force the refresh of the index after the document was added, so it can appear in search
-    response = requests.post(f"{opensearch_url}/_refresh", headers=COMMON_HEADERS)
+    response = requests.post(f"{opensearch_endpoint}/_refresh", headers=COMMON_HEADERS)
     assert response.ok
 
     search = {"query": {"match": {"last_name": "Fett"}}}

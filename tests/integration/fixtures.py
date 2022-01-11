@@ -350,12 +350,14 @@ def opensearch_domain(opensearch_create_domain) -> str:
 
 
 @pytest.fixture
-def opensearch_url(opensearch_domain) -> str:
-    return f"http://{opensearch_domain}.us-east-1.opensearch.localhost.localstack.cloud:4566"
+def opensearch_endpoint(opensearch_client, opensearch_domain) -> str:
+    status = opensearch_client.describe_domain(DomainName=opensearch_domain)["DomainStatus"]
+    assert "Endpoint" in status
+    return f"https://{status['Endpoint']}"
 
 
 @pytest.fixture
-def opensearch_document_path(opensearch_client, opensearch_url):
+def opensearch_document_path(opensearch_client, opensearch_endpoint):
     document = {
         "first_name": "Boba",
         "last_name": "Fett",
@@ -363,7 +365,7 @@ def opensearch_document_path(opensearch_client, opensearch_url):
         "about": "I'm just a simple man, trying to make my way in the universe.",
         "interests": ["mandalorian armor", "tusken culture"],
     }
-    document_path = f"{opensearch_url}/bounty/hunters/1"
+    document_path = f"{opensearch_endpoint}/bounty/hunters/1"
     response = requests.put(
         document_path,
         data=json.dumps(document),

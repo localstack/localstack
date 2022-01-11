@@ -317,6 +317,7 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
         ),
         EngineVersion=stored_status.get("EngineVersion")
         or f"OpenSearch_{OPENSEARCH_DEFAULT_VERSION}",
+        Endpoint=stored_status.get("Endpoint", None),
         EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10, Iops=0),
         CognitoOptions=CognitoOptions(Enabled=False),
         UpgradeProcessing=False,
