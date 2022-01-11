@@ -116,13 +116,19 @@ class Directories:
             or "/var/lib/localstack/var_libs"
         )
         cache = os.environ.get("CONTAINER_CACHE_FOLDER", "").strip() or "/var/lib/localstack/cache"
+        tmp = (
+            os.environ.get("CONTAINER_TMP_FOLDER", "").strip() or "/tmp/localstack"
+        )  # TODO: discuss movement to /var/lib/localstack/tmp
+        data_dir = os.environ.get("CONTAINER_DATA_DIR_FOLDER", "").strip() or (
+            DATA_DIR if in_docker() else "/tmp/localstack_data"
+        )  # TODO: move to /var/lib/localstack/data
         return Directories(
             static_libs=INSTALL_DIR_INFRA,
             var_libs=var_libs,
             cache=cache,
-            tmp=TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp - or /tmp/localstack
+            tmp=tmp,
             functions=HOST_TMP_FOLDER,  # TODO: move to /var/lib/localstack/tmp
-            data=DATA_DIR,  # TODO: move to /var/lib/localstack/data
+            data=data_dir,
             config=None,  # config directory is host-only
             logs="/var/lib/localstack/logs",
             init="/docker-entrypoint-initaws.d",
