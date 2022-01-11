@@ -268,8 +268,6 @@ class ProxiedOpensearchCluster(Server):
             self.cluster_port,
             update_listener=None,
             quiet=True,
-            # TODO: check if protocol_version still needed - doesn't seem to be used in start_proxy_server(..)
-            params={"protocol_version": "HTTP/1.0"},
         )
 
     def do_shutdown(self):
