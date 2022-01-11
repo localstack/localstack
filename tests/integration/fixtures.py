@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import time
 from typing import TYPE_CHECKING, List
 
 import boto3
@@ -312,7 +311,6 @@ def kms_grant_and_key(kms_client, kms_key):
     ]
 
 
-# TODO wait for domain being up
 @pytest.fixture
 def opensearch_create_domain(opensearch_client):
     domains = []
