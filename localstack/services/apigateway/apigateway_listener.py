@@ -948,8 +948,12 @@ def get_stage_variables(api_id: str, stage: str) -> Dict[str, str]:
         return {}
     region_name = [name for name, region in apigateway_backends.items() if api_id in region.apis][0]
     api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
-    response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
-    return response.get("variables")
+    try:
+        response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
+        return response.get("variables")
+    except Exception:
+        LOG.info(f"Failed to get stage {stage} for api id {api_id}")
+        return {}
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):

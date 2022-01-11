@@ -972,7 +972,9 @@ def get_resource_for_path(path: str, path_map: Dict[str, Dict]) -> Optional[Tupl
         for match in matches:
             if match[0] == path:
                 return match
-            # not an exact match but parameters can fit in
+
+        # not an exact match but parameters can fit in
+        for match in matches:
             if path_matches_pattern(path, match[0]):
                 return match
 
