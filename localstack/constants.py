@@ -118,7 +118,7 @@ ELASTICSEARCH_PLUGIN_LIST = [
 ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 
 # the version of opensearch which is used by default
-OPENSEARCH_DEFAULT_VERSION = "1.2.2"
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_1.1"
 
 ELASTICMQ_JAR_URL = (
     "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar"

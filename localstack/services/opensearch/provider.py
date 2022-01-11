@@ -139,6 +139,7 @@ def _create_cluster(
     region = OpenSearchServiceBackend.get(domain_key.region)
 
     manager = cluster_manager()
+    engine_version = engine_version or OPENSEARCH_DEFAULT_VERSION
     cluster = manager.create(domain_key.arn, engine_version, domain_endpoint_options)
 
     region.opensearch_clusters[domain_key.domain_name] = cluster
@@ -315,8 +316,7 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             WarmEnabled=False,
             ColdStorageOptions=ColdStorageOptions(Enabled=False),
         ),
-        EngineVersion=stored_status.get("EngineVersion")
-        or f"OpenSearch_{OPENSEARCH_DEFAULT_VERSION}",
+        EngineVersion=stored_status.get("EngineVersion") or OPENSEARCH_DEFAULT_VERSION,
         Endpoint=stored_status.get("Endpoint", None),
         EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10, Iops=0),
         CognitoOptions=CognitoOptions(Enabled=False),
@@ -496,18 +496,29 @@ class OpensearchProvider(OpensearchApi):
         # Therefore this function only returns the OpenSearch version(s).
         # In later iterations, this implementation should handle both engines (OpenSearch and ElasticSearch).
         # Then the response would also contain ElasticSearch versions.
-        return ListVersionsResponse(
-            Versions=[f"OpenSearch_{version}" for version in versions.install_versions.keys()]
-        )
+        return ListVersionsResponse(Versions=list(versions.install_versions.keys()))
 
     def get_compatible_versions(
         self, context: RequestContext, domain_name: DomainName = None
     ) -> GetCompatibleVersionsResponse:
         # TODO this implementation currently only handles the OpenSearch engine.
-        # Since there is only a single version of opensearch supported yet (1.0), there is no compatibility matrix.
         # In later iterations, this implementation should handle both engines (OpenSearch and ElasticSearch).
-        # In that case, a compatibility matrix would make sense.
-        return GetCompatibleVersionsResponse(CompatibleVersions=[])
+        version_filter = None
+        if domain_name:
+            region = OpenSearchServiceBackend.get(context.region)
+            with _domain_mutex:
+                domain = region.opensearch_domains.get(domain_name)
+                if not domain:
+                    raise ResourceNotFoundException(f"Domain not found: {domain_name}")
+                version_filter = domain.get("EngineVersion")
+        compatible_versions = list(versions.compatible_versions)
+        if version_filter is not None:
+            compatible_versions = [
+                comp
+                for comp in versions.compatible_versions
+                if comp["SourceVersion"] == version_filter
+            ]
+        return GetCompatibleVersionsResponse(CompatibleVersions=compatible_versions)
 
     def describe_domain_config(
         self, context: RequestContext, domain_name: DomainName

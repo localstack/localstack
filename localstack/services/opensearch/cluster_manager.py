@@ -7,7 +7,6 @@ from botocore.utils import ArnParser
 
 from localstack import config, constants
 from localstack.aws.api.opensearch import DomainEndpointOptions
-from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
@@ -129,9 +128,7 @@ class ClusterManager:
         self.clusters = dict()
 
     def create(self, arn: str, version: str, endpoint_options) -> Server:
-        if version is not None and version.startswith("OpenSearch_"):
-            version = version[len("OpenSearch_") :]
-        version = versions.get_install_version(version or OPENSEARCH_DEFAULT_VERSION)
+        version = versions.get_install_version(version)
 
         # determine custom domain endpoint
         custom_endpoint = determine_custom_endpoint(endpoint_options)

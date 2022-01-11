@@ -32,9 +32,12 @@ def install_async():
         with INIT_LOCK:
             if installed.is_set():
                 return
-            LOG.info("installing opensearch")
+            LOG.info("installing opensearch default version")
             install_opensearch()
-            LOG.info("done installing opensearch")
+            LOG.info("done installing opensearch default version")
+            LOG.info("installing opensearch 1.0")
+            install_opensearch("OpenSearch_1.0")
+            LOG.info("done installing opensearch 1.0")
             installed.set()
 
     start_worker_thread(run_install)
@@ -67,12 +70,10 @@ def test_list_versions(opensearch_client):
     response = opensearch_client.list_versions()
 
     assert "Versions" in response
-
     versions = response["Versions"]
-    print(versions)
 
     assert "OpenSearch_1.0" in versions
-    assert "OpenSearch_1.2" in versions
+    assert "OpenSearch_1.1" in versions
 
 
 def test_get_compatible_versions(opensearch_client):
@@ -83,6 +84,15 @@ def test_get_compatible_versions(opensearch_client):
     versions = response["CompatibleVersions"]
 
     # TODO in later iterations this should check for ElasticSearch compatibility
+    assert len(versions) == 1
+    assert versions == [{"SourceVersion": "OpenSearch_1.0", "TargetVersions": ["OpenSearch_1.1"]}]
+
+
+def test_get_compatible_version_for_domain(opensearch_client, opensearch_domain):
+    response = opensearch_client.get_compatible_versions(DomainName=opensearch_domain)
+    assert "CompatibleVersions" in response
+    versions = response["CompatibleVersions"]
+    # The default version is the latest version, which is not compatible with any previous versions
     assert len(versions) == 0
 
 
@@ -115,7 +125,7 @@ def test_domain_version(opensearch_client, opensearch_domain, opensearch_create_
     assert "DomainStatus" in response
     status = response["DomainStatus"]
     assert "EngineVersion" in status
-    assert status["EngineVersion"] == f"OpenSearch_{OPENSEARCH_DEFAULT_VERSION}"
+    assert status["EngineVersion"] == OPENSEARCH_DEFAULT_VERSION
     domain_name = opensearch_create_domain(EngineVersion="OpenSearch_1.0")
     response = opensearch_client.describe_domain(DomainName=domain_name)
     assert "DomainStatus" in response

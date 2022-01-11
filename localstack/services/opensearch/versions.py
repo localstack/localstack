@@ -9,23 +9,34 @@ from typing import Dict
 
 import semver
 
+from localstack.aws.api.opensearch import CompatibleVersionsMap
 from localstack.utils.common import get_arch
 
-install_versions = {"1.0": "1.0.0", "1.1": "1.1.0", "1.2": "1.2.2"}
+# Internal representation of the versions (without the "OpenSearch_" prefix)
+_install_versions = {"1.0": "1.0.0", "1.1": "1.1.0"}
+# External representation fo the versions
+install_versions = {
+    f"OpenSearch_{key}": f"OpenSearch_{value}" for key, value in _install_versions.items()
+}
+compatible_versions = [
+    CompatibleVersionsMap(SourceVersion="OpenSearch_1.0", TargetVersions=["OpenSearch_1.1"])
+]
 
 
 def get_install_version(version: str) -> str:
     try:
+        if version is not None and version.startswith("OpenSearch_"):
+            version = version[len("OpenSearch_") :]
         ver = semver.VersionInfo.parse(version)
         k = f"{ver.major}.{ver.minor}"
     except ValueError:
         ver = version.split(".")
         k = f"{ver[0]}.{ver[1]}"
 
-    if k not in install_versions:
+    if k not in _install_versions:
         raise ValueError("unknown version %s" % version)
 
-    return install_versions[k]
+    return _install_versions[k]
 
 
 def get_download_url(version: str) -> str:
@@ -51,6 +62,8 @@ def fetch_latest_versions() -> Dict[str, str]:  # pragma: no cover
             '1.2': '1.2.2'
         }
 
+    When updating the versions, make sure to not add versions which are currently not yet supported by AWS.
+
     :returns: a version dictionary
     """
     from collections import defaultdict
@@ -70,17 +83,19 @@ def fetch_latest_versions() -> Dict[str, str]:  # pragma: no cover
             break
         versions.extend([tag["name"].lstrip("v") for tag in tags])
 
-    sem_version = []
+    sem_versions = []
 
     for v in versions:
         try:
-            sem_version.append(semver.VersionInfo.parse(v))
+            sem_version = semver.VersionInfo.parse(v)
+            if not sem_version.prerelease:
+                sem_versions.append(sem_version)
         except ValueError:
             pass
 
     minor = defaultdict(list)
 
-    for ver in sem_version:
+    for ver in sem_versions:
         minor[f"{ver.major}.{ver.minor}"].append(ver)
 
     return {k: str(max(versions)) for k, versions in minor.items()}
