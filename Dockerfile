@@ -19,6 +19,8 @@ jdk.unsupported,\
 jdk.crypto.cryptoki,\
 # add ability to open ZIP/JAR files
 jdk.zipfs,\
+# OpenSearch needs some jdk modules
+jdk.httpserver,jdk.management,\
 # Elasticsearch 7+ crashes without Thai Segmentation support
 jdk.localedata --include-locales en,th \
     --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \
