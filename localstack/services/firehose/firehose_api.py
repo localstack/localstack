@@ -110,7 +110,7 @@ def preprocess_records(processor: Dict, records: List[Dict]) -> List[Dict]:
         response = client.invoke(FunctionName=lambda_arn, Payload=event)
         result = response.get("Payload").read()
         result = json.loads(to_str(result))
-        records = result.get("records", [])
+        records = result.get("records", []) if result else []
     else:
         LOG.warning("Unsupported Firehose processor type '%s'", proc_type)
     return records
