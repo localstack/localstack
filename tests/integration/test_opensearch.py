@@ -1,7 +1,6 @@
 import json
 import logging
 import threading
-import time
 
 import botocore.exceptions
 import pytest
@@ -146,14 +145,13 @@ def test_get_document(opensearch_document_path):
 
 
 def test_search(opensearch_url, opensearch_document_path):
-    # TODO make this more reactive?
-    # wait for index to be created
-    time.sleep(1)
-    index = "/".join(opensearch_document_path.split("/")[:-1])
+    index = "/".join(opensearch_document_path.split("/")[:-2])
+    # force the refresh of the index after the document was added, so it can appear in search
+    response = requests.post(f"{opensearch_url}/_refresh", headers=COMMON_HEADERS)
+    assert response.ok
+
     search = {"query": {"match": {"last_name": "Fett"}}}
-    response = requests.get(
-        f"{index}/_search?pretty", data=json.dumps(search), headers=COMMON_HEADERS
-    )
+    response = requests.get(f"{index}/_search", data=json.dumps(search), headers=COMMON_HEADERS)
 
     assert (
         "I'm just a simple man" in response.text
