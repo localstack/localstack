@@ -117,8 +117,6 @@ def test_domain_version(opensearch_client, opensearch_domain, opensearch_create_
     status = response["DomainStatus"]
     assert "EngineVersion" in status
     assert status["EngineVersion"] == f"OpenSearch_{OPENSEARCH_DEFAULT_VERSION}"
-
-    # FIXME can't create second domain. always `ResourceAlreadyExistsException`
     domain_name = opensearch_create_domain(EngineVersion="OpenSearch_1.0")
     response = opensearch_client.describe_domain(DomainName=domain_name)
     assert "DomainStatus" in response

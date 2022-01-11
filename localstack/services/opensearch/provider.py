@@ -313,7 +313,6 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             ZoneAwarenessEnabled=cluster_cfg.get(
                 "ZoneAwarenessEnabled", default_cfg["ZoneAwarenessEnabled"]
             ),
-            # TODO check if these two should be handled (they aren't handled in our elasticsearch implementation)
             WarmEnabled=False,
             ColdStorageOptions=ColdStorageOptions(Enabled=False),
         ),
@@ -321,7 +320,6 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
         or f"OpenSearch_{OPENSEARCH_DEFAULT_VERSION}",
         EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10, Iops=0),
         CognitoOptions=CognitoOptions(Enabled=False),
-        # TODO check if the values below should be handled (they aren't handled in our elasticsearch implementation)
         UpgradeProcessing=False,
         AccessPolicies="",
         SnapshotOptions=SnapshotOptions(AutomatedSnapshotStartHour=0),
