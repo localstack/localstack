@@ -1,6 +1,6 @@
 import logging
 import threading
-import time
+from datetime import datetime
 from random import randint
 from typing import Dict
 
@@ -274,11 +274,10 @@ def get_domain_config(domain_key) -> DomainConfig:
 
 def get_domain_config_status() -> OptionStatus:
     return OptionStatus(
-        # TODO check if the scaffold should be refactored such that it uses a different type than str for timestamps
-        CreationDate="%.3f" % time.time(),
+        CreationDate=datetime.now(),
         PendingDeletion=False,
         State=OptionState.Active,
-        UpdateDate="%.3f" % time.time(),
+        UpdateDate=datetime.now(),
         UpdateVersion=randint(1, 100),
     )
 
@@ -336,7 +335,7 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             Cancellable=False,
             UpdateStatus=DeploymentStatus.COMPLETED,
             Description="There is no software update available for this domain.",
-            AutomatedUpdateDate="0.0",
+            AutomatedUpdateDate=datetime.fromtimestamp(0),
             OptionalDeployment=True,
         ),
         DomainEndpointOptions=DomainEndpointOptions(

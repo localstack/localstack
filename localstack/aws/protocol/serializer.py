@@ -76,7 +76,6 @@ not work out-of-the-box.
 """
 import abc
 import base64
-import calendar
 from abc import ABC
 from datetime import datetime
 from email.utils import formatdate
@@ -226,8 +225,8 @@ class ResponseSerializer(abc.ABC):
         return value.strftime(timestamp_format)
 
     @staticmethod
-    def _timestamp_unixtimestamp(value: datetime) -> int:
-        return int(calendar.timegm(value.timetuple()))
+    def _timestamp_unixtimestamp(value: datetime) -> float:
+        return round(value.timestamp(), 3)
 
     def _timestamp_rfc822(self, value: datetime) -> str:
         if isinstance(value, datetime):
