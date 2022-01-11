@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
 from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
-from localstack.runtime import hooks
+from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
     API_PATH_ROOT,
     LAMBDA_RUNTIME_PROVIDED,
@@ -107,6 +107,15 @@ DOCKER_TASK_FOLDER = "/var/task"
 
 # Lambda event type
 LambdaEvent = Union[Dict[str, Any], str, bytes]
+
+# Hook definitions
+HOOKS_ON_LAMBDA_DOCKER_SEPARATE_EXECUTION = "localstack.hooks.on_docker_separate_execution"
+HOOKS_ON_LAMBDA_DOCKER_REUSE_CONTAINER_CREATION = (
+    "localstack.hooks.on_docker_reuse_container_creation"
+)
+
+on_docker_separate_execution = hook_spec(HOOKS_ON_LAMBDA_DOCKER_SEPARATE_EXECUTION)
+on_docker_reuse_container_creation = hook_spec(HOOKS_ON_LAMBDA_DOCKER_REUSE_CONTAINER_CREATION)
 
 
 class InvocationException(Exception):
@@ -996,7 +1005,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         container_config.remove = True
         container_config.detach = True
 
-        hooks.on_docker_reuse_container_creation.run(lambda_function, container_config)
+        on_docker_reuse_container_creation.run(lambda_function, container_config)
 
         if not config.LAMBDA_REMOTE_DOCKER and container_config.required_files:
             container_config.volumes = container_config.required_files
@@ -1210,7 +1219,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 )
 
         # running hooks to modify execution parameters
-        hooks.on_docker_separate_execution.run(lambda_function, container_config)
+        on_docker_separate_execution.run(lambda_function, container_config)
 
         # actual execution
         # TODO make container client directly accept ContainerConfiguration (?)

@@ -12,12 +12,12 @@ import time
 import traceback
 import uuid
 from datetime import datetime
+from io import StringIO
 from threading import BoundedSemaphore
 from typing import Any, Dict, List, Optional, Tuple, Type
+from urllib.parse import urlparse
 
 from flask import Flask, Response, jsonify, request
-from six.moves import cStringIO as StringIO
-from six.moves.urllib.parse import urlparse
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
