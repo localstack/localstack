@@ -147,6 +147,7 @@ def _create_cluster(
     #  in particular cloudformation currently relies on the assumption that it is set when the domain is created.
     status = region.opensearch_domains[domain_key.domain_name]
     status["Endpoint"] = cluster.url.split("://")[-1]
+    status["EngineVersion"] = engine_version
 
     if cluster.is_up():
         status["Processing"] = False

@@ -129,6 +129,8 @@ class ClusterManager:
         self.clusters = dict()
 
     def create(self, arn: str, version: str, endpoint_options) -> Server:
+        if version is not None and version.startswith("OpenSearch_"):
+            version = version[len("OpenSearch_") :]
         version = versions.get_install_version(version or OPENSEARCH_DEFAULT_VERSION)
 
         # determine custom domain endpoint
