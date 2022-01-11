@@ -491,7 +491,6 @@ class OpensearchProvider(OpensearchApi):
         max_results: MaxResults = None,
         next_token: NextToken = None,
     ) -> ListVersionsResponse:
-        # TODO this currently returns more versions than the actual AWS API.
         # TODO this implementation currently only handles the OpenSearch engine.
         # Therefore this function only returns the OpenSearch version(s).
         # In later iterations, this implementation should handle both engines (OpenSearch and ElasticSearch).
