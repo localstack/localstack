@@ -317,7 +317,6 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             WarmEnabled=False,
             ColdStorageOptions=ColdStorageOptions(Enabled=False),
         ),
-        # TODO handle the version properly (make sure it's set correctly if the client requests a specific version)
         EngineVersion=stored_status.get("EngineVersion")
         or f"OpenSearch_{OPENSEARCH_DEFAULT_VERSION}",
         EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10, Iops=0),
