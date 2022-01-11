@@ -17,6 +17,7 @@ from urllib.parse import parse_qs, quote
 import boto3
 import pytest
 import requests
+from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from pytz import timezone
@@ -2425,6 +2426,26 @@ class TestS3(unittest.TestCase):
             url = "%s%s" % (config.get_edge_url(), path)
             result = getattr(requests, method.lower())(url, data=body, headers=headers)
             self.assertLess(result.status_code, 400)
+
+    def test_get_object_with_anon_credentials(self):
+        bucket_name = "bucket-%s" % short_uid()
+        object_key = "key-%s" % short_uid()
+        body = "body data"
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        self.s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body=body,
+        )
+
+        s3_anon_client = aws_stack.create_external_boto_client(
+            "s3", config=Config(signature_version=UNSIGNED)
+        )
+
+        object = s3_anon_client.get_object(Bucket=bucket_name, Key=object_key)
+        self.assertEqual(body, to_str(object["Body"].read()))
 
     # ---------------
     # HELPER METHODS
