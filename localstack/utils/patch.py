@@ -1,5 +1,6 @@
 import functools
 import inspect
+import types
 from typing import Any, Callable, List
 
 
@@ -69,6 +70,16 @@ class Patch:
     def function(target: Callable, fn: Callable, pass_target: bool = True):
         obj = get_defining_object(target)
         name = target.__name__
+
+        is_class_instance = not inspect.isclass(obj) and not inspect.ismodule(obj)
+        if is_class_instance:
+            # special case: If the defining object is not a class, but a class instance,
+            # then we need to bind the patch function to the target object. Also, we need
+            # to ensure that the final patched method has the same name as the original
+            # method on the defining object (required for restoring objects with patched
+            # methods from persistence, to avoid AttributeError).
+            fn.__name__ = name
+            fn = types.MethodType(fn, obj)
 
         if pass_target:
             new = create_patch_proxy(target, fn)
