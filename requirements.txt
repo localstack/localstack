@@ -52,7 +52,8 @@ flask_swagger==0.2.12
 jsonpatch>=1.24,<2.0
 jsonpath-rw>=1.4.0,<2.0.0
 localstack-ext[full]>=0.13.2
-moto-ext[all]>=2.2.7.1
+# TODO: pinning moto to 2.2.8.1 for now, until latest issues are fixed
+moto-ext[all]==2.2.8.1
 pproxy>=2.7.0
 #pympler>=0.6
 pyopenssl>=21.0.0
