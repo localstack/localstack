@@ -206,7 +206,7 @@ class TestMultiClusterManager:
     @pytest.mark.skip_offline
     def test_multi_cluster(self, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
-        monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
+        monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
 
         manager = MultiClusterManager()
 
