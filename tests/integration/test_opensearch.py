@@ -170,6 +170,19 @@ class TestOpensearchProvider:
             "I'm just a simple man" in response.text
         ), f"search unsuccessful({response.status_code}): {response.text}"
 
+    def test_path_endpoint_strategy(self, monkeypatch, opensearch_create_domain, opensearch_client):
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
+        monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
+
+        domain_name = f"opensearch-domain-{short_uid()}"
+
+        opensearch_create_domain(DomainName=domain_name)
+        status = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"]
+
+        assert "Endpoint" in status
+        endpoint = status["Endpoint"]
+        assert endpoint.endswith(f"/{domain_name}")
+
 
 class TestEdgeProxiedOpensearchCluster:
     def test_route_through_edge(self):
