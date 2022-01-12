@@ -13,7 +13,6 @@ from localstack.services.opensearch.cluster import (
     CustomEndpoint,
     EdgeProxiedOpensearchCluster,
     OpensearchCluster,
-    ProxiedOpensearchCluster,
     resolve_directories,
 )
 from localstack.utils.common import call_safe, get_free_tcp_port, start_thread
@@ -31,7 +30,7 @@ def create_cluster_manager() -> "ClusterManager":
         return CustomBackendManager()
 
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "off" and not config.OPENSEARCH_MULTI_CLUSTER:
-        return SingletonClusterManager()
+        raise NotImplementedError()
 
     if config.OPENSEARCH_ENDPOINT_STRATEGY != "off":
         if config.OPENSEARCH_MULTI_CLUSTER:
@@ -78,15 +77,12 @@ def build_cluster_endpoint(
 
     - my-domain.us-east-1.opensearch.localhost.localstack.cloud:4566 (endpoint strategy = domain (default))
     - localhost:4566/us-east-1/my-domain (endpoint strategy = path)
-    - localhost:4751 (endpoint strategy = off)
     - my.domain:443/foo (arbitrary endpoints (technically not allowed by AWS, but there are no rules in localstack))
     """
     # TODO check if the different modes are working correctly
     if custom_endpoint and custom_endpoint.enabled:
         return custom_endpoint.endpoint
 
-    if config.OPENSEARCH_ENDPOINT_STRATEGY == "off":
-        return "%s:%s" % (config.LOCALSTACK_HOSTNAME, config.PORT_OPENSEARCH)
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
         return "%s:%s/es/%s/%s" % (
             config.LOCALSTACK_HOSTNAME,
@@ -169,59 +165,6 @@ class ClusterManager:
         while self.clusters:
             domain, cluster = self.clusters.popitem()
             call_safe(cluster.shutdown)
-
-
-class SingletonClusterManager(ClusterManager):
-    """
-    Manages a single cluster and always returns that cluster. Using this, we lie to the client about the
-    elasticsearch domain version. The first call to create_domain with a specific version will create the cluster
-    with that version. Subsequent calls will believe they created a cluster with the version they specified. It keeps
-    the cluster running until the last domain was removed. It only works with a single endpoint.
-
-    Assumes the config:
-    - ES_ENDPOINT_STRATEGY == "off"
-    - ES_MULTI_CLUSTER == False
-    """
-
-    cluster: Optional[Server]
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.server = None
-        self.mutex = threading.RLock()
-        self.cluster = None
-
-    def create(self, arn: str, version: str, endpoint_options) -> Server:
-        with self.mutex:
-            return super().create(arn, version, endpoint_options)
-
-    def _create_cluster(self, arn, url, version) -> Server:
-        if not self.cluster:
-            # FIXME: if remove() is called, then immediately after, create() (without letting time pass for the proxy to
-            #  shut down) there's a chance that there will be a bind exception when trying to start the proxy again
-            #  (which is currently always bound to PORT_OPENSEARCH)
-            self.cluster = ProxiedOpensearchCluster(
-                port=config.PORT_OPENSEARCH,
-                host=constants.LOCALHOST,
-                version=version,
-                directories=resolve_directories(version, arn),
-            )
-
-        return self.cluster
-
-    def remove(self, arn: str):
-
-        with self.mutex:
-            try:
-                cluster = self.clusters.pop(arn)
-            except KeyError:
-                return
-
-            LOG.debug("removing cluster for %s, %s remaining", arn, len(self.clusters))
-            if not self.clusters:
-                # shutdown the cluster if it is
-                cluster.shutdown()
-                self.cluster = None
 
 
 class ClusterEndpoint(FakeEndpointProxyServer):

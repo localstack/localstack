@@ -182,23 +182,15 @@ class OpensearchCluster(Server):
         if additional_settings:
             settings.update(additional_settings)
 
-        self._settings_compatibility(settings)
-
         cmd = build_opensearch_run_command(bin_path, settings)
 
         return cmd
 
     def _create_env_vars(self) -> Dict:
         return {
-            "ES_JAVA_OPTS": os.environ.get("ES_JAVA_OPTS", "-Xms200m -Xmx600m"),
-            "ES_TMPDIR": self.directories.tmp,
+            "OPENSEARCH_JAVA_OPTS": os.environ.get("OPENSEARCH_JAVA_OPTS", "-Xms200m -Xmx600m"),
+            "OPENSEARCH_TMPDIR": self.directories.tmp,
         }
-
-    def _settings_compatibility(self, settings):
-        # compatibility hacks for older versions
-        if int(self.version.split(".")[0]) <= 5:
-            settings["transport.tcp.port"] = settings["transport.port"]
-            del settings["transport.port"]
 
     def _resolve_directories(self) -> Directories:
         # by default, the cluster data will be placed in <data_dir>/opensearch/<version>/
