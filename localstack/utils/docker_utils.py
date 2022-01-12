@@ -456,14 +456,14 @@ class ContainerClient(metaclass=ABCMeta):
         """
         pass
 
-    def get_image_cmd(self, docker_image: str, pull: bool = True) -> str:
+    def get_image_cmd(self, docker_image: str, pull: bool = True) -> List[str]:
         """Get the command for the given image
         :param docker_image: Docker image to inspect
         :param pull: Whether to pull if image is not present
-        :return: Image command
+        :return: Image command in its array form
         """
         cmd_list = self.inspect_image(docker_image, pull)["Config"]["Cmd"] or []
-        return " ".join(cmd_list)
+        return cmd_list
 
     def get_image_entrypoint(self, docker_image: str, pull: bool = True) -> str:
         """Get the entry point for the given image
@@ -473,7 +473,7 @@ class ContainerClient(metaclass=ABCMeta):
         """
         LOG.debug("Getting the entrypoint for image: %s", docker_image)
         entrypoint_list = self.inspect_image(docker_image, pull)["Config"]["Entrypoint"] or []
-        return " ".join(entrypoint_list)
+        return shlex.join(entrypoint_list)
 
     @abstractmethod
     def has_docker(self) -> bool:

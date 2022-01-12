@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import sys
 import threading
@@ -804,7 +805,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         )
 
         if not inv_context.lambda_command and inv_context.handler:
-            command = container_info.entry_point.split()
+            command = shlex.split(container_info.entry_point)
             command.append(inv_context.handler)
             inv_context.lambda_command = command
 
