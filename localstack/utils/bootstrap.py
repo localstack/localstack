@@ -429,6 +429,7 @@ def extract_port_flags(user_flags, port_mappings: PortMappings):
     return user_flags
 
 
+# TODO merge with docker_utils.py:ContainerConfiguration
 class LocalstackContainer:
     name: str
     image_name: str
