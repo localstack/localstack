@@ -328,7 +328,7 @@ def opensearch_create_domain(opensearch_client):
             return status["Processing"] is False
 
         assert poll_condition(
-            finished_processing, timeout=60
+            finished_processing, timeout=120
         ), f"could not start domain: {kwargs['DomainName']}"
 
         domains.append(kwargs["DomainName"])

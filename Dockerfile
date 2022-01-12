@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y openjdk-11-jdk-headless
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${TARGETARCH}
 
-# reate a custom, minimized JRE via jlink
+# create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
 # include required modules
 java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.sql,java.xml,jdk.compiler,\
