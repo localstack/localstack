@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from typing import Dict
 
@@ -16,6 +17,8 @@ app = Flask(APP_NAME)
 DDB_KINESIS_STREAM_NAME_PREFIX = "__ddb_stream_"
 
 ACTION_HEADER_PREFIX = "DynamoDBStreams_20120810"
+
+LOG = logging.getLogger(__name__)
 
 
 class DynamoDBStreamsBackend(RegionBackend):
@@ -137,7 +140,13 @@ def post_request():
         )
 
     elif action == "GetRecords":
-        kinesis_records = kinesis.get_records(**data)
+        try:
+            kinesis_records = kinesis.get_records(**data)
+        except kinesis.exceptions.ExpiredIteratorException:
+            LOG.debug("Shard iterator for underlying kinesis stream expired")
+            return error_response(
+                "Shard iterator has expired", error_type="ExpiredIteratorException", code=400
+            )
         result = {
             "Records": [],
             "NextShardIterator": kinesis_records.get("NextShardIterator"),
