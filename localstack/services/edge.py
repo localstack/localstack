@@ -454,15 +454,12 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip("/")
-    if method in ["GET", "HEAD"] and "/" in stripped:
+    if method in ["GET", "HEAD"] and stripped:
         # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
         return "s3", config.PORT_S3
 
     # detect S3 URLs
     if stripped and "/" not in stripped:
-        if method == "HEAD":
-            # assume that this is an S3 HEAD bucket request with URL path `/<bucket>`
-            return "s3", config.PORT_S3
         if method == "PUT":
             # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
             return "s3", config.PORT_S3
