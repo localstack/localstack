@@ -134,13 +134,13 @@ class ShapeNode:
     def _print_as_typed_dict(self, output, doc=True, quote_types=False):
         name = self.shape.name
         q = '"' if quote_types else ""
-        output.write('%s = TypedDict("%s", total=False, fields={\n' % (name, name))
+        output.write('%s = TypedDict("%s", {\n' % (name, name))
         for k, v in self.shape.members.items():
             if k in self.shape.required_members:
                 output.write(f'    "{k}": {q}{v.name}{q},\n')
             else:
                 output.write(f'    "{k}": Optional[{q}{v.name}{q}],\n')
-        output.write("})")
+        output.write("}, total=False)")
 
     def print_shape_doc(self, output, shape):
         html = shape.documentation
