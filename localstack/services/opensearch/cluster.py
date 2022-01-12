@@ -173,7 +173,7 @@ class OpensearchCluster(Server):
             "http.compression": "false",
             "path.data": f'"{dirs.data}"',
             "path.repo": f'"{dirs.backup}"',
-            "plugins.security.disabled": "true",  # todo: should this stay?
+            "plugins.security.disabled": "true",
         }
 
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
