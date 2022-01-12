@@ -2176,10 +2176,14 @@ class TestDockerBehaviour(LambdaTestBase):
 
         # simulate an idle container
         executor.function_invoke_times[func_arn] = (
-            time.time() - lambda_executors.MAX_CONTAINER_IDLE_TIME_MS
+            int(time.time() * 1000) - lambda_executors.MAX_CONTAINER_IDLE_TIME_MS
         )
         executor.idle_container_destroyer()
-        self.assertEqual(0, len(executor.get_all_container_names()))
+
+        def assert_container_destroyed():
+            self.assertEqual(0, len(executor.get_all_container_names()))
+
+        retry(assert_container_destroyed, retries=3)
 
         # clean up
         testutil.delete_lambda_function(func_name)

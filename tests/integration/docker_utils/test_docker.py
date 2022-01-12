@@ -573,7 +573,7 @@ class TestDockerClient:
 
     def test_get_container_command(self, docker_client: ContainerClient):
         command = docker_client.get_image_cmd("alpine")
-        assert "/bin/sh" == command
+        assert ["/bin/sh"] == command
 
     def test_get_container_command_not_pulled_image(self, docker_client: ContainerClient):
         try:
@@ -582,7 +582,7 @@ class TestDockerClient:
         except ContainerException:
             pass
         command = docker_client.get_image_cmd("alpine")
-        assert "/bin/sh" == command
+        assert ["/bin/sh"] == command
 
     def test_get_container_command_non_existing_image(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchImage):
@@ -709,7 +709,7 @@ class TestDockerClient:
         with pytest.raises(NoSuchImage):
             docker_client.get_image_cmd("alpine", pull=False)
         docker_client.pull_image("alpine")
-        assert "/bin/sh" == docker_client.get_image_cmd("alpine", pull=False).strip()
+        assert ["/bin/sh"] == docker_client.get_image_cmd("alpine", pull=False)
 
     @pytest.mark.skip_offline
     def test_pull_non_existent_docker_image(self, docker_client: ContainerClient):
@@ -726,7 +726,7 @@ class TestDockerClient:
         with pytest.raises(NoSuchImage):
             docker_client.get_image_cmd("alpine", pull=False)
         docker_client.pull_image("alpine:3.13")
-        assert "/bin/sh" == docker_client.get_image_cmd("alpine:3.13", pull=False).strip()
+        assert ["/bin/sh"] == docker_client.get_image_cmd("alpine:3.13", pull=False)
         assert "alpine:3.13" in docker_client.inspect_image("alpine:3.13", pull=False)["RepoTags"]
 
     @pytest.mark.skip_offline
@@ -741,12 +741,9 @@ class TestDockerClient:
         docker_client.pull_image(
             "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
         )
-        assert (
-            "/bin/sh"
-            == docker_client.get_image_cmd(
-                "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a",
-                pull=False,
-            ).strip()
+        assert ["/bin/sh"] == docker_client.get_image_cmd(
+            "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a",
+            pull=False,
         )
         assert (
             "alpine@sha256:e1c082e3d3c45cccac829840a25941e679c25d438cc8412c2fa221cf1a824e6a"
