@@ -127,7 +127,7 @@ class ClusterManager:
     def __init__(self) -> None:
         self.clusters = dict()
 
-    def create(self, arn: str, version: str, endpoint_options) -> Server:
+    def create(self, arn: str, version: str, endpoint_options=None) -> Server:
         version = versions.get_install_version(version)
 
         # determine custom domain endpoint
