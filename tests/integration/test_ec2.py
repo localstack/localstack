@@ -235,11 +235,12 @@ class TestEc2Integrations(unittest.TestCase):
             ],
         )
 
+        region = aws_stack.get_region()
         self.assertEqual(200, vpc_endpoint_gateway_services["ResponseMetadata"]["HTTPStatusCode"])
         services = vpc_endpoint_gateway_services["ServiceNames"]
         self.assertEqual(2, len(services))
-        self.assertTrue("com.amazonaws.us-east-1.dynamodb" in services)
-        self.assertTrue("com.amazonaws.us-east-1.s3" in services)
+        self.assertTrue(f"com.amazonaws.{region}.dynamodb" in services)
+        self.assertTrue(f"com.amazonaws.{region}.s3" in services)
         # test filter of Interface endpoint services
         vpc_endpoint_interface_services = ec2.describe_vpc_endpoint_services(
             Filters=[
@@ -250,9 +251,9 @@ class TestEc2Integrations(unittest.TestCase):
         self.assertEqual(200, vpc_endpoint_interface_services["ResponseMetadata"]["HTTPStatusCode"])
         services = vpc_endpoint_interface_services["ServiceNames"]
         self.assertTrue(len(services) > 0)
-        self.assertTrue("com.amazonaws.us-east-1.dynamodb" in services)
-        self.assertTrue("com.amazonaws.us-east-1.s3" in services)
-        self.assertTrue("com.amazonaws.us-east-1.firehose" in services)
+        self.assertTrue(f"com.amazonaws.{region}.dynamodb" in services)
+        self.assertTrue(f"com.amazonaws.{region}.s3" in services)
+        self.assertTrue(f"com.amazonaws.{region}.firehose" in services)
 
         # test filter that does not exist
         vpc_endpoint_interface_services = ec2.describe_vpc_endpoint_services(

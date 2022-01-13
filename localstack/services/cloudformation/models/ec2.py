@@ -339,6 +339,9 @@ class EC2VPC(GenericBaseModel):
                 )
                 for rt in resp["RouteTables"]:
                     for assoc in rt.get("Associations", []):
+                        # skipping Main association (accommodating recent upstream change)
+                        if assoc.get("Main"):
+                            continue
                         ec2_client.disassociate_route_table(
                             AssociationId=assoc["RouteTableAssociationId"]
                         )
