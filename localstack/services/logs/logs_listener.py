@@ -6,7 +6,7 @@ import re
 from gzip import GzipFile
 from typing import Callable, Dict
 
-from moto.awslambda import models as LambdaBackend
+from moto.awslambda.models import LambdaBackend
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
 from moto.logs.exceptions import InvalidParameterException, ResourceNotFoundException
