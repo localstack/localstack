@@ -3,7 +3,6 @@ import re
 
 import xmltodict
 from moto.ec2 import models as ec2_models
-from moto.ec2.exceptions import InvalidPermissionNotFoundError
 from moto.ec2.models import EC2Backend
 from moto.ec2.responses import security_groups, vpcs
 from moto.ec2.responses.reserved_instances import ReservedInstances
@@ -23,15 +22,6 @@ XMLNS_EC2 = "http://ec2.amazonaws.com/doc/2016-11-15/"
 
 
 def patch_ec2():
-    @patch(EC2Backend.revoke_security_group_egress)
-    def revoke_security_group_egress(fn, *args, **kwargs):
-        try:
-            return fn(*args, **kwargs)
-        except InvalidPermissionNotFoundError:
-            # this can happen, as CidrIpv6 is not yet supported by moto
-            if args[4] == []:
-                return "_ignore_"
-
     @patch(EC2Backend.delete_nat_gateway)
     def delete_nat_gateway(fn, *args, **kwargs):
         gateway = fn(*args, **kwargs)
