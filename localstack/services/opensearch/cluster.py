@@ -8,7 +8,7 @@ import requests
 from localstack import config, constants
 from localstack.services import install
 from localstack.services.generic_proxy import EndpointProxy
-from localstack.services.infra import DEFAULT_BACKEND_HOST, start_proxy_for_service
+from localstack.services.infra import DEFAULT_BACKEND_HOST
 from localstack.utils.common import (
     ShellCommandThread,
     chmod_r,
@@ -49,10 +49,8 @@ def get_opensearch_health_status(url: str) -> Optional[str]:
 
 
 def init_directories(dirs: Directories):
-    """
-    Makes sure the directories exist and have the necessary permissions.
-    """
-    LOG.debug("initializing elasticsearch directories %s", dirs)
+    """Makes sure the directories exist and have the necessary permissions."""
+    LOG.debug("initializing opensearch directories %s", dirs)
     chmod_r(dirs.install, 0o777)
 
     if not dirs.data.startswith(config.dirs.data):
@@ -78,14 +76,14 @@ def init_directories(dirs: Directories):
 
 def resolve_directories(version: str, cluster_path: str, data_root: str = None) -> Directories:
     """
-    Determines directories to find the elasticsearch binary as well as where to store the instance data.
+    Determines directories to find the opensearch binary as well as where to store the instance data.
 
     :param version: the opensearch version (to resolve the install dir)
     :param cluster_path: the path between data_root and the actual data directories
     :param data_root: the root of the data dir (will be resolved to TMP_PATH or DATA_DIR by default)
     :returns: a Directories data structure
     """
-    # where to find elasticsearch binary and the modules
+    # where to find opensearch binary and the modules
     install_dir = install.get_opensearch_install_dir(version)
     modules_dir = os.path.join(install_dir, "modules")
 
@@ -105,11 +103,20 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
 
 
 def build_opensearch_run_command(opensearch_bin: str, settings: CommandSettings) -> List[str]:
+    """
+    Takes the command settings dict and builds the actual command (which can then be executed as a shell command).
+
+    :param opensearch_bin: path to the binary (including the binary)
+    :param settings: dictionary where each item will be set as a command arguments
+    :return: list of strings for the command with the settings to be executed as a shell command
+    """
     cmd_settings = [f"-E {k}={v}" for k, v, in settings.items()]
     return [opensearch_bin] + cmd_settings
 
 
 class OpensearchCluster(Server):
+    """Manages an opensearch cluster which is installed an operated by LocalStack."""
+
     def __init__(
         self, port=9200, host="localhost", version: str = None, directories: Directories = None
     ) -> None:
@@ -138,7 +145,7 @@ class OpensearchCluster(Server):
 
         user = constants.OS_USER_OPENSEARCH
         if is_root() and user:
-            # run the elasticsearch process as a non-root user (when running in docker)
+            # run the opensearch process as a non-root user (when running in docker)
             cmd = f"su {user} -c '{cmd}'"
 
         env_vars = self._create_env_vars()
@@ -159,7 +166,7 @@ class OpensearchCluster(Server):
     def _create_run_command(
         self, additional_settings: Optional[CommandSettings] = None
     ) -> List[str]:
-        # delete Elasticsearch data that may be cached locally from a previous test run
+        # delete opensearch data that may be cached locally from a previous test run
         dirs = self.directories
 
         bin_path = os.path.join(dirs.install, "bin/opensearch")
@@ -200,77 +207,20 @@ class OpensearchCluster(Server):
         init_directories(self.directories)
 
 
-class ProxiedOpensearchCluster(Server):
-    """
-    Starts an OpensearchCluster behind a localstack service proxy. The OpenSearchCluster
-    backend will be assigned a random port.
-    """
-
-    def __init__(
-        self, port=9200, host="localhost", version=None, directories: Directories = None
-    ) -> None:
-        super().__init__(port, host)
-        self._version = version or constants.OPENSEARCH_DEFAULT_VERSION
-
-        self.cluster = None
-        self.cluster_port = None
-        self.directories = directories
-
-    @property
-    def version(self):
-        return self._version
-
-    def is_up(self):
-        # check service lifecycle
-        if not self.cluster:
-            return False
-
-        if not self.cluster.is_up():
-            return False
-
-        return super().is_up()
-
-    def health(self):
-        """
-        calls the health endpoint of elasticsearch through the proxy, making sure implicitly that
-        both are running
-        """
-        return get_opensearch_health_status(self.url)
-
-    def do_start_thread(self) -> FuncThread:
-        # start elasticsearch backend
-        if not self.cluster_port:
-            self.cluster_port = get_free_tcp_port()
-
-        self.cluster = OpensearchCluster(
-            port=self.cluster_port,
-            host=DEFAULT_BACKEND_HOST,
-            version=self.version,
-            directories=self.directories,
-        )
-        self.cluster.start()
-
-        self.cluster.wait_is_up()
-        LOG.info("opensearch cluster on %s is ready", self.cluster.url)
-
-        # start front-facing proxy
-        return start_proxy_for_service(
-            "opensearch",
-            self.port,
-            self.cluster_port,
-            update_listener=None,
-            quiet=True,
-        )
-
-    def do_shutdown(self):
-        self.cluster.shutdown()
-
-
 class CustomEndpoint:
+    """
+    Encapsulates a custom endpoint (combines CustomEndpoint and CustomEndpointEnabled within the DomainEndpointOptions
+    of the cluster, i.e. combines two fields from the AWS OpenSearch service model).
+    """
+
     enabled: bool
     endpoint: str
 
     def __init__(self, enabled: bool, endpoint: str) -> None:
+        """
+        :param enabled: true if the custom endpoint is enabled (refers to DomainEndpointOptions#CustomEndpointEnabled)
+        :param endpoint: defines the endpoint (i.e. the URL - refers to DomainEndpointOptions#CustomEndpoint)
+        """
         self.enabled = enabled
         self.endpoint = endpoint
 
@@ -319,10 +269,7 @@ class EdgeProxiedOpensearchCluster(Server):
         return super().is_up()
 
     def health(self):
-        """
-        calls the health endpoint of opensearch through the proxy, making sure implicitly that
-        both are running
-        """
+        """calls the health endpoint of opensearch through the proxy, making sure implicitly that both are running"""
         return get_opensearch_health_status(self.url)
 
     def do_run(self):

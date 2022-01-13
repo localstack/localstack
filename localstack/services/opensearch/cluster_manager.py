@@ -26,21 +26,17 @@ OPENSEARCH_BASE_DOMAIN = f"opensearch.{constants.LOCALHOST_HOSTNAME}"
 def create_cluster_manager() -> "ClusterManager":
     """Creates the cluster manager according to the configuration."""
 
+    # If we have an external cluster, we always use the CustomBackendManager.
     if config.OPENSEARCH_CUSTOM_BACKEND:
         return CustomBackendManager()
 
-    if config.OPENSEARCH_ENDPOINT_STRATEGY == "off" and not config.OPENSEARCH_MULTI_CLUSTER:
-        raise NotImplementedError()
-
-    if config.OPENSEARCH_ENDPOINT_STRATEGY != "off":
-        if config.OPENSEARCH_MULTI_CLUSTER:
-            return MultiClusterManager()
-        else:
-            return MultiplexingClusterManager()
-
-    raise ValueError(
-        "cannot manage clusters with OPENSEARCH_ENDPOINT_STRATEGY=off and OPENSEARCH_MULTI_CLUSTER=True"
-    )
+    # If we are using a localstack-managed multi-cluster-setup, we use the MultiClusterManager.
+    if config.OPENSEARCH_MULTI_CLUSTER:
+        return MultiClusterManager()
+    else:
+        # Otherwise, if we are using a localstack-managed multiplexing-to-a-single-cluster-setup,
+        # we use the MultiplexingClusterManager.
+        return MultiplexingClusterManager()
 
 
 @dataclasses.dataclass
@@ -79,10 +75,11 @@ def build_cluster_endpoint(
     - localhost:4566/us-east-1/my-domain (endpoint strategy = path)
     - my.domain:443/foo (arbitrary endpoints (technically not allowed by AWS, but there are no rules in localstack))
     """
-    # TODO check if the different modes are working correctly
+    # If we have a CustomEndpoint, we directly take its endpoint.
     if custom_endpoint and custom_endpoint.enabled:
         return custom_endpoint.endpoint
 
+    # Otherwise, the endpoint is either routed through the edge proxy via a sub-path (localhost:4566/opensearch/...)
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
         return "%s:%s/es/%s/%s" % (
             config.LOCALSTACK_HOSTNAME,
@@ -90,7 +87,7 @@ def build_cluster_endpoint(
             domain_key.region,
             domain_key.domain_name,
         )
-
+    # or through a subdomain (domain-name.region.opensearch.localhost.localstack.cloud)
     return (
         f"{domain_key.domain_name}.{domain_key.region}.{OPENSEARCH_BASE_DOMAIN}:{config.EDGE_PORT}"
     )
@@ -104,15 +101,9 @@ def determine_custom_endpoint(
 
     custom_endpoint = domain_endpoint_options.get("CustomEndpoint")
     enabled = domain_endpoint_options.get("CustomEndpointEnabled", False)
-    # TODO: other attributes (are they relevant?)
-    #  - EnforceHTTPS: bool
-    #  - TLSSecurityPolicy: str
-    #  - CustomEndpointCertificateArn: str
 
     if not custom_endpoint:
         raise ValueError("Please provide the CustomEndpoint field to create a custom endpoint.")
-
-    # TODO: validate custom_endpoint
 
     return CustomEndpoint(enabled, custom_endpoint)
 
@@ -182,11 +173,12 @@ class ClusterEndpoint(FakeEndpointProxyServer):
 
 class MultiplexingClusterManager(ClusterManager):
     """
-    Similar to SingletonClusterManager, but Multiplexes multiple endpoints to a single backend cluster.
+    Multiplexes multiple endpoints to a single backend cluster (not managed by LocalStack).
+    Using this, we lie to the client about the opensearch domain version.
+    It only works with a single endpoint.
 
     Assumes the config:
-    - ES_ENDPOINT_STRATEGY != "off"
-    - ES_MULTI_CLUSTER = False
+    - OPENSEARCH_MULTI_CLUSTER = False
     """
 
     cluster: Optional[Server]

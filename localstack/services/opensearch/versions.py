@@ -14,10 +14,11 @@ from localstack.utils.common import get_arch
 
 # Internal representation of the versions (without the "OpenSearch_" prefix)
 _install_versions = {"1.0": "1.0.0", "1.1": "1.1.0"}
-# External representation fo the versions
+# External representation fo the versions (with the "OpenSearch_" prefix)
 install_versions = {
     f"OpenSearch_{key}": f"OpenSearch_{value}" for key, value in _install_versions.items()
 }
+# List of compatible versions (using the external representations)
 compatible_versions = [
     CompatibleVersionsMap(SourceVersion="OpenSearch_1.0", TargetVersions=["OpenSearch_1.1"])
 ]
