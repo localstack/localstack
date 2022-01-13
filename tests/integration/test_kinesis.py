@@ -1,4 +1,3 @@
-import base64
 import logging
 import re
 import unittest
@@ -95,9 +94,7 @@ class TestKinesis(unittest.TestCase):
         num_records = 5
         msg = b"Hello world"
         for i in range(num_records):
-            client.put_records(
-                StreamName=stream_name, Records=[{"Data": msg, "PartitionKey": "1"}]
-            )
+            client.put_records(StreamName=stream_name, Records=[{"Data": msg, "PartitionKey": "1"}])
 
         # assert results
         results = []
@@ -216,6 +213,31 @@ class TestKinesis(unittest.TestCase):
 
         # clean up
         client.delete_stream(StreamName=stream_name)
+
+    def test_record_lifecycle_data_integrity(self):
+        """
+        kinesis records should contain the same data from when they are sent to when they are received
+        """
+        client = aws_stack.create_external_boto_client("kinesis")
+        stream_name = "test-%s" % short_uid()
+        records_data = {"test", "ünicödé 统一码 💣💻🔥", "a" * 1000, ""}
+
+        client.create_stream(StreamName=stream_name, ShardCount=1)
+        sleep(1.5)
+        iterator = self._get_shard_iterator(stream_name)
+
+        for record_data in records_data:
+            client.put_record(
+                StreamName=stream_name,
+                Data=record_data,
+                PartitionKey="1",
+            )
+
+        response = client.get_records(ShardIterator=iterator)
+        response_records = response.get("Records")
+        self.assertEqual(len(records_data), len(response_records))
+        for response_record in response_records:
+            self.assertIn(response_record.get("Data").decode("utf-8"), records_data)
 
     def _get_shard_iterator(self, stream_name):
         client = aws_stack.create_external_boto_client("kinesis")
