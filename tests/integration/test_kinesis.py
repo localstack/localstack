@@ -94,10 +94,9 @@ class TestKinesis(unittest.TestCase):
         # put records
         num_records = 5
         msg = b"Hello world"
-        msg_b64 = base64.b64encode(msg)
         for i in range(num_records):
             client.put_records(
-                StreamName=stream_name, Records=[{"Data": msg_b64, "PartitionKey": "1"}]
+                StreamName=stream_name, Records=[{"Data": msg, "PartitionKey": "1"}]
             )
 
         # assert results
@@ -128,6 +127,7 @@ class TestKinesis(unittest.TestCase):
         client = aws_stack.create_external_boto_client("kinesis")
         stream_name = "test-%s" % short_uid()
         stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+        record_data = "Hello world"
 
         # create stream and consumer
         result = client.create_stream(StreamName=stream_name, ShardCount=1)
@@ -161,7 +161,7 @@ class TestKinesis(unittest.TestCase):
         for i in range(num_records):
             client.put_records(
                 StreamName=stream_name,
-                Records=[{"Data": "SGVsbG8gd29ybGQ=", "PartitionKey": "1"}],
+                Records=[{"Data": record_data, "PartitionKey": "1"}],
             )
 
         results = []
@@ -174,7 +174,7 @@ class TestKinesis(unittest.TestCase):
         # assert results
         self.assertEqual(num_records, len(results))
         for record in results:
-            self.assertEqual(b"Hello world", record["Data"])
+            self.assertEqual(str.encode(record_data), record["Data"])
 
         # clean up
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
