@@ -583,7 +583,7 @@ ES_MULTI_CLUSTER = is_env_not_false("ES_MULTI_CLUSTER")
 OPENSEARCH_CUSTOM_BACKEND = os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
 
 # Strategy used when creating opensearch domain endpoints routed through the edge proxy
-# valid values: domain | path | off
+# valid values: domain | path
 OPENSEARCH_ENDPOINT_STRATEGY = (
     os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip() or "domain"
 )
@@ -772,7 +772,7 @@ def populate_configs(service_ports=None):
 def service_port(service_key):
     service_key = service_key.lower()
     if FORWARD_EDGE_INMEM:
-        if service_key == "elasticsearch" or service_key == "opensearch":
+        if service_key == "elasticsearch":
             # TODO Elasticsearch domains are a special case - we do not want to route them through
             #  the edge service, as that would require too many route mappings. In the future, we
             #  should integrate them with the port range for external services (4510-4530)
