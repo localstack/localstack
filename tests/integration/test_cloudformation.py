@@ -2181,6 +2181,7 @@ class CloudFormationTest(unittest.TestCase):
         ec2_client = aws_stack.create_external_boto_client("ec2")
 
         resp = ec2_client.describe_vpcs()
+        # TODO: remove/change assertion, to make tests parallelizable!
         vpcs_before = [vpc["VpcId"] for vpc in resp["Vpcs"]]
 
         template = load_file(os.path.join(THIS_FOLDER, "templates", "template33.yaml"))
@@ -2399,6 +2400,7 @@ class CloudFormationTest(unittest.TestCase):
         ec2_client = aws_stack.create_external_boto_client("ec2")
 
         resp = ec2_client.describe_vpcs()
+        # TODO: remove/change assertion, to make tests parallelizable!
         vpcs_before = [vpc["VpcId"] for vpc in resp["Vpcs"]]
 
         template = load_file(os.path.join(THIS_FOLDER, "templates", "template36.yaml"))
@@ -2410,7 +2412,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(1, len(vpcs))
 
         resp = ec2_client.describe_route_tables(Filters=[{"Name": "vpc-id", "Values": [vpcs[0]]}])
-        # Cloudformation Template will create more than one route table 2 in template + default
+        # CloudFormation will create more than one route table 2 in template + default
         self.assertEqual(3, len(resp["RouteTables"]))
 
         # Clean up
@@ -2431,8 +2433,8 @@ class CloudFormationTest(unittest.TestCase):
             Filters=[{"Name": "route-table-id", "Values": [route_table_id]}]
         )["RouteTables"][0]
 
-        # # Cloudformation Template will create more than one route table 2 in template + default
-        self.assertEqual(2, len(route_table["Associations"]))
+        # CloudFormation will create more than one route table 2 in template + default
+        self.assertEqual(3, len(route_table["Associations"]))
 
         # Clean up
         self.cleanup(stack_name)
