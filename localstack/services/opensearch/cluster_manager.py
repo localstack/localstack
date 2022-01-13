@@ -81,7 +81,7 @@ def build_cluster_endpoint(
 
     # Otherwise, the endpoint is either routed through the edge proxy via a sub-path (localhost:4566/opensearch/...)
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
-        return "%s:%s/es/%s/%s" % (
+        return "%s:%s/opensearch/%s/%s" % (
             config.LOCALSTACK_HOSTNAME,
             config.EDGE_PORT,
             domain_key.region,
