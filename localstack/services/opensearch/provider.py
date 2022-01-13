@@ -1,6 +1,6 @@
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from random import randint
 from typing import Dict
 
@@ -336,7 +336,7 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
             Cancellable=False,
             UpdateStatus=DeploymentStatus.COMPLETED,
             Description="There is no software update available for this domain.",
-            AutomatedUpdateDate=datetime.fromtimestamp(0),
+            AutomatedUpdateDate=datetime.fromtimestamp(0, tz=timezone.utc),
             OptionalDeployment=True,
         ),
         DomainEndpointOptions=DomainEndpointOptions(
