@@ -42,11 +42,12 @@ class HandlerAttributes(NamedTuple):
 
 def create_dispatch_table(delegate: object) -> DispatchTable:
     """
-    Creates a dispatch table for a given object. First, the entire class tree of the object is scanned to find any
-    functions that are decorated with @handler. It then resolves those functions on the delegate.
+    Creates a dispatch table for a given object. First, the entire class tree of the object is
+    scanned to find any functions that are decorated with @handler. It then resolves those
+    functions on the delegate.
     """
-    # scan class tree for @handler wrapped functions (reverse class tree so that inherited functions overwrite parent
-    # functions)
+    # scan class tree for @handler wrapped functions (reverse class tree so that inherited
+    # functions overwrite parent functions)
     cls_tree = inspect.getmro(delegate.__class__)
     handlers: Dict[str, HandlerAttributes] = {}
     cls_tree = reversed(list(cls_tree))

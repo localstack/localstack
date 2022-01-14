@@ -125,9 +125,11 @@ class RequestParserError(Exception):
 class RequestParser(abc.ABC):
     """
     The request parser is responsible for parsing an incoming HTTP request.
-    It determines which operation the request was aiming for and parses the incoming request such that the resulting
+    It determines which operation the request was aiming for and parses the incoming request such
+    that the resulting
     dictionary can be used to invoke the service's function implementation.
-    It is the base class for all parsers and therefore contains the basic logic which is used among all of them.
+    It is the base class for all parsers and therefore contains the basic logic which is used
+    among all of them.
     """
 
     service: ServiceModel
@@ -141,11 +143,13 @@ class RequestParser(abc.ABC):
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         """
-        Determines which operation the request was aiming for and parses the incoming request such that the resulting
+        Determines which operation the request was aiming for and parses the incoming request
+        such that the resulting
         dictionary can be used to invoke the service's function implementation.
 
         :param request: to parse
-        :return: a tuple with the operation model (defining the action / operation which the request aims for),
+        :return: a tuple with the operation model (defining the action / operation which the
+        request aims for),
                  and the parsed service parameters
         """
         raise NotImplementedError
@@ -204,11 +208,8 @@ class RequestParser(abc.ABC):
     def _parse_list(
         self, request: HttpRequest, shape: ListShape, node: list, path_regex: Pattern[str] = None
     ):
-        parsed = []
         member_shape = shape.member
-        for item in node:
-            parsed.append(self._parse_shape(request, member_shape, item, path_regex))
-        return parsed
+        return [self._parse_shape(request, member_shape, item, path_regex) for item in node]
 
     @_text_content
     def _parse_integer(self, _, __, node: str, ___) -> int:
@@ -248,8 +249,7 @@ class RequestParser(abc.ABC):
             timestamp_format = self.TIMESTAMP_FORMAT
         timestamp_format = timestamp_format.lower()
         converter = getattr(self, "_timestamp_%s" % timestamp_format)
-        final_value = converter(value)
-        return final_value
+        return converter(value)
 
     @staticmethod
     def _timestamp_iso8601(date_string: str) -> datetime.datetime:
@@ -319,8 +319,10 @@ class RequestParser(abc.ABC):
 
 class QueryRequestParser(RequestParser):
     """
-    The ``QueryRequestParser`` is responsible for parsing incoming requests for services which use the ``query``
-    protocol. The requests for these services encode the majority of their parameters in the URL query string.
+    The ``QueryRequestParser`` is responsible for parsing incoming requests for services which
+    use the ``query``
+    protocol. The requests for these services encode the majority of their parameters in the URL
+    query string.
 
     **Experimental:** This parser is still experimental.
     When implementing services with this parser, some edge cases might not work out-of-the-box.
@@ -332,7 +334,8 @@ class QueryRequestParser(RequestParser):
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         body = request.get_data(as_text=True)
         instance = parse_qs(body, keep_blank_values=True)
-        # The query parsing returns a list for each entry in the dict (this is how HTTP handles lists in query params).
+        # The query parsing returns a list for each entry in the dict (this is how HTTP handles
+        # lists in query params).
         # However, the AWS Query format does not have any duplicates.
         # Therefore we take the first element of each entry in the dict.
         instance = {k: self._get_first(v) for k, v in instance.items()}
@@ -351,7 +354,8 @@ class QueryRequestParser(RequestParser):
         path_regex: Pattern[str] = None,
     ):
         if isinstance(member_shape, (MapShape, ListShape, StructureShape)):
-            # If we have a complex type, we filter the node and change it's keys to craft a new "context" for the
+            # If we have a complex type, we filter the node and change it's keys to craft a new
+            # "context" for the
             # new hierarchy level
             sub_node = self._filter_node(member_name, node)
         else:
@@ -374,18 +378,18 @@ class QueryRequestParser(RequestParser):
         result = {}
 
         for member, member_shape in shape.members.items():
-            # The key in the node is either the serialization config "name" of the shape, or the name of the member
+            # The key in the node is either the serialization config "name" of the shape,
+            # or the name of the member
             member_name = self._get_serialized_name(member_shape, member)
             # BUT, if it's flattened and a list, the name is defined by the list's member's name
-            if member_shape.serialization.get("flattened"):
-                if isinstance(member_shape, ListShape):
-                    member_name = self._get_serialized_name(member_shape.member, member)
+            if member_shape.serialization.get("flattened") and isinstance(member_shape, ListShape):
+                member_name = self._get_serialized_name(member_shape.member, member)
             value = self._process_member(request, member_name, member_shape, node, path_regex)
             if value is not None or member in shape.required_members:
                 # If the member is required, but not existing, we explicitly set None
                 result[member] = value
 
-        return result if len(result) > 0 else None
+        return result or None
 
     def _parse_map(
         self, request: HttpRequest, shape: MapShape, node: dict, path_regex: Pattern[str]
@@ -400,7 +404,8 @@ class QueryRequestParser(RequestParser):
               ...
           }
         ::
-        This function expects an already filtered / pre-processed node. The node dict would therefore look like:
+        This function expects an already filtered / pre-processed node. The node dict would
+        therefore look like:
         ::
           {
               "1.Name": "MyKey",
@@ -428,23 +433,26 @@ class QueryRequestParser(RequestParser):
             k = self._process_member(request, key_name, shape.key, node)
             v = self._process_member(request, value_name, shape.value, node)
             if k is None or v is None:
-                # technically, if one exists but not the other, then that would be an invalid request
+                # technically, if one exists but not the other, then that would be an invalid
+                # request
                 break
             result[k] = v
 
-        return result if len(result) > 0 else None
+        return result or None
 
     def _parse_list(
         self, request: HttpRequest, shape: ListShape, node: dict, path_regex: Pattern[str] = None
     ) -> list:
         """
-        Some actions take lists of parameters. These lists are specified using the param.[member.]n notation.
+        Some actions take lists of parameters. These lists are specified using the param.[
+        member.]n notation.
         The "member" is used if the list is not flattened.
         Values of n are integers starting from 1.
         For example, a list with two elements looks like this:
         - Flattened: &AttributeName.1=first&AttributeName.2=second
         - Non-flattened: &AttributeName.member.1=first&AttributeName.member.2=second
-        This function expects an already filtered / processed node. The node dict would therefore look like:
+        This function expects an already filtered / processed node. The node dict would therefore
+        look like:
         ::
           {
               "1": "first",
@@ -472,24 +480,21 @@ class QueryRequestParser(RequestParser):
                 break
             result.append((i, value))
 
-        return [r[1] for r in sorted(result)] if len(result) > 0 else None
+        return [r[1] for r in sorted(result)] if result else None
 
     @staticmethod
     def _get_first(node: any) -> any:
-        if isinstance(node, (list, tuple)):
-            return node[0]
-        return node
+        return node[0] if isinstance(node, (list, tuple)) else node
 
     @staticmethod
     def _filter_node(name: str, node: dict) -> dict:
         """Filters the node dict for entries where the key starts with the given name."""
         filtered = {k[len(name) + 1 :]: v for k, v in node.items() if k.startswith(name)}
-        return filtered if len(filtered) > 0 else None
+        return filtered or None
 
     def _get_serialized_name(self, shape: Shape, default_name: str) -> str:
         """
-        Returns the serialized name for the shape if it exists.
-        Otherwise it will return the given default_name.
+        Returns the serialized name for the shape if it exists, default_name otherwise.
         """
         return shape.serialization.get("name", default_name)
 
@@ -497,7 +502,8 @@ class QueryRequestParser(RequestParser):
 class BaseRestRequestParser(RequestParser):
     """
     The ``BaseRestRequestParser`` is the base class for all "resty" AWS service protocols.
-    The operation which should be invoked is determined based on the HTTP method and the path suffix.
+    The operation which should be invoked is determined based on the HTTP method and the path
+    suffix.
     The body encoding is done in the respective subclasses.
     """
 
@@ -549,7 +555,8 @@ class BaseRestRequestParser(RequestParser):
     ) -> None:
         """Parses all attributes which are located in the payload / body of the incoming request."""
         if "payload" in shape.serialization:
-            # If a payload is specified in the output shape, then only that shape is used for the body payload.
+            # If a payload is specified in the output shape, then only that shape is used for the
+            # body payload.
             payload_member_name = shape.serialization["payload"]
             body_shape = member_shapes[payload_member_name]
             if body_shape.serialization.get("eventstream"):
@@ -574,7 +581,8 @@ class BaseRestRequestParser(RequestParser):
     def _initial_body_parse(self, body_contents: bytes) -> any:
         """
         This method executes the initial XML or JSON parsing of the body.
-        The parsed body will afterwards still be walked through and the nodes will be converted to the appropriate
+        The parsed body will afterwards still be walked through and the nodes will be converted
+        to the appropriate
         types, but this method does the first round of parsing.
 
         :param body_contents: which should be parsed
@@ -589,8 +597,10 @@ class BaseRestRequestParser(RequestParser):
 
 class RestXMLRequestParser(BaseRestRequestParser):
     """
-    The ``RestXMLRequestParser`` is responsible for parsing incoming requests for services which use the ``rest-xml``
-    protocol. The requests for these services encode the majority of their parameters as XML in the request body.
+    The ``RestXMLRequestParser`` is responsible for parsing incoming requests for services which
+    use the ``rest-xml``
+    protocol. The requests for these services encode the majority of their parameters as XML in
+    the request body.
 
     **Experimental:** This parser is still experimental.
     When implementing services with this parser, some edge cases might not work out-of-the-box.
@@ -618,7 +628,8 @@ class RestXMLRequestParser(BaseRestRequestParser):
             if "location" in member_shape.serialization or member_shape.serialization.get(
                 "eventheader"
             ):
-                # All members with locations have already been handled in ``_parse_non_payload_attrs``,
+                # All members with locations have already been handled in
+                # ``_parse_non_payload_attrs``,
                 # so we don't need to parse these members.
                 continue
             xml_name = self._member_key_name(member_shape, member_name)
@@ -789,8 +800,7 @@ class BaseJSONRequestParser(RequestParser, ABC):
             return {}
         body = body_contents.decode(self.DEFAULT_ENCODING)
         try:
-            original_parsed = json.loads(body)
-            return original_parsed
+            return json.loads(body)
         except ValueError:
             raise RequestParserError("HTTP body could not be parsed as JSON.")
 
@@ -802,9 +812,11 @@ class BaseJSONRequestParser(RequestParser, ABC):
 
 class JSONRequestParser(BaseJSONRequestParser):
     """
-    The ``JSONRequestParser`` is responsible for parsing incoming requests for services which use the ``json``
+    The ``JSONRequestParser`` is responsible for parsing incoming requests for services which use
+    the ``json``
     protocol.
-    The requests for these services encode the majority of their parameters as JSON in the request body.
+    The requests for these services encode the majority of their parameters as JSON in the
+    request body.
     The operation is defined in an HTTP header field.
 
     **Experimental:** This parser is still experimental.
@@ -840,17 +852,19 @@ class JSONRequestParser(BaseJSONRequestParser):
     def _handle_json_body(
         self, request: HttpRequest, raw_body: bytes, shape: Shape, path_regex: Pattern[str] = None
     ) -> any:
-        # The json.loads() gives us the primitive JSON types, but we need to traverse the parsed JSON data to convert
-        # to richer types (blobs, timestamps, etc.)
+        # The json.loads() gives us the primitive JSON types, but we need to traverse the parsed
+        # JSON data to convert to richer types (blobs, timestamps, etc.)
         parsed_json = self._parse_body_as_json(raw_body)
         return self._parse_shape(request, shape, parsed_json, path_regex)
 
 
 class RestJSONRequestParser(BaseRestRequestParser, BaseJSONRequestParser):
     """
-    The ``RestJSONRequestParser`` is responsible for parsing incoming requests for services which use the ``rest-json``
+    The ``RestJSONRequestParser`` is responsible for parsing incoming requests for services which
+    use the ``rest-json``
     protocol.
-    The requests for these services encode the majority of their parameters as JSON in the request body.
+    The requests for these services encode the majority of their parameters as JSON in the
+    request body.
     The operation is defined by the HTTP method and the path suffix.
 
     **Experimental:** This parser is still experimental.
@@ -866,8 +880,10 @@ class RestJSONRequestParser(BaseRestRequestParser, BaseJSONRequestParser):
 
 class EC2RequestParser(QueryRequestParser):
     """
-    The ``EC2RequestParser`` is responsible for parsing incoming requests for services which use the ``ec2``
-    protocol (which only is EC2). Protocol is quite similar to the ``query`` protocol with some small differences.
+    The ``EC2RequestParser`` is responsible for parsing incoming requests for services which use
+    the ``ec2``
+    protocol (which only is EC2). Protocol is quite similar to the ``query`` protocol with some
+    small differences.
 
     **Experimental:** This parser is still experimental.
     When implementing services with this parser, some edge cases might not work out-of-the-box.

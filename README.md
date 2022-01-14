@@ -46,7 +46,7 @@ LocalStack also provides additional features to make your life as a cloud develo
 
 ## Requirements
 
-* `python` (Python 3.6 up to 3.9 supported)
+* `python` (Python 3.7 up to 3.9 supported)
 * `pip` (Python package manager)
 * `Docker`
 
@@ -60,7 +60,7 @@ pip install localstack
 
 **Note**: Please do **not** use `sudo` or the `root` user - LocalStack should be installed and started entirely under a local non-root user. If you have problems with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
-It installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime. 
+It installs the `localstack-cli` which is used to run the Docker image that hosts the LocalStack runtime.
 
 ## Example
 
