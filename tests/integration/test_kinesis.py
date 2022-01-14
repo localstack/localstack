@@ -11,7 +11,7 @@ import requests
 
 from localstack import config, constants
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import retry, select_attributes, short_uid
+from localstack.utils.common import poll_condition, retry, select_attributes, short_uid
 from localstack.utils.kinesis import kinesis_connector
 
 
@@ -234,6 +234,44 @@ class TestKinesis(unittest.TestCase):
             StartingSequenceNumber=sequence_number,
         )
         return response.get("ShardIterator")
+
+
+@pytest.fixture
+def wait_for_stream_ready(kinesis_client):
+    def _wait_for_stream_ready(stream_name: str):
+        def is_stream_ready():
+            describe_stream_response = kinesis_client.describe_stream(StreamName=stream_name)
+            return describe_stream_response["StreamDescription"]["StreamStatus"] in [
+                "ACTIVE",
+                "UPDATING",
+            ]
+
+        poll_condition(is_stream_ready)
+
+    return _wait_for_stream_ready
+
+
+def test_get_records_next_shard_iterator(
+    kinesis_client, kinesis_create_stream, wait_for_stream_ready
+):
+    stream_name = kinesis_create_stream()
+    wait_for_stream_ready(stream_name)
+
+    first_stream_shard_data = kinesis_client.describe_stream(StreamName=stream_name)[
+        "StreamDescription"
+    ]["Shards"][0]
+    shard_id = first_stream_shard_data["ShardId"]
+
+    shard_iterator = kinesis_client.get_shard_iterator(
+        StreamName=stream_name, ShardIteratorType="LATEST", ShardId=shard_id
+    )["ShardIterator"]
+
+    get_records_response = kinesis_client.get_records(ShardIterator=shard_iterator)
+    new_shard_iterator = get_records_response["NextShardIterator"]
+    assert shard_iterator != new_shard_iterator
+    get_records_response = kinesis_client.get_records(ShardIterator=new_shard_iterator)
+    assert shard_iterator != get_records_response["NextShardIterator"]
+    assert new_shard_iterator != get_records_response["NextShardIterator"]
 
 
 class TestKinesisPythonClient(unittest.TestCase):
