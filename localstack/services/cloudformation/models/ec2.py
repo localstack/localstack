@@ -339,7 +339,7 @@ class EC2VPC(GenericBaseModel):
                 )
                 for rt in resp["RouteTables"]:
                     for assoc in rt.get("Associations", []):
-                        # skipping Main association (accommodating recent upstream change)
+                        # skipping Main association (upstream moto includes default association that cannot be deleted)
                         if assoc.get("Main"):
                             continue
                         ec2_client.disassociate_route_table(

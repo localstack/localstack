@@ -79,7 +79,7 @@ def test_patch_decorator_on_bound_method_with_pass_target():
     obj = MyEchoer()
 
     @patch(target=obj.do_echo)
-    def uppercase(target, arg):
+    def uppercase(self, target, arg):
         return target(arg).upper()
 
     assert obj.do_echo("foo") == "DO_ECHO: FOO"
@@ -94,7 +94,7 @@ def test_patch_decorator_on_bound_method():
     obj = MyEchoer()
 
     @patch(target=obj.do_echo, pass_target=False)
-    def monkey(arg):
+    def monkey(self, arg):
         return f"monkey: {arg}"
 
     assert obj.do_echo("foo") == "monkey: foo"

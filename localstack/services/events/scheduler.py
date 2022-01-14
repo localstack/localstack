@@ -37,6 +37,7 @@ class JobScheduler(object):
     _instance = None
 
     def __init__(self):
+        # TODO: introduce RLock for mutating jobs list
         self.jobs = []
         self.thread = None
 

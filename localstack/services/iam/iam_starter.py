@@ -182,7 +182,7 @@ def apply_patches():
     # patch detach_role_policy
 
     @patch(moto_iam_backend.detach_role_policy, pass_target=False)
-    def iam_backend_detach_role_policy(policy_arn, role_name):
+    def iam_backend_detach_role_policy(self, policy_arn, role_name):
         try:
             role = moto_iam_backend.get_role(role_name)
             policy = role.managed_policies[policy_arn]
