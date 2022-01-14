@@ -21,12 +21,15 @@ class TestEc2Integrations(unittest.TestCase):
         for route_tables in ec2.describe_route_tables()["RouteTables"]:
             for association in route_tables["Associations"]:
                 if association["RouteTableId"] == route_table["RouteTable"]["RouteTableId"]:
+                    if association.get("Main"):
+                        continue  # default route table associations have no SubnetId in moto
                     self.assertEqual(association["SubnetId"], subnet["Subnet"]["SubnetId"])
                     self.assertEqual(association["AssociationState"]["State"], "associated")
 
         ec2.disassociate_route_table(AssociationId=association_id)
         for route_tables in ec2.describe_route_tables()["RouteTables"]:
-            self.assertEqual(route_tables["Associations"], [])
+            associations = [a for a in route_tables["Associations"] if not a.get("Main")]
+            self.assertEqual(associations, [])
 
     def test_create_vpc_end_point(self):
         ec2 = self.ec2_client
@@ -235,11 +238,12 @@ class TestEc2Integrations(unittest.TestCase):
             ],
         )
 
+        region = aws_stack.get_region()
         self.assertEqual(200, vpc_endpoint_gateway_services["ResponseMetadata"]["HTTPStatusCode"])
         services = vpc_endpoint_gateway_services["ServiceNames"]
         self.assertEqual(2, len(services))
-        self.assertTrue("com.amazonaws.us-east-1.dynamodb" in services)
-        self.assertTrue("com.amazonaws.us-east-1.s3" in services)
+        self.assertTrue(f"com.amazonaws.{region}.dynamodb" in services)
+        self.assertTrue(f"com.amazonaws.{region}.s3" in services)
         # test filter of Interface endpoint services
         vpc_endpoint_interface_services = ec2.describe_vpc_endpoint_services(
             Filters=[
@@ -250,9 +254,9 @@ class TestEc2Integrations(unittest.TestCase):
         self.assertEqual(200, vpc_endpoint_interface_services["ResponseMetadata"]["HTTPStatusCode"])
         services = vpc_endpoint_interface_services["ServiceNames"]
         self.assertTrue(len(services) > 0)
-        self.assertTrue("com.amazonaws.us-east-1.dynamodb" in services)
-        self.assertTrue("com.amazonaws.us-east-1.s3" in services)
-        self.assertTrue("com.amazonaws.us-east-1.firehose" in services)
+        self.assertTrue(f"com.amazonaws.{region}.dynamodb" in services)
+        self.assertTrue(f"com.amazonaws.{region}.s3" in services)
+        self.assertTrue(f"com.amazonaws.{region}.firehose" in services)
 
         # test filter that does not exist
         vpc_endpoint_interface_services = ec2.describe_vpc_endpoint_services(

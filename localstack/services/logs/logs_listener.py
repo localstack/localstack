@@ -6,11 +6,11 @@ import re
 from gzip import GzipFile
 from typing import Callable, Dict
 
-from moto.awslambda import models as lambda_models
+from moto.awslambda.models import LambdaBackend
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
 from moto.logs.exceptions import InvalidParameterException, ResourceNotFoundException
-from moto.logs.models import LogStream
+from moto.logs.models import LogsBackend, LogStream
 from requests.models import Request
 
 from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
@@ -164,9 +164,7 @@ def moto_put_log_events(_, self, log_group_name, log_stream_name, log_events, se
             )
 
 
-def moto_put_subscription_filter(put_subscription_filter, *args, **kwargs):
-    self = put_subscription_filter.__self__
-
+def moto_put_subscription_filter(fn, self, *args, **kwargs):
     log_group_name = args[0]
     filter_name = args[1]
     filter_pattern = args[2]
@@ -253,12 +251,9 @@ def moto_filter_log_events(
 
 
 def add_patches(patches: Patches):
-    for lambda_backend in lambda_models.lambda_backends.values():
-        patches.function(lambda_backend.get_function, moto_lambda_get_function)
+    patches.function(LambdaBackend.get_function, moto_lambda_get_function)
 
-    for logs_backend in logs_models.logs_backends.values():
-        patches.function(logs_backend.put_subscription_filter, moto_put_subscription_filter)
-
+    patches.function(LogsBackend.put_subscription_filter, moto_put_subscription_filter)
     patches.function(LogStream.put_log_events, moto_put_log_events)
     patches.function(LogStream.filter_log_events, moto_filter_log_events)
 
