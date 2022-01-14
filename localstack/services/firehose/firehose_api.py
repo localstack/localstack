@@ -370,6 +370,10 @@ def create_stream(
     )
 
     if delivery_stream_type == "KinesisStreamAsSource":
+        if not delivery_stream_type_configuration:
+            # Mock error
+            return error_response("Missing delivery stream configuration", code=400)
+
         kinesis_stream_name = delivery_stream_type_configuration.get("KinesisStreamARN").split("/")[
             1
         ]
