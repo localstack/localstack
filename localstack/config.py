@@ -578,6 +578,19 @@ ES_ENDPOINT_STRATEGY = os.environ.get("ES_ENDPOINT_STRATEGY", "").strip() or "do
 # Whether to start one cluster per domain (default), or multiplex domains to a single clusters
 ES_MULTI_CLUSTER = is_env_not_false("ES_MULTI_CLUSTER")
 
+# URL to a custom opensearch backend cluster. If this is set to a valid URL, then localstack will not create
+# opensearch cluster instances, but instead forward all domains to the given backend.
+OPENSEARCH_CUSTOM_BACKEND = os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
+
+# Strategy used when creating opensearch domain endpoints routed through the edge proxy
+# valid values: domain | path
+OPENSEARCH_ENDPOINT_STRATEGY = (
+    os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip() or "domain"
+)
+
+# Whether to start one openseasrch cluster per domain (default), or multiplex opensearch domains to a single clusters
+OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
+
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately

@@ -73,7 +73,7 @@ import re
 from abc import ABC
 from collections import defaultdict
 from email.utils import parsedate_to_datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Tuple, Union
 from urllib.parse import parse_qs
 from xml.etree import ElementTree as ETree
 
@@ -81,6 +81,7 @@ import dateutil.parser
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 
 from localstack.aws.api import HttpRequest
+from localstack.utils.common import to_str
 
 
 def _text_content(func):
@@ -96,7 +97,11 @@ def _text_content(func):
     """
 
     def _get_text_content(
-        self, request: HttpRequest, shape: Shape, node_or_string: Union[ETree.Element, str]
+        self,
+        request: HttpRequest,
+        shape: Shape,
+        node_or_string: Union[ETree.Element, str],
+        path_regex: Pattern[str] = None,
     ):
         if hasattr(node_or_string, "text"):
             text = node_or_string.text
@@ -106,7 +111,7 @@ def _text_content(func):
                 text = ""
         else:
             text = node_or_string
-        return func(self, request, shape, text)
+        return func(self, request, shape, text, path_regex)
 
     return _get_text_content
 
@@ -145,49 +150,42 @@ class RequestParser(abc.ABC):
         """
         raise NotImplementedError
 
-    def _parse_shape(self, request: HttpRequest, shape: Shape, node: any) -> any:
+    def _parse_shape(
+        self, request: HttpRequest, shape: Shape, node: any, path_regex: Pattern[str] = None
+    ) -> any:
         """
         Main parsing method which dynamically calls the parsing function for the specific shape.
 
         :param request: the complete HttpRequest
         :param shape: of the node
         :param node: the single part of the HTTP request to parse
+        :param path_regex: regex of the path. This is necessary to extract members located in the URI. Defaults to None.
         :return: result of the parsing operation, the type depends on the shape
         """
         location = shape.serialization.get("location")
         if location is not None:
             if location == "header":
-                # TODO implement proper parsing from the header field
-                # https://awslabs.github.io/smithy/1.0/spec/core/http-traits.html#httpheader-trait
-                # Attention: This differs from the other protocols!
-                # headers = request.headers
-                # location_name = shape.serialization.get("locationName")
-                payload = ""
-                raise NotImplementedError
+                header_name = shape.serialization.get("name")
+                if header_name in request.headers:
+                    payload = self._parse_shape(
+                        request, shape, request.headers[header_name], path_regex
+                    )
             elif location == "headers":
-                # TODO implement proper parsing from the header fields (prefix)
-                # https://awslabs.github.io/smithy/1.0/spec/core/http-traits.html#httpprefixheaders-trait
-                # Attention: This differs from the other protocols!
-                # headers = request.headers
-                # location_name = shape.serialization.get("locationName")
-                payload = ""
-                raise NotImplementedError
+                payload = self._parse_header_map(shape, request.headers)
             elif location == "querystring":
-                # TODO implement proper parsing from the query string
-                # https://awslabs.github.io/smithy/1.0/spec/core/http-traits.html#httpquery-trait
-                # Attention: This differs from the other protocols, even the Query protocol!
-                # body = request.text
-                # location_name = shape.serialization.get("locationName")
-                payload = ""
-                raise NotImplementedError
+                query_name = shape.serialization.get("name")
+                parsed_query = parse_qs(to_str(request.query_string))
+                # If the query param is in the parsed dict, take the first element of the value
+                # (the parsed query params are always lists, even if only a single value).
+                payload = (
+                    next(iter(parsed_query[query_name]), None)
+                    if query_name in parsed_query
+                    else None
+                )
             elif location == "uri":
-                # TODO implement proper parsing from the URI path
-                # https://awslabs.github.io/smithy/1.0/spec/core/http-traits.html#httplabel-trait
-                # Attention: This differs from the other protocols, even the Query protocol!
-                # path = request.path
-                # location_name = shape.serialization.get("locationName")
-                payload = ""
-                raise NotImplementedError
+                regex_group_name = shape.serialization.get("name")
+                match = path_regex.match(request.path)
+                payload = match.group(regex_group_name)
             else:
                 raise RequestParserError("Unknown shape location '%s'." % location)
         else:
@@ -196,35 +194,37 @@ class RequestParser(abc.ABC):
 
         fn_name = "_parse_%s" % shape.type_name
         handler = getattr(self, fn_name, self._noop_parser)
-        return handler(request, shape, payload)
+        return handler(request, shape, payload, path_regex) if payload is not None else None
 
     # The parsing functions for primitive types, lists, and timestamps are shared among subclasses.
 
-    def _parse_list(self, request: HttpRequest, shape: ListShape, node: list):
+    def _parse_list(
+        self, request: HttpRequest, shape: ListShape, node: list, path_regex: Pattern[str] = None
+    ):
         parsed = []
         member_shape = shape.member
         for item in node:
-            parsed.append(self._parse_shape(request, member_shape, item))
+            parsed.append(self._parse_shape(request, member_shape, item, path_regex))
         return parsed
 
     @_text_content
-    def _parse_integer(self, _, __, node: str) -> int:
+    def _parse_integer(self, _, __, node: str, ___) -> int:
         return int(node)
 
     @_text_content
-    def _parse_float(self, _, __, node: str) -> float:
+    def _parse_float(self, _, __, node: str, ___) -> float:
         return float(node)
 
     @_text_content
-    def _parse_blob(self, _, __, node: str) -> bytes:
+    def _parse_blob(self, _, __, node: str, ___) -> bytes:
         return base64.b64decode(node)
 
     @_text_content
-    def _parse_timestamp(self, _, shape: Shape, node: str) -> datetime.datetime:
+    def _parse_timestamp(self, _, shape: Shape, node: str, ___) -> datetime.datetime:
         return self._convert_str_to_timestamp(node, shape.serialization.get("timestampFormat"))
 
     @_text_content
-    def _parse_boolean(self, _, __, node: str) -> bool:
+    def _parse_boolean(self, _, __, node: str, ___) -> bool:
         value = node.lower()
         if value == "true":
             return True
@@ -233,7 +233,7 @@ class RequestParser(abc.ABC):
         raise ValueError("cannot parse boolean value %s" % node)
 
     @_text_content
-    def _noop_parser(self, _, __, node: any):
+    def _noop_parser(self, _, __, node: any, ___):
         return node
 
     _parse_character = _parse_string = _noop_parser
@@ -260,6 +260,59 @@ class RequestParser(abc.ABC):
     def _timestamp_rfc822(datetime_string: str) -> datetime.datetime:
         return parsedate_to_datetime(datetime_string)
 
+    @staticmethod
+    def _get_request_uri_regex(operation: OperationModel) -> Optional[Pattern[str]]:
+        """
+        Tries to extract the request URI from a given operation.
+        If a request URI can be found, it is transformed to a regular expression which can be used to try to match
+        incoming requests (i.e. their paths).
+
+        :param operation: to extract the requestUri and convert to a regex of
+        :return: extracted requestUri, converted to a regular expression
+        """
+        if operation is None:
+            return None
+        request_uri_regex = None
+        http = operation.http
+        if len(http) > 0:
+            request_uri = http.get("requestUri")
+            request_uri_regex = RequestParser._convert_request_uri_to_regex(request_uri)
+        return request_uri_regex
+
+    @staticmethod
+    def _convert_request_uri_to_regex(request_uri: str) -> Optional[Pattern[str]]:
+        """
+        Converts the given request_uri to a regular expression.
+        It adds fences (line start and line end operators) and replaces the path param placeholders (f.e. "{VarName}")
+        with named capture groups (where the capture group name is the variable placeholder name).
+
+        :param request_uri: to convert to a regex
+        :return: regex
+        """
+        if request_uri is None:
+            return None
+        # Replace the variable place holder (f.e. {ConnectionId} in "/fuu/{ConnectionId}/bar/")
+        # with a named regex group.
+        request_uri_regex = re.sub(
+            "{(?P<VariableName>[^/]*)}", "(?P<\\g<VariableName>>[^/]*)", request_uri
+        )
+        # Put regex in fences to make sure that we do not match any substrings
+        request_uri_regex = f"^{request_uri_regex}$"
+        # The result is a regex itself.
+        return re.compile(request_uri_regex)
+
+    @staticmethod
+    def _parse_header_map(shape: Shape, headers: dict) -> dict:
+        # Note that headers are case insensitive, so we .lower() all header names and header prefixes.
+        parsed = {}
+        prefix = shape.serialization.get("name", "").lower()
+        for header_name in headers:
+            if header_name.lower().startswith(prefix):
+                # The key name inserted into the parsed hash strips off the prefix.
+                name = header_name[len(prefix) :]
+                parsed[name] = headers[header_name]
+        return parsed
+
 
 class QueryRequestParser(RequestParser):
     """
@@ -281,12 +334,18 @@ class QueryRequestParser(RequestParser):
         # Therefore we take the first element of each entry in the dict.
         instance = {k: self._get_first(v) for k, v in instance.items()}
         operation: OperationModel = self.service.operation_model(instance["Action"])
+        # Extract the URI for the operation and convert it to a regex
+        request_uri_regex = self._get_request_uri_regex(operation)
         input_shape: StructureShape = operation.input_shape
-
-        return operation, self._parse_shape(request, input_shape, instance)
+        return operation, self._parse_shape(request, input_shape, instance, request_uri_regex)
 
     def _process_member(
-        self, request: HttpRequest, member_name: str, member_shape: Shape, node: dict
+        self,
+        request: HttpRequest,
+        member_name: str,
+        member_shape: Shape,
+        node: dict,
+        path_regex: Pattern[str] = None,
     ):
         if isinstance(member_shape, (MapShape, ListShape, StructureShape)):
             # If we have a complex type, we filter the node and change it's keys to craft a new "context" for the
@@ -296,9 +355,19 @@ class QueryRequestParser(RequestParser):
             # If it is a primitive type we just get the value from the dict
             sub_node = node.get(member_name)
         # The filtered node is processed and returned (or None if the sub_node is None)
-        return self._parse_shape(request, member_shape, sub_node) if sub_node is not None else None
+        return (
+            self._parse_shape(request, member_shape, sub_node, path_regex)
+            if sub_node is not None
+            else None
+        )
 
-    def _parse_structure(self, request: HttpRequest, shape: StructureShape, node: dict) -> dict:
+    def _parse_structure(
+        self,
+        request: HttpRequest,
+        shape: StructureShape,
+        node: dict,
+        path_regex: Pattern[str] = None,
+    ) -> dict:
         result = {}
 
         for member, member_shape in shape.members.items():
@@ -308,14 +377,16 @@ class QueryRequestParser(RequestParser):
             if member_shape.serialization.get("flattened"):
                 if isinstance(member_shape, ListShape):
                     member_name = self._get_serialized_name(member_shape.member, member)
-            value = self._process_member(request, member_name, member_shape, node)
+            value = self._process_member(request, member_name, member_shape, node, path_regex)
             if value is not None or member in shape.required_members:
                 # If the member is required, but not existing, we explicitly set None
                 result[member] = value
 
         return result if len(result) > 0 else None
 
-    def _parse_map(self, request: HttpRequest, shape: MapShape, node: dict) -> dict:
+    def _parse_map(
+        self, request: HttpRequest, shape: MapShape, node: dict, path_regex: Pattern[str]
+    ) -> dict:
         """
         This is what the node looks like for a flattened map::
         ::
@@ -360,7 +431,9 @@ class QueryRequestParser(RequestParser):
 
         return result if len(result) > 0 else None
 
-    def _parse_list(self, request: HttpRequest, shape: ListShape, node: dict) -> list:
+    def _parse_list(
+        self, request: HttpRequest, shape: ListShape, node: dict, path_regex: Pattern[str] = None
+    ) -> list:
         """
         Some actions take lists of parameters. These lists are specified using the param.[member.]n notation.
         The "member" is used if the list is not flattened.
@@ -428,24 +501,32 @@ class BaseRestRequestParser(RequestParser):
     def __init__(self, service: ServiceModel) -> None:
         super().__init__(service)
         # When parsing a request, we need to lookup the operation based on the HTTP method and URI.
-        # Therefore we create a mapping when the parser is initialized.
-        self.operation_lookup = defaultdict(lambda: defaultdict(OperationModel))
+        # We create a mapping when the parser is initialized.
+        # Since the path can contain URI path parameters, the key of the dict is a regex.
+        self.operation_lookup: DefaultDict[
+            str, DefaultDict[Pattern[str], OperationModel]
+        ] = defaultdict(lambda: defaultdict())
         for operation in service.operation_names:
             operation_model = service.operation_model(operation)
             http = operation_model.http
             if len(http) > 0:
                 method = http.get("method")
                 request_uri = http.get("requestUri")
-                self.operation_lookup[method][request_uri] = operation_model
+                request_uri_regex = self._convert_request_uri_to_regex(request_uri)
+                self.operation_lookup[method][request_uri_regex] = operation_model
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        operation = self.operation_lookup[request.method][request.path]
+        # Find the regex which matches the given path (as well as its operation)
+        path_regex, operation = next(
+            filter(
+                lambda item: item[0].match(request.path),
+                self.operation_lookup[request.method].items(),
+            )
+        )
         shape: StructureShape = operation.input_shape
         final_parsed = {}
         if shape is not None:
-            member_shapes = shape.members
-            self._parse_non_payload_attrs(request, member_shapes, final_parsed)
-            self._parse_payload(request, shape, member_shapes, final_parsed)
+            self._parse_payload(request, shape, shape.members, path_regex, final_parsed)
         return operation, final_parsed
 
     def _parse_payload(
@@ -453,6 +534,7 @@ class BaseRestRequestParser(RequestParser):
         request: HttpRequest,
         shape: Shape,
         member_shapes: Dict[str, Shape],
+        path_regex: Pattern[str],
         final_parsed: dict,
     ) -> None:
         """Parses all attributes which are located in the payload / body of the incoming request."""
@@ -472,45 +554,12 @@ class BaseRestRequestParser(RequestParser):
             else:
                 original_parsed = self._initial_body_parse(request.data)
                 final_parsed[payload_member_name] = self._parse_shape(
-                    request, body_shape, original_parsed
+                    request, body_shape, original_parsed, path_regex
                 )
         else:
             original_parsed = self._initial_body_parse(request.data)
-            body_parsed = self._parse_shape(request, shape, original_parsed)
+            body_parsed = self._parse_shape(request, shape, original_parsed, path_regex)
             final_parsed.update(body_parsed)
-
-    def _parse_non_payload_attrs(
-        self, request: HttpRequest, member_shapes: dict, final_parsed: dict
-    ) -> None:
-        """Parses all attributes which are not located in the payload."""
-        headers = request.headers
-        for name in member_shapes:
-            member_shape = member_shapes[name]
-            location = member_shape.serialization.get("location")
-            if location is None:
-                continue
-            elif location == "headers":
-                final_parsed[name] = self._parse_header_map(member_shape, headers)
-            elif location == "header":
-                header_name = member_shape.serialization.get("name", name)
-                if header_name in headers:
-                    final_parsed[name] = self._parse_shape(
-                        request, member_shape, headers[header_name]
-                    )
-            else:
-                raise RequestParserError("Unknown shape location '%s'." % location)
-
-    @staticmethod
-    def _parse_header_map(shape: Shape, headers: dict) -> dict:
-        # Note that headers are case insensitive, so we .lower() all header names and header prefixes.
-        parsed = {}
-        prefix = shape.serialization.get("name", "").lower()
-        for header_name in headers:
-            if header_name.lower().startswith(prefix):
-                # The key name inserted into the parsed hash strips off the prefix.
-                name = header_name[len(prefix) :]
-                parsed[name] = headers[header_name]
-        return parsed
 
     def _initial_body_parse(self, body_contents: bytes) -> any:
         """
@@ -547,7 +596,11 @@ class RestXMLRequestParser(BaseRestRequestParser):
         return self._parse_xml_string_to_dom(xml_string)
 
     def _parse_structure(
-        self, request: HttpRequest, shape: StructureShape, node: ETree.Element
+        self,
+        request: HttpRequest,
+        shape: StructureShape,
+        node: ETree.Element,
+        path_regex: Pattern[str] = None,
     ) -> dict:
         parsed = {}
         xml_dict = self._build_name_to_xml_node(node)
@@ -561,7 +614,9 @@ class RestXMLRequestParser(BaseRestRequestParser):
             xml_name = self._member_key_name(member_shape, member_name)
             member_node = xml_dict.get(xml_name)
             if member_node is not None:
-                parsed[member_name] = self._parse_shape(request, member_shape, member_node)
+                parsed[member_name] = self._parse_shape(
+                    request, member_shape, member_node, path_regex
+                )
             elif member_shape.serialization.get("xmlAttribute"):
                 attributes = {}
                 location_name = member_shape.serialization["name"]
@@ -575,7 +630,9 @@ class RestXMLRequestParser(BaseRestRequestParser):
                 parsed[member_name] = None
         return parsed
 
-    def _parse_map(self, request: HttpRequest, shape: MapShape, node: dict) -> dict:
+    def _parse_map(
+        self, request: HttpRequest, shape: MapShape, node: dict, path_regex: Pattern[str] = None
+    ) -> dict:
         parsed = {}
         key_shape = shape.key
         value_shape = shape.value
@@ -589,15 +646,17 @@ class RestXMLRequestParser(BaseRestRequestParser):
                 # Within each <entry> there's a <key> and a <value>
                 tag_name = self._node_tag(single_pair)
                 if tag_name == key_location_name:
-                    key_name = self._parse_shape(request, key_shape, single_pair)
+                    key_name = self._parse_shape(request, key_shape, single_pair, path_regex)
                 elif tag_name == value_location_name:
-                    val_name = self._parse_shape(request, value_shape, single_pair)
+                    val_name = self._parse_shape(request, value_shape, single_pair, path_regex)
                 else:
                     raise RequestParserError("Unknown tag: %s" % tag_name)
             parsed[key_name] = val_name
         return parsed
 
-    def _parse_list(self, request: HttpRequest, shape: ListShape, node: dict) -> list:
+    def _parse_list(
+        self, request: HttpRequest, shape: ListShape, node: dict, path_regex: Pattern[str] = None
+    ) -> list:
         # When we use _build_name_to_xml_node, repeated elements are aggregated
         # into a list. However, we can't tell the difference between a scalar
         # value and a single element flattened list. So before calling the
@@ -605,7 +664,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         # it's flattened, and if it's not, then we make it a one element list.
         if shape.serialization.get("flattened") and not isinstance(node, list):
             node = [node]
-        return super(RestXMLRequestParser, self)._parse_list(request, shape, node)
+        return super(RestXMLRequestParser, self)._parse_list(request, shape, node, path_regex)
 
     def _node_tag(self, node: ETree.Element) -> str:
         return self._namespace_re.sub("", node.tag)
@@ -673,7 +732,11 @@ class BaseJSONRequestParser(RequestParser, ABC):
     TIMESTAMP_FORMAT = "unixtimestamp"
 
     def _parse_structure(
-        self, request: HttpRequest, shape: StructureShape, value: Optional[dict]
+        self,
+        request: HttpRequest,
+        shape: StructureShape,
+        value: Optional[dict],
+        path_regex: Pattern[str] = None,
     ) -> Optional[dict]:
         if shape.is_document_type:
             final_parsed = value
@@ -687,15 +750,18 @@ class BaseJSONRequestParser(RequestParser, ABC):
             for member_name, member_shape in shape.members.items():
                 json_name = member_shape.serialization.get("name", member_name)
                 raw_value = value.get(json_name)
-                if raw_value is not None:
-                    final_parsed[member_name] = self._parse_shape(request, member_shape, raw_value)
-                elif member_name in shape.required_members:
-                    # If the member is required, but not existing, we explicitly set None
-                    final_parsed[member_name] = None
+                parsed = self._parse_shape(request, member_shape, raw_value, path_regex)
+                if parsed is not None or member_name in shape.required_members:
+                    # If the member is required, but not existing, we set it to None anyways
+                    final_parsed[member_name] = parsed
         return final_parsed
 
     def _parse_map(
-        self, request: HttpRequest, shape: MapShape, value: Optional[dict]
+        self,
+        request: HttpRequest,
+        shape: MapShape,
+        value: Optional[dict],
+        path_regex: Pattern[str] = None,
     ) -> Optional[dict]:
         if value is None:
             return None
@@ -703,8 +769,8 @@ class BaseJSONRequestParser(RequestParser, ABC):
         key_shape = shape.key
         value_shape = shape.value
         for key, value in value.items():
-            actual_key = self._parse_shape(request, key_shape, key)
-            actual_value = self._parse_shape(request, value_shape, value)
+            actual_key = self._parse_shape(request, key_shape, key, path_regex)
+            actual_value = self._parse_shape(request, value_shape, value, path_regex)
             parsed[actual_key] = actual_value
         return parsed
 
@@ -718,8 +784,10 @@ class BaseJSONRequestParser(RequestParser, ABC):
         except ValueError:
             raise RequestParserError("HTTP body could not be parsed as JSON.")
 
-    def _parse_boolean(self, request: HttpRequest, shape: Shape, node: bool) -> bool:
-        return super()._noop_parser(request, shape, node)
+    def _parse_boolean(
+        self, request: HttpRequest, shape: Shape, node: bool, path_regex: Pattern[str] = None
+    ) -> bool:
+        return super()._noop_parser(request, shape, node, path_regex)
 
 
 class JSONRequestParser(BaseJSONRequestParser):
@@ -738,28 +806,33 @@ class JSONRequestParser(BaseJSONRequestParser):
         _, operation_name = target.split(".")
         operation = self.service.operation_model(operation_name)
         shape = operation.input_shape
-        final_parsed = self._do_parse(request, shape)
+        path_regex = self._get_request_uri_regex(operation)
+        final_parsed = self._do_parse(request, shape, path_regex)
         return operation, final_parsed
 
-    def _do_parse(self, request: HttpRequest, shape: Shape) -> dict:
+    def _do_parse(
+        self, request: HttpRequest, shape: Shape, path_regex: Pattern[str] = None
+    ) -> dict:
         parsed = {}
         if shape is not None:
             event_name = shape.event_stream_name
             if event_name:
                 parsed = self._handle_event_stream(request, shape, event_name)
             else:
-                parsed = self._handle_json_body(request, request.data, shape)
+                parsed = self._handle_json_body(request, request.data, shape, path_regex)
         return parsed
 
     def _handle_event_stream(self, request: HttpRequest, shape: Shape, event_name: str):
         # TODO handle event streams
         raise NotImplementedError
 
-    def _handle_json_body(self, request: HttpRequest, raw_body: bytes, shape: Shape) -> any:
+    def _handle_json_body(
+        self, request: HttpRequest, raw_body: bytes, shape: Shape, path_regex: Pattern[str] = None
+    ) -> any:
         # The json.loads() gives us the primitive JSON types, but we need to traverse the parsed JSON data to convert
         # to richer types (blobs, timestamps, etc.)
         parsed_json = self._parse_body_as_json(raw_body)
-        return self._parse_shape(request, shape, parsed_json)
+        return self._parse_shape(request, shape, parsed_json, path_regex)
 
 
 class RestJSONRequestParser(BaseRestRequestParser, BaseJSONRequestParser):

@@ -130,8 +130,10 @@ def test_rest_xml_serializer_cloudfront_with_botocore():
                 "FunctionMetadata": {
                     "FunctionARN": "string",
                     "Stage": "LIVE",
-                    "CreatedTime": datetime(2015, 1, 1, tzinfo=tzutc()),
-                    "LastModifiedTime": datetime(2015, 1, 1, tzinfo=tzutc()),
+                    # Test the timestamp precision by adding hours, minutes, seconds and some milliseconds
+                    # (as microseconds).
+                    "CreatedTime": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
+                    "LastModifiedTime": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
                 },
             },
             "ComputeUtilization": "string",
@@ -200,7 +202,7 @@ def test_rest_xml_serializer_s3_2_with_botocore():
         "AcceptRanges": "string",
         "Expiration": "string",
         "Restore": "string",
-        "LastModified": datetime(2015, 1, 1),
+        "LastModified": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
         "ContentLength": 123,
         "ETag": "string",
         "MissingMeta": 123,
@@ -211,7 +213,7 @@ def test_rest_xml_serializer_s3_2_with_botocore():
         "ContentLanguage": "string",
         "ContentRange": "string",
         "ContentType": "string",
-        "Expires": datetime(2015, 1, 1),
+        "Expires": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
         "WebsiteRedirectLocation": "string",
         "ServerSideEncryption": "AES256",
         "Metadata": {"string": "string"},
@@ -225,7 +227,7 @@ def test_rest_xml_serializer_s3_2_with_botocore():
         "PartsCount": 123,
         "TagCount": 123,
         "ObjectLockMode": "GOVERNANCE",
-        "ObjectLockRetainUntilDate": datetime(2015, 1, 1),
+        "ObjectLockRetainUntilDate": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
         "ObjectLockLegalHoldStatus": "ON",
     }
     _botocore_serializer_integration_test("s3", "GetObject", parameters)
@@ -255,7 +257,7 @@ def test_query_serializer_cloudformation_with_botocore():
                 },
             ],
             "StackResourceDriftStatus": "MODIFIED",
-            "Timestamp": datetime(2015, 1, 1, tzinfo=tzutc()),
+            "Timestamp": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
         }
     }
     _botocore_serializer_integration_test("cloudformation", "DetectStackResourceDrift", parameters)
@@ -268,12 +270,16 @@ def test_query_serializer_redshift_with_botocore():
             {
                 "ClusterIdentifier": "string",
                 "CurrentDatabaseRevision": "string",
-                "DatabaseRevisionReleaseDate": datetime(2015, 1, 1, tzinfo=tzutc()),
+                "DatabaseRevisionReleaseDate": datetime(
+                    2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()
+                ),
                 "RevisionTargets": [
                     {
                         "DatabaseRevision": "string",
                         "Description": "string",
-                        "DatabaseRevisionReleaseDate": datetime(2015, 1, 1, tzinfo=tzutc()),
+                        "DatabaseRevisionReleaseDate": datetime(
+                            2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()
+                        ),
                     },
                 ],
             },
@@ -450,8 +456,8 @@ def test_json_serializer_cognito_with_botocore():
                 "KMSKeyID": "string",
             },
             "Status": "Enabled",
-            "LastModifiedDate": datetime(2015, 1, 1, tzinfo=tzutc()),
-            "CreationDate": datetime(2015, 1, 1, tzinfo=tzutc()),
+            "LastModifiedDate": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
+            "CreationDate": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
             "SchemaAttributes": [
                 {
                     "Name": "string",
@@ -574,8 +580,8 @@ def test_restjson_serializer_xray_with_botocore():
                 "Version": 123,
                 "Attributes": {"string": "string"},
             },
-            "CreatedAt": datetime(2015, 1, 1, tzinfo=tzutc()),
-            "ModifiedAt": datetime(2015, 1, 1, tzinfo=tzutc()),
+            "CreatedAt": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
+            "ModifiedAt": datetime(2015, 1, 1, 23, 59, 59, 1000, tzinfo=tzutc()),
         }
     }
 

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from typing import TYPE_CHECKING, List
@@ -9,6 +10,8 @@ import pytest
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
+from localstack.utils.common import poll_condition
+from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
 from localstack.utils.testutil import start_http_server
 
@@ -25,6 +28,7 @@ if TYPE_CHECKING:
     from mypy_boto3_kms import KMSClient
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
+    from mypy_boto3_opensearch import OpenSearchServiceClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_secretsmanager import SecretsManagerClient
     from mypy_boto3_ses import SESClient
@@ -135,6 +139,11 @@ def ses_client() -> "SESClient":
 @pytest.fixture(scope="class")
 def es_client() -> "ElasticsearchServiceClient":
     return _client("es")
+
+
+@pytest.fixture(scope="class")
+def opensearch_client() -> "OpenSearchServiceClient":
+    return _client("opensearch")
 
 
 @pytest.fixture(scope="class")
@@ -300,6 +309,70 @@ def kms_grant_and_key(kms_client, kms_key):
         ),
         kms_key,
     ]
+
+
+@pytest.fixture
+def opensearch_create_domain(opensearch_client):
+    domains = []
+
+    def factory(**kwargs) -> str:
+        if "DomainName" not in kwargs:
+            kwargs["DomainName"] = f"test-domain-{short_uid()}"
+
+        opensearch_client.create_domain(**kwargs)
+
+        def finished_processing():
+            status = opensearch_client.describe_domain(DomainName=kwargs["DomainName"])[
+                "DomainStatus"
+            ]
+            return status["Processing"] is False
+
+        assert poll_condition(
+            finished_processing, timeout=120
+        ), f"could not start domain: {kwargs['DomainName']}"
+
+        domains.append(kwargs["DomainName"])
+        return kwargs["DomainName"]
+
+    yield factory
+
+    # cleanup
+    for domain in domains:
+        try:
+            opensearch_client.delete_domain(DomainName=domain)
+        except Exception as e:
+            LOG.debug("error cleaning up domain %s: %s", domain, e)
+
+
+@pytest.fixture
+def opensearch_domain(opensearch_create_domain) -> str:
+    return opensearch_create_domain()
+
+
+@pytest.fixture
+def opensearch_endpoint(opensearch_client, opensearch_domain) -> str:
+    status = opensearch_client.describe_domain(DomainName=opensearch_domain)["DomainStatus"]
+    assert "Endpoint" in status
+    return f"https://{status['Endpoint']}"
+
+
+@pytest.fixture
+def opensearch_document_path(opensearch_client, opensearch_endpoint):
+    document = {
+        "first_name": "Boba",
+        "last_name": "Fett",
+        "age": 41,
+        "about": "I'm just a simple man, trying to make my way in the universe.",
+        "interests": ["mandalorian armor", "tusken culture"],
+    }
+    document_path = f"{opensearch_endpoint}/bounty/hunters/1"
+    response = requests.put(
+        document_path,
+        data=json.dumps(document),
+        headers={"content-type": "application/json", "Accept-encoding": "identity"},
+    )
+    assert response.status_code == 201, f"could not create document at: {document_path}"
+    return document_path
 
 
 # Cleanup fixtures

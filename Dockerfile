@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y openjdk-11-jdk-headless
 
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-${TARGETARCH}
 
-# reate a custom, minimized JRE via jlink
+# create a custom, minimized JRE via jlink
 RUN jlink --add-modules \
 # include required modules
 java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.sql,java.xml,jdk.compiler,\
@@ -19,6 +19,8 @@ jdk.unsupported,\
 jdk.crypto.cryptoki,\
 # add ability to open ZIP/JAR files
 jdk.zipfs,\
+# OpenSearch needs some jdk modules
+jdk.httpserver,jdk.management,\
 # Elasticsearch 7+ crashes without Thai Segmentation support
 jdk.localedata --include-locales en,th \
     --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \

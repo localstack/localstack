@@ -116,6 +116,10 @@ ELASTICSEARCH_PLUGIN_LIST = [
 ]
 # Default ES modules to exclude (save apprx 66MB in the final image)
 ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
+
+# the version of opensearch which is used by default
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_1.1"
+
 ELASTICMQ_JAR_URL = (
     "https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar"
 )
@@ -190,6 +194,9 @@ DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
 
 # user that starts the elasticsearch process if the current user is root
 OS_USER_ELASTICSEARCH = "localstack"
+
+# user that starts the opensearch process if the current user is root
+OS_USER_OPENSEARCH = "localstack"
 
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."

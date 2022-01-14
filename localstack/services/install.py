@@ -28,6 +28,7 @@ from localstack.constants import (
     KMS_URL_PATTERN,
     LOCALSTACK_MAVEN_VERSION,
     MODULE_MAIN_PATH,
+    OPENSEARCH_DEFAULT_VERSION,
     STS_JAR_URL,
 )
 from localstack.runtime import hooks
@@ -211,6 +212,60 @@ def install_elasticsearch(version=None):
     # disable x-pack-ml plugin (not working on Alpine)
     xpack_dir = os.path.join(install_dir, "modules", "x-pack-ml", "platform")
     rm_rf(xpack_dir)
+
+    # patch JVM options file - replace hardcoded heap size settings
+    jvm_options_file = os.path.join(install_dir, "config", "jvm.options")
+    if os.path.exists(jvm_options_file):
+        jvm_options = load_file(jvm_options_file)
+        jvm_options_replaced = re.sub(
+            r"(^-Xm[sx][a-zA-Z0-9\.]+$)", r"# \1", jvm_options, flags=re.MULTILINE
+        )
+        if jvm_options != jvm_options_replaced:
+            save_file(jvm_options_file, jvm_options_replaced)
+
+
+def get_opensearch_install_version(version: str) -> str:
+    from localstack.services.opensearch import versions
+
+    if config.SKIP_INFRA_DOWNLOADS:
+        return OPENSEARCH_DEFAULT_VERSION
+
+    return versions.get_install_version(version)
+
+
+def get_opensearch_install_dir(version: str) -> str:
+    version = get_opensearch_install_version(version)
+    return os.path.join(config.dirs.var_libs, "opensearch", version)
+
+
+def install_opensearch(version=None):
+    from localstack.services.opensearch import versions
+
+    if not version:
+        version = OPENSEARCH_DEFAULT_VERSION
+
+    version = get_opensearch_install_version(version)
+    install_dir = get_opensearch_install_dir(version)
+    installed_executable = os.path.join(install_dir, "bin", "opensearch")
+    if not os.path.exists(installed_executable):
+        log_install_msg("OpenSearch (%s)" % version)
+        opensearch_url = versions.get_download_url(version)
+        install_dir_parent = os.path.dirname(install_dir)
+        mkdir(install_dir_parent)
+        # download and extract archive
+        tmp_archive = os.path.join(
+            config.dirs.tmp, "localstack.%s" % os.path.basename(opensearch_url)
+        )
+        download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
+        opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
+        if not opensearch_dir:
+            raise Exception("Unable to find OpenSearch folder in %s" % install_dir_parent)
+        shutil.move(opensearch_dir[0], install_dir)
+
+        for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
+            dir_path = os.path.join(install_dir, dir_name)
+            mkdir(dir_path)
+            chmod_r(dir_path, 0o777)
 
     # patch JVM options file - replace hardcoded heap size settings
     jvm_options_file = os.path.join(install_dir, "config", "jvm.options")
@@ -622,6 +677,7 @@ class CommunityInstallerRepository(InstallerRepository):
             ("dynamodb-local", install_dynamodb_local),
             ("elasticmq", install_elasticmq),
             ("elasticsearch", install_elasticsearch),
+            ("opensearch", install_opensearch),
             ("kinesalite", install_kinesalite),
             ("kinesis-client-libs", install_amazon_kinesis_client_libs),
             ("kinesis-mock", install_kinesis_mock),

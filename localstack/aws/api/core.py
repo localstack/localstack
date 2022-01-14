@@ -4,6 +4,8 @@ import sys
 from io import BytesIO
 from typing import IO, Any, Callable, Dict, NamedTuple, Optional, Type, Union
 
+from localstack.utils.common import to_bytes
+
 if sys.version_info >= (3, 8):
     from typing import TypedDict
 else:
@@ -66,7 +68,7 @@ class HttpRequest(_SansIORequest):
         body: Union[bytes, str] = None,
         scheme: str = "http",
         root_path: str = "/",
-        query_string: bytes = b"",
+        query_string: Union[bytes, str] = b"",
         remote_addr: str = None,
     ):
         if not headers:
@@ -89,7 +91,7 @@ class HttpRequest(_SansIORequest):
             server=("127.0.0.1", None),
             root_path=root_path,
             path=path,
-            query_string=query_string,  # TODO: create query string from path
+            query_string=to_bytes(query_string),
             headers=headers,
             remote_addr=remote_addr,
         )

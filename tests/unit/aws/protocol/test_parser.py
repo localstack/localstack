@@ -192,13 +192,7 @@ def test_query_parser_flattened_list_structure():
 
 
 def _botocore_parser_integration_test(
-    service: str,
-    action: str,
-    method: str = None,
-    request_uri: str = None,
-    headers: dict = None,
-    expected: dict = None,
-    **kwargs
+    service: str, action: str, headers: dict = None, expected: dict = None, **kwargs
 ):
     # Load the appropriate service
     service = load_service(service)
@@ -207,6 +201,7 @@ def _botocore_parser_integration_test(
 
     serialized_request = serializer.serialize_to_request(kwargs, service.operation_model(action))
     body = serialized_request["body"]
+    query_string = urlencode(serialized_request.get("query_string") or "", doseq=False)
 
     if service.protocol in ["query", "ec2"]:
         # Serialize the body as query parameter
@@ -215,7 +210,13 @@ def _botocore_parser_integration_test(
     # Use our parser to parse the serialized body
     parser = create_parser(service)
     operation_model, parsed_request = parser.parse(
-        HttpRequest(method=method or "GET", path=request_uri or "", headers=headers, body=body)
+        HttpRequest(
+            method=serialized_request.get("method") or "GET",
+            path=serialized_request.get("url_path") or "",
+            query_string=query_string,
+            headers=headers,
+            body=body,
+        )
     )
 
     # Check if the result is equal to the given "expected" dict or the kwargs (if "expected" has not been set)
@@ -318,8 +319,6 @@ def test_restxml_parser_route53_with_botocore():
     _botocore_parser_integration_test(
         service="route53",
         action="CreateHostedZone",
-        method="POST",
-        request_uri="/2013-04-01/hostedzone",
         Name="string",
         VPC={"VPCRegion": "us-east-1", "VPCId": "string"},
         CallerReference="string",
@@ -332,8 +331,6 @@ def test_json_parser_cognito_with_botocore():
     _botocore_parser_integration_test(
         service="cognito-idp",
         action="CreateUserPool",
-        method="POST",
-        request_uri="/",
         headers={"X-Amz-Target": "AWSCognitoIdentityProviderService.CreateUserPool"},
         PoolName="string",
         Policies={
@@ -430,8 +427,6 @@ def test_restjson_parser_xray_with_botocore():
     _botocore_parser_integration_test(
         service="xray",
         action="PutTelemetryRecords",
-        method="POST",
-        request_uri="/TelemetryRecords",
         TelemetryRecords=[
             {
                 "Timestamp": datetime(2015, 1, 1),
@@ -452,6 +447,102 @@ def test_restjson_parser_xray_with_botocore():
         EC2InstanceId="string",
         Hostname="string",
         ResourceARN="string",
+    )
+
+
+def test_restjson_path_location_opensearch_with_botocore():
+    _botocore_parser_integration_test(
+        service="opensearch",
+        action="DeleteDomain",
+        DomainName="test-domain",
+    )
+
+
+def test_restjson_query_location_opensearch_with_botocore():
+    _botocore_parser_integration_test(
+        service="opensearch",
+        action="ListVersions",
+        NextToken="test-token",
+    )
+
+
+def test_restjson_opensearch_with_botocore():
+    _botocore_parser_integration_test(
+        service="opensearch",
+        action="UpdateDomainConfig",
+        DomainName="string",
+        ClusterConfig={
+            "InstanceType": "m3.medium.search",
+            "InstanceCount": 123,
+            "DedicatedMasterEnabled": True,
+            "ZoneAwarenessEnabled": True,
+            "ZoneAwarenessConfig": {"AvailabilityZoneCount": 123},
+            "DedicatedMasterType": "m3.medium.search",
+            "DedicatedMasterCount": 123,
+            "WarmEnabled": True,
+            "WarmType": "ultrawarm1.medium.search",
+            "WarmCount": 123,
+            "ColdStorageOptions": {"Enabled": True},
+        },
+        EBSOptions={"EBSEnabled": False, "VolumeType": "standard", "VolumeSize": 123, "Iops": 123},
+        SnapshotOptions={"AutomatedSnapshotStartHour": 123},
+        VPCOptions={
+            "SubnetIds": [
+                "string",
+            ],
+            "SecurityGroupIds": [
+                "string",
+            ],
+        },
+        CognitoOptions={
+            "Enabled": True,
+            "UserPoolId": "string",
+            "IdentityPoolId": "string",
+            "RoleArn": "12345678901234567890",
+        },
+        AdvancedOptions={"string": "string"},
+        AccessPolicies="string",
+        LogPublishingOptions={
+            "string": {"CloudWatchLogsLogGroupArn": "12345678901234567890", "Enabled": True}
+        },
+        EncryptionAtRestOptions={"Enabled": False, "KmsKeyId": "string"},
+        DomainEndpointOptions={
+            "EnforceHTTPS": True,
+            "TLSSecurityPolicy": "Policy-Min-TLS-1-0-2019-07",
+            "CustomEndpointEnabled": True,
+            "CustomEndpoint": "string",
+            "CustomEndpointCertificateArn": "12345678901234567890",
+        },
+        NodeToNodeEncryptionOptions={"Enabled": True},
+        AdvancedSecurityOptions={
+            "Enabled": True,
+            "InternalUserDatabaseEnabled": True,
+            "MasterUserOptions": {
+                "MasterUserARN": "12345678901234567890",
+                "MasterUserName": "string",
+                "MasterUserPassword": "12345678",
+            },
+            "SAMLOptions": {
+                "Enabled": True,
+                "Idp": {"MetadataContent": "string", "EntityId": "12345678"},
+                "MasterUserName": "string",
+                "MasterBackendRole": "string",
+                "SubjectKey": "string",
+                "RolesKey": "string",
+                "SessionTimeoutMinutes": 123,
+            },
+        },
+        AutoTuneOptions={
+            "DesiredState": "ENABLED",
+            "RollbackOnDisable": "DEFAULT_ROLLBACK",
+            "MaintenanceSchedules": [
+                {
+                    "StartAt": datetime(2015, 1, 1),
+                    "Duration": {"Value": 123, "Unit": "HOURS"},
+                    "CronExpressionForRecurrence": "string",
+                },
+            ],
+        },
     )
 
 

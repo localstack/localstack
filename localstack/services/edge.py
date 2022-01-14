@@ -373,6 +373,11 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = "resourcegroupstaggingapi", config.PORT_RESOURCEGROUPSTAGGINGAPI
     elif result[0] == "resource-groups":
         result = "resource-groups", config.PORT_RESOURCE_GROUPS
+    elif result[0] == "es" and path is not None and not path.startswith("/2015-01-01/"):
+        # For OpenSearch, the auth header points to the API ("es").
+        # However, if the path does _not_ start with /2015-01-01 (the API version path prefix for the only ES API
+        # version) it is a request to the opensearch API.
+        result = "opensearch", config.PORT_OPENSEARCH
 
     return result[0], result_before[1] or result[1], path, host
 

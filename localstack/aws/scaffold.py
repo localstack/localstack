@@ -187,7 +187,7 @@ class ShapeNode:
         elif shape.type_name == "blob":
             output.write(f"{shape.name} = bytes")  # FIXME check what type blob really is
         elif shape.type_name == "timestamp":
-            output.write(f"{shape.name} = str")
+            output.write(f"{shape.name} = datetime")
         else:
             output.write(f"# unknown shape type for {shape.name}: {shape.type_name}")
         # TODO: BoxedInteger?
@@ -214,6 +214,7 @@ class ShapeNode:
 def generate_service_types(output, service: ServiceModel, doc=True):
     output.write("import sys\n")
     output.write("from typing import Dict, List, Optional\n")
+    output.write("from datetime import datetime\n")
     output.write("if sys.version_info >= (3, 8):\n")
     output.write("    from typing import TypedDict\n")
     output.write("else:\n")
