@@ -1,12 +1,13 @@
+import logging
+
+from moto.apigateway.models import APIGatewayBackend
+
 from localstack.aws.api import RequestContext
 from localstack.aws.api.apigateway import (
     ApigatewayApi,
     ApiKeySourceType,
-    Authorizer,
-    AuthorizerType,
     Boolean,
     EndpointConfiguration,
-    ListOfARNs,
     ListOfString,
     MapOfStringToString,
     NullableInteger,
@@ -14,24 +15,10 @@ from localstack.aws.api.apigateway import (
     String,
 )
 
+LOG = logging.getLogger(__name__)
+
 
 class ApigatewayProvider(ApigatewayApi):
-    def create_authorizer(
-        self,
-        context: RequestContext,
-        rest_api_id: String,
-        name: String,
-        type: AuthorizerType,
-        provider_arns: ListOfARNs = None,
-        auth_type: String = None,
-        authorizer_uri: String = None,
-        authorizer_credentials: String = None,
-        identity_source: String = None,
-        identity_validation_expression: String = None,
-        authorizer_result_ttl_in_seconds: NullableInteger = None,
-    ) -> Authorizer:
-        pass
-
     def create_rest_api(
         self,
         context: RequestContext,
@@ -47,4 +34,13 @@ class ApigatewayProvider(ApigatewayApi):
         tags: MapOfStringToString = None,
         disable_execute_api_endpoint: Boolean = None,
     ) -> RestApi:
-        pass
+
+        return APIGatewayBackend(context.region).create_rest_api(
+            name=name,
+            description=description,
+            api_key_source=api_key_source,
+            endpoint_configuration=endpoint_configuration,
+            tags=tags,
+            policy=policy,
+            minimum_compression_size=minimum_compression_size,
+        )

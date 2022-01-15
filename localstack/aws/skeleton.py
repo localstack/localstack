@@ -181,8 +181,8 @@ class Skeleton:
 
     def on_not_implemented_error(self, context: RequestContext) -> HttpResponse:
         """
-        Called by invoke if either the dispatch table did not contain an entry for the operation, or the service
-        provider raised a NotImplementedError
+        Called by invoke if either the dispatch table did not contain an entry for the operation,
+        or the service provider raised a NotImplementedError
         :param context: the request context
         :return: an HttpResponse object
         """
