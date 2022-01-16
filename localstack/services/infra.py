@@ -10,7 +10,8 @@ from typing import Dict, List, Union
 
 import boto3
 from localstack_client.config import get_service_port
-from moto import core as moto_core
+from moto.core import BaseModel
+from moto.core.models import InstanceTrackerMeta
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
@@ -40,6 +41,7 @@ from localstack.utils.common import (
     run,
     start_thread,
 )
+from localstack.utils.patch import patch
 from localstack.utils.run import FuncThread
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
@@ -103,6 +105,7 @@ def patch_instance_tracker_meta():
     Avoid instance collection for moto dashboard
     """
 
+    @patch(InstanceTrackerMeta.__new__, pass_target=False)
     def new_instance(meta, name, bases, dct):
         cls = super(InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
         if name == "BaseModel":
@@ -110,15 +113,11 @@ def patch_instance_tracker_meta():
         cls.instances = []
         return cls
 
-    InstanceTrackerMeta = moto_core.models.InstanceTrackerMeta
-    InstanceTrackerMeta.__new__ = new_instance
-
+    @patch(BaseModel.__new__, pass_target=False)
     def new_basemodel(cls, *args, **kwargs):
+        # skip cls.instances.append(..) which is done by the original/upstream constructor
         instance = super(BaseModel, cls).__new__(cls)
         return instance
-
-    BaseModel = moto_core.models.BaseModel
-    BaseModel.__new__ = new_basemodel
 
 
 def get_multiserver_or_free_service_port():
