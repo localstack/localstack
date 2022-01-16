@@ -2,7 +2,6 @@ import json
 import logging
 
 from botocore.exceptions import ClientError
-from moto.sqs.models import Queue as MotoQueue
 
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
@@ -63,7 +62,7 @@ class QueuePolicy(GenericBaseModel):
         }
 
 
-class SQSQueue(GenericBaseModel, MotoQueue):
+class SQSQueue(GenericBaseModel):
     @classmethod
     def cloudformation_type(cls):
         return "AWS::SQS::Queue"

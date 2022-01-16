@@ -103,20 +103,22 @@ def patch_instance_tracker_meta():
     Avoid instance collection for moto dashboard
     """
 
-    def new_intance(meta, name, bases, dct):
-        cls = super(moto_core.models.InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
+    def new_instance(meta, name, bases, dct):
+        cls = super(InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
         if name == "BaseModel":
             return cls
         cls.instances = []
         return cls
 
-    moto_core.models.InstanceTrackerMeta.__new__ = new_intance
+    InstanceTrackerMeta = moto_core.models.InstanceTrackerMeta
+    InstanceTrackerMeta.__new__ = new_instance
 
     def new_basemodel(cls, *args, **kwargs):
-        instance = super(moto_core.models.BaseModel, cls).__new__(cls)
+        instance = super(BaseModel, cls).__new__(cls)
         return instance
 
-    moto_core.models.BaseModel.__new__ = new_basemodel
+    BaseModel = moto_core.models.BaseModel
+    BaseModel.__new__ = new_basemodel
 
 
 def get_multiserver_or_free_service_port():
