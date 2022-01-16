@@ -43,6 +43,10 @@ class S3BucketPolicy(GenericBaseModel):
 
 
 class S3Bucket(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::S3::Bucket"
+
     def get_resource_name(self):
         return self.normalize_bucket_name(self.props.get("BucketName"))
 

@@ -101,9 +101,10 @@ def patch_urllib3_connection_pool(**constructor_kwargs):
 
 
 def patch_instance_tracker_meta():
-    """
-    Avoid instance collection for moto dashboard
-    """
+    """Avoid instance collection for moto dashboard"""
+
+    if hasattr(InstanceTrackerMeta, "_ls_patch_applied"):
+        return  # ensure we're not applying the patch multiple times
 
     @patch(InstanceTrackerMeta.__new__, pass_target=False)
     def new_instance(meta, name, bases, dct):
@@ -118,6 +119,8 @@ def patch_instance_tracker_meta():
         # skip cls.instances.append(..) which is done by the original/upstream constructor
         instance = super(BaseModel, cls).__new__(cls)
         return instance
+
+    InstanceTrackerMeta._ls_patch_applied = True
 
 
 def get_multiserver_or_free_service_port():
