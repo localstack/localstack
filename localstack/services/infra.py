@@ -10,7 +10,8 @@ from typing import Dict, List, Union
 
 import boto3
 from localstack_client.config import get_service_port
-from moto import core as moto_core
+from moto.core import BaseModel
+from moto.core.models import InstanceTrackerMeta
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
@@ -40,6 +41,7 @@ from localstack.utils.common import (
     run,
     start_thread,
 )
+from localstack.utils.patch import patch
 from localstack.utils.run import FuncThread
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
@@ -99,24 +101,26 @@ def patch_urllib3_connection_pool(**constructor_kwargs):
 
 
 def patch_instance_tracker_meta():
-    """
-    Avoid instance collection for moto dashboard
-    """
+    """Avoid instance collection for moto dashboard"""
 
-    def new_intance(meta, name, bases, dct):
-        cls = super(moto_core.models.InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
+    if hasattr(InstanceTrackerMeta, "_ls_patch_applied"):
+        return  # ensure we're not applying the patch multiple times
+
+    @patch(InstanceTrackerMeta.__new__, pass_target=False)
+    def new_instance(meta, name, bases, dct):
+        cls = super(InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
         if name == "BaseModel":
             return cls
         cls.instances = []
         return cls
 
-    moto_core.models.InstanceTrackerMeta.__new__ = new_intance
-
+    @patch(BaseModel.__new__, pass_target=False)
     def new_basemodel(cls, *args, **kwargs):
-        instance = super(moto_core.models.BaseModel, cls).__new__(cls)
+        # skip cls.instances.append(..) which is done by the original/upstream constructor
+        instance = super(BaseModel, cls).__new__(cls)
         return instance
 
-    moto_core.models.BaseModel.__new__ = new_basemodel
+    InstanceTrackerMeta._ls_patch_applied = True
 
 
 def get_multiserver_or_free_service_port():

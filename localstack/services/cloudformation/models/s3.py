@@ -1,8 +1,6 @@
 import json
 import re
 
-from moto.s3.models import FakeBucket
-
 from localstack.constants import AWS_REGION_US_EAST_1, S3_VIRTUAL_HOSTNAME
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME,
@@ -44,8 +42,11 @@ class S3BucketPolicy(GenericBaseModel):
         }
 
 
-# TODO: moto dependency
-class S3Bucket(GenericBaseModel, FakeBucket):
+class S3Bucket(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return "AWS::S3::Bucket"
+
     def get_resource_name(self):
         return self.normalize_bucket_name(self.props.get("BucketName"))
 

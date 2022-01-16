@@ -1,8 +1,6 @@
 import json
 import logging
 
-from moto.iam.models import Role as MotoRole
-
 from localstack.services.awslambda.lambda_api import IAM_POLICY_VERSION
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
@@ -156,7 +154,7 @@ class IAMUser(GenericBaseModel):
         }
 
 
-class IAMRole(GenericBaseModel, MotoRole):
+class IAMRole(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return "AWS::IAM::Role"
