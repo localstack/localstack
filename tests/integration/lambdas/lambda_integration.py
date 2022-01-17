@@ -11,6 +11,7 @@ TEST_BUCKET_NAME = "test-bucket"
 KINESIS_STREAM_NAME = "test_stream_1"
 MSG_BODY_RAISE_ERROR_FLAG = "raise_error"
 MSG_BODY_MESSAGE_TARGET = "message_target"
+MSG_BODY_DELETE_BATCH = "delete_batch_test"
 
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
@@ -88,6 +89,16 @@ def handler(event, context):
             "multiValueHeaders": {"set-cookie": ["language=en-US", "theme=blue moon"]},
             **base64_response,
         }
+    if MSG_BODY_DELETE_BATCH in event:
+        sqs_client = create_external_boto_client("sqs")
+        queue_url = event.get(MSG_BODY_DELETE_BATCH)
+        message = sqs_client.receive_message(QueueUrl=queue_url)["Messages"][0]
+        sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message["ReceiptHandle"])
+        messages = sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=10)[
+            "Messages"
+        ]
+        entries = [message["ReceiptHandle"] for message in messages]
+        sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
 
     if "Records" not in event:
         result_map = {"event": event, "context": {}}

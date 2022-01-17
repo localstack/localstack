@@ -793,9 +793,10 @@ def get_protocol():
     return "https" if USE_SSL else "http"
 
 
-def external_service_url(service_key, host=None):
+def external_service_url(service_key, host=None, port=None):
     host = host or HOSTNAME_EXTERNAL
-    return "%s://%s:%s" % (get_protocol(), host, service_port(service_key))
+    port = port or service_port(service_key)
+    return "%s://%s:%s" % (get_protocol(), host, port)
 
 
 def get_edge_port_http():

@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import re
 import time
 
 import pytest
@@ -14,7 +15,7 @@ from six.moves.urllib.parse import urlencode
 from localstack import config
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid
+from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid, to_str
 
 from .fixtures import only_localstack
 from .lambdas import lambda_integration
@@ -324,6 +325,34 @@ class TestSqsProvider:
         result = sqs_client.receive_message(QueueUrl=queue_url)
         assert "Messages" not in result
 
+    def test_delete_message_batch_from_lambda(
+        self, sqs_client, sqs_create_queue, lambda_client, create_lambda_function
+    ):
+        # issue 3671 - not recreatable
+        # TODO: lambda creation does not work when testing against AWS
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+
+        lambda_name = f"lambda-{short_uid()}"
+        create_lambda_function(
+            lambda_name,
+            libs=TEST_LAMBDA_LIBS,
+            handler_file=TEST_LAMBDA_PYTHON,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+        )
+        delete_batch_payload = {lambda_integration.MSG_BODY_DELETE_BATCH: queue_url}
+        batch = []
+        for i in range(4):
+            batch.append({"Id": str(i), "MessageBody": str(i)})
+        sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
+
+        lambda_client.invoke(
+            FunctionName=lambda_name, Payload=json.dumps(delete_batch_payload), LogType="Tail"
+        )
+
+        receive_result = sqs_client.receive_message(QueueUrl=queue_url)
+        assert "Messages" not in receive_result.keys()
+
     def test_invalid_receipt_handle_should_return_error_message(self, sqs_client, sqs_create_queue):
         # issue 3619
         queue_name = "queue_3619_" + short_uid()
@@ -385,6 +414,58 @@ class TestSqsProvider:
 
         receive_result = sqs_client.receive_message(QueueUrl=queue_url)
         assert receive_result["Messages"][0]["Body"] == message_body
+
+    @only_localstack
+    def test_external_hostname_via_host_header(self, sqs_create_queue):
+        """test making a request with a different external hostname/port being returned"""
+        queue_name = f"queue-{short_uid()}"
+        sqs_create_queue(QueueName=queue_name)
+
+        edge_url = config.get_edge_url()
+        headers = aws_stack.mock_aws_request_headers("sqs")
+        payload = f"Action=GetQueueUrl&QueueName={queue_name}"
+
+        # assert regular/default queue URL is returned
+        url = f"{edge_url}"
+        result = requests.post(url, data=payload, headers=headers)
+        assert result
+        content = to_str(result.content)
+        kwargs = {"flags": re.MULTILINE}
+        assert re.match(rf".*<QueueUrl>\s*{edge_url}/[^<]+</QueueUrl>.*", content, **kwargs)
+
+        # assert custom port is returned in queue URL
+        port = 12345
+        headers["Host"] = f"local-test-host:{port}"
+        result = requests.post(url, data=payload, headers=headers)
+        assert result
+        content = to_str(result.content)
+        # TODO: currently only asserting that the port matches - potentially should also return the custom hostname?
+        assert re.match(rf".*<QueueUrl>\s*http://[^:]+:{port}[^<]+</QueueUrl>.*", content, **kwargs)
+
+    @pytest.mark.xfail
+    def test_fifo_messages_in_order_after_timeout(self, sqs_client, sqs_create_queue):
+        # issue 4287
+        queue_name = f"queue-{short_uid()}.fifo"
+        timeout = 1
+        attributes = {"FifoQueue": "true", "VisibilityTimeout": f"{timeout}"}
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
+        for i in range(3):
+            sqs_client.send_message(
+                QueueUrl=queue_url,
+                MessageBody=f"message-{i}",
+                MessageGroupId="1",
+                MessageDeduplicationId=f"{i}",
+            )
+
+        def receive_and_check_order():
+            result_receive = sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=10)
+            for j in range(3):
+                assert result_receive["Messages"][j]["Body"] == f"message-{j}"
+
+        receive_and_check_order()
+        time.sleep(timeout + 1)
+        receive_and_check_order()
 
     def test_list_queue_tags(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
@@ -448,7 +529,6 @@ class TestSqsProvider:
         assert "Messages" not in result_follow_up.keys()
 
     def test_publish_get_delete_message_batch(self, sqs_client, sqs_create_queue):
-        # TODO: this does not work against AWS
         message_count = 10
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -522,7 +602,7 @@ class TestSqsProvider:
         e.match("InvalidParameterValue")
 
     @pytest.mark.skipif(
-        os.environ.get("PROVIDER_OVERRIDE_SQS") != "custom",
+        os.environ.get("PROVIDER_OVERRIDE_SQS") != "asf",
         reason="New provider test which isn't covered by old one",
     )
     def test_standard_queue_cannot_have_fifo_suffix(self, sqs_create_queue):
@@ -790,7 +870,7 @@ class TestSqsProvider:
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
         url_parts = dl_queue_url.split("/")
-        region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
+        region = get_region()
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
             region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
@@ -943,7 +1023,7 @@ class TestSqsProvider:
         dead_letter_queue_name = f"dead_letter_queue-{short_uid()}"
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
-        region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
+        region = get_region()
         dl_result = sqs_client.get_queue_attributes(
             QueueUrl=dl_queue_url, AttributeNames=["QueueArn"]
         )
@@ -1039,14 +1119,15 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
 
-    # FIXME: make this testcase work against the new provider
-    @pytest.mark.xfail
     def test_post_list_queues_with_auth_in_presigned_url(self):
         # TODO: does not work when testing against AWS
         method = "post"
-        base_url = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.EDGE_PORT
-        )
+        protocol = get_service_protocol()
+        # CI might not set EDGE_PORT variables properly
+        port = 4566
+        if protocol == "https":
+            port = 443
+        base_url = "{}://{}:{}".format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, port)
 
         req = AWSRequest(
             method=method,
@@ -1086,9 +1167,11 @@ class TestSqsProvider:
     def test_get_list_queues_with_auth_in_presigned_url(self):
         # TODO: does not work when testing against AWS
         method = "get"
-        base_url = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.EDGE_PORT
-        )
+        protocol = get_service_protocol()
+        port = config.EDGE_PORT_HTTP
+        if protocol == "https":
+            port = config.EDGE_PORT
+        base_url = "{}://{}:{}".format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, port)
 
         req = AWSRequest(
             method=method,
@@ -1280,7 +1363,7 @@ class TestSqsProvider:
 
         # create arn
         url_parts = dl_queue_url.split("/")
-        region = os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
+        region = get_region()
         dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
             region, url_parts[len(url_parts) - 2], url_parts[-1]
         )
@@ -1439,6 +1522,10 @@ class TestSqsProvider:
         assert result_send_duplicate.get("MD5OfMessageBody") == result_receive_duplicate.get(
             "Messages"
         )[0].get("MD5OfBody")
+
+
+def get_region():
+    return os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
 
 
 # TODO: test visibility timeout (with various ways to set them: queue attributes, receive parameter, update call)

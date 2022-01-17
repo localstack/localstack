@@ -62,7 +62,7 @@ from localstack.aws.api.sqs import (
     Token,
 )
 from localstack.aws.spec import load_service
-from localstack.config import external_service_url
+from localstack.config import EDGE_PORT, EDGE_PORT_HTTP, external_service_url
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.common import long_uid, md5, now, start_thread
 from localstack.utils.run import FuncThread
@@ -274,10 +274,9 @@ class SqsQueue:
     def arn(self) -> str:
         return f"arn:aws:sqs:{self.key.region}:{self.key.account_id}:{self.key.name}"
 
-    @property
-    def url(self) -> str:
+    def url(self, context) -> str:
         return "{host}/{account_id}/{name}".format(
-            host=external_service_url(service_key="sqs"),  # FIXME region
+            host=_get_external_service_url(context),  # FIXME region
             account_id=self.key.account_id,
             name=self.key.name,
         )
@@ -669,11 +668,11 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def on_before_stop(self):
         self.shutdown()
 
-    def _add_queue(self, queue: SqsQueue):
+    def _add_queue(self, queue: SqsQueue, context: RequestContext):
         with self._mutex:
             self.queues[queue.key] = queue
-            self.queue_url_index[queue.url] = queue
-            self.queue_name_index[queue.name] = queue.url
+            self.queue_url_index[queue.url(context)] = queue
+            self.queue_name_index[queue.name] = queue.url(context)
 
     def _require_queue_by_url(self, queue_url: str) -> SqsQueue:
         """
@@ -706,6 +705,10 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         k = QueueKey(context.region, context.account_id, queue_name)
 
+        # Special Case TODO: why is an emtpy policy passed at all? same in set_queue_attributes
+        if attributes and attributes.get(QueueAttributeName.Policy) == "":
+            del attributes[QueueAttributeName.Policy]
+
         if k in self.queues:
             raise QueueNameExists(queue_name)
         if fifo:
@@ -713,9 +716,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         else:
             queue = StandardQueue(k, attributes, tags)
         LOG.debug("creating queue key=%s attributes=%s tags=%s", k, attributes, tags)
-        self._add_queue(queue)
+        self._add_queue(queue, context)
 
-        return CreateQueueResult(QueueUrl=queue.url)
+        return CreateQueueResult(QueueUrl=queue.url(context))
 
     def get_queue_url(
         self, context: RequestContext, queue_name: String, queue_owner_aws_account_id: String = None
@@ -729,7 +732,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue = self.queues[key]
         self._assert_permission(context, queue)
 
-        return GetQueueUrlResult(QueueUrl=queue.url)
+        return GetQueueUrlResult(QueueUrl=queue.url(context))
 
     def list_queues(
         self,
@@ -748,7 +751,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             if queue_name_prefix:
                 if not queue.name.startswith(queue_name_prefix):
                     continue
-            urls.append(queue.url)
+            urls.append(queue.url(context))
 
         if max_results:
             # FIXME: also need to solve pagination with stateful iterators: If the total number of items available is
@@ -811,7 +814,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             queue = self._require_queue_by_url(queue_url)
             self._assert_permission(context, queue)
             del self.queues[queue.key]
-            del self.queue_url_index[queue_url]
+            del self.queue_url_index[queue.url(context)]
             del self.queue_name_index[queue.name]
 
     def get_queue_attributes(
@@ -824,7 +827,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             return GetQueueAttributesResult(Attributes=dict())
 
         if QueueAttributeName.All in attribute_names:
-            return GetQueueAttributesResult(Attributes=queue.attributes)
+            # return GetQueueAttributesResult(Attributes=queue.attributes)
+            attribute_names = queue.attributes.keys()
 
         result: Dict[QueueAttributeName, str] = dict()
 
@@ -1005,7 +1009,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 queue.attributes
                 and queue.attributes.get(QueueAttributeName.RedrivePolicy) is not None
             ):
-                moved_to_dlq = self._dead_letter_check(queue, standard_message)
+                moved_to_dlq = self._dead_letter_check(queue, standard_message, context)
             if moved_to_dlq:
                 continue
             # filter attributes
@@ -1030,13 +1034,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         # TODO: how does receiving behave if the queue was deleted in the meantime?
         return ReceiveMessageResult(Messages=messages)
 
-    def _dead_letter_check(self, queue: SqsQueue, std_m: SqsMessage) -> bool:
+    def _dead_letter_check(
+        self, queue: SqsQueue, std_m: SqsMessage, context: RequestContext
+    ) -> bool:
         redrive_policy = json.loads(queue.attributes.get(QueueAttributeName.RedrivePolicy))
         # TODO: include the names of the dictionary sub - attributes in the autogenerated code?
         max_receive_count = redrive_policy["maxReceiveCount"]
         if std_m.receive_times > max_receive_count:
             dead_letter_target_arn = redrive_policy["deadLetterTargetArn"]
-            dl_queue = self._require_queue_by_arn(dead_letter_target_arn)
+            dl_queue = self._require_queue_by_arn(dead_letter_target_arn, context)
             # TODO: this needs to be atomic?
             dead_message = std_m.message
             dl_queue.put(message=dead_message)
@@ -1257,11 +1263,36 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             else:
                 visited.add(entry["Id"])
 
-    def _require_queue_by_arn(self, dead_letter_target_arn):
+    def _require_queue_by_arn(self, dead_letter_target_arn, context):
         arn_parts = dead_letter_target_arn.split(":")
-        url = f"{external_service_url('sqs')}/{arn_parts[-2]}/{arn_parts[-1]}"
+        url = f"{_get_external_service_url(context)}/{arn_parts[-2]}/{arn_parts[-1]}"
         queue = self._require_queue_by_url(url)
         return queue
+
+
+# FIXME: this needs refactoring or to be moved, importing too much of config
+def _get_external_service_url(context: RequestContext):
+
+    external_port = _get_external_port(context)
+
+    # if there are no special ports set in the headers we want config to look for ports as usual
+    if external_port == EDGE_PORT or external_port == EDGE_PORT_HTTP:
+        external_port = None
+    return external_service_url("sqs", port=external_port)
+
+
+# TODO: should this be moved to config.py?
+def _get_external_port(context: RequestContext):
+    headers = context.request.headers
+    host = headers.get("Host", "")
+    if not host:
+        forwarded = [header[1] for header in headers if header[0].lower() == "x-forwarded-for"][
+            0
+        ].split(",")
+        host = forwarded[-2] if len(forwarded) > 2 else forwarded[-1]
+
+    if ":" in host:
+        return int(host.split(":")[1])
 
 
 def _create_mock_sequence_number():
