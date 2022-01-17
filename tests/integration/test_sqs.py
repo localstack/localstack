@@ -1123,9 +1123,10 @@ class TestSqsProvider:
         # TODO: does not work when testing against AWS
         method = "post"
         protocol = get_service_protocol()
-        port = config.EDGE_PORT_HTTP
+        # CI might not set EDGE_PORT variables properly
+        port = 4566
         if protocol == "https":
-            port = config.EDGE_PORT
+            port = 443
         base_url = "{}://{}:{}".format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, port)
 
         req = AWSRequest(
