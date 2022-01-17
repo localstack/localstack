@@ -805,6 +805,7 @@ def run_lambda(
 
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
+        # TODO: wrong mapping
         response = {
             "errorType": str(exc_type.__name__),
             "errorMessage": str(e),
