@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import re
 import time
 
 import pytest
@@ -14,7 +15,7 @@ from six.moves.urllib.parse import urlencode
 from localstack import config
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid
+from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid, to_str
 
 from .fixtures import only_localstack
 from .lambdas import lambda_integration
@@ -413,6 +414,33 @@ class TestSqsProvider:
 
         receive_result = sqs_client.receive_message(QueueUrl=queue_url)
         assert receive_result["Messages"][0]["Body"] == message_body
+
+    @only_localstack
+    def test_external_hostname_via_host_header(self, sqs_create_queue):
+        """test making a request with a different external hostname/port being returned"""
+        queue_name = f"queue-{short_uid()}"
+        sqs_create_queue(QueueName=queue_name)
+
+        edge_url = config.get_edge_url()
+        headers = aws_stack.mock_aws_request_headers("sqs")
+        payload = f"Action=GetQueueUrl&QueueName={queue_name}"
+
+        # assert regular/default queue URL is returned
+        url = f"{edge_url}"
+        result = requests.post(url, data=payload, headers=headers)
+        assert result
+        content = to_str(result.content)
+        kwargs = {"flags": re.MULTILINE}
+        assert re.match(rf".*<QueueUrl>\s*{edge_url}/[^<]+</QueueUrl>.*", content, **kwargs)
+
+        # assert custom port is returned in queue URL
+        port = 12345
+        headers["Host"] = f"local-test-host:{port}"
+        result = requests.post(url, data=payload, headers=headers)
+        assert result
+        content = to_str(result.content)
+        # TODO: currently only asserting that the port matches - potentially should also return the custom hostname?
+        assert re.match(rf".*<QueueUrl>\s*http://[^:]+:{port}[^<]+</QueueUrl>.*", content, **kwargs)
 
     @pytest.mark.xfail
     def test_fifo_messages_in_order_after_timeout(self, sqs_client, sqs_create_queue):
