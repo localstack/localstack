@@ -723,6 +723,7 @@ def publish_batch(topic_arn, messages, headers):
         data["Subject"] = [message["Subject"]]
         if ".fifo" in topic_arn:
             data["MessageGroupId"] = message.get("MessageGroupId")
+        # TODO: add MessageDeduplication checks once ASF-SQS implementation becomes default
 
         message_attributes = prepare_message_attributes(message.get("MessageAttributes", []))
         try:

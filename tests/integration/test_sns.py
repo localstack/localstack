@@ -1060,8 +1060,8 @@ class TestSNS:
         retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
 
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(self):
-        topic_name = "topic-{}.fifo".format(short_uid())
-        queue_name = "queue-%s.fifo" % short_uid()
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
 
         topic_arn = self.sns_client.create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})[
             "TopicArn"
@@ -1149,8 +1149,8 @@ class TestSNS:
         retry(get_messages, retries=5, sleep=1, queue_url=queue_url)
 
     def test_publish_batch_exceptions(self):
-        topic_name = "topic-{}.fifo".format(short_uid())
-        queue_name = "queue-%s.fifo" % short_uid()
+        topic_name = f"topic-{short_uid()}.fifo"
+        queue_name = f"queue-{short_uid()}.fifo"
 
         topic_arn = self.sns_client.create_topic(Name=topic_name, Attributes={"FifoTopic": "true"})[
             "TopicArn"
@@ -1181,10 +1181,6 @@ class TestSNS:
                 ],
             )
         assert e.value.response["Error"]["Code"] == "InvalidParameter"
-        assert (
-            e.value.response["Error"]["Message"]
-            == "The MessageGroupId parameter is required for FIFO topics"
-        )
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
         with pytest.raises(ClientError) as e:
@@ -1195,10 +1191,6 @@ class TestSNS:
                 ],
             )
         assert e.value.response["Error"]["Code"] == "TooManyEntriesInBatchRequest"
-        assert (
-            e.value.response["Error"]["Message"]
-            == "The batch request contains more entries than permissible"
-        )
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
         with pytest.raises(ClientError) as e:
@@ -1209,10 +1201,6 @@ class TestSNS:
                 ],
             )
         assert e.value.response["Error"]["Code"] == "BatchEntryIdsNotDistinct"
-        assert (
-            e.value.response["Error"]["Message"]
-            == "Two or more batch entries in the request have the same Id"
-        )
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
         # cleanup
