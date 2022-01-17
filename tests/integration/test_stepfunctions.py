@@ -10,7 +10,7 @@ from localstack.services.events.events_listener import TEST_EVENTS_CACHE
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, load_file, retry, short_uid
-from localstack.utils.generic.wait_utils import wait_until
+from localstack.utils.generic.wait_utils import ShortCircuitWaitException, wait_until
 
 from .lambdas import lambda_environment
 
@@ -565,8 +565,7 @@ def test_multiregion_nested(region_name, statemachine_definition):
         client1.delete_state_machine(stateMachineArn=child_machine_arn)
 
 
-def test_aws_sdk_task(stepfunctions_client, iam_client):
-    # TODO: test support for callback pattern
+def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
     statemachine_definition = {
         "StartAt": "CreateTopicTask",
         "States": {
@@ -583,6 +582,7 @@ def test_aws_sdk_task(stepfunctions_client, iam_client):
     name = f"statemachine-{short_uid()}"
     policy_name = f"policy-{short_uid()}"
     role_name = f"role-{short_uid()}"
+    topic_name = f"topic-{short_uid()}"
 
     role = iam_client.create_role(
         RoleName=role_name,
@@ -608,42 +608,42 @@ def test_aws_sdk_task(stepfunctions_client, iam_client):
         assert len(result) > 0
         assert len([sm for sm in result if sm["name"] == name]) == 1
 
-        # start state machine execution
-        # AWS initially straight up fails until the permissions seem to take effect
-        # so we wait until the statemachine is at least running
-        topic_name = f"topic-{short_uid()}"
-        result = None
+        def assert_execution_success(executionArn: str):
+            def _assert_execution_success():
+                status = stepfunctions_client.describe_execution(executionArn=executionArn)[
+                    "status"
+                ]
+                if status == "FAILED":
+                    raise ShortCircuitWaitException("Statemachine execution failed")
+                else:
+                    return status == "SUCCEEDED"
+
+            return _assert_execution_success
 
         def _retry_execution():
+            # start state machine execution
+            # AWS initially straight up fails until the permissions seem to take effect
+            # so we wait until the statemachine is at least running
             result = stepfunctions_client.start_execution(
                 stateMachineArn=machine_arn, input='{"Name": "' f"{topic_name}" '"}'
             )
-            execution = stepfunctions_client.describe_execution(executionArn=result["executionArn"])
-            return execution["stateMachineArn"] == machine_arn and execution["status"] in [
-                "RUNNING",
-                "SUCCEEDED",
-            ]
-
-        assert wait_until(_retry_execution, max_retries=3, strategy="linear", wait=3)
-
-        def _assert_success():
-            assert_result = stepfunctions_client.describe_execution(
+            assert wait_until(assert_execution_success(result["executionArn"]))
+            describe_result = stepfunctions_client.describe_execution(
                 executionArn=result["executionArn"]
             )
-            return assert_result["status"] == "SUCCEEDED"
+            output = describe_result["output"]
+            assert topic_name in output
+            result = stepfunctions_client.describe_state_machine_for_execution(
+                executionArn=result["executionArn"]
+            )
+            assert result["stateMachineArn"] == machine_arn
+            topic_arn = json.loads(describe_result["output"])["TopicArn"]
+            topics = sns_client.list_topics()
+            assert topic_arn in [t["TopicArn"] for t in topics["Topics"]]
+            sns_client.delete_topic(TopicArn=topic_arn)
+            return True
 
-        wait_until(_assert_success)
-        describe_result = stepfunctions_client.describe_execution(
-            executionArn=result["executionArn"]
-        )
-        assert describe_result["status"] == "SUCCEEDED"
-        output = describe_result["output"]
-        assert topic_name in output
-
-        result = stepfunctions_client.describe_state_machine_for_execution(
-            executionArn=result["executionArn"]
-        )
-        assert result["stateMachineArn"] == machine_arn
+        assert wait_until(_retry_execution, max_retries=3, strategy="linear", wait=3.0)
 
     finally:
         iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["Policy"]["Arn"])
@@ -660,7 +660,7 @@ def test_aws_sdk_exception_handling(stepfunctions_client, iam_client):
             "CreateTopicTask": {
                 "End": True,
                 "Type": "Task",
-                "Resource": "arn:aws:states:::aws-sdk:sns:createTopic",  # request-response integration pattern
+                "Resource": "arn:aws:states:::aws-sdk:sns:createTopic",
                 "Parameters": {"Name.$": "$.Name"},
             }
         },
