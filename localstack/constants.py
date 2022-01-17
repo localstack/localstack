@@ -125,7 +125,7 @@ ELASTICMQ_JAR_URL = (
 )
 STS_JAR_URL = "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar"
 STEPFUNCTIONS_ZIP_URL = "https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip"
-KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/localstack/v3/local-kms.<arch>.bin"
+KMS_URL_PATTERN = "https://s3-eu-west-2.amazonaws.com/local-kms/3/local-kms_<arch>.bin"
 
 DYNAMODB_JAR_URL = "https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip"
 

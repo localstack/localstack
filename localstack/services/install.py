@@ -37,7 +37,6 @@ from localstack.utils.common import (
     download,
     file_exists_not_empty,
     get_arch,
-    get_os,
     is_windows,
     load_file,
     mkdir,
@@ -368,12 +367,11 @@ def install_kinesis_mock():
 
 
 def install_local_kms():
-    local_arch = get_os()
+    local_arch = f"{platform.system().lower()}-{get_arch()}"
     binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace("<arch>", local_arch)
     if not os.path.exists(binary_path):
         log_install_msg("KMS")
         mkdir(INSTALL_DIR_KMS)
-        # TODO ARM download platform specific binary
         kms_url = KMS_URL_PATTERN.replace("<arch>", local_arch)
         download(kms_url, binary_path)
         chmod_r(binary_path, 0o777)
