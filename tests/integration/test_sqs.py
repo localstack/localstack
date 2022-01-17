@@ -574,7 +574,7 @@ class TestSqsProvider:
         e.match("InvalidParameterValue")
 
     @pytest.mark.skipif(
-        os.environ.get("PROVIDER_OVERRIDE_SQS") != "custom",
+        os.environ.get("PROVIDER_OVERRIDE_SQS") != "asf",
         reason="New provider test which isn't covered by old one",
     )
     def test_standard_queue_cannot_have_fifo_suffix(self, sqs_create_queue):
@@ -1091,14 +1091,14 @@ class TestSqsProvider:
             sqs_create_queue(QueueName=queue_name)
         e.match("InvalidParameterValue")
 
-    # FIXME: make this testcase work against the new provider
-    @pytest.mark.xfail
     def test_post_list_queues_with_auth_in_presigned_url(self):
         # TODO: does not work when testing against AWS
         method = "post"
-        base_url = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.EDGE_PORT
-        )
+        protocol = get_service_protocol()
+        port = config.EDGE_PORT_HTTP
+        if protocol == "https":
+            port = config.EDGE_PORT
+        base_url = "{}://{}:{}".format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, port)
 
         req = AWSRequest(
             method=method,
@@ -1138,9 +1138,11 @@ class TestSqsProvider:
     def test_get_list_queues_with_auth_in_presigned_url(self):
         # TODO: does not work when testing against AWS
         method = "get"
-        base_url = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.EDGE_PORT
-        )
+        protocol = get_service_protocol()
+        port = config.EDGE_PORT_HTTP
+        if protocol == "https":
+            port = config.EDGE_PORT
+        base_url = "{}://{}:{}".format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, port)
 
         req = AWSRequest(
             method=method,
