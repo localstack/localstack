@@ -227,3 +227,43 @@ class CloudWatchTest(unittest.TestCase):
 
         # clean up
         cloudwatch.delete_alarms(AlarmNames=[alarm_name])
+
+    def test_list_metrics_uniqueness(self):
+        cloudwatch = aws_stack.create_external_boto_client("cloudwatch")
+        # create metrics with same namespace and dimensions but different metric names
+        cloudwatch.put_metric_data(
+            Namespace="AWS/EC2",
+            MetricData=[
+                {
+                    "MetricName": "CPUUtilization",
+                    "Dimensions": [{"Name": "InstanceId", "Value": "i-46cdcd06a11207ab3"}],
+                    "Value": 15,
+                }
+            ],
+        )
+        cloudwatch.put_metric_data(
+            Namespace="AWS/EC2",
+            MetricData=[
+                {
+                    "MetricName": "Memory",
+                    "Dimensions": [{"Name": "InstanceId", "Value": "i-46cdcd06a11207ab3"}],
+                    "Value": 30,
+                }
+            ],
+        )
+        results = cloudwatch.list_metrics(Namespace="AWS/EC2")["Metrics"]
+        self.assertEqual(2, len(results))
+        # duplicating existing metric
+        cloudwatch.put_metric_data(
+            Namespace="AWS/EC2",
+            MetricData=[
+                {
+                    "MetricName": "CPUUtilization",
+                    "Dimensions": [{"Name": "InstanceId", "Value": "i-46cdcd06a11207ab3"}],
+                    "Value": 15,
+                }
+            ],
+        )
+        # asserting only unique values are returned
+        results = cloudwatch.list_metrics(Namespace="AWS/EC2")["Metrics"]
+        self.assertEqual(2, len(results))
