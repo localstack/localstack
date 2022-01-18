@@ -2452,3 +2452,20 @@ class TestCloudFormation:
 
         # Clean up
         self.cleanup(stack_name)
+
+    def test_firehose_stack_with_kinesis_as_source(self):
+        template = load_file(
+            os.path.join(THIS_FOLDER, "templates", "firehose_kinesis_as_source.yaml")
+        )
+        stack_name = "stack-%s" % short_uid()
+
+        create_and_await_stack(StackName=stack_name, TemplateBody=template)
+
+        firehose_client = aws_stack.create_external_boto_client("firehose")
+        response = firehose_client.describe_delivery_stream(DeliveryStreamName="deliveryStream")
+        self.assertEqual(
+            "deliveryStream", response["DeliveryStreamDescription"]["DeliveryStreamName"]
+        )
+
+        # Clean up
+        self.cleanup(stack_name)
