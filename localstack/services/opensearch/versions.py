@@ -9,44 +9,85 @@ from typing import Dict
 
 import semver
 
-from localstack.aws.api.opensearch import CompatibleVersionsMap
+from localstack.aws.api.opensearch import CompatibleVersionsMap, EngineType
 from localstack.utils.common import get_arch
 
-# Internal representation of the versions (without the "OpenSearch_" prefix)
-_install_versions = {"1.0": "1.0.0", "1.1": "1.1.0"}
-# External representation fo the versions (with the "OpenSearch_" prefix)
-install_versions = {
-    f"OpenSearch_{key}": f"OpenSearch_{value}" for key, value in _install_versions.items()
+# Internal representation of the OpenSearch versions (without the "OpenSearch_" prefix)
+_opensearch_install_versions = {"1.0": "1.0.0", "1.1": "1.1.0"}
+# Internal representation of the Elasticsearch versions (without the "Elasticsearch_" prefix)
+_elasticsearch_install_versions = {
+    "7.10": "7.10.0",
+    "7.9": "7.9.3",
+    "7.8": "7.8.1",
+    "7.7": "7.7.1",
+    "7.4": "7.4.2",
+    "7.1": "7.1.1",
+    "6.8": "6.8.20",
+    "6.7": "6.7.2",
+    "6.5": "6.5.4",
+    "6.4": "6.4.3",
+    "6.3": "6.3.2",
+    "6.2": "6.2.4",
+    "6.0": "6.0.1",
+    "5.6": "5.6.16",
+    "5.5": "5.5.3",
+    "5.3": "5.3.3",
+    "5.1": "5.1.2",
+    "5.0": "5.0.2",
+    "2.3": "",
+    "1.5": "",
 }
+#  prefixed versions
+_prefixed_opensearch_install_versions = {
+    f"OpenSearch_{key}": value for key, value in _opensearch_install_versions.items()
+}
+_prefixed_elasticsearch_install_versions = {
+    f"Elasticsearch_{key}": value for key, value in _elasticsearch_install_versions.items()
+}
+install_versions = {
+    **_prefixed_opensearch_install_versions,
+    **_prefixed_elasticsearch_install_versions,
+}
+es_install_versions = {**_prefixed_opensearch_install_versions, **_elasticsearch_install_versions}
 # List of compatible versions (using the external representations)
 compatible_versions = [
     CompatibleVersionsMap(SourceVersion="OpenSearch_1.0", TargetVersions=["OpenSearch_1.1"])
 ]
 
 
-def get_install_version(version: str) -> str:
-    try:
-        if version is not None and version.startswith("OpenSearch_"):
-            version = version[len("OpenSearch_") :]
-        ver = semver.VersionInfo.parse(version)
-        k = f"{ver.major}.{ver.minor}"
-    except ValueError:
-        ver = version.split(".")
-        k = f"{ver[0]}.{ver[1]}"
+def get_install_type_and_version(version: str) -> (EngineType, str):
+    engine_type = EngineType(version.split("_")[0])
 
-    if k not in _install_versions:
-        raise ValueError("unknown version %s" % version)
+    if version not in install_versions:
+        raise ValueError(f"unknown version {version}")
 
-    return _install_versions[k]
+    return engine_type, install_versions[version]
 
 
-def get_download_url(version: str) -> str:
-    ver_str = str(semver.VersionInfo.parse(get_install_version(version)))
-    arch_str = "x64" if get_arch() == "amd64" else "arm64"
+def _opensearch_url(install_version: semver.VersionInfo, arch: str) -> str:
+    version = str(install_version)
     return (
         f"https://artifacts.opensearch.org/releases/bundle/opensearch/"
-        f"{ver_str}/opensearch-{ver_str}-linux-{arch_str}.tar.gz"
+        f"{version}/opensearch-{version}-linux-{arch}.tar.gz"
     )
+
+
+def _es_url(install_version: semver.VersionInfo, arch: str) -> str:
+    version = str(install_version)
+    repo = "https://artifacts.elastic.co/downloads/elasticsearch"
+    if install_version.major <= 6:
+        return f"{repo}/elasticsearch-{version}.tar.gz"
+
+    return f"{repo}/elasticsearch-{version}-linux-x86_64.tar.gz"
+
+
+def get_download_url(install_version: str, engine_type: EngineType) -> str:
+    install_version = semver.VersionInfo.parse(install_version)
+    arch_str = "x64" if get_arch() == "amd64" else "arm64"
+    if engine_type is EngineType.OpenSearch:
+        return _opensearch_url(install_version, arch_str)
+    elif engine_type is EngineType.Elasticsearch:
+        return _es_url(install_version, arch_str)
 
 
 def fetch_latest_versions() -> Dict[str, str]:  # pragma: no cover
@@ -103,6 +144,7 @@ def fetch_latest_versions() -> Dict[str, str]:  # pragma: no cover
 
 
 if __name__ == "__main__":  # pragma: no cover
-    from pprint import pprint
-
-    pprint(fetch_latest_versions())
+    # from pprint import pprint
+    #
+    # pprint(fetch_latest_versions())
+    print(get_install_type_and_version("Elasticsearch_7.9"))

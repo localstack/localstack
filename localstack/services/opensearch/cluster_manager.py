@@ -8,7 +8,6 @@ from botocore.utils import ArnParser
 from localstack import config, constants
 from localstack.aws.api.opensearch import DomainEndpointOptions
 from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
-from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
     CustomEndpoint,
     EdgeProxiedOpensearchCluster,
@@ -21,6 +20,7 @@ from localstack.utils.serving import Server
 LOG = logging.getLogger(__name__)
 
 OPENSEARCH_BASE_DOMAIN = f"opensearch.{constants.LOCALHOST_HOSTNAME}"
+ES_BASE_DOMAIN = f"es.{constants.LOCALHOST_HOSTNAME}"
 
 
 def create_cluster_manager() -> "ClusterManager":
@@ -64,6 +64,7 @@ class DomainKey:
         )
 
 
+# TODO add engine type differentiation
 def build_cluster_endpoint(
     domain_key: DomainKey, custom_endpoint: Optional[CustomEndpoint] = None
 ) -> str:
@@ -115,7 +116,11 @@ class ClusterManager:
         self.clusters = {}
 
     def create(self, arn: str, version: str, endpoint_options=None) -> Server:
-        version = versions.get_install_version(version)
+        # engine_type, version = versions.get_install_version(version)
+        #
+        # # TODO implement support
+        # if engine_type == EngineType.Elasticsearch:
+        #     raise ValueError("Localstack does not yet support Elasticsearch Clusters in OpenSearch")
 
         # determine custom domain endpoint
         custom_endpoint = determine_custom_endpoint(endpoint_options)

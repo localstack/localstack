@@ -17,6 +17,7 @@ import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
+from localstack.aws.api.opensearch import EngineType
 from localstack.config import dirs, has_docker
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
@@ -235,13 +236,13 @@ def get_opensearch_install_version(version: str) -> str:
     from localstack.services.opensearch import versions
 
     if config.SKIP_INFRA_DOWNLOADS:
-        return OPENSEARCH_DEFAULT_VERSION
+        version = OPENSEARCH_DEFAULT_VERSION
 
-    return versions.get_install_version(version)
+    _, install_version = versions.get_install_type_and_version(version)
+    return install_version
 
 
 def get_opensearch_install_dir(version: str) -> str:
-    version = get_opensearch_install_version(version)
     return os.path.join(config.dirs.var_libs, "opensearch", version)
 
 
@@ -256,12 +257,12 @@ def install_opensearch(version=None):
     installed_executable = os.path.join(install_dir, "bin", "opensearch")
     if not os.path.exists(installed_executable):
         log_install_msg("OpenSearch (%s)" % version)
-        opensearch_url = versions.get_download_url(version)
+        opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
         tmp_archive = os.path.join(
-            config.dirs.tmp, "localstack.%s" % os.path.basename(opensearch_url)
+            config.dirs.tmp, f"localstack.{os.path.basename(opensearch_url)}"
         )
         download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
         opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))

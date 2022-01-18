@@ -9,6 +9,7 @@ from localstack import config, constants
 from localstack.services import install
 from localstack.services.generic_proxy import EndpointProxy
 from localstack.services.infra import DEFAULT_BACKEND_HOST
+from localstack.services.opensearch import versions
 from localstack.utils.common import (
     ShellCommandThread,
     chmod_r,
@@ -84,7 +85,8 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
     :returns: a Directories data structure
     """
     # where to find opensearch binary and the modules
-    install_dir = install.get_opensearch_install_dir(version)
+    engine_type, install_version = versions.get_install_type_and_version(version)
+    install_dir = install.get_opensearch_install_dir(install_version)
     modules_dir = os.path.join(install_dir, "modules")
 
     if data_root is None:
