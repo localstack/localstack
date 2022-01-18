@@ -1466,13 +1466,9 @@ class LambdaExecutorLocal(LambdaExecutor):
         cmd = [
             "node",
             "-e",
-            'require("%s").%s(%s,%s).then(r => process.stdout.write(JSON.stringify(r)))'
-            % (
-                main_file,
-                function,
-                event_json_string,
-                context_json_string,
-            ),
+            f'const res = require("{main_file}").{function}({event_json_string},{context_json_string}); '
+            f"const log = (rs) => console.log(JSON.stringify(rs)); "
+            "res && res.then ? res.then(r => log(r)) : log(res)",
         ]
         LOG.info(cmd)
         result = self._execute_in_custom_runtime(cmd, lambda_function=lambda_function)
