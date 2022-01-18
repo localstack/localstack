@@ -7,7 +7,7 @@ import socket
 import ssl
 import threading
 from asyncio.selector_events import BaseSelectorEventLoop
-from typing import Dict, List, Match, Optional, Union
+from typing import Callable, Dict, List, Match, Optional, Union
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
 import requests
@@ -509,11 +509,6 @@ def with_context():
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             ctx_manager = context_manager(*args, **kwargs)
-            with ctx_manager:
-                value = func(*args, **kwargs)
-            return value
-
-        return wrapper
 
     return decorator
 
