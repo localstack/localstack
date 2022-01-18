@@ -9,6 +9,8 @@ from typing import Dict
 
 import semver
 
+from localstack.aws.api.es import CompatibleVersionsMap
+
 install_versions = {
     "7.15": "7.15.1",
     "7.14": "7.14.2",
@@ -43,6 +45,28 @@ install_versions = {
     "5.1": "5.1.2",
     "5.0": "5.0.2",
 }
+
+compatible_versions = [
+    CompatibleVersionsMap(SourceVersion="7.10", TargetVersions=[]),
+    CompatibleVersionsMap(SourceVersion="7.9", TargetVersions=["7.10"]),
+    CompatibleVersionsMap(SourceVersion="7.8", TargetVersions=["7.9", "7.10"]),
+    CompatibleVersionsMap(SourceVersion="7.7", TargetVersions=["7.8", "7.9", "7.10"]),
+    CompatibleVersionsMap(SourceVersion="7.4", TargetVersions=["7.7", "7.8", "7.9", "7.10"]),
+    CompatibleVersionsMap(SourceVersion="7.1", TargetVersions=["7.4", "7.7", "7.8", "7.9", "7.10"]),
+    CompatibleVersionsMap(
+        SourceVersion="6.8", TargetVersions=["7.1", "7.4", "7.7", "7.8", "7.9", "7.10"]
+    ),
+    CompatibleVersionsMap(SourceVersion="6.7", TargetVersions=["6.8"]),
+    CompatibleVersionsMap(SourceVersion="6.5", TargetVersions=["6.7", "6.8"]),
+    CompatibleVersionsMap(SourceVersion="6.4", TargetVersions=["6.5", "6.7", "6.8"]),
+    CompatibleVersionsMap(SourceVersion="6.3", TargetVersions=["6.4", "6.5", "6.7", "6.8"]),
+    CompatibleVersionsMap(SourceVersion="6.2", TargetVersions=["6.3", "6.4", "6.5", "6.7", "6.8"]),
+    CompatibleVersionsMap(SourceVersion="6.0", TargetVersions=["6.3", "6.4", "6.5", "6.7", "6.8"]),
+    CompatibleVersionsMap(SourceVersion="5.6", TargetVersions=["6.3", "6.4", "6.5", "6.7", "6.8"]),
+    CompatibleVersionsMap(SourceVersion="5.5", TargetVersions=["5.6"]),
+    CompatibleVersionsMap(SourceVersion="5.3", TargetVersions=["5.6"]),
+    CompatibleVersionsMap(SourceVersion="5.1", TargetVersions=["5.6"]),
+]
 
 
 def get_install_version(version: str) -> str:

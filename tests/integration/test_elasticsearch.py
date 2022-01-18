@@ -9,16 +9,16 @@ from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, TEST_AWS_ACCOUNT_ID
-from localstack.services.es import es_api
+from localstack.services.es import provider
 from localstack.services.es.cluster import EdgeProxiedElasticsearchCluster
 from localstack.services.es.cluster_manager import (
     CustomBackendManager,
+    DomainKey,
     MultiClusterManager,
     MultiplexingClusterManager,
     SingletonClusterManager,
     create_cluster_manager,
 )
-from localstack.services.es.es_api import get_domain_arn
 from localstack.services.install import install_elasticsearch
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import call_safe, poll_condition, retry
@@ -32,12 +32,14 @@ TEST_INDEX = "megacorp"
 TEST_DOC_ID = 1
 COMMON_HEADERS = {"content-type": "application/json", "Accept-encoding": "identity"}
 ES_CLUSTER_CONFIG = {
-    "InstanceType": "m3.xlarge.elasticsearch",
-    "InstanceCount": 4,
+    "ColdStorageOptions": {"Enabled": False},
+    "InstanceType": "m3.medium.elasticsearch",
+    "InstanceCount": 1,
     "DedicatedMasterEnabled": True,
-    "ZoneAwarenessEnabled": True,
-    "DedicatedMasterType": "m3.xlarge.elasticsearch",
-    "DedicatedMasterCount": 3,
+    "ZoneAwarenessEnabled": False,
+    "DedicatedMasterType": "m3.medium.elasticsearch",
+    "DedicatedMasterCount": 1,
+    "WarmEnabled": False,
 }
 
 installed = threading.Event()
@@ -103,9 +105,9 @@ class ElasticsearchTest(unittest.TestCase):
         config.ES_MULTI_CLUSTER = False
 
         # FIXME clean up this test to avoid these hacks!
-        es_api.cluster_manager().shutdown_all()
-        es_api._cluster_manager = None
-        manager = es_api.cluster_manager()
+        provider.cluster_manager().shutdown_all()
+        provider._cluster_manager = None
+        manager = provider.cluster_manager()
         assert isinstance(manager, SingletonClusterManager)
 
         then = time.time()
@@ -141,8 +143,8 @@ class ElasticsearchTest(unittest.TestCase):
             d["DomainName"] for d in es_client.list_domain_names()["DomainNames"]
         ]
 
-        es_api.cluster_manager().shutdown_all()
-        es_api._cluster_manager = None
+        provider.cluster_manager().shutdown_all()
+        provider._cluster_manager = None
 
     def test_create_existing_domain_causes_exception(self):
         # the domain was already created in TEST_DOMAIN_NAME
@@ -223,9 +225,8 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertTrue(status["DomainStatus"]["EBSOptions"]["EBSEnabled"])
 
         # make sure we can fake adding tags to a domain
-        response = es_client.add_tags(
-            ARN="string", TagList=[{"Key": "SOME_TAG", "Value": "SOME_VALUE"}]
-        )
+        arn = DomainKey(self.domain_name, "us-east-1", TEST_AWS_ACCOUNT_ID).arn
+        response = es_client.add_tags(ARN=arn, TagList=[{"Key": "SOME_TAG", "Value": "SOME_VALUE"}])
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
 
     def test_elasticsearch_get_document(self):
@@ -339,8 +340,8 @@ class TestMultiClusterManager:
         # create two elasticsearch domains
         domain0_name = f"domain-{short_uid()}"
         domain1_name = f"domain-{short_uid()}"
-        domain0_arn = get_domain_arn(domain0_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
-        domain1_arn = get_domain_arn(domain1_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        domain0_arn = DomainKey(domain0_name, "us-east-1", TEST_AWS_ACCOUNT_ID).arn
+        domain1_arn = DomainKey(domain1_name, "us-east-1", TEST_AWS_ACCOUNT_ID).arn
         cluster0 = manager.create(domain0_arn, dict(DomainName=domain0_name))
         cluster1 = manager.create(domain1_arn, dict(DomainName=domain1_name))
 
@@ -402,8 +403,8 @@ class TestMultiplexingClusterManager:
         # create two elasticsearch domains
         domain0_name = f"domain-{short_uid()}"
         domain1_name = f"domain-{short_uid()}"
-        domain0_arn = get_domain_arn(domain0_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
-        domain1_arn = get_domain_arn(domain1_name, "us-east-1", TEST_AWS_ACCOUNT_ID)
+        domain0_arn = DomainKey(domain0_name, "us-east-1", TEST_AWS_ACCOUNT_ID).arn
+        domain1_arn = DomainKey(domain1_name, "us-east-1", TEST_AWS_ACCOUNT_ID).arn
         cluster0 = manager.create(domain0_arn, dict(DomainName=domain0_name))
         cluster1 = manager.create(domain1_arn, dict(DomainName=domain1_name))
 
@@ -484,7 +485,7 @@ class TestCustomBackendManager:
         assert isinstance(manager, CustomBackendManager)
 
         domain_name = f"domain-{short_uid()}"
-        cluster_arn = get_domain_arn(domain_name)
+        cluster_arn = DomainKey(domain_name, "us-east-1", TEST_AWS_ACCOUNT_ID).arn
 
         cluster = manager.create(cluster_arn, dict(DomainName=domain_name))
         # check that we're using the domain endpoint strategy
