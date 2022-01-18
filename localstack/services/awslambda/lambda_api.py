@@ -29,6 +29,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_DEFAULT_STARTING_POSITION,
+    LAMBDA_RUNTIME_NODEJS14X,
     ClientError,
     error_response,
     event_source_arn_matches,
@@ -38,8 +39,8 @@ from localstack.services.awslambda.lambda_utils import (
     multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
-from localstack.services.install import install_go_lambda_runtime
-from localstack.utils import bootstrap
+from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
+from localstack.utils import bootstrap, testutil
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
@@ -1796,6 +1797,19 @@ def invoke_function(function):
         not_found = not_found_error(arn)
     elif qualifier and not region.lambdas.get(arn).qualifier_exists(qualifier):
         not_found = not_found_error("{0}:{1}".format(arn, qualifier))
+
+    # remove this block when AWS updates the stepfunctions image to support aws-sdk invocations
+    if not_found and "localstack-internal-awssdk" in arn:
+        # init aws-sdk stepfunctions handler
+        testutil.create_lambda_function(
+            func_name="localstack-internal-awssdk",
+            handler="index.handler",
+            handler_file=os.path.join(
+                INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "index.js"
+            ),
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
+        )
+        not_found = None
 
     if not_found:
         try:
