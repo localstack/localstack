@@ -541,6 +541,10 @@ def apply_patches():
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_APIGATEWAY
     apply_patches()
+    # from moto import mock_apigateway
+    # mock = mock_apigateway()
+    # mock.start()
+
     result = start_moto_server(
         key="apigateway",
         name="API Gateway",

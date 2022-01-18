@@ -502,10 +502,10 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     @log_duration()
     def start_runtime_components():
         from localstack.services.edge import start_edge
-        from localstack.services.internal import LocalstackResourceHandler, get_internal_apis
+        from localstack.services.internal import LocalstackResourceHandler
 
         # serve internal APIs through the generic proxy
-        ProxyListener.DEFAULT_LISTENERS.append(LocalstackResourceHandler(get_internal_apis()))
+        ProxyListener.DEFAULT_LISTENERS.append(LocalstackResourceHandler())
 
         # TODO: we want a composable LocalStack runtime (edge proxy, service manager, dns, ...)
         t = start_thread(start_edge, quiet=False)

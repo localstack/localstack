@@ -520,10 +520,10 @@ def is_trace_logging_enabled(headers):
 
 
 def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
-    from localstack.services.internal import LocalstackResourceHandler
 
     # add internal routes as default listener
-    ProxyListener.DEFAULT_LISTENERS.append(LocalstackResourceHandler())
+    # xXx Already added in infra.py start_runtime_components()
+    # ProxyListener.DEFAULT_LISTENERS.append(LocalstackResourceHandler())
 
     start_dns_server(asynchronous=True)
 

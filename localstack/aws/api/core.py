@@ -12,7 +12,7 @@ else:
     from typing_extensions import TypedDict
 
 from botocore.model import OperationModel, ServiceModel
-from werkzeug.datastructures import Headers
+from werkzeug.datastructures import Headers, ImmutableMultiDict
 from werkzeug.sansio.request import Request as _SansIORequest
 from werkzeug.utils import cached_property
 from werkzeug.wrappers import Response
@@ -112,8 +112,7 @@ class HttpRequest(_SansIORequest):
 
     @property
     def form(self):
-        self._load_form_data()
-        return self.form
+        return ImmutableMultiDict()
 
     @property
     def values(self):
