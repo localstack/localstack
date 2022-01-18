@@ -22,7 +22,6 @@ from localstack.config import external_service_url
 from localstack.constants import MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import RegionBackend
-from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import (
@@ -511,14 +510,20 @@ async def message_to_subscriber(
                 req_data.get("MessageGroupId")[0] if req_data.get("MessageGroupId") else ""
             )
 
+            message_deduplication_id = (
+                req_data.get("MessageDeduplicationId")[0]
+                if req_data.get("MessageDeduplicationId")
+                else ""
+            )
+
             sqs_client = aws_stack.connect_to_service("sqs")
 
-            # TODO remove this kwargs if we stop using ElasticMQ entirely
-            kwargs = (
-                {"MessageGroupId": message_group_id}
-                if message_group_id and SQS_BACKEND_IMPL == "moto"
-                else {}
-            )
+            kwargs = {}
+            if message_group_id:
+                kwargs["MessageGroupId"] = message_group_id
+            if message_deduplication_id:
+                kwargs["MessageDeduplicationId"] = message_deduplication_id
+
             sqs_client.send_message(
                 QueueUrl=queue_url,
                 MessageBody=create_sns_message_body(subscriber, req_data, message_id),
