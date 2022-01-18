@@ -112,7 +112,8 @@ class HttpRequest(_SansIORequest):
 
     @property
     def form(self):
-        raise NotImplementedError
+        self._load_form_data()
+        return self.form
 
     @property
     def values(self):

@@ -1,6 +1,7 @@
+import json
 import logging
 
-from moto.apigateway.models import APIGatewayBackend
+from moto.apigateway.responses import APIGatewayResponse
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.apigateway import (
@@ -35,12 +36,17 @@ class ApigatewayProvider(ApigatewayApi):
         disable_execute_api_endpoint: Boolean = None,
     ) -> RestApi:
 
-        return APIGatewayBackend(context.region).create_rest_api(
-            name=name,
-            description=description,
-            api_key_source=api_key_source,
-            endpoint_configuration=endpoint_configuration,
-            tags=tags,
-            policy=policy,
-            minimum_compression_size=minimum_compression_size,
+        response = APIGatewayResponse()
+        status, _, rest_api = response.restapis(
+            context.request, context.request.full_path, context.request.headers
         )
+        return json.loads(rest_api)
+        # return APIGatewayBackend(context.region).create_rest_api(
+        #     name=name,
+        #     description=description,
+        #     api_key_source=api_key_source,
+        #     endpoint_configuration=endpoint_configuration,
+        #     tags=tags,
+        #     policy=policy,
+        #     minimum_compression_size=minimum_compression_size,
+        # )

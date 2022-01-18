@@ -730,8 +730,11 @@ class JSONResponseSerializer(ResponseSerializer):
         serialized.set_json(body)
 
     def _serialize(self, body: dict, value: any, shape, key: Optional[str] = None):
-        """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
-        method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
+        """
+        This method dynamically invokes the correct `_serialize_type_*` method for each shape
+        type.
+        """
+        method = getattr(self, f"_serialize_type_{shape.type_name}", self._default_serialize)
         method(body, value, shape, key)
 
     def _serialize_type_structure(self, body: dict, value: dict, shape: StructureShape, key: str):
