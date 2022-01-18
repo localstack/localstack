@@ -2,7 +2,6 @@ import logging
 
 # TODO: remove
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
-from moto.core.models import CloudFormationModel
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
@@ -28,7 +27,7 @@ class DependencyNotYetSatisfied(Exception):
         self.resource_ids = resource_ids
 
 
-class GenericBaseModel(CloudFormationModel):
+class GenericBaseModel:
     """Abstract base class representing a resource model class in LocalStack.
     This class keeps references to a combination of (1) the CF resource
     properties (as defined in the template), and (2) the current deployment
