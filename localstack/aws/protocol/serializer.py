@@ -76,6 +76,7 @@ not work out-of-the-box.
 """
 import abc
 import base64
+import html
 from abc import ABC
 from datetime import datetime
 from email.utils import formatdate
@@ -203,8 +204,7 @@ class ResponseSerializer(abc.ABC):
     ) -> None:
         raise NotImplementedError
 
-    @staticmethod
-    def _create_default_response(operation_model: OperationModel) -> HttpResponse:
+    def _create_default_response(self, operation_model: OperationModel) -> HttpResponse:
         """
         Creates a boilerplate default response to be used by subclasses as starting points.
         Uses the default HTTP response status code defined in the operation model (if defined).
@@ -355,7 +355,9 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestId")
         request_id.text = gen_amzn_requestid_long()
-        serialized.data = self._encode_payload(ETree.tostring(root, encoding=self.DEFAULT_ENCODING))
+        serialized.data = self._encode_payload(
+            ETree.tostring(root, encoding=self.DEFAULT_ENCODING, xml_declaration=True)
+        )
 
     @staticmethod
     def _add_error_tags(
@@ -366,7 +368,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         message = str(error)
         if len(message) > 0:
             message_tag = ETree.SubElement(error_tag, "Message")
-            message_tag.text = message
+            message_tag.text = html.escape(message)
         if sender_fault:
             # The sender fault is either not set or "Sender"
             fault_tag = ETree.SubElement(error_tag, "Fault")
@@ -529,6 +531,11 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         For some protocols (like rest-xml), the root can be None.
         """
         pass
+
+    def _create_default_response(self, operation_model: OperationModel) -> HttpResponse:
+        response = super()._create_default_response(operation_model)
+        response.headers["Content-Type"] = "text/xml"
+        return response
 
 
 class BaseRestResponseSerializer(ResponseSerializer, ABC):
