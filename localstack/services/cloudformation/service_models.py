@@ -76,7 +76,7 @@ class GenericBaseModel:
     @classmethod
     def cloudformation_type(cls):
         """Return the CloudFormation resource type name, e.g., "AWS::S3::Bucket" (implemented by subclasses)."""
-        return super(GenericBaseModel, cls).cloudformation_type()
+        pass
 
     @staticmethod
     def get_deploy_templates():
