@@ -49,7 +49,119 @@ install_versions = {
 es_install_versions = {**_prefixed_opensearch_install_versions, **_elasticsearch_install_versions}
 # List of compatible versions (using the external representations)
 compatible_versions = [
-    CompatibleVersionsMap(SourceVersion="OpenSearch_1.0", TargetVersions=["OpenSearch_1.1"])
+    CompatibleVersionsMap(SourceVersion="OpenSearch_1.0", TargetVersions=["OpenSearch_1.1"]),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.10", TargetVersions=["OpenSearch_1.0", "OpenSearch_1.1"]
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.9",
+        TargetVersions=["Elasticsearch_7.10", "OpenSearch_1.0", "OpenSearch_1.1"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.8",
+        TargetVersions=[
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.1",
+            "OpenSearch_1.0",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.7",
+        TargetVersions=[
+            "Elasticsearch_7.8",
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.4",
+        TargetVersions=[
+            "Elasticsearch_7.7",
+            "Elasticsearch_7.8",
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_7.1",
+        TargetVersions=[
+            "Elasticsearch_7.4",
+            "Elasticsearch_7.7",
+            "Elasticsearch_7.8",
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.8",
+        TargetVersions=[
+            "Elasticsearch_7.1",
+            "Elasticsearch_7.4",
+            "Elasticsearch_7.7",
+            "Elasticsearch_7.8",
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.10",
+            "OpenSearch_1.0",
+            "OpenSearch_1.1",
+        ],
+    ),
+    CompatibleVersionsMap(SourceVersion="Elasticsearch_6.7", TargetVersions=["Elasticsearch_6.8"]),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.5", TargetVersions=["Elasticsearch_6.7", "Elasticsearch_6.8"]
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.4",
+        TargetVersions=["Elasticsearch_6.5", "Elasticsearch_6.7", "Elasticsearch_6.8"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.3",
+        TargetVersions=[
+            "Elasticsearch_6.4",
+            "Elasticsearch_6.5",
+            "Elasticsearch_6.7",
+            "Elasticsearch_6.8",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.2",
+        TargetVersions=[
+            "Elasticsearch_6.3",
+            "Elasticsearch_6.4",
+            "Elasticsearch_6.5",
+            "Elasticsearch_6.7",
+            "Elasticsearch_6.8",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_6.0",
+        TargetVersions=[
+            "Elasticsearch_6.3",
+            "Elasticsearch_6.4",
+            "Elasticsearch_6.5",
+            "Elasticsearch_6.7",
+            "Elasticsearch_6.8",
+        ],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="Elasticsearch_5.6",
+        TargetVersions=[
+            "Elasticsearch_6.3",
+            "Elasticsearch_6.4",
+            "Elasticsearch_6.5",
+            "Elasticsearch_6.7",
+            "Elasticsearch_6.8",
+        ],
+    ),
+    CompatibleVersionsMap(SourceVersion="Elasticsearch_5.5", TargetVersions=["Elasticsearch_5.6"]),
+    CompatibleVersionsMap(SourceVersion="Elasticsearch_5.3", TargetVersions=["Elasticsearch_5.6"]),
+    CompatibleVersionsMap(SourceVersion="Elasticsearch_5.1", TargetVersions=["Elasticsearch_5.6"]),
 ]
 
 
