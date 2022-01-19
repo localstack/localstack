@@ -14,7 +14,7 @@ from requests.models import Request
 from localstack import config
 from localstack.config import ServiceProviderConfig
 from localstack.utils.bootstrap import get_enabled_apis, is_api_enabled, log_duration
-from localstack.utils.common import call_safe, poll_condition, wait_for_port_status
+from localstack.utils.common import call_safe, poll_condition
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -657,7 +657,7 @@ def local_api_checker(service: str) -> Callable:
             port = PROXY_LISTENERS[service][1]
 
             LOG.debug("checking service health %s:%d", service, port)
-            wait_for_port_status(port, expect_success=not expect_shutdown)
+            # wait_for_port_status(port, expect_success=not expect_shutdown)
         except Exception:
             if print_error:
                 LOG.exception("service health check %s:%d failed", service, port)

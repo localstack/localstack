@@ -14,7 +14,7 @@ from localstack.services.apigateway.helpers import (
     apply_json_patch_safe,
     import_api_from_openapi_spec,
 )
-from localstack.services.infra import start_moto_server
+from localstack.services.infra import start_proxy_for_service
 from localstack.utils.common import DelSafeDict, short_uid, str_to_bool, to_str
 
 LOG = logging.getLogger(__name__)
@@ -547,12 +547,15 @@ def start_apigateway(port=None, backend_port=None, asynchronous=None, update_lis
     mock.start()
     print("MOCK_GATEWAY STARTED")
 
-    result = start_moto_server(
-        key="apigateway",
-        name="API Gateway",
-        asynchronous=asynchronous,
-        port=port,
-        backend_port=backend_port,
-        update_listener=update_listener,
-    )
-    return result
+    # this should be added in the service "check/start" mechanics
+    start_proxy_for_service("apigateway", port, 100000, update_listener)
+    return True
+    # result = start_moto_server(
+    #     key="apigateway",
+    #     name="API Gateway",
+    #     asynchronous=asynchronous,
+    #     port=port,
+    #     backend_port=backend_port,
+    #     update_listener=update_listener,
+    # )
+    # return result

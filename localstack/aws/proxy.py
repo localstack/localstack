@@ -59,8 +59,7 @@ class AwsApiListener(ProxyListener):
         boto_client = boto3.client(self.service.service_name)
         fn = getattr(boto_client, "create_rest_api")
         payload = json.loads(data)
-        response = fn(**payload)
-        return self.to_server_response(response)
+        return fn(**payload)
 
     def create_request_context(self, request: HttpRequest) -> RequestContext:
         context = RequestContext()
