@@ -725,14 +725,10 @@ def publish_batch(topic_arn, messages, headers):
         data = {}
         data["TopicArn"] = [topic_arn]
         data["Message"] = [message["Message"]]
-<<<<<<< HEAD
         data["Subject"] = [message["Subject"]]
         if ".fifo" in topic_arn:
             data["MessageGroupId"] = message.get("MessageGroupId")
         # TODO: add MessageDeduplication checks once ASF-SQS implementation becomes default
-=======
-        data["Subject"] = [message.get("Subject",None)]
->>>>>>> 99375a7f (Fix SNS PublishBatch optional subject atttribute)
 
         message_attributes = prepare_message_attributes(message.get("MessageAttributes", []))
         try:
