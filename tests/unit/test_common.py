@@ -14,7 +14,9 @@ import yaml
 from localstack import config
 from localstack.utils import common
 from localstack.utils.common import (
+    ExternalServicePortsManager,
     Mock,
+    PortNotAvailableException,
     fully_qualified_class_name,
     is_empty_dir,
     load_file,
@@ -551,3 +553,46 @@ def test_save_load_file_with_changing_permissions(tmp_path):
     save_file(file_name, content, permissions=permissions)
     assert permissions != os.stat(file_name).st_mode & 0o777
     assert content == load_file(file_name)
+
+
+@pytest.fixture()
+def external_service_ports_manager():
+    previous_end = config.EXTERNAL_SERVICE_PORTS_END
+    # Limit the range to only contain a single port
+    config.EXTERNAL_SERVICE_PORTS_END = config.EXTERNAL_SERVICE_PORTS_START + 1
+    yield ExternalServicePortsManager()
+    config.EXTERNAL_SERVICE_PORTS_END = previous_end
+
+
+class TestExternalServicePortsManager:
+    def test_reserve_port_within_range(
+        self, external_service_ports_manager: ExternalServicePortsManager
+    ):
+        port = external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
+        assert port == config.EXTERNAL_SERVICE_PORTS_START
+
+    def test_reserve_port_outside_range(
+        self, external_service_ports_manager: ExternalServicePortsManager
+    ):
+        with pytest.raises(PortNotAvailableException):
+            external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START + 1)
+
+    def test_reserve_any_port_within_range(
+        self, external_service_ports_manager: ExternalServicePortsManager
+    ):
+        port = external_service_ports_manager.reserve_port()
+        assert port == config.EXTERNAL_SERVICE_PORTS_START
+
+    def test_reserve_port_all_reserved(
+        self, external_service_ports_manager: ExternalServicePortsManager
+    ):
+        external_service_ports_manager.reserve_port()
+        with pytest.raises(PortNotAvailableException):
+            external_service_ports_manager.reserve_port()
+
+    def test_reserve_same_port_twice(
+        self, external_service_ports_manager: ExternalServicePortsManager
+    ):
+        external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
+        with pytest.raises(PortNotAvailableException):
+            external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
