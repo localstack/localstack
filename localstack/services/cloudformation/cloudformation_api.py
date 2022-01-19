@@ -91,8 +91,6 @@ class Stack(object):
         self.metadata["CreationTime"] = self.metadata.get("CreationTime") or timestamp_millis()
         # maps resource id to resource state
         self._resource_states = {}
-        # maps resource id to moto resource class instance (TODO: remove in the future)
-        self.moto_resource_statuses = {}
         # list of stack events
         self.events = []
         # list of stack change sets

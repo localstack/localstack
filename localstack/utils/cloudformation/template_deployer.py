@@ -7,12 +7,7 @@ import traceback
 from typing import Optional
 
 import botocore
-
-# TODO: remove
-from moto.cloudformation import parsing
-from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.ec2.utils import generate_route_id
-from six import iteritems
 
 from localstack import config
 from localstack.constants import FALSE_STRINGS, S3_STATIC_WEBSITE_HOSTNAME, TEST_AWS_ACCOUNT_ID
@@ -213,12 +208,6 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         if resource_type == "Parameter":
             return resource_props
 
-        # fallback: try accessing stack.moto_resource_statuses
-        stack = find_stack(stack_name)
-        moto_resource = stack.moto_resource_statuses.get(resource_id)
-        if moto_resource:
-            return moto_resource
-
         # if is_deployable_resource(resource):
         LOG.warning(
             "Unexpected resource type %s when resolving references of resource %s: %s",
@@ -286,14 +275,7 @@ def extract_resource_attribute(
                 % (resource_id, attribute),
             )
 
-    if isinstance(resource_state, MotoCloudFormationModel):
-        if is_ref_attribute:
-            res_phys_id = getattr(resource_state, "physical_resource_id", None)
-            get_res_phys_id = getattr(resource_state, "get_physical_resource_id", None)
-            if not res_phys_id and get_res_phys_id:
-                res_phys_id = get_res_phys_id(attribute)
-            if res_phys_id:
-                return res_phys_id
+    if isinstance(resource_state, GenericBaseModel):
         if hasattr(resource_state, "get_cfn_attribute"):
             try:
                 return resource_state.get_cfn_attribute(attribute)
@@ -868,28 +850,6 @@ def delete_resource(resource_id, resources, stack_name):
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
 
-def execute_resource_action_fallback(
-    action_name, resource_id, resources, stack_name, resource, resource_type
-):
-    # using moto as fallback for now - TODO remove in the future!
-    msg = 'Action "%s" for resource type %s not yet implemented' % (
-        action_name,
-        resource_type,
-    )
-    long_type = canonical_resource_type(resource_type)
-    clazz = parsing.MODEL_MAP.get(long_type)
-    if not clazz:
-        LOG.warning(msg)
-        return
-    LOG.info("%s - using fallback mechanism", msg)
-    if action_name == ACTION_CREATE:
-        resource_name = get_resource_name(resource) or resource_id
-        result = clazz.create_from_cloudformation_json(
-            resource_name, resource, aws_stack.get_region()
-        )
-        return result
-
-
 def execute_resource_action(resource_id, resources, stack_name, action_name):
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
@@ -898,9 +858,10 @@ def execute_resource_action(resource_id, resources, stack_name, action_name):
     if not func_details or action_name not in func_details:
         if resource_type in ["Parameter"]:
             return
-        return execute_resource_action_fallback(
-            action_name, resource_id, resources, stack_name, resource, resource_type
+        LOG.warning(
+            'Action "%s" for resource type %s not yet implemented', action_name, resource_type
         )
+        return
 
     LOG.debug(
         'Running action "%s" for resource type "%s" id "%s"',
@@ -1192,11 +1153,6 @@ def update_resource_details(stack, resource_id, details, action=None):
             resource_props.get("DestinationIpv6CidrBlock"),
         )
 
-    # TODO remove!
-    if isinstance(details, MotoCloudFormationModel):
-        # fallback: keep track of moto resource status
-        stack.moto_resource_statuses[resource_id] = details
-
 
 def add_default_resource_props(
     resource,
@@ -1300,10 +1256,6 @@ class TemplateDeployer(object):
         resource_type = get_resource_type(resource)
         entry = get_deployment_config(resource_type)
         if entry is None and resource_type not in ["Parameter", None]:
-            # fall back to moto resource creation (TODO: remove in the future)
-            long_res_type = canonical_resource_type(resource_type)
-            if long_res_type in parsing.MODEL_MAP:
-                return True
             LOG.warning('Unable to deploy resource type "%s": %s', resource_type, resource)
         return bool(entry and entry.get(ACTION_CREATE))
 
@@ -1334,7 +1286,7 @@ class TemplateDeployer(object):
         self, resources, depending_resource=None, return_first=True
     ):
         result = {}
-        for resource_id, resource in iteritems(resources):
+        for resource_id, resource in resources.items():
             if self.is_deployable_resource(resource):
                 if not self.is_deployed(resource):
                     LOG.debug(
