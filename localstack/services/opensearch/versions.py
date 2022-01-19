@@ -34,8 +34,6 @@ _elasticsearch_install_versions = {
     "5.3": "5.3.3",
     "5.1": "5.1.2",
     "5.0": "5.0.2",
-    "2.3": "",
-    "1.5": "",
 }
 #  prefixed versions
 _prefixed_opensearch_install_versions = {
@@ -84,9 +82,9 @@ def _es_url(install_version: semver.VersionInfo, arch: str) -> str:
 def get_download_url(install_version: str, engine_type: EngineType) -> str:
     install_version = semver.VersionInfo.parse(install_version)
     arch_str = "x64" if get_arch() == "amd64" else "arm64"
-    if engine_type is EngineType.OpenSearch:
+    if engine_type == EngineType.OpenSearch:
         return _opensearch_url(install_version, arch_str)
-    elif engine_type is EngineType.Elasticsearch:
+    elif engine_type == EngineType.Elasticsearch:
         return _es_url(install_version, arch_str)
 
 

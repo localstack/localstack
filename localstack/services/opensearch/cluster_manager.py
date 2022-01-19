@@ -116,11 +116,6 @@ class ClusterManager:
         self.clusters = {}
 
     def create(self, arn: str, version: str, endpoint_options=None) -> Server:
-        # engine_type, version = versions.get_install_version(version)
-        #
-        # # TODO implement support
-        # if engine_type == EngineType.Elasticsearch:
-        #     raise ValueError("Localstack does not yet support Elasticsearch Clusters in OpenSearch")
 
         # determine custom domain endpoint
         custom_endpoint = determine_custom_endpoint(endpoint_options)
@@ -154,6 +149,8 @@ class ClusterManager:
     def _create_cluster(self, arn, url, version) -> Server:
         """
         Abstract cluster factory.
+
+        :param version: the full prefixed version, e.g. "OpenSearch_1.0" or "Elasticsearch_7.10"
         """
         raise NotImplementedError
 

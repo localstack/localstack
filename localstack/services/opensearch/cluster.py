@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 import requests
 
 from localstack import config, constants
+from localstack.aws.api.opensearch import EngineType
 from localstack.services import install
 from localstack.services.generic_proxy import EndpointProxy
 from localstack.services.infra import DEFAULT_BACKEND_HOST
@@ -34,9 +35,9 @@ class Directories(NamedTuple):
     backup: str
 
 
-def get_opensearch_health_status(url: str) -> Optional[str]:
+def get_cluster_health_status(url: str) -> Optional[str]:
     """
-    Queries the health endpoint of opensearch and returns either the status ('green', 'yellow',
+    Queries the health endpoint of OpenSearch/Elasticsearch and returns either the status ('green', 'yellow',
     ...) or None if the response returned a non-200 response.
     """
     resp = requests.get(url + "/_cluster/health")
@@ -51,7 +52,7 @@ def get_opensearch_health_status(url: str) -> Optional[str]:
 
 def init_directories(dirs: Directories):
     """Makes sure the directories exist and have the necessary permissions."""
-    LOG.debug("initializing opensearch directories %s", dirs)
+    LOG.debug("initializing cluster directories %s", dirs)
     chmod_r(dirs.install, 0o777)
 
     if not dirs.data.startswith(config.dirs.data):
@@ -79,14 +80,19 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
     """
     Determines directories to find the opensearch binary as well as where to store the instance data.
 
-    :param version: the opensearch version (to resolve the install dir)
+    :param version: the full OpenSearch/Elasticsearch version (to resolve the install dir)
     :param cluster_path: the path between data_root and the actual data directories
     :param data_root: the root of the data dir (will be resolved to TMP_PATH or DATA_DIR by default)
     :returns: a Directories data structure
     """
-    # where to find opensearch binary and the modules
+    # where to find cluster binary and the modules
     engine_type, install_version = versions.get_install_type_and_version(version)
-    install_dir = install.get_opensearch_install_dir(install_version)
+    if engine_type == EngineType.OpenSearch:
+        install_dir = install.get_opensearch_install_dir(install_version)
+    else:
+        # Elasticsearch version
+        install_dir = install.get_elasticsearch_install_dir(install_version)
+
     modules_dir = os.path.join(install_dir, "modules")
 
     if data_root is None:
@@ -95,7 +101,10 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
         else:
             data_root = config.dirs.tmp
 
-    data_path = os.path.join(data_root, "opensearch", cluster_path)
+    if engine_type is EngineType.OpenSearch:
+        data_path = os.path.join(data_root, "opensearch", cluster_path)
+    else:
+        data_path = os.path.join(data_root, "elasticsearch", cluster_path)
 
     tmp_dir = os.path.join(data_path, "tmp")
     data_dir = os.path.join(data_path, "data")
@@ -104,55 +113,68 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
     return Directories(install_dir, tmp_dir, modules_dir, data_dir, backup_dir)
 
 
-def build_opensearch_run_command(opensearch_bin: str, settings: CommandSettings) -> List[str]:
+def build_cluster_run_command(cluster_bin: str, settings: CommandSettings) -> List[str]:
     """
     Takes the command settings dict and builds the actual command (which can then be executed as a shell command).
 
-    :param opensearch_bin: path to the binary (including the binary)
+    :param cluster_bin: path to the OpenSearch/Elasticsearch binary (including the binary)
     :param settings: dictionary where each item will be set as a command arguments
     :return: list of strings for the command with the settings to be executed as a shell command
     """
     cmd_settings = [f"-E {k}={v}" for k, v, in settings.items()]
-    return [opensearch_bin] + cmd_settings
+    return [cluster_bin] + cmd_settings
 
 
 class OpensearchCluster(Server):
-    """Manages an opensearch cluster which is installed an operated by LocalStack."""
+    """Manages an OpenSearch cluster which is installed an operated by LocalStack."""
 
     def __init__(
-        self, port=9200, host="localhost", version: str = None, directories: Directories = None
+        self, port=4571, host="localhost", version: str = None, directories: Directories = None
     ) -> None:
         super().__init__(port, host)
-        self._version = version or constants.OPENSEARCH_DEFAULT_VERSION
+        self._version = version or self.default_version
 
         self.command_settings = {}
         self.directories = directories or self._resolve_directories()
 
     @property
-    def version(self):
+    def default_version(self) -> str:
+        return constants.OPENSEARCH_DEFAULT_VERSION
+
+    @property
+    def version(self) -> str:
         return self._version
 
-    def health(self):
-        return get_opensearch_health_status(self.url)
+    @property
+    def install_version(self) -> str:
+        _, install_version = versions.get_install_type_and_version(self._version)
+        return install_version
+
+    @property
+    def bin_name(self) -> str:
+        return "opensearch"
+
+    @property
+    def os_user(self):
+        return constants.OS_USER_OPENSEARCH
+
+    def health(self) -> Optional[str]:
+        return get_cluster_health_status(self.url)
 
     def do_start_thread(self) -> FuncThread:
-        # FIXME: if this fails the cluster could be left in a wonky state
-        # FIXME: this is not a good place to run install, and it only works because we're
-        #  assuming that there will only ever be one running Opensearch cluster
-        install.install_opensearch(self.version)
+        self._ensure_installed()
         self._init_directories()
 
         cmd = self._create_run_command(additional_settings=self.command_settings)
         cmd = " ".join(cmd)
 
-        user = constants.OS_USER_OPENSEARCH
-        if is_root() and user:
+        if is_root() and self.os_user:
             # run the opensearch process as a non-root user (when running in docker)
-            cmd = f"su {user} -c '{cmd}'"
+            cmd = f"su {self.os_user} -c '{cmd}'"
 
         env_vars = self._create_env_vars()
 
-        LOG.info("starting opensearch: %s with env %s", cmd, env_vars)
+        LOG.info("starting %s: %s with env %s", self.bin_name, cmd, env_vars)
         t = ShellCommandThread(
             cmd,
             env_vars=env_vars,
@@ -162,18 +184,16 @@ class OpensearchCluster(Server):
         t.start()
         return t
 
-    def _log_listener(self, line, **_kwargs):
-        LOG.info(line.rstrip())
+    def _resolve_directories(self) -> Directories:
+        return resolve_directories(version=self.version, cluster_path=self.version)
 
-    def _create_run_command(
-        self, additional_settings: Optional[CommandSettings] = None
-    ) -> List[str]:
-        # delete opensearch data that may be cached locally from a previous test run
-        dirs = self.directories
+    def _ensure_installed(self):
+        install.install_opensearch(self.version)
 
-        bin_path = os.path.join(dirs.install, "bin/opensearch")
+    def _init_directories(self):
+        init_directories(self.directories)
 
-        # build command settings for bin/opensearch
+    def _base_settings(self, dirs) -> CommandSettings:
         settings = {
             "http.port": self.port,
             "http.publish_port": self.port,
@@ -188,11 +208,22 @@ class OpensearchCluster(Server):
         if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
             settings["xpack.ml.enabled"] = "false"
 
+        return settings
+
+    def _create_run_command(
+        self, additional_settings: Optional[CommandSettings] = None
+    ) -> List[str]:
+        # delete opensearch data that may be cached locally from a previous test run
+        dirs = self.directories
+
+        bin_path = os.path.join(self.directories.install, "bin", self.bin_name)
+
+        settings = self._base_settings(dirs)
+
         if additional_settings:
             settings.update(additional_settings)
 
-        cmd = build_opensearch_run_command(bin_path, settings)
-
+        cmd = build_cluster_run_command(bin_path, settings)
         return cmd
 
     def _create_env_vars(self) -> Dict:
@@ -201,12 +232,9 @@ class OpensearchCluster(Server):
             "OPENSEARCH_TMPDIR": self.directories.tmp,
         }
 
-    def _resolve_directories(self) -> Directories:
-        # by default, the cluster data will be placed in <data_dir>/opensearch/<version>/
-        return resolve_directories(version=self.version, cluster_path=self.version)
-
-    def _init_directories(self):
-        init_directories(self.directories)
+    @staticmethod
+    def _log_listener(line, **_kwargs):
+        LOG.info(line.rstrip())
 
 
 class CustomEndpoint:
@@ -245,7 +273,7 @@ class EdgeProxiedOpensearchCluster(Server):
             host=self._url.hostname,
             port=self._url.port,
         )
-        self._version = version or constants.OPENSEARCH_DEFAULT_VERSION
+        self._version = version or self.default_version
 
         self.cluster = None
         self.cluster_port = None
@@ -255,6 +283,10 @@ class EdgeProxiedOpensearchCluster(Server):
     @property
     def version(self):
         return self._version
+
+    @property
+    def default_version(self):
+        return constants.OPENSEARCH_DEFAULT_VERSION
 
     @property
     def url(self) -> str:
@@ -271,17 +303,20 @@ class EdgeProxiedOpensearchCluster(Server):
         return super().is_up()
 
     def health(self):
-        """calls the health endpoint of opensearch through the proxy, making sure implicitly that both are running"""
-        return get_opensearch_health_status(self.url)
+        """calls the health endpoint of cluster through the proxy, making sure implicitly that both are running"""
+        return get_cluster_health_status(self.url)
 
-    def do_run(self):
-        self.cluster_port = get_free_tcp_port()
-        self.cluster = OpensearchCluster(
+    def _backend_cluster(self) -> OpensearchCluster:
+        return OpensearchCluster(
             port=self.cluster_port,
             host=DEFAULT_BACKEND_HOST,
             version=self.version,
             directories=self.directories,
         )
+
+    def do_run(self):
+        self.cluster_port = get_free_tcp_port()
+        self.cluster = self._backend_cluster()
         self.cluster.start()
 
         self.proxy = EndpointProxy(self.url, self.cluster.url)
@@ -289,7 +324,7 @@ class EdgeProxiedOpensearchCluster(Server):
         self.proxy.register()
 
         self.cluster.wait_is_up()
-        LOG.info("opensearch cluster on %s is ready", self.cluster.url)
+        LOG.info("cluster on %s is ready", self.cluster.url)
 
         return self.cluster.join()
 
@@ -298,3 +333,56 @@ class EdgeProxiedOpensearchCluster(Server):
             self.proxy.unregister()
         if self.cluster:
             self.cluster.shutdown()
+
+
+class ElasticsearchCluster(OpensearchCluster):
+    @property
+    def default_version(self) -> str:
+        return constants.ELASTICSEARCH_DEFAULT_VERSION
+
+    @property
+    def bin_name(self) -> str:
+        return "elasticsearch"
+
+    @property
+    def os_user(self):
+        return constants.OS_USER_ELASTICSEARCH
+
+    def _ensure_installed(self):
+        install.install_elasticsearch(self.install_version)
+
+    def _base_settings(self, dirs) -> CommandSettings:
+        settings = {
+            "http.port": self.port,
+            "http.publish_port": self.port,
+            "transport.port": "0",
+            "network.host": self.host,
+            "http.compression": "false",
+            "path.data": f'"{dirs.data}"',
+            "path.repo": f'"{dirs.backup}"',
+        }
+
+        if os.path.exists(os.path.join(dirs.mods, "x-pack-ml")):
+            settings["xpack.ml.enabled"] = "false"
+
+        return settings
+
+    def _create_env_vars(self) -> Dict:
+        return {
+            "ES_JAVA_OPTS": os.environ.get("ES_JAVA_OPTS", "-Xms200m -Xmx600m"),
+            "ES_TMPDIR": self.directories.tmp,
+        }
+
+
+class EdgeProxiedElasticsearchCluster(EdgeProxiedOpensearchCluster):
+    @property
+    def default_version(self):
+        return constants.ELASTICSEARCH_DEFAULT_VERSION
+
+    def _backend_cluster(self) -> OpensearchCluster:
+        return ElasticsearchCluster(
+            port=self.cluster_port,
+            host=DEFAULT_BACKEND_HOST,
+            version=self.version,
+            directories=self.directories,
+        )
