@@ -170,6 +170,9 @@ class RequestParser(abc.ABC):
                     payload = self._parse_shape(
                         request, shape, request.headers[header_name], path_regex
                     )
+                else:
+                    # if header is optional and not set
+                    payload = None
             elif location == "headers":
                 payload = self._parse_header_map(shape, request.headers)
             elif location == "querystring":
@@ -556,10 +559,10 @@ class BaseRestRequestParser(RequestParser):
                 final_parsed[payload_member_name] = self._parse_shape(
                     request, body_shape, original_parsed, path_regex
                 )
-        else:
-            original_parsed = self._initial_body_parse(request.data)
-            body_parsed = self._parse_shape(request, shape, original_parsed, path_regex)
-            final_parsed.update(body_parsed)
+        # even if the payload has been parsed, the rest of the shape needs to be processed as well
+        original_parsed = self._initial_body_parse(request.data)
+        body_parsed = self._parse_shape(request, shape, original_parsed, path_regex)
+        final_parsed.update(body_parsed)
 
     def _initial_body_parse(self, body_contents: bytes) -> any:
         """
