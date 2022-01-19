@@ -62,6 +62,17 @@ def get_install_type_and_version(version: str) -> (EngineType, str):
     return engine_type, install_versions[version]
 
 
+def get_engine_type(version: str) -> EngineType:
+    return EngineType(version.split("_")[0])
+
+
+def get_install_version(version: str) -> str:
+    if version not in install_versions:
+        raise ValueError(f"unknown version {version}")
+
+    return install_versions[version]
+
+
 def _opensearch_url(install_version: semver.VersionInfo, arch: str) -> str:
     version = str(install_version)
     return (

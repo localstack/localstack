@@ -5,12 +5,16 @@ from typing import Dict, Optional
 
 from botocore.utils import ArnParser
 
-from localstack import config, constants
-from localstack.aws.api.opensearch import DomainEndpointOptions
+from localstack import config
+from localstack.aws.api.opensearch import DomainEndpointOptions, EngineType
+from localstack.constants import LOCALHOST_HOSTNAME
 from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
+from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
     CustomEndpoint,
+    EdgeProxiedElasticsearchCluster,
     EdgeProxiedOpensearchCluster,
+    ElasticsearchCluster,
     OpensearchCluster,
     resolve_directories,
 )
@@ -18,9 +22,6 @@ from localstack.utils.common import call_safe, get_free_tcp_port, start_thread
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
-
-OPENSEARCH_BASE_DOMAIN = f"opensearch.{constants.LOCALHOST_HOSTNAME}"
-ES_BASE_DOMAIN = f"es.{constants.LOCALHOST_HOSTNAME}"
 
 
 def create_cluster_manager() -> "ClusterManager":
@@ -41,7 +42,7 @@ def create_cluster_manager() -> "ClusterManager":
 
 @dataclasses.dataclass
 class DomainKey:
-    """Uniquely identifies an OpenSearch domain."""
+    """Uniquely identifies an OpenSearch/Elasticsearch domain."""
 
     domain_name: str
     region: str
@@ -55,7 +56,7 @@ class DomainKey:
     def from_arn(arn: str) -> "DomainKey":
         parsed = ArnParser().parse_arn(arn)
         if parsed["service"] != "es":
-            raise ValueError("not an opensearch arn: %s", arn)
+            raise ValueError("not an opensearch/es arn: %s", arn)
 
         return DomainKey(
             domain_name=parsed["resource"][7:],  # strip 'domain/'
@@ -64,9 +65,10 @@ class DomainKey:
         )
 
 
-# TODO add engine type differentiation
 def build_cluster_endpoint(
-    domain_key: DomainKey, custom_endpoint: Optional[CustomEndpoint] = None
+    domain_key: DomainKey,
+    custom_endpoint: Optional[CustomEndpoint] = None,
+    engine_type: EngineType = EngineType.OpenSearch,
 ) -> str:
     """
     Builds the cluster endpoint from and optional custom_endpoint and the localstack opensearch config. Example
@@ -80,18 +82,14 @@ def build_cluster_endpoint(
     if custom_endpoint and custom_endpoint.enabled:
         return custom_endpoint.endpoint
 
+    # different endpoints based on engine type
+    engine_domain = "opensearch" if engine_type == EngineType.OpenSearch else "es"
+
     # Otherwise, the endpoint is either routed through the edge proxy via a sub-path (localhost:4566/opensearch/...)
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
-        return "%s:%s/opensearch/%s/%s" % (
-            config.LOCALSTACK_HOSTNAME,
-            config.EDGE_PORT,
-            domain_key.region,
-            domain_key.domain_name,
-        )
+        return f"{config.LOCALSTACK_HOSTNAME}:{config.EDGE_PORT}/{engine_domain}/{domain_key.region}/{domain_key.domain_name}"
     # or through a subdomain (domain-name.region.opensearch.localhost.localstack.cloud)
-    return (
-        f"{domain_key.domain_name}.{domain_key.region}.{OPENSEARCH_BASE_DOMAIN}:{config.EDGE_PORT}"
-    )
+    return f"{domain_key.domain_name}.{domain_key.region}.{engine_domain}.{LOCALHOST_HOSTNAME}:{config.EDGE_PORT}"
 
 
 def determine_custom_endpoint(
@@ -120,8 +118,11 @@ class ClusterManager:
         # determine custom domain endpoint
         custom_endpoint = determine_custom_endpoint(endpoint_options)
 
+        # determine engine type
+        engine_type = versions.get_engine_type(version)
+
         # build final endpoint and cluster url
-        endpoint = build_cluster_endpoint(DomainKey.from_arn(arn), custom_endpoint)
+        endpoint = build_cluster_endpoint(DomainKey.from_arn(arn), custom_endpoint, engine_type)
         url = f"http://{endpoint}" if "://" not in endpoint else endpoint
 
         # call abstract cluster factory
@@ -195,10 +196,16 @@ class MultiplexingClusterManager(ClusterManager):
     def _create_cluster(self, arn, url, version) -> Server:
         with self.mutex:
             if not self.cluster:
+                engine_type = versions.get_engine_type(version)
                 # startup routine for the singleton cluster instance
-                self.cluster = OpensearchCluster(
-                    port=get_free_tcp_port(), directories=resolve_directories(version, arn)
-                )
+                if engine_type == EngineType.OpenSearch:
+                    self.cluster = OpensearchCluster(
+                        port=get_free_tcp_port(), directories=resolve_directories(version, arn)
+                    )
+                else:
+                    self.cluster = ElasticsearchCluster(
+                        port=get_free_tcp_port(), directories=resolve_directories(version, arn)
+                    )
 
                 def _start_async(*_):
                     LOG.info("starting %s on %s", type(self.cluster), self.cluster.url)
@@ -228,9 +235,15 @@ class MultiClusterManager(ClusterManager):
     """
 
     def _create_cluster(self, arn, url, version) -> Server:
-        return EdgeProxiedOpensearchCluster(
-            url, version, directories=resolve_directories(version, arn)
-        )
+        engine_type = versions.get_engine_type(version)
+        if engine_type == EngineType.OpenSearch:
+            return EdgeProxiedOpensearchCluster(
+                url, version, directories=resolve_directories(version, arn)
+            )
+        else:
+            return EdgeProxiedElasticsearchCluster(
+                url, version, directories=resolve_directories(version, arn)
+            )
 
 
 class CustomBackendManager(ClusterManager):
