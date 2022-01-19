@@ -12,12 +12,13 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
+import localstack.services.kinesis.server as kinesis_server
 
 import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
-from localstack.config import dirs, is_env_true
+from localstack.config import dirs
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
@@ -305,7 +306,9 @@ def install_kinesis():
     if config.KINESIS_PROVIDER == "kinesalite":
         return install_kinesalite()
     elif config.KINESIS_PROVIDER == "kinesis-mock":
-        return install_kinesis_mock()
+        # TODO: something better than this
+        km_bin, km_bin_path = kinesis_server._get_kinesis_mock_bin_file_and_path()
+        return install_kinesis_mock(km_bin, km_bin_path)
     else:
         raise ValueError("unknown kinesis provider %s" % config.KINESIS_PROVIDER)
 
@@ -316,33 +319,8 @@ def install_kinesalite():
         run('cd "%s" && npm install' % MODULE_MAIN_PATH)
 
 
-def install_kinesis_mock():
-    target_dir = INSTALL_PATH_KINESIS_MOCK
-
-    machine = platform.machine().lower()
-    system = platform.system().lower()
-    version = platform.version().lower()
-
-    is_probably_m1 = system == "darwin" and ("arm64" in version or "arm32" in version)
-
-    LOG.debug("getting kinesis-mock for %s %s", system, machine)
-
-    if is_env_true("KINESIS_MOCK_FORCE_JAVA"):
-        # sometimes the static binaries may have problems, and we want to fal back to Java
-        bin_file = "kinesis-mock.jar"
-    elif (machine == "x86_64" or machine == "amd64") and not is_probably_m1:
-        if system == "windows":
-            bin_file = "kinesis-mock-mostly-static.exe"
-        elif system == "linux":
-            bin_file = "kinesis-mock-linux-amd64-static"
-        elif system == "darwin":
-            bin_file = "kinesis-mock-macos-amd64-dynamic"
-        else:
-            bin_file = "kinesis-mock.jar"
-    else:
-        bin_file = "kinesis-mock.jar"
-
-    bin_file_path = os.path.join(target_dir, bin_file)
+def install_kinesis_mock(bin_file, bin_file_path):
+    print("installing kinesis")
     if os.path.exists(bin_file_path):
         LOG.debug("kinesis-mock found at %s", bin_file_path)
         return bin_file_path
@@ -366,7 +344,7 @@ def install_kinesis_mock():
             "could not find required binary %s in release %s" % (bin_file, KINESIS_MOCK_RELEASE_URL)
         )
 
-    mkdir(target_dir)
+    mkdir(INSTALL_PATH_KINESIS_MOCK)
     LOG.info("downloading kinesis-mock binary from %s", download_url)
     download(download_url, bin_file_path)
     chmod_r(bin_file_path, 0o777)

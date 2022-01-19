@@ -1,10 +1,12 @@
 import logging
 import threading
 import time
+from typing import Optional
 
 from localstack import config
 from localstack.constants import MODULE_MAIN_PATH
 from localstack.services import install
+from localstack.services.kinesis.server import KinesisServer, create_kinesis_server
 from localstack.services.infra import do_run, log_startup_message, start_proxy_for_service
 from localstack.services.kinesis import kinesis_listener
 from localstack.utils.aws import aws_stack
@@ -19,13 +21,14 @@ from localstack.utils.common import (
 
 LOG = logging.getLogger(__name__)
 
+# server singleton
+_server: Optional[KinesisServer] = None
+
 # event to indicate that the kinesis backend service has stopped (the terminal command has returned)
 kinesis_stopped = threading.Event()
 
 # todo: will be replaced with plugin mechanism
 PROCESS_THREAD = None
-
-PORT_KINESIS_BACKEND = None
 
 
 def apply_patches_kinesalite():
@@ -41,9 +44,7 @@ def apply_patches_kinesalite():
 def start_kinesis(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_KINESIS
     if config.KINESIS_PROVIDER == "kinesis-mock":
-        return start_kinesis_mock(
-            port=port, asynchronous=asynchronous, update_listener=update_listener
-        )
+        return start_kinesis_mock(port, update_listener)
     if config.KINESIS_PROVIDER == "kinesalite":
         return start_kinesalite(
             port=port, asynchronous=asynchronous, update_listener=update_listener
@@ -51,93 +52,20 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
     raise Exception('Unsupported Kinesis provider "%s"' % config.KINESIS_PROVIDER)
 
 
-def _run_proxy_and_command(cmd, port, backend_port, update_listener, asynchronous):
-    global PROCESS_THREAD
+def start_kinesis_mock(port=None, update_listener=None):
+    global _server
+    if not _server:
+        _server = create_kinesis_server()
+
+    _server.start()
     log_startup_message("Kinesis")
-    start_proxy_for_service("kinesis", port, backend_port, update_listener)
-
-    # TODO: generalize into service manager once it is introduced
-    LOG.debug("Running Kinesis startup command: %s", cmd)
-    try:
-        PROCESS_THREAD = do_run(cmd, asynchronous)
-    finally:
-        if asynchronous:
-
-            def _return_listener(*_):
-                try:
-                    ret_code = PROCESS_THREAD.result_future.result()
-                    if ret_code not in [0, None]:
-                        LOG.error("kinesis terminated with return code %s", ret_code)
-                finally:
-                    kinesis_stopped.set()
-
-            start_thread(_return_listener)
-        else:
-            kinesis_stopped.set()
-
-    return PROCESS_THREAD
-
-
-def start_kinesis_mock(port=None, asynchronous=False, update_listener=None):
-    kinesis_mock_bin = install.install_kinesis_mock()
-
-    backend_port = get_free_tcp_port()
-    global PORT_KINESIS_BACKEND
-    PORT_KINESIS_BACKEND = backend_port
-    kinesis_data_dir_param = ""
-    if config.dirs.data:
-        kinesis_data_dir = "%s/kinesis" % config.dirs.data
-        mkdir(kinesis_data_dir)
-        kinesis_data_dir_param = "SHOULD_PERSIST_DATA=true PERSIST_PATH=%s" % kinesis_data_dir
-    if not config.LS_LOG:
-        log_level = "INFO"
-    elif config.LS_LOG == "warning":
-        log_level = "WARN"
-    else:
-        log_level = config.LS_LOG.upper()
-    log_level_param = "LOG_LEVEL=%s" % log_level
-    latency = config.KINESIS_LATENCY + "ms"
-    latency_param = (
-        "CREATE_STREAM_DURATION={l} DELETE_STREAM_DURATION={l} REGISTER_STREAM_CONSUMER_DURATION={l} "
-        "START_STREAM_ENCRYPTION_DURATION={l} STOP_STREAM_ENCRYPTION_DURATION={l} "
-        "DEREGISTER_STREAM_CONSUMER_DURATION={l} MERGE_SHARDS_DURATION={l} SPLIT_SHARD_DURATION={l} "
-        "UPDATE_SHARD_COUNT_DURATION={l}"
-    ).format(l=latency)
-
-    if config.KINESIS_INITIALIZE_STREAMS != "":
-        initialize_streams_param = "INITIALIZE_STREAMS=%s" % config.KINESIS_INITIALIZE_STREAMS
-    else:
-        initialize_streams_param = ""
-
-    if kinesis_mock_bin.endswith(".jar"):
-        cmd = "KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s java -XX:+UseG1GC -jar %s" % (
-            backend_port,
-            config.KINESIS_SHARD_LIMIT,
-            latency_param,
-            kinesis_data_dir_param,
-            log_level_param,
-            initialize_streams_param,
-            kinesis_mock_bin,
-        )
-    else:
-        chmod_r(kinesis_mock_bin, 0o777)
-        cmd = "KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s %s --gc=G1" % (
-            backend_port,
-            config.KINESIS_SHARD_LIMIT,
-            latency_param,
-            kinesis_data_dir_param,
-            log_level_param,
-            initialize_streams_param,
-            kinesis_mock_bin,
-        )
-
-    return _run_proxy_and_command(
-        cmd=cmd,
-        port=port,
-        backend_port=backend_port,
+    start_proxy_for_service(
+        "kinesis",
+        port,
+        backend_port=_server.port,
         update_listener=update_listener,
-        asynchronous=asynchronous,
     )
+    return _server
 
 
 def start_kinesalite(port=None, asynchronous=False, update_listener=None):
@@ -175,33 +103,27 @@ def start_kinesalite(port=None, asynchronous=False, update_listener=None):
         asynchronous=asynchronous,
     )
 
+def _run_proxy_and_command(**kwargs):
+    pass
 
 def check_kinesis(expect_shutdown=False, print_error=False):
-    if expect_shutdown is False and kinesis_stopped.is_set():
-        raise AssertionError("kinesis backend has stopped")
-
     out = None
+
+    if not expect_shutdown:
+        assert _server
+
     try:
-        # check Kinesis
-        wait_for_port_open(PORT_KINESIS_BACKEND, http_path="/", expect_success=False, sleep_time=1)
-        endpoint_url = f"http://127.0.0.1:{PORT_KINESIS_BACKEND}"
+        _server.wait_is_up()
         out = aws_stack.connect_to_service(
-            service_name="kinesis", endpoint_url=endpoint_url
+            service_name="kinesis", endpoint_url=_server.url
         ).list_streams()
     except Exception:
         if print_error:
             LOG.exception("Kinesis health check failed")
-
     if expect_shutdown:
-        assert out is None or kinesis_stopped.is_set()
+        assert out is None
     else:
-        assert not kinesis_stopped.is_set()
-        assert out and isinstance(out.get("StreamNames"), list)
-
-
-def kinesis_running():
-    return PROCESS_THREAD is not None
-
+        assert out is not None and isinstance(out.get("StreamNames"), list)
 
 def restart_kinesis():
     if PROCESS_THREAD:
