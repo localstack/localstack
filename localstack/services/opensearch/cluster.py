@@ -338,7 +338,8 @@ class EdgeProxiedOpensearchCluster(Server):
 class ElasticsearchCluster(OpensearchCluster):
     @property
     def default_version(self) -> str:
-        return constants.ELASTICSEARCH_DEFAULT_VERSION
+        # TODO move to constants
+        return "Elasticsearch_7.10"
 
     @property
     def bin_name(self) -> str:
@@ -377,7 +378,8 @@ class ElasticsearchCluster(OpensearchCluster):
 class EdgeProxiedElasticsearchCluster(EdgeProxiedOpensearchCluster):
     @property
     def default_version(self):
-        return constants.ELASTICSEARCH_DEFAULT_VERSION
+        # TODO move to constants
+        return "Elasticsearch_7.10"
 
     def _backend_cluster(self) -> OpensearchCluster:
         return ElasticsearchCluster(
