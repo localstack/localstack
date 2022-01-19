@@ -546,6 +546,16 @@ def test_restjson_opensearch_with_botocore():
     )
 
 
+def test_restjson_awslambda_invoke_with_botocore():
+    _botocore_parser_integration_test(
+        service="lambda",
+        action="Invoke",
+        headers={},
+        expected={"FunctionName": "test-function", "Payload": ""},
+        FunctionName="test-function",
+    )
+
+
 def test_ec2_parser_ec2_with_botocore():
     _botocore_parser_integration_test(
         service="ec2",
