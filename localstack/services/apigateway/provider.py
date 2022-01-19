@@ -1,7 +1,6 @@
-import json
 import logging
 
-from moto.apigateway.responses import APIGatewayResponse
+import boto3
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.apigateway import (
@@ -35,18 +34,26 @@ class ApigatewayProvider(ApigatewayApi):
         tags: MapOfStringToString = None,
         disable_execute_api_endpoint: Boolean = None,
     ) -> RestApi:
+        # Directly to backend
 
-        response = APIGatewayResponse()
-        status, _, rest_api = response.restapis(
-            context.request, context.request.full_path, context.request.headers
-        )
-        return json.loads(rest_api)
-        # return APIGatewayBackend(context.region).create_rest_api(
-        #     name=name,
-        #     description=description,
-        #     api_key_source=api_key_source,
-        #     endpoint_configuration=endpoint_configuration,
-        #     tags=tags,
-        #     policy=policy,
-        #     minimum_compression_size=minimum_compression_size,
+        # response = APIGatewayResponse()
+        # status, _, rest_api = response.restapis(
+        #     context.request, context.request.full_path, context.request.headers
         # )
+        # return json.loads(rest_api)
+
+        # boto3 patched version
+        client = boto3.client("apigateway")
+        return client.create_rest_api(
+            name=name,
+            description=description or "",
+            version=version or "",
+            cloneFrom=clone_from or "",
+            binaryMediaTypes=binary_media_types or [""],
+            minimumCompressionSize=minimum_compression_size or 1,
+            apiKeySource=api_key_source or "",
+            endpointConfiguration=endpoint_configuration or {},
+            policy=policy or "",
+            tags=tags or {},
+            disableExecuteApiEndpoint=disable_execute_api_endpoint or False,
+        )

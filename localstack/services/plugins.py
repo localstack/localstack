@@ -158,7 +158,8 @@ class Service(object):
             return
 
         if self.start_function is _default:
-            # fallback start method that simply adds the listener function to the list of proxy listeners if it exists
+            # fallback start method that simply adds the listener function to the list of proxy
+            # listeners if it exists
             if not self.listener:
                 return
 

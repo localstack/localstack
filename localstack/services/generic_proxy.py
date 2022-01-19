@@ -509,6 +509,11 @@ def with_context():
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             ctx_manager = context_manager(*args, **kwargs)
+            with ctx_manager:
+                value = func(*args, **kwargs)
+            return value
+
+        return wrapper
 
     return decorator
 
