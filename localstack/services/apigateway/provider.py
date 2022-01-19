@@ -1,7 +1,5 @@
 import logging
 
-import boto3
-
 from localstack.aws.api import RequestContext
 from localstack.aws.api.apigateway import (
     ApigatewayApi,
@@ -34,6 +32,7 @@ class ApigatewayProvider(ApigatewayApi):
         tags: MapOfStringToString = None,
         disable_execute_api_endpoint: Boolean = None,
     ) -> RestApi:
+        pass
         # Directly to backend
 
         # response = APIGatewayResponse()
@@ -43,17 +42,18 @@ class ApigatewayProvider(ApigatewayApi):
         # return json.loads(rest_api)
 
         # boto3 patched version
-        client = boto3.client("apigateway")
-        return client.create_rest_api(
-            name=name,
-            description=description or "",
-            version=version or "",
-            cloneFrom=clone_from or "",
-            binaryMediaTypes=binary_media_types or [""],
-            minimumCompressionSize=minimum_compression_size or 1,
-            apiKeySource=api_key_source or "",
-            endpointConfiguration=endpoint_configuration or {},
-            policy=policy or "",
-            tags=tags or {},
-            disableExecuteApiEndpoint=disable_execute_api_endpoint or False,
-        )
+
+        # client = boto3.client("apigateway")
+        # return client.create_rest_api(
+        #     name=name,
+        #     description=description or "",
+        #     version=version or "",
+        #     cloneFrom=clone_from or "",
+        #     binaryMediaTypes=binary_media_types or [""],
+        #     minimumCompressionSize=minimum_compression_size or 1,
+        #     apiKeySource=api_key_source or "",
+        #     endpointConfiguration=endpoint_configuration or {},
+        #     policy=policy or "",
+        #     tags=tags or {},
+        #     disableExecuteApiEndpoint=disable_execute_api_endpoint or False,
+        # )
