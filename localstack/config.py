@@ -459,6 +459,18 @@ except socket.error:
 # SERVICE-SPECIFIC CONFIGS BELOW
 # -----
 
+# port ranges for external service instances (f.e. elasticsearch clusters, opensearch clusters,...)
+EXTERNAL_SERVICE_PORTS_START = int(
+    os.environ.get("EXTERNAL_SERVICE_PORTS_START")
+    or os.environ.get("SERVICE_INSTANCES_PORTS_START")
+    or 4510
+)
+EXTERNAL_SERVICE_PORTS_END = int(
+    os.environ.get("EXTERNAL_SERVICE_PORTS_END")
+    or os.environ.get("SERVICE_INSTANCES_PORTS_END")
+    or (EXTERNAL_SERVICE_PORTS_START + 30)
+)
+
 # java options to Lambda
 LAMBDA_JAVA_OPTS = os.environ.get("LAMBDA_JAVA_OPTS", "").strip()
 
