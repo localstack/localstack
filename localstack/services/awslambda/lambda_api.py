@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from flask import Flask, Response, jsonify, request
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
 from localstack.services.awslambda.lambda_utils import (
@@ -40,7 +40,7 @@ from localstack.services.awslambda.lambda_utils import (
 )
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
-from localstack.utils import bootstrap, testutil
+from localstack.utils import bootstrap
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import CodeSigningConfig, LambdaFunction
@@ -1801,15 +1801,19 @@ def invoke_function(function):
     # remove this block when AWS updates the stepfunctions image to support aws-sdk invocations
     if not_found and "localstack-internal-awssdk" in arn:
         # init aws-sdk stepfunctions handler
-        testutil.create_lambda_function(
-            func_name="localstack-internal-awssdk",
-            handler="index.handler",
-            handler_file=os.path.join(
-                INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "index.js"
-            ),
-            runtime=LAMBDA_RUNTIME_NODEJS14X,
-        )
-        not_found = None
+        with open(
+            os.path.join(INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "awssdk.zip"),
+            "rb",
+        ) as zf:
+            lambda_client = aws_stack.connect_to_service("lambda")
+            lambda_client.create_function(
+                FunctionName="localstack-internal-awssdk",
+                Runtime=LAMBDA_RUNTIME_NODEJS14X,
+                Handler="index.handler",
+                Code={"ZipFile": zf.read()},
+                Role=LAMBDA_TEST_ROLE,
+            )
+            not_found = None
 
     if not_found:
         try:

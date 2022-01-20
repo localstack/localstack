@@ -86,7 +86,11 @@ SFN_PATCH_CLASS2 = (
 SFN_PATCH_CLASS_STARTER = "cloud/localstack/StepFunctionsStarter.class"
 SFN_PATCH_CLASS_REGION = "cloud/localstack/RegionAspect.class"
 SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
-AWS_SDK_LAMBDA_HANDLER = f"{SFN_PATCH_URL_PREFIX}/localstack-internal-awssdk/index.js"
+
+SFN_AWS_SDK_URL_PREFIX = (
+    f"{ARTIFACTS_REPO}/raw/504eb5e20664e8e4dcca102479d1b27f90545453/stepfunctions-internal-awssdk"
+)
+SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
 MAVEN_REPO = "https://repo1.maven.org/maven2"
@@ -437,9 +441,9 @@ def install_stepfunctions_local():
             download(jar_url, target)
 
     # download aws-sdk lambda handler
-    target = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "index.js")
+    target = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "awssdk.zip")
     if not file_exists_not_empty(target):
-        download(AWS_SDK_LAMBDA_HANDLER, target)
+        download(SFN_AWS_SDK_LAMBDA_ZIP_FILE, target)
 
 
 def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):
