@@ -294,10 +294,10 @@ class RequestParser(abc.ABC):
         """
         if request_uri is None:
             return None
-        # Replace the variable place holder (f.e. {ConnectionId} in "/fuu/{ConnectionId}/bar/")
-        # with a named regex group.
+        # Replace the variable placeholder (f.e. {ConnectionId} in "/fuu/{ConnectionId}/bar/") with a
+        # named regex group. Note: allowing slashes in param values, as required, e.g., for ARNs in paths.
         request_uri_regex = re.sub(
-            "{(?P<VariableName>[^/]*)}", "(?P<\\g<VariableName>>[^/]*)", request_uri
+            "{(?P<VariableName>[^}]+)}", r"(?P<\g<VariableName>>.+)", request_uri
         )
         # Put regex in fences to make sure that we do not match any substrings
         request_uri_regex = f"^{request_uri_regex}$"
@@ -520,12 +520,19 @@ class BaseRestRequestParser(RequestParser):
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         # Find the regex which matches the given path (as well as its operation)
-        path_regex, operation = next(
+        # Note: using list(filter(..)) here, to avoid "TypeError: StopIteration interacts badly with generators"
+        matching = list(
             filter(
                 lambda item: item[0].match(request.path),
                 self.operation_lookup[request.method].items(),
             )
         )
+        if not matching:
+            raise RequestParserError(
+                f"Unable to find operation for request to service "
+                f"{self.service.service_name}: {request.method} {request.path}"
+            )
+        path_regex, operation = matching[0]
         shape: StructureShape = operation.input_shape
         final_parsed = {}
         if shape is not None:

@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 from botocore.serialize import create_serializer
 
 from localstack.aws.api import HttpRequest
-from localstack.aws.protocol.parser import QueryRequestParser, create_parser
+from localstack.aws.protocol.parser import QueryRequestParser, RestJSONRequestParser, create_parser
 from localstack.aws.spec import load_service
 from localstack.utils.common import to_bytes
 
@@ -592,6 +592,20 @@ def test_ec2_parser_ec2_with_botocore():
             },
         ],
     )
+
+
+def test_query_parser_path_params_with_slashes():
+    parser = RestJSONRequestParser(load_service("qldb"))
+    resource_arn = "arn:aws:qldb:eu-central-1:000000000000:ledger/c-c67c827a"
+    request = HttpRequest(
+        body=b"",
+        method="GET",
+        headers={},
+        path=f"/tags/{resource_arn}",
+    )
+    operation, params = parser.parse(request)
+    assert operation.name == "ListTagsForResource"
+    assert params == {"ResourceArn": resource_arn}
 
 
 # TODO Add additional tests (or even automate the creation)
