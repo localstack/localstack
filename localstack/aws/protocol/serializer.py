@@ -833,7 +833,9 @@ class SqsResponseSerializer(QueryResponseSerializer):
         return (
             to_bytes(
                 to_str(generated_string)
+                # Undo the second escaping of the &
                 .replace("&amp;quot;", "&quot;")
+                # Undo the second escaping of the carriage return (\r)
                 .replace("&amp;#xD;", "&#xD;")
             )
             if generated_string is not None
