@@ -770,7 +770,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         visibility_timeout: Integer,
     ) -> None:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -783,7 +783,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         entries: ChangeMessageVisibilityBatchRequestEntryList,
     ) -> ChangeMessageVisibilityBatchResult:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -827,7 +827,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None
     ) -> GetQueueAttributesResult:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -867,7 +867,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_group_id: String = None,
     ) -> SendMessageResult:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -894,7 +894,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self, context: RequestContext, queue_url: String, entries: SendMessageBatchRequestEntryList
     ) -> SendMessageBatchResult:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -1004,7 +1004,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         receive_request_attempt_id: String = None,
     ) -> ReceiveMessageResult:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -1073,7 +1073,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self, context: RequestContext, queue_url: String, receipt_handle: String
     ) -> None:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -1086,7 +1086,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         entries: DeleteMessageBatchRequestEntryList,
     ) -> DeleteMessageBatchResult:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -1117,7 +1117,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def purge_queue(self, context: RequestContext, queue_url: String) -> None:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -1142,7 +1142,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self, context: RequestContext, queue_url: String, attributes: QueueAttributeMap
     ) -> None:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
 
@@ -1182,7 +1182,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap) -> None:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -1195,7 +1195,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def list_queue_tags(self, context: RequestContext, queue_url: String) -> ListQueueTagsResult:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
@@ -1203,7 +1203,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def untag_queue(self, context: RequestContext, queue_url: String, tag_keys: TagKeyList) -> None:
         if queue_url is None:
-            queue_url = context.request.url
+            queue_url = context.request.base_url
 
         queue = self._require_queue_by_url(queue_url)
         self._assert_permission(context, queue)
