@@ -90,6 +90,7 @@ from botocore.utils import calculate_md5, parse_to_aware_datetime
 from moto.core.utils import gen_amzn_requestid_long
 
 from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
+from localstack.utils.common import to_bytes, to_str
 
 
 class ResponseSerializer(abc.ABC):
@@ -203,8 +204,7 @@ class ResponseSerializer(abc.ABC):
     ) -> None:
         raise NotImplementedError
 
-    @staticmethod
-    def _create_default_response(operation_model: OperationModel) -> HttpResponse:
+    def _create_default_response(self, operation_model: OperationModel) -> HttpResponse:
         """
         Creates a boilerplate default response to be used by subclasses as starting points.
         Uses the default HTTP response status code defined in the operation model (if defined).
@@ -329,7 +329,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
                     )
                 )
         else:
-            # Otherwise we use the "traditional" way of serializing the whole parameters dict recursively.
+            # Otherwise, we use the "traditional" way of serializing the whole parameters dict recursively.
             serialized.data = self._encode_payload(
                 self._serialize_body_params(parameters, shape, operation_model)
             )
@@ -355,29 +355,26 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestId")
         request_id.text = gen_amzn_requestid_long()
-        serialized.data = self._encode_payload(ETree.tostring(root, encoding=self.DEFAULT_ENCODING))
+        serialized.data = self._encode_payload(self._xml_to_string(root))
 
-    @staticmethod
     def _add_error_tags(
-        code: str, error: ServiceException, error_tag: ETree.Element, sender_fault: bool
+        self, code: str, error: ServiceException, error_tag: ETree.Element, sender_fault: bool
     ) -> None:
         code_tag = ETree.SubElement(error_tag, "Code")
         code_tag.text = code
         message = str(error)
         if len(message) > 0:
-            message_tag = ETree.SubElement(error_tag, "Message")
-            message_tag.text = message
+            self._default_serialize(error_tag, message, None, "Message")
         if sender_fault:
             # The sender fault is either not set or "Sender"
-            fault_tag = ETree.SubElement(error_tag, "Fault")
-            fault_tag.text = "Sender"
+            self._default_serialize(error_tag, "Sender", None, "Fault")
 
     def _serialize_body_params(
         self, params: dict, shape: Shape, operation_model: OperationModel
-    ) -> str:
+    ) -> Optional[str]:
         root = self._serialize_body_params_to_xml(params, shape, operation_model)
         self._prepare_additional_traits_in_xml(root)
-        return ETree.tostring(root, encoding=self.DEFAULT_ENCODING)
+        return self._xml_to_string(root)
 
     def _serialize_body_params_to_xml(
         self, params: dict, shape: Shape, operation_model: OperationModel
@@ -517,8 +514,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             params, shape.serialization.get("timestampFormat")
         )
 
-    @staticmethod
-    def _default_serialize(xmlnode: ETree.Element, params: str, _, name: str) -> None:
+    def _default_serialize(self, xmlnode: ETree.Element, params: str, _, name: str) -> None:
         node = ETree.SubElement(xmlnode, name)
         node.text = six.text_type(params)
 
@@ -529,6 +525,18 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         For some protocols (like rest-xml), the root can be None.
         """
         pass
+
+    def _create_default_response(self, operation_model: OperationModel) -> HttpResponse:
+        response = super()._create_default_response(operation_model)
+        response.headers["Content-Type"] = "text/xml"
+        return response
+
+    def _xml_to_string(self, root: Optional[ETree.ElementTree]) -> Optional[str]:
+        """Generates the string representation of the given XML element."""
+        if root is not None:
+            return ETree.tostring(
+                element=root, encoding=self.DEFAULT_ENCODING, xml_declaration=True
+            )
 
 
 class BaseRestResponseSerializer(ResponseSerializer, ABC):
@@ -579,9 +587,7 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
             self._add_error_tags(code, error, root, sender_fault)
             request_id = ETree.SubElement(root, "RequestId")
             request_id.text = gen_amzn_requestid_long()
-            serialized.data = self._encode_payload(
-                ETree.tostring(root, encoding=self.DEFAULT_ENCODING)
-            )
+            serialized.data = self._encode_payload(self._xml_to_string(root))
         else:
             super()._serialize_error(error, code, sender_fault, serialized, shape, operation_model)
 
@@ -666,7 +672,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestID")
         request_id.text = gen_amzn_requestid_long()
-        serialized.data = self._encode_payload(ETree.tostring(root, encoding=self.DEFAULT_ENCODING))
+        serialized.data = self._encode_payload(self._xml_to_string(root))
 
     def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
         # The EC2 protocol does not use the root output shape, therefore we need to remove the hierarchy level
@@ -766,8 +772,7 @@ class JSONResponseSerializer(ResponseSerializer):
             self._serialize(wrapper, list_item, shape.member, "__current__")
             list_obj.append(wrapper["__current__"])
 
-    @staticmethod
-    def _default_serialize(body: dict, value: any, _, key: str):
+    def _default_serialize(self, body: dict, value: any, _, key: str):
         body[key] = value
 
     def _serialize_type_timestamp(self, body: dict, value: any, shape: Shape, key: str):
@@ -800,6 +805,44 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
     pass
 
 
+class SqsResponseSerializer(QueryResponseSerializer):
+    """
+    Unfortunately, SQS uses a rare interpretation of the XML protocol: It uses HTML entities within XML tag text nodes.
+    For example:
+    - Normal XML serializers: <Message>No need to escape quotes (like this: ") with HTML entities in XML.</Message>
+    - SQS XML serializer: <Message>No need to escape quotes (like this: &quot;) with HTML entities in XML.</Message>
+
+    None of the prominent XML frameworks for python allow HTML entity escapes when serializing XML.
+    This serializer implements the following workaround:
+    - Escape quotes and \r with their HTML entities (&quot; and &#xD;).
+    - Since & is (correctly) escaped in XML, the serialized string contains &amp;quot; and &amp;#xD;
+    - These double-escapes are corrected by replacing such strings with their original.
+    """
+
+    def _default_serialize(self, xmlnode: ETree.Element, params: str, _, name: str) -> None:
+        """Ensures that XML text nodes use HTML entities instead of " or \r"""
+        node = ETree.SubElement(xmlnode, name)
+        node.text = six.text_type(params).replace('"', "&quot;").replace("\r", "&#xD;")
+
+    def _xml_to_string(self, root: Optional[ETree.ElementTree]) -> Optional[str]:
+        """
+        Replaces the double-escaped HTML entities with their correct HTML entity (basically reverts the escaping in
+        the serialization of the used XML framework).
+        """
+        generated_string = super()._xml_to_string(root)
+        return (
+            to_bytes(
+                to_str(generated_string)
+                # Undo the second escaping of the &
+                .replace("&amp;quot;", "&quot;")
+                # Undo the second escaping of the carriage return (\r)
+                .replace("&amp;#xD;", "&#xD;")
+            )
+            if generated_string is not None
+            else None
+        )
+
+
 def create_serializer(service: ServiceModel) -> ResponseSerializer:
     """
     Creates the right serializer for the given service model.
@@ -811,11 +854,27 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
     :param service: to create the serializer for
     :return: ResponseSerializer which can handle the protocol of the service
     """
-    serializers = {
+
+    # Unfortunately, some services show subtle differences in their serialized responses, even though their
+    # specification states they implement the same protocol.
+    # Since some clients might be stricter / less resilient than others, we need to mimic the serialization of the
+    # specific services as close as possible.
+    # Therefore, the service-specific serializer implementations (basically the implicit / informally more specific
+    # protocol implementation) has precedence over the more general protocol-specific serializers.
+    service_specific_serializers = {
+        "sqs": SqsResponseSerializer,
+    }
+    protocol_specific_serializers = {
         "query": QueryResponseSerializer,
         "json": JSONResponseSerializer,
         "rest-json": RestJSONResponseSerializer,
         "rest-xml": RestXMLResponseSerializer,
         "ec2": EC2ResponseSerializer,
     }
-    return serializers[service.protocol]()
+
+    # Try to select a service-specific serializer implementation
+    if service.service_name in service_specific_serializers:
+        return service_specific_serializers[service.service_name]()
+    else:
+        # Otherwise, pick the protocol-specific serializer for the protocol of the service
+        return protocol_specific_serializers[service.protocol]()

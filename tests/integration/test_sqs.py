@@ -430,7 +430,7 @@ class TestSqsProvider:
         result = requests.post(url, data=payload, headers=headers)
         assert result
         content = to_str(result.content)
-        kwargs = {"flags": re.MULTILINE}
+        kwargs = {"flags": re.MULTILINE | re.DOTALL}
         assert re.match(rf".*<QueueUrl>\s*{edge_url}/[^<]+</QueueUrl>.*", content, **kwargs)
 
         # assert custom port is returned in queue URL
