@@ -608,7 +608,8 @@ class ProxyListenerDynamoDB(ProxyListener):
     # UTIL METHODS
     # -------------
 
-    def prepare_request_headers(self, headers):
+    @classmethod
+    def prepare_request_headers(cls, headers):
         def _replace(regex, replace):
             headers["Authorization"] = re.sub(
                 regex, replace, headers.get("Authorization") or "", flags=re.IGNORECASE
@@ -617,10 +618,10 @@ class ProxyListenerDynamoDB(ProxyListener):
         # Note: We need to ensure that the same access key is used here for all requests,
         # otherwise DynamoDBLocal stores tables/items in separate namespaces
         _replace(r"Credential=[^/]+/", r"Credential=%s/" % constants.INTERNAL_AWS_ACCESS_KEY_ID)
-        # Note: The NoSQL Workbench sends "localhost" as the region name, which we need to correct here
+        # Note: The NoSQL Workbench sends "localhost" or "local" as the region name, which we need to fix here
         _replace(
-            r"Credential=([^/]+/[^/]+)/localhost",
-            r"Credential=\1/%s" % aws_stack.get_local_region(),
+            r"Credential=([^/]+/[^/]+)/local(host)?/",
+            rf"Credential=\1/{aws_stack.get_local_region()}/",
         )
 
     def prepare_batch_write_item_records(self, record, data):
