@@ -12,7 +12,7 @@ from botocore.credentials import Credentials
 from botocore.exceptions import ClientError
 from six.moves.urllib.parse import urlencode
 
-from localstack import config
+from localstack import config, constants
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid, to_str
@@ -392,6 +392,7 @@ class TestSqsProvider:
         assert len(result_send["Failed"]) == 1
 
     @only_localstack
+    @pytest.mark.xfail  # We are deprecating this and see what breaks
     def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
         external_host = "external-host"
         external_port = "12345"
@@ -441,6 +442,51 @@ class TestSqsProvider:
         content = to_str(result.content)
         # TODO: currently only asserting that the port matches - potentially should also return the custom hostname?
         assert re.match(rf".*<QueueUrl>\s*http://[^:]+:{port}[^<]+</QueueUrl>.*", content, **kwargs)
+
+    def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch):
+        queue_name = f"queue-{short_uid()}"
+
+        edge_url = config.get_edge_url()
+        headers = aws_stack.mock_aws_request_headers("sqs")
+        port = 12345
+        hostname = "aws-local"
+        # We need both HOSTNAME_EXTERNAL and headers?
+        monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname)
+
+        url = f"{hostname}:{port}"
+        headers["Host"] = url
+        payload = f"Action=CreateQueue&QueueName={queue_name}"
+        result = requests.post(edge_url, data=payload, headers=headers)
+        assert result.status_code == 200
+        assert url in result.text
+
+        queue_url = f"http://{url}/{constants.TEST_AWS_ACCOUNT_ID}/{queue_name}"
+        message_body = f"test message {short_uid()}"
+        payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
+        result = requests.post(edge_url, data=payload, headers=headers)
+        assert result.status_code == 200
+        assert "MD5" in result.text
+
+        payload = f"Action=ReceiveMessage&QueueUrl={queue_url}&VisibilityTimeout=0"
+        result = requests.post(edge_url, data=payload, headers=headers)
+        assert result.status_code == 200
+        assert message_body in result.text
+
+        # the customer said that he used to be able to access it via "127.0.0.1" instead of "aws-local" as well
+        # TODO: uncomment and FIXME
+        queue_url = f"http://127.0.0.1/{constants.TEST_AWS_ACCOUNT_ID}/{queue_name}"
+
+        payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
+        result = requests.post(edge_url, data=payload, headers=headers)
+        assert result.status_code == 200
+        assert "MD5" in result.text
+
+        queue_url = f"http://127.0.0.1/{constants.TEST_AWS_ACCOUNT_ID}/{queue_name}"
+
+        payload = f"Action=ReceiveMessage&QueueUrl={queue_url}&VisibilityTimeout=0"
+        result = requests.post(edge_url, data=payload, headers=headers)
+        assert result.status_code == 200
+        assert message_body in result.text
 
     @pytest.mark.xfail
     def test_fifo_messages_in_order_after_timeout(self, sqs_client, sqs_create_queue):
