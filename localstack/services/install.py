@@ -77,7 +77,7 @@ MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SFN_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/190a8e1ba9f780fd2a0a1a8ab9e599a65c58790d/stepfunctions-local-patch"
+    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-local-patch"
 )
 SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
 SFN_PATCH_CLASS2 = (
@@ -85,10 +85,12 @@ SFN_PATCH_CLASS2 = (
 )
 SFN_PATCH_CLASS_STARTER = "cloud/localstack/StepFunctionsStarter.class"
 SFN_PATCH_CLASS_REGION = "cloud/localstack/RegionAspect.class"
+SFN_PATCH_CLASS_ASYNC2SERVICEAPI = "cloud/localstack/Async2ServiceApi.class"
+SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED = "cloud/localstack/DescribeExecutionParsed.class"
 SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
 
 SFN_AWS_SDK_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/504eb5e20664e8e4dcca102479d1b27f90545453/stepfunctions-internal-awssdk"
+    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-internal-awssdk"
 )
 SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
 
@@ -413,6 +415,8 @@ def install_stepfunctions_local():
         SFN_PATCH_CLASS2,
         SFN_PATCH_CLASS_REGION,
         SFN_PATCH_CLASS_STARTER,
+        SFN_PATCH_CLASS_ASYNC2SERVICEAPI,
+        SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED,
         SFN_PATCH_FILE_METAINF,
     ]
     for patch_class in classes:

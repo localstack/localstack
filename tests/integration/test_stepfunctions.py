@@ -1,6 +1,5 @@
 import json
 import os
-import time
 import unittest
 
 import pytest
@@ -644,92 +643,6 @@ def test_aws_sdk_task(stepfunctions_client, iam_client, sns_client):
             return True
 
         assert wait_until(_retry_execution, max_retries=3, strategy="linear", wait=3.0)
-
-    finally:
-        iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["Policy"]["Arn"])
-        iam_client.delete_role(RoleName=role_name)
-        iam_client.delete_policy(PolicyArn=policy["Policy"]["Arn"])
-        stepfunctions_client.delete_state_machine(stateMachineArn=machine_arn)
-
-
-@pytest.mark.skip(reason="Will be implemented during the lambda rework")
-def test_aws_sdk_exception_handling(stepfunctions_client, iam_client):
-    statemachine_definition = {
-        "StartAt": "CreateTopicTask",
-        "States": {
-            "CreateTopicTask": {
-                "End": True,
-                "Type": "Task",
-                "Resource": "arn:aws:states:::aws-sdk:sns:createTopic",
-                "Parameters": {"Name.$": "$.Name"},
-            }
-        },
-    }
-
-    name = f"sf-parent-{short_uid()}"
-    policy_name = f"policy-{short_uid()}"
-    role_name = f"role-{short_uid()}"
-
-    role = iam_client.create_role(
-        RoleName=role_name,
-        AssumeRolePolicyDocument='{"Version": "2012-10-17", "Statement": {"Action": "sts:AssumeRole", "Effect": "Allow", "Principal": {"Service": "states.amazonaws.com"}}}',
-    )
-    policy = iam_client.create_policy(
-        PolicyDocument='{"Version": "2012-10-17", "Statement": {"Action": "sns:createTopic", "Effect": "Allow", "Resource": "*"}}',
-        PolicyName=policy_name,
-    )
-    iam_client.attach_role_policy(
-        RoleName=role["Role"]["RoleName"], PolicyArn=policy["Policy"]["Arn"]
-    )
-    result = stepfunctions_client.create_state_machine(
-        name=name,
-        definition=json.dumps(statemachine_definition),
-        roleArn=role["Role"]["Arn"],
-    )
-    machine_arn = result["stateMachineArn"]
-
-    try:
-        result = stepfunctions_client.list_state_machines()["stateMachines"]
-        assert len(result) > 0
-        assert len([sm for sm in result if sm["name"] == name]) == 1
-
-        time.sleep(10)  # AWS initially fails a few times until the permissions seem to take effect
-
-        # start state machine execution
-        topic_name = ""  # empty topic will lead to an InvalidParameterException
-        result = stepfunctions_client.start_execution(
-            stateMachineArn=machine_arn, input='{"Name": "' f"{topic_name}" '"}'
-        )
-
-        execution = stepfunctions_client.describe_execution(executionArn=result["executionArn"])
-        assert execution["stateMachineArn"] == machine_arn
-        assert execution["status"] in ["RUNNING", "FAILED"]
-
-        def assert_fail():
-            assert_result = stepfunctions_client.describe_execution(
-                executionArn=result["executionArn"]
-            )
-            return assert_result["status"] == "FAILED"
-
-        wait_until(assert_fail)
-        describe_result = stepfunctions_client.describe_execution(
-            executionArn=result["executionArn"]
-        )
-        assert describe_result["status"] == "FAILED"
-
-        history_result = stepfunctions_client.get_execution_history(
-            executionArn=result["executionArn"]
-        )
-        assert (
-            history_result["events"][-1]["executionFailedEventDetails"]["error"]
-            == "Sns.InvalidParameterException"
-        )
-        assert history_result["events"][-1]["executionFailedEventDetails"]["cause"]
-
-        result = stepfunctions_client.describe_state_machine_for_execution(
-            executionArn=result["executionArn"]
-        )
-        assert result["stateMachineArn"] == machine_arn
 
     finally:
         iam_client.detach_role_policy(RoleName=role_name, PolicyArn=policy["Policy"]["Arn"])
