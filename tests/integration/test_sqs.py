@@ -443,6 +443,8 @@ class TestSqsProvider:
         # TODO: currently only asserting that the port matches - potentially should also return the custom hostname?
         assert re.match(rf".*<QueueUrl>\s*http://[^:]+:{port}[^<]+</QueueUrl>.*", content, **kwargs)
 
+    @only_localstack
+    @pytest.mark.xfail
     def test_external_host_via_header_complete_message_lifecycle(self, monkeypatch):
         queue_name = f"queue-{short_uid()}"
 
