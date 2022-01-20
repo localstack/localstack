@@ -450,8 +450,6 @@ class TestSqsProvider:
         headers = aws_stack.mock_aws_request_headers("sqs")
         port = 12345
         hostname = "aws-local"
-        # We need both HOSTNAME_EXTERNAL and headers?
-        monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", hostname)
 
         url = f"{hostname}:{port}"
         headers["Host"] = url
@@ -473,7 +471,6 @@ class TestSqsProvider:
         assert message_body in result.text
 
         # the customer said that he used to be able to access it via "127.0.0.1" instead of "aws-local" as well
-        # TODO: uncomment and FIXME
         queue_url = f"http://127.0.0.1/{constants.TEST_AWS_ACCOUNT_ID}/{queue_name}"
 
         payload = f"Action=SendMessage&QueueUrl={queue_url}&MessageBody={message_body}"
