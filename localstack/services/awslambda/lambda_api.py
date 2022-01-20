@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from flask import Flask, Response, jsonify, request
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_JSON, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.lambda_executors import InvocationResult, LambdaContext
 from localstack.services.awslambda.lambda_utils import (
@@ -29,6 +29,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME,
     LAMBDA_DEFAULT_STARTING_POSITION,
+    LAMBDA_RUNTIME_NODEJS14X,
     ClientError,
     error_response,
     event_source_arn_matches,
@@ -38,7 +39,7 @@ from localstack.services.awslambda.lambda_utils import (
     multi_value_dict_for_list,
 )
 from localstack.services.generic_proxy import RegionBackend
-from localstack.services.install import install_go_lambda_runtime
+from localstack.services.install import INSTALL_DIR_STEPFUNCTIONS, install_go_lambda_runtime
 from localstack.utils import bootstrap
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
@@ -805,6 +806,7 @@ def run_lambda(
 
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
+        # TODO: wrong mapping
         response = {
             "errorType": str(exc_type.__name__),
             "errorMessage": str(e),
@@ -1795,6 +1797,23 @@ def invoke_function(function):
         not_found = not_found_error(arn)
     elif qualifier and not region.lambdas.get(arn).qualifier_exists(qualifier):
         not_found = not_found_error("{0}:{1}".format(arn, qualifier))
+
+    # remove this block when AWS updates the stepfunctions image to support aws-sdk invocations
+    if not_found and "localstack-internal-awssdk" in arn:
+        # init aws-sdk stepfunctions handler
+        with open(
+            os.path.join(INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "awssdk.zip"),
+            "rb",
+        ) as zf:
+            lambda_client = aws_stack.connect_to_service("lambda")
+            lambda_client.create_function(
+                FunctionName="localstack-internal-awssdk",
+                Runtime=LAMBDA_RUNTIME_NODEJS14X,
+                Handler="index.handler",
+                Code={"ZipFile": zf.read()},
+                Role=LAMBDA_TEST_ROLE,
+            )
+            not_found = None
 
     if not_found:
         try:

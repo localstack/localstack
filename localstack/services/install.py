@@ -77,7 +77,7 @@ MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
 IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SFN_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/047cc6dcd2e31f5ff3ec52d293c61b875f606958/stepfunctions-local-patch"
+    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-local-patch"
 )
 SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
 SFN_PATCH_CLASS2 = (
@@ -85,7 +85,14 @@ SFN_PATCH_CLASS2 = (
 )
 SFN_PATCH_CLASS_STARTER = "cloud/localstack/StepFunctionsStarter.class"
 SFN_PATCH_CLASS_REGION = "cloud/localstack/RegionAspect.class"
+SFN_PATCH_CLASS_ASYNC2SERVICEAPI = "cloud/localstack/Async2ServiceApi.class"
+SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED = "cloud/localstack/DescribeExecutionParsed.class"
 SFN_PATCH_FILE_METAINF = "META-INF/aop.xml"
+
+SFN_AWS_SDK_URL_PREFIX = (
+    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-internal-awssdk"
+)
+SFN_AWS_SDK_LAMBDA_ZIP_FILE = f"{SFN_AWS_SDK_URL_PREFIX}/awssdk.zip"
 
 # additional JAR libs required for multi-region and persistence (PRO only) support
 MAVEN_REPO = "https://repo1.maven.org/maven2"
@@ -408,6 +415,8 @@ def install_stepfunctions_local():
         SFN_PATCH_CLASS2,
         SFN_PATCH_CLASS_REGION,
         SFN_PATCH_CLASS_STARTER,
+        SFN_PATCH_CLASS_ASYNC2SERVICEAPI,
+        SFN_PATCH_CLASS_DESCRIBEEXECUTIONPARSED,
         SFN_PATCH_FILE_METAINF,
     ]
     for patch_class in classes:
@@ -434,6 +443,11 @@ def install_stepfunctions_local():
         target = os.path.join(INSTALL_DIR_STEPFUNCTIONS, os.path.basename(jar_url))
         if not file_exists_not_empty(target):
             download(jar_url, target)
+
+    # download aws-sdk lambda handler
+    target = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "awssdk.zip")
+    if not file_exists_not_empty(target):
+        download(SFN_AWS_SDK_LAMBDA_ZIP_FILE, target)
 
 
 def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):
