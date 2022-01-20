@@ -294,16 +294,11 @@ class RequestParser(abc.ABC):
         """
         if request_uri is None:
             return None
-
-        # Replace the variable placeholder (f.e. {ConnectionId} in "/fuu/{ConnectionId}/bar/")
-        # with a named regex group. Allow slashes, in case the placeholder is at the end of the pattern.
-        def _replace(m):
-            is_path_end = m.group().endswith("}")
-            match_chars = ".*" if is_path_end else "[^/]*"
-            suffix_char = "" if is_path_end else m.group()[-1]
-            return rf"(?P<{m.groupdict()['VariableName']}>{match_chars}){suffix_char}"
-
-        request_uri_regex = re.sub(r"{(?P<VariableName>[^/]*)}(.?)", _replace, request_uri)
+        # Replace the variable placeholder (f.e. {ConnectionId} in "/fuu/{ConnectionId}/bar/") with a
+        # named regex group. Note: allowing slashes in param values, as required, e.g., for ARNs in paths.
+        request_uri_regex = re.sub(
+            "{(?P<VariableName>[^}]+)}", r"(?P<\g<VariableName>>.+)", request_uri
+        )
         # Put regex in fences to make sure that we do not match any substrings
         request_uri_regex = f"^{request_uri_regex}$"
         # The result is a regex itself.
