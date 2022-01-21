@@ -61,6 +61,7 @@ INSTALL_DIR_KCL = "%s/amazon-kinesis-client" % dirs.static_libs
 INSTALL_DIR_STEPFUNCTIONS = "%s/stepfunctions" % dirs.static_libs
 INSTALL_DIR_KMS = "%s/kms" % dirs.static_libs
 INSTALL_DIR_ELASTICMQ = "%s/elasticmq" % dirs.static_libs
+INSTALL_DIR_KINESIS_MOCK = os.path.join(dirs.static_libs, "kinesis-mock")
 INSTALL_PATH_LOCALSTACK_FAT_JAR = "%s/localstack-utils-fat.jar" % dirs.static_libs
 INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, "DynamoDBLocal.jar")
 INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, "aws-java-sdk-sts.jar")
@@ -68,7 +69,6 @@ INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, "StepFu
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, "local-kms.<arch>.bin")
 INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, "elasticmq-server.jar")
 INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, "kinesalite", "cli.js")
-INSTALL_PATH_KINESIS_MOCK = os.path.join(dirs.static_libs, "kinesis-mock")
 URL_LOCALSTACK_FAT_JAR = (
     "https://repo1.maven.org/maven2/"
     + "cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar"
@@ -304,13 +304,15 @@ def install_elasticmq():
 
 def install_kinesis():
     if config.KINESIS_PROVIDER == "kinesalite":
-        return install_kinesalite()
-    elif config.KINESIS_PROVIDER == "kinesis-mock":
+        install_kinesalite()
+        return
+    if config.KINESIS_PROVIDER == "kinesis-mock":
         # TODO: something better than this
-        km_bin, km_bin_path = kinesis_server._get_kinesis_mock_bin_file_and_path()
-        return install_kinesis_mock(km_bin, km_bin_path)
-    else:
-        raise ValueError("unknown kinesis provider %s" % config.KINESIS_PROVIDER)
+        is_installed, bin_path = get_is_kinesis_mock_installed()
+        if not is_installed:
+            install_kinesis_mock(bin_path)
+        return
+    raise ValueError("unknown kinesis provider %s" % config.KINESIS_PROVIDER)
 
 
 def install_kinesalite():
@@ -319,12 +321,37 @@ def install_kinesalite():
         run('cd "%s" && npm install' % MODULE_MAIN_PATH)
 
 
-def install_kinesis_mock(bin_file, bin_file_path):
-    print("installing kinesis")
+# TODO add cache decorator
+def get_is_kinesis_mock_installed() -> Tuple[bool, str]:
+    machine = platform.machine().lower()
+    system = platform.system().lower()
+    version = platform.version().lower()
+    is_probably_m1 = system == "darwin" and ("arm64" in version or "arm32" in version)
+
+    LOG.debug("getting kinesis-mock for %s %s", system, machine)
+    if config.is_env_true("KINESIS_MOCK_FORCE_JAVA"):  # TODO: set this in constructor
+        # sometimes the static binaries may have problems, and we want to fal back to Java
+        bin_file = "kinesis-mock.jar"
+    elif (machine == "x86_64" or machine == "amd64") and not is_probably_m1:
+        if system == "windows":
+            bin_file = "kinesis-mock-mostly-static.exe"
+        elif system == "linux":
+            bin_file = "kinesis-mock-linux-amd64-static"
+        elif system == "darwin":
+            bin_file = "kinesis-mock-macos-amd64-dynamic"
+        else:
+            bin_file = "kinesis-mock.jar"
+    else:
+        bin_file = "kinesis-mock.jar"
+
+    bin_file_path = os.path.join(INSTALL_DIR_KINESIS_MOCK, bin_file)
     if os.path.exists(bin_file_path):
         LOG.debug("kinesis-mock found at %s", bin_file_path)
-        return bin_file_path
+        return True, bin_file_path
+    return False, bin_file_path
 
+
+def install_kinesis_mock(bin_file_path: str):
     response = requests.get(KINESIS_MOCK_RELEASE_URL)
     if not response.ok:
         raise ValueError(
@@ -333,22 +360,21 @@ def install_kinesis_mock(bin_file, bin_file_path):
 
     github_release = response.json()
     download_url = None
+    bin_file_name = os.path.basename((bin_file_path))
     for asset in github_release.get("assets", []):
         # find the correct binary in the release
-        if asset["name"] == bin_file:
+        if asset["name"] == bin_file_name:
             download_url = asset["browser_download_url"]
             break
-
     if download_url is None:
         raise ValueError(
-            "could not find required binary %s in release %s" % (bin_file, KINESIS_MOCK_RELEASE_URL)
+            "could not find required binary %s in release %s" % (bin_file_name, KINESIS_MOCK_RELEASE_URL)
         )
 
-    mkdir(INSTALL_PATH_KINESIS_MOCK)
+    mkdir(INSTALL_DIR_KINESIS_MOCK)
     LOG.info("downloading kinesis-mock binary from %s", download_url)
     download(download_url, bin_file_path)
     chmod_r(bin_file_path, 0o777)
-    return bin_file_path
 
 
 def install_local_kms():

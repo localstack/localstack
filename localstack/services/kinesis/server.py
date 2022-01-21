@@ -16,36 +16,15 @@ from localstack.utils.common import (
 
 LOG = logging.getLogger(__name__)
 
-def _get_kinesis_mock_bin_file_and_path() -> Tuple[str, str]:
-    target_dir = install.INSTALL_PATH_KINESIS_MOCK
-    machine = platform.machine().lower()
-    system = platform.system().lower()
-    version = platform.version().lower()
-    is_probably_m1 = system == "darwin" and ("arm64" in version or "arm32" in version)
-
-    LOG.debug("getting kinesis-mock for %s %s", system, machine)
-    if config.is_env_true("KINESIS_MOCK_FORCE_JAVA"):  # TODO: set this in constructor
-        # sometimes the static binaries may have problems, and we want to fal back to Java
-        bin_file = "kinesis-mock.jar"
-    elif (machine == "x86_64" or machine == "amd64") and not is_probably_m1:
-        if system == "windows":
-            bin_file = "kinesis-mock-mostly-static.exe"
-        elif system == "linux":
-            bin_file = "kinesis-mock-linux-amd64-static"
-        elif system == "darwin":
-            bin_file = "kinesis-mock-macos-amd64-dynamic"
-        else:
-            bin_file = "kinesis-mock.jar"
-    else:
-        bin_file = "kinesis-mock.jar"
-    bin_file_path = os.path.join(target_dir, bin_file)
-    return bin_file, bin_file_path
-
 
 class KinesisServer(Server):
-
-    def __init__(self, port: int, host: str = "localhost") -> None:
+    def __init__(self, port: int, bin_path: str, host: str = "localhost") -> None:
+        self._bin_path = bin_path
         super().__init__(port, host)
+
+    @property
+    def bin_path(self) -> str:
+        return self._bin_path
 
     def health(self):
         return super().health()
@@ -57,9 +36,7 @@ class KinesisServer(Server):
         super().do_shutdown()
 
     def do_start_thread(self) -> FuncThread:
-        bin_file, bin_file_path, cmd = self._create_shell_command()
-
-        install.install_kinesis_mock(bin_file, bin_file_path)
+        cmd = self._create_shell_command()
         LOG.debug("starting kinesis process %s", cmd)
         t = ShellCommandThread(
             cmd,
@@ -71,9 +48,8 @@ class KinesisServer(Server):
         t.start()
         return t
 
-    def _create_shell_command(self) -> Tuple[str, str, str]:
+    def _create_shell_command(self) -> str:
         # TODO kinesalite
-        kinesis_mock_bin, kinesis_mock_bin_path = _get_kinesis_mock_bin_file_and_path()
         kinesis_data_dir_param = ""
         if config.dirs.data:  # TODO: move this to create_kinesis_server and/or class property
             kinesis_data_dir = "%s/kinesis" % config.dirs.data
@@ -99,7 +75,7 @@ class KinesisServer(Server):
         else:
             initialize_streams_param = ""
 
-        if kinesis_mock_bin.endswith(".jar"):
+        if self.bin_path.endswith(".jar"):
             cmd = "KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s java -XX:+UseG1GC -jar %s" % (
                 self.port,
                 config.KINESIS_SHARD_LIMIT,
@@ -107,10 +83,10 @@ class KinesisServer(Server):
                 kinesis_data_dir_param,
                 log_level_param,
                 initialize_streams_param,
-                kinesis_mock_bin_path,
+                self.bin_path,
             )
         else:
-            chmod_r(kinesis_mock_bin, 0o777)
+            chmod_r(self.bin_path, 0o777)
             cmd = "KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s %s --gc=G1" % (
                 self.port,
                 config.KINESIS_SHARD_LIMIT,
@@ -118,15 +94,20 @@ class KinesisServer(Server):
                 kinesis_data_dir_param,
                 log_level_param,
                 initialize_streams_param,
-                kinesis_mock_bin_path,
+                self.bin_path,
             )
-        return kinesis_mock_bin, kinesis_mock_bin_path, cmd
+        return cmd
 
     def _log_listener(self, line, **_kwargs):
         LOG.info(line.rstrip())
 
+
 def create_kinesis_server(port=None) -> KinesisServer:
     port = port or get_free_tcp_port()
-    server = KinesisServer(port)
+    is_kinesis_mock_installed, kinesis_mock_bin_path = install.get_is_kinesis_mock_installed()
+    if not is_kinesis_mock_installed:
+        install.install_kinesis_mock(kinesis_mock_bin_path)
+
+    server = KinesisServer(port=port, bin_path=kinesis_mock_bin_path)
     #TODO: mk data dir and set class properties here
     return server
