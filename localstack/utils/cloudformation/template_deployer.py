@@ -860,8 +860,8 @@ def execute_resource_action(resource_id, resources, stack_name, action_name):
             return
         LOG.warning(
             f"Action {action_name} for resource type {resource_type} not available. "
-            f"To see if {resource_type} is supported in LocalStack PRO"
-            f"please check out https://docs.localstack.cloud/aws/cloudformation/#resources-pro--enterprise-edition"
+            f"To find out if {resource_type} is supported in LocalStack Pro, "
+            "please check out our docs at https://docs.localstack.cloud/aws/cloudformation"
         )
         return
 
