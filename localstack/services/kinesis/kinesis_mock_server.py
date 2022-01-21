@@ -78,7 +78,7 @@ class KinesisMockServer(Server):
         LOG.info(line.rstrip())
 
 
-def create_mock_kinesis_server(port=None) -> KinesisMockServer:
+def create_kinesis_mock_server(port=None) -> KinesisMockServer:
     port = port or get_free_tcp_port()
     is_kinesis_mock_installed, kinesis_mock_bin_path = install.get_is_kinesis_mock_installed()
     if not is_kinesis_mock_installed:
