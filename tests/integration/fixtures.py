@@ -254,6 +254,16 @@ def sqs_queue(sqs_create_queue):
 
 
 @pytest.fixture
+def sqs_queue_arn(sqs_client):
+    def _get_arn(queue_url: str) -> str:
+        return sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])[
+            "Attributes"
+        ]["QueueArn"]
+
+    return _get_arn
+
+
+@pytest.fixture
 def sns_create_topic(sns_client):
     topic_arns = []
 
