@@ -813,7 +813,8 @@ class JSONRequestParser(BaseJSONRequestParser):
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         target = request.headers["X-Amz-Target"]
-        _, operation_name = target.split(".")
+        # assuming that the last part of the target string (e.g., "x.y.z.MyAction") contains the operation name
+        operation_name = target.rpartition(".")[2]
         operation = self.service.operation_model(operation_name)
         shape = operation.input_shape
         path_regex = self._get_request_uri_regex(operation)

@@ -608,6 +608,17 @@ def test_query_parser_path_params_with_slashes():
     assert params == {"ResourceArn": resource_arn}
 
 
+def test_parse_cloudtrail_with_botocore():
+    _botocore_parser_integration_test(
+        service="cloudtrail",
+        action="DescribeTrails",
+        headers={
+            "X-Amz-Target": "com.amazonaws.cloudtrail.v20131101.CloudTrail_20131101.DescribeTrails"
+        },
+        trailNameList=["t1"],
+    )
+
+
 # TODO Add additional tests (or even automate the creation)
 # - Go to the Boto3 Docs (https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/index.html)
 # - Look for boto3 request syntax definition for services that use the protocol you want to test
