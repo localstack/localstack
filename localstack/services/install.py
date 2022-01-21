@@ -12,7 +12,7 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
-import localstack.services.kinesis.server as kinesis_server
+import localstack.services.kinesis.kinesis_mock_server as kinesis_server
 
 import requests
 from plugin import Plugin, PluginManager
@@ -44,6 +44,7 @@ from localstack.utils.common import (
     new_tmp_file,
     parallelize,
     retry,
+    replace_in_file,
     rm_rf,
     run,
     safe_run,
@@ -314,13 +315,23 @@ def install_kinesis():
     raise ValueError("unknown kinesis provider %s" % config.KINESIS_PROVIDER)
 
 
+def _apply_patches_kinesalite():
+    files = [
+        "%s/kinesalite/validations/decreaseStreamRetentionPeriod.js",
+        "%s/kinesalite/validations/increaseStreamRetentionPeriod.js",
+    ]
+    for file_path in files:
+        file_path = file_path % INSTALL_DIR_NPM
+        replace_in_file("lessThanOrEqual: 168", "lessThanOrEqual: 8760", file_path)
+
+
 def install_kinesalite():
     if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
         log_install_msg("Kinesis")
         run('cd "%s" && npm install' % MODULE_MAIN_PATH)
+        _apply_patches_kinesalite()
 
 
-# TODO add cache decorator
 def get_is_kinesis_mock_installed() -> Tuple[bool, str]:
     machine = platform.machine().lower()
     system = platform.system().lower()
@@ -359,7 +370,7 @@ def install_kinesis_mock(bin_file_path: str):
 
     github_release = response.json()
     download_url = None
-    bin_file_name = os.path.basename((bin_file_path))
+    bin_file_name = os.path.basename(bin_file_path)
     for asset in github_release.get("assets", []):
         # find the correct binary in the release
         if asset["name"] == bin_file_name:
