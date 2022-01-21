@@ -1801,19 +1801,19 @@ def invoke_function(function):
     # remove this block when AWS updates the stepfunctions image to support aws-sdk invocations
     if not_found and "localstack-internal-awssdk" in arn:
         # init aws-sdk stepfunctions handler
-        with open(
+        code = load_file(
             os.path.join(INSTALL_DIR_STEPFUNCTIONS, "localstack-internal-awssdk", "awssdk.zip"),
-            "rb",
-        ) as zf:
-            lambda_client = aws_stack.connect_to_service("lambda")
-            lambda_client.create_function(
-                FunctionName="localstack-internal-awssdk",
-                Runtime=LAMBDA_RUNTIME_NODEJS14X,
-                Handler="index.handler",
-                Code={"ZipFile": zf.read()},
-                Role=LAMBDA_TEST_ROLE,
-            )
-            not_found = None
+            mode="rb",
+        )
+        lambda_client = aws_stack.connect_to_service("lambda")
+        lambda_client.create_function(
+            FunctionName="localstack-internal-awssdk",
+            Runtime=LAMBDA_RUNTIME_NODEJS14X,
+            Handler="index.handler",
+            Code={"ZipFile": code},
+            Role=LAMBDA_TEST_ROLE,
+        )
+        not_found = None
 
     if not_found:
         try:
