@@ -16,7 +16,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
     requests_to_flask_response,
 )
-from localstack.utils.common import empty_context_manager, snake_to_camel_case
+from localstack.utils.common import snake_to_camel_case
 from localstack.utils.run import FuncThread
 
 LOG = logging.getLogger(__name__)
@@ -191,27 +191,7 @@ def patch_moto_request_handling():
     if config.USE_SINGLE_REGION:
         return
 
-    # TODO: move into generic_proxy.py, instead of patching here (leaving import here for now, to avoid circular dependency)
-    from localstack.services import generic_proxy
-
-    def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, *args, **kwargs):
-        """Patch proxy forward method and store request in thread local."""
-        request_context = get_proxy_request_for_thread()
-        context_manager = empty_context_manager()
-        if not request_context:
-            request_context = Request(url=path, data=data_bytes, headers=headers, method=method)
-            context_manager = RequestContextManager(request_context)
-        with context_manager:
-            result = modify_and_forward_orig(
-                method, path, data_bytes=data_bytes, headers=headers, *args, **kwargs
-            )
-        return result
-
-    modify_and_forward_orig = generic_proxy.modify_and_forward
-    generic_proxy.modify_and_forward = modify_and_forward
-
     # make sure that we inherit THREAD_LOCAL request contexts to spawned sub-threads
-
     def thread_init(self, *args, **kwargs):
         self._req_context = get_request_context()
         return thread_init_orig(self, *args, **kwargs)
