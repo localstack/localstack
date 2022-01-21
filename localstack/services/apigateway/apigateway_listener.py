@@ -546,7 +546,11 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
     integrations = resource.get("resourceMethods", {})
     integration = integrations.get(method, {})
     if not integration:
-        integration = integrations.get("ANY", {})
+        # HttpMethod: '*'
+        # ResourcePath: '/*' - produces 'X-AMAZON-APIGATEWAY-ANY-METHOD'
+        integration = integrations.get("ANY", {}) or integrations.get(
+            "X-AMAZON-APIGATEWAY-ANY-METHOD", {}
+        )
     integration = integration.get("methodIntegration")
     if not integration:
         if method == "OPTIONS" and "Origin" in headers:
