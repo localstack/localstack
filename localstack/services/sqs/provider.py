@@ -667,7 +667,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         with self._mutex:
             self.queues[queue.key] = queue
 
-    def _require_queue(self, context, queue_url=None, queue_name=None) -> SqsQueue:
+    def _require_queue(
+        self, context: RequestContext, queue_url: str = None, queue_name: str = None
+    ) -> SqsQueue:
         """
         #     Returns the queue for the given url or name, or raises a NonExistentQueue error.
         #
@@ -682,7 +684,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             queue_url = context.request.url
         if queue_url:
             queue_name = queue_url.split("/")[-1]
-        key = QueueKey(context.region, context.account_id, queue_name)
+        key = resolve_queue_key(context, queue_name)
         with self._mutex:
             try:
                 return self.queues[key]
@@ -1300,3 +1302,7 @@ def _create_message_attribute_hash(message_attributes) -> Optional[str]:
         # string_list_value, binary_list_value type is not implemented, reserved for the future use.
         # See https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_MessageAttributeValue.html
     return hash.hexdigest()
+
+
+def resolve_queue_key(context: RequestContext, queue_name: str):
+    return QueueKey(context.region, context.account_id, queue_name)
