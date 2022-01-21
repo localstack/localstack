@@ -1,12 +1,10 @@
+from typing import Optional
 import logging
-import os
-import platform
-from typing import Optional, Tuple, List
 from localstack.utils.run import FuncThread
 from localstack.utils.serving import Server
 from localstack import config
 from localstack.services import install
-from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
+from localstack.utils.common import TMP_THREADS, ShellCommandThread
 from localstack.utils.common import (
     chmod_r,
     get_free_tcp_port,
@@ -18,8 +16,12 @@ LOG = logging.getLogger(__name__)
 
 
 class KinesisServer(Server):
-    def __init__(self, port: int, bin_path: str, host: str = "localhost") -> None:
+    def __init__(self, port: int, bin_path: str, latency: str, host: str = "localhost", log_level: str = "INFO", data_dir: Optional[str]=None, initialize_streams: Optional[str]=None) -> None:
+        self._latency = latency
+        self._initialize_streams = initialize_streams
+        self._data_dir = data_dir
         self._bin_path = bin_path
+        self._log_level = log_level
         super().__init__(port, host)
 
     @property
@@ -50,30 +52,18 @@ class KinesisServer(Server):
 
     def _create_shell_command(self) -> str:
         # TODO kinesalite
-        kinesis_data_dir_param = ""
-        if config.dirs.data:  # TODO: move this to create_kinesis_server and/or class property
-            kinesis_data_dir = "%s/kinesis" % config.dirs.data
-            mkdir(kinesis_data_dir)
-            kinesis_data_dir_param = "SHOULD_PERSIST_DATA=true PERSIST_PATH=%s" % kinesis_data_dir
-        if not config.LS_LOG:
-            log_level = "INFO"
-        elif config.LS_LOG == "warning":
-            log_level = "WARN"
+        if self._data_dir:
+            kinesis_data_dir_param = "SHOULD_PERSIST_DATA=true PERSIST_PATH=%s" % self._data_dir
         else:
-            log_level = config.LS_LOG.upper()
-        log_level_param = "LOG_LEVEL=%s" % log_level
-        latency = config.KINESIS_LATENCY + "ms"
+            kinesis_data_dir_param = ""
+        log_level_param = "LOG_LEVEL=%s" % self._log_level
         latency_param = (
             "CREATE_STREAM_DURATION={l} DELETE_STREAM_DURATION={l} REGISTER_STREAM_CONSUMER_DURATION={l} "
             "START_STREAM_ENCRYPTION_DURATION={l} STOP_STREAM_ENCRYPTION_DURATION={l} "
             "DEREGISTER_STREAM_CONSUMER_DURATION={l} MERGE_SHARDS_DURATION={l} SPLIT_SHARD_DURATION={l} "
             "UPDATE_SHARD_COUNT_DURATION={l}"
-        ).format(l=latency)
-
-        if config.KINESIS_INITIALIZE_STREAMS != "":
-            initialize_streams_param = "INITIALIZE_STREAMS=%s" % config.KINESIS_INITIALIZE_STREAMS
-        else:
-            initialize_streams_param = ""
+        ).format(l=self._latency)
+        init_streams_param = "INITIALIZE_STREAMS=%s" % self._initialize_streams if self._initialize_streams else ""
 
         if self.bin_path.endswith(".jar"):
             cmd = "KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s java -XX:+UseG1GC -jar %s" % (
@@ -82,7 +72,7 @@ class KinesisServer(Server):
                 latency_param,
                 kinesis_data_dir_param,
                 log_level_param,
-                initialize_streams_param,
+                init_streams_param,
                 self.bin_path,
             )
         else:
@@ -93,7 +83,7 @@ class KinesisServer(Server):
                 latency_param,
                 kinesis_data_dir_param,
                 log_level_param,
-                initialize_streams_param,
+                init_streams_param,
                 self.bin_path,
             )
         return cmd
@@ -108,6 +98,22 @@ def create_kinesis_server(port=None) -> KinesisServer:
     if not is_kinesis_mock_installed:
         install.install_kinesis_mock(kinesis_mock_bin_path)
 
-    server = KinesisServer(port=port, bin_path=kinesis_mock_bin_path)
-    #TODO: mk data dir and set class properties here
+    if config.dirs.data:
+        kinesis_data_dir = "%s/kinesis" % config.dirs.data
+        mkdir(kinesis_data_dir)
+    else:
+        kinesis_data_dir = None
+
+    if config.LS_LOG:
+        if config.LS_LOG == "warning":
+            log_level = "WARN"
+        else:
+            log_level = config.LS_LOG.upper()
+    else:
+        log_level = "INFO"
+
+    latency = config.KINESIS_LATENCY + "ms"
+    initialize_streams = config.KINESIS_INITIALIZE_STREAMS if config.KINESIS_INITIALIZE_STREAMS else None
+
+    server = KinesisServer(port=port, bin_path=kinesis_mock_bin_path, log_level=log_level, latency=latency, initialize_streams=initialize_streams, data_dir=kinesis_data_dir)
     return server

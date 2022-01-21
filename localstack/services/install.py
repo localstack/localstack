@@ -307,7 +307,6 @@ def install_kinesis():
         install_kinesalite()
         return
     if config.KINESIS_PROVIDER == "kinesis-mock":
-        # TODO: something better than this
         is_installed, bin_path = get_is_kinesis_mock_installed()
         if not is_installed:
             install_kinesis_mock(bin_path)
@@ -329,7 +328,7 @@ def get_is_kinesis_mock_installed() -> Tuple[bool, str]:
     is_probably_m1 = system == "darwin" and ("arm64" in version or "arm32" in version)
 
     LOG.debug("getting kinesis-mock for %s %s", system, machine)
-    if config.is_env_true("KINESIS_MOCK_FORCE_JAVA"):  # TODO: set this in constructor
+    if config.is_env_true("KINESIS_MOCK_FORCE_JAVA"):
         # sometimes the static binaries may have problems, and we want to fal back to Java
         bin_file = "kinesis-mock.jar"
     elif (machine == "x86_64" or machine == "amd64") and not is_probably_m1:
