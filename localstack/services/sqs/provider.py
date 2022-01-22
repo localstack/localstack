@@ -227,11 +227,11 @@ class SqsQueue:
         super().__init__()
         self._assert_queue_name(key.name)
         self.key = key
-        self.tags = tags or dict()
+        self.tags = tags or {}
 
         self.visible = PriorityQueue()
         self.inflight = set()
-        self.receipts = dict()
+        self.receipts = {}
 
         self.attributes = self.default_attributes()
         if attributes:
@@ -463,7 +463,7 @@ class FifoQueue(SqsQueue):
 
     def __init__(self, key: QueueKey, attributes=None, tags=None) -> None:
         super().__init__(key, attributes, tags)
-        self.deduplication = dict()
+        self.deduplication = {}
 
     def put(
         self,
@@ -511,7 +511,7 @@ class FifoQueue(SqsQueue):
         else:
             self.visible.put_nowait(qm)
             if not original_message_group:
-                self.deduplication[message_group_id] = dict()
+                self.deduplication[message_group_id] = {}
             self.deduplication[message_group_id][message_deduplication_id] = qm
 
     def _assert_queue_name(self, name):
@@ -650,9 +650,9 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def __init__(self) -> None:
         super().__init__()
-        self.queues = dict()
-        self.queue_url_index = dict()
-        self.queue_name_index = dict()
+        self.queues = {}
+        self.queue_url_index = {}
+        self.queue_name_index = {}
         self._mutex = threading.RLock()
         self._inflight_worker = InflightUpdateWorker(self.queues)
 
@@ -741,7 +741,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         next_token: Token = None,
         max_results: BoxedInteger = None,
     ) -> ListQueuesResult:
-        urls = list()
+        urls = []
 
         for queue in self.queues.values():
             if queue.key.region != context.region:
@@ -790,8 +790,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._assert_batch(entries)
 
-        successful = list()
-        failed = list()
+        successful = []
+        failed = []
 
         with queue.mutex:
             for entry in entries:
@@ -833,13 +833,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._assert_permission(context, queue)
 
         if not attribute_names:
-            return GetQueueAttributesResult(Attributes=dict())
+            return GetQueueAttributesResult(Attributes={})
 
         if QueueAttributeName.All in attribute_names:
             # return GetQueueAttributesResult(Attributes=queue.attributes)
             attribute_names = queue.attributes.keys()
 
-        result: Dict[QueueAttributeName, str] = dict()
+        result: Dict[QueueAttributeName, str] = {}
 
         for attr in attribute_names:
             try:
@@ -901,8 +901,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._assert_batch(entries)
 
-        successful = list()
-        failed = list()
+        successful = []
+        failed = []
 
         with queue.mutex:
             for entry in entries:
@@ -1012,7 +1012,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         num = max_number_of_messages or 1
         block = wait_time_seconds is not None
         # collect messages
-        messages = list()
+        messages = []
         while num:
             try:
                 standard_message = queue.get(
@@ -1092,8 +1092,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._assert_permission(context, queue)
         self._assert_batch(entries)
 
-        successful = list()
-        failed = list()
+        successful = []
+        failed = []
 
         with queue.mutex:
             for entry in entries:

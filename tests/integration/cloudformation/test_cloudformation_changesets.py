@@ -30,7 +30,7 @@ def test_create_change_set_without_parameters(
     try:
         # make sure the change set wasn't executed (which would create a topic)
         topics = sns_client.list_topics()
-        topic_arns = [t for t in map(lambda x: x["TopicArn"], topics["Topics"])]
+        topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
         assert not any("sns-topic-simple" in arn for arn in topic_arns)
         # stack is initially in REVIEW_IN_PROGRESS state. only after executing the change_set will it change its status
         stack_response = cfn_client.describe_stacks(StackName=stack_id)
@@ -283,7 +283,7 @@ def test_create_change_set_with_ssm_parameter(
         wait_until(is_stack_created(stack_id))
 
         topics = sns_client.list_topics()
-        topic_arns = [t for t in map(lambda x: x["TopicArn"], topics["Topics"])]
+        topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
         assert any((parameter_value in t) for t in topic_arns)
     finally:
         cleanup_changesets([change_set_id])
@@ -321,7 +321,7 @@ def test_execute_change_set(
         wait_until(is_change_set_finished(change_set_id))
         # check if stack resource was created
         topics = sns_client.list_topics()
-        topic_arns = [t for t in map(lambda x: x["TopicArn"], topics["Topics"])]
+        topic_arns = list(map(lambda x: x["TopicArn"], topics["Topics"]))
         assert any(("sns-topic-simple" in t) for t in topic_arns)
     finally:
         cleanup_changesets([change_set_id])
