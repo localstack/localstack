@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 import os
@@ -7,6 +8,7 @@ import ssl
 import threading
 from asyncio.selector_events import BaseSelectorEventLoop
 from typing import Dict, List, Match, Optional, Union
+from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
 import requests
 from flask_cors import CORS
@@ -18,7 +20,6 @@ from flask_cors.core import (
     ACL_REQUEST_HEADERS,
 )
 from requests.models import Request, Response
-from six.moves.urllib.parse import parse_qs, unquote, urlencode, urlparse
 from werkzeug.exceptions import HTTPException
 
 from localstack import config
@@ -40,7 +41,9 @@ from localstack.services.messages import Response as RoutingResponse
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.aws.aws_stack import is_internal_call_context
+from localstack.utils.aws.request_context import RequestContextManager, get_proxy_request_for_thread
 from localstack.utils.common import (
+    empty_context_manager,
     generate_ssl_cert,
     json_safe,
     path_from_url,
@@ -179,7 +182,8 @@ class MessageModifyingProxyListener(ProxyListener):
     def forward_request(
         self, method: str, path: str, data: MessagePayload, headers: Headers
     ) -> Optional[RoutingRequest]:
-        """Return a RoutingRequest with modified request data, or None to forward the request unmodified"""
+        """Return a RoutingRequest with modified request data, or None to forward the request
+        unmodified"""
         return None
 
     def return_response(
@@ -190,19 +194,24 @@ class MessageModifyingProxyListener(ProxyListener):
         headers: Headers,
         response: Response,
     ) -> Optional[RoutingResponse]:
-        """Return a RoutingResponse with modified response data, or None to forward the response unmodified"""
+        """Return a RoutingResponse with modified response data, or None to forward the response
+        unmodified"""
         return None
 
 
 class ArnPartitionRewriteListener(MessageModifyingProxyListener):
     """
-    Intercepts requests and responses and tries to adjust the partitions in ARNs within the intercepted requests.
+    Intercepts requests and responses and tries to adjust the partitions in ARNs within the
+    intercepted requests.
     For incoming requests, the default partition is set ("aws").
-    For outgoing responses, the partition is adjusted based on the region in the ARN, or by the default region
+    For outgoing responses, the partition is adjusted based on the region in the ARN, or by the
+    default region
     if the ARN does not contain a region.
-    This listener is used to support other partitions than the default "aws" partition (f.e. aws-us-gov) without
+    This listener is used to support other partitions than the default "aws" partition (f.e.
+    aws-us-gov) without
     rewriting all the cases where the ARN is parsed or constructed within LocalStack or moto.
-    In other words, this listener makes sure that internally the ARNs are always in the partition "aws", while the
+    In other words, this listener makes sure that internally the ARNs are always in the partition
+    "aws", while the
     client gets ARNs with the proper partition.
     """
 
@@ -256,7 +265,8 @@ class ArnPartitionRewriteListener(MessageModifyingProxyListener):
     def _adjust_partition_in_path(self, path: str, static_partition: str = None):
         """Adjusts the (still url encoded) URL path"""
         parsed_url = urlparse(path)
-        # Make sure to keep blank values, otherwise we drop query params which do not have a value (f.e. "/?policy")
+        # Make sure to keep blank values, otherwise we drop query params which do not have a
+        # value (f.e. "/?policy")
         decoded_query = parse_qs(qs=parsed_url.query, keep_blank_values=True)
         adjusted_path = self._adjust_partition(parsed_url.path, static_partition)
         adjusted_query = self._adjust_partition(decoded_query, static_partition)
@@ -481,6 +491,34 @@ def update_path_in_url(base_url: str, path: str) -> str:
     return f"{protocol}//{parsed.netloc}{path}"
 
 
+def with_context():
+    """
+    Decorator wraps function in a request context manager
+    :return:
+    """
+
+    def context_manager(method=None, path=None, data_bytes=None, headers=None, *args, **kwargs):
+        req_context = get_proxy_request_for_thread()
+        ctx_manager = empty_context_manager()
+        if not req_context:
+            req_context = Request(url=path, data=data_bytes, headers=headers, method=method)
+            ctx_manager = RequestContextManager(req_context)
+        return ctx_manager
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            ctx_manager = context_manager(*args, **kwargs)
+            with ctx_manager:
+                value = func(*args, **kwargs)
+            return value
+
+        return wrapper
+
+    return decorator
+
+
+@with_context()
 def modify_and_forward(
     method: str = None,
     path: str = None,
@@ -587,7 +625,8 @@ def modify_and_forward(
             response.status_code = 200
             break
         elif isinstance(listener_result, Request):
-            # TODO: unify modified_request_to_backend (requests.Request) and handler_chain_request (ls.routing.Request)
+            # TODO: unify modified_request_to_backend (requests.Request) and
+            #  handler_chain_request (ls.routing.Request)
             modified_request_to_backend = listener_result
             break
         elif http2_server.get_async_generator_result(listener_result):
@@ -632,7 +671,8 @@ def modify_and_forward(
             verify=False,
         )
 
-    # prevent requests from processing response body (e.g., to pass-through gzip encoded content unmodified)
+    # prevent requests from processing response body (e.g., to pass-through gzip encoded content
+    # unmodified)
     pass_raw = (
         hasattr(response, "_content_consumed") and not response._content_consumed
     ) or response.headers.get("content-encoding") in ["gzip"]
@@ -700,7 +740,8 @@ class DuplexSocket(ssl.SSLSocket):
 
     @staticmethod
     def is_ssl_socket(newsock):
-        """Returns True/False if the socket uses SSL or not, or None if the status cannot be determined"""
+        """Returns True/False if the socket uses SSL or not, or None if the status cannot be
+        determined"""
 
         def peek_ssl_header():
             peek_bytes = 5
@@ -744,7 +785,8 @@ class GenericProxy(object):
 
 class UrlMatchingForwarder(ProxyListener):
     """
-    ProxyListener that matches URLs to a base url pattern, and if the request url matches the pattern, forwards it to
+    ProxyListener that matches URLs to a base url pattern, and if the request url matches the
+    pattern, forwards it to
     a forward_url. See TestUrlMatchingForwarder for how it behaves.
     """
 
@@ -773,8 +815,10 @@ class UrlMatchingForwarder(ProxyListener):
         return requests.request(method, url, data=data, headers=headers, stream=True, verify=False)
 
     def matches(self, host, path):
-        # TODO: refine matching default ports (80, 443 if scheme is https). Example: http://localhost:80 matches
-        #  http://localhost) check host rule. Can lead to problems with 443-4566 edge proxy forwarding if not enabled
+        # TODO: refine matching default ports (80, 443 if scheme is https). Example:
+        #  http://localhost:80 matches
+        #  http://localhost) check host rule. Can lead to problems with 443-4566 edge proxy
+        #  forwarding if not enabled
         if self.base_url.netloc:
             stripped_netloc, _, port = self.base_url.netloc.rpartition(":")
             if host != self.base_url.netloc and (
@@ -841,7 +885,8 @@ class EndpointProxy(ProxyListener):
 
 class FakeEndpointProxyServer(Server):
     """
-    Makes an EndpointProxy behave like a Server. You can use this to create transparent multiplexing behavior.
+    Makes an EndpointProxy behave like a Server. You can use this to create transparent
+    multiplexing behavior.
     """
 
     endpoint: EndpointProxy
