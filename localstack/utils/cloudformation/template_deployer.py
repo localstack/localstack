@@ -859,7 +859,9 @@ def execute_resource_action(resource_id, resources, stack_name, action_name):
         if resource_type in ["Parameter"]:
             return
         LOG.warning(
-            'Action "%s" for resource type %s not yet implemented', action_name, resource_type
+            f"Action {action_name} for resource type {resource_type} not available. "
+            f"To find out if {resource_type} is supported in LocalStack Pro, "
+            "please check out our docs at https://docs.localstack.cloud/aws/cloudformation"
         )
         return
 

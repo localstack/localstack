@@ -1,3 +1,4 @@
+import json
 import os
 
 from localstack.utils.common import short_uid
@@ -63,6 +64,69 @@ def test_statemachine_definitionsubstitution(
         # ex_result = stepfunctions_client.start_sync_execution(stateMachineArn=statemachine_arn)
 
         assert "hello from statemachine" in execution_desc["output"]
+
+    finally:
+        cleanup_changesets([change_set_id])
+        cleanup_stacks([stack_id])
+
+
+def test_nested_statemachine_with_sync2(
+    cfn_client,
+    lambda_client,
+    cleanup_stacks,
+    cleanup_changesets,
+    is_change_set_created_and_available,
+    is_stack_created,
+    stepfunctions_client,
+    s3_client,
+):
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+
+    response = cfn_client.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=load_template_raw("sfn_nested_sync2.json"),
+        ChangeSetType="CREATE",
+        Capabilities=["CAPABILITY_IAM"],
+    )
+    change_set_id = response["Id"]
+    stack_id = response["StackId"]
+
+    try:
+        wait_until(is_change_set_created_and_available(change_set_id))
+        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+
+        wait_until(is_stack_created(stack_id))
+
+        stack_result = cfn_client.describe_stacks(StackName=stack_id)
+        assert stack_result["Stacks"][0]["StackStatus"] == "CREATE_COMPLETE"
+
+        parent_arn = [
+            o["OutputValue"]
+            for o in stack_result["Stacks"][0]["Outputs"]
+            if o["OutputKey"] == "ParentStateMachineArnOutput"
+        ][0]
+
+        ex_result = stepfunctions_client.start_execution(
+            stateMachineArn=parent_arn, input='{"Value": 1}'
+        )
+
+        def _is_executed():
+            return (
+                stepfunctions_client.describe_execution(executionArn=ex_result["executionArn"])[
+                    "status"
+                ]
+                != "RUNNING"
+            )
+
+        wait_until(_is_executed)
+        execution_desc = stepfunctions_client.describe_execution(
+            executionArn=ex_result["executionArn"]
+        )
+        assert execution_desc["status"] == "SUCCEEDED"
+        output = json.loads(execution_desc["output"])
+        assert output["Value"] == 3
 
     finally:
         cleanup_changesets([change_set_id])

@@ -202,6 +202,8 @@ def _botocore_parser_integration_test(
     serialized_request = serializer.serialize_to_request(kwargs, service.operation_model(action))
     body = serialized_request["body"]
     query_string = urlencode(serialized_request.get("query_string") or "", doseq=False)
+    # use custom headers (if provided), or headers from serialized request as default
+    headers = serialized_request.get("headers") if headers is None else headers
 
     if service.protocol in ["query", "ec2"]:
         # Serialize the body as query parameter
@@ -606,6 +608,14 @@ def test_query_parser_path_params_with_slashes():
     operation, params = parser.parse(request)
     assert operation.name == "ListTagsForResource"
     assert params == {"ResourceArn": resource_arn}
+
+
+def test_parse_cloudtrail_with_botocore():
+    _botocore_parser_integration_test(
+        service="cloudtrail",
+        action="DescribeTrails",
+        trailNameList=["t1"],
+    )
 
 
 # TODO Add additional tests (or even automate the creation)
