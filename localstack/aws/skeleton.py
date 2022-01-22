@@ -1,8 +1,9 @@
 import inspect
 import logging
+from functools import lru_cache
 from typing import Any, Callable, Dict, NamedTuple, Optional, Union
 
-from botocore import xform_name
+import boto3
 from botocore.model import ServiceModel
 
 from localstack.aws.api import (
@@ -38,6 +39,16 @@ class HandlerAttributes(NamedTuple):
     operation: str
     pass_context: bool
     expand_parameters: bool
+    override: bool
+
+
+@lru_cache
+def boto_client(service_name):
+    return boto3.client(service_name)
+
+
+def create_boto(service_name, function_name):
+    return getattr(boto_client(service_name), function_name)
 
 
 def create_dispatch_table(delegate: object) -> DispatchTable:
@@ -59,7 +70,7 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
             try:
                 # attributes come from operation_marker in @handler wrapper
                 handlers[fn.operation] = HandlerAttributes(
-                    fn.__name__, fn.operation, fn.pass_context, fn.expand_parameters
+                    fn.__name__, fn.operation, fn.pass_context, fn.expand_parameters, fn.override
                 )
             except AttributeError:
                 pass
@@ -67,8 +78,13 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
     # create dispatch table from operation handlers by resolving bound functions on the delegate
     dispatch_table: DispatchTable = {}
     for handler in handlers.values():
+
         # resolve the bound function of the delegate
-        bound_function = getattr(delegate, handler.function_name)
+        if handler.override:
+            bound_function = getattr(delegate, handler.function_name)
+        else:
+            bound_function = create_boto(delegate.service, handler.function_name)
+
         # create a dispatcher
         dispatch_table[handler.operation] = ServiceRequestDispatcher(
             bound_function,
@@ -84,13 +100,13 @@ class ServiceRequestDispatcher:
     fn: Callable
     operation: str
     expand_parameters: bool = True
-    pass_context: bool = True
+    pass_context: bool = False
 
     def __init__(
         self,
         fn: Callable,
         operation: str,
-        pass_context: bool = True,
+        pass_context: bool = False,
         expand_parameters: bool = True,
     ):
         self.fn = fn
@@ -109,11 +125,9 @@ class ServiceRequestDispatcher:
                 args.append(context)
             args.append(request)
         else:
-            if request is None:
-                kwargs = {}
-            else:
-                kwargs = {xform_name(k): v for k, v in request.items()}
-            kwargs["context"] = context
+            kwargs = {} if request is None else dict(request.items())
+            if self.pass_context:
+                kwargs["context"] = context
 
         return self.fn(*args, **kwargs)
 
@@ -165,7 +179,8 @@ class Skeleton:
         # Call the appropriate handler
         result = handler(context, instance) or {}
         # Serialize result dict to an HTTPResponse and return it
-        return self.serializer.serialize_to_response(result, operation)
+        # return self.serializer.serialize_to_response(result, operation)
+        return result
 
     def on_service_exception(
         self, context: RequestContext, exception: ServiceException
