@@ -234,7 +234,34 @@ class ProxyListenerSNS(PersistingProxyListener):
                 return make_response(req_action, message_id=message_id)
 
             elif req_action == "PublishBatch":
-                response = publish_batch(topic_arn, req_data, headers)
+                entries = parse_urlencoded_data(
+                    req_data, "PublishBatchRequestEntries.member", "MessageAttributes.entry"
+                )
+
+                if len(entries) > 10:
+                    return make_error(
+                        message="The batch request contains more entries than permissible",
+                        code=400,
+                        code_string="TooManyEntriesInBatchRequest",
+                    )
+                ids = [entry["Id"] for entry in entries]
+
+                if len(set(ids)) != len(entries):
+                    return make_error(
+                        message="Two or more batch entries in the request have the same Id",
+                        code=400,
+                        code_string="BatchEntryIdsNotDistinct",
+                    )
+
+                if topic_arn and ".fifo" in topic_arn:
+                    if not all(["MessageGroupId" in entry for entry in entries]):
+                        return make_error(
+                            message="The MessageGroupId parameter is required for FIFO topics",
+                            code=400,
+                            code_string="InvalidParameter",
+                        )
+
+                response = publish_batch(topic_arn, entries, headers)
                 return requests_response_xml(
                     req_action, response, xmlns="http://sns.amazonaws.com/doc/2010-03-31/"
                 )
@@ -691,17 +718,17 @@ def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_ch
     return message_id
 
 
-def publish_batch(topic_arn, req_data, headers):
+def publish_batch(topic_arn, messages, headers):
     response = {"Successful": [], "Failed": []}
-    messages = parse_urlencoded_data(
-        req_data, "PublishBatchRequestEntries.member", "MessageAttributes.entry"
-    )
     for message in messages:
         message_id = str(uuid.uuid4())
         data = {}
         data["TopicArn"] = [topic_arn]
         data["Message"] = [message["Message"]]
         data["Subject"] = [message["Subject"]]
+        if ".fifo" in topic_arn:
+            data["MessageGroupId"] = message.get("MessageGroupId")
+        # TODO: add MessageDeduplication checks once ASF-SQS implementation becomes default
 
         message_attributes = prepare_message_attributes(message.get("MessageAttributes", []))
         try:
