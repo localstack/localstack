@@ -1,7 +1,9 @@
 import inspect
 import logging
+from functools import lru_cache
 from typing import Any, Callable, Dict, NamedTuple, Optional, Union
 
+import boto3
 from botocore import xform_name
 from botocore.model import ServiceModel
 
@@ -22,6 +24,19 @@ LOG = logging.getLogger(__name__)
 DispatchTable = Dict[str, ServiceRequestHandler]
 
 
+# Cache the client to avoid instantiation per bound method. Also, they are thread-safe with some
+# caveats
+# https://boto3.amazonaws.com/v1/documentation/api/latest/guide/clients.html
+@lru_cache
+def boto_client(service_name):
+    return boto3.client(service_name)
+
+
+# This is where we bound an operation to the service
+def create_boto(service_name, function_name):
+    return getattr(boto_client(service_name), function_name)
+
+
 def create_skeleton(service: Union[str, ServiceModel], delegate: Any):
     if isinstance(service, str):
         service = load_service(service)
@@ -38,6 +53,7 @@ class HandlerAttributes(NamedTuple):
     operation: str
     pass_context: bool
     expand_parameters: bool
+    override: bool
 
 
 def create_dispatch_table(delegate: object) -> DispatchTable:
@@ -58,7 +74,7 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
             try:
                 # attributes come from operation_marker in @handler wrapper
                 handlers[fn.operation] = HandlerAttributes(
-                    fn.__name__, fn.operation, fn.pass_context, fn.expand_parameters
+                    fn.__name__, fn.operation, fn.pass_context, fn.expand_parameters, fn.override
                 )
             except AttributeError:
                 pass
@@ -66,8 +82,16 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
     # create dispatch table from operation handlers by resolving bound functions on the delegate
     dispatch_table: DispatchTable = {}
     for handler in handlers.values():
+
         # resolve the bound function of the delegate
-        bound_function = getattr(delegate, handler.function_name)
+        # if we want to override the direct call to boto, we set the override property in the
+        # handler and implement the operation in the provider. Otherwise, we dispatch the call
+        # to boto.
+        if handler.override:
+            bound_function = getattr(delegate, handler.function_name)
+        else:
+            bound_function = create_boto(delegate.service, handler.function_name)
+
         # create a dispatcher
         dispatch_table[handler.operation] = ServiceRequestDispatcher(
             bound_function,

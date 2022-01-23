@@ -543,6 +543,17 @@ def apply_patches():
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_APIGATEWAY
     apply_patches()
+
+    # Why here?
+    # 1. The moto mocking has to happen before any usage of botocore, the import will register
+    #    a 'before-send-handler' event, thus intercepting the call to aws.
+    # 2. Then we start the specific service mocking, which basically starts the service backend.
+    #
+    from moto import mock_apigateway
+
+    mock = mock_apigateway()
+    mock.start()
+
     return start_moto_server(
         key="apigateway",
         name="API Gateway",
