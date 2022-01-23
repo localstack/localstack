@@ -1,7 +1,6 @@
 import re
 
 from localstack.services.cloudformation.models.stepfunctions import _apply_substitutions
-from localstack.services.cloudformation.service_models import KEY_RESOURCE_STATE
 from localstack.utils.cloudformation import template_deployer, template_preparer
 
 
@@ -25,26 +24,6 @@ def test_resolve_references():
     result = template_deployer.resolve_refs_recursively(stack_name, ref, resources)
     pattern = r"arn:aws:apigateway:.*:lambda:path/2015-03-31/functions/test:lambda:arn/invocations"
     assert re.match(pattern, result)
-
-
-def test_resolve_transitive_placeholders_in_strings():
-    resources = {
-        "CdkBootstrapVersion": {
-            "Type": "AWS::SSM::Parameter",
-            "Properties": {
-                "Type": "String",
-                "Name": {"Fn::Sub": "/cdk-bootstrap/${Qualifier}/version"},
-                "Value": "...",
-            },
-            KEY_RESOURCE_STATE: {"Value": "..."},
-        },
-        "Qualifier": {"Type": "Parameter", "Properties": {"Value": "q123"}},
-    }
-    placeholder = "arn:aws:ssm:us-east-1:000000000000:parameter${CdkBootstrapVersion}"
-    result = template_deployer.resolve_placeholders_in_string(
-        placeholder, resources=resources, stack_name="stack1"
-    )
-    assert result == "arn:aws:ssm:us-east-1:000000000000:parameter/cdk-bootstrap/q123/version"
 
 
 def test_is_local_service_url():

@@ -765,6 +765,12 @@ def code_signing_arn(code_signing_id: str, account_id: str = None, region_name: 
     return _resource_arn(code_signing_id, pattern, account_id=account_id, region_name=region_name)
 
 
+def ssm_parameter_arn(param_name: str, account_id: str = None, region_name: str = None) -> str:
+    pattern = "arn:aws:ssm:%s:%s:parameter/%s"
+    param_name = param_name.lstrip("/")
+    return _resource_arn(param_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def s3_bucket_arn(bucket_name_or_arn: str, account_id=None):
     bucket_name = s3_bucket_name(bucket_name_or_arn)
     return "arn:aws:s3:::%s" % bucket_name
