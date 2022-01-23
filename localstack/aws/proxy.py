@@ -1,16 +1,13 @@
-import json
 import logging
 from typing import Any, Optional
 from urllib.parse import urlsplit
 
-import boto3
 from botocore.model import ServiceModel
 from requests.models import Response
 from werkzeug.datastructures import Headers
 
 from localstack import constants
 from localstack.aws.api import HttpRequest, HttpResponse, RequestContext
-from localstack.aws.protocol.parser import create_parser
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
 from localstack.services.generic_proxy import ProxyListener
@@ -19,10 +16,6 @@ from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.persistence import PersistingProxyListener
 
 LOG = logging.getLogger(__name__)
-
-
-def snake_it(str):
-    return "".join(["_" + i.lower() if i.isupper() else i for i in str]).lstrip("_")
 
 
 def get_region(request: HttpRequest) -> str:
@@ -39,7 +32,6 @@ class AwsApiListener(ProxyListener):
 
     def __init__(self, api: str, delegate: Any):
         self.service = load_service(api)
-        self.parser = create_parser(self.service)
         self.skeleton = Skeleton(self.service, delegate)
 
     def forward_request(self, method, path, data, headers):
@@ -52,20 +44,9 @@ class AwsApiListener(ProxyListener):
             body=data,
         )
 
-        # create a context out of a request
         context = self.create_request_context(request)
-        # parse request
-        operation, instance = self.parser.parse(context.request)
-        # creat boto client
-        boto_client = boto3.client(self.service.service_name)
-        # call operation on boto
-        fn = getattr(boto_client, snake_it(context.operation.name))
-
-        payload = json.loads(data)
-        return fn(**payload)
-
-        # response = self.skeleton.invoke(context)
-        # return self.to_server_response(response)
+        response = self.skeleton.invoke(context)
+        return self.to_server_response(response)
 
     def create_request_context(self, request: HttpRequest) -> RequestContext:
         context = RequestContext()
@@ -76,8 +57,7 @@ class AwsApiListener(ProxyListener):
         return context
 
     def to_server_response(self, response: HttpResponse):
-        # TODO: creating response objects in this way (re-using the requests library instead of
-        #  an HTTP server
+        # TODO: creating response objects in this way (re-using the requests library instead of an HTTP server
         #  framework) is a bit ugly, but it's the way that the edge proxy expects them.
         resp = Response()
         resp._content = response.get_data()
@@ -92,10 +72,8 @@ def _raise_not_implemented_error(*args, **kwargs):
 
 class AsfWithFallbackListener(AwsApiListener):
     """
-    An AwsApiListener that does not return a default error response if a particular method has
-    not been implemented,
-    but instead calls a second ProxyListener. This is useful to migrate service providers to ASF
-    providers.
+    An AwsApiListener that does not return a default error response if a particular method has not been implemented,
+    but instead calls a second ProxyListener. This is useful to migrate service providers to ASF providers.
     """
 
     api: str
@@ -111,8 +89,7 @@ class AsfWithFallbackListener(AwsApiListener):
         try:
             return super().forward_request(method, path, data, headers)
         except (NotImplementedError, KeyError):
-            # FIXME: KeyError may be an ASF parser error, that indicates that the request cannot
-            #  be parsed
+            # FIXME: KeyError may be an ASF parser error, that indicates that the request cannot be parsed
             LOG.debug("no ASF handler for %s %s, using fallback listener", method, path)
             return self.fallback.forward_request(method, path, data, headers)
 
