@@ -718,7 +718,7 @@ def resolve_placeholders_in_string(result, stack_name=None, resources=None):
             resource_type = get_resource_type(resource_json)
             result = extract_resource_attribute(
                 resource_type,
-                {},
+                resource_json.get(KEY_RESOURCE_STATE, {}),
                 "Ref",
                 resources=resources,
                 resource_id=parts[0],
@@ -729,6 +729,8 @@ def resolve_placeholders_in_string(result, stack_name=None, resources=None):
                     resource_ids=parts[0],
                     message="Unable to resolve attribute ref %s" % match.group(1),
                 )
+            # make sure we resolve any functions/placeholders in the extracted string
+            result = resolve_refs_recursively(stack_name, result, resources)
             return result
         # TODO raise exception here?
         return match.group(0)
