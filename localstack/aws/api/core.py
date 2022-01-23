@@ -222,7 +222,7 @@ ServiceRequestHandler = Callable[[RequestContext, ServiceRequest], Optional[Serv
 
 
 def handler(
-    operation: str = None, context: bool = False, expand: bool = True, override: bool = False
+    operation: str = None, context: bool = True, expand: bool = True, override: bool = False
 ):
     """
     Decorator that indicates that the given function is a handler

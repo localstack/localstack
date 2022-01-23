@@ -1,4 +1,6 @@
+import importlib
 import logging
+import re
 from typing import Any, Optional
 from urllib.parse import urlsplit
 
@@ -6,12 +8,13 @@ from botocore.model import ServiceModel
 from requests.models import Response
 from werkzeug.datastructures import Headers
 
-from localstack import constants
+from localstack import config, constants
 from localstack.aws.api import HttpRequest, HttpResponse, RequestContext
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.messages import MessagePayload
+from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.aws.request_context import extract_region_from_headers
 from localstack.utils.persistence import PersistingProxyListener
 
@@ -69,6 +72,55 @@ class AwsApiListener(ProxyListener):
 
 def _raise_not_implemented_error(*args, **kwargs):
     raise NotImplementedError
+
+
+class CallMotoListener(ProxyListener):
+    def __init__(self, api: str):
+        api = api.replace("-", "")
+        api = "awslambda" if api == "lambda" else api
+
+        # import url_paths mappings from moto
+        urls = importlib.import_module(f"moto.{api}.urls")
+        url_paths = getattr(urls, "url_paths")
+
+        # create list of pre-compiled regexes
+        def _compile(regex):
+            regex = regex[3:] if regex.startswith("{0}") else regex
+            return re.compile(regex)
+
+        self.url_paths = [(_compile(regex), func) for regex, func in url_paths.items()]
+
+    def forward_request(self, method, path, data, headers):
+
+        split_url = urlsplit(path)
+        request = HttpRequest(
+            method=method,
+            path=split_url.path,
+            query_string=split_url.query,
+            headers=headers,
+            body=data,
+        )
+        # TODO: optimize this (should not get computed for each invocation)
+        full_url = f"{config.get_edge_url()}{path}"
+
+        for regex, func in self.url_paths:
+            if regex.match(path):
+                response = func(request, full_url, headers)
+                result = self._convert_moto_response(response)
+                return result
+
+        return True
+
+    def _convert_moto_response(self, response):
+        # taken from moto.core.responses
+        if response is None:
+            response = "", {}
+        if len(response) == 2:
+            body, new_headers = response
+        else:
+            status, new_headers, body = response
+        status = new_headers.get("status", 200)
+        return requests_response(body, status, new_headers)
 
 
 class AsfWithFallbackListener(AwsApiListener):

@@ -80,10 +80,11 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
     for handler in handlers.values():
 
         # resolve the bound function of the delegate
-        if handler.override:
-            bound_function = getattr(delegate, handler.function_name)
-        else:
-            bound_function = create_boto(delegate.service, handler.function_name)
+        bound_function = getattr(delegate, handler.function_name)
+        # if handler.override:
+        #     bound_function = getattr(delegate, handler.function_name)
+        # else:
+        #     bound_function = create_boto(delegate.service, handler.function_name)
 
         # create a dispatcher
         dispatch_table[handler.operation] = ServiceRequestDispatcher(

@@ -7,7 +7,7 @@ import socket
 import ssl
 import threading
 from asyncio.selector_events import BaseSelectorEventLoop
-from typing import Callable, Dict, List, Match, Optional, Union
+from typing import Dict, List, Match, Optional, Union
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
 import requests

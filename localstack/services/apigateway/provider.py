@@ -32,4 +32,4 @@ class ApigatewayProvider(ApigatewayApi):
         tags: MapOfStringToString = None,
         disable_execute_api_endpoint: Boolean = None,
     ) -> RestApi:
-        pass
+        raise NotImplementedError
