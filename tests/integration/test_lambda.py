@@ -5,7 +5,6 @@ import os
 import re
 import shutil
 import time
-import unittest
 from datetime import datetime
 from io import BytesIO
 
@@ -24,6 +23,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE31,
     LAMBDA_RUNTIME_GOLANG,
     LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_JAVA8_AL2,
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_NODEJS10X,
     LAMBDA_RUNTIME_NODEJS12X,
@@ -92,11 +92,6 @@ TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
 )
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "lambdas", "lambda_environment.py")
 
-TEST_LAMBDA_NAME_JAVA = "test_lambda_java"
-TEST_LAMBDA_NAME_JAVA_STREAM = "test_lambda_java_stream"
-TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = "test_lambda_java_serializable"
-TEST_LAMBDA_NAME_JAVA_KINESIS = "test_lambda_java_kinesis"
-
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_send_message.py")
 TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_put_item.py")
@@ -129,6 +124,11 @@ NODE_TEST_RUNTIMES = [
     LAMBDA_RUNTIME_NODEJS12X,
     LAMBDA_RUNTIME_NODEJS14X,
 ]
+JAVA_TEST_RUNTIMES = [
+    LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_JAVA8_AL2,
+    LAMBDA_RUNTIME_JAVA11,
+]
 PROVIDED_TEST_RUNTIMES = [
     LAMBDA_RUNTIME_PROVIDED,
     # TODO remove skip once we use correct images
@@ -138,44 +138,32 @@ PROVIDED_TEST_RUNTIMES = [
 ]
 
 
-def _check_lambda_logs(func_name, expected_lines=None):
-    if not expected_lines:
-        expected_lines = []
-    log_events = LambdaTestBase.get_lambda_logs(func_name)
-    log_messages = [e["message"] for e in log_events]
-    for line in expected_lines:
-        if ".*" in line:
-            found = [re.match(line, m) for m in log_messages]
-            if any(found):
-                continue
-        assert line in log_messages
-
-
-class LambdaTestBase(unittest.TestCase):
-
-    # TODO remove once refactoring to pytest is complete
-    def check_lambda_logs(self, func_name, expected_lines=None):
-        if expected_lines is None:
+@pytest.fixture
+def check_lambda_logs(logs_client):
+    def _check_logs(func_name, expected_lines=None):
+        if not expected_lines:
             expected_lines = []
-        log_events = LambdaTestBase.get_lambda_logs(func_name)
+        log_events = get_lambda_logs(func_name, logs_client=logs_client)
         log_messages = [e["message"] for e in log_events]
         for line in expected_lines:
             if ".*" in line:
                 found = [re.match(line, m) for m in log_messages]
                 if any(found):
                     continue
-            self.assertIn(line, log_messages)
+            assert line in log_messages
 
-    @staticmethod
-    def get_lambda_logs(func_name):
-        logs_client = aws_stack.create_external_boto_client("logs")
-        log_group_name = "/aws/lambda/%s" % func_name
-        streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
-        streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
-        log_events = logs_client.get_log_events(
-            logGroupName=log_group_name, logStreamName=streams[0]["logStreamName"]
-        )["events"]
-        return log_events
+    return _check_logs
+
+
+def get_lambda_logs(func_name, logs_client=None):
+    logs_client = logs_client or aws_stack.create_external_boto_client("logs")
+    log_group_name = "/aws/lambda/%s" % func_name
+    streams = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+    streams = sorted(streams, key=lambda x: x["creationTime"], reverse=True)
+    log_events = logs_client.get_log_events(
+        logGroupName=log_group_name, logStreamName=streams[0]["logStreamName"]
+    )["events"]
+    return log_events
 
 
 # API only functions (no lambda execution itself)
@@ -719,7 +707,9 @@ class TestPythonRuntimes:
         assert result["Environment"] == {"Variables": env_vars}
 
     @parametrize_python_runtimes
-    def test_invocation_with_qualifier(self, lambda_client, s3_client, s3_bucket, runtime):
+    def test_invocation_with_qualifier(
+        self, lambda_client, s3_client, s3_bucket, runtime, check_lambda_logs
+    ):
         function_name = f"test_lambda_{short_uid()}"
         bucket_key = "test_lambda.zip"
 
@@ -733,7 +723,7 @@ class TestPythonRuntimes:
         response = lambda_client.create_function(
             FunctionName=function_name,
             Runtime=runtime,
-            Role="r1",
+            Role="r1",  # TODO
             Publish=True,
             Handler="handler.handler",
             Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
@@ -763,7 +753,7 @@ class TestPythonRuntimes:
             # Note that during regular test execution, nosetests captures the output from
             # the logging module - hence we can only expect this when running in Docker
             expected.append(".*Lambda log message - logging module")
-        _check_lambda_logs(function_name, expected_lines=expected)
+        check_lambda_logs(function_name, expected_lines=expected)
         lambda_client.delete_function(FunctionName=function_name)
 
     @parametrize_python_runtimes
@@ -979,7 +969,9 @@ class TestNodeJSRuntimes:
         not use_docker(), reason="Test for docker nodejs runtimes not applicable if run locally"
     )
     @parametrize_node_runtimes
-    def test_nodejs_lambda_with_context(self, lambda_client, create_lambda_function, runtime):
+    def test_nodejs_lambda_with_context(
+        self, lambda_client, create_lambda_function, runtime, check_lambda_logs
+    ):
         function_name = f"test-function-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
@@ -1007,7 +999,7 @@ class TestNodeJSRuntimes:
 
         # assert that logs are present
         expected = [".*Node.js Lambda handler executing."]
-        _check_lambda_logs(function_name, expected_lines=expected)
+        check_lambda_logs(function_name, expected_lines=expected)
 
     @parametrize_node_runtimes
     def test_invoke_nodejs_lambda(self, lambda_client, create_lambda_function, runtime):
@@ -1071,7 +1063,9 @@ class TestCustomRuntimes:
         "runtime",
         PROVIDED_TEST_RUNTIMES,
     )
-    def test_provided_runtimes(self, lambda_client, create_lambda_function, runtime):
+    def test_provided_runtimes(
+        self, lambda_client, create_lambda_function, runtime, check_lambda_logs
+    ):
         function_name = f"test-function-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
@@ -1095,7 +1089,7 @@ class TestCustomRuntimes:
 
         # assert that logs are present
         expected = [".*Custom Runtime Lambda handler executing."]
-        _check_lambda_logs(function_name, expected_lines=expected)
+        check_lambda_logs(function_name, expected_lines=expected)
 
 
 class TestDotNetCoreRuntimes:
@@ -1185,11 +1179,13 @@ class TestGolangRuntimes:
         assert to_str(result_data).strip() == '"Hello pytest!"'
 
 
-class TestJavaRuntimes:
-    @pytest.fixture(autouse=True)
-    def inject_fixtures(self, caplog):
-        self._caplog = caplog
+parametrize_java_runtimes = pytest.mark.parametrize(
+    "runtime",
+    JAVA_TEST_RUNTIMES,
+)
 
+
+class TestJavaRuntimes:
     @pytest.fixture(scope="class")
     def test_java_jar(self) -> bytes:
         # The TEST_LAMBDA_JAVA jar file is downloaded with `make init-testlibs`.
@@ -1202,7 +1198,8 @@ class TestJavaRuntimes:
         return java_file
 
     @pytest.fixture(scope="class")
-    def test_java_zip(self, tmpdir, test_java_jar) -> bytes:
+    def test_java_zip(self, tmpdir_factory, test_java_jar) -> bytes:
+        tmpdir = tmpdir_factory.mktemp("tmp-java-zip")
         zip_lib_dir = os.path.join(tmpdir, "lib")
         zip_jar_path = os.path.join(zip_lib_dir, "test.lambda.jar")
         mkdir(zip_lib_dir)
@@ -1213,55 +1210,22 @@ class TestJavaRuntimes:
         save_file(zip_jar_path, test_java_jar)
         return testutil.create_zip_file(tmpdir, get_content=True)
 
-    @classmethod
-    def setUpClass(cls):
-        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
-
-        # deploy Lambda - default handler
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_JAVA,
-            zip_file=cls.test_java_zip,
-            runtime=LAMBDA_RUNTIME_JAVA8,
+    @pytest.fixture(
+        params=JAVA_TEST_RUNTIMES,
+    )
+    def simple_java_lambda(self, create_lambda_function, test_java_zip, request):
+        function_name = f"java-test-function-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=test_java_zip,
+            runtime=request.param,
             handler="cloud.localstack.sample.LambdaHandler",
         )
+        return function_name
 
-        # Deploy lambda - Java with stream handler.
-        # Lambda supports single JAR deployments without the zip, so we upload the JAR directly.
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_JAVA_STREAM,
-            zip_file=cls.test_java_jar,
-            runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.awssdkv1.sample.LambdaStreamHandler",
-        )
-
-        # deploy lambda - Java with serializable input object
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
-            zip_file=cls.test_java_zip,
-            runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
-        )
-
-        # deploy lambda - Java with Kinesis input object
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_JAVA_KINESIS,
-            zip_file=cls.test_java_zip,
-            runtime=LAMBDA_RUNTIME_JAVA8,
-            handler="cloud.localstack.awssdkv1.sample.KinesisLambdaHandler",
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA)
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_STREAM)
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_SERIALIZABLE)
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_KINESIS)
-
-    def test_java_runtime(self):
-
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA,
+    def test_java_runtime(self, lambda_client, simple_java_lambda):
+        result = lambda_client.invoke(
+            FunctionName=simple_java_lambda,
             Payload=b'{"echo":"echo"}',
         )
         result_data = result["Payload"].read()
@@ -1271,21 +1235,21 @@ class TestJavaRuntimes:
         assert "LinkedHashMap" in to_str(result_data)
         assert result_data is not None
 
-    def test_java_runtime_with_large_payload(self):
+    def test_java_runtime_with_large_payload(self, lambda_client, simple_java_lambda, caplog):
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
-        self._caplog.set_level(logging.INFO)
+        caplog.set_level(logging.INFO)
 
         payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
         payload = to_bytes(json.dumps(payload))
 
-        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=payload)
+        result = lambda_client.invoke(FunctionName=simple_java_lambda, Payload=payload)
         result_data = result["Payload"].read()
 
         assert 200 == result["StatusCode"]
         assert "LinkedHashMap" in to_str(result_data)
         assert result_data is not None
 
-    def test_java_runtime_with_lib(self):
+    def test_java_runtime_with_lib(self, lambda_client, create_lambda_function):
         java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
 
         # create ZIP file from JAR file
@@ -1312,65 +1276,71 @@ class TestJavaRuntimes:
         )
 
         for archive in [java_jar_with_lib, java_zip_with_lib, java_zip_with_lib_gradle]:
-            lambda_name = "test-%s" % short_uid()
-            testutil.create_lambda_function(
+            lambda_name = "test-function-%s" % short_uid()
+            create_lambda_function(
                 func_name=lambda_name,
                 zip_file=archive,
                 runtime=LAMBDA_RUNTIME_JAVA11,
                 handler="cloud.localstack.sample.LambdaHandlerWithLib",
             )
 
-            result = self.lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
+            result = lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
             result_data = result["Payload"].read()
 
             assert 200 == result["StatusCode"]
             assert "echo" in to_str(result_data)
 
-            # clean up
-            testutil.delete_lambda_function(lambda_name)
-
-    def test_sns_event(self):
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA,
+    def test_sns_event(self, lambda_client, simple_java_lambda):
+        result = lambda_client.invoke(
+            FunctionName=simple_java_lambda,
             InvocationType="Event",
             Payload=b'{"Records": [{"Sns": {"Message": "{}"}}]}',
         )
 
         assert 202 == result["StatusCode"]
 
-    def test_ddb_event(self):
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA,
+    def test_ddb_event(self, lambda_client, simple_java_lambda):
+        result = lambda_client.invoke(
+            FunctionName=simple_java_lambda,
             InvocationType="Event",
             Payload=b'{"Records": [{"dynamodb": {"Message": "{}"}}]}',
         )
 
         assert 202 == result["StatusCode"]
 
-    def test_kinesis_invocation(self):
+    @parametrize_java_runtimes
+    def test_kinesis_invocation(
+        self, lambda_client, create_lambda_function, test_java_zip, runtime
+    ):
         payload = (
             b'{"Records": [{'
             b'"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"},'
             b'"eventID": "shardId-000000000001:12345678901234567890123456789012345678901234567890",'
             b'"eventSourceARN": "arn:aws:kinesis:us-east-1:123456789012:stream/test"}]}'
         )
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA_KINESIS, Payload=payload
+        # deploy lambda - Java with Kinesis input object
+        function_name = f"test-lambda-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=test_java_zip,
+            runtime=runtime,
+            handler="cloud.localstack.awssdkv1.sample.KinesisLambdaHandler",
         )
+        result = lambda_client.invoke(FunctionName=function_name, Payload=payload)
         result_data = result["Payload"].read()
 
         assert 200 == result["StatusCode"]
         assert '"test "' == to_str(result_data).strip()
 
-    def test_kinesis_event(self):
+    def test_kinesis_event(self, lambda_client, simple_java_lambda):
         payload = (
             b'{"Records": [{'
             b'"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"},'
             b'"eventID": "shardId-000000000001:12345678901234567890123456789012345678901234567890",'
             b'"eventSourceARN": "arn:aws:kinesis:us-east-1:123456789012:stream/test"}]}'
         )
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA,
+        result = lambda_client.invoke(
+            FunctionName=simple_java_lambda,
             InvocationType="Event",
             Payload=payload,
         )
@@ -1379,9 +1349,17 @@ class TestJavaRuntimes:
         assert 202 == result["StatusCode"]
         assert "" == to_str(result_data).strip()
 
-    def test_stream_handler(self):
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM,
+    @parametrize_java_runtimes
+    def test_stream_handler(self, lambda_client, create_lambda_function, test_java_jar, runtime):
+        function_name = f"test-lambda-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=test_java_jar,
+            runtime=runtime,
+            handler="cloud.localstack.awssdkv1.sample.LambdaStreamHandler",
+        )
+        result = lambda_client.invoke(
+            FunctionName=function_name,
             Payload=b'{"echo":"echo"}',
         )
         result_data = result["Payload"].read()
@@ -1389,9 +1367,20 @@ class TestJavaRuntimes:
         assert 200 == result["StatusCode"]
         assert "{}" == to_str(result_data).strip()
 
-    def test_serializable_input_object(self):
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
+    @parametrize_java_runtimes
+    def test_serializable_input_object(
+        self, lambda_client, create_lambda_function, test_java_zip, runtime
+    ):
+        # deploy lambda - Java with serializable input object
+        function_name = f"test-lambda-{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            zip_file=test_java_zip,
+            runtime=runtime,
+            handler="cloud.localstack.awssdkv1.sample.SerializedInputLambdaHandler",
+        )
+        result = lambda_client.invoke(
+            FunctionName=function_name,
             Payload=b'{"bucket": "test_bucket", "key": "test_key"}',
         )
         result_data = result["Payload"].read()
@@ -1403,20 +1392,17 @@ class TestJavaRuntimes:
             "key": "test_key",
         }
 
-    def test_trigger_java_lambda_through_sns(self):
+    def test_trigger_java_lambda_through_sns(
+        self, lambda_client, s3_client, sns_client, simple_java_lambda, s3_bucket, sns_create_topic
+    ):
         topic_name = "topic-%s" % short_uid()
-        bucket_name = "bucket-%s" % short_uid()
         key = "key-%s" % short_uid()
-        function_name = TEST_LAMBDA_NAME_JAVA
+        function_name = simple_java_lambda
 
-        sns_client = aws_stack.create_external_boto_client("sns")
-        topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
 
-        s3_client = aws_stack.create_external_boto_client("s3")
-
-        s3_client.create_bucket(Bucket=bucket_name)
         s3_client.put_bucket_notification_configuration(
-            Bucket=bucket_name,
+            Bucket=s3_bucket,
             NotificationConfiguration={
                 "TopicConfigurations": [{"TopicArn": topic_arn, "Events": ["s3:ObjectCreated:*"]}]
             },
@@ -1430,7 +1416,7 @@ class TestJavaRuntimes:
 
         events_before = run_safe(get_lambda_log_events, function_name, regex_filter="Records") or []
 
-        s3_client.put_object(Bucket=bucket_name, Key=key, Body="something")
+        s3_client.put_object(Bucket=s3_bucket, Key=key, Body="something")
         time.sleep(2)
 
         # We got an event that confirm lambda invoked
@@ -1444,9 +1430,7 @@ class TestJavaRuntimes:
         )
 
         # clean up
-        sns_client.delete_topic(TopicArn=topic_arn)
-        s3_client.delete_objects(Bucket=bucket_name, Delete={"Objects": [{"Key": key}]})
-        s3_client.delete_bucket(Bucket=bucket_name)
+        s3_client.delete_objects(Bucket=s3_bucket, Delete={"Objects": [{"Key": key}]})
 
     @pytest.mark.parametrize(
         "handler,expected_result",
@@ -1462,8 +1446,9 @@ class TestJavaRuntimes:
             ),
         ],
     )
+    # this test is only compiled against java 11
     def test_java_custom_handler_method_specification(
-        self, lambda_client, create_lambda_function, handler, expected_result
+        self, lambda_client, create_lambda_function, handler, expected_result, check_lambda_logs
     ):
         java_handler_multiple_handlers = load_file(TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS, mode="rb")
         expected = ['.*"echo": "echo".*']
@@ -1481,4 +1466,4 @@ class TestJavaRuntimes:
 
         assert 200 == result["StatusCode"]
         assert expected_result == to_str(result_data).strip('"\n ')
-        _check_lambda_logs(function_name, expected_lines=expected)
+        check_lambda_logs(function_name, expected_lines=expected)
