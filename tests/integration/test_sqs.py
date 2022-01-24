@@ -59,6 +59,9 @@ TEST_REGION = "us-east-1"
 class TestSqsProvider:
     @only_localstack
     def test_get_queue_url_contains_request_host(self, sqs_client, sqs_create_queue):
+        if config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf":
+            pytest.xfail("this test only works for the ASF provider")
+
         queue_name = "test-queue-" + short_uid()
 
         sqs_create_queue(QueueName=queue_name)
