@@ -1193,7 +1193,13 @@ class TestJavaRuntimes:
     @pytest.fixture(scope="class")
     def test_java_jar(self) -> bytes:
         # The TEST_LAMBDA_JAVA jar file is downloaded with `make init-testlibs`.
-        return load_file(TEST_LAMBDA_JAVA, mode="rb")
+        java_file = load_file(TEST_LAMBDA_JAVA, mode="rb")
+        if not java_file:
+            raise Exception(
+                f"Test dependency {TEST_LAMBDA_JAVA} not found."
+                "Please make sure to run 'make init-testlibs' to ensure the file is available."
+            )
+        return java_file
 
     @pytest.fixture(scope="class")
     def test_java_zip(self, tmpdir, test_java_jar) -> bytes:
@@ -1253,7 +1259,6 @@ class TestJavaRuntimes:
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_KINESIS)
 
     def test_java_runtime(self):
-        assert self.test_java_jar is not None
 
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JAVA,
@@ -1269,8 +1274,6 @@ class TestJavaRuntimes:
     def test_java_runtime_with_large_payload(self):
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         self._caplog.set_level(logging.INFO)
-
-        assert self.test_java_jar is not None
 
         payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
         payload = to_bytes(json.dumps(payload))

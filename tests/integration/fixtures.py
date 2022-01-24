@@ -561,6 +561,8 @@ def create_lambda_function(lambda_client: "LambdaClient"):
 
     def _create_lambda_function(*args, **kwargs):
         # TODO move create function logic here to use lambda_client fixture
+        kwargs["client"] = lambda_client
+        kwargs["role"] = ""  # TODO
         resp = testutil.create_lambda_function(*args, **kwargs)
         lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
         return resp
@@ -568,7 +570,10 @@ def create_lambda_function(lambda_client: "LambdaClient"):
     yield _create_lambda_function
 
     for arn in lambda_arns:
-        lambda_client.delete_function(FunctionName=arn)
+        try:
+            lambda_client.delete_function(FunctionName=arn)
+        except Exception:
+            LOG.debug("Unable to delete function %s in cleanup", arn)
 
 
 @pytest.fixture

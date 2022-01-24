@@ -223,6 +223,7 @@ def create_lambda_function(
     delete=False,
     layers=None,
     client=None,
+    role=None,
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API"""
@@ -275,7 +276,7 @@ def create_lambda_function(
         "FunctionName": func_name,
         "Runtime": runtime,
         "Handler": handler,
-        "Role": LAMBDA_TEST_ROLE,
+        "Role": role or LAMBDA_TEST_ROLE,
         "Code": lambda_code,
         "Timeout": LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
