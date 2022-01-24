@@ -141,12 +141,12 @@ TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-
 
 
 def get_elasticsearch_install_version(version: str) -> str:
-    from localstack.services.es import versions
+    from localstack.services.opensearch import versions
 
     if config.SKIP_INFRA_DOWNLOADS:
         return ELASTICSEARCH_DEFAULT_VERSION
 
-    return versions.get_install_version(version)
+    return versions.get_es_install_version(version)
 
 
 def get_elasticsearch_install_dir(version: str) -> str:
@@ -163,7 +163,7 @@ def get_elasticsearch_install_dir(version: str) -> str:
 
 
 def install_elasticsearch(version=None):
-    from localstack.services.es import versions
+    from localstack.services.opensearch import versions
 
     if not version:
         version = ELASTICSEARCH_DEFAULT_VERSION
@@ -238,8 +238,7 @@ def get_opensearch_install_version(version: str) -> str:
     if config.SKIP_INFRA_DOWNLOADS:
         version = OPENSEARCH_DEFAULT_VERSION
 
-    _, install_version = versions.get_install_type_and_version(version)
-    return install_version
+    return versions.get_install_version(version)
 
 
 def get_opensearch_install_dir(version: str) -> str:
