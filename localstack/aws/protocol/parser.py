@@ -71,7 +71,7 @@ import datetime
 import json
 import re
 from abc import ABC
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from email.utils import parsedate_to_datetime
 from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Tuple, Union
 from urllib.parse import parse_qs
@@ -507,8 +507,8 @@ class BaseRestRequestParser(RequestParser):
         # We create a mapping when the parser is initialized.
         # Since the path can contain URI path parameters, the key of the dict is a regex.
         self.operation_lookup: DefaultDict[
-            str, DefaultDict[Pattern[str], OperationModel]
-        ] = defaultdict(lambda: defaultdict())
+            str, OrderedDict[Pattern[str], OperationModel]
+        ] = defaultdict(lambda: OrderedDict())
         # Extract all operation models from the service spec
         operation_models = [
             service.operation_model(operation) for operation in service.operation_names
