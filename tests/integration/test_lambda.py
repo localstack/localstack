@@ -1185,28 +1185,33 @@ class TestGolangRuntimes:
         assert to_str(result_data).strip() == '"Hello pytest!"'
 
 
-class TestJavaRuntimes(LambdaTestBase):
+class TestJavaRuntimes:
     @pytest.fixture(autouse=True)
     def inject_fixtures(self, caplog):
         self._caplog = caplog
 
-    @classmethod
-    def setUpClass(cls):
-        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
-
-        # deploy Lambda - default handler
+    @pytest.fixture(scope="class")
+    def test_java_jar(self) -> bytes:
         # The TEST_LAMBDA_JAVA jar file is downloaded with `make init-testlibs`.
-        cls.test_java_jar = load_file(TEST_LAMBDA_JAVA, mode="rb")
-        zip_dir = new_tmp_dir()
-        zip_lib_dir = os.path.join(zip_dir, "lib")
+        return load_file(TEST_LAMBDA_JAVA, mode="rb")
+
+    @pytest.fixture(scope="class")
+    def test_java_zip(self, tmpdir, test_java_jar) -> bytes:
+        zip_lib_dir = os.path.join(tmpdir, "lib")
         zip_jar_path = os.path.join(zip_lib_dir, "test.lambda.jar")
         mkdir(zip_lib_dir)
         cp_r(
             INSTALL_PATH_LOCALSTACK_FAT_JAR,
             os.path.join(zip_lib_dir, "executor.lambda.jar"),
         )
-        save_file(zip_jar_path, cls.test_java_jar)
-        cls.test_java_zip = testutil.create_zip_file(zip_dir, get_content=True)
+        save_file(zip_jar_path, test_java_jar)
+        return testutil.create_zip_file(tmpdir, get_content=True)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.create_external_boto_client("lambda")
+
+        # deploy Lambda - default handler
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JAVA,
             zip_file=cls.test_java_zip,
@@ -1248,7 +1253,7 @@ class TestJavaRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_KINESIS)
 
     def test_java_runtime(self):
-        self.assertIsNotNone(self.test_java_jar)
+        assert self.test_java_jar is not None
 
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JAVA,
@@ -1259,13 +1264,13 @@ class TestJavaRuntimes(LambdaTestBase):
         assert 200 == result["StatusCode"]
         # TODO: find out why the assertion below does not work in Travis-CI! (seems to work locally)
         assert "LinkedHashMap" in to_str(result_data)
-        self.assertIsNotNone(result_data)
+        assert result_data is not None
 
     def test_java_runtime_with_large_payload(self):
         # Set the loglevel to INFO for this test to avoid breaking a CI environment (due to excessive log outputs)
         self._caplog.set_level(logging.INFO)
 
-        self.assertIsNotNone(self.test_java_jar)
+        assert self.test_java_jar is not None
 
         payload = {"test": "test123456" * 100 * 1000 * 5}  # 5MB payload
         payload = to_bytes(json.dumps(payload))
@@ -1275,7 +1280,7 @@ class TestJavaRuntimes(LambdaTestBase):
 
         assert 200 == result["StatusCode"]
         assert "LinkedHashMap" in to_str(result_data)
-        self.assertIsNotNone(result_data)
+        assert result_data is not None
 
     def test_java_runtime_with_lib(self):
         java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode="rb")
@@ -1389,10 +1394,11 @@ class TestJavaRuntimes(LambdaTestBase):
         result_data = result["Payload"].read()
 
         assert 200 == result["StatusCode"]
-        self.assertDictEqual(
-            json.loads(to_str(result_data)),
-            {"validated": True, "bucket": "test_bucket", "key": "test_key"},
-        )
+        assert json.loads(to_str(result_data)) == {
+            "validated": True,
+            "bucket": "test_bucket",
+            "key": "test_key",
+        }
 
     def test_trigger_java_lambda_through_sns(self):
         topic_name = "topic-%s" % short_uid()
