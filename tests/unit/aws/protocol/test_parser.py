@@ -199,7 +199,8 @@ def _botocore_parser_integration_test(
     # Use the serializer from botocore to serialize the request params
     serializer = create_serializer(service.protocol)
 
-    serialized_request = serializer.serialize_to_request(kwargs, service.operation_model(action))
+    operation_model = service.operation_model(action)
+    serialized_request = serializer.serialize_to_request(kwargs, operation_model)
     body = serialized_request["body"]
     query_string = urlencode(serialized_request.get("query_string") or "", doseq=False)
     # use custom headers (if provided), or headers from serialized request as default
@@ -211,7 +212,7 @@ def _botocore_parser_integration_test(
 
     # Use our parser to parse the serialized body
     parser = create_parser(service)
-    operation_model, parsed_request = parser.parse(
+    parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
             path=serialized_request.get("url_path") or "",
@@ -220,6 +221,9 @@ def _botocore_parser_integration_test(
             body=body,
         )
     )
+
+    # Check if the determined operation_model is correct
+    assert parsed_operation_model == operation_model
 
     # Check if the result is equal to the given "expected" dict or the kwargs (if "expected" has not been set)
     assert parsed_request == (expected or kwargs)
@@ -615,6 +619,25 @@ def test_parse_cloudtrail_with_botocore():
         service="cloudtrail",
         action="DescribeTrails",
         trailNameList=["t1"],
+    )
+
+
+def test_parse_opensearch_conflicting_request_uris():
+    """
+    Tests if the operation detection works with conflicting regular expressions:
+    - OpenSearch's DescribeDomain (/2021-01-01/opensearch/domain/{DomainName})
+    - OpenSearch's DescribeDomainConfig (/2021-01-01/opensearch/domain/{DomainName}/config)
+    Since the path parameters are greedy (they might contain slashes), "better" matches need to be preferred.
+    """
+    _botocore_parser_integration_test(
+        service="opensearch",
+        action="DescribeDomainConfig",
+        DomainName="test-domain",
+    )
+    _botocore_parser_integration_test(
+        service="opensearch",
+        action="DescribeDomain",
+        DomainName="test-domain",
     )
 
 
