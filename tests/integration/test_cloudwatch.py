@@ -2,10 +2,10 @@ import gzip
 import json
 import unittest
 from datetime import datetime, timedelta
+from urllib.request import Request, urlopen
 
 import requests
 from dateutil.tz import tzutc
-from six.moves.urllib.request import Request, urlopen
 
 from localstack import config
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
