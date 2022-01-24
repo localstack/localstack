@@ -6,12 +6,6 @@ import unittest
 from unittest.mock import patch
 
 from botocore.exceptions import ClientError
-from integration.test_lambda import (
-    TEST_LAMBDA_ECHO_FILE,
-    TEST_LAMBDA_FUNCTION_PREFIX,
-    TEST_LAMBDA_LIBS,
-    TEST_LAMBDA_PYTHON,
-)
 
 from localstack import config
 from localstack.services.apigateway.helpers import gateway_request_url
@@ -26,6 +20,13 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry, safe_requests, short_uid
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
+
+from .test_lambda import (
+    TEST_LAMBDA_ECHO_FILE,
+    TEST_LAMBDA_FUNCTION_PREFIX,
+    TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_PYTHON,
+)
 
 TEST_STAGE_NAME = "testing"
 TEST_SNS_TOPIC_NAME = "sns-topic-1"

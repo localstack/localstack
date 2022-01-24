@@ -5,7 +5,6 @@ import time
 import unittest
 
 import pytest
-from integration.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 
 from localstack import config
 from localstack.services.awslambda import lambda_api, lambda_executors
@@ -25,6 +24,8 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
+
+from .test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 
 # TestLocalLambda variables
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
