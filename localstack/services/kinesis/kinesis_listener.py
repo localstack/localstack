@@ -165,9 +165,10 @@ class ProxyListenerKinesis(ProxyListener):
         elif action == "PutRecord":
             response_body = self.decode_content(response.content)
             # Note: avoid adding 'encryptionType':'NONE' in the event_record, as this breaks .NET Lambdas
+            # also, ensure data payload is base64 encoded before passing to lambda functions
             event_record = {
                 "approximateArrivalTimestamp": epoch_timestamp(),
-                "data": data["Data"],
+                "data": to_str(base64.b64encode(to_bytes(data["Data"]))),
                 "partitionKey": data["PartitionKey"],
                 "sequenceNumber": response_body.get("SequenceNumber"),
             }
@@ -183,9 +184,10 @@ class ProxyListenerKinesis(ProxyListener):
                 for index in range(0, len(records)):
                     record = records[index]
                     # Note: avoid adding 'encryptionType':'NONE' in the event_record, as this breaks .NET Lambdas
+                    # also, ensure data payload is base64 encoded before passing to lambda functions
                     event_record = {
                         "approximateArrivalTimestamp": epoch_timestamp(),
-                        "data": record["Data"],
+                        "data": to_str(base64.b64encode(to_bytes(record["Data"]))),
                         "partitionKey": record["PartitionKey"],
                         "sequenceNumber": response_records[index].get("SequenceNumber"),
                     }
