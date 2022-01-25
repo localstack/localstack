@@ -636,7 +636,7 @@ async def message_to_subscriber(
 
             delivery = {
                 "statusCode": response.status_code,
-                "providerResponse": response.get_data(),
+                "providerResponse": response.content.decode("utf-8"),
             }
             store_delivery_log(subscriber, True, message, message_id, delivery)
 
