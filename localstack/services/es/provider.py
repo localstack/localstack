@@ -1,4 +1,3 @@
-import logging
 from contextlib import contextmanager
 from typing import Optional, cast
 
@@ -66,8 +65,6 @@ from localstack.aws.api.opensearch import (
 )
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
-
-LOG = logging.getLogger(__name__)
 
 
 def _version_to_opensearch(
