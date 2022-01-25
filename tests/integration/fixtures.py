@@ -10,12 +10,15 @@ import pytest
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
-from localstack.utils.common import poll_condition
+from localstack.utils.common import ensure_list, load_file, poll_condition
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
+from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.testutil import start_http_server
+from tests.integration.cloudformation.utils import render_template, template_path
 
 if TYPE_CHECKING:
+    from mypy_boto3_acm import ACMClient
     from mypy_boto3_apigateway import APIGatewayClient
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudwatch import CloudWatchClient
@@ -134,6 +137,11 @@ def stepfunctions_client() -> "SFNClient":
 @pytest.fixture(scope="class")
 def ses_client() -> "SESClient":
     return _client("ses")
+
+
+@pytest.fixture(scope="class")
+def acm_client() -> "ACMClient":
+    return _client("acm")
 
 
 @pytest.fixture(scope="class")
@@ -379,6 +387,7 @@ def opensearch_document_path(opensearch_client, opensearch_endpoint):
 @pytest.fixture
 def cleanup_stacks(cfn_client):
     def _cleanup_stacks(stacks: List[str]) -> None:
+        stacks = ensure_list(stacks)
         for stack in stacks:
             try:
                 cfn_client.delete_stack(StackName=stack)
@@ -391,6 +400,7 @@ def cleanup_stacks(cfn_client):
 @pytest.fixture
 def cleanup_changesets(cfn_client):
     def _cleanup_changesets(changesets: List[str]) -> None:
+        changesets = ensure_list(changesets)
         for cs in changesets:
             try:
                 cfn_client.delete_change_set(ChangeSetName=cs)
@@ -401,6 +411,51 @@ def cleanup_changesets(cfn_client):
 
 
 # Helpers for Cfn
+
+
+@pytest.fixture
+def deploy_cfn_template(
+    cfn_client,
+    lambda_client,
+    cleanup_stacks,
+    cleanup_changesets,
+    is_change_set_created_and_available,
+    is_stack_created,
+):
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+    state = {}
+
+    def _deploy(template_body_or_file, **kwargs):
+        candidates = [template_body_or_file, template_path(template_body_or_file)]
+        for template_file in candidates:
+            if os.path.exists(template_file):
+                template_body_or_file = load_file(template_file)
+                break
+        template_rendered = render_template(template_body_or_file, **kwargs)
+
+        response = cfn_client.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            TemplateBody=template_rendered,
+            ChangeSetType="CREATE",
+        )
+        change_set_id = response["Id"]
+        stack_id = response["StackId"]
+
+        wait_until(is_change_set_created_and_available(change_set_id))
+        cfn_client.execute_change_set(ChangeSetName=change_set_id)
+        wait_until(is_stack_created(stack_id))
+
+        state.update({"stack_id": stack_id, "change_set_id": change_set_id})
+        return stack_id, change_set_id
+
+    yield _deploy
+
+    stack_id = state.get("stack_id")
+    change_set_id = state.get("change_set_id")
+    change_set_id and cleanup_changesets(change_set_id)
+    stack_id and cleanup_stacks(stack_id)
 
 
 @pytest.fixture
