@@ -71,7 +71,7 @@ import datetime
 import json
 import re
 from abc import ABC
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from email.utils import parsedate_to_datetime
 from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Tuple, Union
 from urllib.parse import parse_qs
@@ -507,32 +507,54 @@ class BaseRestRequestParser(RequestParser):
         # We create a mapping when the parser is initialized.
         # Since the path can contain URI path parameters, the key of the dict is a regex.
         self.operation_lookup: DefaultDict[
-            str, DefaultDict[Pattern[str], OperationModel]
-        ] = defaultdict(lambda: defaultdict())
-        for operation in service.operation_names:
-            operation_model = service.operation_model(operation)
+            str, OrderedDict[Pattern[str], OperationModel]
+        ] = defaultdict(lambda: OrderedDict())
+        # Extract all operation models from the service spec
+        operation_models = [
+            service.operation_model(operation) for operation in service.operation_names
+        ]
+        # Sort the operation models descending based on their normalized request URIs.
+        # This is necessary, to ensure that greedy regex matches do not cause wrong method lookups.
+        # f.e. /fuu/{bar}/baz should have precedence over /fuu/{bar}.
+        sorted_operation_models = sorted(
+            operation_models, key=self._get_normalized_request_uri_length, reverse=True
+        )
+        for operation_model in sorted_operation_models:
             http = operation_model.http
-            if len(http) > 0:
-                method = http.get("method")
-                request_uri = http.get("requestUri")
-                request_uri_regex = self._convert_request_uri_to_regex(request_uri)
-                self.operation_lookup[method][request_uri_regex] = operation_model
+            method = http.get("method")
+            request_uri = http.get("requestUri")
+            request_uri_regex = self._convert_request_uri_to_regex(request_uri)
+            self.operation_lookup[method][request_uri_regex] = operation_model
+
+    def _get_normalized_request_uri_length(self, operation_model: OperationModel) -> str:
+        """
+        Fings the normalized request URI for the given operation model.
+        A normalized request URI has a static, common replacement for path parameter placeholders, starting with a
+        space character (which is the lowest non-control character in ASCII and is not expected to be present in a
+        service specification's request URI pattern).
+        This allows the resulting normalized request URIs to be sorted.
+        :param operation_model: to get the normalized request URI for.
+            This function expects that the given operation model has HTTP metadata!
+        :return: normalized request URI for the given operation model
+        """
+        request_uri: str = operation_model.http.get("requestUri")
+        # Make sure that all path parameter placeholders have the same name and length
+        return re.sub(r"{(.*?)}", " param", request_uri)
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         # Find the regex which matches the given path (as well as its operation)
-        # Note: using list(filter(..)) here, to avoid "TypeError: StopIteration interacts badly with generators"
-        matching = list(
-            filter(
-                lambda item: item[0].match(request.path),
-                self.operation_lookup[request.method].items(),
+        try:
+            path_regex, operation = next(
+                filter(
+                    lambda item: item[0].match(request.path),
+                    self.operation_lookup[request.method].items(),
+                )
             )
-        )
-        if not matching:
+        except StopIteration:
             raise RequestParserError(
                 f"Unable to find operation for request to service "
                 f"{self.service.service_name}: {request.method} {request.path}"
             )
-        path_regex, operation = matching[0]
         shape: StructureShape = operation.input_shape
         final_parsed = {}
         if shape is not None:
