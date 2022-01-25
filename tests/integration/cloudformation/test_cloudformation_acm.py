@@ -1,4 +1,5 @@
 from localstack.utils.common import short_uid
+from tests.integration.fixtures import only_localstack
 
 TEST_TEMPLATE = """
 Resources:
@@ -13,10 +14,8 @@ Resources:
 """
 
 
-def test_cfn_apigateway_aws_integration(
-    deploy_cfn_template,
-    acm_client,
-):
+@only_localstack
+def test_cfn_acm_certificate(deploy_cfn_template, acm_client):
     domain = f"domain-{short_uid()}.com"
     deploy_cfn_template(TEST_TEMPLATE, domain=domain)
 
