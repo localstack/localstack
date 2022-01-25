@@ -1,7 +1,8 @@
+import dataclasses
 import json
 import logging
 import os
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import boto3
 import botocore.config
@@ -413,6 +414,14 @@ def cleanup_changesets(cfn_client):
 # Helpers for Cfn
 
 
+@dataclasses.dataclass(frozen=True)
+class DeployResult:
+    change_set_id: str
+    stack_id: str
+    stack_name: str
+    change_set_name: str
+
+
 @pytest.fixture
 def deploy_cfn_template(
     cfn_client,
@@ -420,42 +429,60 @@ def deploy_cfn_template(
     cleanup_stacks,
     cleanup_changesets,
     is_change_set_created_and_available,
-    is_stack_created,
+    is_change_set_finished,
 ):
     stack_name = f"stack-{short_uid()}"
-    change_set_name = f"change-set-{short_uid()}"
-    state = {}
+    state = []
 
-    def _deploy(template_body_or_file, **kwargs):
-        candidates = [template_body_or_file, template_path(template_body_or_file)]
-        for template_file in candidates:
-            if os.path.exists(template_file):
-                template_body_or_file = load_file(template_file)
-                break
-        template_rendered = render_template(template_body_or_file, **kwargs)
+    def _deploy(
+        *,
+        is_update: Optional[bool] = False,
+        template: Optional[str] = None,
+        template_file_name: Optional[str] = None,
+        template_mapping: Optional[Dict[str, any]] = None,
+        parameters: Optional[Dict[str, str]] = None,
+    ) -> DeployResult:
+        change_set_name = f"change-set-{short_uid()}"
+
+        if template_file_name is not None and os.path.exists(template_path(template_file_name)):
+            template = load_file(template_path(template_file_name))
+        template_rendered = render_template(template, **(template_mapping or {}))
 
         response = cfn_client.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=template_rendered,
-            ChangeSetType="CREATE",
+            ChangeSetType=("UPDATE" if is_update else "CREATE"),
+            Parameters=[
+                {
+                    "ParameterKey": k,
+                    "ParameterValue": v,
+                }
+                for (k, v) in (parameters or {}).items()
+            ],
         )
         change_set_id = response["Id"]
         stack_id = response["StackId"]
 
-        wait_until(is_change_set_created_and_available(change_set_id))
+        assert wait_until(is_change_set_created_and_available(change_set_id))
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        wait_until(is_stack_created(stack_id))
+        assert wait_until(is_change_set_finished(change_set_id))
 
-        state.update({"stack_id": stack_id, "change_set_id": change_set_id})
-        return stack_id, change_set_id
+        state.append({"stack_id": stack_id, "change_set_id": change_set_id})
+        return DeployResult(change_set_id, stack_id, stack_name, change_set_name)
 
     yield _deploy
 
-    stack_id = state.get("stack_id")
-    change_set_id = state.get("change_set_id")
-    change_set_id and cleanup_changesets(change_set_id)
-    stack_id and cleanup_stacks(stack_id)
+    for entry in state:
+        entry_stack_id = entry.get("stack_id")
+        entry_change_set_id = entry.get("change_set_id")
+        try:
+            entry_change_set_id and cleanup_changesets(entry_change_set_id)
+            entry_stack_id and cleanup_stacks(entry_stack_id)
+        except Exception as e:
+            LOG.debug(
+                f"Failed cleaning up change set {entry_change_set_id=} and stack {entry_stack_id=}: {e}"
+            )
 
 
 @pytest.fixture
