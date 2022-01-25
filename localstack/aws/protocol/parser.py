@@ -294,13 +294,6 @@ class RequestParser(abc.ABC):
         """
         if request_uri is None:
             return None
-        # TODO Unfortunately, the latest change to the regex which allows slashes in patch params causes some issues.
-        #  - It causes problems with the dispatching in OpenSearch.
-        #    - Requests are redirected to get-domain-status instead of get-domain-config.
-        #  - We need to think about how to find the "best" match in case of conflicting regexes (or we could think about
-        #    how to enhance the regex such that these cases cannot happen?).
-        #  - Maybe we could sort the regexes such that the longest request URIs (after normalizing the path variable
-        #    placeholder lengths) come first. request URIs with the same length should be sorted alphabetically.
         # Replace the variable placeholder (f.e. {ConnectionId} in "/fuu/{ConnectionId}/bar/") with a
         # named regex group. Note: allowing slashes in param values, as required, e.g., for ARNs in paths.
         request_uri_regex = re.sub(

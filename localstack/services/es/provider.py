@@ -1,9 +1,13 @@
 import logging
+from contextlib import contextmanager
 from typing import Optional, cast
+
+from botocore.exceptions import ClientError
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.es import (
     ARN,
+    AccessDeniedException,
     AdvancedOptions,
     AdvancedSecurityOptionsInput,
     AutoTuneOptionsInput,
@@ -13,6 +17,7 @@ from localstack.aws.api.es import (
     CognitoOptions,
     CompatibleElasticsearchVersionsList,
     CompatibleVersionsMap,
+    ConflictException,
     CreateElasticsearchDomainResponse,
     DeleteElasticsearchDomainResponse,
     DescribeElasticsearchDomainConfigResponse,
@@ -33,6 +38,8 @@ from localstack.aws.api.es import (
     EsApi,
     GetCompatibleElasticsearchVersionsResponse,
     InternalException,
+    InvalidPaginationTokenException,
+    InvalidTypeException,
     LimitExceededException,
     ListDomainNamesResponse,
     ListElasticsearchVersionsResponse,
@@ -172,9 +179,30 @@ def _compatible_version_list_from_opensearch(
         ]
 
 
-class EsProvider(EsApi):
-    # TODO describe-domain-config doesn't work yet (it broke with recent changes to the operation determination / regex)
+@contextmanager
+def exception_mapper():
+    """Maps an exception thrown by the OpenSearch client to an exception thrown by the ElasticSearch API."""
+    try:
+        yield
+    except ClientError as err:
+        exception_types = {
+            "AccessDeniedException": AccessDeniedException,
+            "BaseException": EsBaseException,
+            "ConflictException": ConflictException,
+            "DisabledOperationException": DisabledOperationException,
+            "InternalException": InternalException,
+            "InvalidPaginationTokenException": InvalidPaginationTokenException,
+            "InvalidTypeException": InvalidTypeException,
+            "LimitExceededException": LimitExceededException,
+            "ResourceAlreadyExistsException": ResourceAlreadyExistsException,
+            "ResourceNotFoundException": ResourceNotFoundException,
+            "ValidationException": ValidationException,
+        }
+        mapped_exception_type = exception_types.get(err.response["Error"]["Code"], EsBaseException)
+        raise mapped_exception_type(err.response["Error"]["Message"])
 
+
+class EsProvider(EsApi):
     def create_elasticsearch_domain(
         self,
         context: RequestContext,
@@ -219,20 +247,8 @@ class EsProvider(EsApi):
         # Filter the kwargs to not set None values at all (boto doesn't like that)
         kwargs = {key: value for key, value in kwargs.items() if value is not None}
 
-        try:
+        with exception_mapper():
             domain_status = opensearch_client.create_domain(**kwargs)["DomainStatus"]
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.DisabledOperationException as e:
-            raise DisabledOperationException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.LimitExceededException as e:
-            raise LimitExceededException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ResourceAlreadyExistsException as e:
-            raise ResourceAlreadyExistsException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
 
         # record event
         event_publisher.fire_event(
@@ -248,18 +264,10 @@ class EsProvider(EsApi):
     ) -> DeleteElasticsearchDomainResponse:
         opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
 
-        try:
+        with exception_mapper():
             domain_status = opensearch_client.delete_domain(
                 DomainName=domain_name,
             )["DomainStatus"]
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ResourceNotFoundException as e:
-            raise ResourceNotFoundException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
 
         # record event
         event_publisher.fire_event(
@@ -275,18 +283,10 @@ class EsProvider(EsApi):
     ) -> DescribeElasticsearchDomainResponse:
         opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
 
-        try:
+        with exception_mapper():
             opensearch_status = opensearch_client.describe_domain(
                 DomainName=domain_name,
             )["DomainStatus"]
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ResourceNotFoundException as e:
-            raise ResourceNotFoundException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
 
         status = _domainstatus_from_opensearch(opensearch_status)
         return DescribeElasticsearchDomainResponse(DomainStatus=status)
@@ -296,16 +296,10 @@ class EsProvider(EsApi):
     ) -> DescribeElasticsearchDomainsResponse:
         opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
 
-        try:
+        with exception_mapper():
             opensearch_status_list = opensearch_client.describe_domains(
                 DomainNames=domain_names,
             )["DomainStatus"]
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
 
         status_list = [_domainstatus_from_opensearch(s) for s in opensearch_status_list]
         return DescribeElasticsearchDomainsResponse(DomainStatusList=status_list)
@@ -319,12 +313,8 @@ class EsProvider(EsApi):
         if engine_type:
             kwargs["EngineType"] = engine_type
 
-        try:
+        with exception_mapper():
             domain_names = opensearch_client.list_domain_names(**kwargs)["DomainNames"]
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
 
         return ListDomainNamesResponse(DomainNames=cast(Optional[DomainInfoList], domain_names))
 
@@ -341,16 +331,8 @@ class EsProvider(EsApi):
             for key, value in {"MaxResults": max_results, "NextToken": next_token}.items()
             if value is not None
         }
-        try:
+        with exception_mapper():
             versions = opensearch_client.list_versions(**kwargs)
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ResourceNotFoundException as e:
-            raise ResourceNotFoundException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
 
         return ListElasticsearchVersionsResponse(
             ElasticsearchVersions=[
@@ -368,18 +350,8 @@ class EsProvider(EsApi):
         if domain_name:
             kwargs["DomainName"] = domain_name
 
-        try:
+        with exception_mapper():
             compatible_versions_response = opensearch_client.get_compatible_versions(**kwargs)
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ResourceNotFoundException as e:
-            raise ResourceNotFoundException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.DisabledOperationException as e:
-            raise DisabledOperationException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
 
         compatible_versions = compatible_versions_response.get("CompatibleVersions")
         return GetCompatibleElasticsearchVersionsResponse(
@@ -393,18 +365,10 @@ class EsProvider(EsApi):
     ) -> DescribeElasticsearchDomainConfigResponse:
         opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
 
-        try:
+        with exception_mapper():
             domain_config = opensearch_client.describe_domain_config(DomainName=domain_name).get(
                 "DomainConfig"
             )
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ResourceNotFoundException as e:
-            raise ResourceNotFoundException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
 
         return DescribeElasticsearchDomainConfigResponse(
             DomainConfig=_domainconfig_from_opensearch(domain_config)
@@ -413,41 +377,19 @@ class EsProvider(EsApi):
     def add_tags(self, context: RequestContext, arn: ARN, tag_list: TagList) -> None:
         opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
 
-        try:
+        with exception_mapper():
             opensearch_client.add_tags(ARN=arn, TagList=tag_list)
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.LimitExceededException as e:
-            raise LimitExceededException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
 
     def list_tags(self, context: RequestContext, arn: ARN) -> ListTagsResponse:
         opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
 
-        try:
+        with exception_mapper():
             response = opensearch_client.list_tags(ARN=arn)
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ResourceNotFoundException as e:
-            raise ResourceNotFoundException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
 
         return ListTagsResponse(TagList=response.get("TagList"))
 
     def remove_tags(self, context: RequestContext, arn: ARN, tag_keys: StringList) -> None:
         opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
 
-        try:
+        with exception_mapper():
             opensearch_client.remove_tags(ARN=arn, TagKeys=tag_keys)
-        except opensearch_client.exceptions.BaseException as e:
-            raise EsBaseException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.ValidationException as e:
-            raise ValidationException(e.response["Error"]["Message"])
-        except opensearch_client.exceptions.InternalException as e:
-            raise InternalException(e.response["Error"]["Message"])
