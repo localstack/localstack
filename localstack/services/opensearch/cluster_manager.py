@@ -7,7 +7,7 @@ from botocore.utils import ArnParser
 
 from localstack import config
 from localstack.aws.api.opensearch import DomainEndpointOptions, EngineType
-from localstack.constants import LOCALHOST_HOSTNAME
+from localstack.constants import LOCALHOST, LOCALHOST_HOSTNAME
 from localstack.services.generic_proxy import EndpointProxy, FakeEndpointProxyServer
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import (
@@ -18,7 +18,12 @@ from localstack.services.opensearch.cluster import (
     OpensearchCluster,
     resolve_directories,
 )
-from localstack.utils.common import call_safe, get_free_tcp_port, start_thread
+from localstack.utils.common import (
+    call_safe,
+    external_service_ports,
+    get_free_tcp_port,
+    start_thread,
+)
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
@@ -35,9 +40,13 @@ def create_cluster_manager() -> "ClusterManager":
     if config.OPENSEARCH_MULTI_CLUSTER:
         return MultiClusterManager()
     else:
-        # Otherwise, if we are using a localstack-managed multiplexing-to-a-single-cluster-setup,
-        # we use the MultiplexingClusterManager.
-        return MultiplexingClusterManager()
+        # Otherwise, we use a single cluster
+        if config.OPENSEARCH_ENDPOINT_STRATEGY != "port":
+            # and multiplex domains with the MultiplexingClusterManager.
+            return MultiplexingClusterManager()
+        else:
+            # with a single port.
+            return SingletonClusterManager()
 
 
 @dataclasses.dataclass
@@ -76,6 +85,7 @@ def build_cluster_endpoint(
 
     - my-domain.us-east-1.opensearch.localhost.localstack.cloud:4566 (endpoint strategy = domain (default))
     - localhost:4566/us-east-1/my-domain (endpoint strategy = path)
+    - localhost:[port-from-range] (endpoint strategy = port (or deprecated 'off'))
     - my.domain:443/foo (arbitrary endpoints (technically not allowed by AWS, but there are no rules in localstack))
     """
     # If we have a CustomEndpoint, we directly take its endpoint.
@@ -86,6 +96,9 @@ def build_cluster_endpoint(
     engine_domain = "opensearch" if engine_type == EngineType.OpenSearch else "es"
 
     # Otherwise, the endpoint is either routed through the edge proxy via a sub-path (localhost:4566/opensearch/...)
+    if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
+        assigned_port = external_service_ports.reserve_port()
+        return f"{config.LOCALSTACK_HOSTNAME}:{assigned_port}"
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
         return f"{config.LOCALSTACK_HOSTNAME}:{config.EDGE_PORT}/{engine_domain}/{domain_key.region}/{domain_key.domain_name}"
     # or through a subdomain (domain-name.region.opensearch.localhost.localstack.cloud)
@@ -174,6 +187,10 @@ class ClusterEndpoint(FakeEndpointProxyServer):
         return super().health() and self.cluster.health()
 
 
+def _get_port_from_url(url: str) -> int:
+    return int(url.split(":")[2])
+
+
 class MultiplexingClusterManager(ClusterManager):
     """
     Multiplexes multiple endpoints to a single backend cluster (not managed by LocalStack).
@@ -182,6 +199,7 @@ class MultiplexingClusterManager(ClusterManager):
 
     Assumes the config:
     - OPENSEARCH_MULTI_CLUSTER = False
+    - OPENSEARCH_ENDPOINT_STRATEGY = domain / path
     """
 
     cluster: Optional[Server]
@@ -236,14 +254,90 @@ class MultiClusterManager(ClusterManager):
 
     def _create_cluster(self, arn, url, version) -> Server:
         engine_type = versions.get_engine_type(version)
-        if engine_type == EngineType.OpenSearch:
-            return EdgeProxiedOpensearchCluster(
-                url, version, directories=resolve_directories(version, arn)
-            )
+        if config.OPENSEARCH_ENDPOINT_STRATEGY != "port":
+            if engine_type == EngineType.OpenSearch:
+                return EdgeProxiedOpensearchCluster(
+                    url, version, directories=resolve_directories(version, arn)
+                )
+            else:
+                return EdgeProxiedElasticsearchCluster(
+                    url, version, directories=resolve_directories(version, arn)
+                )
         else:
-            return EdgeProxiedElasticsearchCluster(
-                url, version, directories=resolve_directories(version, arn)
-            )
+            port = _get_port_from_url(url)
+            if engine_type == EngineType.OpenSearch:
+                return OpensearchCluster(
+                    port=port,
+                    host=LOCALHOST,
+                    version=version,
+                    directories=resolve_directories(version, arn),
+                )
+            else:
+                return ElasticsearchCluster(
+                    port=port,
+                    host=LOCALHOST,
+                    version=version,
+                    directories=resolve_directories(version, arn),
+                )
+
+
+class SingletonClusterManager(ClusterManager):
+    """
+    Manages a single cluster and always returns that cluster. Using this, we lie to the client about the
+    elasticsearch domain version. The first call to create_domain with a specific version will create the cluster
+    with that version. Subsequent calls will believe they created a cluster with the version they specified. It keeps
+    the cluster running until the last domain was removed. It only works with a single endpoint.
+    Assumes the config:
+    - ES_ENDPOINT_STRATEGY == "port"
+    - ES_MULTI_CLUSTER == False
+    """
+
+    cluster: Optional[Server]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.server = None
+        self.mutex = threading.RLock()
+        self.cluster = None
+
+    def create(self, arn: str, version: str, endpoint_options=None) -> Server:
+        with self.mutex:
+            return super().create(arn, version, endpoint_options)
+
+    def _create_cluster(self, arn, url, version) -> Server:
+        if not self.cluster:
+            port = _get_port_from_url(url)
+            engine_type = versions.get_engine_type(version)
+            if engine_type == EngineType.OpenSearch:
+                self.cluster = OpensearchCluster(
+                    port=port,
+                    host=LOCALHOST,
+                    version=version,
+                    directories=resolve_directories(version, arn),
+                )
+            else:
+                self.cluster = ElasticsearchCluster(
+                    port=port,
+                    host=LOCALHOST,
+                    version=version,
+                    directories=resolve_directories(version, arn),
+                )
+
+        return self.cluster
+
+    def remove(self, arn: str):
+
+        with self.mutex:
+            try:
+                cluster = self.clusters.pop(arn)
+            except KeyError:
+                return
+
+            LOG.debug("removing cluster for %s, %s remaining", arn, len(self.clusters))
+            if not self.clusters:
+                # shutdown the cluster if it is
+                cluster.shutdown()
+                self.cluster = None
 
 
 class CustomBackendManager(ClusterManager):

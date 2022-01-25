@@ -593,15 +593,17 @@ OPENSEARCH_CUSTOM_BACKEND = (
 )
 
 # Strategy used when creating OpenSearch/Elasticsearch domain endpoints routed through the edge proxy
-# valid values: domain | path
+# valid values: domain | path | port (off)
 OPENSEARCH_ENDPOINT_STRATEGY = (
     os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip()
     or os.environ.get("ES_ENDPOINT_STRATEGY", "").strip()
     or "domain"
 )
+if OPENSEARCH_ENDPOINT_STRATEGY == "off":
+    OPENSEARCH_ENDPOINT_STRATEGY = "port"
 
 # Whether to start one cluster per domain (default), or multiplex opensearch domains to a single clusters
-OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_env_not_false(
+OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_env_true(
     "ES_MULTI_CLUSTER"
 )
 
