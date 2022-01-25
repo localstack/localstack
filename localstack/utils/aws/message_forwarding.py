@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import uuid
 from typing import Dict
 
@@ -10,8 +11,13 @@ from localstack.utils.common import long_uid, now_utc
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import timestamp_millis, to_bytes
 from localstack.utils.generic import dict_utils
+from localstack.utils.http_utils import add_query_params_to_url
 
 LOG = logging.getLogger(__name__)
+
+AUTH_BASIC = "BASIC"
+AUTH_API_KEY = "API_KEY"
+AUTH_OAUTH = "AUTH_CLIENT_CREDENTIALS"
 
 
 def lambda_result_to_destination(
@@ -166,8 +172,11 @@ def send_event_to_api_destination(target_arn, event):
         "Connection": "close",
     }
 
-    # add auth headers for target destination
-    add_api_destination_authorization(destination, headers, event)
+    connection_arn = destination.get("ConnectionArn", "")
+    connection_name = re.search(r"connection\/([a-zA-Z0-9-_]+)\/", connection_arn).group(1)
+    connection = events_client.describe_connection(Name=connection_name)
+
+    add_connection_parameters(connection, headers, event, endpoint)
 
     # TODO: consider option to disable the actual network call to avoid unintended side effects
     # TODO: InvocationRateLimitPerSecond (needs some form of thread-safety, scoped to the api destination)
@@ -180,6 +189,35 @@ def send_event_to_api_destination(target_arn, event):
             pass  # TODO: retry logic (only retry on 429 and 5xx response status)
 
 
-def add_api_destination_authorization(destination, headers, event):
-    # not yet implemented - may be implemented elsewhere ...
-    pass
+def add_connection_parameters(connection, headers, data, endpoint):
+    auth_type = connection.get("AuthorizationType").upper()
+    if auth_type is AUTH_BASIC:
+        basic_auth_parameters = connection.get("BasicAuthParamethers", {})
+        username = basic_auth_parameters.get("Username")
+        headers.update("Authorization", "Basic {}".format(username))
+
+    if auth_type is AUTH_API_KEY:
+        api_key_paramethers = connection.get("ApiKeyAuthParameters", {})
+        api_key = api_key_paramethers.get("ApiKeyName", "")
+        headers.update("X-API-KEY", api_key)
+
+    # TODO: implement auth keys obtention for Oauth connection type
+    if auth_type is AUTH_OAUTH:
+        pass
+
+    invocation_parameters = connection.get("InvocationHttpParameters")
+    if invocation_parameters:
+        # TODO: look into what isValueSecret parameter does
+        header_parameters = invocation_parameters.get("HeaderParameters", [])
+        for header_parameter in header_parameters:
+            headers.update(header_parameter.get("Key"), header_parameter.get("Value"))
+
+        query_string_parameters = invocation_parameters.get("QueryStringParameters", [])
+        query_object = {}
+        for query_paramater in query_string_parameters:
+            query_object.update(query_paramater.get(""), query_paramater.get("Value"))
+        endpoint = add_query_params_to_url(endpoint, query_object)
+
+        body_parameters = invocation_parameters.get("BodyParameters", [])
+        for body_paramater in body_parameters:
+            data.update(body_paramater.get("Key"), body_paramater.get("Value"))
