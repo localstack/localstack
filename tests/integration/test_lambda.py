@@ -59,6 +59,7 @@ from localstack.utils.common import (
     to_str,
     unzip,
 )
+from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.testutil import (
     check_expected_lambda_log_events_length,
     create_lambda_archive,
@@ -1471,9 +1472,10 @@ class TestJavaRuntimes:
 
 TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_cache.js")
 TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_cache.py")
+TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_timeout.py")
 
 
-class TestLambdaCache:
+class TestLambdaBehavior:
     @pytest.mark.parametrize(
         ["lambda_fn", "lambda_runtime"],
         [
@@ -1510,3 +1512,81 @@ class TestLambdaCache:
         result_data = result["Payload"].read()
         assert result["StatusCode"] == 200
         assert json.loads(result_data)["counter"] == 1
+
+    @pytest.mark.parametrize(
+        ["lambda_fn", "lambda_runtime"],
+        [
+            (TEST_LAMBDA_TIMEOUT_PYTHON, LAMBDA_RUNTIME_PYTHON38),
+        ],
+        ids=["python"],
+    )
+    def test_lambda_timeout_logs(
+        self, lambda_client, create_lambda_function, lambda_fn, lambda_runtime, logs_client
+    ):
+        """tests the local context reuse of packages in AWS lambda"""
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=lambda_fn,
+            runtime=lambda_runtime,
+            client=lambda_client,
+            timeout=1,
+        )
+
+        result = lambda_client.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 2}))
+        assert result["StatusCode"] == 200
+
+        log_group_name = f"/aws/lambda/{func_name}"
+        ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
+        log_stream_name = ls_result["logStreams"][0]["logStreamName"]
+        log_events = logs_client.get_log_events(
+            logGroupName=log_group_name, logStreamName=log_stream_name
+        )["events"]
+
+        assert any(["starting wait" in e["message"] for e in log_events])
+        assert not any(["done waiting" in e["message"] for e in log_events])
+
+    @pytest.mark.parametrize(
+        ["lambda_fn", "lambda_runtime"],
+        [
+            (TEST_LAMBDA_TIMEOUT_PYTHON, LAMBDA_RUNTIME_PYTHON38),
+        ],
+        ids=["python"],
+    )
+    def test_lambda_no_timeout_logs(
+        self, lambda_client, create_lambda_function, lambda_fn, lambda_runtime, logs_client
+    ):
+        """tests the local context reuse of packages in AWS lambda"""
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=lambda_fn,
+            runtime=lambda_runtime,
+            client=lambda_client,
+            timeout=2,
+        )
+
+        result = lambda_client.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 1}))
+        assert result["StatusCode"] == 200
+        log_group_name = f"/aws/lambda/{func_name}"
+
+        def _log_stream_available():
+            result = logs_client.describe_log_streams(logGroupName=log_group_name)["logStreams"]
+            return len(result) > 0
+
+        wait_until(_log_stream_available, strategy="linear")
+
+        ls_result = logs_client.describe_log_streams(logGroupName=log_group_name)
+        log_stream_name = ls_result["logStreams"][0]["logStreamName"]
+
+        def _assert_log_output():
+            log_events = logs_client.get_log_events(
+                logGroupName=log_group_name, logStreamName=log_stream_name
+            )["events"]
+            return any(["starting wait" in e["message"] for e in log_events]) and any(
+                ["done waiting" in e["message"] for e in log_events]
+            )
+
+        wait_until(_assert_log_output, strategy="linear")
