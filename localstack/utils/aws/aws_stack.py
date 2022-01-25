@@ -16,9 +16,10 @@ else:
 
 import boto3
 import botocore
+import botocore.config
 from botocore.utils import ArnParser, InvalidArnException
 
-from localstack import config
+from localstack import config, constants
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_0,
     APPLICATION_AMZ_JSON_1_1,
@@ -58,11 +59,7 @@ LOG = logging.getLogger(__name__)
 # cache local region
 LOCAL_REGION = None
 
-# Use this field if you want to provide a custom boto3 session.
-# This field takes priority over CREATE_NEW_SESSION_PER_BOTO3_CONNECTION
-CUSTOM_BOTO3_SESSION = None
 # Use this flag to enable creation of a new session for each boto3 connection.
-# This flag will be ignored if CUSTOM_BOTO3_SESSION is specified
 CREATE_NEW_SESSION_PER_BOTO3_CONNECTION = False
 
 # Used in AWS assume role function
@@ -178,21 +175,7 @@ class Boto3Session(boto3.session.Session):
             kwargs.pop("endpoint_url")
 
 
-def get_boto3_credentials():
-    global INITIAL_BOTO3_SESSION
-    if CUSTOM_BOTO3_SESSION:
-        return CUSTOM_BOTO3_SESSION.get_credentials()
-    if not INITIAL_BOTO3_SESSION:
-        INITIAL_BOTO3_SESSION = boto3.session.Session()
-    try:
-        return INITIAL_BOTO3_SESSION.get_credentials()
-    except Exception:
-        return boto3.session.Session().get_credentials()
-
-
 def get_boto3_session(cache=True):
-    if cache and CUSTOM_BOTO3_SESSION:
-        return CUSTOM_BOTO3_SESSION
     if not cache or CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
         return boto3.session.Session()
     # return default session
@@ -398,20 +381,16 @@ def render_velocity_template(*args, **kwargs):
 
 
 def generate_presigned_url(*args, **kwargs):
-    id_before = os.environ.get(ENV_ACCESS_KEY)
-    key_before = os.environ.get(ENV_SECRET_KEY)
     endpoint_url = kwargs.pop("endpoint_url", None)
-    try:
-        # Note: presigned URL needs to be created with test credentials
-        os.environ[ENV_ACCESS_KEY] = TEST_AWS_ACCESS_KEY_ID
-        os.environ[ENV_SECRET_KEY] = TEST_AWS_SECRET_ACCESS_KEY
-        s3_client = connect_to_service("s3", endpoint_url=endpoint_url, cache=False)
-        return s3_client.generate_presigned_url(*args, **kwargs)
-    finally:
-        if id_before:
-            os.environ[ENV_ACCESS_KEY] = id_before
-        if key_before:
-            os.environ[ENV_SECRET_KEY] = key_before
+    s3_client = connect_to_service(
+        "s3",
+        endpoint_url=endpoint_url,
+        cache=False,
+        # Note: presigned URL needs to be created with (external) test credentials
+        aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY,
+    )
+    return s3_client.generate_presigned_url(*args, **kwargs)
 
 
 def check_valid_region(headers):
@@ -857,7 +836,8 @@ def mock_aws_request_headers(service="dynamodb", region_name=None, access_key=No
     elif service in ["sns", "sqs"]:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
 
-    access_key = access_key or get_boto3_credentials().access_key
+    # TODO: consider adding an internal=False flag, to use INTERNAL_AWS_ACCESS_KEY_ID for internal calls here
+    access_key = access_key or constants.TEST_AWS_ACCESS_KEY_ID
     region_name = region_name or get_region()
     headers = {
         "Content-Type": ctype,
@@ -1148,15 +1128,10 @@ def connect_elasticsearch(endpoint: str = None, domain: str = None, region_name:
             verify_certs = True
 
     LOG.debug("Creating ES client with endpoint %s", endpoint)
-    if CUSTOM_BOTO3_SESSION or (ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ):
+    if ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ:
         access_key = os.environ.get(ENV_ACCESS_KEY)
         secret_key = os.environ.get(ENV_SECRET_KEY)
         session_token = os.environ.get(ENV_SESSION_TOKEN)
-        if CUSTOM_BOTO3_SESSION:
-            credentials = CUSTOM_BOTO3_SESSION.get_credentials()
-            access_key = credentials.access_key
-            secret_key = credentials.secret_key
-            session_token = credentials.token
         awsauth = AWS4Auth(access_key, secret_key, region, "es", session_token=session_token)
         connection_class = RequestsHttpConnection
         return Elasticsearch(
