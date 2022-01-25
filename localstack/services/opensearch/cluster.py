@@ -346,7 +346,7 @@ class ElasticsearchCluster(OpensearchCluster):
 
     @property
     def os_user(self):
-        return constants.OS_USER_ELASTICSEARCH
+        return constants.OS_USER_OPENSEARCH
 
     def _ensure_installed(self):
         install.install_elasticsearch(self.version)
