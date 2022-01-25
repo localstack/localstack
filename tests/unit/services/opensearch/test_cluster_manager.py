@@ -12,7 +12,7 @@ class TestBuildClusterEndpoint:
         endpoint = build_cluster_endpoint(DomainKey("my-domain", "us-east-1", TEST_AWS_ACCOUNT_ID))
         parts = endpoint.split(":")
         assert parts[0] == "localhost"
-        assert parts[1] in range(
+        assert int(parts[1]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
 
