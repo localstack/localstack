@@ -2476,9 +2476,7 @@ class TestCloudFormation:
 
         firehose_client = aws_stack.create_external_boto_client("firehose")
         response = firehose_client.describe_delivery_stream(DeliveryStreamName=delivery_stream_name)
-        self.assertEqual(
-            delivery_stream_name, response["DeliveryStreamDescription"]["DeliveryStreamName"]
-        )
+        assert delivery_stream_name == response["DeliveryStreamDescription"]["DeliveryStreamName"]
 
         # Clean up
         self.cleanup(stack_name)
