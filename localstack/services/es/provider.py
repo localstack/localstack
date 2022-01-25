@@ -3,6 +3,7 @@ from typing import Optional, cast
 
 from botocore.exceptions import ClientError
 
+from localstack import constants
 from localstack.aws.api import RequestContext
 from localstack.aws.api.es import (
     ARN,
@@ -228,10 +229,15 @@ class EsProvider(EsApi):
         tag_list: TagList = None,
     ) -> CreateElasticsearchDomainResponse:
         opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
-
+        # If no version is given, we set our default elasticsearch version
+        engine_version = (
+            _version_to_opensearch(elasticsearch_version)
+            if elasticsearch_version
+            else constants.ELASTICSEARCH_DEFAULT_VERSION
+        )
         kwargs = {
             "DomainName": domain_name,
-            "EngineVersion": _version_to_opensearch(elasticsearch_version),
+            "EngineVersion": engine_version,
             "ClusterConfig": _clusterconfig_to_opensearch(elasticsearch_cluster_config),
             "EBSOptions": ebs_options,
             "AccessPolicies": access_policies,
