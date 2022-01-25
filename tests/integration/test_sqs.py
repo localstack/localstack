@@ -57,6 +57,28 @@ TEST_REGION = "us-east-1"
 
 
 class TestSqsProvider:
+    @only_localstack
+    def test_get_queue_url_contains_request_host(self, sqs_client, sqs_create_queue):
+        if config.SERVICE_PROVIDER_CONFIG.get_provider("sqs") != "asf":
+            pytest.xfail("this test only works for the ASF provider")
+
+        queue_name = "test-queue-" + short_uid()
+
+        sqs_create_queue(QueueName=queue_name)
+
+        queue_url = sqs_client.get_queue_url(QueueName=queue_name)["QueueUrl"]
+        account_id = constants.TEST_AWS_ACCOUNT_ID
+
+        host = f"http://localhost:{config.EDGE_PORT}"
+        # our current queue pattern looks like this, but may change going forward, or may be configurable
+        assert queue_url == f"{host}/{account_id}/{queue_name}"
+
+        # attempt to connect through a different host and make sure the URL contains that host
+        host = f"http://127.0.0.1:{config.EDGE_PORT}"
+        client = aws_stack.connect_to_service("sqs", endpoint_url=host)
+        queue_url = client.get_queue_url(QueueName=queue_name)["QueueUrl"]
+        assert queue_url == f"{host}/{account_id}/{queue_name}"
+
     def test_list_queues(self, sqs_client, sqs_create_queue):
         queue_names = [
             "a-test-queue-" + short_uid(),
