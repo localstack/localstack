@@ -2481,5 +2481,4 @@ class TestCloudFormation:
         )
 
         # Clean up
-        firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
         self.cleanup(stack_name)

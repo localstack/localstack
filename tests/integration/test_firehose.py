@@ -244,6 +244,7 @@ class TestFirehoseIntegration:
         self,
         firehose_client,
         kinesis_client,
+        s3_client,
         s3_bucket,
         kinesis_create_stream,
     ):
@@ -298,3 +299,7 @@ class TestFirehoseIntegration:
         )
 
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+        kinesis_client.delete_stream(StreamName=stream_name)
+        s3_client.delete_bucket(Bucket=s3_bucket)
