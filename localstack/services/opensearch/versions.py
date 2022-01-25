@@ -265,7 +265,6 @@ def fetch_latest_versions() -> Dict[str, str]:  # pragma: no cover
 
 
 if __name__ == "__main__":  # pragma: no cover
-    # from pprint import pprint
-    #
-    # pprint(fetch_latest_versions())
-    print(get_install_type_and_version("Elasticsearch_7.9"))
+    from pprint import pprint
+
+    pprint(fetch_latest_versions())
