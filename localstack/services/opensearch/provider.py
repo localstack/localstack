@@ -406,7 +406,11 @@ class OpensearchProvider(OpensearchApi):
             region.opensearch_domains[domain_name] = get_domain_status(domain_key)
 
             # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
+            # TODO handle additional parameters (cluster config,...)
             _create_cluster(domain_key, engine_version, domain_endpoint_options)
+
+            # set the tags
+            self.add_tags(context, domain_key.arn, tag_list)
 
             # get the (updated) status
             status = get_domain_status(domain_key)
@@ -466,13 +470,13 @@ class OpensearchProvider(OpensearchApi):
         status_list = []
         with _domain_mutex:
             for domain_name in domain_names:
-                domain_key = DomainKey(
-                    domain_name=domain_name,
-                    region=context.region,
-                    account=context.account_id,
-                )
-
-                status_list.append(get_domain_status(domain_key))
+                try:
+                    domain_status = self.describe_domain(context, domain_name)["DomainStatus"]
+                    status_list.append(domain_status)
+                except ResourceNotFoundException:
+                    # ResourceNotFoundExceptions are ignored, we just look for the next domain.
+                    # If no domain can be found, the result will just be empty.
+                    pass
         return DescribeDomainsResponse(DomainStatusList=status_list)
 
     def list_domain_names(
@@ -480,8 +484,13 @@ class OpensearchProvider(OpensearchApi):
     ) -> ListDomainNamesResponse:
         region = OpenSearchServiceBackend.get(context.region)
         domain_names = [
-            DomainInfo(DomainName=DomainName(domain_name), EngineType=EngineType.OpenSearch)
-            for domain_name in region.opensearch_domains.keys()
+            DomainInfo(
+                DomainName=DomainName(domain_name),
+                EngineType=versions.get_engine_type(domain["EngineVersion"]),
+            )
+            for domain_name, domain in region.opensearch_domains.items()
+            if engine_type is None
+            or versions.get_engine_type(domain["EngineVersion"]) == engine_type
         ]
         return ListDomainNamesResponse(DomainNames=domain_names)
 
@@ -491,17 +500,11 @@ class OpensearchProvider(OpensearchApi):
         max_results: MaxResults = None,
         next_token: NextToken = None,
     ) -> ListVersionsResponse:
-        # TODO this implementation currently only handles the OpenSearch engine.
-        # Therefore this function only returns the OpenSearch version(s).
-        # In later iterations, this implementation should handle both engines (OpenSearch and ElasticSearch).
-        # Then the response would also contain ElasticSearch versions.
         return ListVersionsResponse(Versions=list(versions.install_versions.keys()))
 
     def get_compatible_versions(
         self, context: RequestContext, domain_name: DomainName = None
     ) -> GetCompatibleVersionsResponse:
-        # TODO this implementation currently only handles the OpenSearch engine.
-        # In later iterations, this implementation should handle both engines (OpenSearch and ElasticSearch).
         version_filter = None
         if domain_name:
             region = OpenSearchServiceBackend.get(context.region)

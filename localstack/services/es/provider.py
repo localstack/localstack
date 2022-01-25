@@ -29,8 +29,10 @@ from localstack.aws.api.es import (
     DomainNameList,
     EBSOptions,
     ElasticsearchClusterConfig,
+    ElasticsearchClusterConfigStatus,
     ElasticsearchDomainConfig,
     ElasticsearchDomainStatus,
+    ElasticsearchVersionStatus,
     ElasticsearchVersionString,
     EncryptionAtRestOptions,
     EngineType,
@@ -47,6 +49,7 @@ from localstack.aws.api.es import (
     MaxResults,
     NextToken,
     NodeToNodeEncryptionOptions,
+    OptionStatus,
     PolicyDocument,
     ResourceAlreadyExistsException,
     ResourceNotFoundException,
@@ -149,11 +152,15 @@ def _domainconfig_from_opensearch(
 ) -> Optional[ElasticsearchDomainConfig]:
     if domain_config is not None:
         result = cast(ElasticsearchDomainConfig, domain_config)
-        result["ElasticsearchVersion"] = _version_from_opensearch(
-            domain_config.get("EngineVersion")
+        engine_version = domain_config.get("EngineVersion", {})
+        result["ElasticsearchVersion"] = ElasticsearchVersionStatus(
+            Options=_version_from_opensearch(engine_version.get("Options")),
+            Status=cast(OptionStatus, engine_version.get("Status")),
         )
-        result["ElasticsearchClusterConfig"] = _clusterconfig_from_opensearch(
-            domain_config.get("ClusterConfig")
+        cluster_config = domain_config.get("ClusterConfig", {})
+        result["ElasticsearchClusterConfig"] = ElasticsearchClusterConfigStatus(
+            Options=_clusterconfig_from_opensearch(cluster_config.get("Options")),
+            Status=cluster_config.get("Status"),
         )
         result.pop("EngineVersion", None)
         result.pop("ClusterConfig", None)
@@ -296,7 +303,7 @@ class EsProvider(EsApi):
         with exception_mapper():
             opensearch_status_list = opensearch_client.describe_domains(
                 DomainNames=domain_names,
-            )["DomainStatus"]
+            )["DomainStatusList"]
 
         status_list = [_domainstatus_from_opensearch(s) for s in opensearch_status_list]
         return DescribeElasticsearchDomainsResponse(DomainStatusList=status_list)
