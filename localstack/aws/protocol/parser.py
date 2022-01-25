@@ -513,13 +513,11 @@ class BaseRestRequestParser(RequestParser):
         operation_models = [
             service.operation_model(operation) for operation in service.operation_names
         ]
-        # Exclude all operation models which do not have "http" metadata
-        filtered_operation_models = filter(lambda model: len(model.http) > 0, operation_models)
         # Sort the operation models descending based on their normalized request URIs.
         # This is necessary, to ensure that greedy regex matches do not cause wrong method lookups.
         # f.e. /fuu/{bar}/baz should have precedence over /fuu/{bar}.
         sorted_operation_models = sorted(
-            filtered_operation_models, key=self._get_normalized_request_uri_length, reverse=True
+            operation_models, key=self._get_normalized_request_uri_length, reverse=True
         )
         for operation_model in sorted_operation_models:
             http = operation_model.http
