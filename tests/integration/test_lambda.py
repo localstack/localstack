@@ -1467,3 +1467,46 @@ class TestJavaRuntimes:
         assert 200 == result["StatusCode"]
         assert expected_result == to_str(result_data).strip('"\n ')
         check_lambda_logs(function_name, expected_lines=expected)
+
+
+TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_cache.js")
+TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_cache.py")
+
+
+class TestLambdaCache:
+    @pytest.mark.parametrize(
+        ["lambda_fn", "lambda_runtime"],
+        [
+            (
+                TEST_LAMBDA_CACHE_NODEJS,
+                LAMBDA_RUNTIME_NODEJS12X,
+            ),  # TODO: can we do some kind of nested parametrize here?
+            (TEST_LAMBDA_CACHE_PYTHON, LAMBDA_RUNTIME_PYTHON38),
+        ],
+        ids=["nodejs", "python"],
+    )
+    @pytest.mark.xfail(
+        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
+    )  # TODO: should be removed after the lambda rework
+    def test_lambda_cache_local(
+        self, lambda_client, create_lambda_function, lambda_fn, lambda_runtime
+    ):
+        """tests the local context reuse of packages in AWS lambda"""
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=lambda_fn,
+            runtime=lambda_runtime,
+            client=lambda_client,
+        )
+
+        result = lambda_client.invoke(FunctionName=func_name)
+        result_data = result["Payload"].read()
+        assert result["StatusCode"] == 200
+        assert json.loads(result_data)["counter"] == 0
+
+        result = lambda_client.invoke(FunctionName=func_name)
+        result_data = result["Payload"].read()
+        assert result["StatusCode"] == 200
+        assert json.loads(result_data)["counter"] == 1
