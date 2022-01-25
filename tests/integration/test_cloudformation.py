@@ -13,6 +13,7 @@ from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_sta
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import load_file, retry, short_uid, to_str
 from localstack.utils.testutil import create_zip_file, list_all_resources
+from tests.integration.cloudformation.utils import load_template
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -2454,18 +2455,31 @@ class TestCloudFormation:
         self.cleanup(stack_name)
 
     def test_firehose_stack_with_kinesis_as_source(self):
-        template = load_file(
-            os.path.join(THIS_FOLDER, "templates", "firehose_kinesis_as_source.yaml")
+        bucket_name = "bucket-%s" % short_uid()
+        stream_name = "stream-%s" % short_uid()
+        delivery_stream_name = "delivery-stream-%s" % short_uid()
+
+        file_path = os.path.join(THIS_FOLDER, "templates", "firehose_kinesis_as_source.yaml")
+
+        template = load_template(
+            file_path,
+            BucketName=bucket_name,
+            StreamName=stream_name,
+            DeliveryStreamName=delivery_stream_name,
         )
         stack_name = "stack-%s" % short_uid()
 
-        create_and_await_stack(StackName=stack_name, TemplateBody=template)
+        create_and_await_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+        )
 
         firehose_client = aws_stack.create_external_boto_client("firehose")
-        response = firehose_client.describe_delivery_stream(DeliveryStreamName="deliveryStream")
+        response = firehose_client.describe_delivery_stream(DeliveryStreamName=delivery_stream_name)
         self.assertEqual(
-            "deliveryStream", response["DeliveryStreamDescription"]["DeliveryStreamName"]
+            delivery_stream_name, response["DeliveryStreamDescription"]["DeliveryStreamName"]
         )
 
         # Clean up
+        firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
         self.cleanup(stack_name)

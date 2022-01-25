@@ -3,11 +3,11 @@ Resources:
   bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: test-bucket
+      BucketName: {{BucketName}}
   stream:
     Type: AWS::Kinesis::Stream
     Properties: 
-      Name: testStream
+      Name: {{StreamName}}
       ShardCount: 2    
   deliveryStream:
     DependsOn:
@@ -15,7 +15,7 @@ Resources:
       - stream
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties: 
-      DeliveryStreamName: deliveryStream
+      DeliveryStreamName: {{DeliveryStreamName}}
       DeliveryStreamType: KinesisStreamAsSource
       KinesisStreamSourceConfiguration:
         KinesisStreamARN: !GetAtt 'stream.Arn'
