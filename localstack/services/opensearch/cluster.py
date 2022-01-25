@@ -338,8 +338,7 @@ class EdgeProxiedOpensearchCluster(Server):
 class ElasticsearchCluster(OpensearchCluster):
     @property
     def default_version(self) -> str:
-        # TODO move to constants
-        return "Elasticsearch_7.10"
+        return constants.ELASTICSEARCH_DEFAULT_VERSION
 
     @property
     def bin_name(self) -> str:
@@ -350,7 +349,7 @@ class ElasticsearchCluster(OpensearchCluster):
         return constants.OS_USER_ELASTICSEARCH
 
     def _ensure_installed(self):
-        install.install_elasticsearch(self.install_version)
+        install.install_elasticsearch(self.version)
 
     def _base_settings(self, dirs) -> CommandSettings:
         settings = {

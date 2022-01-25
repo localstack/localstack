@@ -146,18 +146,16 @@ def get_elasticsearch_install_version(version: str) -> str:
     if config.SKIP_INFRA_DOWNLOADS:
         return ELASTICSEARCH_DEFAULT_VERSION
 
-    return versions.get_es_install_version(version)
+    return versions.get_install_version(version)
 
 
 def get_elasticsearch_install_dir(version: str) -> str:
-    version = get_elasticsearch_install_version(version)
-
     if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         # install the default version into a subfolder of the code base
         install_dir = os.path.join(dirs.static_libs, "elasticsearch")
     else:
         # put all other versions into the TMP_FOLDER
-        install_dir = os.path.join(config.dirs.tmp, "elasticsearch", version)
+        install_dir = os.path.join(config.dirs.var_libs, "elasticsearch", version)
 
     return install_dir
 
@@ -173,7 +171,7 @@ def install_elasticsearch(version=None):
     installed_executable = os.path.join(install_dir, "bin", "elasticsearch")
     if not os.path.exists(installed_executable):
         log_install_msg("Elasticsearch (%s)" % version)
-        es_url = versions.get_download_url(version)
+        es_url = versions.get_download_url(version, EngineType.Elasticsearch)
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive

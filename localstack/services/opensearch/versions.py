@@ -46,11 +46,6 @@ install_versions = {
     **_prefixed_opensearch_install_versions,
     **_prefixed_elasticsearch_install_versions,
 }
-es_install_versions = {
-    **_prefixed_opensearch_install_versions,
-    **_elasticsearch_install_versions,
-    "7.10.0": "7.10.0",
-}
 
 # List of compatible versions (using the external representations)
 compatible_versions = [
@@ -188,13 +183,6 @@ def get_install_version(version: str) -> str:
         raise ValueError(f"unknown version {version}")
 
     return install_versions[version]
-
-
-def get_es_install_version(version: str) -> str:
-    if version not in es_install_versions:
-        raise ValueError(f"unknown version {version}")
-
-    return es_install_versions[version]
 
 
 def _opensearch_url(install_version: semver.VersionInfo, arch: str) -> str:
