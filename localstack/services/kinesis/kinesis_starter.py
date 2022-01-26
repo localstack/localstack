@@ -2,8 +2,8 @@ import logging
 from typing import Optional
 
 from localstack import config
-from localstack.services.kinesis import kinesis_mock_server, kinesalite_server, kinesis_listener
 from localstack.services.infra import log_startup_message, start_proxy_for_service
+from localstack.services.kinesis import kinesalite_server, kinesis_listener, kinesis_mock_server
 from localstack.utils.aws import aws_stack
 from localstack.utils.serving import Server
 

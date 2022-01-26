@@ -1,22 +1,32 @@
-from typing import Optional
 import logging
-from localstack.utils.run import FuncThread
-from localstack.utils.serving import Server
+from typing import Optional
+
 from localstack import config
 from localstack.services import install
-from localstack.utils.common import TMP_THREADS, ShellCommandThread
 from localstack.utils.common import (
+    TMP_THREADS,
+    ShellCommandThread,
     chmod_r,
     get_free_tcp_port,
     mkdir,
 )
-
+from localstack.utils.run import FuncThread
+from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
 
 
 class KinesisMockServer(Server):
-    def __init__(self, port: int, bin_path: str, latency: str, host: str = "localhost", log_level: str = "INFO", data_dir: Optional[str]=None, initialize_streams: Optional[str]=None) -> None:
+    def __init__(
+        self,
+        port: int,
+        bin_path: str,
+        latency: str,
+        host: str = "localhost",
+        log_level: str = "INFO",
+        data_dir: Optional[str] = None,
+        initialize_streams: Optional[str] = None,
+    ) -> None:
         self._latency = latency
         self._initialize_streams = initialize_streams
         self._data_dir = data_dir
@@ -49,17 +59,22 @@ class KinesisMockServer(Server):
             "DEREGISTER_STREAM_CONSUMER_DURATION={l} MERGE_SHARDS_DURATION={l} SPLIT_SHARD_DURATION={l} "
             "UPDATE_SHARD_COUNT_DURATION={l}"
         ).format(l=self._latency)
-        init_streams_param = "INITIALIZE_STREAMS=%s" % self._initialize_streams if self._initialize_streams else ""
+        init_streams_param = (
+            "INITIALIZE_STREAMS=%s" % self._initialize_streams if self._initialize_streams else ""
+        )
 
         if self._bin_path.endswith(".jar"):
-            cmd = "KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s java -XX:+UseG1GC -jar %s" % (
-                self.port,
-                config.KINESIS_SHARD_LIMIT,
-                latency_param,
-                kinesis_data_dir_param,
-                log_level_param,
-                init_streams_param,
-                self._bin_path,
+            cmd = (
+                "KINESIS_MOCK_PLAIN_PORT=%s SHARD_LIMIT=%s %s %s %s %s java -XX:+UseG1GC -jar %s"
+                % (
+                    self.port,
+                    config.KINESIS_SHARD_LIMIT,
+                    latency_param,
+                    kinesis_data_dir_param,
+                    log_level_param,
+                    init_streams_param,
+                    self._bin_path,
+                )
             )
         else:
             chmod_r(self._bin_path, 0o777)
@@ -98,7 +113,16 @@ def create_kinesis_mock_server(port=None) -> KinesisMockServer:
         log_level = "INFO"
 
     latency = config.KINESIS_LATENCY + "ms"
-    initialize_streams = config.KINESIS_INITIALIZE_STREAMS if config.KINESIS_INITIALIZE_STREAMS else None
+    initialize_streams = (
+        config.KINESIS_INITIALIZE_STREAMS if config.KINESIS_INITIALIZE_STREAMS else None
+    )
 
-    server = KinesisMockServer(port=port, bin_path=kinesis_mock_bin_path, log_level=log_level, latency=latency, initialize_streams=initialize_streams, data_dir=kinesis_data_dir)
+    server = KinesisMockServer(
+        port=port,
+        bin_path=kinesis_mock_bin_path,
+        log_level=log_level,
+        latency=latency,
+        initialize_streams=initialize_streams,
+        data_dir=kinesis_data_dir,
+    )
     return server

@@ -12,7 +12,6 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
-import localstack.services.kinesis.kinesis_mock_server as kinesis_server
 
 import requests
 from plugin import Plugin, PluginManager
@@ -43,8 +42,8 @@ from localstack.utils.common import (
     mkdir,
     new_tmp_file,
     parallelize,
-    retry,
     replace_in_file,
+    retry,
     rm_rf,
     run,
     safe_run,
@@ -378,7 +377,8 @@ def install_kinesis_mock(bin_file_path: str):
             break
     if download_url is None:
         raise ValueError(
-            "could not find required binary %s in release %s" % (bin_file_name, KINESIS_MOCK_RELEASE_URL)
+            "could not find required binary %s in release %s"
+            % (bin_file_name, KINESIS_MOCK_RELEASE_URL)
         )
 
     mkdir(INSTALL_DIR_KINESIS_MOCK)
