@@ -11,6 +11,10 @@ LOG = logging.getLogger(__name__)
 
 
 class KinesaliteServer(Server):
+    """
+    Server abstraction for controlling Kinesalite on a separate thread
+    """
+
     def __init__(
         self, port: int, latency: str, host: str = "localhost", data_dir: Optional[str] = None
     ):
@@ -19,6 +23,11 @@ class KinesaliteServer(Server):
         super().__init__(port, host)
 
     def do_start_thread(self) -> FuncThread:
+        """
+        Start Kinesalite in a new thread
+        Returns:
+            The running thread
+        """
         cmd = self._create_shell_command()
         LOG.debug("starting kinesis process %s", cmd)
         t = ShellCommandThread(
@@ -49,7 +58,13 @@ class KinesaliteServer(Server):
         LOG.info(line.rstrip())
 
 
-def create_kinesalite_server(port=None):
+def create_kinesalite_server(port=None) -> KinesaliteServer:
+    """
+    Creates a new Kinesalite server instance. Installs Kinesalite on the host first if necessary.
+    Introspects on the host config to determine server configuration:
+    config.dirs.data -> if set, the server runs with persistence using the path to store data
+    config.KINESIS_LATENCY -> configure stream latency (in milliseconds)
+    """
     port = port or get_free_tcp_port()
 
     install.install_kinesalite()

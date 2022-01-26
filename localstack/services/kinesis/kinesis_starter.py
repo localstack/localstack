@@ -11,7 +11,21 @@ LOG = logging.getLogger(__name__)
 _server: Optional[Server] = None  # server singleton
 
 
-def start_kinesis(port=None, update_listener=None, asynchronous=None):
+def start_kinesis(port=None, update_listener=None, asynchronous=None) -> Server:
+    """
+    Creates a singleton of a Kinesis server and starts it on a new thread. Uses either Kinesis Mock or Kinesalite
+    based on value of config.KINESIS_PROVIDER
+
+    Args:
+        port: port to run server on. Selects an arbitrary available port if None.
+        update_listener: an update listener instance for server proxy
+        asynchronous: currently unused but required by localstack.services.plugins.Service.start(). TODO: either make
+        use of this param or refactor Service.start() to not pass it.
+    Returns:
+        A running Kinesis server instance
+    Raises:
+        ValueError: Value of config.KINESIS_PROVIDER is not recognized as one of "kinesis-mock" or "kinesalite"
+    """
     global _server
     if not _server:
         if config.KINESIS_PROVIDER == "kinesis-mock":
@@ -19,7 +33,7 @@ def start_kinesis(port=None, update_listener=None, asynchronous=None):
         elif config.KINESIS_PROVIDER == "kinesalite":
             _server = kinesalite_server.create_kinesalite_server()
         else:
-            raise Exception('Unsupported Kinesis provider "%s"' % config.KINESIS_PROVIDER)
+            raise ValueError('Unsupported Kinesis provider "%s"' % config.KINESIS_PROVIDER)
     _start_kinesis_helper(_server, port=port, update_listener=update_listener)
     return _server
 

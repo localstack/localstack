@@ -17,6 +17,10 @@ LOG = logging.getLogger(__name__)
 
 
 class KinesisMockServer(Server):
+    """
+    Server abstraction for controlling Kinesis Mock in a separate thread
+    """
+
     def __init__(
         self,
         port: int,
@@ -48,6 +52,9 @@ class KinesisMockServer(Server):
         return t
 
     def _create_shell_command(self) -> str:
+        """
+        helper method for creating kinesis mock invocation command
+        """
         if self._data_dir:
             kinesis_data_dir_param = "SHOULD_PERSIST_DATA=true PERSIST_PATH=%s" % self._data_dir
         else:
@@ -94,6 +101,14 @@ class KinesisMockServer(Server):
 
 
 def create_kinesis_mock_server(port=None) -> KinesisMockServer:
+    """
+    Creates a new Kinesis Mock server instance. Installs Kinesis Mock on the host first if necessary.
+    Introspects on the host config to determine server configuration:
+    config.dirs.data -> if set, the server runs with persistence using the path to store data
+    config.LS_LOG -> configure kinesis mock log level (defaults to INFO)
+    config.KINESIS_LATENCY -> configure stream latency (in milliseconds)
+    config.KINESIS_INITIALIZE_STREAMS -> Initialize the given streams on startup
+    """
     port = port or get_free_tcp_port()
     is_kinesis_mock_installed, kinesis_mock_bin_path = install.get_is_kinesis_mock_installed()
     if not is_kinesis_mock_installed:
