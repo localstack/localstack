@@ -145,7 +145,7 @@ def test_firehose_http(lambda_processor_enabled: bool):
 
 
 class TestFirehoseIntegration:
-    @pytest.mark.parametrize("es_endpoint_strategy", ["domain", "path"])
+    @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path"])
     def test_kinesis_firehose_elasticsearch_s3_backup(
         self,
         firehose_client,
@@ -155,13 +155,13 @@ class TestFirehoseIntegration:
         s3_bucket,
         kinesis_create_stream,
         monkeypatch,
-        es_endpoint_strategy,
+        opensearch_endpoint_strategy,
     ):
         domain_name = f"test-domain-{short_uid()}"
         stream_name = f"test-stream-{short_uid()}"
         role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
         delivery_stream_name = f"test-delivery-stream-{short_uid()}"
-        monkeypatch.setattr(config, "ES_ENDPOINT_STRATEGY", es_endpoint_strategy)
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
         try:
             es_create_response = es_client.create_elasticsearch_domain(DomainName=domain_name)
             es_url = f"http://{es_create_response['DomainStatus']['Endpoint']}"
