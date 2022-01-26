@@ -718,7 +718,8 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment["AWS_LAMBDA_FUNCTION_NAME"] = context.function_name
             environment["AWS_LAMBDA_FUNCTION_VERSION"] = context.function_version
             environment["AWS_LAMBDA_FUNCTION_INVOKED_ARN"] = context.invoked_function_arn
-            environment["AWS_LAMBDA_COGNITO_IDENTITY"] = json.dumps(context.cognito_identity or {})
+            if context.cognito_identity:
+                environment["AWS_LAMBDA_COGNITO_IDENTITY"] = json.dumps(context.cognito_identity)
             if context.client_context is not None:
                 environment["AWS_LAMBDA_CLIENT_CONTEXT"] = json.dumps(
                     to_str(base64.b64decode(to_bytes(context.client_context)))
