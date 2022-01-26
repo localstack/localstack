@@ -14,6 +14,7 @@ from localstack.services.opensearch.cluster_manager import (
     DomainKey,
     MultiClusterManager,
     MultiplexingClusterManager,
+    SingletonClusterManager,
     create_cluster_manager,
 )
 from localstack.utils.common import call_safe, poll_condition, retry
@@ -76,6 +77,11 @@ def try_cluster_health(cluster_url: str):
 
 
 class TestOpensearchProvider:
+    """
+    Because this test reuses the localstack instance for each test, all tests are performed with
+    OPENSEARCH_MULTI_CLUSTER=True, regardless of changes in the config value.
+    """
+
     def test_list_versions(self, opensearch_client):
         response = opensearch_client.list_versions()
 
@@ -320,7 +326,6 @@ class TestOpensearchProvider:
 
     def test_endpoint_strategy_path(self, monkeypatch, opensearch_create_domain, opensearch_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
-        monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
 
         domain_name = f"opensearch-domain-{short_uid()}"
 
@@ -331,11 +336,8 @@ class TestOpensearchProvider:
         endpoint = status["Endpoint"]
         assert endpoint.endswith(f"/{domain_name}")
 
-    def test_endpoint_strategy_port_multi_cluster(
-        self, monkeypatch, opensearch_create_domain, opensearch_client
-    ):
+    def test_endpoint_strategy_port(self, monkeypatch, opensearch_create_domain, opensearch_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
-        monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
 
         domain_name = f"opensearch-domain-{short_uid()}"
 
@@ -349,32 +351,6 @@ class TestOpensearchProvider:
         assert int(parts[1]) in range(
             config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
         )
-
-    def test_endpoint_strategy_port_singleton_cluster(
-        self, monkeypatch, opensearch_create_domain, opensearch_client
-    ):
-        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
-        monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
-
-        # Create a domain and check if the port is in the correct range
-        domain_name = f"opensearch-domain-{short_uid()}"
-        opensearch_create_domain(DomainName=domain_name)
-        status = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"]
-        assert "Endpoint" in status
-        endpoint = status["Endpoint"]
-        parts = endpoint.split(":")
-        assert parts[0] == "localhost"
-        assert int(parts[1]) in range(
-            config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
-        )
-
-        # Create a second domain and check if the endpoint equals the first one
-        domain_name_2 = f"opensearch-domain-{short_uid()}"
-        opensearch_create_domain(DomainName=domain_name_2)
-        status_2 = opensearch_client.describe_domain(DomainName=domain_name_2)["DomainStatus"]
-        assert "Endpoint" in status_2
-        endpoint_2 = status_2["Endpoint"]
-        assert endpoint == endpoint_2
 
 
 class TestEdgeProxiedOpensearchCluster:
@@ -492,6 +468,39 @@ class TestMultiplexingClusterManager:
         finally:
             call_safe(cluster_0.shutdown)
             call_safe(cluster_1.shutdown)
+
+
+class TestSingletonClusterManager:
+    def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch):
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
+        monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
+
+        manager = SingletonClusterManager()
+
+        # create two opensearch domains
+        domain_key_0 = DomainKey(
+            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+        )
+        domain_key_1 = DomainKey(
+            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+        )
+        cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
+        cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
+
+        # check if the first port url matches the port range
+
+        parts = cluster_0.url.split(":")
+        assert parts[0] == "http"
+        assert parts[1] == "//localhost"
+        assert int(parts[2]) in range(
+            config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
+        )
+
+        # check if the second url matches the first one
+        assert cluster_0.url == cluster_1.url
+
+        call_safe(cluster_0.shutdown)
+        call_safe(cluster_1.shutdown)
 
 
 class TestCustomBackendManager:
