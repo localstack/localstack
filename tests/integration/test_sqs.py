@@ -1590,6 +1590,10 @@ class TestSqsProvider:
             "Messages"
         )[0].get("MD5OfBody")
 
+    @pytest.mark.skipif(
+        os.environ.get("PROVIDER_OVERRIDE_SQS") != "asf",
+        reason="New provider test which isn't covered by old one",
+    )
     def test_sse_attributes_are_accepted(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
