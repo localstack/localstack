@@ -29,6 +29,7 @@ from localstack.aws.api.firehose import (
     DestinationId,
     ElasticsearchDestinationConfiguration,
     ElasticsearchDestinationUpdate,
+    ElasticsearchS3BackupMode,
     ExtendedS3DestinationConfiguration,
     ExtendedS3DestinationUpdate,
     FirehoseApi,
@@ -117,7 +118,7 @@ class FirehoseBackend(RegionBackend):
     # maps delivery stream names to DeliveryStreamDescription
     delivery_streams: Dict[str, DeliveryStreamDescription]
     # static tagging service instance
-    tags = TaggingService()
+    TAGS = TaggingService()
 
     def __init__(self):
         self.delivery_streams = {}
@@ -194,6 +195,14 @@ class FirehoseProvider(FirehoseApi):
                     ),
                 )
             )
+        if splunk_destination_configuration:
+            LOG.warning(
+                "Delivery stream contains a splunk destination (which is currently not supported)."
+            )
+        if redshift_destination_configuration:
+            LOG.warning(
+                "Delivery stream contains a redshift destination (which is currently not supported)."
+            )
 
         stream = DeliveryStreamDescription(
             DeliveryStreamName=delivery_stream_name,
@@ -211,7 +220,7 @@ class FirehoseProvider(FirehoseApi):
             Destinations=destinations,
             Source=convert_source_config_to_desc(kinesis_stream_source_configuration),
         )
-        region.tags.tag_resource(stream["DeliveryStreamARN"], tags)
+        FirehoseBackend.TAGS.tag_resource(stream["DeliveryStreamARN"], tags)
         region.delivery_streams[delivery_stream_name] = stream
 
         # record event
@@ -312,9 +321,7 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
         )
-        FirehoseBackend.get().tags.tag_resource(
-            delivery_stream_description["DeliveryStreamARN"], tags
-        )
+        FirehoseBackend.TAGS.tag_resource(delivery_stream_description["DeliveryStreamARN"], tags)
         return ListTagsForDeliveryStreamOutput()
 
     def list_tags_for_delivery_stream(
@@ -328,7 +335,7 @@ class FirehoseProvider(FirehoseApi):
             context, delivery_stream_name
         )
         # The tagging service returns a dictionary with the given root name
-        tags = FirehoseBackend.get().tags.list_tags_for_resource(
+        tags = FirehoseBackend.TAGS.list_tags_for_resource(
             arn=delivery_stream_description["DeliveryStreamARN"], root_name="root"
         )
         # Extract the actual list of tags for the typed response
@@ -344,9 +351,8 @@ class FirehoseProvider(FirehoseApi):
         delivery_stream_description = _get_description_or_raise_not_found(
             context, delivery_stream_name
         )
-        region = FirehoseBackend.get()
         # The tagging service returns a dictionary with the given root name
-        region.tags.untag_resource(
+        FirehoseBackend.TAGS.untag_resource(
             arn=delivery_stream_description["DeliveryStreamARN"], tag_names=tag_keys
         )
         return UntagDeliveryStreamOutput()
@@ -460,8 +466,7 @@ class FirehoseProvider(FirehoseApi):
                 es = connect_elasticsearch(
                     endpoint=es_dest.get("ClusterEndpoint"), domain=es_dest.get("DomainARN")
                 )
-                # TODO support FailedDocumentsOnly as well
-                if es_dest.get("S3BackupMode") == "AllDocuments":
+                if es_dest.get("S3BackupMode") == ElasticsearchS3BackupMode.AllDocuments:
                     s3_dest_desc = es_dest.get("S3DestinationDescription")
                     if s3_dest_desc:
                         try:
@@ -474,6 +479,11 @@ class FirehoseProvider(FirehoseApi):
                             LOG.warning("Unable to backup unprocessed records to S3. Error: %s", e)
                     else:
                         LOG.warning("Passed S3BackupMode without S3Configuration. Cannot backup...")
+                elif es_dest.get("S3BackupMode") == ElasticsearchS3BackupMode.FailedDocumentsOnly:
+                    # TODO support FailedDocumentsOnly as well
+                    LOG.warning(
+                        "S3BackupMode FailedDocumentsOnly is set but currently not supported."
+                    )
                 for record in records:
                     obj_id = uuid.uuid4()
 
