@@ -575,18 +575,42 @@ class EventsTest(unittest.TestCase):
             def forward_request(self, method, path, data, headers):
                 event = json.loads(to_str(data))
                 events.append(event)
+                paths.append(path)
+                headers_list.append(headers)
+
                 return 200
 
         events = []
+        paths = []
+        headers_list = []
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
         wait_for_port_open(local_port)
 
         events_client = aws_stack.create_external_boto_client("events")
+        # TODO implement test for oauth variant
         connection_arn = events_client.create_connection(
             Name="TestConnection",
-            AuthorizationType="BASIC",
-            AuthParameters={"BasicAuthParameters": {"Username": "user", "Password": "pw"}},
+            AuthorizationType="OAUTH_CLIENT_CREDENTIALS",
+            AuthParameters={
+                "BasicAuthParameters": {"Username": "user", "Password": "pass"},
+                # "ApiKeyAuthParameters": {"ApiKeyName": "Api", "ApiKeyValue": "val"},
+                # "OAuthParameters": {
+                #     "AuthorizationEndpoint": "https://run.mocky.io/v3/7b1e87a0-7b13-4b6d-b603-b3c0891a742f",
+                #     "ClientParameters": {
+                #         "ClientID": "id",
+                #         "ClientSecret": "password"
+                #     },
+                #     "HttpMethod": "put"
+                # },
+                "InvocationHttpParameters": {
+                    "BodyParameters": [{"Key": "key", "Value": "value", "IsValueSecret": False}],
+                    "HeaderParameters": [{"Key": "key", "Value": "value", "IsValueSecret": False}],
+                    "QueryStringParameters": [
+                        {"Key": "key", "Value": "value", "IsValueSecret": False}
+                    ],
+                },
+            },
         )["ConnectionArn"]
 
         # create api destination
@@ -624,6 +648,15 @@ class EventsTest(unittest.TestCase):
         # assert that all events have been received in the HTTP server listener
         def check():
             self.assertEqual(len(events), num_events)
+
+            self.assertTrue("key" in paths[0])
+            self.assertTrue("value" in paths[0])
+
+            self.assertEqual(events[0].get("key"), "value")
+
+            print(headers_list[0])
+
+            self.assertEqual("Basic user:pass" in headers_list[0].get("Authorization"))
 
         retry(check, sleep=0.5, retries=5)
 

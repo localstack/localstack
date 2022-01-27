@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import re
@@ -147,6 +148,64 @@ def send_event_to_target(
         LOG.warning('Unsupported Events rule target ARN: "%s"', target_arn)
 
 
+def auth_keys_from_connection(connection: dict):
+    headers = {}
+
+    auth_type = connection.get("AuthorizationType").upper()
+    auth_parameters = connection.get("AuthParameters")
+    if auth_type == AUTH_BASIC:
+        basic_auth_parameters = auth_parameters.get("BasicAuthParameters", {})
+        username = basic_auth_parameters.get("Username", "")
+        password = basic_auth_parameters.get("Password", "")
+        headers.update({"authorization": "Basic {}:{}".format(username, password)})
+
+    if auth_type == AUTH_API_KEY:
+        api_key_parameters = auth_parameters.get("ApiKeyAuthParameters", {})
+        api_key_name = api_key_parameters.get("ApiKeyName", "")
+        api_key_value = api_key_parameters.get("ApiKeyValue", "")
+        headers.update({api_key_name: api_key_value})
+
+    if auth_type == AUTH_OAUTH:
+        oauth_parameters = auth_parameters.get("OAuthHttpParameters", {})
+
+        oauth_method = oauth_parameters.get("HttpMethod")
+        oauth_endpoint = oauth_parameters.get("AuthorizationEnpoint", "")
+        query_object = list_of_parameters_to_object(
+            oauth_parameters.get("QueryStringParameters", [])
+        )
+        oauth_endpoint = add_query_params_to_url(oauth_endpoint, query_object)
+
+        client_parameters = oauth_parameters("ClientParameters", {})
+        client_id = client_parameters.get("ClientID", "")
+        client_secret = client_parameters.get("ClientSecret", "")
+
+        oauth_body = list_of_parameters_to_object(oauth_parameters.get("BodyParameters", []))
+        oauth_body.update({"client_id": client_id, "client_secret": client_secret})
+
+        oauth_header = list_of_parameters_to_object(oauth_parameters.get("HeaderParameters", []))
+        oauth_result = requests.request(
+            method=oauth_method,
+            url=oauth_endpoint,
+            data=json.dumps(oauth_body),
+            headers=oauth_header,
+        )
+
+        oauth_data = json.loads(oauth_result.json())
+        token_type = oauth_data.get("token_type", "")
+        access_token = oauth_data.get("token_type", "")
+        auth_header = "{} {}".format(token_type, access_token)
+        headers.update({"authorization": auth_header})
+
+    return headers
+
+
+def list_of_parameters_to_object(items: list[dict]):
+    new_object = {}
+    for item in items:
+        new_object.update({item.get("Key"): item.get("Value")})
+    return new_object
+
+
 def send_event_to_api_destination(target_arn, event):
     """Send an event to an EventBridge API destination
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
@@ -176,10 +235,22 @@ def send_event_to_api_destination(target_arn, event):
     connection_name = re.search(r"connection\/([a-zA-Z0-9-_]+)\/", connection_arn).group(1)
     connection = events_client.describe_connection(Name=connection_name)
 
-    add_connection_parameters(connection, headers, event, endpoint)
+    headers.update(auth_keys_from_connection(connection))
 
-    # TODO: consider option to disable the actual network call to avoid unintended side effects
-    # TODO: InvocationRateLimitPerSecond (needs some form of thread-safety, scoped to the api destination)
+    auth_parameters = connection.get("AuthParameters", {})
+    invocation_parameters = auth_parameters.get("InvocationHttpParameters")
+
+    if invocation_parameters:
+        headers.update(
+            list_of_parameters_to_object(invocation_parameters.get("HeaderParameters", []))
+        )
+        event.update(list_of_parameters_to_object(invocation_parameters.get("BodyParameters", [])))
+
+        query_object = list_of_parameters_to_object(
+            invocation_parameters.get("QueryStringParameters", [])
+        )
+        endpoint = add_query_params_to_url(endpoint, query_object)
+
     result = requests.request(
         method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
     )
@@ -187,37 +258,3 @@ def send_event_to_api_destination(target_arn, event):
         LOG.debug("Received code %s forwarding events: %s %s", result.status_code, method, endpoint)
         if result.status_code == 429 or 500 <= result.status_code <= 600:
             pass  # TODO: retry logic (only retry on 429 and 5xx response status)
-
-
-def add_connection_parameters(connection, headers, data, endpoint):
-    auth_type = connection.get("AuthorizationType").upper()
-    if auth_type is AUTH_BASIC:
-        basic_auth_parameters = connection.get("BasicAuthParamethers", {})
-        username = basic_auth_parameters.get("Username")
-        headers.update("Authorization", "Basic {}".format(username))
-
-    if auth_type is AUTH_API_KEY:
-        api_key_paramethers = connection.get("ApiKeyAuthParameters", {})
-        api_key = api_key_paramethers.get("ApiKeyName", "")
-        headers.update("X-API-KEY", api_key)
-
-    # TODO: implement auth keys obtention for Oauth connection type
-    if auth_type is AUTH_OAUTH:
-        pass
-
-    invocation_parameters = connection.get("InvocationHttpParameters")
-    if invocation_parameters:
-        # TODO: look into what isValueSecret parameter does
-        header_parameters = invocation_parameters.get("HeaderParameters", [])
-        for header_parameter in header_parameters:
-            headers.update(header_parameter.get("Key"), header_parameter.get("Value"))
-
-        query_string_parameters = invocation_parameters.get("QueryStringParameters", [])
-        query_object = {}
-        for query_paramater in query_string_parameters:
-            query_object.update(query_paramater.get(""), query_paramater.get("Value"))
-        endpoint = add_query_params_to_url(endpoint, query_object)
-
-        body_parameters = invocation_parameters.get("BodyParameters", [])
-        for body_paramater in body_parameters:
-            data.update(body_paramater.get("Key"), body_paramater.get("Value"))
