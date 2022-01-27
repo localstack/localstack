@@ -206,7 +206,7 @@ def auth_keys_from_connection(connection: dict):
     return headers
 
 
-def list_of_parameters_to_object(items: list[dict]):
+def list_of_parameters_to_object(items):
     new_object = {}
     for item in items:
         new_object.update({item.get("Key"): item.get("Value")})
