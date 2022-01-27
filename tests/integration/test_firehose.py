@@ -41,16 +41,18 @@ def handler(event, context):
 """
 
 
-def test_firehose_http():
+@pytest.mark.parametrize("lambda_processor_enabled", [True, False])
+def test_firehose_http(lambda_processor_enabled: bool):
     class MyUpdateListener(ProxyListener):
         def forward_request(self, method, path, data, headers):
             data_received = dict(json.loads(data.decode("utf-8")))
             records.append(data_received)
             return 200
 
-    # create processor func
-    func_name = f"proc-{short_uid()}"
-    testutil.create_lambda_function(handler_file=PROCESSOR_LAMBDA, func_name=func_name)
+    if lambda_processor_enabled:
+        # create processor func
+        func_name = f"proc-{short_uid()}"
+        testutil.create_lambda_function(handler_file=PROCESSOR_LAMBDA, func_name=func_name)
 
     # define firehose configs
     local_port = get_free_tcp_port()
@@ -67,7 +69,10 @@ def test_firehose_http():
             "ErrorOutputPrefix": "",
             "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 60},
         },
-        "ProcessingConfiguration": {
+    }
+
+    if lambda_processor_enabled:
+        http_destination["ProcessingConfiguration"] = {
             "Enabled": True,
             "Processors": [
                 {
@@ -80,8 +85,7 @@ def test_firehose_http():
                     ],
                 }
             ],
-        },
-    }
+        }
 
     # start proxy server
     start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
@@ -113,7 +117,9 @@ def test_firehose_http():
     def _assert_record():
         received_record = records[0]["records"][0]
         received_record_data = to_str(base64.b64decode(to_bytes(received_record["data"])))
-        assert received_record_data == f"{msg_text}-processed"
+        assert (
+            received_record_data == f"{msg_text}{'-processed' if lambda_processor_enabled else ''}"
+        )
 
     retry(_assert_record, retries=5, sleep=1)
 
