@@ -415,8 +415,6 @@ class SqsQueue:
 
     def validate_queue_attributes(self, attributes):
         valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
-        # attributes of cli v2
-        valid = valid + [k[1] for k in inspect.getmembers(QueueAttributeNameV2)]
         del valid[valid.index(QueueAttributeName.FifoQueue)]
 
         for k in attributes.keys():
@@ -529,8 +527,6 @@ class FifoQueue(SqsQueue):
 
     def validate_queue_attributes(self, attributes):
         valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
-        # attributes of cli v2
-        valid = valid + [k[1] for k in inspect.getmembers(QueueAttributeNameV2)]
 
         for k in attributes.keys():
             if k not in valid:
@@ -857,10 +853,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             try:
                 getattr(QueueAttributeName, attr)
             except AttributeError:
-                try:
-                    getattr(QueueAttributeNameV2, attr)
-                except AttributeError:
-                    raise InvalidAttributeName(f"Unknown attribute {attr}.")
+                raise InvalidAttributeName(f"Unknown attribute {attr}.")
 
             if callable(queue.attributes.get(attr)):
                 func = queue.attributes.get(attr)
@@ -1240,7 +1233,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _validate_queue_attributes(self, attributes: QueueAttributeMap):
         valid = [k[1] for k in inspect.getmembers(QueueAttributeName)]
-        valid = valid + [k[1] for k in inspect.getmembers(QueueAttributeNameV2)]
 
         for k in attributes.keys():
             if k not in valid:
@@ -1343,17 +1335,3 @@ def resolve_queue_key(
             queue_name = get_queue_name_from_url(context.request.base_url)
 
     return QueueKey(region=context.region, account_id=context.account_id, name=queue_name)
-
-
-class QueueAttributeNameV2:
-    """
-    Includes only attributes that are not covered by the aws-cli v1.
-    Remove/integrate once v2 support is established.
-    """
-
-    KmsMasterKeyId = "KmsMasterKeyId"
-    KmsDataKeyReusePeriodSeconds = "KmsDataKeyReusePeriodSeconds"
-    SqsManagedSseEnabled = "SqsManagedSseEnabled"
-
-
-AttributeNameListV2 = List[QueueAttributeNameV2]
