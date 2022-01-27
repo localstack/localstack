@@ -1457,12 +1457,12 @@ class SdkDockerClient(ContainerClient):
         )
         try:
             network = self.client().networks.get(network_name)
+        except NotFound:
+            raise NoSuchNetwork(network_name)
+        try:
             network.connect(container=container_name_or_id, aliases=aliases)
-        except NotFound as e:
-            if "No such container" in e.explanation:
-                raise NoSuchContainer(container_name_or_id)
-            else:
-                raise NoSuchNetwork(network_name)
+        except NotFound:
+            raise NoSuchContainer(container_name_or_id)
         except APIError:
             raise ContainerException()
 
@@ -1473,13 +1473,14 @@ class SdkDockerClient(ContainerClient):
             "Disconnecting container '%s' from network '%s'", container_name_or_id, network_name
         )
         try:
-            network = self.client().networks.get(network_name)
-            network.disconnect(container_name_or_id)
-        except NotFound as e:
-            if "No such container" in e.explanation:
-                raise NoSuchContainer(container_name_or_id)
-            else:
+            try:
+                network = self.client().networks.get(network_name)
+            except NotFound:
                 raise NoSuchNetwork(network_name)
+            try:
+                network.disconnect(container_name_or_id)
+            except NotFound:
+                raise NoSuchContainer(container_name_or_id)
         except APIError:
             raise ContainerException()
 
