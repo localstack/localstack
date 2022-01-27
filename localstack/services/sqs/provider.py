@@ -63,6 +63,7 @@ from localstack.aws.api.sqs import (
 )
 from localstack.aws.spec import load_service
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import long_uid, md5, now, start_thread
 from localstack.utils.run import FuncThread
 
@@ -273,9 +274,9 @@ class SqsQueue:
     def arn(self) -> str:
         return f"arn:aws:sqs:{self.key.region}:{self.key.account_id}:{self.key.name}"
 
-    def url(self, context) -> str:
+    def url(self, context: RequestContext) -> str:
         return "{host}/{account_id}/{name}".format(
-            host=_get_host(context),  # FIXME region
+            host=context.request.host_url.rstrip("/"),
             account_id=self.key.account_id,
             name=self.key.name,
         )
@@ -346,8 +347,7 @@ class SqsQueue:
         message_deduplication_id: str = None,
         message_group_id: str = None,
     ):
-
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def get(self, block=True, timeout=None, visibility_timeout: int = None) -> SqsMessage:
         start = time.time()
@@ -436,11 +436,13 @@ class StandardQueue(SqsQueue):
 
         if message_deduplication_id:
             raise InvalidParameterValue(
-                f"Value {message_deduplication_id} for parameter MessageDeduplicationId is invalid. Reason: The request includes a parameter that is not valid for this queue type."
+                f"Value {message_deduplication_id} for parameter MessageDeduplicationId is invalid. Reason: The "
+                f"request includes a parameter that is not valid for this queue type. "
             )
         if message_group_id:
             raise InvalidParameterValue(
-                f"Value {message_group_id} for parameter MessageGroupId is invalid. Reason: The request includes a parameter that is not valid for this queue type."
+                f"Value {message_group_id} for parameter MessageGroupId is invalid. Reason: The request includes a "
+                f"parameter that is not valid for this queue type. "
             )
 
         standard_message = SqsMessage(time.time(), message)
@@ -483,7 +485,8 @@ class FifoQueue(SqsQueue):
             dedup_id = hashlib.sha256(message.get("Body").encode("utf-8")).hexdigest()
         if not dedup_id:
             raise InvalidParameterValue(
-                "The Queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided explicitly"
+                "The Queue should either have ContentBasedDeduplication enabled or MessageDeduplicationId provided "
+                "explicitly "
             )
 
         qm = SqsMessage(
@@ -589,7 +592,8 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
             )
         if not re.match(ATTR_NAME_CHAR_REGEX, attribute_name.lower()):
             raise InvalidParameterValue(
-                "Message (user) attributes name can only contain upper and lower score characters, digits, periods, hyphens and underscores."
+                "Message (user) attributes name can only contain upper and lower score characters, digits, periods, "
+                "hyphens and underscores. "
             )
         if not re.match(ATTR_NAME_PREFIX_SUFFIX_REGEX, attribute_name.lower()):
             raise InvalidParameterValue(
@@ -641,6 +645,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     LIMITATIONS:
         - Pagination of results (NextToken)
         - Delivery guarantees
+        - The region is not encoded in the queue URL
     """
 
     queues: Dict[QueueKey, SqsQueue]
@@ -663,33 +668,47 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def on_before_stop(self):
         self.shutdown()
 
-    def _add_queue(self, queue: SqsQueue, context: RequestContext):
+    def _add_queue(self, queue: SqsQueue):
         with self._mutex:
             self.queues[queue.key] = queue
 
-    def _require_queue(
-        self, context: RequestContext, queue_url: str = None, queue_name: str = None
+    def _require_queue(self, key: QueueKey) -> SqsQueue:
+        """
+        Returns the queue for the given key, or raises NonExistentQueue if it does not exist.
+
+        :param key: the QueueKey to look for
+        :returns: the queue
+        :raises NonExistentQueue: if the queue does not exist
+        """
+        with self._mutex:
+            if key not in self.queues:
+                raise NonExistentQueue()
+
+            return self.queues[key]
+
+    def _require_queue_by_arn(self, queue_arn: str) -> SqsQueue:
+        arn = parse_arn(queue_arn)
+        key = QueueKey(region=arn["region"], account_id=arn["account"], name=arn["resource"])
+        return self._require_queue(key)
+
+    def _resolve_queue(
+        self,
+        context: RequestContext,
+        queue_name: Optional[str] = None,
+        queue_url: Optional[str] = None,
     ) -> SqsQueue:
         """
-        #     Returns the queue for the given url or name, or raises a NonExistentQueue error.
-        #
-        #     :param queue_url: The QueueUrl
-        #     :param queue_name: The QueueName
-        #     :returns: the queue
-        #     :raises NonExistentQueue: if the queue does not exist
-        #"""
+        Uses resolve_queue_key to determine the QueueKey from the given input, and returns the respective queue,
+        or raises NonExistentQueue if it does not exist.
 
-        # if we have nothing, something went probably wrong, and we do a best effort extraction
-        if not (queue_url or queue_name):
-            queue_url = context.request.url
-        if queue_url:
-            queue_name = queue_url.split("/")[-1]
-        key = resolve_queue_key(context, queue_name)
-        with self._mutex:
-            try:
-                return self.queues[key]
-            except KeyError:
-                raise NonExistentQueue()
+        :param context: the request context, used for getting region and account_id, and optionally the queue_url
+        :param queue_name: the queue name (if this is set, then this will be used for the key)
+        :param queue_url: the queue url (if name is not set, this will be used to determine the queue name)
+        :returns: the queue
+        :raises NonExistentQueue: if the queue does not exist
+        """
+        key = resolve_queue_key(context, queue_name, queue_url)
+        return self._require_queue(key)
 
     def create_queue(
         self,
@@ -715,7 +734,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         else:
             queue = StandardQueue(k, attributes, tags)
         LOG.debug("creating queue key=%s attributes=%s tags=%s", k, attributes, tags)
-        self._add_queue(queue, context)
+        self._add_queue(queue)
 
         return CreateQueueResult(QueueUrl=queue.url(context))
 
@@ -768,7 +787,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         receipt_handle: String,
         visibility_timeout: Integer,
     ) -> None:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
         queue.update_visibility_timeout(receipt_handle, visibility_timeout)
 
@@ -778,7 +797,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue_url: String,
         entries: ChangeMessageVisibilityBatchRequestEntryList,
     ) -> ChangeMessageVisibilityBatchResult:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         self._assert_batch(entries)
@@ -810,14 +829,14 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def delete_queue(self, context: RequestContext, queue_url: String) -> None:
         with self._mutex:
-            queue = self._require_queue(context, queue_url=queue_url)
+            queue = self._resolve_queue(context, queue_url=queue_url)
             self._assert_permission(context, queue)
             del self.queues[queue.key]
 
     def get_queue_attributes(
         self, context: RequestContext, queue_url: String, attribute_names: AttributeNameList = None
     ) -> GetQueueAttributesResult:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         if not attribute_names:
@@ -854,7 +873,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         message_deduplication_id: String = None,
         message_group_id: String = None,
     ) -> SendMessageResult:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         message = self._put_message(
@@ -878,7 +897,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def send_message_batch(
         self, context: RequestContext, queue_url: String, entries: SendMessageBatchRequestEntryList
     ) -> SendMessageBatchResult:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         self._assert_batch(entries)
@@ -985,7 +1004,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         wait_time_seconds: Integer = None,
         receive_request_attempt_id: String = None,
     ) -> ReceiveMessageResult:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         num = max_number_of_messages or 1
@@ -1039,7 +1058,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         max_receive_count = redrive_policy["maxReceiveCount"]
         if std_m.receive_times > max_receive_count:
             dead_letter_target_arn = redrive_policy["deadLetterTargetArn"]
-            dl_queue = self._require_queue_by_arn(dead_letter_target_arn, context)
+            dl_queue = self._require_queue_by_arn(dead_letter_target_arn)
             # TODO: this needs to be atomic?
             dead_message = std_m.message
             dl_queue.put(message=dead_message)
@@ -1051,7 +1070,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def delete_message(
         self, context: RequestContext, queue_url: String, receipt_handle: String
     ) -> None:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
         queue.remove(receipt_handle)
 
@@ -1061,7 +1080,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         queue_url: String,
         entries: DeleteMessageBatchRequestEntryList,
     ) -> DeleteMessageBatchResult:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
         self._assert_batch(entries)
 
@@ -1089,7 +1108,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         )
 
     def purge_queue(self, context: RequestContext, queue_url: String) -> None:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         with self._mutex:
@@ -1111,7 +1130,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def set_queue_attributes(
         self, context: RequestContext, queue_url: String, attributes: QueueAttributeMap
     ) -> None:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
 
         if not attributes:
             return
@@ -1148,7 +1167,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 )
 
     def tag_queue(self, context: RequestContext, queue_url: String, tags: TagMap) -> None:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         if not tags:
@@ -1158,12 +1177,12 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             queue.tags[k] = v
 
     def list_queue_tags(self, context: RequestContext, queue_url: String) -> ListQueueTagsResult:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
         return ListQueueTagsResult(Tags=queue.tags)
 
     def untag_queue(self, context: RequestContext, queue_url: String, tag_keys: TagKeyList) -> None:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         for k in tag_keys:
@@ -1178,7 +1197,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         aws_account_ids: AWSAccountIdList,
         actions: ActionNameList,
     ) -> None:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         self._validate_actions(actions)
@@ -1188,7 +1207,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 queue.permissions.add(Permission(label, account_id, action))
 
     def remove_permission(self, context: RequestContext, queue_url: String, label: String) -> None:
-        queue = self._require_queue(context, queue_url=queue_url)
+        queue = self._resolve_queue(context, queue_url=queue_url)
         self._assert_permission(context, queue)
 
         candidates = [p for p in queue.permissions if p.label == label]
@@ -1260,16 +1279,6 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             else:
                 visited.add(entry["Id"])
 
-    def _require_queue_by_arn(self, dead_letter_target_arn, context):
-        arn_parts = dead_letter_target_arn.split(":")
-        url = f"{_get_host(context)}/{arn_parts[-2]}/{arn_parts[-1]}"
-        queue = self._require_queue(context, queue_url=url)
-        return queue
-
-
-def _get_host(context: RequestContext):
-    return context.request.host_url
-
 
 def _create_mock_sequence_number():
     return "".join(random.choice(string.digits) for _ in range(20))
@@ -1277,7 +1286,6 @@ def _create_mock_sequence_number():
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
 def _create_message_attribute_hash(message_attributes) -> Optional[str]:
-
     # To avoid the need to check for dict conformity everytime we invoke this function
     if not isinstance(message_attributes, dict):
         return
@@ -1304,5 +1312,25 @@ def _create_message_attribute_hash(message_attributes) -> Optional[str]:
     return hash.hexdigest()
 
 
-def resolve_queue_key(context: RequestContext, queue_name: str):
-    return QueueKey(context.region, context.account_id, queue_name)
+def get_queue_name_from_url(queue_url: str) -> str:
+    return queue_url.rstrip("/").split("/")[-1]
+
+
+def resolve_queue_key(
+    context: RequestContext, queue_name: Optional[str] = None, queue_url: Optional[str] = None
+) -> QueueKey:
+    """
+    Resolves a QueueKey from the given information.
+
+    :param context: the request context, used for getting region and account_id, and optionally the queue_url
+    :param queue_name: the queue name (if this is set, then this will be used for the key)
+    :param queue_url: the queue url (if name is not set, this will be used to determine the queue name)
+    :return: the QueueKey describing the queue being requested
+    """
+    if not queue_name:
+        if queue_url:
+            queue_name = get_queue_name_from_url(queue_url)
+        else:
+            queue_name = get_queue_name_from_url(context.request.base_url)
+
+    return QueueKey(region=context.region, account_id=context.account_id, name=queue_name)

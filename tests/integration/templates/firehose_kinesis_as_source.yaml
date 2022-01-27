@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: {{BucketName}}
+  stream:
+    Type: AWS::Kinesis::Stream
+    Properties: 
+      Name: {{StreamName}}
+      ShardCount: 2    
+  deliveryStream:
+    DependsOn:
+      - bucket
+      - stream
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties: 
+      DeliveryStreamName: {{DeliveryStreamName}}
+      DeliveryStreamType: KinesisStreamAsSource
+      KinesisStreamSourceConfiguration:
+        KinesisStreamARN: !GetAtt 'stream.Arn'
+        RoleARN: arn:aws:iam::000000000000:role/Firehose-Role
+      ExtendedS3DestinationConfiguration: 
+        BucketARN: !GetAtt 'bucket.Arn'
+        RoleARN: arn:aws:iam::000000000000:role/Firehose-Role
+        BufferingHints:
+          IntervalInSeconds: 60
+          SizeInMBs: 64
+        DynamicPartitioningConfiguration: 
+          Enabled: true
+        ProcessingConfiguration: 
+          Enabled: true
+          Processors:
+            - Type: MetadataExtraction
+              Parameters: 
+                - ParameterName: "MetadatExtractionQuery"
+                  ParameterValue: "{s3Prefix: .tableName}"
+                - ParameterName: "JsonParsingEngine"
+                  ParameterValue: "JQ-1.6"
+        DataFormatConversionConfiguration: 
+          Enabled: true
+        CompressionFormat: "GZIP"
+        Prefix: "firehoseTest/!{partitionKeyFromQuery:s3Prefix}/!{partitionKeyFromLambda:companyId}/!{partitionKeyFromLambda:year}/!{partitionKeyFromLambda:month}/"
+        ErrorOutputPrefix: "firehoseTest-errors/!{firehose:error-output-type}/"
+        CloudWatchLoggingOptions:
+          Enabled: true
+          LogGroupName: 'FirehoseStreamLog'

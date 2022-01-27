@@ -76,6 +76,7 @@ not work out-of-the-box.
 """
 import abc
 import base64
+import logging
 from abc import ABC
 from datetime import datetime
 from email.utils import formatdate
@@ -91,6 +92,8 @@ from moto.core.utils import gen_amzn_requestid_long
 
 from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
 from localstack.utils.common import to_bytes, to_str
+
+LOG = logging.getLogger(__name__)
 
 
 class ResponseSerializer(abc.ABC):
@@ -735,6 +738,8 @@ class JSONResponseSerializer(ResponseSerializer):
         method(body, value, shape, key)
 
     def _serialize_type_structure(self, body: dict, value: dict, shape: StructureShape, key: str):
+        if value is None:
+            return
         if shape.is_document_type:
             body[key] = value
         else:
@@ -749,7 +754,13 @@ class JSONResponseSerializer(ResponseSerializer):
                 body = new_serialized
             members = shape.members
             for member_key, member_value in value.items():
-                member_shape = members[member_key]
+                try:
+                    member_shape = members[member_key]
+                except KeyError:
+                    LOG.exception(
+                        f"Response object contains a member which is not specified: {member_key}"
+                    )
+                    continue
                 if "name" in member_shape.serialization:
                     member_key = member_shape.serialization["name"]
                 self._serialize(body, member_value, member_shape, member_key)
