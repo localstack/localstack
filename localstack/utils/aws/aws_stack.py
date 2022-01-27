@@ -1110,7 +1110,7 @@ def get_elasticsearch_endpoint(region_name: str, domain_arn: str = None):
 
 
 def connect_elasticsearch(endpoint: str = None, domain: str = None, region_name: str = None):
-    from elasticsearch import Elasticsearch, RequestsHttpConnection
+    from opensearchpy import OpenSearch, RequestsHttpConnection
     from requests_aws4auth import AWS4Auth
 
     region = region_name or get_region()
@@ -1133,14 +1133,14 @@ def connect_elasticsearch(endpoint: str = None, domain: str = None, region_name:
         session_token = os.environ.get(ENV_SESSION_TOKEN)
         awsauth = AWS4Auth(access_key, secret_key, region, "es", session_token=session_token)
         connection_class = RequestsHttpConnection
-        return Elasticsearch(
+        return OpenSearch(
             hosts=[endpoint],
             verify_certs=verify_certs,
             use_ssl=use_ssl,
             connection_class=connection_class,
             http_auth=awsauth,
         )
-    return Elasticsearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
+    return OpenSearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
 
 
 def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):

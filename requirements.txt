@@ -43,7 +43,7 @@ botocore>=1.12.13
 cbor2>=5.2.0
 crontab>=0.22.6
 cryptography
-elasticsearch>=7.0.0,<7.14.0
+opensearch-py>=1.0.0,<2.0.0
 flask>=1.0.2
 flask-cors>=3.0.3,<3.1.0
 flask_swagger==0.2.12

@@ -460,61 +460,23 @@ class FirehoseProvider(FirehoseApi):
                     records = self._preprocess_records(processor, records)
 
             if "ElasticsearchDestinationDescription" in destination:
-                es_dest = destination["ElasticsearchDestinationDescription"]
-                es_index = es_dest["IndexName"]
-                es_type = es_dest.get("TypeName")
-                es = connect_elasticsearch(
-                    endpoint=es_dest.get("ClusterEndpoint"), domain=es_dest.get("DomainARN")
+                self._put_to_search_db(
+                    "ElasticSearch",
+                    destination["ElasticsearchDestinationDescription"],
+                    delivery_stream_name,
+                    destination,
+                    records,
+                    unprocessed_records,
                 )
-                if es_dest.get("S3BackupMode") == ElasticsearchS3BackupMode.AllDocuments:
-                    s3_dest_desc = es_dest.get("S3DestinationDescription")
-                    if s3_dest_desc:
-                        try:
-                            self._put_records_to_s3_bucket(
-                                stream_name=delivery_stream_name,
-                                records=unprocessed_records,
-                                s3_destination_description=s3_dest_desc,
-                            )
-                        except Exception as e:
-                            LOG.warning("Unable to backup unprocessed records to S3. Error: %s", e)
-                    else:
-                        LOG.warning("Passed S3BackupMode without S3Configuration. Cannot backup...")
-                elif es_dest.get("S3BackupMode") == ElasticsearchS3BackupMode.FailedDocumentsOnly:
-                    # TODO support FailedDocumentsOnly as well
-                    LOG.warning(
-                        "S3BackupMode FailedDocumentsOnly is set but currently not supported."
-                    )
-                for record in records:
-                    obj_id = uuid.uuid4()
-
-                    data = "{}"
-                    # DirectPut
-                    if "Data" in record:
-                        data = base64.b64decode(record["Data"])
-                    # KinesisAsSource
-                    elif "data" in record:
-                        data = base64.b64decode(record["data"])
-
-                    try:
-                        body = json.loads(data)
-                    except Exception as e:
-                        LOG.warning("Elasticsearch only allows json input data!")
-                        raise e
-
-                    LOG.debug(
-                        "Publishing to ES destination. Data: %s", truncate(data, max_length=300)
-                    )
-                    try:
-                        es.create(index=es_index, doc_type=es_type, id=obj_id, body=body)
-                    except Exception as e:
-                        LOG.exception(f"Unable to put record to stream {delivery_stream_name}.")
-                        raise e
             if "AmazonopensearchserviceDestinationDescription" in destination:
-                # TODO implement opensearch integration
-                # - Replace the elasticsearch client with the opensearch client
-                # - Then this most likely can be handled together with ElasticsearchDestinationDescription
-                # opensearch_dest = destination["AmazonopensearchserviceDestinationDescription"]
-                pass
+                self._put_to_search_db(
+                    "OpenSearch",
+                    destination["AmazonopensearchserviceDestinationDescription"],
+                    delivery_stream_name,
+                    destination,
+                    records,
+                    unprocessed_records,
+                )
             if "S3DestinationDescription" in destination:
                 s3_dest_desc = destination["S3DestinationDescription"]
                 self._put_records_to_s3_bucket(delivery_stream_name, records, s3_dest_desc)
@@ -541,6 +503,63 @@ class FirehoseProvider(FirehoseApi):
         return [
             PutRecordBatchResponseEntry(RecordId=str(uuid.uuid4())) for _ in unprocessed_records
         ]
+
+    def _put_to_search_db(
+        self, db_type, db_description, delivery_stream_name, records, unprocessed_records
+    ):
+        """
+        sends Firehose records to an ElasticSearch or Opensearch database
+        """
+        search_db_index = db_description["IndexName"]
+        search_db_type = db_description.get("TypeName")
+        db_connection = connect_elasticsearch(
+            endpoint=db_description.get("ClusterEndpoint"), domain=db_description.get("DomainARN")
+        )
+        if db_description.get("S3BackupMode") == ElasticsearchS3BackupMode.AllDocuments:
+            s3_dest_desc = db_description.get("S3DestinationDescription")
+            if s3_dest_desc:
+                try:
+                    self._put_records_to_s3_bucket(
+                        stream_name=delivery_stream_name,
+                        records=unprocessed_records,
+                        s3_destination_description=s3_dest_desc,
+                    )
+                except Exception as e:
+                    LOG.warning("Unable to backup unprocessed records to S3. Error: %s", e)
+            else:
+                LOG.warning("Passed S3BackupMode without S3Configuration. Cannot backup...")
+        elif db_description.get("S3BackupMode") == ElasticsearchS3BackupMode.FailedDocumentsOnly:
+            # TODO support FailedDocumentsOnly as well
+            LOG.warning("S3BackupMode FailedDocumentsOnly is set but currently not supported.")
+        for record in records:
+            obj_id = uuid.uuid4()
+
+            data = "{}"
+            # DirectPut
+            if "Data" in record:
+                data = base64.b64decode(record["Data"])
+            # KinesisAsSource
+            elif "data" in record:
+                data = base64.b64decode(record["data"])
+
+            try:
+                body = json.loads(data)
+            except Exception as e:
+                LOG.warning(f"{db_type} only allows json input data!")
+                raise e
+
+            LOG.debug(
+                "Publishing to {} destination. Data: {}".format(
+                    db_type, truncate(data, max_length=300)
+                )
+            )
+            try:
+                db_connection.create(
+                    index=search_db_index, doc_type=search_db_type, id=obj_id, body=body
+                )
+            except Exception as e:
+                LOG.exception(f"Unable to put record to stream {delivery_stream_name}.")
+                raise e
 
     def _add_missing_record_attributes(self, records: List[Dict]) -> None:
         def _get_entry(obj, key):
