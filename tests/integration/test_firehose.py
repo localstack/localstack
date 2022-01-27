@@ -41,16 +41,18 @@ def handler(event, context):
 """
 
 
-def test_firehose_http():
+@pytest.mark.parametrize("lambda_processor_enabled", [True, False])
+def test_firehose_http(lambda_processor_enabled: bool):
     class MyUpdateListener(ProxyListener):
         def forward_request(self, method, path, data, headers):
             data_received = dict(json.loads(data.decode("utf-8")))
             records.append(data_received)
             return 200
 
-    # create processor func
-    func_name = f"proc-{short_uid()}"
-    testutil.create_lambda_function(handler_file=PROCESSOR_LAMBDA, func_name=func_name)
+    if lambda_processor_enabled:
+        # create processor func
+        func_name = f"proc-{short_uid()}"
+        testutil.create_lambda_function(handler_file=PROCESSOR_LAMBDA, func_name=func_name)
 
     # define firehose configs
     local_port = get_free_tcp_port()
@@ -67,7 +69,10 @@ def test_firehose_http():
             "ErrorOutputPrefix": "",
             "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 60},
         },
-        "ProcessingConfiguration": {
+    }
+
+    if lambda_processor_enabled:
+        http_destination["ProcessingConfiguration"] = {
             "Enabled": True,
             "Processors": [
                 {
@@ -80,8 +85,7 @@ def test_firehose_http():
                     ],
                 }
             ],
-        },
-    }
+        }
 
     # start proxy server
     start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
@@ -113,7 +117,9 @@ def test_firehose_http():
     def _assert_record():
         received_record = records[0]["records"][0]
         received_record_data = to_str(base64.b64decode(to_bytes(received_record["data"])))
-        assert received_record_data == f"{msg_text}-processed"
+        assert (
+            received_record_data == f"{msg_text}{'-processed' if lambda_processor_enabled else ''}"
+        )
 
     retry(_assert_record, retries=5, sleep=1)
 
@@ -239,3 +245,67 @@ class TestFirehoseIntegration:
         finally:
             firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
             es_client.delete_elasticsearch_domain(DomainName=domain_name)
+
+    def test_delivery_stream_with_kinesis_as_source(
+        self,
+        firehose_client,
+        kinesis_client,
+        s3_client,
+        s3_bucket,
+        kinesis_create_stream,
+    ):
+
+        bucket_arn = aws_stack.s3_bucket_arn(s3_bucket)
+        stream_name = f"test-stream-{short_uid()}"
+        log_group_name = f"group{short_uid()}"
+        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
+        delivery_stream_name = f"test-delivery-stream-{short_uid()}"
+
+        kinesis_create_stream(StreamName=stream_name, ShardCount=2)
+        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
+            "StreamARN"
+        ]
+
+        response = firehose_client.create_delivery_stream(
+            DeliveryStreamName=delivery_stream_name,
+            DeliveryStreamType="KinesisStreamAsSource",
+            KinesisStreamSourceConfiguration={
+                "KinesisStreamARN": stream_arn,
+                "RoleARN": role_arn,
+            },
+            ExtendedS3DestinationConfiguration={
+                "BucketARN": bucket_arn,
+                "RoleARN": role_arn,
+                "BufferingHints": {"IntervalInSeconds": 60, "SizeInMBs": 64},
+                "DynamicPartitioningConfiguration": {"Enabled": True},
+                "ProcessingConfiguration": {
+                    "Enabled": True,
+                    "Processors": [
+                        {
+                            "Type": "MetadataExtraction",
+                            "Parameters": [
+                                {
+                                    "ParameterName": "MetadataExtractionQuery",
+                                    "ParameterValue": "{s3Prefix: .tableName}",
+                                },
+                                {"ParameterName": "JsonParsingEngine", "ParameterValue": "JQ-1.6"},
+                            ],
+                        },
+                    ],
+                },
+                "DataFormatConversionConfiguration": {"Enabled": True},
+                "CompressionFormat": "GZIP",
+                "Prefix": "firehoseTest/!{partitionKeyFromQuery:s3Prefix}/!{partitionKeyFromLambda:companyId}/!{partitionKeyFromLambda:year}/!{partitionKeyFromLambda:month}/",
+                "ErrorOutputPrefix": "firehoseTest-errors/!{firehose:error-output-type}/",
+                "CloudWatchLoggingOptions": {
+                    "Enabled": True,
+                    "LogGroupName": log_group_name,
+                },
+            },
+        )
+
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+        kinesis_client.delete_stream(StreamName=stream_name)
+        s3_client.delete_bucket(Bucket=s3_bucket)

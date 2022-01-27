@@ -79,9 +79,11 @@ def es():
 
 @aws_provider()
 def firehose():
-    from localstack.services.firehose import firehose_starter
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.firehose.provider import FirehoseProvider
 
-    return Service("firehose", start=firehose_starter.start_firehose)
+    provider = FirehoseProvider()
+    return Service("firehose", listener=AwsApiListener("firehose", provider))
 
 
 @aws_provider()

@@ -581,7 +581,7 @@ class TestDynamoDB(unittest.TestCase):
 
         table_list = dynamodb.list_tables()
         self.assertEqual(tables_before + 1, len(table_list["TableNames"]))
-        self.assertEqual(table_name, table_list["TableNames"][-1])
+        self.assertTrue(table_name in table_list["TableNames"])
 
         dynamodb.delete_table(TableName=table_name)
 

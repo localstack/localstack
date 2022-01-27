@@ -34,9 +34,23 @@ class CertificateManagerCertificate(GenericBaseModel):
                     "ValidationMethod",
                 ],
             )
-            logging_pref = params.get("CertificateTransparencyLoggingPreference")
+
+            # adjust domain validation options
+            valid_opts = result.get("DomainValidationOptions")
+            if valid_opts:
+
+                def _convert(opt):
+                    res = select_attributes(opt, ["DomainName", "ValidationDomain"])
+                    res.setdefault("ValidationDomain", res["DomainName"])
+                    return res
+
+                result["DomainValidationOptions"] = [_convert(opt) for opt in valid_opts]
+
+            # adjust logging preferences
+            logging_pref = result.get("CertificateTransparencyLoggingPreference")
             if logging_pref:
                 result["Options"] = {"CertificateTransparencyLoggingPreference": logging_pref}
+
             return result
 
         return {

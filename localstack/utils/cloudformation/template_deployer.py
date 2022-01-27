@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import traceback
-from typing import Optional
+from typing import Dict, Optional
 
 import botocore
 from moto.ec2.utils import generate_route_id
@@ -27,7 +27,9 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
 from localstack.utils.common import (
     get_all_subclasses,
+    json_safe,
     prevent_stack_overflow,
+    run_safe,
     start_worker_thread,
     to_bytes,
     to_str,
@@ -194,8 +196,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     resource_props = resource.get("Properties")
     if resource_props is None:
         raise Exception(
-            'Unable to find properties for resource "%s": %s %s'
-            % (resource_id, resource, resources)
+            f'Unable to find properties for resource "{resource_id}": {resource} - {resources}'
         )
     try:
         # convert resource props to resource entity
@@ -208,13 +209,11 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         if resource_type == "Parameter":
             return resource_props
 
-        # if is_deployable_resource(resource):
-        LOG.warning(
-            "Unexpected resource type %s when resolving references of resource %s: %s",
-            resource_type,
-            resource_id,
-            resource,
+        message = (
+            f"Unexpected resource type {resource_type} when resolving "
+            f"references of resource {resource_id}: {dump_resource_as_json(resource)}"
         )
+        log_not_available_message(resource_type=resource_type, message=message)
 
     except DependencyNotYetSatisfied:
         return
@@ -838,6 +837,17 @@ def convert_data_types(func_details, params):
     return result
 
 
+def log_not_available_message(resource_type: str, message: str):
+    LOG.warning(
+        f"{message}. To find out if {resource_type} is supported in LocalStack Pro, "
+        "please check out our docs at https://docs.localstack.cloud/aws/cloudformation"
+    )
+
+
+def dump_resource_as_json(resource: Dict) -> str:
+    return str(run_safe(lambda: json.dumps(json_safe(resource))) or resource)
+
+
 # TODO remove this method
 def prepare_template_body(req_data):
     return template_preparer.prepare_template_body(req_data)
@@ -852,7 +862,9 @@ def delete_resource(resource_id, resources, stack_name):
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
 
-def execute_resource_action(resource_id, resources, stack_name, action_name):
+def execute_resource_action(
+    resource_id: str, resources: Dict[str, Dict], stack_name: str, action_name: str
+):
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
     func_details = get_deployment_config(resource_type)
@@ -860,10 +872,9 @@ def execute_resource_action(resource_id, resources, stack_name, action_name):
     if not func_details or action_name not in func_details:
         if resource_type in ["Parameter"]:
             return
-        LOG.warning(
-            f"Action {action_name} for resource type {resource_type} not available. "
-            f"To find out if {resource_type} is supported in LocalStack Pro, "
-            "please check out our docs at https://docs.localstack.cloud/aws/cloudformation"
+        log_not_available_message(
+            resource_type=resource_type,
+            message=f"Action {action_name} for resource type {resource_type} not available",
         )
         return
 
@@ -1260,7 +1271,8 @@ class TemplateDeployer(object):
         resource_type = get_resource_type(resource)
         entry = get_deployment_config(resource_type)
         if entry is None and resource_type not in ["Parameter", None]:
-            LOG.warning('Unable to deploy resource type "%s": %s', resource_type, resource)
+            resource_str = dump_resource_as_json(resource)
+            LOG.warning(f'Unable to deploy resource type "{resource_type}": {resource_str}')
         return bool(entry and entry.get(ACTION_CREATE))
 
     def is_deployed(self, resource):
