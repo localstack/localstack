@@ -142,8 +142,6 @@ def _create_cluster(
     engine_version = engine_version or OPENSEARCH_DEFAULT_VERSION
     cluster = manager.create(domain_key.arn, engine_version, domain_endpoint_options)
 
-    region.opensearch_clusters[domain_key.domain_name] = cluster
-
     # FIXME: in AWS, the Endpoint is set once the cluster is running, not before (like here), but our tests and
     #  in particular cloudformation currently relies on the assumption that it is set when the domain is created.
     status = region.opensearch_domains[domain_key.domain_name]
@@ -165,19 +163,16 @@ def _create_cluster(
 def _remove_cluster(domain_key: DomainKey):
     region = OpenSearchServiceBackend.get(domain_key.region)
     cluster_manager().remove(domain_key.arn)
-    del region.opensearch_clusters[domain_key.domain_name]
+    del region.opensearch_domains[domain_key.domain_name]
 
 
 class OpenSearchServiceBackend(RegionBackend):
-    # maps cluster names to cluster details
-    opensearch_clusters: Dict[str, Server]
     # storage for domain resources (access should be protected with the _domain_mutex)
     opensearch_domains: Dict[str, DomainStatus]
     # static tagging service instance
     TAGS = TaggingService()
 
     def __init__(self):
-        self.opensearch_clusters = {}
         self.opensearch_domains = {}
 
 
