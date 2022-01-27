@@ -1,5 +1,6 @@
 import json
 import os
+import urllib.parse
 
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
@@ -131,3 +132,128 @@ def test_nested_statemachine_with_sync2(
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])
+
+
+def test_apigateway_invoke(cfn_client, deploy_cfn_template, stepfunctions_client):
+    deploy_result = deploy_cfn_template(template_file_name="sfn_apigateway.yaml")
+    state_machine_arn = deploy_result.outputs["statemachineOutput"]
+
+    execution_arn = stepfunctions_client.start_execution(stateMachineArn=state_machine_arn)[
+        "executionArn"
+    ]
+
+    def _sfn_finished_running():
+        return (
+            stepfunctions_client.describe_execution(executionArn=execution_arn)["status"]
+            != "RUNNING"
+        )
+
+    wait_until(_sfn_finished_running)
+
+    execution_result = stepfunctions_client.describe_execution(executionArn=execution_arn)
+    assert execution_result["status"] == "SUCCEEDED"
+    assert "hello from stepfunctions" in execution_result["output"]
+
+
+def test_apigateway_invoke_with_path(cfn_client, deploy_cfn_template, stepfunctions_client):
+    deploy_result = deploy_cfn_template(template_file_name="sfn_apigateway_two_integrations.yaml")
+    state_machine_arn = deploy_result.outputs["statemachineOutput"]
+
+    execution_arn = stepfunctions_client.start_execution(stateMachineArn=state_machine_arn)[
+        "executionArn"
+    ]
+
+    def _sfn_finished_running():
+        return (
+            stepfunctions_client.describe_execution(executionArn=execution_arn)["status"]
+            != "RUNNING"
+        )
+
+    wait_until(_sfn_finished_running)
+
+    execution_result = stepfunctions_client.describe_execution(executionArn=execution_arn)
+    assert execution_result["status"] == "SUCCEEDED"
+    assert "hello_with_path from stepfunctions" in execution_result["output"]
+
+
+def test_apigateway_invoke_localhost(cfn_client, deploy_cfn_template, stepfunctions_client):
+    """tests the same as above but with the "generic" localhost version of invoking the apigateway"""
+    deploy_result = deploy_cfn_template(template_file_name="sfn_apigateway.yaml")
+    state_machine_arn = deploy_result.outputs["statemachineOutput"]
+    api_url = deploy_result.outputs["LsApiEndpointA06D37E8"]
+
+    # instead of changing the template, we're just mapping the endpoint here to the more generic path-based version
+    state_def = stepfunctions_client.describe_state_machine(stateMachineArn=state_machine_arn)[
+        "definition"
+    ]
+    parsed = urllib.parse.urlparse(api_url)
+    api_id = parsed.hostname.split(".")[0]
+    state = json.loads(state_def)
+    stage = state["States"]["LsCallApi"]["Parameters"]["Stage"]
+    state["States"]["LsCallApi"]["Parameters"]["ApiEndpoint"] = "localhost:4566"
+    state["States"]["LsCallApi"]["Parameters"][
+        "Stage"
+    ] = f"restapis/{api_id}/{stage}/_user_request_"
+    state["States"]["LsCallApi"]["Parameters"]["Path"] = "/"
+
+    stepfunctions_client.update_state_machine(
+        stateMachineArn=state_machine_arn, definition=json.dumps(state)
+    )
+
+    execution_arn = stepfunctions_client.start_execution(stateMachineArn=state_machine_arn)[
+        "executionArn"
+    ]
+
+    def _sfn_finished_running():
+        return (
+            stepfunctions_client.describe_execution(executionArn=execution_arn)["status"]
+            != "RUNNING"
+        )
+
+    wait_until(_sfn_finished_running)
+
+    execution_result = stepfunctions_client.describe_execution(executionArn=execution_arn)
+    assert execution_result["status"] == "SUCCEEDED"
+    assert "hello from stepfunctions" in execution_result["output"]
+
+
+def test_apigateway_invoke_localhost_with_path(
+    cfn_client, deploy_cfn_template, stepfunctions_client
+):
+    """tests the same as above but with the "generic" localhost version of invoking the apigateway"""
+    deploy_result = deploy_cfn_template(template_file_name="sfn_apigateway_two_integrations.yaml")
+    state_machine_arn = deploy_result.outputs["statemachineOutput"]
+    api_url = deploy_result.outputs["LsApiEndpointA06D37E8"]
+
+    # instead of changing the template, we're just mapping the endpoint here to the more generic path-based version
+    state_def = stepfunctions_client.describe_state_machine(stateMachineArn=state_machine_arn)[
+        "definition"
+    ]
+    parsed = urllib.parse.urlparse(api_url)
+    api_id = parsed.hostname.split(".")[0]
+    state = json.loads(state_def)
+    stage = state["States"]["LsCallApi"]["Parameters"]["Stage"]
+    state["States"]["LsCallApi"]["Parameters"]["ApiEndpoint"] = "localhost:4566"
+    state["States"]["LsCallApi"]["Parameters"][
+        "Stage"
+    ] = f"restapis/{api_id}/{stage}/_user_request_"
+
+    stepfunctions_client.update_state_machine(
+        stateMachineArn=state_machine_arn, definition=json.dumps(state)
+    )
+
+    execution_arn = stepfunctions_client.start_execution(stateMachineArn=state_machine_arn)[
+        "executionArn"
+    ]
+
+    def _sfn_finished_running():
+        return (
+            stepfunctions_client.describe_execution(executionArn=execution_arn)["status"]
+            != "RUNNING"
+        )
+
+    wait_until(_sfn_finished_running)
+
+    execution_result = stepfunctions_client.describe_execution(executionArn=execution_arn)
+    assert execution_result["status"] == "SUCCEEDED"
+    assert "hello_with_path from stepfunctions" in execution_result["output"]
