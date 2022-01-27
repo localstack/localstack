@@ -960,3 +960,79 @@ class TestDockerClient:
     def test_set_container_workdir(self, docker_client: ContainerClient):
         result = docker_client.run_container("alpine", command=["pwd"], workdir="/tmp", remove=True)
         assert "/tmp" == to_str(result[0]).strip()
+
+    def test_connect_container_to_network(
+        self, docker_client: ContainerClient, create_network, create_container
+    ):
+        network_name = "ls_test_network_%s" % short_uid()
+        create_network(network_name)
+        container = create_container("alpine", command=["sh", "-c", "while true; do sleep 1; done"])
+        docker_client.start_container(container.container_id)
+        docker_client.connect_container_to_network(
+            network_name, container_name_or_id=container.container_id
+        )
+        assert (
+            container.container_id
+            in docker_client.inspect_network(network_name).get("Containers").keys()
+        )
+
+    def test_connect_container_to_nonexistent_network(
+        self, docker_client: ContainerClient, create_container
+    ):
+        container = create_container("alpine", command=["sh", "-c", "while true; do sleep 1; done"])
+        docker_client.start_container(container.container_id)
+        with pytest.raises(NoSuchNetwork):
+            docker_client.connect_container_to_network(
+                f"invalid_network_{short_uid()}", container_name_or_id=container.container_id
+            )
+
+    def test_disconnect_container_from_nonexistent_network(
+        self, docker_client: ContainerClient, create_container
+    ):
+        container = create_container("alpine", command=["sh", "-c", "while true; do sleep 1; done"])
+        docker_client.start_container(container.container_id)
+        with pytest.raises(NoSuchNetwork):
+            docker_client.disconnect_container_from_network(
+                f"invalid_network_{short_uid()}", container_name_or_id=container.container_id
+            )
+
+    def test_connect_nonexistent_container_to_network(
+        self, docker_client: ContainerClient, create_network, create_container
+    ):
+        network_name = "ls_test_network_%s" % short_uid()
+        create_network(network_name)
+        with pytest.raises(NoSuchContainer):
+            docker_client.connect_container_to_network(
+                network_name, container_name_or_id=f"some-invalid-container-{short_uid()}"
+            )
+
+    def test_disconnect_nonexistent_container_from_network(
+        self, docker_client: ContainerClient, create_network, create_container
+    ):
+        network_name = "ls_test_network_%s" % short_uid()
+        create_network(network_name)
+        with pytest.raises(NoSuchContainer):
+            docker_client.disconnect_container_from_network(
+                network_name, container_name_or_id=f"some-invalid-container-{short_uid()}"
+            )
+
+    def test_connect_container_to_network_with_alias_and_disconnect(
+        self, docker_client: ContainerClient, create_network, create_container
+    ):
+        network_name = "ls_test_network_%s" % short_uid()
+        container_alias = f"test-container-{short_uid()}.localstack.cloud"
+        create_network(network_name)
+        container = create_container("alpine", command=["sh", "-c", "while true; do sleep 1; done"])
+        docker_client.start_container(container.container_id)
+        docker_client.connect_container_to_network(
+            network_name, container_name_or_id=container.container_id, aliases=[container_alias]
+        )
+        container_2 = create_container(
+            "alpine", command=["ping", "-c", "1", container_alias], network=network_name
+        )
+        docker_client.start_container(container_name_or_id=container_2.container_id, attach=True)
+        docker_client.disconnect_container_from_network(network_name, container.container_id)
+        with pytest.raises(ContainerException):
+            docker_client.start_container(
+                container_name_or_id=container_2.container_id, attach=True
+            )
