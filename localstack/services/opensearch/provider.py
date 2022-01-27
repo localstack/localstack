@@ -89,9 +89,6 @@ from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
 
-# timeout in seconds when giving up on waiting for the cluster to start
-CLUSTER_STARTUP_TIMEOUT = 600
-
 # mutex for modifying domains
 _domain_mutex = threading.RLock()
 
@@ -119,9 +116,9 @@ def cluster_manager() -> ClusterManager:
 def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str):
     LOG.debug("running cluster startup monitor for cluster %s", cluster)
 
-    # wait until the cluster is started, or the timeout is reached
+    # wait until the cluster is started
     # NOTE: does not work when DNS rebind protection is active for localhost.localstack.cloud
-    is_up = cluster.wait_is_up(CLUSTER_STARTUP_TIMEOUT)
+    is_up = cluster.wait_is_up()
 
     LOG.debug("cluster state polling for %s returned! status = %s", domain_name, is_up)
     with _domain_mutex:
