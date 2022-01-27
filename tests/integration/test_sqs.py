@@ -1590,7 +1590,7 @@ class TestSqsProvider:
             "Messages"
         )[0].get("MD5OfBody")
 
-    def test_cli_v2_attributes_are_accepted(self, sqs_client, sqs_create_queue):
+    def test_sse_attributes_are_accepted(self, sqs_client, sqs_create_queue):
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
         attributes = {
