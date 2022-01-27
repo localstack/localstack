@@ -452,6 +452,17 @@ class ContainerClient(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
+    def disconnect_container_from_network(
+        self, network_name: str, container_name_or_id: str
+    ) -> None:
+        """
+        Disconnects a container from a given network
+        :param network_name: Network to disconnect the container from
+        :param container_name_or_id: Container to disconnect from the network
+        """
+        pass
+
     def get_container_name(self, container_id: str) -> str:
         """Get the name of a container by a given identifier"""
         return self.inspect_container(container_id)["Name"].lstrip("/")
@@ -785,17 +796,44 @@ class CmdDockerClient(ContainerClient):
     def connect_container_to_network(
         self, network_name: str, container_name_or_id: str, aliases: Optional[List] = None
     ) -> None:
-        cmd = [self._docker_cmd(), "network", "connect"]
+        LOG.debug(
+            "Connecting container '%s' to network '%s' with aliases '%s'",
+            container_name_or_id,
+            network_name,
+            aliases,
+        )
+        cmd = self._docker_cmd()
+        cmd += ["network", "connect"]
         if aliases:
             cmd += ["--alias", ",".join(aliases)]
         cmd += [network_name, container_name_or_id]
         try:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:
-            stderr_str = to_str(e.stderr)
-            if re.match(r"network (.*) not found", stderr_str):
+            stdout_str = to_str(e.stdout)
+            if re.match(r".*network (.*) not found.*", stdout_str):
                 raise NoSuchNetwork(network_name=network_name)
-            elif "No such container" in stderr_str:
+            elif "No such container" in stdout_str:
+                raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
+    def disconnect_container_from_network(
+        self, network_name: str, container_name_or_id: str
+    ) -> None:
+        LOG.debug(
+            "Disconnecting container '%s' from network '%s'", container_name_or_id, network_name
+        )
+        cmd = self._docker_cmd() + ["network", "disconnect", network_name, container_name_or_id]
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            stdout_str = to_str(e.stdout)
+            if re.match(r".*network (.*) not found.*", stdout_str):
+                raise NoSuchNetwork(network_name=network_name)
+            elif "No such container" in stdout_str:
                 raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
@@ -1411,12 +1449,37 @@ class SdkDockerClient(ContainerClient):
     def connect_container_to_network(
         self, network_name: str, container_name_or_id: str, aliases: Optional[List] = None
     ) -> None:
+        LOG.debug(
+            "Connecting container '%s' to network '%s' with aliases '%s'",
+            container_name_or_id,
+            network_name,
+            aliases,
+        )
         try:
             network = self.client().networks.get(network_name)
             network.connect(container=container_name_or_id, aliases=aliases)
         except NotFound as e:
-            LOG.debug("Exc: %s", e)
-            raise NoSuchNetwork(network_name)
+            if "No such container" in e.explanation:
+                raise NoSuchContainer(container_name_or_id)
+            else:
+                raise NoSuchNetwork(network_name)
+        except APIError:
+            raise ContainerException()
+
+    def disconnect_container_from_network(
+        self, network_name: str, container_name_or_id: str
+    ) -> None:
+        LOG.debug(
+            "Disconnecting container '%s' from network '%s'", container_name_or_id, network_name
+        )
+        try:
+            network = self.client().networks.get(network_name)
+            network.disconnect(container_name_or_id)
+        except NotFound as e:
+            if "No such container" in e.explanation:
+                raise NoSuchContainer(container_name_or_id)
+            else:
+                raise NoSuchNetwork(network_name)
         except APIError:
             raise ContainerException()
 
