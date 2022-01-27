@@ -1,13 +1,19 @@
-import base64
 import json
 import logging
 import re
 import uuid
 from typing import Dict
 
+from moto.events.models import events_backends as moto_events_backends
+
 from localstack.services.awslambda.lambda_executors import InvocationException, InvocationResult
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.aws.aws_stack import connect_to_service, firehose_name, get_sqs_queue_url
+from localstack.utils.aws.aws_stack import (
+    connect_to_service,
+    extract_region_from_arn,
+    firehose_name,
+    get_sqs_queue_url,
+)
 from localstack.utils.common import long_uid, now_utc
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import timestamp_millis, to_bytes
@@ -18,7 +24,7 @@ LOG = logging.getLogger(__name__)
 
 AUTH_BASIC = "BASIC"
 AUTH_API_KEY = "API_KEY"
-AUTH_OAUTH = "AUTH_CLIENT_CREDENTIALS"
+AUTH_OAUTH = "OAUTH_CLIENT_CREDENTIALS"
 
 
 def lambda_result_to_destination(
@@ -166,16 +172,16 @@ def auth_keys_from_connection(connection: dict):
         headers.update({api_key_name: api_key_value})
 
     if auth_type == AUTH_OAUTH:
-        oauth_parameters = auth_parameters.get("OAuthHttpParameters", {})
+        oauth_parameters = auth_parameters.get("OAuthParameters", {})
 
         oauth_method = oauth_parameters.get("HttpMethod")
-        oauth_endpoint = oauth_parameters.get("AuthorizationEnpoint", "")
+        oauth_endpoint = oauth_parameters.get("AuthorizationEndpoint", "")
         query_object = list_of_parameters_to_object(
             oauth_parameters.get("QueryStringParameters", [])
         )
         oauth_endpoint = add_query_params_to_url(oauth_endpoint, query_object)
 
-        client_parameters = oauth_parameters("ClientParameters", {})
+        client_parameters = oauth_parameters.get("ClientParameters", {})
         client_id = client_parameters.get("ClientID", "")
         client_secret = client_parameters.get("ClientSecret", "")
 
@@ -190,9 +196,10 @@ def auth_keys_from_connection(connection: dict):
             headers=oauth_header,
         )
 
-        oauth_data = json.loads(oauth_result.json())
+        oauth_data = json.loads(oauth_result.text)
+
         token_type = oauth_data.get("token_type", "")
-        access_token = oauth_data.get("token_type", "")
+        access_token = oauth_data.get("access_token", "")
         auth_header = "{} {}".format(token_type, access_token)
         headers.update({"authorization": auth_header})
 
@@ -233,7 +240,11 @@ def send_event_to_api_destination(target_arn, event):
 
     connection_arn = destination.get("ConnectionArn", "")
     connection_name = re.search(r"connection\/([a-zA-Z0-9-_]+)\/", connection_arn).group(1)
-    connection = events_client.describe_connection(Name=connection_name)
+    connection_region = extract_region_from_arn(connection_arn)
+
+    # Using backend directly due to boto hiding passwords, keys and secret values
+    event_backend = moto_events_backends.get(connection_region)
+    connection = event_backend.describe_connection(name=connection_name)
 
     headers.update(auth_keys_from_connection(connection))
 
@@ -241,14 +252,18 @@ def send_event_to_api_destination(target_arn, event):
     invocation_parameters = auth_parameters.get("InvocationHttpParameters")
 
     if invocation_parameters:
-        headers.update(
-            list_of_parameters_to_object(invocation_parameters.get("HeaderParameters", []))
+        header_parameters = list_of_parameters_to_object(
+            invocation_parameters.get("HeaderParameters", [])
         )
-        event.update(list_of_parameters_to_object(invocation_parameters.get("BodyParameters", [])))
+        headers.update(header_parameters)
 
-        query_object = list_of_parameters_to_object(
-            invocation_parameters.get("QueryStringParameters", [])
+        body_parameters = list_of_parameters_to_object(
+            invocation_parameters.get("BodyParameters", [])
         )
+        event.update(body_parameters)
+
+        query_parameters = invocation_parameters.get("QueryStringParameters", [])
+        query_object = list_of_parameters_to_object(query_parameters)
         endpoint = add_query_params_to_url(endpoint, query_object)
 
     result = requests.request(
