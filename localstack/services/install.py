@@ -334,8 +334,7 @@ def install_kinesalite():
 def get_is_kinesis_mock_installed() -> Tuple[bool, str]:
     """
     Checks the host system to see if kinesis mock is installed and where.
-    Returns:
-        True if kinesis mock is installed (False otherwise) and the expected installation path
+    :returns: True if kinesis mock is installed (False otherwise) and the expected installation path
     """
     machine = platform.machine().lower()
     system = platform.system().lower()

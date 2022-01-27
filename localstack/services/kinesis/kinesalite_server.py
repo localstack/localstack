@@ -25,8 +25,7 @@ class KinesaliteServer(Server):
     def do_start_thread(self) -> FuncThread:
         """
         Start Kinesalite in a new thread
-        Returns:
-            The running thread
+        :returns: The running thread
         """
         cmd = self._create_shell_command()
         LOG.debug("starting kinesis process %s", cmd)
