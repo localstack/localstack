@@ -464,7 +464,6 @@ class FirehoseProvider(FirehoseApi):
                     "ElasticSearch",
                     destination["ElasticsearchDestinationDescription"],
                     delivery_stream_name,
-                    destination,
                     records,
                     unprocessed_records,
                 )
@@ -473,7 +472,6 @@ class FirehoseProvider(FirehoseApi):
                     "OpenSearch",
                     destination["AmazonopensearchserviceDestinationDescription"],
                     delivery_stream_name,
-                    destination,
                     records,
                     unprocessed_records,
                 )
