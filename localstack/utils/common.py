@@ -24,6 +24,7 @@ import uuid
 import zipfile
 from contextlib import closing
 from datetime import date, datetime, timezone, tzinfo
+from json import JSONDecodeError
 from multiprocessing.dummy import Pool
 from queue import Queue
 from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, Type, Union
@@ -1456,6 +1457,19 @@ def parse_json_or_yaml(markup: str) -> JsonComplexType:
                 return clone_safe(yaml.load(markup, Loader=yaml.SafeLoader))
             except Exception:
                 raise
+
+
+def try_json(data: str):
+    """
+    Tries to deserialize json input to object if possible, otherwise returns original
+    :param data: string
+    :return: deserialize version of input
+    """
+    try:
+        return json.loads(to_str(data or "{}"))
+    except JSONDecodeError:
+        LOG.warning("failed serialize to json, fallback to original")
+        return data
 
 
 def json_safe(item: JsonType) -> JsonType:

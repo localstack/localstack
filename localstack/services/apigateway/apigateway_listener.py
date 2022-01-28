@@ -386,14 +386,6 @@ def apply_request_parameters(
     return add_query_params_to_url(uri, query_params)
 
 
-def try_json(data):
-    try:
-        return json.loads(to_str(data or "{}"))
-    except JSONDecodeError:
-        LOG.warning("failed serialize to json, fallback to original")
-        return data
-
-
 def apply_template(
     integration: Dict[str, Any],
     req_res_type: str,
