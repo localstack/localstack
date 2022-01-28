@@ -6,13 +6,13 @@ import re
 import time
 from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
+from urllib.parse import urljoin
 
 import pytz
 import requests
 from flask import Response as FlaskResponse
 from moto.apigateway.models import apigateway_backends
 from requests.models import Response
-from six.moves.urllib_parse import urljoin
 
 from localstack import config
 from localstack.constants import (
@@ -61,7 +61,14 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.common import camel_to_snake_case, json_safe, long_uid, to_bytes, to_str
+from localstack.utils.common import (
+    camel_to_snake_case,
+    json_safe,
+    long_uid,
+    to_bytes,
+    to_str,
+    try_json,
+)
 
 # set up logger
 from localstack.utils.http_utils import add_query_params_to_url
@@ -410,6 +417,19 @@ def apply_template(
         if template:
             variables = {"context": context or {}}
             input_ctx = {"body": data}
+            # little trick to flatten the input context so velocity templates
+            # work from the root.
+            # orig - { "body": '{"action": "$default","message":"foobar"}'
+            # after - {
+            #   "body": '{"action": "$default","message":"foobar"}',
+            #   "action": "$default",
+            #   "message": "foobar"
+            # }
+            if data:
+                dict_pack = try_json(data)
+                if isinstance(dict_pack, dict):
+                    for k, v in dict_pack.items():
+                        input_ctx.update({k: v})
 
             def _params(name=None):
                 # See https://docs.aws.amazon.com/apigateway/latest/developerguide/

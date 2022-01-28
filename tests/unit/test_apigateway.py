@@ -1,7 +1,9 @@
 import json
 import unittest
 
+from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway import apigateway_listener
+from localstack.services.apigateway.apigateway_listener import apply_template
 from localstack.services.apigateway.helpers import apply_json_patch_safe
 from localstack.utils.aws import templating
 from localstack.utils.common import clone
@@ -159,3 +161,31 @@ class TestJSONPatch(unittest.TestCase):
         subject = {"features": ["feat1"]}
         result = apply(clone(subject), operation)
         self.assertEqual(["feat1", "feat2"], result["features"])
+
+
+class TestApplyTemplate(unittest.TestCase):
+    def test_apply_template(self):
+        int_type = {
+            "type": "HTTP",
+            "requestTemplates": {
+                APPLICATION_JSON: "$util.escapeJavaScript($input.json('$.message'))"
+            },
+        }
+        resp_type = "request"
+        inv_payload = '{"action":"$default","message":"foobar"}'
+        rendered = apply_template(int_type, resp_type, inv_payload)
+
+        self.assertEqual('"foobar"', rendered)
+
+    def test_apply_template_no_json_payload(self):
+        int_type = {
+            "type": "HTTP",
+            "requestTemplates": {
+                APPLICATION_JSON: "$util.escapeJavaScript($input.json('$.message'))"
+            },
+        }
+        resp_type = "request"
+        inv_payload = "#foobar123"
+        rendered = apply_template(int_type, resp_type, inv_payload)
+
+        self.assertEqual("[]", rendered)
