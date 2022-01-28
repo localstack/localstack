@@ -5,6 +5,7 @@ import logging
 import re
 import time
 from enum import Enum
+from json import JSONDecodeError
 from typing import Any, Dict, Optional, Tuple, Union
 
 import pytz
@@ -12,7 +13,6 @@ import requests
 from flask import Response as FlaskResponse
 from moto.apigateway.models import apigateway_backends
 from requests.models import Response
-from six.moves.urllib_parse import urljoin
 
 from localstack import config
 from localstack.constants import (
@@ -388,7 +388,8 @@ def apply_request_parameters(
 def try_json(data):
     try:
         return json.loads(to_str(data or "{}"))
-    except:
+    except JSONDecodeError:
+        LOG.warning("failed serialize to json, fallback to original")
         return data
 
 
