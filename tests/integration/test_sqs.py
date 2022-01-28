@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+from urllib.parse import urlencode
 
 import pytest
 import requests
@@ -10,7 +11,6 @@ from botocore.auth import SIGV4_TIMESTAMP, SigV4Auth
 from botocore.awsrequest import AWSRequest
 from botocore.credentials import Credentials
 from botocore.exceptions import ClientError
-from six.moves.urllib.parse import urlencode
 
 from localstack import config, constants
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
@@ -414,18 +414,16 @@ class TestSqsProvider:
         assert len(result_send["Failed"]) == 1
 
     @only_localstack
-    @pytest.mark.xfail  # We are deprecating this and see what breaks
     def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
         external_host = "external-host"
         external_port = "12345"
-        SQS_PORT_EXTERNAL = "SQS_PORT_EXTERNAL"
 
-        monkeypatch.setattr(config, SQS_PORT_EXTERNAL, external_port)
+        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
         monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
         # TODO: remove once the old provider is discontinued
         from localstack.services.sqs import sqs_listener as old_sqs_listener
 
-        monkeypatch.setattr(old_sqs_listener, SQS_PORT_EXTERNAL, external_port)
+        monkeypatch.setattr(old_sqs_listener, "SQS_PORT_EXTERNAL", external_port)
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
