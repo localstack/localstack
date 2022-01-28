@@ -532,7 +532,8 @@ class FifoQueue(SqsQueue):
             if k not in valid:
                 raise InvalidAttributeName(f"Unknown attribute name {k}")
         # Special Cases
-        if attributes.get(QueueAttributeName.FifoQueue).lower() != "true":
+        fifo = attributes.get(QueueAttributeName.FifoQueue)
+        if fifo and fifo.lower() != "true":
             raise InvalidAttributeValue(
                 "Invalid value for the parameter FifoQueue. Reason: Modifying queue type is not supported."
             )

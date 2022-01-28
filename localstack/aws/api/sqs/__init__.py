@@ -1,4 +1,10 @@
-from typing import Dict, List, Optional, TypedDict
+import sys
+from typing import Dict, List, Optional
+
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -49,6 +55,7 @@ class QueueAttributeName(str):
     DeduplicationScope = "DeduplicationScope"
     FifoThroughputLimit = "FifoThroughputLimit"
     RedriveAllowPolicy = "RedriveAllowPolicy"
+    SqsManagedSseEnabled = "SqsManagedSseEnabled"
 
 
 class BatchEntryIdsNotDistinct(ServiceException):
@@ -162,7 +169,6 @@ class UnsupportedOperation(ServiceException):
 
 
 AWSAccountIdList = List[String]
-
 ActionNameList = List[String]
 
 
@@ -188,7 +194,6 @@ class BatchResultErrorEntry(TypedDict, total=False):
 
 
 BatchResultErrorEntryList = List[BatchResultErrorEntry]
-
 Binary = bytes
 BinaryList = List[Binary]
 
@@ -594,7 +599,7 @@ class SqsApi:
         :param queue_url: The URL of the Amazon SQS queue to which permissions are added.
         :param label: The unique identification of the permission you're setting (for example,
         ``AliceSendMessage``).
-        :param aws_account_ids: The account numbers of the
+        :param aws_account_ids: The Amazon Web Services account numbers of the
         `principals <https://docs.
         :param actions: The action the client wants to allow for the specified principal.
         :raises OverLimit:
@@ -914,7 +919,8 @@ class SqsApi:
         in the *Amazon SQS Developer Guide*.
 
         :param queue_name: The name of the queue whose URL must be fetched.
-        :param queue_owner_aws_account_id: The account ID of the account that created the queue.
+        :param queue_owner_aws_account_id: The Amazon Web Services account ID of the account that created the
+        queue.
         :returns: GetQueueUrlResult
         :raises QueueDoesNotExist:
         """
@@ -1140,13 +1146,13 @@ class SqsApi:
         message_deduplication_id: String = None,
         message_group_id: String = None,
     ) -> SendMessageResult:
-        """Delivers a message to the specified queue.
+        r"""Delivers a message to the specified queue.
 
         A message can include only XML, JSON, and unformatted text. The
         following Unicode characters are allowed:
 
-        ``#x9`` | ``#xA`` | ``#xD`` | ``#x20`` to ``#xD7FF`` | ``#xE000`` to
-        ``#xFFFD`` | ``#x10000`` to ``#x10FFFF``
+        ``#x9`` \| ``#xA`` \| ``#xD`` \| ``#x20`` to ``#xD7FF`` \| ``#xE000`` to
+        ``#xFFFD`` \| ``#x10000`` to ``#x10FFFF``
 
         Any characters not included in this list will be rejected. For more
         information, see the `W3C specification for
@@ -1172,7 +1178,7 @@ class SqsApi:
         queue_url: String,
         entries: SendMessageBatchRequestEntryList,
     ) -> SendMessageBatchResult:
-        """Delivers up to ten messages to the specified queue. This is a batch
+        r"""Delivers up to ten messages to the specified queue. This is a batch
         version of ``SendMessage.`` For a FIFO queue, multiple messages within a
         single batch are enqueued in the order they are sent.
 
@@ -1188,8 +1194,8 @@ class SqsApi:
         A message can include only XML, JSON, and unformatted text. The
         following Unicode characters are allowed:
 
-        ``#x9`` | ``#xA`` | ``#xD`` | ``#x20`` to ``#xD7FF`` | ``#xE000`` to
-        ``#xFFFD`` | ``#x10000`` to ``#x10FFFF``
+        ``#x9`` \| ``#xA`` \| ``#xD`` \| ``#x20`` to ``#xD7FF`` \| ``#xE000`` to
+        ``#xFFFD`` \| ``#x10000`` to ``#x10FFFF``
 
         Any characters not included in this list will be rejected. For more
         information, see the `W3C specification for

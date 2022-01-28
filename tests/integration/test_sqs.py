@@ -1590,6 +1590,27 @@ class TestSqsProvider:
             "Messages"
         )[0].get("MD5OfBody")
 
+    @pytest.mark.skipif(
+        os.environ.get("PROVIDER_OVERRIDE_SQS") != "asf",
+        reason="New provider test which isn't covered by old one",
+    )
+    def test_sse_attributes_are_accepted(self, sqs_client, sqs_create_queue):
+        queue_name = f"queue-{short_uid()}"
+        queue_url = sqs_create_queue(QueueName=queue_name)
+        attributes = {
+            "KmsMasterKeyId": "testKeyId",
+            "KmsDataKeyReusePeriodSeconds": "6000",
+            "SqsManagedSseEnabled": "true",
+        }
+        sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes=attributes)
+        result_attributes = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["All"]
+        )["Attributes"]
+        keys = result_attributes.keys()
+        for k in attributes.keys():
+            assert k in keys
+            assert attributes[k] == result_attributes[k]
+
 
 def get_region():
     return os.environ.get("AWS_DEFAULT_REGION") or TEST_REGION
