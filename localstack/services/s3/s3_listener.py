@@ -8,7 +8,7 @@ import logging
 import random
 import re
 import uuid
-from urllib.parse import parse_qs, quote, urlparse
+from urllib.parse import parse_qs, parse_qsl, quote, urlencode, urlparse, urlunparse
 
 import botocore.config
 import dateutil.parser
@@ -614,8 +614,8 @@ def append_list_objects_marker(method, path, data, response):
         marker = ""
         content = to_str(response.content)
         if "<ListBucketResult" in content and "<Marker>" not in content:
-            parsed = urlparse.urlparse(path)
-            query_map = urlparse.parse_qs(parsed.query)
+            parsed = urlparse(path)
+            query_map = parse_qs(parsed.query)
             if query_map.get("marker") and query_map.get("marker")[0]:
                 marker = query_map.get("marker")[0]
             insert = "<Marker>%s</Marker>" % marker
@@ -996,17 +996,17 @@ def token_expired_error(resource, requestId=None, status_code=400):
 
 def expand_redirect_url(starting_url, key, bucket):
     """Add key and bucket parameters to starting URL query string."""
-    parsed = urlparse.urlparse(starting_url)
-    query = collections.OrderedDict(urlparse.parse_qsl(parsed.query))
+    parsed = urlparse(starting_url)
+    query = collections.OrderedDict(parse_qsl(parsed.query))
     query.update([("key", key), ("bucket", bucket)])
 
-    redirect_url = urlparse.urlunparse(
+    redirect_url = urlunparse(
         (
             parsed.scheme,
             parsed.netloc,
             parsed.path,
             parsed.params,
-            urlparse.urlencode(query),
+            urlencode(query),
             None,
         )
     )
@@ -1168,7 +1168,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 """.format(
             protocol=get_service_protocol(),
             host=config.HOSTNAME_EXTERNAL,
-            encoded_key=urlparse.quote(key, safe=""),
+            encoded_key=quote(key, safe=""),
             key=key,
             bucket=bucket_name,
             etag="d41d8cd98f00b204e9800998ecf8427f",
@@ -1219,14 +1219,14 @@ class ProxyListenerS3(PersistingProxyListener):
 
     def forward_request(self, method, path, data, headers):
         # Create list of query parameteres from the url
-        parsed = urlparse.urlparse("{}{}".format(config.get_edge_url(), path))
+        parsed = urlparse("{}{}".format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
         path_orig = path
         path = path.replace(
             "#", "%23"
         )  # support key names containing hashes (e.g., required by Amplify)
         # extracting bucket name from the request
-        parsed_path = urlparse.urlparse(path)
+        parsed_path = urlparse(path)
         bucket_name = extract_bucket_name(headers, parsed_path.path)
 
         if method == "PUT" and bucket_name and not re.match(BUCKET_NAME_REGEX, bucket_name):
@@ -1295,7 +1295,7 @@ class ProxyListenerS3(PersistingProxyListener):
         # parse query params
         query = parsed_path.query
         path = parsed_path.path
-        query_map = urlparse.parse_qs(query, keep_blank_values=True)
+        query_map = parse_qs(query, keep_blank_values=True)
 
         # remap metadata query params (not supported in moto) to request headers
         append_metadata_headers(method, query_map, headers)
@@ -1415,7 +1415,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.status_code = 200
                 return response
 
-        parsed = urlparse.urlparse(path)
+        parsed = urlparse(path)
         bucket_name_in_host = uses_host_addressing(headers)
         should_send_notifications = all(
             [
@@ -1538,7 +1538,7 @@ class ProxyListenerS3(PersistingProxyListener):
                     exists, code, body = is_bucket_available(bucket_name)
                     if not exists:
                         return no_such_bucket(bucket_name, headers.get("x-amz-request-id"), 404)
-                query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
+                query_map = parse_qs(parsed.query, keep_blank_values=True)
                 for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
                     if param_name in query_map:
                         response.headers[header_name] = query_map[param_name][0]

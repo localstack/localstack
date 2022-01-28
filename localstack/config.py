@@ -746,6 +746,12 @@ SERVICE_PORTS = parse_service_ports()
 
 
 # TODO: remove
+def populate_configs(service_ports=None):
+    # no-op for now (to be removed in follow-up change)
+    pass
+
+
+# TODO: remove
 # def populate_configs(service_ports=None):
 #     global SERVICE_PORTS, CONFIG_ENV_VARS
 #

@@ -17,11 +17,6 @@ logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
 
-ENDPOINT_URL = "http://%s:%s" % (
-    os.environ["LOCALSTACK_HOSTNAME"],
-    os.environ.get("EDGE_PORT", 4566),
-)
-
 
 # Do not import this function from localstack.utils.common (this is a standalone application / lambda).
 def to_str(obj: Union[str, bytes], encoding: str = "utf-8", errors="strict") -> str:
@@ -190,4 +185,5 @@ def forward_event_to_target_stream(record, stream_name):
 
 
 def create_external_boto_client(service):
-    return boto3.client(service, endpoint_url=ENDPOINT_URL)
+    endpoint_url = f"http://{os.environ['LOCALSTACK_HOSTNAME']}:{os.environ.get('EDGE_PORT', 4566)}"
+    return boto3.client(service, endpoint_url=endpoint_url)
