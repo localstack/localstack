@@ -337,8 +337,12 @@ class TestSNS:
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
 
-    def test_subscribe_sqs_queue(self):
+    @pytest.mark.parametrize("external_sqs_port", [None, 12345])
+    def test_subscribe_sqs_queue(self, monkeypatch, external_sqs_port):
         _, queue_arn, queue_url = self._create_queue()
+
+        if external_sqs_port:
+            monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_sqs_port)
 
         # publish message
         subscription = self._publish_sns_message_with_attrs(queue_arn, "sqs")

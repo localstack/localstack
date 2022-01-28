@@ -787,16 +787,17 @@ def populate_configs(service_ports=None):
     CONFIG_ENV_VARS = list(set(CONFIG_ENV_VARS))
 
 
-def service_port(service_key):
+def service_port(service_key: str, external: bool = False) -> int:
     service_key = service_key.lower()
+    if external:
+        if service_key == "sqs" and SQS_PORT_EXTERNAL:
+            return SQS_PORT_EXTERNAL
     if FORWARD_EDGE_INMEM:
         if service_key == "elasticsearch":
             # TODO Elasticsearch domains are a special case - we do not want to route them through
             #  the edge service, as that would require too many route mappings. In the future, we
             #  should integrate them with the port range for external services (4510-4530)
             return SERVICE_PORTS.get(service_key, 0)
-        if service_key == "sqs" and SQS_PORT_EXTERNAL:
-            return SQS_PORT_EXTERNAL
         return get_edge_port_http()
     return SERVICE_PORTS.get(service_key, 0)
 
@@ -807,8 +808,8 @@ def get_protocol():
 
 def external_service_url(service_key, host=None, port=None):
     host = host or HOSTNAME_EXTERNAL
-    port = port or service_port(service_key)
-    return "%s://%s:%s" % (get_protocol(), host, port)
+    port = port or service_port(service_key, external=True)
+    return f"{get_protocol()}://{host}:{port}"
 
 
 def get_edge_port_http():

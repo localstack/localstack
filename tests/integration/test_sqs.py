@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+from urllib.parse import urlencode
 
 import pytest
 import requests
@@ -10,7 +11,6 @@ from botocore.auth import SIGV4_TIMESTAMP, SigV4Auth
 from botocore.awsrequest import AWSRequest
 from botocore.credentials import Credentials
 from botocore.exceptions import ClientError
-from six.moves.urllib.parse import urlencode
 
 from localstack import config, constants
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
@@ -414,7 +414,6 @@ class TestSqsProvider:
         assert len(result_send["Failed"]) == 1
 
     @only_localstack
-    @pytest.mark.xfail  # We are deprecating this and see what breaks
     def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
         external_host = "external-host"
         external_port = "12345"
