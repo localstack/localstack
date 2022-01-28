@@ -420,7 +420,7 @@ class DeployResult:
     stack_id: str
     stack_name: str
     change_set_name: str
-    outputs: Dict[str,str]
+    outputs: Dict[str, str]
 
 
 @pytest.fixture
@@ -469,9 +469,9 @@ def deploy_cfn_template(
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
         assert wait_until(is_change_set_finished(change_set_id))
 
-        outputs = cfn_client.describe_stacks(StackName=stack_id)['Stacks'][0]['Outputs']
+        outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["Outputs"]
 
-        mapped_outputs = {o['OutputKey']: o['OutputValue'] for o in outputs}
+        mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
 
         state.append({"stack_id": stack_id, "change_set_id": change_set_id})
         return DeployResult(change_set_id, stack_id, stack_name, change_set_name, mapped_outputs)
