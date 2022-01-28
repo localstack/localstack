@@ -16,6 +16,7 @@ from typing import Dict, List, NamedTuple, Optional, Set
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sqs import (
     ActionNameList,
@@ -62,6 +63,7 @@ from localstack.aws.api.sqs import (
     Token,
 )
 from localstack.aws.spec import load_service
+from localstack.config import external_service_url
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import long_uid, md5, now, start_thread
@@ -275,8 +277,12 @@ class SqsQueue:
         return f"arn:aws:sqs:{self.key.region}:{self.key.account_id}:{self.key.name}"
 
     def url(self, context: RequestContext) -> str:
+        """Return queue URL using either SQS_PORT_EXTERNAL (if configured), or based on the 'Host' request header"""
+        host_url = context.request.host_url
+        if config.SQS_PORT_EXTERNAL:
+            host_url = external_service_url("sqs")
         return "{host}/{account_id}/{name}".format(
-            host=context.request.host_url.rstrip("/"),
+            host=host_url.rstrip("/"),
             account_id=self.key.account_id,
             name=self.key.name,
         )

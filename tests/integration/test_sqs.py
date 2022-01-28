@@ -417,14 +417,13 @@ class TestSqsProvider:
     def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
         external_host = "external-host"
         external_port = "12345"
-        SQS_PORT_EXTERNAL = "SQS_PORT_EXTERNAL"
 
-        monkeypatch.setattr(config, SQS_PORT_EXTERNAL, external_port)
+        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
         monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
         # TODO: remove once the old provider is discontinued
         from localstack.services.sqs import sqs_listener as old_sqs_listener
 
-        monkeypatch.setattr(old_sqs_listener, SQS_PORT_EXTERNAL, external_port)
+        monkeypatch.setattr(old_sqs_listener, "SQS_PORT_EXTERNAL", external_port)
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
