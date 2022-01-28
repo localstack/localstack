@@ -154,7 +154,7 @@ def send_event_to_target(
         LOG.warning('Unsupported Events rule target ARN: "%s"', target_arn)
 
 
-def auth_keys_from_connection(connection: dict):
+def auth_keys_from_connection(connection: Dict):
     headers = {}
 
     auth_type = connection.get("AuthorizationType").upper()
@@ -207,10 +207,7 @@ def auth_keys_from_connection(connection: dict):
 
 
 def list_of_parameters_to_object(items):
-    new_object = {}
-    for item in items:
-        new_object.update({item.get("Key"): item.get("Value")})
-    return new_object
+    return {item.get("Key"): item.get("Value") for item in items}
 
 
 def send_event_to_api_destination(target_arn, event):
@@ -238,6 +235,18 @@ def send_event_to_api_destination(target_arn, event):
         "Connection": "close",
     }
 
+    endpoint = add_api_destination_authorization(destination, headers, event)
+
+    result = requests.request(
+        method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
+    )
+    if result.status_code >= 400:
+        LOG.debug("Received code %s forwarding events: %s %s", result.status_code, method, endpoint)
+        if result.status_code == 429 or 500 <= result.status_code <= 600:
+            pass  # TODO: retry logic (only retry on 429 and 5xx response status)
+
+
+def add_api_destination_authorization(destination, headers, event):
     connection_arn = destination.get("ConnectionArn", "")
     connection_name = re.search(r"connection\/([a-zA-Z0-9-_]+)\/", connection_arn).group(1)
     connection_region = extract_region_from_arn(connection_arn)
@@ -251,6 +260,7 @@ def send_event_to_api_destination(target_arn, event):
     auth_parameters = connection.get("AuthParameters", {})
     invocation_parameters = auth_parameters.get("InvocationHttpParameters")
 
+    endpoint = destination.get("InvocationEndpoint")
     if invocation_parameters:
         header_parameters = list_of_parameters_to_object(
             invocation_parameters.get("HeaderParameters", [])
@@ -266,10 +276,4 @@ def send_event_to_api_destination(target_arn, event):
         query_object = list_of_parameters_to_object(query_parameters)
         endpoint = add_query_params_to_url(endpoint, query_object)
 
-    result = requests.request(
-        method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
-    )
-    if result.status_code >= 400:
-        LOG.debug("Received code %s forwarding events: %s %s", result.status_code, method, endpoint)
-        if result.status_code == 429 or 500 <= result.status_code <= 600:
-            pass  # TODO: retry logic (only retry on 429 and 5xx response status)
+    return endpoint
