@@ -80,7 +80,7 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (
-    connect_elasticsearch,
+    get_search_db_connection,
     connect_to_resource,
     firehose_stream_arn,
     s3_bucket_name,
@@ -503,16 +503,26 @@ class FirehoseProvider(FirehoseApi):
         ]
 
     def _put_to_search_db(
-        self, db_type, db_description, delivery_stream_name, records, unprocessed_records
+        self, db_flavor, db_description, delivery_stream_name, records, unprocessed_records
     ):
         """
         sends Firehose records to an ElasticSearch or Opensearch database
         """
         search_db_index = db_description["IndexName"]
         search_db_type = db_description.get("TypeName")
-        db_connection = connect_elasticsearch(
-            endpoint=db_description.get("ClusterEndpoint"), domain=db_description.get("DomainARN")
-        )
+        region = aws_stack.get_region()
+        domain_arn = db_description.get("DomainARN")
+
+        cluster_endoint = db_description.get("ClusterEndpoint")
+        if cluster_endoint is None:
+            if db_flavor == "ElasticSearch":
+                cluster_endoint = aws_stack.get_elasticsearch_endpoint(region, domain_arn)
+            elif db_flavor == "OpenSearch":
+                cluster_endoint = aws_stack.get_opensearch_endpoint(region, domain_arn)
+            else:
+                raise ValueError("db_flavor must be either 'OpenSearch' or 'ElasticSearch'")
+
+        db_connection = get_search_db_connection(cluster_endoint, region)
         if db_description.get("S3BackupMode") == ElasticsearchS3BackupMode.AllDocuments:
             s3_dest_desc = db_description.get("S3DestinationDescription")
             if s3_dest_desc:
@@ -543,12 +553,12 @@ class FirehoseProvider(FirehoseApi):
             try:
                 body = json.loads(data)
             except Exception as e:
-                LOG.warning(f"{db_type} only allows json input data!")
+                LOG.warning(f"{db_flavor} only allows json input data!")
                 raise e
 
             LOG.debug(
                 "Publishing to {} destination. Data: {}".format(
-                    db_type, truncate(data, max_length=300)
+                    db_flavor, truncate(data, max_length=300)
                 )
             )
             try:
