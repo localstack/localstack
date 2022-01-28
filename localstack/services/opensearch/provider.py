@@ -126,7 +126,7 @@ def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str)
         status["Processing"] = False
 
 
-def _create_cluster(
+def create_cluster(
     domain_key: DomainKey, engine_version: str, domain_endpoint_options: DomainEndpointOptions
 ):
     """
@@ -399,7 +399,7 @@ class OpensearchProvider(OpensearchApi):
 
             # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
             # TODO handle additional parameters (cluster config,...)
-            _create_cluster(domain_key, engine_version, domain_endpoint_options)
+            create_cluster(domain_key, engine_version, domain_endpoint_options)
 
             # set the tags
             self.add_tags(context, domain_key.arn, tag_list)
@@ -429,7 +429,6 @@ class OpensearchProvider(OpensearchApi):
                 raise ResourceNotFoundException(f"Domain not found: {domain_name}")
 
             status = get_domain_status(domain_key, deleted=True)
-            del region.opensearch_domains[domain_name]
             _remove_cluster(domain_key)
 
         # record event

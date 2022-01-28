@@ -115,7 +115,8 @@ def determine_custom_endpoint(
     enabled = domain_endpoint_options.get("CustomEndpointEnabled", False)
 
     if not custom_endpoint:
-        raise ValueError("Please provide the CustomEndpoint field to create a custom endpoint.")
+        # No custom endpoint to determine
+        return
 
     return CustomEndpoint(enabled, custom_endpoint)
 

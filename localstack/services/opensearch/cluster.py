@@ -101,7 +101,7 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
         else:
             data_root = config.dirs.tmp
 
-    if engine_type is EngineType.OpenSearch:
+    if engine_type == EngineType.OpenSearch:
         data_path = os.path.join(data_root, "opensearch", cluster_path)
     else:
         data_path = os.path.join(data_root, "elasticsearch", cluster_path)
