@@ -80,9 +80,9 @@ from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import (
-    get_search_db_connection,
     connect_to_resource,
     firehose_stream_arn,
+    get_search_db_connection,
     s3_bucket_name,
 )
 from localstack.utils.common import (
