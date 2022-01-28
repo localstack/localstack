@@ -410,6 +410,18 @@ def apply_template(
         if template:
             variables = {"context": context or {}}
             input_ctx = {"body": data}
+            # little trick to flatten the input context so velocity templates
+            # work from the root.
+            # orig - { "body": '{"action": "$default","message":"foobar"}'
+            # after - {
+            #   "body": '{"action": "$default","message":"foobar"}',
+            #   "action": "$default",
+            #   "message": "foobar"
+            # }
+            if data:
+                dict_pack = json.loads(to_str(data or "{}"))
+                for k, v in dict_pack.items():
+                    input_ctx.update({k: v})
 
             def _params(name=None):
                 # See https://docs.aws.amazon.com/apigateway/latest/developerguide/
