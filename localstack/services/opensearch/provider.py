@@ -2,7 +2,7 @@ import logging
 import threading
 from datetime import datetime, timezone
 from random import randint
-from typing import Dict
+from typing import Dict, Optional
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.opensearch import (
@@ -122,22 +122,29 @@ def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str)
 
     LOG.debug("cluster state polling for %s returned! status = %s", domain_name, is_up)
     with _domain_mutex:
-        status = OpenSearchServiceBackend.get(region).opensearch_domains[domain_name]
-        status["Processing"] = False
+        status = OpenSearchServiceBackend.get(region).opensearch_domains.get(domain_name)
+        if status is not None:
+            status["Processing"] = False
 
 
 def create_cluster(
-    domain_key: DomainKey, engine_version: str, domain_endpoint_options: DomainEndpointOptions
+    domain_key: DomainKey,
+    engine_version: str,
+    domain_endpoint_options: Optional[DomainEndpointOptions],
+    preferred_port: Optional[int] = None,
 ):
     """
     Uses the ClusterManager to create a new cluster for the given domain_name in the region of the current request
     context. NOT thread safe, needs to be called around _domain_mutex.
+    If the preferred_port is given, this port will be preferred (if OPENSEARCH_ENDPOINT_STRATEGY == "port").
     """
     region = OpenSearchServiceBackend.get(domain_key.region)
 
     manager = cluster_manager()
     engine_version = engine_version or OPENSEARCH_DEFAULT_VERSION
-    cluster = manager.create(domain_key.arn, engine_version, domain_endpoint_options)
+    cluster = manager.create(
+        domain_key.arn, engine_version, domain_endpoint_options, preferred_port
+    )
 
     # FIXME: in AWS, the Endpoint is set once the cluster is running, not before (like here), but our tests and
     #  in particular cloudformation currently relies on the assumption that it is set when the domain is created.

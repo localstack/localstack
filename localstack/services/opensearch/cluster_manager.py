@@ -19,6 +19,7 @@ from localstack.services.opensearch.cluster import (
     resolve_directories,
 )
 from localstack.utils.common import (
+    PortNotAvailableException,
     call_safe,
     external_service_ports,
     get_free_tcp_port,
@@ -78,6 +79,7 @@ def build_cluster_endpoint(
     domain_key: DomainKey,
     custom_endpoint: Optional[CustomEndpoint] = None,
     engine_type: EngineType = EngineType.OpenSearch,
+    preferred_port: Optional[int] = None,
 ) -> str:
     """
     Builds the cluster endpoint from and optional custom_endpoint and the localstack opensearch config. Example
@@ -87,6 +89,9 @@ def build_cluster_endpoint(
     - localhost:4566/us-east-1/my-domain (endpoint strategy = path)
     - localhost:[port-from-range] (endpoint strategy = port (or deprecated 'off'))
     - my.domain:443/foo (arbitrary endpoints (technically not allowed by AWS, but there are no rules in localstack))
+
+    If preferred_port is not None, it is tried to reserve the given port. If the port is already bound, another port
+    will be used.
     """
     # If we have a CustomEndpoint, we directly take its endpoint.
     if custom_endpoint and custom_endpoint.enabled:
@@ -97,7 +102,17 @@ def build_cluster_endpoint(
 
     # Otherwise, the endpoint is either routed through the edge proxy via a sub-path (localhost:4566/opensearch/...)
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "port":
-        assigned_port = external_service_ports.reserve_port()
+        if preferred_port is not None:
+            try:
+                # if the preferred port is given, we explicitly try to reserve it
+                assigned_port = external_service_ports.reserve_port(preferred_port)
+            except PortNotAvailableException:
+                LOG.warning(
+                    f"Preferred port {preferred_port} is not available, trying to reserve another port."
+                )
+                assigned_port = external_service_ports.reserve_port()
+        else:
+            assigned_port = external_service_ports.reserve_port()
         return f"{config.LOCALSTACK_HOSTNAME}:{assigned_port}"
     if config.OPENSEARCH_ENDPOINT_STRATEGY == "path":
         return f"{config.LOCALSTACK_HOSTNAME}:{config.EDGE_PORT}/{engine_domain}/{domain_key.region}/{domain_key.domain_name}"
@@ -127,7 +142,22 @@ class ClusterManager:
     def __init__(self) -> None:
         self.clusters = {}
 
-    def create(self, arn: str, version: str, endpoint_options=None) -> Server:
+    def create(
+        self,
+        arn: str,
+        version: str,
+        endpoint_options: Optional[DomainEndpointOptions] = None,
+        preferred_port: Optional[int] = None,
+    ) -> Server:
+        """
+        Creates a new cluster.
+
+        :param arn: of the cluster to create
+        :param version: of the cluster to start (string including the EngineType)
+        :param endpoint_options: DomainEndpointOptions (may contain information about a custom endpoint url)
+        :param preferred_port: port which should be preferred (only if OPENSEARCH_ENDPOINT_STRATEGY == "port")
+        :return: None
+        """
 
         # determine custom domain endpoint
         custom_endpoint = determine_custom_endpoint(endpoint_options)
@@ -136,7 +166,9 @@ class ClusterManager:
         engine_type = versions.get_engine_type(version)
 
         # build final endpoint and cluster url
-        endpoint = build_cluster_endpoint(DomainKey.from_arn(arn), custom_endpoint, engine_type)
+        endpoint = build_cluster_endpoint(
+            DomainKey.from_arn(arn), custom_endpoint, engine_type, preferred_port
+        )
         url = f"http://{endpoint}" if "://" not in endpoint else endpoint
 
         # call abstract cluster factory
@@ -301,9 +333,15 @@ class SingletonClusterManager(ClusterManager):
         self.mutex = threading.RLock()
         self.cluster = None
 
-    def create(self, arn: str, version: str, endpoint_options=None) -> Server:
+    def create(
+        self,
+        arn: str,
+        version: str,
+        endpoint_options: Optional[DomainEndpointOptions] = None,
+        preferred_port: int = None,
+    ) -> Server:
         with self.mutex:
-            return super().create(arn, version, endpoint_options)
+            return super().create(arn, version, endpoint_options, preferred_port)
 
     def _create_cluster(self, arn, url, version) -> Server:
         if not self.cluster:
