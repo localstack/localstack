@@ -7,6 +7,7 @@ import time
 from enum import Enum
 from json import JSONDecodeError
 from typing import Any, Dict, Optional, Tuple, Union
+from urllib.parse import urljoin
 
 import pytz
 import requests

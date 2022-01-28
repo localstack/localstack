@@ -185,7 +185,7 @@ class TestApplyTemplate(unittest.TestCase):
             },
         }
         resp_type = "request"
-        inv_payload = '#foobar123'
+        inv_payload = "#foobar123"
         rendered = apply_template(int_type, resp_type, inv_payload)
 
         self.assertEqual("[]", rendered)
