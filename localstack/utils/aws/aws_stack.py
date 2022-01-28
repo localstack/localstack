@@ -1099,7 +1099,7 @@ def apigateway_invocations_arn(lambda_uri):
 
 def get_elasticsearch_endpoint(region_name: str, domain_arn: str = None):
     if not domain_arn:
-        return os.environ["TEST_ELASTICSEARCH_URL"]
+        return config.service_url("elasticsearch")
     # get endpoint from API
     es_client = connect_to_service(service_name="es", region_name=region_name)
     domain_name = domain_arn.rpartition("/")[2]

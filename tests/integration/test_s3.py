@@ -1211,7 +1211,7 @@ class TestS3(unittest.TestCase):
             expected_url = "%s://%s:%s/%s/%s" % (
                 get_service_protocol(),
                 config.HOSTNAME_EXTERNAL,
-                config.PORT_S3,
+                config.service_port("s3"),
                 bucket_name,
                 key,
             )
@@ -1854,8 +1854,8 @@ class TestS3(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key_1, Body="This body document")
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key_2, Body="This body document")
 
-        base_url = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_S3
+        base_url = (
+            f"{get_service_protocol()}://{config.LOCALSTACK_HOSTNAME}:{config.service_port('s3')}"
         )
         url = "{}/{}?delete=".format(base_url, bucket_name)
         r = requests.post(url=url, data=BATCH_DELETE_BODY % (object_key_1, object_key_2))

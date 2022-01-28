@@ -217,7 +217,7 @@ class ElasticsearchTest(unittest.TestCase):
             poll_condition(lambda: status["DomainStatus"].get("Processing") is False, timeout=30)
         )
         self.assertEqual(
-            "localhost:%s" % config.PORT_ELASTICSEARCH,
+            f"localhost:{config.service_port('elasticsearch')}",
             status["DomainStatus"]["Endpoint"],
         )
         self.assertTrue(status["DomainStatus"]["EBSOptions"]["EBSEnabled"])

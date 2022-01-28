@@ -8,7 +8,7 @@ import logging
 import random
 import re
 import uuid
-from urllib.parse import parse_qs, parse_qsl, quote, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qs, parse_qsl, quote, unquote, urlencode, urlparse, urlunparse
 
 import botocore.config
 import dateutil.parser
@@ -265,7 +265,6 @@ def send_notification_for_subscriber(
     object_data = {}
     try:
         object_data = s3_client.head_object(Bucket=bucket_name, Key=key)
-
     except botocore.exceptions.ClientError:
         pass
 
@@ -744,7 +743,7 @@ def convert_to_chunked_encoding(method, path, response):
     response.headers.pop("Content-Length", None)
 
 
-def unquote(s):
+def strip_surrounding_quotes(s):
     if (s[0], s[-1]) in (('"', '"'), ("'", "'")):
         return s[1:-1]
     return s
@@ -754,7 +753,7 @@ def ret304_on_etag(data, headers, response):
     etag = response.headers.get("ETag")
     if etag:
         match = headers.get("If-None-Match")
-        if match and unquote(match) == unquote(etag):
+        if match and strip_surrounding_quotes(match) == strip_surrounding_quotes(etag):
             response.status_code = 304
             response._content = ""
 
