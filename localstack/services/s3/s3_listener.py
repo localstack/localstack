@@ -7,9 +7,8 @@ import json
 import logging
 import random
 import re
-import urllib.parse
 import uuid
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote, urlparse
 
 import botocore.config
 import dateutil.parser
@@ -20,7 +19,6 @@ from moto.s3.exceptions import InvalidFilterRuleName
 from moto.s3.models import s3_backend
 from pytz import timezone
 from requests.models import Request, Response
-from six.moves.urllib import parse as urlparse
 
 from localstack import config, constants
 from localstack.services.s3 import multipart_content
@@ -202,7 +200,7 @@ def get_event_message(
                         "arn": "arn:aws:s3:::%s" % bucket_name,
                     },
                     "object": {
-                        "key": urllib.parse.quote(file_name),
+                        "key": quote(file_name),
                         "size": file_size,
                         "eTag": etag,
                         "versionId": version_id,
@@ -261,7 +259,7 @@ def send_notification_for_subscriber(
     ):
         return
 
-    key = urlparse.unquote(object_path.replace("//", "/"))[1:]
+    key = unquote(object_path.replace("//", "/"))[1:]
 
     s3_client = aws_stack.connect_to_service("s3")
     object_data = {}
@@ -656,7 +654,7 @@ def fix_range_content_type(bucket_name, path, headers, response):
         return
 
     s3_client = aws_stack.connect_to_service("s3")
-    path = urlparse.urlparse(urlparse.unquote(path)).path
+    path = urlparse(unquote(path)).path
     key_name = extract_key_name(headers, path)
     result = s3_client.head_object(Bucket=bucket_name, Key=key_name)
     content_type = result["ContentType"]
@@ -1182,7 +1180,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
         host = config.HOSTNAME_EXTERNAL
         if ":" not in host:
-            host = "%s:%s" % (host, config.PORT_S3)
+            host = f"{host}:{config.service_port('s3')}"
         return re.sub(
             r"<Location>\s*([a-zA-Z0-9\-]+)://[^/]+/([^<]+)\s*</Location>",
             r"<Location>%s://%s/%s/\2</Location>" % (get_service_protocol(), host, bucket_name),

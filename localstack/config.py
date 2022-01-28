@@ -689,15 +689,6 @@ CONFIG_ENV_VARS = [
     "WINDOWS_DOCKER_MOUNT_PREFIX",
 ]
 
-for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
-    clean_key = key.upper().replace("-", "_")
-    CONFIG_ENV_VARS += [
-        clean_key + "_BACKEND",
-        clean_key + "_PORT",
-        clean_key + "_PORT_EXTERNAL",
-        "PROVIDER_OVERRIDE_" + clean_key,
-    ]
-
 
 def collect_config_items() -> List[Tuple[str, Any]]:
     """Returns a list of key-value tuples of LocalStack configuration values."""
@@ -750,41 +741,60 @@ def parse_service_ports() -> Dict[str, int]:
     return result
 
 
-# TODO: we need to investigate the performance impact of this
-def populate_configs(service_ports=None):
-    global SERVICE_PORTS, CONFIG_ENV_VARS
+# TODO: use functools cache, instead of global variable here
+SERVICE_PORTS = parse_service_ports()
 
-    SERVICE_PORTS = service_ports or parse_service_ports()
-    globs = globals()
-    protocol = get_protocol()
 
-    # define service ports and URLs as environment variables
+# TODO: remove
+# def populate_configs(service_ports=None):
+#     global SERVICE_PORTS, CONFIG_ENV_VARS
+#
+#     SERVICE_PORTS = service_ports or parse_service_ports()
+#     globs = globals()
+#     protocol = get_protocol()
+#
+#     # define service ports and URLs as environment variables
+#     for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
+#         key_upper = key.upper().replace("-", "_")
+#
+#         # define PORT_* variables with actual service ports as per configuration
+#         port_var_name = "PORT_%s" % key_upper
+#         port_number = service_port(key)
+#         globs[port_var_name] = port_number
+#         url = "%s://%s:%s" % (protocol, LOCALSTACK_HOSTNAME, port_number)
+#         # define TEST_*_URL variables with mock service endpoints
+#         url_key = "TEST_%s_URL" % key_upper
+#         # allow overwriting TEST_*_URL from user-defined environment variables
+#         existing = os.environ.get(url_key)
+#         url = existing or url
+#         # set global variable
+#         globs[url_key] = url
+#         # expose HOST_*_URL variables as environment variables
+#         os.environ[url_key] = url
+#
+#     # expose LOCALSTACK_HOSTNAME as env. variable
+#     os.environ["LOCALSTACK_HOSTNAME"] = LOCALSTACK_HOSTNAME
+
+
+def populate_config_env_var_names():
+    global CONFIG_ENV_VARS
+
     for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
-        key_upper = key.upper().replace("-", "_")
-
-        # define PORT_* variables with actual service ports as per configuration
-        port_var_name = "PORT_%s" % key_upper
-        port_number = service_port(key)
-        globs[port_var_name] = port_number
-        url = "%s://%s:%s" % (protocol, LOCALSTACK_HOSTNAME, port_number)
-        # define TEST_*_URL variables with mock service endpoints
-        url_key = "TEST_%s_URL" % key_upper
-        # allow overwriting TEST_*_URL from user-defined environment variables
-        existing = os.environ.get(url_key)
-        url = existing or url
-        # set global variable
-        globs[url_key] = url
-        # expose HOST_*_URL variables as environment variables
-        os.environ[url_key] = url
-
-    # expose LOCALSTACK_HOSTNAME as env. variable
-    os.environ["LOCALSTACK_HOSTNAME"] = LOCALSTACK_HOSTNAME
+        clean_key = key.upper().replace("-", "_")
+        CONFIG_ENV_VARS += [
+            clean_key + "_BACKEND",
+            clean_key + "_PORT_EXTERNAL",
+            "PROVIDER_OVERRIDE_" + clean_key,
+        ]
 
     # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
     CONFIG_ENV_VARS += [
         "LOCALSTACK_" + v for v in CONFIG_ENV_VARS if not v.startswith("LOCALSTACK_")
     ]
     CONFIG_ENV_VARS = list(set(CONFIG_ENV_VARS))
+
+
+populate_config_env_var_names()
 
 
 def service_port(service_key: str, external: bool = False) -> int:
@@ -822,9 +832,6 @@ def get_edge_url(localstack_hostname=None, protocol=None):
     localstack_hostname = localstack_hostname or LOCALSTACK_HOSTNAME
     return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
-
-# initialize config values
-populate_configs()
 
 # set log levels
 if DEBUG:

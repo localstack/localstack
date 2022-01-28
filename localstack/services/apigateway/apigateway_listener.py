@@ -756,7 +756,7 @@ def invoke_rest_api_integration_backend(
             headers = aws_stack.mock_aws_request_headers(service="kinesis")
             headers["X-Amz-Target"] = target
             result = common.make_http_request(
-                url=config.TEST_KINESIS_URL, method="POST", data=new_data, headers=headers
+                url=config.service_url("kinesis"), method="POST", data=new_data, headers=headers
             )
             # apply response template
             result = apply_request_response_templates(
@@ -861,7 +861,7 @@ def invoke_rest_api_integration_backend(
                     )
                 headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
 
-                url = urljoin(config.TEST_SQS_URL, "%s/%s" % (TEST_AWS_ACCOUNT_ID, queue))
+                url = urljoin(config.service_url("sqs"), f"{TEST_AWS_ACCOUNT_ID}/{queue}")
                 result = common.make_http_request(
                     url, method="POST", headers=headers, data=new_request
                 )

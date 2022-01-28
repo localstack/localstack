@@ -19,7 +19,7 @@ KMS_PROVIDER = (os.environ.get("KMS_PROVIDER") or "").strip() or "moto"
 
 
 def start_kms_local(port=None, backend_port=None, asynchronous=None, update_listener=None):
-    port = port or config.PORT_KMS
+    port = port or config.service_port("kms")
     backend_port = get_free_tcp_port()
     kms_binary = INSTALL_PATH_KMS_BINARY_PATTERN.replace(
         "<arch>", f"{platform.system().lower()}-{get_arch()}"
@@ -41,7 +41,7 @@ def start_kms_local(port=None, backend_port=None, asynchronous=None, update_list
 
 
 def start_kms_moto(port=None, backend_port=None, asynchronous=None, update_listener=None):
-    port = port or config.PORT_KMS
+    port = port or config.service_port("kms")
     return start_moto_server(
         "kms",
         port,

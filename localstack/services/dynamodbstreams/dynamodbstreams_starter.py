@@ -5,7 +5,7 @@ def start_dynamodbstreams(port=None, asynchronous=False):
     from localstack.services.dynamodbstreams import dynamodbstreams_api
     from localstack.services.infra import start_local_api
 
-    port = port or config.PORT_DYNAMODBSTREAMS
+    port = port or config.service_port("dynamodbstreams")
     return start_local_api(
         "DynamoDB Streams",
         port,

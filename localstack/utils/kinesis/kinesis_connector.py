@@ -2,14 +2,14 @@
 
 import logging
 import os
+import queue
 import re
 import subprocess
 import tempfile
 import threading
+from urllib.parse import urlparse
 
 from amazon_kclpy import kcl
-from six.moves import queue as Queue
-from six.moves.urllib.parse import urlparse
 
 from localstack import config
 from localstack.config import USE_SSL
@@ -260,8 +260,8 @@ class KclStartedLogListener(KclLogListener):
         super(KclStartedLogListener, self).__init__(regex=regex)
         # Semaphore.acquire does not provide timeout parameter, so we
         # use a Queue here which provides the required functionality
-        self.sync_init = Queue.Queue(0)
-        self.sync_take_shard = Queue.Queue(0)
+        self.sync_init = queue.Queue(0)
+        self.sync_take_shard = queue.Queue(0)
 
     def update(self, log_line):
         if re.match(self.regex_init, log_line):
@@ -303,7 +303,7 @@ def get_stream_info(
     if aws_stack.is_local_env(env):
         stream_info["conn_kwargs"] = {
             "host": LOCALHOST,
-            "port": config.PORT_KINESIS,
+            "port": config.service_port("kinesis"),
             "is_secure": bool(USE_SSL),
         }
     if endpoint_url:
@@ -390,8 +390,8 @@ def start_kcl_client_process(
     kwargs = {"metricsLevel": "NONE", "initialPositionInStream": "LATEST"}
     # set parameters for local connection
     if aws_stack.is_local_env(env):
-        kwargs["kinesisEndpoint"] = "%s:%s" % (LOCALHOST, config.PORT_KINESIS)
-        kwargs["dynamodbEndpoint"] = "%s:%s" % (LOCALHOST, config.PORT_DYNAMODB)
+        kwargs["kinesisEndpoint"] = f"{LOCALHOST}:{config.service_port('kinesis')}"
+        kwargs["dynamodbEndpoint"] = f"{LOCALHOST}:{config.service_port('dynamodb')}"
         kwargs["kinesisProtocol"] = get_service_protocol()
         kwargs["dynamodbProtocol"] = get_service_protocol()
         kwargs["disableCertChecking"] = "true"

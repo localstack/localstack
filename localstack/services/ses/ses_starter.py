@@ -218,7 +218,7 @@ def apply_patches():
 
 
 def start_ses(port=None, backend_port=None, asynchronous=None, update_listener=None):
-    port = port or config.PORT_SES
+    port = port or config.service_port("ses")
     apply_patches()
     return start_moto_server(
         key="ses",

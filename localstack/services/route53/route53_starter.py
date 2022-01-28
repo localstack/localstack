@@ -1,8 +1,9 @@
+from urllib.parse import parse_qs, urlparse
+
 from moto.route53 import responses as route53_responses
 from moto.route53.models import route53_backend
 from moto.route53.responses import DELETE_HEALTH_CHECK_RESPONSE
 from moto.route53.urls import url_paths as route53_url_paths
-from six.moves.urllib.parse import parse_qs, urlparse
 
 from localstack import config
 from localstack.services.infra import start_moto_server
@@ -56,7 +57,7 @@ def apply_patches():
 
 
 def start_route53(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_ROUTE53
+    port = port or config.service_port("route53")
     apply_patches()
     return start_moto_server(
         "route53",
@@ -68,7 +69,7 @@ def start_route53(port=None, asynchronous=False, update_listener=None):
 
 
 def start_route53_resolver(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_ROUTE53RESOLVER
+    port = port or config.service_port("route53resolver")
     return start_moto_server(
         "route53resolver",
         port,

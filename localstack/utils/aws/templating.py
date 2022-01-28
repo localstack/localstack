@@ -1,8 +1,7 @@
 import base64
 import json
 import re
-
-from six.moves.urllib.parse import quote_plus, unquote_plus
+from urllib.parse import quote_plus, unquote_plus
 
 from localstack import config
 from localstack.utils.common import (

@@ -1,9 +1,9 @@
 import re
 from typing import Dict, List
+from urllib.parse import urlparse
 
 import xmltodict
 from requests import Response
-from six.moves.urllib.parse import urlparse
 
 from localstack import constants
 from localstack.services.generic_proxy import RegionBackend
