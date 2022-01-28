@@ -84,4 +84,4 @@ def restart_kinesis():
         _server = None
 
     LOG.debug("Restarting Kinesis process ...")
-    start_kinesis(update_listener=kinesis_listener)
+    start_kinesis(update_listener=kinesis_listener.UPDATE_KINESIS)
