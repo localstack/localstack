@@ -385,6 +385,13 @@ def apply_request_parameters(
     return add_query_params_to_url(uri, query_params)
 
 
+def try_json(data):
+    try:
+        return json.loads(to_str(data or "{}"))
+    except:
+        return data
+
+
 def apply_template(
     integration: Dict[str, Any],
     req_res_type: str,
@@ -419,9 +426,10 @@ def apply_template(
             #   "message": "foobar"
             # }
             if data:
-                dict_pack = json.loads(to_str(data or "{}"))
-                for k, v in dict_pack.items():
-                    input_ctx.update({k: v})
+                dict_pack = try_json(data)
+                if isinstance(dict_pack, dict):
+                    for k, v in dict_pack.items():
+                        input_ctx.update({k: v})
 
             def _params(name=None):
                 # See https://docs.aws.amazon.com/apigateway/latest/developerguide/

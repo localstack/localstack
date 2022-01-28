@@ -176,3 +176,16 @@ class TestApplyTemplate(unittest.TestCase):
         rendered = apply_template(int_type, resp_type, inv_payload)
 
         self.assertEqual('"foobar"', rendered)
+
+    def test_apply_template_no_json_payload(self):
+        int_type = {
+            "type": "HTTP",
+            "requestTemplates": {
+                APPLICATION_JSON: "$util.escapeJavaScript($input.json('$.message'))"
+            },
+        }
+        resp_type = "request"
+        inv_payload = '#foobar123'
+        rendered = apply_template(int_type, resp_type, inv_payload)
+
+        self.assertEqual("[]", rendered)
