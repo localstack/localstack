@@ -741,45 +741,13 @@ def parse_service_ports() -> Dict[str, int]:
     return result
 
 
-# TODO: use functools cache, instead of global variable here
-SERVICE_PORTS = parse_service_ports()
-
-
-# TODO: remove
+# TODO: leaving temporarily for patch compatibilty - remove!
 def populate_configs(service_ports=None):
-    # no-op for now (to be removed in follow-up change)
     pass
 
 
-# TODO: remove
-# def populate_configs(service_ports=None):
-#     global SERVICE_PORTS, CONFIG_ENV_VARS
-#
-#     SERVICE_PORTS = service_ports or parse_service_ports()
-#     globs = globals()
-#     protocol = get_protocol()
-#
-#     # define service ports and URLs as environment variables
-#     for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
-#         key_upper = key.upper().replace("-", "_")
-#
-#         # define PORT_* variables with actual service ports as per configuration
-#         port_var_name = "PORT_%s" % key_upper
-#         port_number = service_port(key)
-#         globs[port_var_name] = port_number
-#         url = "%s://%s:%s" % (protocol, LOCALSTACK_HOSTNAME, port_number)
-#         # define TEST_*_URL variables with mock service endpoints
-#         url_key = "TEST_%s_URL" % key_upper
-#         # allow overwriting TEST_*_URL from user-defined environment variables
-#         existing = os.environ.get(url_key)
-#         url = existing or url
-#         # set global variable
-#         globs[url_key] = url
-#         # expose HOST_*_URL variables as environment variables
-#         os.environ[url_key] = url
-#
-#     # expose LOCALSTACK_HOSTNAME as env. variable
-#     os.environ["LOCALSTACK_HOSTNAME"] = LOCALSTACK_HOSTNAME
+# TODO: use functools cache, instead of global variable here
+SERVICE_PORTS = parse_service_ports()
 
 
 def populate_config_env_var_names():
@@ -800,6 +768,7 @@ def populate_config_env_var_names():
     CONFIG_ENV_VARS = list(set(CONFIG_ENV_VARS))
 
 
+# populate env var names to be passed to the container
 populate_config_env_var_names()
 
 
@@ -822,10 +791,16 @@ def get_protocol():
     return "https" if USE_SSL else "http"
 
 
+def service_url(service_key, host=None, port=None):
+    host = host or LOCALHOST
+    port = port or service_port(service_key)
+    return f"{get_protocol()}://{host}:{port}"
+
+
 def external_service_url(service_key, host=None, port=None):
     host = host or HOSTNAME_EXTERNAL
     port = port or service_port(service_key, external=True)
-    return f"{get_protocol()}://{host}:{port}"
+    return service_url(service_key, host=host, port=port)
 
 
 def get_edge_port_http():
