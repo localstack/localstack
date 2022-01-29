@@ -1047,18 +1047,18 @@ class TestLambdaAPI(unittest.TestCase):
 
     @mock.patch("tempfile.NamedTemporaryFile")
     def test_lambda_output(self, temp):
-        stderr = """START RequestId: 14c6eaeb-9183-4461-b520-10c4c64a2b07 Version: $LATEST 
-        2022-01-27T12:57:39.071Z	14c6eaeb-9183-4461-b520-10c4c64a2b07 INFO {} 
-        2022-01-27T12:57:39.071Z	14c6eaeb-9183-4461-b520-10c4c64a2b07 INFO { 
-        callbackWaitsForEmptyEventLoop: [Getter/Setter], succeed: [Function (anonymous)], 
-        fail: [Function (anonymous)], done: [Function (anonymous)], functionVersion: '$LATEST', 
-        functionName: 'hello', memoryLimitInMB: '128', logGroupName: '/aws/lambda/hello', 
-        logStreamName: '2022/01/27/[$LATEST]44deffbc11404f459e2cf38bb2fae611', clientContext: 
-        undefined, identity: undefined, invokedFunctionArn: 
-        'arn:aws:lambda:eu-west-1:659676821118:function:hello', awsRequestId: 
-        '14c6eaeb-9183-4461-b520-10c4c64a2b07', getRemainingTimeInMillis: [Function: 
-        getRemainingTimeInMillis] } END RequestId: 14c6eaeb-9183-4461-b520-10c4c64a2b07 REPORT 
-        RequestId: 14c6eaeb-9183-4461-b520-10c4c64a2b07	Duration: 1.61 ms	Billed Duration: 2 
+        stderr = """START RequestId: 14c6eaeb-9183-4461-b520-10c4c64a2b07 Version: $LATEST
+        2022-01-27T12:57:39.071Z	14c6eaeb-9183-4461-b520-10c4c64a2b07 INFO {}
+        2022-01-27T12:57:39.071Z	14c6eaeb-9183-4461-b520-10c4c64a2b07 INFO {
+        callbackWaitsForEmptyEventLoop: [Getter/Setter], succeed: [Function (anonymous)],
+        fail: [Function (anonymous)], done: [Function (anonymous)], functionVersion: '$LATEST',
+        functionName: 'hello', memoryLimitInMB: '128', logGroupName: '/aws/lambda/hello',
+        logStreamName: '2022/01/27/[$LATEST]44deffbc11404f459e2cf38bb2fae611', clientContext:
+        undefined, identity: undefined, invokedFunctionArn:
+        'arn:aws:lambda:eu-west-1:659676821118:function:hello', awsRequestId:
+        '14c6eaeb-9183-4461-b520-10c4c64a2b07', getRemainingTimeInMillis: [Function:
+        getRemainingTimeInMillis] } END RequestId: 14c6eaeb-9183-4461-b520-10c4c64a2b07 REPORT
+        RequestId: 14c6eaeb-9183-4461-b520-10c4c64a2b07	Duration: 1.61 ms	Billed Duration: 2
         ms	Memory Size: 128 MB	Max Memory Used: 58 MB """
 
         output = OutputLog(stdout='{"hello":"world"}', stderr=stderr)
