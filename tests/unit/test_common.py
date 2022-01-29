@@ -18,6 +18,7 @@ from localstack.utils.common import (
     Mock,
     PortNotAvailableException,
     fully_qualified_class_name,
+    get_free_tcp_port,
     is_empty_dir,
     load_file,
     mkdir,
@@ -557,11 +558,14 @@ def test_save_load_file_with_changing_permissions(tmp_path):
 
 @pytest.fixture()
 def external_service_ports_manager():
+    previous_start = config.EXTERNAL_SERVICE_PORTS_START
     previous_end = config.EXTERNAL_SERVICE_PORTS_END
     # Limit the range to only contain a single port
+    config.EXTERNAL_SERVICE_PORTS_START = get_free_tcp_port()
     config.EXTERNAL_SERVICE_PORTS_END = config.EXTERNAL_SERVICE_PORTS_START + 1
     yield ExternalServicePortsManager()
     config.EXTERNAL_SERVICE_PORTS_END = previous_end
+    config.EXTERNAL_SERVICE_PORTS_START = previous_start
 
 
 class TestExternalServicePortsManager:

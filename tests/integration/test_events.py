@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 import json
 import os
 import unittest
@@ -12,6 +13,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import (
     get_free_tcp_port,
     get_service_protocol,
@@ -22,6 +24,8 @@ from localstack.utils.common import (
     wait_for_port_open,
 )
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+
+from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -376,9 +380,8 @@ class EventsTest(unittest.TestCase):
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
         rs = testutil.create_lambda_function(
-            handler_file=handler_file,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -571,59 +574,127 @@ class EventsTest(unittest.TestCase):
         self.sfn_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
     def test_api_destinations(self):
+
+        token = short_uid()
+        bearer = "Bearer %s" % token
+
         class HttpEndpointListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 event = json.loads(to_str(data))
                 events.append(event)
-                return 200
+                paths_list.append(path)
+                auth = headers.get("Api") or headers.get("Authorization")
+                if auth not in headers_list:
+                    headers_list.append(auth)
+
+                return requests_response(
+                    {
+                        "access_token": token,
+                        "token_type": "Bearer",
+                        "expires_in": 86400,
+                    }
+                )
 
         events = []
+        paths_list = []
+        headers_list = []
+
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, update_listener=HttpEndpointListener())
         wait_for_port_open(local_port)
-
         events_client = aws_stack.create_external_boto_client("events")
-        connection_arn = events_client.create_connection(
-            Name="TestConnection",
-            AuthorizationType="BASIC",
-            AuthParameters={"BasicAuthParameters": {"Username": "user", "Password": "pw"}},
-        )["ConnectionArn"]
-
-        # create api destination
-        dest_name = "d-%s" % short_uid()
         url = "http://localhost:%s" % local_port
-        result = self.events_client.create_api_destination(
-            Name=dest_name,
-            ConnectionArn=connection_arn,
-            InvocationEndpoint=url,
-            HttpMethod="POST",
-        )
 
-        # create rule and target
-        rule_name = "r-%s" % short_uid()
-        target_id = "target-{}".format(short_uid())
-        pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
-        self.events_client.put_rule(Name=rule_name, EventPattern=pattern)
-        self.events_client.put_targets(
-            Rule=rule_name,
-            Targets=[{"Id": target_id, "Arn": result["ApiDestinationArn"]}],
-        )
+        auth_types = [
+            {
+                "type": "BASIC",
+                "key": "BasicAuthParameters",
+                "parameters": {"Username": "user", "Password": "pass"},
+            },
+            {
+                "type": "API_KEY",
+                "key": "ApiKeyAuthParameters",
+                "parameters": {"ApiKeyName": "Api", "ApiKeyValue": "apikey_secret"},
+            },
+            {
+                "type": "OAUTH_CLIENT_CREDENTIALS",
+                "key": "OAuthParameters",
+                "parameters": {
+                    "AuthorizationEndpoint": url,
+                    "ClientParameters": {"ClientID": "id", "ClientSecret": "password"},
+                    "HttpMethod": "put",
+                },
+            },
+        ]
 
-        # put events, to trigger rules
-        num_events = 5
-        for i in range(num_events):
+        for auth in auth_types:
+            connection_name = "c-%s" % short_uid()
+            connection_arn = events_client.create_connection(
+                Name=connection_name,
+                AuthorizationType=auth.get("type"),
+                AuthParameters={
+                    auth.get("key"): auth.get("parameters"),
+                    "InvocationHttpParameters": {
+                        "BodyParameters": [
+                            {"Key": "key", "Value": "value", "IsValueSecret": False}
+                        ],
+                        "HeaderParameters": [
+                            {"Key": "key", "Value": "value", "IsValueSecret": False}
+                        ],
+                        "QueryStringParameters": [
+                            {"Key": "key", "Value": "value", "IsValueSecret": False}
+                        ],
+                    },
+                },
+            )["ConnectionArn"]
+
+            # create api destination
+            dest_name = "d-%s" % short_uid()
+            result = self.events_client.create_api_destination(
+                Name=dest_name,
+                ConnectionArn=connection_arn,
+                InvocationEndpoint=url,
+                HttpMethod="POST",
+            )
+
+            # create rule and target
+            rule_name = "r-%s" % short_uid()
+            target_id = "target-{}".format(short_uid())
+            pattern = json.dumps({"source": ["source-123"], "detail-type": ["type-123"]})
+            self.events_client.put_rule(Name=rule_name, EventPattern=pattern)
+            self.events_client.put_targets(
+                Rule=rule_name,
+                Targets=[{"Id": target_id, "Arn": result["ApiDestinationArn"]}],
+            )
+
             entries = [
                 {
                     "Source": "source-123",
                     "DetailType": "type-123",
-                    "Detail": '{"i": %s}' % i,
+                    "Detail": '{"i": %s}' % 0,
                 }
             ]
             self.events_client.put_events(Entries=entries)
 
+            # cleaning
+            self.events_client.delete_connection(Name=connection_name)
+            self.events_client.delete_api_destination(Name=dest_name)
+            self.events_client.delete_rule(Name=rule_name, Force=True)
+
         # assert that all events have been received in the HTTP server listener
         def check():
-            self.assertEqual(len(events), num_events)
+            self.assertTrue(len(events) >= len(auth_types))
+            self.assertTrue("key" in paths_list[0] and "value" in paths_list[0])
+            self.assertTrue(events[0].get("key") == "value")
+
+            # TODO examine behavior difference between LS pro/community
+            # Pro seems to (correctly) use base64 for basic authentication instead of plaintext
+            user_pass = to_str(base64.b64encode(b"user:pass"))
+            self.assertTrue(
+                "Basic user:pass" in headers_list or f"Basic {user_pass}" in headers_list
+            )
+            self.assertTrue("apikey_secret" in headers_list)
+            self.assertTrue(bearer in headers_list)
 
         retry(check, sleep=0.5, retries=5)
 

@@ -67,6 +67,7 @@ not work out-of-the-box.
 """
 import abc
 import base64
+import copy
 import datetime
 import json
 import re
@@ -167,8 +168,11 @@ class RequestParser(abc.ABC):
             if location == "header":
                 header_name = shape.serialization.get("name")
                 if header_name in request.headers:
+                    # set the location to None to avoid an unlimited recursion with header parameters
+                    copied_shape = copy.deepcopy(shape)
+                    copied_shape.serialization["location"] = None
                     payload = self._parse_shape(
-                        request, shape, request.headers[header_name], path_regex
+                        request, copied_shape, request.headers[header_name], path_regex
                     )
                 else:
                     # if header is optional and not set

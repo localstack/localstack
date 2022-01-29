@@ -1,5 +1,6 @@
 import re
 
+from localstack.services.cloudformation.cloudformation_api import Stack
 from localstack.services.cloudformation.models.stepfunctions import _apply_substitutions
 from localstack.utils.cloudformation import template_deployer, template_preparer
 
@@ -20,8 +21,8 @@ def test_resolve_references():
         ]
     }
     stack_name = "test"
-    resources = {}
-    result = template_deployer.resolve_refs_recursively(stack_name, ref, resources)
+    stack = Stack({"StackName": stack_name})
+    result = template_deployer.resolve_refs_recursively(stack, ref)
     pattern = r"arn:aws:apigateway:.*:lambda:path/2015-03-31/functions/test:lambda:arn/invocations"
     assert re.match(pattern, result)
 

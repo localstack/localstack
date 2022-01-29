@@ -43,7 +43,7 @@ botocore>=1.12.13
 cbor2>=5.2.0
 crontab>=0.22.6
 cryptography
-elasticsearch>=7.0.0,<7.14.0
+opensearch-py>=1.0.0
 flask>=1.0.2
 flask-cors>=3.0.3,<3.1.0
 flask_swagger==0.2.12
@@ -52,7 +52,7 @@ flask_swagger==0.2.12
 jsonpatch>=1.24,<2.0
 jsonpath-rw>=1.4.0,<2.0.0
 localstack-ext[full]>=0.13.2
-moto-ext[all]>=2.2.8.2
+moto-ext[all]>=3.0.0
 pproxy>=2.7.0
 #pympler>=0.6
 pyopenssl>=21.0.0

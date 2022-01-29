@@ -85,6 +85,7 @@ class Stack(object):
         ) or aws_stack.cloudformation_stack_arn(self.stack_name, short_uid())
         self.template["Parameters"] = self.template.get("Parameters") or {}
         self.template["Outputs"] = self.template.get("Outputs") or {}
+        self.template["Conditions"] = self.template.get("Conditions") or {}
         # initialize metadata
         self.metadata["Parameters"] = self.metadata.get("Parameters") or []
         self.metadata["StackStatus"] = "CREATE_IN_PROGRESS"
@@ -182,6 +183,11 @@ class Stack(object):
         result = self._lookup(self.resource_states, resource_id)
         return result
 
+    def latest_template_raw(self):
+        if self.change_sets:
+            return self.change_sets[-1]._template_raw
+        return self._template_raw
+
     @property
     def resource_states(self):
         for resource_id in list(self._resource_states.keys()):
@@ -271,15 +277,13 @@ class Stack(object):
         for k, details in self.template.get("Outputs", {}).items():
             value = None
             try:
-                template_deployer.resolve_refs_recursively(self.stack_name, details, self.resources)
+                template_deployer.resolve_refs_recursively(self, details)
                 value = details["Value"]
             except Exception as e:
                 LOG.debug("Unable to resolve references in stack outputs: %s - %s", details, e)
             exports = details.get("Export") or {}
             export = exports.get("Name")
-            export = template_deployer.resolve_refs_recursively(
-                self.stack_name, export, self.resources
-            )
+            export = template_deployer.resolve_refs_recursively(self, export)
             description = details.get("Description")
             entry = {
                 "OutputKey": k,
@@ -935,10 +939,10 @@ def get_template(req_params):
     cs_name = req_params.get("ChangeSetName")
     stack = find_stack(stack_name)
     if cs_name:
-        stack = find_change_set(stack_name, cs_name)
+        stack = find_change_set(stack_name=stack_name, cs_name=cs_name)
     if not stack:
         return stack_not_found_error(stack_name)
-    result = {"TemplateBody": json.dumps(stack._template_raw)}
+    result = {"TemplateBody": json.dumps(stack.latest_template_raw())}
     return result
 
 

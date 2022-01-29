@@ -69,7 +69,7 @@ def test_events_sqs_sns_lambda(
             ]
         )
 
-        # verifying lambdas have been called and the respective log groups/streams were created
+        # verifying functions have been called and the respective log groups/streams were created
         def _check_lambda_invocations():
             groups = logs_client.describe_log_groups(
                 logGroupNamePrefix=f"/aws/lambda/{lambda_name}"

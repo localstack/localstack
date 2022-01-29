@@ -38,7 +38,7 @@ LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
     "dynamodbstreams": ["kinesis"],
-    "es": ["elasticsearch"],
+    "es": ["opensearch"],
     "lambda": ["logs", "cloudwatch"],
     "kinesis": ["dynamodb"],
     "firehose": ["kinesis"],
@@ -598,6 +598,8 @@ def configure_container(container: LocalstackContainer):
     for port in service_ports.values():
         if port:
             container.ports.add(port)
+    for port in range(config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END):
+        container.ports.add(port)
 
     if config.DEVELOP:
         container.ports.add(config.DEVELOP_PORT)

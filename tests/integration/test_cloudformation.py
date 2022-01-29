@@ -3,6 +3,7 @@ import os
 import time
 
 import pytest
+import yaml
 from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
@@ -16,6 +17,7 @@ from localstack.utils.testutil import create_zip_file, list_all_resources
 from tests.integration.cloudformation.utils import load_template
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+LAMBDA_FOLDER = os.path.join(THIS_FOLDER, "awslambda", "functions")
 
 TEST_TEMPLATE_1 = os.path.join(THIS_FOLDER, "templates", "template1.yaml")
 
@@ -27,7 +29,7 @@ TEST_VALID_TEMPLATE = os.path.join(THIS_FOLDER, "templates", "valid_template.jso
 
 TEST_TEMPLATE_3 = (
     """
-AWSTemplateFormatVersion: 2010-09-09
+AWSTemplateFormatVersion: "2010-09-09"
 Resources:
   S3Setup:
     Type: AWS::S3::Bucket
@@ -1597,7 +1599,7 @@ class TestCloudFormation:
         key_name = "lambda-package"
         role_name = "role-{}".format(short_uid())
         function_name = "func-{}".format(short_uid())
-        package_path = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.js")
+        package_path = os.path.join(LAMBDA_FOLDER, "lambda_echo.js")
 
         stack_name = "stack-{}".format(short_uid())
 
@@ -1637,7 +1639,7 @@ class TestCloudFormation:
         stack_name = "stack-%s" % short_uid()
         bucket_name = "hofund-local-deployment"
         key_name = "serverless/hofund/local/1599143878432/authorizer.zip"
-        package_path = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.js")
+        package_path = os.path.join(LAMBDA_FOLDER, "lambda_echo.js")
 
         template = template_preparer.template_to_json(load_file(APIGW_INTEGRATION_TEMPLATE))
 
@@ -1718,6 +1720,44 @@ class TestCloudFormation:
         self.cleanup(stack_name)
         with pytest.raises(Exception):
             s3.head_bucket(Bucket=bucket_name)
+
+    def test_update_conditions(self, s3_client, cfn_client):
+        stack_name = f"stack-{short_uid()}"
+
+        create_and_await_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_3)
+        template = yaml.load(TEST_TEMPLATE_3)
+
+        # update stack with additional resources and conditions
+        bucket1 = f"b-{short_uid()}"
+        bucket2 = f"b-{short_uid()}"
+        template["Resources"].update(
+            {
+                "ToBeCreated": {
+                    "Type": "AWS::S3::Bucket",
+                    "Condition": "TrueCondition",
+                    "Properties": {"BucketName": bucket1},
+                },
+                "NotToBeCreated": {
+                    "Type": "AWS::S3::Bucket",
+                    "Condition": "FalseCondition",
+                    "Properties": {"BucketName": bucket2},
+                },
+            }
+        )
+        template["Conditions"] = {
+            "TrueCondition": {"Fn::Equals": ["same", "same"]},
+            "FalseCondition": {"Fn::Equals": ["this", "other"]},
+        }
+        cfn_client.update_stack(StackName=stack_name, TemplateBody=json.dumps(template))
+        await_stack_completion(stack_name)
+
+        # bucket1 should have been created, bucket2 not
+        s3_client.head_bucket(Bucket=bucket1)
+        with pytest.raises(Exception):
+            s3_client.head_bucket(Bucket=bucket2)
+
+        # clean up
+        self.cleanup(stack_name)
 
     def test_update_stack_with_same_template(self):
         stack_name = "stack-%s" % short_uid()
@@ -1826,7 +1866,7 @@ class TestCloudFormation:
         bucket = "bucket-%s" % short_uid()
         key = "key-%s" % short_uid()
 
-        package_path = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.js")
+        package_path = os.path.join(LAMBDA_FOLDER, "lambda_echo.js")
 
         s3 = aws_stack.create_external_boto_client("s3")
         s3.create_bucket(Bucket=bucket, ACL="public-read")

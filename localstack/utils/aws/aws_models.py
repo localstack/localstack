@@ -226,21 +226,19 @@ class LambdaFunction(Component):
         response = {}
 
         if self.max_retry_attempts is not None:
-            response.update({"MaximumRetryAttempts": self.max_retry_attempts})
-
+            response["MaximumRetryAttempts"] = self.max_retry_attempts
         if self.max_event_age is not None:
-            response.update({"MaximumEventAgeInSeconds": self.max_event_age})
-
+            response["MaximumEventAgeInSeconds"] = self.max_event_age
         if self.on_successful_invocation or self.on_failed_invocation:
-            response.update({"DestinationConfig": {}})
-            if self.on_successful_invocation:
-                response["DestinationConfig"].update(
-                    {"OnSuccess": {"Destination": self.on_successful_invocation}}
-                )
-            if self.on_failed_invocation:
-                response["DestinationConfig"].update(
-                    {"OnFailure": {"Destination": self.on_failed_invocation}}
-                )
+            response["DestinationConfig"] = {}
+        if self.on_successful_invocation:
+            response["DestinationConfig"].update(
+                {"OnSuccess": {"Destination": self.on_successful_invocation}}
+            )
+        if self.on_failed_invocation:
+            response["DestinationConfig"].update(
+                {"OnFailure": {"Destination": self.on_failed_invocation}}
+            )
         if not response:
             return None
         response.update(

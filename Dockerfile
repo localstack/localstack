@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=full
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.8.12-slim-buster@sha256:dae221bf222c2f68868dcdadfc3c1a3a3175b0297ac629f649ec72cc7c7a9f1f as java-builder
+FROM python:3.8.12-slim-buster@sha256:0ac2a12df86b01d6a482fd07b62b6ca2afe3355cd520260c7d561c4e5c966cdb as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -34,7 +34,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.8.12-slim-buster@sha256:dae221bf222c2f68868dcdadfc3c1a3a3175b0297ac629f649ec72cc7c7a9f1f as base
+FROM python:3.8.12-slim-buster@sha256:0ac2a12df86b01d6a482fd07b62b6ca2afe3355cd520260c7d561c4e5c966cdb as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -120,9 +120,6 @@ ENV EDGE_BIND_HOST=0.0.0.0
 ENV LOCALSTACK_HOSTNAME=localhost
 
 RUN mkdir /root/.serverless; chmod -R 777 /root/.serverless
-
-# add trusted CA certificates to the cert store
-RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ssl/certs/ca-certificates.crt
 
 
 
@@ -217,7 +214,7 @@ LABEL authors="LocalStack Contributors"
 LABEL maintainer="LocalStack Team (info@localstack.cloud)"
 LABEL description="LocalStack Docker image"
 
-# Copy in the build dependencies
+# Copy the build dependencies
 COPY --from=builder /opt/code/localstack/ /opt/code/localstack/
 
 # Copy in postgresql extensions
@@ -260,8 +257,8 @@ ARG LOCALSTACK_BUILD_GIT_HASH
 ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
 ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 
-# expose edge service, ElasticSearch & debugpy ports
-EXPOSE 4566 4571 5678
+# expose edge service, external service ports, and debugpy
+EXPOSE 4566 4510-4559 5678
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]

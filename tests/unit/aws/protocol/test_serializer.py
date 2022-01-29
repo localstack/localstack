@@ -11,6 +11,8 @@ from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.spec import load_service
 from localstack.utils.common import to_str
 
+_skip_assert = {}
+
 
 def _botocore_serializer_integration_test(
     service: str,
@@ -53,6 +55,8 @@ def _botocore_serializer_integration_test(
         service.operation_model(action).output_shape,
     )
 
+    return_response = copy.deepcopy(parsed_response)
+
     # Check if the result is equal to the initial response params
     assert "ResponseMetadata" in parsed_response
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
@@ -60,9 +64,13 @@ def _botocore_serializer_integration_test(
     assert "RequestId" in parsed_response["ResponseMetadata"]
     assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
     del parsed_response["ResponseMetadata"]
+
     if expected_response_content is None:
         expected_response_content = response
-    assert parsed_response == expected_response_content
+    if expected_response_content is not _skip_assert:
+        assert parsed_response == expected_response_content
+
+    return return_response
 
 
 def _botocore_error_serializer_integration_test(
@@ -637,6 +645,151 @@ def test_restjson_serializer_xray_with_botocore():
     }
 
     _botocore_serializer_integration_test("xray", "UpdateSamplingRule", parameters)
+
+
+def test_restjson_header_target_serialization():
+    """
+    Tests the serialization of attributes into a specified header key based on this example from glacier:
+
+        "InitiateJobOutput":{
+          "type":"structure",
+          "members":{
+            "location":{
+              "shape":"string",
+              "location":"header",
+              "locationName":"Location"
+            },
+            "jobId":{
+              "shape":"string",
+              "location":"header",
+              "locationName":"x-amz-job-id"
+            },
+            "jobOutputPath":{
+              "shape":"string",
+              "location":"header",
+              "locationName":"x-amz-job-output-path"
+            }
+          },
+          "documentation":"<p>Contains the Amazon S3 Glacier response to your request.</p>"
+        },
+    """
+    response = {
+        "location": "/here",
+        "jobId": "42069",
+        "jobOutputPath": "/there",
+    }
+
+    result = _botocore_serializer_integration_test(
+        "glacier",
+        "InitiateJob",
+        response,
+        status_code=202,
+    )
+
+    headers = result["ResponseMetadata"]["HTTPHeaders"]
+    assert "location" in headers
+    assert "x-amz-job-id" in headers
+    assert "x-amz-job-output-path" in headers
+    assert "locationName" not in headers
+    assert "jobOutputPath" not in headers
+
+    assert headers["location"] == "/here"
+    assert headers["x-amz-job-id"] == "42069"
+    assert headers["x-amz-job-output-path"] == "/there"
+
+
+def test_restjson_headers_target_serialization():
+    # SendApiAssetResponse
+    response = {
+        "Body": "hello",
+        "ResponseHeaders": {
+            "foo": "bar",
+            "baz": "ed",
+        },
+    }
+
+    # skipping assert here, because the response will contain all HTTP headers (given the nature of "ResponseHeaders"
+    # attribute).
+    result = _botocore_serializer_integration_test(
+        "dataexchange", "SendApiAsset", response, expected_response_content=_skip_assert
+    )
+
+    assert result["Body"] == "hello"
+    assert result["ResponseHeaders"]["foo"] == "bar"
+    assert result["ResponseHeaders"]["baz"] == "ed"
+
+    headers = result["ResponseMetadata"]["HTTPHeaders"]
+    assert "foo" in headers
+    assert "baz" in headers
+    assert headers["foo"] == "bar"
+    assert headers["baz"] == "ed"
+
+
+def test_restjson_payload_serialization():
+    """
+    Tests the serialization of specific member attributes as payload, based on an appconfig example:
+
+        "Configuration":{
+          "type":"structure",
+          "members":{
+            "Content":{
+              "shape":"Blob",
+            },
+            "ConfigurationVersion":{
+              "shape":"Version",
+              "location":"header",
+              "locationName":"Configuration-Version"
+            },
+            "ContentType":{
+              "shape":"String",
+              "location":"header",
+              "locationName":"Content-Type"
+            }
+          },
+          "payload":"Content"
+        },
+    """
+
+    response = {
+        "Content": '{"foo": "bar"}',
+        "ConfigurationVersion": "123",
+        "ContentType": "application/json",
+    }
+
+    result = _botocore_serializer_integration_test(
+        "appconfig",
+        "GetConfiguration",
+        response,
+        status_code=200,
+    )
+    headers = result["ResponseMetadata"]["HTTPHeaders"]
+    assert "configuration-version" in headers
+    assert headers["configuration-version"] == "123"
+    assert headers["content-type"] == "application/json"
+
+
+@pytest.mark.xfail(
+    reason="fails until botocore#2609 is fixed: https://github.com/boto/botocore/issues/2609"
+)
+def test_restjson_int_header_serialization():
+    response = {
+        "Configuration": b'{"foo": "bar"}',
+        "ContentType": "application/json",
+        "NextPollConfigurationToken": "abcdefg",
+        "NextPollIntervalInSeconds": 42,
+    }
+    expected = {
+        "Configuration": "eyJmb28iOiAiYmFyIn0=",  # base64 encoding of b'{"foo": "bar"}
+        "ContentType": "application/json",
+        "NextPollConfigurationToken": "abcdefg",
+        "NextPollIntervalInSeconds": 42,
+    }
+    result = _botocore_serializer_integration_test(
+        "appconfigdata", "GetLatestConfiguration", response, expected_response_content=expected
+    )
+
+    headers = result["ResponseMetadata"]["HTTPHeaders"]
+    assert headers["next-poll-interval-in-seconds"] == "42"
 
 
 def test_ec2_serializer_ec2_with_botocore():

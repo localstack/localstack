@@ -17,7 +17,8 @@ import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
-from localstack.config import dirs
+from localstack.aws.api.opensearch import EngineType
+from localstack.config import dirs, has_docker
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
@@ -75,10 +76,10 @@ URL_LOCALSTACK_FAT_JAR = (
 ).format(v=LOCALSTACK_MAVEN_VERSION)
 
 MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
-IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
+IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SFN_PATCH_URL_PREFIX = (
-    f"{ARTIFACTS_REPO}/raw/a4adc8f4da9c7ec0d93b50ca5b73dd14df791c0e/stepfunctions-local-patch"
+    f"{ARTIFACTS_REPO}/raw/2958554c8aeadff0e8f5d0e35f6e520d834854ea/stepfunctions-local-patch"
 )
 SFN_PATCH_CLASS1 = "com/amazonaws/stepfunctions/local/runtime/Config.class"
 SFN_PATCH_CLASS2 = (
@@ -140,7 +141,7 @@ TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-
 
 
 def get_elasticsearch_install_version(version: str) -> str:
-    from localstack.services.es import versions
+    from localstack.services.opensearch import versions
 
     if config.SKIP_INFRA_DOWNLOADS:
         return ELASTICSEARCH_DEFAULT_VERSION
@@ -149,20 +150,20 @@ def get_elasticsearch_install_version(version: str) -> str:
 
 
 def get_elasticsearch_install_dir(version: str) -> str:
-    version = get_elasticsearch_install_version(version)
-
-    if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
+    if version == get_elasticsearch_install_version(
+        ELASTICSEARCH_DEFAULT_VERSION
+    ) and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         # install the default version into a subfolder of the code base
         install_dir = os.path.join(dirs.static_libs, "elasticsearch")
     else:
         # put all other versions into the TMP_FOLDER
-        install_dir = os.path.join(config.dirs.tmp, "elasticsearch", version)
+        install_dir = os.path.join(config.dirs.var_libs, "elasticsearch", version)
 
     return install_dir
 
 
 def install_elasticsearch(version=None):
-    from localstack.services.es import versions
+    from localstack.services.opensearch import versions
 
     if not version:
         version = ELASTICSEARCH_DEFAULT_VERSION
@@ -172,7 +173,7 @@ def install_elasticsearch(version=None):
     installed_executable = os.path.join(install_dir, "bin", "elasticsearch")
     if not os.path.exists(installed_executable):
         log_install_msg("Elasticsearch (%s)" % version)
-        es_url = versions.get_download_url(version)
+        es_url = versions.get_download_url(version, EngineType.Elasticsearch)
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
@@ -196,7 +197,8 @@ def install_elasticsearch(version=None):
                 LOG.info("Installing Elasticsearch plugin %s", plugin)
 
                 def try_install():
-                    safe_run([plugin_binary, "install", "-b", plugin])
+                    output = safe_run([plugin_binary, "install", "-b", plugin])
+                    LOG.debug("Plugin installation output: %s", output)
 
                 # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
                 download_attempts = 3
@@ -235,13 +237,12 @@ def get_opensearch_install_version(version: str) -> str:
     from localstack.services.opensearch import versions
 
     if config.SKIP_INFRA_DOWNLOADS:
-        return OPENSEARCH_DEFAULT_VERSION
+        version = OPENSEARCH_DEFAULT_VERSION
 
     return versions.get_install_version(version)
 
 
 def get_opensearch_install_dir(version: str) -> str:
-    version = get_opensearch_install_version(version)
     return os.path.join(config.dirs.var_libs, "opensearch", version)
 
 
@@ -256,12 +257,12 @@ def install_opensearch(version=None):
     installed_executable = os.path.join(install_dir, "bin", "opensearch")
     if not os.path.exists(installed_executable):
         log_install_msg("OpenSearch (%s)" % version)
-        opensearch_url = versions.get_download_url(version)
+        opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
         tmp_archive = os.path.join(
-            config.dirs.tmp, "localstack.%s" % os.path.basename(opensearch_url)
+            config.dirs.tmp, f"localstack.{os.path.basename(opensearch_url)}"
         )
         download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
         opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
@@ -336,6 +337,14 @@ def get_is_kinesis_mock_installed() -> Tuple[bool, str]:
     Checks the host system to see if kinesis mock is installed and where.
     :returns: True if kinesis mock is installed (False otherwise) and the expected installation path
     """
+    bin_file_path = kinesis_mock_install_path()
+    if os.path.exists(bin_file_path):
+        LOG.debug("kinesis-mock found at %s", bin_file_path)
+        return True, bin_file_path
+    return False, bin_file_path
+
+
+def kinesis_mock_install_path() -> str:
     machine = platform.machine().lower()
     system = platform.system().lower()
     version = platform.version().lower()
@@ -358,19 +367,17 @@ def get_is_kinesis_mock_installed() -> Tuple[bool, str]:
         bin_file = "kinesis-mock.jar"
 
     bin_file_path = os.path.join(INSTALL_DIR_KINESIS_MOCK, bin_file)
-    if os.path.exists(bin_file_path):
-        LOG.debug("kinesis-mock found at %s", bin_file_path)
-        return True, bin_file_path
-    return False, bin_file_path
+    return bin_file_path
 
 
-def install_kinesis_mock(bin_file_path: str):
+def install_kinesis_mock(bin_file_path: str = None):
     response = requests.get(KINESIS_MOCK_RELEASE_URL)
     if not response.ok:
         raise ValueError(
             "Could not get list of releases from %s: %s" % (KINESIS_MOCK_RELEASE_URL, response.text)
         )
 
+    bin_file_path = bin_file_path or kinesis_mock_install_path()
     github_release = response.json()
     download_url = None
     bin_file_name = os.path.basename(bin_file_path)
@@ -405,7 +412,10 @@ def install_local_kms():
 def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
         # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
-        # TODO: works only when running on the host, outside of Docker -> add a fallback if running in Docker?
+        if not has_docker():
+            # TODO: works only when a docker socket is available -> add a fallback if running without Docker?
+            LOG.warning("Docker not available - skipping installation of StepFunctions dependency")
+            return
         log_install_msg("Step Functions")
         mkdir(INSTALL_DIR_STEPFUNCTIONS)
         DOCKER_CLIENT.pull_image(IMAGE_NAME_SFN_LOCAL)
