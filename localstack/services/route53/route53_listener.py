@@ -3,6 +3,7 @@ from typing import Dict, List
 from urllib.parse import urlparse
 
 import xmltodict
+from moto.route53.models import route53_backend
 from requests import Response
 
 from localstack import constants
@@ -161,6 +162,12 @@ def handle_associate_vpc_request(method, path, data):
                 "SubmittedAt": timestamp_millis(),
             }
         }
+        # update VPC info in hosted zone moto object - fixes required after https://github.com/spulec/moto/pull/4786
+        hosted_zone = route53_backend.zones.get(zone_id)
+        if not getattr(hosted_zone, "vpcid", None):
+            hosted_zone.vpcid = zone_data["VPC"].get("VPCId")
+        if not getattr(hosted_zone, "vpcregion", None):
+            hosted_zone.vpcregion = aws_stack.get_region()
     else:
 
         def _match(z):

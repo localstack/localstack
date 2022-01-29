@@ -7,13 +7,15 @@ from moto.route53.urls import url_paths as route53_url_paths
 
 from localstack import config
 from localstack.services.infra import start_moto_server
+from localstack.utils.patch import patch
 
 XMLNS_ROUTE53 = "https://route53.amazonaws.com/doc/2013-04-01/"
 
 
 def apply_patches():
     # patch function to match hosted zone if zone name ends with a dot
-    def list_hosted_zones_by_name_response(self, request, full_url, headers):
+    @patch(route53_responses.Route53.list_hosted_zones_by_name_response)
+    def list_hosted_zones_by_name_response(fn, self, request, full_url, headers):
         parsed_url = urlparse(full_url)
         query_params = parse_qs(parsed_url.query)
         dnsname = query_params.get("dnsname")
@@ -23,14 +25,7 @@ def apply_patches():
         zones2 = [zone for zone in all_zones if zone.name == "%s." % dnsname]
         if not zones1 and zones2:
             full_url = full_url.replace("dnsname=%s" % dnsname, "dnsname=%s." % dnsname)
-        return list_hosted_zones_by_name_response_orig(self, request, full_url, headers)
-
-    list_hosted_zones_by_name_response_orig = (
-        route53_responses.Route53.list_hosted_zones_by_name_response
-    )
-    route53_responses.Route53.list_hosted_zones_by_name_response = (
-        list_hosted_zones_by_name_response
-    )
+        return fn(self, request, full_url, headers)
 
     def get_or_delete_health_check(self, request, full_url, headers):
         parsed_url = urlparse(full_url)
@@ -51,9 +46,8 @@ def apply_patches():
         route53_responses.Route53.get_or_delete_health_check = get_or_delete_health_check
 
     # update URL path mappings to enable the patch
-    route53_url_paths[
-        r"{0}/(?P<api_version>[\d_-]+)/healthcheck/(?P<health_check_id>[^/]+)/?$"
-    ] = route53_responses.Route53().get_or_delete_health_check
+    path_regex = r"{0}/(?P<api_version>[\d_-]+)/healthcheck/(?P<health_check_id>[^/]+)/?$"
+    route53_url_paths[path_regex] = route53_responses.Route53().get_or_delete_health_check
 
 
 def start_route53(port=None, asynchronous=False, update_listener=None):
