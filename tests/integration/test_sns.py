@@ -836,8 +836,8 @@ class TestSNS:
         message = "test message {}".format(short_uid())
         topic_arn = self.sns_client.create_topic(Name=topic_name)["TopicArn"]
 
-        base_url = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SNS
+        base_url = (
+            f"{get_service_protocol()}://{config.LOCALSTACK_HOSTNAME}:{config.service_port('sns')}"
         )
         path = "Action=Publish&Version=2010-03-31&TopicArn={}&Message={}".format(topic_arn, message)
 

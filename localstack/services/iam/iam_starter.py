@@ -442,7 +442,7 @@ def apply_patches():
 
 
 def start_iam(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_IAM
+    port = port or config.service_port("iam")
 
     apply_patches()
     return start_moto_server(

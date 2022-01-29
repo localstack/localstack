@@ -23,7 +23,7 @@ def apply_patches():
 def start_sts(port=None, asynchronous=False, update_listener=None):
     apply_patches()
 
-    port = port or config.PORT_STS
+    port = port or config.service_port("sts")
     return start_moto_server(
         "sts",
         port,

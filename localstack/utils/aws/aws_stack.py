@@ -6,7 +6,7 @@ import socket
 import sys
 import threading
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
 if sys.version_info >= (3, 8):
@@ -236,17 +236,16 @@ def set_internal_auth(headers):
     return headers
 
 
-def get_local_service_url(service_name_or_port):
+def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
     """Return the local service URL for the given service name or port."""
     if isinstance(service_name_or_port, int):
-        return "%s://%s:%s" % (get_service_protocol(), LOCALHOST, service_name_or_port)
+        return f"{get_service_protocol()}://{LOCALHOST}:{service_name_or_port}"
     service_name = service_name_or_port
     if service_name == "s3api":
         service_name = "s3"
     elif service_name == "runtime.sagemaker":
         service_name = "sagemaker-runtime"
-    service_name_upper = service_name.upper().replace("-", "_").replace(".", "_")
-    return os.environ["TEST_%s_URL" % service_name_upper]
+    return config.service_url(service_name)
 
 
 def connect_to_resource(
@@ -865,7 +864,7 @@ def dynamodb_get_item_raw(request):
     headers = mock_aws_request_headers()
     headers["X-Amz-Target"] = "DynamoDB_20120810.GetItem"
     new_item = make_http_request(
-        url=config.TEST_DYNAMODB_URL,
+        url=config.service_url("dynamodb"),
         method="POST",
         data=json.dumps(request),
         headers=headers,
@@ -1100,7 +1099,7 @@ def apigateway_invocations_arn(lambda_uri):
 
 def get_elasticsearch_endpoint(region_name: str, domain_arn: str = None):
     if not domain_arn:
-        return os.environ["TEST_ELASTICSEARCH_URL"]
+        return config.service_url("elasticsearch")
     # get endpoint from API
     es_client = connect_to_service(service_name="es", region_name=region_name)
     domain_name = domain_arn.rpartition("/")[2]

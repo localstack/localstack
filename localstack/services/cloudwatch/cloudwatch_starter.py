@@ -23,7 +23,7 @@ def apply_patches():
 
 
 def start_cloudwatch(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_CLOUDWATCH
+    port = port or config.service_port("cloudwatch")
     apply_patches()
     return start_moto_server(
         "cloudwatch",

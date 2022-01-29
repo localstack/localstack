@@ -30,6 +30,6 @@ def apply_patches():
 
 
 def start_redshift(port=None, asynchronous=False):
-    port = port or config.PORT_REDSHIFT
+    port = port or config.service_port("redshift")
     apply_patches()
     return start_moto_server("redshift", port, name="Redshift", asynchronous=asynchronous)

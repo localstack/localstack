@@ -7,9 +7,8 @@ import json
 import logging
 import random
 import re
-import urllib.parse
 import uuid
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, parse_qsl, quote, unquote, urlencode, urlparse, urlunparse
 
 import botocore.config
 import dateutil.parser
@@ -20,7 +19,6 @@ from moto.s3.exceptions import InvalidFilterRuleName
 from moto.s3.models import s3_backend
 from pytz import timezone
 from requests.models import Request, Response
-from six.moves.urllib import parse as urlparse
 
 from localstack import config, constants
 from localstack.services.s3 import multipart_content
@@ -202,7 +200,7 @@ def get_event_message(
                         "arn": "arn:aws:s3:::%s" % bucket_name,
                     },
                     "object": {
-                        "key": urllib.parse.quote(file_name),
+                        "key": quote(file_name),
                         "size": file_size,
                         "eTag": etag,
                         "versionId": version_id,
@@ -261,13 +259,12 @@ def send_notification_for_subscriber(
     ):
         return
 
-    key = urlparse.unquote(object_path.replace("//", "/"))[1:]
+    key = unquote(object_path.replace("//", "/"))[1:]
 
     s3_client = aws_stack.connect_to_service("s3")
     object_data = {}
     try:
         object_data = s3_client.head_object(Bucket=bucket_name, Key=key)
-
     except botocore.exceptions.ClientError:
         pass
 
@@ -616,8 +613,8 @@ def append_list_objects_marker(method, path, data, response):
         marker = ""
         content = to_str(response.content)
         if "<ListBucketResult" in content and "<Marker>" not in content:
-            parsed = urlparse.urlparse(path)
-            query_map = urlparse.parse_qs(parsed.query)
+            parsed = urlparse(path)
+            query_map = parse_qs(parsed.query)
             if query_map.get("marker") and query_map.get("marker")[0]:
                 marker = query_map.get("marker")[0]
             insert = "<Marker>%s</Marker>" % marker
@@ -656,7 +653,7 @@ def fix_range_content_type(bucket_name, path, headers, response):
         return
 
     s3_client = aws_stack.connect_to_service("s3")
-    path = urlparse.urlparse(urlparse.unquote(path)).path
+    path = urlparse(unquote(path)).path
     key_name = extract_key_name(headers, path)
     result = s3_client.head_object(Bucket=bucket_name, Key=key_name)
     content_type = result["ContentType"]
@@ -746,7 +743,7 @@ def convert_to_chunked_encoding(method, path, response):
     response.headers.pop("Content-Length", None)
 
 
-def unquote(s):
+def strip_surrounding_quotes(s):
     if (s[0], s[-1]) in (('"', '"'), ("'", "'")):
         return s[1:-1]
     return s
@@ -756,7 +753,7 @@ def ret304_on_etag(data, headers, response):
     etag = response.headers.get("ETag")
     if etag:
         match = headers.get("If-None-Match")
-        if match and unquote(match) == unquote(etag):
+        if match and strip_surrounding_quotes(match) == strip_surrounding_quotes(etag):
             response.status_code = 304
             response._content = ""
 
@@ -998,17 +995,17 @@ def token_expired_error(resource, requestId=None, status_code=400):
 
 def expand_redirect_url(starting_url, key, bucket):
     """Add key and bucket parameters to starting URL query string."""
-    parsed = urlparse.urlparse(starting_url)
-    query = collections.OrderedDict(urlparse.parse_qsl(parsed.query))
+    parsed = urlparse(starting_url)
+    query = collections.OrderedDict(parse_qsl(parsed.query))
     query.update([("key", key), ("bucket", bucket)])
 
-    redirect_url = urlparse.urlunparse(
+    redirect_url = urlunparse(
         (
             parsed.scheme,
             parsed.netloc,
             parsed.path,
             parsed.params,
-            urlparse.urlencode(query),
+            urlencode(query),
             None,
         )
     )
@@ -1170,7 +1167,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 """.format(
             protocol=get_service_protocol(),
             host=config.HOSTNAME_EXTERNAL,
-            encoded_key=urlparse.quote(key, safe=""),
+            encoded_key=quote(key, safe=""),
             key=key,
             bucket=bucket_name,
             etag="d41d8cd98f00b204e9800998ecf8427f",
@@ -1182,7 +1179,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
         host = config.HOSTNAME_EXTERNAL
         if ":" not in host:
-            host = "%s:%s" % (host, config.PORT_S3)
+            host = f"{host}:{config.service_port('s3')}"
         return re.sub(
             r"<Location>\s*([a-zA-Z0-9\-]+)://[^/]+/([^<]+)\s*</Location>",
             r"<Location>%s://%s/%s/\2</Location>" % (get_service_protocol(), host, bucket_name),
@@ -1221,14 +1218,14 @@ class ProxyListenerS3(PersistingProxyListener):
 
     def forward_request(self, method, path, data, headers):
         # Create list of query parameteres from the url
-        parsed = urlparse.urlparse("{}{}".format(config.get_edge_url(), path))
+        parsed = urlparse("{}{}".format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
         path_orig = path
         path = path.replace(
             "#", "%23"
         )  # support key names containing hashes (e.g., required by Amplify)
         # extracting bucket name from the request
-        parsed_path = urlparse.urlparse(path)
+        parsed_path = urlparse(path)
         bucket_name = extract_bucket_name(headers, parsed_path.path)
 
         if method == "PUT" and bucket_name and not re.match(BUCKET_NAME_REGEX, bucket_name):
@@ -1297,7 +1294,7 @@ class ProxyListenerS3(PersistingProxyListener):
         # parse query params
         query = parsed_path.query
         path = parsed_path.path
-        query_map = urlparse.parse_qs(query, keep_blank_values=True)
+        query_map = parse_qs(query, keep_blank_values=True)
 
         # remap metadata query params (not supported in moto) to request headers
         append_metadata_headers(method, query_map, headers)
@@ -1417,7 +1414,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.status_code = 200
                 return response
 
-        parsed = urlparse.urlparse(path)
+        parsed = urlparse(path)
         bucket_name_in_host = uses_host_addressing(headers)
         should_send_notifications = all(
             [
@@ -1540,7 +1537,7 @@ class ProxyListenerS3(PersistingProxyListener):
                     exists, code, body = is_bucket_available(bucket_name)
                     if not exists:
                         return no_such_bucket(bucket_name, headers.get("x-amz-request-id"), 404)
-                query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
+                query_map = parse_qs(parsed.query, keep_blank_values=True)
                 for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
                     if param_name in query_map:
                         response.headers[header_name] = query_map[param_name][0]

@@ -541,7 +541,7 @@ def apply_patches():
 
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):
-    port = port or config.PORT_APIGATEWAY
+    port = port or config.service_port("apigateway")
     apply_patches()
     result = start_moto_server(
         key="apigateway",

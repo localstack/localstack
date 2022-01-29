@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from typing import Any, Dict, List, Optional, Tuple
+from urllib import parse as urlparse
 
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
@@ -9,7 +10,6 @@ from jsonpointer import JsonPointerException
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
-from six.moves.urllib import parse as urlparse
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
@@ -871,7 +871,7 @@ def find_api_subentity_by_id(api_id, entity_id, map_name):
 def gateway_request_url(api_id, stage_name, path):
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
     pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
-        config.TEST_APIGATEWAY_URL,
+        config.service_url("apigateway"),
         PATH_USER_REQUEST,
     )
     return pattern.format(api_id=api_id, stage_name=stage_name, path=path)

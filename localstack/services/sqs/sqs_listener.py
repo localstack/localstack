@@ -1,12 +1,12 @@
 import json
 import re
 from typing import Dict
+from urllib.parse import urlencode
 
 import xmltodict
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 from moto.sqs.utils import parse_message_attributes
 from requests.models import Request, Response
-from six.moves.urllib.parse import urlencode
 
 from localstack import config, constants
 from localstack.config import SQS_PORT_EXTERNAL
@@ -186,7 +186,7 @@ def _queue_url(path, req_data, headers):
     queue_url = req_data.get("QueueUrl")
     if queue_url:
         return queue_url
-    url = config.TEST_SQS_URL
+    url = config.service_url("sqs")
     if headers.get("Host"):
         url = "%s://%s" % (get_service_protocol(), headers["Host"])
     queue_url = "%s%s" % (url, path.partition("?")[0])
@@ -266,7 +266,7 @@ def get_external_port(headers):
     # If we cannot find the Host header, then fall back to the port of SQS itself (i.e., edge proxy).
     # (Note that this could be incorrect, e.g., if running in Docker with a host port that
     #  is different from the internal container port, but there is not much else we can do.)
-    return config.PORT_SQS
+    return config.service_port("sqs")
 
 
 def validate_empty_message_batch(data, req_data):

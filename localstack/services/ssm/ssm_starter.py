@@ -4,7 +4,7 @@ from localstack import config
 def start_ssm(port=None, asynchronous=False, update_listener=None):
     from localstack.services.infra import start_moto_server
 
-    port = port or config.PORT_SSM
+    port = port or config.service_port("ssm")
     return start_moto_server(
         "ssm",
         port,

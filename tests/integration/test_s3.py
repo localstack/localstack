@@ -128,7 +128,7 @@ class TestS3(unittest.TestCase):
         headers = aws_stack.mock_aws_request_headers("s3")
         bucket_name = "test-%s" % short_uid()
         headers["Host"] = s3_utils.get_bucket_hostname(bucket_name)
-        response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
+        response = requests.put(config.service_url("s3"), data=body, headers=headers, verify=False)
         self.assertEqual(200, response.status_code)
         response = self.s3_client.get_bucket_location(Bucket=bucket_name)
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
@@ -176,7 +176,7 @@ class TestS3(unittest.TestCase):
         # put an object where the bucket_name is in the host
         headers = aws_stack.mock_aws_request_headers("s3")
         headers["Host"] = s3_utils.get_bucket_hostname(bucket_name)
-        url = "{}/{}".format(config.TEST_S3_URL, key_by_host)
+        url = f"{config.service_url('s3')}/{key_by_host}"
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data="something else", headers=headers, verify=False)
         self.assertTrue(response.ok)
@@ -747,7 +747,7 @@ class TestS3(unittest.TestCase):
             + "%s\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
         ) % body
         # put object
-        url = "%s/%s/%s" % (config.TEST_S3_URL, bucket_name, object_key)
+        url = f"{config.service_url('s3')}/{bucket_name}/{object_key}"
         req = PutRequest(url, to_bytes(data), headers)
         urlopen(req, context=ssl.SSLContext()).read()
         # get object and assert content length
@@ -911,7 +911,7 @@ class TestS3(unittest.TestCase):
         object_key = "test-key-tagging"
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
         # get object and assert response
-        url = "%s/%s/%s" % (config.TEST_S3_URL, bucket_name, object_key)
+        url = f"{config.service_url('s3')}/{bucket_name}/{object_key}"
         response = requests.get(url, verify=False)
         self.assertEqual(200, response.status_code)
         # delete object tagging
@@ -1211,7 +1211,7 @@ class TestS3(unittest.TestCase):
             expected_url = "%s://%s:%s/%s/%s" % (
                 get_service_protocol(),
                 config.HOSTNAME_EXTERNAL,
-                config.PORT_S3,
+                config.service_port("s3"),
                 bucket_name,
                 key,
             )
@@ -1854,8 +1854,8 @@ class TestS3(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key_1, Body="This body document")
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key_2, Body="This body document")
 
-        base_url = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_S3
+        base_url = (
+            f"{get_service_protocol()}://{config.LOCALSTACK_HOSTNAME}:{config.service_port('s3')}"
         )
         url = "{}/{}?delete=".format(base_url, bucket_name)
         r = requests.post(url=url, data=BATCH_DELETE_BODY % (object_key_1, object_key_2))

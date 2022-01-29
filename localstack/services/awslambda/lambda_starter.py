@@ -9,7 +9,7 @@ def start_lambda(port=None, asynchronous=False):
     from localstack.services.awslambda import lambda_api
     from localstack.services.infra import start_local_api
 
-    port = port or config.PORT_LAMBDA
+    port = port or config.service_port("lambda")
     return start_local_api(
         "Lambda", port, api="lambda", method=lambda_api.serve, asynchronous=asynchronous
     )

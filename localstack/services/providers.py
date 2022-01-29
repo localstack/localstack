@@ -259,13 +259,11 @@ def stepfunctions():
 
 @aws_provider()
 def swf():
-    from localstack.services.swf import swf_listener, swf_starter
+    from localstack.services.swf import swf_starter
 
     return Service(
         "swf",
-        listener=swf_listener.UPDATE_SWF,
         start=swf_starter.start_swf,
-        check=swf_starter.check_swf,
     )
 
 

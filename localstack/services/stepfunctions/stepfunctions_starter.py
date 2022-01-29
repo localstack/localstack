@@ -64,7 +64,7 @@ def get_command(backend_port):
 
 
 def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_STEPFUNCTIONS
+    port = port or config.service_port("stepfunctions")
     backend_port = config.LOCAL_PORT_STEPFUNCTIONS
     install.install_stepfunctions_local()
     cmd = get_command(backend_port)

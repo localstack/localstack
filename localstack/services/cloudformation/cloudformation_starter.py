@@ -4,8 +4,7 @@ from localstack.services.infra import start_local_api
 
 
 def start_cloudformation(port=None, asynchronous=False):
-
-    port = port or config.PORT_CLOUDFORMATION
+    port = port or config.service_port("cloudformation")
     return start_local_api(
         "CloudFormation",
         port,

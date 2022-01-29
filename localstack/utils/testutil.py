@@ -15,6 +15,7 @@ import boto3
 import requests
 from six import iteritems
 
+from localstack import config
 from localstack.constants import (
     ENV_INTERNAL_TEST_RUN,
     LAMBDA_TEST_ROLE,
@@ -543,7 +544,7 @@ def send_dynamodb_request(path, action, request_body):
         "x-amz-target": "DynamoDB_20120810.{}".format(action),
         "Authorization": aws_stack.mock_aws_request_headers("dynamodb")["Authorization"],
     }
-    url = "{}/{}".format(os.getenv("TEST_DYNAMODB_URL"), path)
+    url = f"{config.service_url('dynamodb')}/{path}"
     return requests.put(url, data=request_body, headers=headers, verify=False)
 
 

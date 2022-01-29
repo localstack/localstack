@@ -51,7 +51,7 @@ def check_s3(expect_shutdown=False, print_error=False):
 
 
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
-    port = port or config.PORT_S3
+    port = port or config.service_port("s3")
     if not backend_port:
         if config.FORWARD_EDGE_INMEM:
             backend_port = multiserver.get_moto_server_port()

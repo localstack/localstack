@@ -81,7 +81,7 @@ def build_cluster_endpoint(
         return custom_endpoint.endpoint
 
     if config.ES_ENDPOINT_STRATEGY == "off":
-        return "%s:%s" % (config.LOCALSTACK_HOSTNAME, config.PORT_ELASTICSEARCH)
+        return f"{config.LOCALSTACK_HOSTNAME}:{config.service_port('elasticsearch')}"
     if config.ES_ENDPOINT_STRATEGY == "path":
         return "%s:%s/es/%s/%s" % (
             config.LOCALSTACK_HOSTNAME,
@@ -195,7 +195,7 @@ class SingletonClusterManager(ClusterManager):
             #  shut down) there's a chance that there will be a bind exception when trying to start the proxy again
             #  (which is currently always bound to PORT_ELASTICSEARCH)
             self.cluster = ProxiedElasticsearchCluster(
-                port=config.PORT_ELASTICSEARCH,
+                port=config.service_port("elasticsearch"),
                 host=constants.LOCALHOST,
                 version=version,
                 directories=resolve_directories(version, arn),

@@ -276,7 +276,6 @@ def canonicalize_api_names(apis: Iterable[str] = None) -> List[str]:
     for api in apis:
         if api not in config.SERVICE_PORTS:
             config.SERVICE_PORTS[api] = config.DEFAULT_SERVICE_PORTS.get(api)
-    config.populate_configs(config.SERVICE_PORTS)
 
     return list(apis)
 

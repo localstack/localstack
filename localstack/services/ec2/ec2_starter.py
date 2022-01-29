@@ -253,7 +253,7 @@ def patch_ec2():
 
 def start_ec2(port=None, asynchronous=False, update_listener=None):
     patch_ec2()
-    port = port or config.PORT_EC2
+    port = port or config.service_port("ec2")
 
     return start_moto_server(
         "ec2",

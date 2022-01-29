@@ -17,6 +17,7 @@ from localstack.utils.aws.aws_responses import (
     requests_to_flask_response,
 )
 from localstack.utils.common import snake_to_camel_case
+from localstack.utils.patch import patch
 from localstack.utils.run import FuncThread
 
 LOG = logging.getLogger(__name__)
@@ -156,9 +157,10 @@ def patch_moto_request_handling():
     from localstack.services.edge import extract_service_name_from_auth_header
 
     # make sure we properly handle/propagate "not implemented" errors
-    def convert_flask_to_httpretty_response_call(*args, **kwargs):
+    @patch(moto_utils.convert_to_flask_response.__call__)
+    def convert_to_flask_response_call(fn, *args, **kwargs):
         try:
-            return convert_flask_to_httpretty_response_call_orig(*args, **kwargs)
+            return fn(*args, **kwargs)
         except NotImplementedError as e:
             action = request.headers.get("X-Amz-Target")
             action = action or f"{request.method} {urlparse(request.url).path}"
@@ -181,27 +183,17 @@ def patch_moto_request_handling():
             # TODO: publish analytics event ...
             return requests_to_flask_response(response)
 
-    convert_flask_to_httpretty_response_call_orig = (
-        moto_utils.convert_flask_to_httpretty_response.__call__
-    )
-    moto_utils.convert_flask_to_httpretty_response.__call__ = (
-        convert_flask_to_httpretty_response_call
-    )
-
     if config.USE_SINGLE_REGION:
         return
 
     # make sure that we inherit THREAD_LOCAL request contexts to spawned sub-threads
-    def thread_init(self, *args, **kwargs):
+    @patch(FuncThread.__init__)
+    def thread_init(fn, self, *args, **kwargs):
         self._req_context = get_request_context()
-        return thread_init_orig(self, *args, **kwargs)
+        return fn(self, *args, **kwargs)
 
-    def thread_run(self, *args, **kwargs):
+    @patch(FuncThread.run)
+    def thread_run(fn, self, *args, **kwargs):
         if self._req_context:
             THREAD_LOCAL.request_context = self._req_context
-        return thread_run_orig(self, *args, **kwargs)
-
-    thread_run_orig = FuncThread.run
-    FuncThread.run = thread_run
-    thread_init_orig = FuncThread.__init__
-    FuncThread.__init__ = thread_init
+        return fn(self, *args, **kwargs)
