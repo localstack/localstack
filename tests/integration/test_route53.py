@@ -22,7 +22,11 @@ class TestRoute53:
         route53 = aws_stack.create_external_boto_client("route53")
 
         name = "zone123"
-        response = route53.create_hosted_zone(Name=name, CallerReference="ref123")
+        response = route53.create_hosted_zone(
+            Name=name,
+            CallerReference="ref123",
+            HostedZoneConfig={"PrivateZone": True, "Comment": "test"},
+        )
         zone_id = response["HostedZone"]["Id"]
         zone_id = zone_id.replace("/hostedzone/", "")
 
@@ -42,7 +46,7 @@ class TestRoute53:
             "HostedZoneSummaries"
         ]
         expected = {
-            "HostedZoneId": zone_id,
+            "HostedZoneId": f"/hostedzone/{zone_id}",
             "Name": "%s." % name,
             "Owner": {"OwningAccount": constants.TEST_AWS_ACCOUNT_ID},
         }
