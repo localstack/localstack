@@ -17,6 +17,7 @@ MAX_HEAP_SIZE = "256m"
 PROCESS_THREAD = None
 
 
+# TODO: pass env more explicitly
 def get_command(backend_port):
     cmd = (
         "cd %s; PORT=%s java "
@@ -78,7 +79,6 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
 def check_stepfunctions(expect_shutdown=False, print_error=False):
     out = None
     try:
-        # check Kinesis
         wait_for_port_open(config.LOCAL_PORT_STEPFUNCTIONS, sleep_time=2)
         endpoint_url = f"http://127.0.0.1:{config.LOCAL_PORT_STEPFUNCTIONS}"
         out = aws_stack.connect_to_service(
