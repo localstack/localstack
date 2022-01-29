@@ -581,7 +581,7 @@ LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE")
 
 # truncate output string slices value
-LAMBDA_TRUNCATE_STDOUT = os.getenv("TRUNCATE_STDOUT", 2000)
+LAMBDA_TRUNCATE_STDOUT = os.getenv("LAMBDA_TRUNCATE_STDOUT", 2000)
 
 # A comma-delimited string of stream names and its corresponding shard count to
 # initialize during startup.
