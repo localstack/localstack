@@ -7,8 +7,10 @@ import unittest
 
 import mock
 
+from localstack.config import TMP_FOLDER
 from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api, lambda_executors, lambda_utils
+from localstack.services.awslambda.lambda_executors import OutputLog
 from localstack.services.awslambda.lambda_utils import API_PATH_ROOT
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -1042,6 +1044,30 @@ class TestLambdaAPI(unittest.TestCase):
 
     def _assert_contained(self, child, parent):
         self.assertTrue(set(child.items()).issubset(set(parent.items())))
+
+    @mock.patch("tempfile.NamedTemporaryFile")
+    def test_lambda_output(self, temp):
+        stderr = """START RequestId: 14c6eaeb-9183-4461-b520-10c4c64a2b07 Version: $LATEST 
+        2022-01-27T12:57:39.071Z	14c6eaeb-9183-4461-b520-10c4c64a2b07 INFO {} 
+        2022-01-27T12:57:39.071Z	14c6eaeb-9183-4461-b520-10c4c64a2b07 INFO { 
+        callbackWaitsForEmptyEventLoop: [Getter/Setter], succeed: [Function (anonymous)], 
+        fail: [Function (anonymous)], done: [Function (anonymous)], functionVersion: '$LATEST', 
+        functionName: 'hello', memoryLimitInMB: '128', logGroupName: '/aws/lambda/hello', 
+        logStreamName: '2022/01/27/[$LATEST]44deffbc11404f459e2cf38bb2fae611', clientContext: 
+        undefined, identity: undefined, invokedFunctionArn: 
+        'arn:aws:lambda:eu-west-1:659676821118:function:hello', awsRequestId: 
+        '14c6eaeb-9183-4461-b520-10c4c64a2b07', getRemainingTimeInMillis: [Function: 
+        getRemainingTimeInMillis] } END RequestId: 14c6eaeb-9183-4461-b520-10c4c64a2b07 REPORT 
+        RequestId: 14c6eaeb-9183-4461-b520-10c4c64a2b07	Duration: 1.61 ms	Billed Duration: 2 
+        ms	Memory Size: 128 MB	Max Memory Used: 58 MB """
+
+        output = OutputLog(stdout='{"hello":"world"}', stderr=stderr)
+        self.assertEqual('{"hello":"world"}', output.stdout_formatted())
+        self.assertEqual("START...", output.stderr_formatted(truncated_to=5))
+
+        output.output_file()
+
+        temp.assert_called_once_with(dir=TMP_FOLDER, delete=False, suffix=".log", prefix="lambda_")
 
 
 class TestLambdaEventInvokeConfig(unittest.TestCase):
