@@ -1633,13 +1633,6 @@ class Util:
         return env_vars
 
 
-# def log_lambda_result(func_arn, result, log_output, max_length: int = 2000):
-#     result = to_str(result or "")
-#     log_output = truncate(to_str(log_output or ""), max_length)
-#     log_formatted = log_output.strip().replace("\n", "\n> ")
-#     LOG.debug("Lambda %s result / log output:\n%s\n> %s", func_arn, result.strip(), log_formatted)
-
-
 class OutputLog:
 
     __slots__ = ["_stdout", "_stderr"]
