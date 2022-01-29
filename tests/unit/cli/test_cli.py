@@ -1,4 +1,5 @@
 import json
+import re
 import threading
 
 import click
@@ -154,7 +155,9 @@ def test_config_show_json(runner):
     result = runner.invoke(cli, ["config", "show", "--format=json"])
     assert result.exit_code == 0
 
-    doc = json.loads(result.output)
+    # remove control characters and color/formatting codes like "\x1b[32m"
+    output = re.sub(r"\x1b\[[;0-9]+m", "", result.output, flags=re.MULTILINE)
+    doc = json.loads(output)
     assert "DATA_DIR" in doc
     assert "DEBUG" in doc
     assert type(doc["DEBUG"]) == bool
@@ -167,8 +170,9 @@ def test_config_show_plain(runner, monkeypatch):
     result = runner.invoke(cli, ["config", "show", "--format=plain"])
     assert result.exit_code == 0
 
-    assert "DATA_DIR=" in result.output
-    assert "DEBUG=True" in result.output
+    # using regex here, as output string may contain the color/formatting codes like "\x1b[32m"
+    assert re.search(r"DATA_DIR[^=]*=", result.output)
+    assert re.search(r"DEBUG[^=]*=(\x1b\[3;92m)?True", result.output)
 
 
 def test_config_show_dict(runner, monkeypatch):
@@ -178,5 +182,6 @@ def test_config_show_dict(runner, monkeypatch):
     result = runner.invoke(cli, ["config", "show", "--format=dict"])
     assert result.exit_code == 0
 
-    assert "'DATA_DIR':" in result.output
-    assert "'DEBUG': True" in result.output
+    assert "'DATA_DIR'" in result.output
+    # using regex here, as output string may contain the color/formatting codes like "\x1b[32m"
+    assert re.search(r"'DEBUG'[^:]*: [^']*True", result.output)
