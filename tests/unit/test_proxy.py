@@ -91,10 +91,11 @@ def test_ssl_proxy_server():
     assert len(invocations) == num_requests
 
     # invoke SSL proxy server with gzip response
-    headers = {HEADER_ACCEPT_ENCODING: "gzip"}
-    response = requests.get(url, headers=headers, verify=False, stream=True)
-    result = response.raw.read()
-    assert to_str(gzip.decompress(result)) == json.dumps({"foo": "bar"})
+    for encoding in ["gzip", "gzip, deflate"]:
+        headers = {HEADER_ACCEPT_ENCODING: encoding}
+        response = requests.get(url, headers=headers, verify=False, stream=True)
+        result = response.raw.read()
+        assert to_str(gzip.decompress(result)) == json.dumps({"foo": "bar"})
 
     # clean up
     proxy.stop()
