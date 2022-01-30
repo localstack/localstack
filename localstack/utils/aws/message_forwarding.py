@@ -1,17 +1,30 @@
 import json
 import logging
+import re
 import uuid
 from typing import Dict
 
+from moto.events.models import events_backends as moto_events_backends
+
 from localstack.services.awslambda.lambda_executors import InvocationException, InvocationResult
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.aws.aws_stack import connect_to_service, firehose_name, get_sqs_queue_url
+from localstack.utils.aws.aws_stack import (
+    connect_to_service,
+    extract_region_from_arn,
+    firehose_name,
+    get_sqs_queue_url,
+)
 from localstack.utils.common import long_uid, now_utc
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import timestamp_millis, to_bytes
 from localstack.utils.generic import dict_utils
+from localstack.utils.http_utils import add_query_params_to_url
 
 LOG = logging.getLogger(__name__)
+
+AUTH_BASIC = "BASIC"
+AUTH_API_KEY = "API_KEY"
+AUTH_OAUTH = "OAUTH_CLIENT_CREDENTIALS"
 
 
 def lambda_result_to_destination(
@@ -141,6 +154,62 @@ def send_event_to_target(
         LOG.warning('Unsupported Events rule target ARN: "%s"', target_arn)
 
 
+def auth_keys_from_connection(connection: Dict):
+    headers = {}
+
+    auth_type = connection.get("AuthorizationType").upper()
+    auth_parameters = connection.get("AuthParameters")
+    if auth_type == AUTH_BASIC:
+        basic_auth_parameters = auth_parameters.get("BasicAuthParameters", {})
+        username = basic_auth_parameters.get("Username", "")
+        password = basic_auth_parameters.get("Password", "")
+        headers.update({"authorization": "Basic {}:{}".format(username, password)})
+
+    if auth_type == AUTH_API_KEY:
+        api_key_parameters = auth_parameters.get("ApiKeyAuthParameters", {})
+        api_key_name = api_key_parameters.get("ApiKeyName", "")
+        api_key_value = api_key_parameters.get("ApiKeyValue", "")
+        headers.update({api_key_name: api_key_value})
+
+    if auth_type == AUTH_OAUTH:
+        oauth_parameters = auth_parameters.get("OAuthParameters", {})
+
+        oauth_method = oauth_parameters.get("HttpMethod")
+        oauth_endpoint = oauth_parameters.get("AuthorizationEndpoint", "")
+        query_object = list_of_parameters_to_object(
+            oauth_parameters.get("QueryStringParameters", [])
+        )
+        oauth_endpoint = add_query_params_to_url(oauth_endpoint, query_object)
+
+        client_parameters = oauth_parameters.get("ClientParameters", {})
+        client_id = client_parameters.get("ClientID", "")
+        client_secret = client_parameters.get("ClientSecret", "")
+
+        oauth_body = list_of_parameters_to_object(oauth_parameters.get("BodyParameters", []))
+        oauth_body.update({"client_id": client_id, "client_secret": client_secret})
+
+        oauth_header = list_of_parameters_to_object(oauth_parameters.get("HeaderParameters", []))
+        oauth_result = requests.request(
+            method=oauth_method,
+            url=oauth_endpoint,
+            data=json.dumps(oauth_body),
+            headers=oauth_header,
+        )
+
+        oauth_data = json.loads(oauth_result.text)
+
+        token_type = oauth_data.get("token_type", "")
+        access_token = oauth_data.get("access_token", "")
+        auth_header = "{} {}".format(token_type, access_token)
+        headers.update({"authorization": auth_header})
+
+    return headers
+
+
+def list_of_parameters_to_object(items):
+    return {item.get("Key"): item.get("Value") for item in items}
+
+
 def send_event_to_api_destination(target_arn, event):
     """Send an event to an EventBridge API destination
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
@@ -166,11 +235,8 @@ def send_event_to_api_destination(target_arn, event):
         "Connection": "close",
     }
 
-    # add auth headers for target destination
-    add_api_destination_authorization(destination, headers, event)
+    endpoint = add_api_destination_authorization(destination, headers, event)
 
-    # TODO: consider option to disable the actual network call to avoid unintended side effects
-    # TODO: InvocationRateLimitPerSecond (needs some form of thread-safety, scoped to the api destination)
     result = requests.request(
         method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
     )
@@ -181,5 +247,33 @@ def send_event_to_api_destination(target_arn, event):
 
 
 def add_api_destination_authorization(destination, headers, event):
-    # not yet implemented - may be implemented elsewhere ...
-    pass
+    connection_arn = destination.get("ConnectionArn", "")
+    connection_name = re.search(r"connection\/([a-zA-Z0-9-_]+)\/", connection_arn).group(1)
+    connection_region = extract_region_from_arn(connection_arn)
+
+    # Using backend directly due to boto hiding passwords, keys and secret values
+    event_backend = moto_events_backends.get(connection_region)
+    connection = event_backend.describe_connection(name=connection_name)
+
+    headers.update(auth_keys_from_connection(connection))
+
+    auth_parameters = connection.get("AuthParameters", {})
+    invocation_parameters = auth_parameters.get("InvocationHttpParameters")
+
+    endpoint = destination.get("InvocationEndpoint")
+    if invocation_parameters:
+        header_parameters = list_of_parameters_to_object(
+            invocation_parameters.get("HeaderParameters", [])
+        )
+        headers.update(header_parameters)
+
+        body_parameters = list_of_parameters_to_object(
+            invocation_parameters.get("BodyParameters", [])
+        )
+        event.update(body_parameters)
+
+        query_parameters = invocation_parameters.get("QueryStringParameters", [])
+        query_object = list_of_parameters_to_object(query_parameters)
+        endpoint = add_query_params_to_url(endpoint, query_object)
+
+    return endpoint
