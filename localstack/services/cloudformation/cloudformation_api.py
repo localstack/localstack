@@ -935,7 +935,7 @@ def get_template(req_params):
     cs_name = req_params.get("ChangeSetName")
     stack = find_stack(stack_name)
     if cs_name:
-        stack = find_change_set(stack_name, cs_name)
+        stack = find_change_set(stack_name=stack_name, cs_name=cs_name)
     if not stack:
         return stack_not_found_error(stack_name)
     result = {"TemplateBody": json.dumps(stack._template_raw)}
