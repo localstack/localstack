@@ -11,6 +11,7 @@ from typing import Dict, Optional
 from requests.models import Response
 
 from localstack import config
+from localstack.aws.challenger import get_asf_challenge_listener
 from localstack.constants import (
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
@@ -172,6 +173,10 @@ class ProxyListenerEdge(ProxyListener):
             lock_ctx = empty_context_manager()
 
         with lock_ctx:
+            result = get_asf_challenge_listener(api).forward_request(method, path, data, headers)
+            if result is not True:
+                return result
+
             result = do_forward_request(api, method, path, data, headers, port=port)
             if should_log_trace and result not in [None, False, True]:
                 result_status_code = getattr(result, "status_code", result)
