@@ -371,7 +371,7 @@ def print_service_table(services: Dict[str, str]):
     table.add_column("Service")
     table.add_column("Status")
 
-    services = [(k, v) for k, v in services.items()]
+    services = list(services.items())
     services.sort(key=lambda item: item[0])
 
     for service, status in services:
