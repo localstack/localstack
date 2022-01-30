@@ -725,7 +725,7 @@ def publish_batch(topic_arn, messages, headers):
         data = {}
         data["TopicArn"] = [topic_arn]
         data["Message"] = [message["Message"]]
-        data["Subject"] = [message["Subject"]]
+        data["Subject"] = [message.get("Subject")]
         if ".fifo" in topic_arn:
             data["MessageGroupId"] = message.get("MessageGroupId")
         # TODO: add MessageDeduplication checks once ASF-SQS implementation becomes default

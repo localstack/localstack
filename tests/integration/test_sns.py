@@ -1022,6 +1022,10 @@ class TestSNS:
                     "Message": "Test Message without attribute",
                     "Subject": "Subject",
                 },
+                {
+                    "Id": "4",
+                    "Message": "Test Message without subject",
+                },
             ],
         )
 
@@ -1036,7 +1040,7 @@ class TestSNS:
             response = self.sqs_client.receive_message(
                 QueueUrl=queue_url, MessageAttributeNames=["All"], MaxNumberOfMessages=10
             )
-            assert len(response["Messages"]) == 3
+            assert len(response["Messages"]) == 4
             for message in response["Messages"]:
                 assert "Body" in message
 
