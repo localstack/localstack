@@ -336,6 +336,14 @@ def get_is_kinesis_mock_installed() -> Tuple[bool, str]:
     Checks the host system to see if kinesis mock is installed and where.
     :returns: True if kinesis mock is installed (False otherwise) and the expected installation path
     """
+    bin_file_path = kinesis_mock_install_path()
+    if os.path.exists(bin_file_path):
+        LOG.debug("kinesis-mock found at %s", bin_file_path)
+        return True, bin_file_path
+    return False, bin_file_path
+
+
+def kinesis_mock_install_path() -> str:
     machine = platform.machine().lower()
     system = platform.system().lower()
     version = platform.version().lower()
@@ -358,19 +366,17 @@ def get_is_kinesis_mock_installed() -> Tuple[bool, str]:
         bin_file = "kinesis-mock.jar"
 
     bin_file_path = os.path.join(INSTALL_DIR_KINESIS_MOCK, bin_file)
-    if os.path.exists(bin_file_path):
-        LOG.debug("kinesis-mock found at %s", bin_file_path)
-        return True, bin_file_path
-    return False, bin_file_path
+    return bin_file_path
 
 
-def install_kinesis_mock(bin_file_path: str):
+def install_kinesis_mock(bin_file_path: str = None):
     response = requests.get(KINESIS_MOCK_RELEASE_URL)
     if not response.ok:
         raise ValueError(
             "Could not get list of releases from %s: %s" % (KINESIS_MOCK_RELEASE_URL, response.text)
         )
 
+    bin_file_path = bin_file_path or kinesis_mock_install_path()
     github_release = response.json()
     download_url = None
     bin_file_name = os.path.basename(bin_file_path)
