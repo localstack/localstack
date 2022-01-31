@@ -412,7 +412,7 @@ def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
         # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
         if not has_docker():
-            # TODO: works only when running on the host, outside of Docker -> add a fallback if running in Docker?
+            # TODO: works only when a docker socket is available -> add a fallback if running without Docker?
             LOG.warning("Docker not available - skipping installation of StepFunctions dependency")
             return
         log_install_msg("Step Functions")
