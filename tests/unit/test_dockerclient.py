@@ -20,19 +20,26 @@ class TestDockerClient(unittest.TestCase):
 
     @patch("localstack.utils.docker_utils.safe_run")
     def test_list_containers(self, run_mock):
-        test_container = {
-            "id": "00000000a1",
-            "image": "localstack/localstack",
-            "name": "localstack_main",
-            "labels": "authors=LocalStack Contributors",
-            "status": "running",
+        mock_container = {
+            "ID": "00000000a1",
+            "Image": "localstack/localstack",
+            "Names": "localstack_main",
+            "Labels": "authors=LocalStack Contributors",
+            "State": "running",
         }
-        run_mock.return_value = json.dumps(test_container)
+        return_container = {
+            "id": mock_container["ID"],
+            "image": mock_container["Image"],
+            "name": mock_container["Names"],
+            "labels": mock_container["Labels"],
+            "status": mock_container["State"],
+        }
+        run_mock.return_value = json.dumps(mock_container)
         docker_client = CmdDockerClient()
         container_list = docker_client.list_containers()
         call_arguments = run_mock.call_args[0][0]
         LOG.info("Intercepted call arguments: %s", call_arguments)
-        self.assertEqual(test_container, container_list[0])
+        self.assertEqual(return_container, container_list[0])
         self.assertTrue(list_in(self._docker_cmd() + ["ps"], call_arguments))
         self.assertIn("-a", call_arguments)
         self.assertIn("--format", call_arguments)
