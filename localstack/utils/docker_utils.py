@@ -669,10 +669,7 @@ class CmdDockerClient(ContainerClient):
             options += [y for filter_item in filter for y in ["--filter", filter_item]]
         cmd += options
         cmd.append("--format")
-        cmd.append(
-            '{"id":"{{ .ID }}","image":"{{ .Image }}","name":"{{ .Names }}",'
-            '"labels":"{{ .Labels }}","status":"{{ .State }}"}'
-        )
+        cmd.append("{{json . }}")
         try:
             cmd_result = safe_run(cmd).strip()
         except subprocess.CalledProcessError as e:
@@ -682,7 +679,18 @@ class CmdDockerClient(ContainerClient):
         container_list = []
         if cmd_result:
             container_list = [json.loads(line) for line in cmd_result.splitlines()]
-        return container_list
+        result = []
+        for container in container_list:
+            result.append(
+                {
+                    "id": container["ID"],
+                    "image": container["Image"],
+                    "name": container["Names"],
+                    "status": container["State"],
+                    "labels": container["Labels"],
+                }
+            )
+        return result
 
     def copy_into_container(
         self, container_name: str, local_path: str, container_path: str
@@ -1546,16 +1554,19 @@ class SdkDockerClient(ContainerClient):
                 start_waiting.set()
 
                 # handle container input/output
-                with sock:
-                    try:
-                        if stdin:
-                            sock.sendall(to_bytes(stdin))
-                            sock.shutdown(socket.SHUT_WR)
-                        stdout, stderr = self._read_from_sock(sock, False)
-                    except socket.timeout:
-                        LOG.debug(
-                            f"Socket timeout when talking to the I/O streams of Docker container '{container_name_or_id}'"
-                        )
+                # under windows, the socket has no __enter__ / cannot be used as context manager
+                # therefore try/finally instead of with here
+                try:
+                    if stdin:
+                        sock.sendall(to_bytes(stdin))
+                        sock.shutdown(socket.SHUT_WR)
+                    stdout, stderr = self._read_from_sock(sock, False)
+                except socket.timeout:
+                    LOG.debug(
+                        f"Socket timeout when talking to the I/O streams of Docker container '{container_name_or_id}'"
+                    )
+                finally:
+                    sock.close()
 
                 # get container exit code
                 exit_code = result_queue.get()
