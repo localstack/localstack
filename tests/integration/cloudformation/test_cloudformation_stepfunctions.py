@@ -2,6 +2,7 @@ import json
 import os
 import urllib.parse
 
+from localstack.constants import PATH_USER_REQUEST
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from tests.integration.cloudformation.test_cloudformation_changesets import load_template_raw
@@ -193,7 +194,7 @@ def test_apigateway_invoke_localhost(cfn_client, deploy_cfn_template, stepfuncti
     state["States"]["LsCallApi"]["Parameters"]["ApiEndpoint"] = "localhost:4566"
     state["States"]["LsCallApi"]["Parameters"][
         "Stage"
-    ] = f"restapis/{api_id}/{stage}/_user_request_"
+    ] = f"restapis/{api_id}/{stage}/{PATH_USER_REQUEST}"
     state["States"]["LsCallApi"]["Parameters"]["Path"] = "/"
 
     stepfunctions_client.update_state_machine(
@@ -236,7 +237,7 @@ def test_apigateway_invoke_localhost_with_path(
     state["States"]["LsCallApi"]["Parameters"]["ApiEndpoint"] = "localhost:4566"
     state["States"]["LsCallApi"]["Parameters"][
         "Stage"
-    ] = f"restapis/{api_id}/{stage}/_user_request_"
+    ] = f"restapis/{api_id}/{stage}/{PATH_USER_REQUEST}"
 
     stepfunctions_client.update_state_machine(
         stateMachineArn=state_machine_arn, definition=json.dumps(state)
