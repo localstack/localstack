@@ -17,6 +17,7 @@ import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
+from localstack.aws.api.opensearch import EngineType
 from localstack.config import dirs, has_docker
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
@@ -140,7 +141,7 @@ TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-
 
 
 def get_elasticsearch_install_version(version: str) -> str:
-    from localstack.services.es import versions
+    from localstack.services.opensearch import versions
 
     if config.SKIP_INFRA_DOWNLOADS:
         return ELASTICSEARCH_DEFAULT_VERSION
@@ -149,20 +150,18 @@ def get_elasticsearch_install_version(version: str) -> str:
 
 
 def get_elasticsearch_install_dir(version: str) -> str:
-    version = get_elasticsearch_install_version(version)
-
     if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         # install the default version into a subfolder of the code base
         install_dir = os.path.join(dirs.static_libs, "elasticsearch")
     else:
         # put all other versions into the TMP_FOLDER
-        install_dir = os.path.join(config.dirs.tmp, "elasticsearch", version)
+        install_dir = os.path.join(config.dirs.var_libs, "elasticsearch", version)
 
     return install_dir
 
 
 def install_elasticsearch(version=None):
-    from localstack.services.es import versions
+    from localstack.services.opensearch import versions
 
     if not version:
         version = ELASTICSEARCH_DEFAULT_VERSION
@@ -172,7 +171,7 @@ def install_elasticsearch(version=None):
     installed_executable = os.path.join(install_dir, "bin", "elasticsearch")
     if not os.path.exists(installed_executable):
         log_install_msg("Elasticsearch (%s)" % version)
-        es_url = versions.get_download_url(version)
+        es_url = versions.get_download_url(version, EngineType.Elasticsearch)
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
@@ -235,13 +234,12 @@ def get_opensearch_install_version(version: str) -> str:
     from localstack.services.opensearch import versions
 
     if config.SKIP_INFRA_DOWNLOADS:
-        return OPENSEARCH_DEFAULT_VERSION
+        version = OPENSEARCH_DEFAULT_VERSION
 
     return versions.get_install_version(version)
 
 
 def get_opensearch_install_dir(version: str) -> str:
-    version = get_opensearch_install_version(version)
     return os.path.join(config.dirs.var_libs, "opensearch", version)
 
 
@@ -256,12 +254,12 @@ def install_opensearch(version=None):
     installed_executable = os.path.join(install_dir, "bin", "opensearch")
     if not os.path.exists(installed_executable):
         log_install_msg("OpenSearch (%s)" % version)
-        opensearch_url = versions.get_download_url(version)
+        opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
         tmp_archive = os.path.join(
-            config.dirs.tmp, "localstack.%s" % os.path.basename(opensearch_url)
+            config.dirs.tmp, f"localstack.{os.path.basename(opensearch_url)}"
         )
         download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
         opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))

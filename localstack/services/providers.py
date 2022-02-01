@@ -72,9 +72,11 @@ def ec2():
 
 @aws_provider()
 def es():
-    from localstack.services.es import es_starter
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.es.provider import EsProvider
 
-    return Service("es", start=es_starter.start_elasticsearch_service)
+    provider = EsProvider()
+    return Service("es", listener=AwsApiListener("es", provider))
 
 
 @aws_provider()

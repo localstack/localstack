@@ -14,6 +14,7 @@ from localstack.services.opensearch.cluster_manager import (
     DomainKey,
     MultiClusterManager,
     MultiplexingClusterManager,
+    SingletonClusterManager,
     create_cluster_manager,
 )
 from localstack.utils.common import call_safe, poll_condition, retry
@@ -76,34 +77,187 @@ def try_cluster_health(cluster_url: str):
 
 
 class TestOpensearchProvider:
+    """
+    Because this test reuses the localstack instance for each test, all tests are performed with
+    OPENSEARCH_MULTI_CLUSTER=True, regardless of changes in the config value.
+    """
+
     def test_list_versions(self, opensearch_client):
         response = opensearch_client.list_versions()
 
         assert "Versions" in response
         versions = response["Versions"]
 
-        assert "OpenSearch_1.0" in versions
-        assert "OpenSearch_1.1" in versions
+        expected_versions = [
+            "OpenSearch_1.1",
+            "OpenSearch_1.0",
+            "Elasticsearch_7.10",
+            "Elasticsearch_7.9",
+            "Elasticsearch_7.8",
+            "Elasticsearch_7.7",
+            "Elasticsearch_7.4",
+            "Elasticsearch_7.1",
+            "Elasticsearch_6.8",
+            "Elasticsearch_6.7",
+            "Elasticsearch_6.5",
+            "Elasticsearch_6.4",
+            "Elasticsearch_6.3",
+            "Elasticsearch_6.2",
+            "Elasticsearch_6.0",
+            "Elasticsearch_5.6",
+            "Elasticsearch_5.5",
+            "Elasticsearch_5.3",
+            "Elasticsearch_5.1",
+            "Elasticsearch_5.0",
+        ]
+        # We iterate over the expected versions to avoid breaking the test if new versions are supported
+        for expected_version in expected_versions:
+            assert expected_version in versions
 
     def test_get_compatible_versions(self, opensearch_client):
         response = opensearch_client.get_compatible_versions()
 
         assert "CompatibleVersions" in response
 
-        versions = response["CompatibleVersions"]
+        compatible_versions = response["CompatibleVersions"]
 
-        # TODO in later iterations this should check for ElasticSearch compatibility
-        assert len(versions) == 1
-        assert versions == [
-            {"SourceVersion": "OpenSearch_1.0", "TargetVersions": ["OpenSearch_1.1"]}
+        assert len(compatible_versions) >= 18
+        expected_compatible_versions = [
+            {"SourceVersion": "OpenSearch_1.0", "TargetVersions": ["OpenSearch_1.1"]},
+            {
+                "SourceVersion": "Elasticsearch_7.10",
+                "TargetVersions": ["OpenSearch_1.0", "OpenSearch_1.1"],
+            },
+            {
+                "SourceVersion": "Elasticsearch_7.9",
+                "TargetVersions": ["Elasticsearch_7.10", "OpenSearch_1.0", "OpenSearch_1.1"],
+            },
+            {
+                "SourceVersion": "Elasticsearch_7.8",
+                "TargetVersions": [
+                    "Elasticsearch_7.9",
+                    "Elasticsearch_7.10",
+                    "OpenSearch_1.1",
+                    "OpenSearch_1.0",
+                ],
+            },
+            {
+                "SourceVersion": "Elasticsearch_7.7",
+                "TargetVersions": [
+                    "Elasticsearch_7.8",
+                    "Elasticsearch_7.9",
+                    "Elasticsearch_7.10",
+                    "OpenSearch_1.0",
+                    "OpenSearch_1.1",
+                ],
+            },
+            {
+                "SourceVersion": "Elasticsearch_7.4",
+                "TargetVersions": [
+                    "Elasticsearch_7.7",
+                    "Elasticsearch_7.8",
+                    "Elasticsearch_7.9",
+                    "Elasticsearch_7.10",
+                    "OpenSearch_1.0",
+                    "OpenSearch_1.1",
+                ],
+            },
+            {
+                "SourceVersion": "Elasticsearch_7.1",
+                "TargetVersions": [
+                    "Elasticsearch_7.4",
+                    "Elasticsearch_7.7",
+                    "Elasticsearch_7.8",
+                    "Elasticsearch_7.9",
+                    "Elasticsearch_7.10",
+                    "OpenSearch_1.0",
+                    "OpenSearch_1.1",
+                ],
+            },
+            {
+                "SourceVersion": "Elasticsearch_6.8",
+                "TargetVersions": [
+                    "Elasticsearch_7.1",
+                    "Elasticsearch_7.4",
+                    "Elasticsearch_7.7",
+                    "Elasticsearch_7.8",
+                    "Elasticsearch_7.9",
+                    "Elasticsearch_7.10",
+                    "OpenSearch_1.0",
+                    "OpenSearch_1.1",
+                ],
+            },
+            {"SourceVersion": "Elasticsearch_6.7", "TargetVersions": ["Elasticsearch_6.8"]},
+            {
+                "SourceVersion": "Elasticsearch_6.5",
+                "TargetVersions": ["Elasticsearch_6.7", "Elasticsearch_6.8"],
+            },
+            {
+                "SourceVersion": "Elasticsearch_6.4",
+                "TargetVersions": [
+                    "Elasticsearch_6.5",
+                    "Elasticsearch_6.7",
+                    "Elasticsearch_6.8",
+                ],
+            },
+            {
+                "SourceVersion": "Elasticsearch_6.3",
+                "TargetVersions": [
+                    "Elasticsearch_6.4",
+                    "Elasticsearch_6.5",
+                    "Elasticsearch_6.7",
+                    "Elasticsearch_6.8",
+                ],
+            },
+            {
+                "SourceVersion": "Elasticsearch_6.2",
+                "TargetVersions": [
+                    "Elasticsearch_6.3",
+                    "Elasticsearch_6.4",
+                    "Elasticsearch_6.5",
+                    "Elasticsearch_6.7",
+                    "Elasticsearch_6.8",
+                ],
+            },
+            {
+                "SourceVersion": "Elasticsearch_6.0",
+                "TargetVersions": [
+                    "Elasticsearch_6.3",
+                    "Elasticsearch_6.4",
+                    "Elasticsearch_6.5",
+                    "Elasticsearch_6.7",
+                    "Elasticsearch_6.8",
+                ],
+            },
+            {
+                "SourceVersion": "Elasticsearch_5.6",
+                "TargetVersions": [
+                    "Elasticsearch_6.3",
+                    "Elasticsearch_6.4",
+                    "Elasticsearch_6.5",
+                    "Elasticsearch_6.7",
+                    "Elasticsearch_6.8",
+                ],
+            },
+            {"SourceVersion": "Elasticsearch_5.5", "TargetVersions": ["Elasticsearch_5.6"]},
+            {"SourceVersion": "Elasticsearch_5.3", "TargetVersions": ["Elasticsearch_5.6"]},
+            {"SourceVersion": "Elasticsearch_5.1", "TargetVersions": ["Elasticsearch_5.6"]},
         ]
+        # Iterate over the expected compatible versions to avoid breaking the test if new versions are supported
+        for expected_compatible_version in expected_compatible_versions:
+            assert expected_compatible_version in compatible_versions
 
-    def test_get_compatible_version_for_domain(self, opensearch_client, opensearch_domain):
+    def test_get_compatible_version_for_domain(self, opensearch_client, opensearch_create_domain):
+        opensearch_domain = opensearch_create_domain(EngineVersion="OpenSearch_1.0")
         response = opensearch_client.get_compatible_versions(DomainName=opensearch_domain)
         assert "CompatibleVersions" in response
-        versions = response["CompatibleVersions"]
-        # The default version is the latest version, which is not compatible with any previous versions
-        assert len(versions) == 0
+        compatible_versions = response["CompatibleVersions"]
+
+        assert len(compatible_versions) == 1
+        compatibility = compatible_versions[0]
+        assert compatibility["SourceVersion"] == "OpenSearch_1.0"
+        # Just check if 1.1 is contained (not equality) to avoid breaking the test if new versions are supported
+        assert "OpenSearch_1.1" in compatibility["TargetVersions"]
 
     def test_create_domain(self, opensearch_client):
         domain_name = f"opensearch-domain-{short_uid()}"
@@ -170,9 +324,8 @@ class TestOpensearchProvider:
             "I'm just a simple man" in response.text
         ), f"search unsuccessful({response.status_code}): {response.text}"
 
-    def test_path_endpoint_strategy(self, monkeypatch, opensearch_create_domain, opensearch_client):
+    def test_endpoint_strategy_path(self, monkeypatch, opensearch_create_domain, opensearch_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
-        monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", True)
 
         domain_name = f"opensearch-domain-{short_uid()}"
 
@@ -182,6 +335,22 @@ class TestOpensearchProvider:
         assert "Endpoint" in status
         endpoint = status["Endpoint"]
         assert endpoint.endswith(f"/{domain_name}")
+
+    def test_endpoint_strategy_port(self, monkeypatch, opensearch_create_domain, opensearch_client):
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
+
+        domain_name = f"opensearch-domain-{short_uid()}"
+
+        opensearch_create_domain(DomainName=domain_name)
+        status = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"]
+
+        assert "Endpoint" in status
+        endpoint = status["Endpoint"]
+        parts = endpoint.split(":")
+        assert parts[0] == "localhost"
+        assert int(parts[1]) in range(
+            config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
+        )
 
 
 class TestEdgeProxiedOpensearchCluster:
@@ -299,6 +468,39 @@ class TestMultiplexingClusterManager:
         finally:
             call_safe(cluster_0.shutdown)
             call_safe(cluster_1.shutdown)
+
+
+class TestSingletonClusterManager:
+    def test_endpoint_strategy_port_singleton_cluster(self, monkeypatch):
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
+        monkeypatch.setattr(config, "OPENSEARCH_MULTI_CLUSTER", False)
+
+        manager = SingletonClusterManager()
+
+        # create two opensearch domains
+        domain_key_0 = DomainKey(
+            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+        )
+        domain_key_1 = DomainKey(
+            domain_name=f"domain-{short_uid()}", region="us-east-1", account=TEST_AWS_ACCOUNT_ID
+        )
+        cluster_0 = manager.create(domain_key_0.arn, OPENSEARCH_DEFAULT_VERSION)
+        cluster_1 = manager.create(domain_key_1.arn, OPENSEARCH_DEFAULT_VERSION)
+
+        # check if the first port url matches the port range
+
+        parts = cluster_0.url.split(":")
+        assert parts[0] == "http"
+        assert parts[1] == "//localhost"
+        assert int(parts[2]) in range(
+            config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END
+        )
+
+        # check if the second url matches the first one
+        assert cluster_0.url == cluster_1.url
+
+        call_safe(cluster_0.shutdown)
+        call_safe(cluster_1.shutdown)
 
 
 class TestCustomBackendManager:

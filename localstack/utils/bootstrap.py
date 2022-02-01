@@ -38,7 +38,7 @@ LOG_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
     "dynamodbstreams": ["kinesis"],
-    "es": ["elasticsearch"],
+    "es": ["opensearch"],
     "lambda": ["logs", "cloudwatch"],
     "kinesis": ["dynamodb"],
     "firehose": ["kinesis"],
