@@ -1003,6 +1003,10 @@ def merge_dicts(*dicts, **kwargs):
     return result
 
 
+def remove_none_values_from_dict(dict: Dict) -> Dict:
+    return {k: v for (k, v) in dict.items() if v is not None}
+
+
 def recurse_object(obj: JsonType, func: Callable, path: str = "") -> Any:
     """Recursively apply `func` to `obj` (may be a list, dict, or other object)."""
     obj = func(obj, path=path)
