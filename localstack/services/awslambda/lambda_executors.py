@@ -1326,6 +1326,7 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         lambda_cwd = lambda_function.cwd
         environment = self._prepare_environment(lambda_function)
+        Util.inject_endpoints_into_env(env_vars=environment)
 
         environment["EDGE_PORT"] = str(config.EDGE_PORT)
         if lambda_function.timeout:
