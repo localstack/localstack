@@ -221,7 +221,11 @@ class TestFirehoseIntegration:
 
             def assert_elasticsearch_contents():
                 response = requests.get(f"{es_url}/activity/_search")
-                result = response.json()["hits"]["hits"]
+                response_bod = response.json()
+                assert "hits" in response_bod
+                response_bod_hits = response_bod["hits"]
+                assert "hits" in response_bod_hits
+                result = response_bod_hits["hits"]
                 assert len(result) == 2
                 sources = [item["_source"] for item in result]
                 assert firehose_record in sources
@@ -322,7 +326,11 @@ class TestFirehoseIntegration:
 
             def assert_opensearch_contents():
                 response = requests.get(f"{opensearch_url}/activity/_search")
-                result = response.json()["hits"]["hits"]
+                response_bod = response.json()
+                assert "hits" in response_bod
+                response_bod_hits = response_bod["hits"]
+                assert "hits" in response_bod_hits
+                result = response_bod_hits["hits"]
                 assert len(result) == 2
                 sources = [item["_source"] for item in result]
                 assert firehose_record in sources

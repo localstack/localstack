@@ -512,11 +512,11 @@ class FirehoseProvider(FirehoseApi):
         search_db_type = db_description.get("TypeName")
         region = aws_stack.get_region()
         domain_arn = db_description.get("DomainARN")
-        cluster_endoint = db_description.get("ClusterEndpoint")
-        if cluster_endoint is None:
-            cluster_endoint = aws_stack.get_opensearch_endpoint(domain_arn)
+        cluster_endpoint = db_description.get("ClusterEndpoint")
+        if cluster_endpoint is None:
+            cluster_endpoint = aws_stack.get_opensearch_endpoint(domain_arn)
 
-        db_connection = get_search_db_connection(cluster_endoint, region)
+        db_connection = get_search_db_connection(cluster_endpoint, region)
         if db_description.get("S3BackupMode") == ElasticsearchS3BackupMode.AllDocuments:
             s3_dest_desc = db_description.get("S3DestinationDescription")
             if s3_dest_desc:
