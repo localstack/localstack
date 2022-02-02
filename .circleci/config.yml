@@ -254,10 +254,17 @@ jobs:
         description: "Platform to build for"
         default: "amd64"
         type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: "ubuntu-2004:202107-02"
+        type: string
     machine:
-      image: "ubuntu-2004:202107-02"
-      docker_layer_caching: true
-    resource_class: "medium"
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -367,11 +374,15 @@ workflows:
       - docker-test:
           name: docker-test-arm64
           platform: arm64
+          resource_class: arm.medium
+          machine_image: ubuntu-2004:202101-01
           requires:
             - docker-build-arm64
       - docker-test:
           name: docker-test-amd64
           platform: amd64
+          resource_class: medium
+          machine_image: ubuntu-2004:202107-02
           requires:
             - docker-build-amd64
       - report:
