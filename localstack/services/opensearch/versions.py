@@ -185,7 +185,8 @@ def get_install_version(version: str) -> str:
     return install_versions[version]
 
 
-def _opensearch_url(install_version: semver.VersionInfo, arch: str) -> str:
+def _opensearch_url(install_version: semver.VersionInfo) -> str:
+    arch = "x64" if get_arch() == "amd64" else "arm64"
     version = str(install_version)
     return (
         f"https://artifacts.opensearch.org/releases/bundle/opensearch/"
@@ -193,22 +194,22 @@ def _opensearch_url(install_version: semver.VersionInfo, arch: str) -> str:
     )
 
 
-def _es_url(install_version: semver.VersionInfo, arch: str) -> str:
+def _es_url(install_version: semver.VersionInfo) -> str:
+    arch = "x86_64" if get_arch() == "amd64" else "aarch64"
     version = str(install_version)
     repo = "https://artifacts.elastic.co/downloads/elasticsearch"
     if install_version.major <= 6:
         return f"{repo}/elasticsearch-{version}.tar.gz"
 
-    return f"{repo}/elasticsearch-{version}-linux-x86_64.tar.gz"
+    return f"{repo}/elasticsearch-{version}-linux-{arch}.tar.gz"
 
 
 def get_download_url(install_version: str, engine_type: EngineType) -> str:
     install_version = semver.VersionInfo.parse(install_version)
-    arch_str = "x64" if get_arch() == "amd64" else "arm64"
     if engine_type == EngineType.OpenSearch:
-        return _opensearch_url(install_version, arch_str)
+        return _opensearch_url(install_version)
     elif engine_type == EngineType.Elasticsearch:
-        return _es_url(install_version, arch_str)
+        return _es_url(install_version)
 
 
 def fetch_latest_versions() -> Dict[str, str]:  # pragma: no cover
