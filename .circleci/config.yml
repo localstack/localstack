@@ -280,6 +280,11 @@ jobs:
             make docker-run-tests
       - store_test_results:
           path: target/reports/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/reports/
 
   report:
     docker:
