@@ -1488,7 +1488,8 @@ class TestLambdaBehavior:
         ids=["nodejs", "python"],
     )
     @pytest.mark.xfail(
-        os.environ.get("TEST_TARGET") != "AWS_CLOUD"
+        os.environ.get("TEST_TARGET") != "AWS_CLOUD",
+        reason="lambda caching not supported currently",
     )  # TODO: should be removed after the lambda rework
     def test_lambda_cache_local(
         self, lambda_client, create_lambda_function, lambda_fn, lambda_runtime
@@ -1520,6 +1521,10 @@ class TestLambdaBehavior:
         ],
         ids=["python"],
     )
+    @pytest.mark.xfail(
+        os.environ.get("TEST_TARGET") != "AWS_CLOUD",
+        reason="lambda timeouts not supported currently",
+    )  # TODO: should be removed after the lambda rework
     def test_lambda_timeout_logs(
         self, lambda_client, create_lambda_function, lambda_fn, lambda_runtime, logs_client
     ):
