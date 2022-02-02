@@ -1,0 +1,2 @@
+class LambdaVersionManager:
+    pass

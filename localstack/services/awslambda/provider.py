@@ -11,6 +11,7 @@ from localstack.aws.api.awslambda import (
     Qualifier,
     String,
 )
+from localstack.services.awslambda.invocation import lambda_service
 from localstack.services.generic_proxy import ProxyListener
 
 LOG = logging.getLogger(__name__)
@@ -36,3 +37,4 @@ class LambdaProvider(LambdaApi):
         qualifier: Qualifier = None,
     ) -> InvocationResponse:
         LOG.debug("Lambda got invoked!")
+        lambda_service
