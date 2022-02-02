@@ -151,9 +151,21 @@ def get_elasticsearch_install_version(version: str) -> str:
 
 def get_elasticsearch_install_dir(version: str) -> str:
     if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
+        LOG.debug(
+            "Chose to install to static_libs, version %s, path light exists: %s, path light: %s",
+            version,
+            os.path.exists(MARKER_FILE_LIGHT_VERSION),
+            MARKER_FILE_LIGHT_VERSION,
+        )
         # install the default version into a subfolder of the code base
         install_dir = os.path.join(dirs.static_libs, "elasticsearch")
     else:
+        LOG.debug(
+            "Chose to install to var_libs, version %s, path light exists: %s, path light: %s",
+            version,
+            os.path.exists(MARKER_FILE_LIGHT_VERSION),
+            MARKER_FILE_LIGHT_VERSION,
+        )
         # put all other versions into the TMP_FOLDER
         install_dir = os.path.join(config.dirs.var_libs, "elasticsearch", version)
 
