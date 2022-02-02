@@ -121,9 +121,6 @@ ENV LOCALSTACK_HOSTNAME=localhost
 
 RUN mkdir /root/.serverless; chmod -R 777 /root/.serverless
 
-# add trusted CA certificates to the cert store
-RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ssl/certs/ca-certificates.crt
-
 
 
 # builder: Stage which installs/builds the dependencies and infra-components of LocalStack
@@ -217,7 +214,7 @@ LABEL authors="LocalStack Contributors"
 LABEL maintainer="LocalStack Team (info@localstack.cloud)"
 LABEL description="LocalStack Docker image"
 
-# Copy in the build dependencies
+# Copy the build dependencies
 COPY --from=builder /opt/code/localstack/ /opt/code/localstack/
 
 # Copy in postgresql extensions
@@ -260,8 +257,8 @@ ARG LOCALSTACK_BUILD_GIT_HASH
 ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
 ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
 
-# expose edge service, ElasticSearch & debugpy ports
-EXPOSE 4566 4571 5678
+# expose edge service, external service ports, and debugpy
+EXPOSE 4566 4510-4559 5678
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
