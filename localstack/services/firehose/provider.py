@@ -512,15 +512,9 @@ class FirehoseProvider(FirehoseApi):
         search_db_type = db_description.get("TypeName")
         region = aws_stack.get_region()
         domain_arn = db_description.get("DomainARN")
-
         cluster_endoint = db_description.get("ClusterEndpoint")
         if cluster_endoint is None:
-            if db_flavor == "ElasticSearch":
-                cluster_endoint = aws_stack.get_elasticsearch_endpoint(region, domain_arn)
-            elif db_flavor == "OpenSearch":
-                cluster_endoint = aws_stack.get_opensearch_endpoint(region, domain_arn)
-            else:
-                raise ValueError("db_flavor must be either 'OpenSearch' or 'ElasticSearch'")
+            cluster_endoint = aws_stack.get_opensearch_endpoint(domain_arn)
 
         db_connection = get_search_db_connection(cluster_endoint, region)
         if db_description.get("S3BackupMode") == ElasticsearchS3BackupMode.AllDocuments:

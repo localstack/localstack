@@ -1097,36 +1097,16 @@ def apigateway_invocations_arn(lambda_uri):
     )
 
 
-def get_elasticsearch_endpoint(region_name: str, domain_arn: Optional[str] = None) -> str:
-    """
-    Get an ElasticSearch cluster endpoint by describing the cluster associated with the domain_arn
-    :param region_name: cluster region e.g. us-east-1
-    :param domain_arn: ARN of the cluster. Uses TEST_ELASTICSEARCH_URL env var if not set.
-    :returns: cluster endpoint
-    """
-    # TODO: extract region_name from the domain_arn
-    if not domain_arn:
-        return config.service_url("elasticsearch")
-    # get endpoint from API
-    es_client = connect_to_service(service_name="es", region_name=region_name)
-    domain_name = domain_arn.rpartition("/")[2]
-    info = es_client.describe_elasticsearch_domain(DomainName=domain_name)
-    base_domain = info["DomainStatus"]["Endpoint"]
-    endpoint = base_domain if base_domain.startswith("http") else f"https://{base_domain}"
-    return endpoint
-
-
-def get_opensearch_endpoint(region_name: str, domain_arn: str = None) -> str:
+def get_opensearch_endpoint(domain_arn: str) -> str:
     """
     Get an OpenSearch cluster endpoint by describing the cluster associated with the domain_arn
-    :param region_name: cluster region e.g. us-east-1
-    :param domain_arn: ARN of the cluster. Uses TEST_OPENSEARCH_URL env var if not set.
+    :param domain_arn: ARN of the cluster.
     :returns: cluster endpoint
+    :raises: ValueError if the domain_arn is malformed
     """
-    # TODO: extract region_name from the domain_arn
-    if not domain_arn:
-        return os.environ["TEST_OPENSEARCH_URL"]
-    # get endpoint from API
+    region_name = extract_region_from_arn(domain_arn)
+    if region_name is None:
+        raise ValueError("unable to parse region from opensearch domain ARN")
     opensearch_client = connect_to_service(service_name="opensearch", region_name=region_name)
     domain_name = domain_arn.rpartition("/")[2]
     info = opensearch_client.describe_domain(DomainName=domain_name)
