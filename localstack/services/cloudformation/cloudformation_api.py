@@ -85,6 +85,7 @@ class Stack(object):
         ) or aws_stack.cloudformation_stack_arn(self.stack_name, short_uid())
         self.template["Parameters"] = self.template.get("Parameters") or {}
         self.template["Outputs"] = self.template.get("Outputs") or {}
+        self.template["Conditions"] = self.template.get("Conditions") or {}
         # initialize metadata
         self.metadata["Parameters"] = self.metadata.get("Parameters") or []
         self.metadata["StackStatus"] = "CREATE_IN_PROGRESS"
@@ -271,15 +272,13 @@ class Stack(object):
         for k, details in self.template.get("Outputs", {}).items():
             value = None
             try:
-                template_deployer.resolve_refs_recursively(self.stack_name, details, self.resources)
+                template_deployer.resolve_refs_recursively(self, details)
                 value = details["Value"]
             except Exception as e:
                 LOG.debug("Unable to resolve references in stack outputs: %s - %s", details, e)
             exports = details.get("Export") or {}
             export = exports.get("Name")
-            export = template_deployer.resolve_refs_recursively(
-                self.stack_name, export, self.resources
-            )
+            export = template_deployer.resolve_refs_recursively(self, export)
             description = details.get("Description")
             entry = {
                 "OutputKey": k,

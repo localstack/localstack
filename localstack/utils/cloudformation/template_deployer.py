@@ -187,7 +187,10 @@ def describe_stack_resource(stack_name, logical_resource_id):
         )
 
 
-def retrieve_resource_details(resource_id, resource_status, resources, stack_name):
+def retrieve_resource_details(resource_id, resource_status, stack):
+    resources = stack.resources
+    stack_name = stack.stack_name
+
     resource = resources.get(resource_id)
     resource_id = resource_status.get("PhysicalResourceId") or resource_id
     if not resource:
@@ -200,7 +203,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         )
     try:
         # convert resource props to resource entity
-        instance = get_resource_model_instance(resource_id, resources)
+        instance = get_resource_model_instance(resource_id, stack=stack)
         if instance:
             state = instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
             return state
@@ -255,18 +258,17 @@ def extract_resource_attribute(
     attribute,
     resource_id=None,
     resource=None,
-    resources=None,
-    stack_name=None,
+    stack=None,
 ):
     LOG.debug("Extract resource attribute: %s %s", resource_type, attribute)
     is_ref_attribute = attribute in ["PhysicalResourceId", "Ref"]
     is_ref_attr_or_arn = is_ref_attribute or attribute == "Arn"
     resource = resource or {}
-    if not resource and resources:
-        resource = resources[resource_id]
+    if not resource and stack.resources:
+        resource = stack.resources[resource_id]
 
     if not resource_state:
-        resource_state = retrieve_resource_details(resource_id, {}, resources, stack_name)
+        resource_state = retrieve_resource_details(resource_id, {}, stack=stack)
         if not resource_state:
             raise DependencyNotYetSatisfied(
                 resource_ids=resource_id,
@@ -307,10 +309,8 @@ def extract_resource_attribute(
         if is_ref_attr_or_arn:
             func_arn = func_configs.get("FunctionArn")
             if func_arn:
-                return resolve_refs_recursively(stack_name, func_arn, resources)
-            func_name = resolve_refs_recursively(
-                stack_name, func_configs.get("FunctionName"), resources
-            )
+                return resolve_refs_recursively(stack, func_arn)
+            func_name = resolve_refs_recursively(stack, func_configs.get("FunctionName"))
             return aws_stack.lambda_function_arn(func_name)
         else:
             return func_configs.get(attribute)
@@ -350,7 +350,7 @@ def extract_resource_attribute(
             return f"http://{bucket_name}.{S3_STATIC_WEBSITE_HOSTNAME}"
         if is_ref_attr_or_arn:
             bucket_name = resource_props.get("BucketName")
-            bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
+            bucket_name = resolve_refs_recursively(stack, bucket_name)
             if attribute == "Arn":
                 return aws_stack.s3_bucket_arn(bucket_name)
             return bucket_name
@@ -369,13 +369,11 @@ def extract_resource_attribute(
     elif resource_type == "SNS::Topic":
         if is_ref_attribute and resource_state.get("TopicArn"):
             topic_arn = resource_state.get("TopicArn")
-            return resolve_refs_recursively(stack_name, topic_arn, resources)
+            return resolve_refs_recursively(stack, topic_arn)
     elif resource_type == "SQS::Queue":
         if is_ref_attr_or_arn:
             if attribute == "Arn" and resource_state.get("QueueArn"):
-                return resolve_refs_recursively(
-                    stack_name, resource_state.get("QueueArn"), resources
-                )
+                return resolve_refs_recursively(stack, resource_state.get("QueueArn"))
             return aws_stack.get_sqs_queue_url(resource_props.get("QueueName"))
     attribute_lower = common.first_char_to_lower(attribute)
     result = resource_state.get(attribute) or resource_state.get(attribute_lower)
@@ -416,7 +414,9 @@ def get_attr_from_model_instance(resource, attribute, resource_type, resource_id
         pass
 
 
-def resolve_ref(stack_name, ref, resources, attribute):
+def resolve_ref(stack, ref, attribute):
+    stack_name = stack.stack_name
+    resources = stack.resources
     if ref == "AWS::Region":
         return aws_stack.get_region()
     if ref == "AWS::Partition":
@@ -440,12 +440,11 @@ def resolve_ref(stack_name, ref, resources, attribute):
     if is_ref_attribute:
         # extract the Properties here, as we only want to recurse over the resource props...
         resource_props = resources.get(ref, {}).get("Properties")
-        resolve_refs_recursively(stack_name, resource_props, resources)
+        resolve_refs_recursively(stack, resource_props)
         return determine_resource_physical_id(
             resource_id=ref,
-            resources=resources,
             attribute=attribute,
-            stack_name=stack_name,
+            stack=stack,
         )
 
     if resources.get(ref):
@@ -453,7 +452,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
             return resources[ref][attribute]
 
     # fetch resource details
-    resource_new = retrieve_resource_details(ref, {}, resources, stack_name)
+    resource_new = retrieve_resource_details(ref, {}, stack=stack)
     if not resource_new:
         raise DependencyNotYetSatisfied(
             resource_ids=ref,
@@ -464,13 +463,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
     resource = resources.get(ref)
     resource_type = get_resource_type(resource)
     result = extract_resource_attribute(
-        resource_type,
-        resource_new,
-        attribute,
-        resource_id=ref,
-        resource=resource,
-        resources=resources,
-        stack_name=stack_name,
+        resource_type, resource_new, attribute, resource_id=ref, resource=resource, stack=stack
     )
     if result is None:
         LOG.warning(
@@ -486,8 +479,8 @@ def resolve_ref(stack_name, ref, resources, attribute):
 # in case we load stack exports that have circular dependencies (see issue 3438)
 # TODO: Potentially think about a better approach in the future
 @prevent_stack_overflow(match_parameters=True)
-def resolve_refs_recursively(stack_name, value, resources):
-    result = _resolve_refs_recursively(stack_name, value, resources)
+def resolve_refs_recursively(stack, value):
+    result = _resolve_refs_recursively(stack, value)
 
     # localstack specific patches
     if isinstance(result, str):
@@ -554,29 +547,31 @@ def resolve_refs_recursively(stack_name, value, resources):
 
 
 @prevent_stack_overflow(match_parameters=True)
-def _resolve_refs_recursively(stack_name, value, resources):
+# TODO: move Stack model into separate file and add type hints here
+def _resolve_refs_recursively(stack, value):
     if isinstance(value, dict):
         keys_list = list(value.keys())
         stripped_fn_lower = keys_list[0].lower().split("::")[-1] if len(keys_list) == 1 else None
 
         # process special operators
         if keys_list == ["Ref"]:
-            ref = resolve_ref(stack_name, value["Ref"], resources, attribute="Ref")
+            ref = resolve_ref(stack, value["Ref"], attribute="Ref")
             if ref is None:
+                resources = stack.resources
                 msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
-            ref = resolve_refs_recursively(stack_name, ref, resources)
+            ref = resolve_refs_recursively(stack, ref)
             return ref
 
         if stripped_fn_lower == "getatt":
             attr_ref = value[keys_list[0]]
             attr_ref = attr_ref.split(".") if isinstance(attr_ref, str) else attr_ref
-            return resolve_ref(stack_name, attr_ref[0], resources, attribute=attr_ref[1])
+            return resolve_ref(stack, attr_ref[0], attribute=attr_ref[1])
 
         if stripped_fn_lower == "join":
             join_values = value[keys_list[0]][1]
-            join_values = [resolve_refs_recursively(stack_name, v, resources) for v in join_values]
+            join_values = [resolve_refs_recursively(stack, v) for v in join_values]
             none_values = [v for v in join_values if v is None]
             if none_values:
                 raise Exception(
@@ -594,39 +589,36 @@ def _resolve_refs_recursively(stack_name, value, resources):
             item_to_sub[1].update(attr_refs)
 
             for key, val in item_to_sub[1].items():
-                val = resolve_refs_recursively(stack_name, val, resources)
+                val = resolve_refs_recursively(stack, val)
                 result = result.replace("${%s}" % key, val)
 
             # resolve placeholders
-            result = resolve_placeholders_in_string(
-                result, stack_name=stack_name, resources=resources
-            )
+            result = resolve_placeholders_in_string(result, stack=stack)
             return result
 
         if stripped_fn_lower == "findinmap":
-            attr = resolve_refs_recursively(stack_name, value[keys_list[0]][1], resources)
-            result = resolve_ref(stack_name, value[keys_list[0]][0], resources, attribute=attr)
+            attr = resolve_refs_recursively(stack, value[keys_list[0]][1])
+            result = resolve_ref(stack, value[keys_list[0]][0], attribute=attr)
             if not result:
+                resources = stack.resources
                 raise Exception(
-                    "Cannot resolve fn::FindInMap: %s %s"
-                    % (value[keys_list[0]], list(resources.keys()))
+                    f"Cannot resolve fn::FindInMap: {value[keys_list[0]]} {list(resources.keys())}"
                 )
 
             key = value[keys_list[0]][2]
             if not isinstance(key, str):
-                key = resolve_refs_recursively(stack_name, key, resources)
+                key = resolve_refs_recursively(stack, key)
 
             return result.get(key)
 
         if stripped_fn_lower == "importvalue":
-            import_value_key = resolve_refs_recursively(stack_name, value[keys_list[0]], resources)
-            stack = find_stack(stack_name)
+            import_value_key = resolve_refs_recursively(stack, value[keys_list[0]])
             stack_export = stack.exports_map.get(import_value_key) or {}
             if not stack_export.get("Value"):
                 LOG.info(
                     'Unable to find export "%s" in stack "%s", existing export names: %s',
                     import_value_key,
-                    stack_name,
+                    stack.stack_name,
                     list(stack.exports_map.keys()),
                 )
                 return None
@@ -634,49 +626,44 @@ def _resolve_refs_recursively(stack_name, value, resources):
 
         if stripped_fn_lower == "if":
             condition, option1, option2 = value[keys_list[0]]
-            condition = evaluate_condition(stack_name, condition, resources)
-            return resolve_refs_recursively(
-                stack_name, option1 if condition else option2, resources
-            )
+            condition = evaluate_condition(stack, condition)
+            return resolve_refs_recursively(stack, option1 if condition else option2)
 
         if stripped_fn_lower == "condition":
-            result = evaluate_condition(stack_name, value[keys_list[0]], resources)
+            result = evaluate_condition(stack, value[keys_list[0]])
             return result
 
         if stripped_fn_lower == "not":
             condition = value[keys_list[0]][0]
-            condition = resolve_refs_recursively(stack_name, condition, resources)
+            condition = resolve_refs_recursively(stack, condition)
             return not condition
 
         if stripped_fn_lower in ["and", "or"]:
             conditions = value[keys_list[0]]
-            results = [resolve_refs_recursively(stack_name, cond, resources) for cond in conditions]
+            results = [resolve_refs_recursively(stack, cond) for cond in conditions]
             result = all(results) if stripped_fn_lower == "and" else any(results)
             return result
 
         if stripped_fn_lower == "equals":
             operand1, operand2 = value[keys_list[0]]
-            operand1 = resolve_refs_recursively(stack_name, operand1, resources)
-            operand2 = resolve_refs_recursively(stack_name, operand2, resources)
+            operand1 = resolve_refs_recursively(stack, operand1)
+            operand2 = resolve_refs_recursively(stack, operand2)
             return str(operand1) == str(operand2)
 
         if stripped_fn_lower == "select":
             index, values = value[keys_list[0]]
-            index = resolve_refs_recursively(stack_name, index, resources)
-            values = resolve_refs_recursively(stack_name, values, resources)
+            index = resolve_refs_recursively(stack, index)
+            values = resolve_refs_recursively(stack, values)
             return values[index]
 
         if stripped_fn_lower == "split":
             delimiter, string = value[keys_list[0]]
-            delimiter = resolve_refs_recursively(stack_name, delimiter, resources)
-            string = resolve_refs_recursively(stack_name, string, resources)
+            delimiter = resolve_refs_recursively(stack, delimiter)
+            string = resolve_refs_recursively(stack, string)
             return string.split(delimiter)
 
         if stripped_fn_lower == "getazs":
-            region = (
-                resolve_refs_recursively(stack_name, value["Fn::GetAZs"], resources)
-                or aws_stack.get_region()
-            )
+            region = resolve_refs_recursively(stack, value["Fn::GetAZs"]) or aws_stack.get_region()
             azs = []
             for az in ("a", "b", "c", "d"):
                 azs.append("%s%s" % (region, az))
@@ -685,27 +672,27 @@ def _resolve_refs_recursively(stack_name, value, resources):
 
         if stripped_fn_lower == "base64":
             value_to_encode = value[keys_list[0]]
-            value_to_encode = resolve_refs_recursively(stack_name, value_to_encode, resources)
+            value_to_encode = resolve_refs_recursively(stack, value_to_encode)
             return to_str(base64.b64encode(to_bytes(value_to_encode)))
 
         for key, val in dict(value).items():
-            value[key] = resolve_refs_recursively(stack_name, val, resources)
+            value[key] = resolve_refs_recursively(stack, val)
 
     if isinstance(value, list):
         for i in range(len(value)):
-            value[i] = resolve_refs_recursively(stack_name, value[i], resources)
+            value[i] = resolve_refs_recursively(stack, value[i])
 
     return value
 
 
-def resolve_placeholders_in_string(result, stack_name=None, resources=None):
+def resolve_placeholders_in_string(result, stack):
+    resources = stack.resources
+
     def _replace(match):
         parts = match.group(1).split(".")
         if len(parts) >= 2:
             resource_name, _, attr_name = match.group(1).partition(".")
-            resolved = resolve_ref(
-                stack_name, resource_name.strip(), resources, attribute=attr_name.strip()
-            )
+            resolved = resolve_ref(stack, resource_name.strip(), attribute=attr_name.strip())
             if resolved is None:
                 raise DependencyNotYetSatisfied(
                     resource_ids=resource_name,
@@ -719,9 +706,8 @@ def resolve_placeholders_in_string(result, stack_name=None, resources=None):
                 resource_type,
                 resource_json.get(KEY_RESOURCE_STATE, {}),
                 "Ref",
-                resources=resources,
+                stack=stack,
                 resource_id=parts[0],
-                stack_name=stack_name,
             )
             if result is None:
                 raise DependencyNotYetSatisfied(
@@ -729,7 +715,7 @@ def resolve_placeholders_in_string(result, stack_name=None, resources=None):
                     message="Unable to resolve attribute ref %s" % match.group(1),
                 )
             # make sure we resolve any functions/placeholders in the extracted string
-            result = resolve_refs_recursively(stack_name, result, resources)
+            result = resolve_refs_recursively(stack, result)
             return result
         # TODO raise exception here?
         return match.group(0)
@@ -739,17 +725,17 @@ def resolve_placeholders_in_string(result, stack_name=None, resources=None):
     return result
 
 
-def evaluate_condition(stack_name, condition, resources):
-    condition = resolve_refs_recursively(stack_name, condition, resources)
-    condition = resolve_ref(stack_name, condition, resources, attribute="Ref")
-    condition = resolve_refs_recursively(stack_name, condition, resources)
+def evaluate_condition(stack, condition):
+    condition = resolve_refs_recursively(stack, condition)
+    condition = resolve_ref(stack, condition, attribute="Ref")
+    condition = resolve_refs_recursively(stack, condition)
     return condition
 
 
-def evaluate_resource_condition(resource, stack_name, resources):
+def evaluate_resource_condition(stack, resource):
     condition = resource.get("Condition")
     if condition:
-        condition = evaluate_condition(stack_name, condition, resources)
+        condition = evaluate_condition(stack, condition)
         if condition is False or condition in FALSE_STRINGS or is_none_or_empty_value(condition):
             return False
     return True
@@ -768,7 +754,10 @@ def get_stack_parameter(stack_name, parameter):
     return (result or [None])[0]
 
 
-def update_resource(resource_id, resources, stack_name):
+def update_resource(resource_id, stack):
+    resources = stack.resources
+    stack_name = stack.stack_name
+
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
     if resource_type not in UPDATEABLE_RESOURCES:
@@ -776,16 +765,16 @@ def update_resource(resource_id, resources, stack_name):
         return
     LOG.info("Updating resource %s of type %s", resource_id, resource_type)
 
-    instance = get_resource_model_instance(resource_id, resources)
+    instance = get_resource_model_instance(resource_id, stack=stack)
     if instance:
         result = instance.update_resource(resource, stack_name=stack_name, resources=resources)
         instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
         return result
 
 
-def get_resource_model_instance(resource_id: str, resources) -> Optional[GenericBaseModel]:
+def get_resource_model_instance(resource_id: str, stack) -> Optional[GenericBaseModel]:
     """Obtain a typed resource entity instance representing the given stack resource."""
-    resource = resources[resource_id]
+    resource = stack.resources[resource_id]
     resource_type = get_resource_type(resource)
     canonical_type = canonical_resource_type(resource_type)
     resource_class = RESOURCE_MODELS.get(canonical_type)
@@ -853,18 +842,19 @@ def prepare_template_body(req_data):
     return template_preparer.prepare_template_body(req_data)
 
 
-def deploy_resource(resource_id, resources, stack_name):
-    result = execute_resource_action(resource_id, resources, stack_name, ACTION_CREATE)
+def deploy_resource(stack, resource_id):
+    result = execute_resource_action(resource_id, stack, ACTION_CREATE)
     return result
 
 
-def delete_resource(resource_id, resources, stack_name):
-    return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
+def delete_resource(stack, resource_id):
+    return execute_resource_action(resource_id, stack, ACTION_DELETE)
 
 
-def execute_resource_action(
-    resource_id: str, resources: Dict[str, Dict], stack_name: str, action_name: str
-):
+def execute_resource_action(resource_id: str, stack, action_name: str):
+    stack_name = stack.stack_name
+    resources = stack.resources
+
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
     func_details = get_deployment_config(resource_type)
@@ -895,15 +885,20 @@ def execute_resource_action(
         client = get_client(resource, func)
         if client:
             result = configure_resource_via_sdk(
-                resource_id, resources, resource_type, func, stack_name, action_name
+                stack,
+                resource_id,
+                resource_type,
+                func,
+                action_name,
             )
             results.append(result)
     return (results or [None])[0]
 
 
-def configure_resource_via_sdk(
-    resource_id, resources, resource_type, func_details, stack_name, action_name
-):
+def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, action_name):
+    resources = stack.resources
+    stack_name = stack.stack_name
+
     resource = resources[resource_id]
 
     if resource_type == "EC2::Instance":
@@ -985,9 +980,7 @@ def configure_resource_via_sdk(
     # convert refs
     for param_key, param_value in dict(params).items():
         if param_value is not None:
-            param_value = params[param_key] = resolve_refs_recursively(
-                stack_name, param_value, resources
-            )
+            params[param_key] = resolve_refs_recursively(stack, param_value)
 
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
     params = fix_account_id_in_arns(params)
@@ -1034,11 +1027,9 @@ def get_action_name_for_resource_change(res_change):
 
 
 # TODO: this shouldn't be called for stack parameters
-def determine_resource_physical_id(
-    resource_id, resources=None, stack=None, attribute=None, stack_name=None
-):
-    resources = resources or stack.resources
-    stack_name = stack_name or stack.stack_name
+def determine_resource_physical_id(resource_id, stack=None, attribute=None):
+    resources = stack.resources
+    stack_name = stack.stack_name
     resource = resources.get(resource_id, {})
     if not resource:
         return
@@ -1099,10 +1090,9 @@ def determine_resource_physical_id(
         resource_type,
         {},
         attribute or "PhysicalResourceId",
-        stack_name=stack_name,
         resource_id=resource_id,
         resource=resource,
-        resources=resources,
+        stack=stack,
     )
     if result is not None:
         # note that value could be an empty string here (in case of Parameter values)
@@ -1250,15 +1240,14 @@ class TemplateDeployer(object):
             return
         self.stack.set_stack_status("DELETE_IN_PROGRESS")
         stack_resources = list(self.stack.resources.values())
-        stack_name = self.stack.stack_name
         resources = {r["LogicalResourceId"]: common.clone_safe(r) for r in stack_resources}
         for key, resource in resources.items():
             resource["Properties"] = resource.get("Properties", common.clone_safe(resource))
             resource["ResourceType"] = resource.get("ResourceType") or resource.get("Type")
         for resource_id, resource in resources.items():
             # TODO: cache condition value in resource details on deployment and use cached value here
-            if evaluate_resource_condition(resource, stack_name, resources):
-                delete_resource(resource_id, resources, stack_name)
+            if evaluate_resource_condition(self, resource):
+                delete_resource(self, resource_id)
                 self.stack.set_resource_status(resource_id, "DELETE_COMPLETE")
         # update status
         self.stack.set_stack_status("DELETE_COMPLETE")
@@ -1278,9 +1267,7 @@ class TemplateDeployer(object):
     def is_deployed(self, resource):
         resource_status = {}
         resource_id = resource["LogicalResourceId"]
-        details = retrieve_resource_details(
-            resource_id, resource_status, self.resources, self.stack_name
-        )
+        details = retrieve_resource_details(resource_id, resource_status, stack=self.stack)
         return bool(details)
 
     def is_updateable(self, resource):
@@ -1525,8 +1512,9 @@ class TemplateDeployer(object):
         if not contains_changes:
             raise NoStackUpdates("No updates are to be performed.")
 
-        # merge stack outputs
+        # merge stack outputs and conditions
         existing_stack.template["Outputs"].update(new_stack.template.get("Outputs", {}))
+        existing_stack.template["Conditions"].update(new_stack.template.get("Conditions", {}))
 
         # start deployment loop
         return self.apply_changes_in_loop(
@@ -1610,7 +1598,7 @@ class TemplateDeployer(object):
                         if not self.all_resource_dependencies_satisfied(resource):
                             j += 1
                             continue
-                    self.apply_change(change, stack, new_resources, stack_name=stack_name)
+                    self.apply_change(change, stack=stack)
                     changes_done.append(change)
                     del changes[j]
                     updated = True
@@ -1641,14 +1629,14 @@ class TemplateDeployer(object):
         action = res_change["Action"]
 
         # check resource condition, if present
-        if not evaluate_resource_condition(resource, stack.stack_name, new_resources):
+        if not evaluate_resource_condition(stack, resource):
             LOG.debug(
                 'Skipping deployment of "%s", as resource condition evaluates to false', resource_id
             )
             return
 
         # resolve refs in resource details
-        resolve_refs_recursively(stack.stack_name, resource, new_resources)
+        resolve_refs_recursively(stack, resource)
 
         if action in ["Add", "Modify"]:
             is_deployed = self.is_deployed(resource)
@@ -1665,24 +1653,25 @@ class TemplateDeployer(object):
                 return False
         return True
 
-    def apply_change(self, change, old_stack, new_resources, stack_name):
+    def apply_change(self, change, stack):
         change_details = change["ResourceChange"]
         action = change_details["Action"]
         resource_id = change_details["LogicalResourceId"]
-        resource = new_resources[resource_id]
-        if not evaluate_resource_condition(resource, stack_name, new_resources):
+        resource = stack.resources[resource_id]
+        if not evaluate_resource_condition(stack, resource):
             return
+
         # execute resource action
         result = None
         if action == "Add":
-            result = deploy_resource(resource_id, new_resources, stack_name)
+            result = deploy_resource(self, resource_id)
         elif action == "Remove":
-            result = delete_resource(resource_id, old_stack.resources, stack_name)
+            result = delete_resource(self, resource_id)
         elif action == "Modify":
-            result = update_resource(resource_id, new_resources, stack_name)
+            result = update_resource(resource_id, stack=stack)
 
         # update resource status and physical resource id
         stack_action = get_action_name_for_resource_change(action)
-        self.update_resource_details(resource_id, result, stack=old_stack, action=stack_action)
+        self.update_resource_details(resource_id, result, stack=stack, action=stack_action)
 
         return result

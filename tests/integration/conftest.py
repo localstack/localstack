@@ -48,9 +48,9 @@ def pytest_runtestloop(session):
         # OpenSearch is a pytest, not a unit test class, therefore we check based on the item parent's name
         # (test_opensearch.py).
         if "opensearch" in str(item.parent).lower():
-            test_init_functions.add(opensearch_install_async())
+            test_init_functions.add(opensearch_install_async)
         if "es" in str(item.parent).lower():
-            test_init_functions.add(es_install_async())
+            test_init_functions.add(es_install_async)
 
     # add init functions for certain tests that download/install things
     for test_class in test_classes:
