@@ -285,6 +285,7 @@ jobs:
             /tmp/workspace
           paths:
             - repo/target/reports/
+            - repo/target/coverage/
 
   report:
     docker:
