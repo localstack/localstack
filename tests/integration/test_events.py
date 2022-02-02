@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 import json
 import os
 import unittest
@@ -685,7 +686,12 @@ class EventsTest(unittest.TestCase):
             self.assertTrue("key" in paths_list[0] and "value" in paths_list[0])
             self.assertTrue(events[0].get("key") == "value")
 
-            self.assertTrue("Basic user:pass" in headers_list)
+            # TODO examine behavior difference between LS pro/community
+            # Pro seems to (correctly) use base64 for basic authentication instead of plaintext
+            user_pass = to_str(base64.b64encode(b"user:pass"))
+            self.assertTrue(
+                "Basic user:pass" in headers_list or f"Basic {user_pass}" in headers_list
+            )
             self.assertTrue("apikey_secret" in headers_list)
             self.assertTrue(bearer in headers_list)
 

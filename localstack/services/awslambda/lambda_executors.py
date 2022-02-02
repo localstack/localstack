@@ -1327,6 +1327,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         lambda_cwd = lambda_function.cwd
         environment = self._prepare_environment(lambda_function)
 
+        environment["LOCALSTACK_HOSTNAME"] = config.LOCALSTACK_HOSTNAME
         environment["EDGE_PORT"] = str(config.EDGE_PORT)
         if lambda_function.timeout:
             environment["AWS_LAMBDA_FUNCTION_TIMEOUT"] = str(lambda_function.timeout)

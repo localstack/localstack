@@ -76,7 +76,7 @@ URL_LOCALSTACK_FAT_JAR = (
 ).format(v=LOCALSTACK_MAVEN_VERSION)
 
 MARKER_FILE_LIGHT_VERSION = "%s/.light-version" % dirs.static_libs
-IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local"
+IMAGE_NAME_SFN_LOCAL = "amazon/aws-stepfunctions-local:1.7.9"
 ARTIFACTS_REPO = "https://github.com/localstack/localstack-artifacts"
 SFN_PATCH_URL_PREFIX = (
     f"{ARTIFACTS_REPO}/raw/2958554c8aeadff0e8f5d0e35f6e520d834854ea/stepfunctions-local-patch"

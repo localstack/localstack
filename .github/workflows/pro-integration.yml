@@ -74,6 +74,7 @@ jobs:
         working-directory: localstack
         run: |
           make install
+          make init
       - name: Link community LocalStack into Pro venv
         run: |
           source .venv/bin/activate

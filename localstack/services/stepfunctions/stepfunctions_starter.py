@@ -72,7 +72,17 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
     log_startup_message("StepFunctions")
     start_proxy_for_service("stepfunctions", port, backend_port, update_listener)
     global PROCESS_THREAD
-    PROCESS_THREAD = do_run(cmd, asynchronous, strip_color=True)
+    # TODO: change ports in stepfunctions.jar, then update here
+    PROCESS_THREAD = do_run(
+        cmd,
+        asynchronous,
+        strip_color=True,
+        env_vars={
+            "EDGE_PORT": config.EDGE_PORT_HTTP or config.EDGE_PORT,
+            "EDGE_PORT_HTTP": config.EDGE_PORT_HTTP or config.EDGE_PORT,
+            "DATA_DIR": config.DATA_DIR,
+        },
+    )
     return PROCESS_THREAD
 
 
