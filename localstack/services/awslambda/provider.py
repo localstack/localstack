@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.awslambda import (
@@ -11,17 +12,16 @@ from localstack.aws.api.awslambda import (
     Qualifier,
     String,
 )
-from localstack.services.awslambda.invocation import lambda_service
 from localstack.services.generic_proxy import ProxyListener
 
 LOG = logging.getLogger(__name__)
 
 
 class NoopListener(ProxyListener):
-    def forward_request(self, *args, **kwargs):
+    def forward_request(self, *args: Any, **kwargs: Any) -> bool:
         return True
 
-    def return_response(self, *args, **kwargs):
+    def return_response(self, *args: Any, **kwargs: Any) -> bool:
         return True
 
 
@@ -37,4 +37,4 @@ class LambdaProvider(LambdaApi):
         qualifier: Qualifier = None,
     ) -> InvocationResponse:
         LOG.debug("Lambda got invoked!")
-        lambda_service
+        return {}
