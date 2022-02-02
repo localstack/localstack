@@ -150,7 +150,9 @@ def get_elasticsearch_install_version(version: str) -> str:
 
 
 def get_elasticsearch_install_dir(version: str) -> str:
-    if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
+    if version == get_elasticsearch_install_version(
+        ELASTICSEARCH_DEFAULT_VERSION
+    ) and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         LOG.debug(
             "Chose to install to static_libs, version %s, path light exists: %s, path light: %s",
             version,
