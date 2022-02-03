@@ -32,7 +32,8 @@ def test_version(runner):
     assert result.output.strip() == constants.VERSION
 
 
-@pytest.mark.skip_offline
+# TODO this test assumes LS is not running, which is not true in CI for example
+@pytest.mark.skip
 def test_status_services_error(runner):
     result = runner.invoke(cli, ["status", "services"])
     assert result.exit_code == 1
