@@ -580,6 +580,9 @@ LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 # whether lambdas should use stay open mode if executed in "docker-reuse" executor
 LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE")
 
+# truncate output string slices value
+LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
+
 # A comma-delimited string of stream names and its corresponding shard count to
 # initialize during startup.
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
@@ -654,6 +657,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_STAY_OPEN_MODE",
+    "LAMBDA_TRUNCATE_STDOUT",
     "LEGACY_DOCKER_CLIENT",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_HOSTNAME",

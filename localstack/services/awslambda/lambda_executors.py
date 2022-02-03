@@ -9,6 +9,7 @@ import re
 import shlex
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import traceback
@@ -17,6 +18,7 @@ from multiprocessing import Process, Queue
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
+from localstack.config import LAMBDA_TRUNCATE_STDOUT, TMP_FOLDER
 from localstack.constants import DEFAULT_LAMBDA_CONTAINER_REGISTRY
 from localstack.runtime.hooks import hook_spec
 from localstack.services.awslambda.lambda_utils import (
@@ -645,7 +647,7 @@ class LambdaExecutorContainers(LambdaExecutor):
             result = to_str(result).strip()
         except Exception:
             pass
-        log_output = to_str(log_output).strip()
+
         # Note: The user's code may have been logging to stderr, in which case the logs
         # will be part of the "result" variable here. Hence, make sure that we extract
         # only the *last* line of "result" and consider anything above that as log output.
@@ -660,12 +662,19 @@ class LambdaExecutorContainers(LambdaExecutor):
                 log_output += "\n%s" % additional_logs
 
         func_arn = lambda_function and lambda_function.arn()
-        log_lambda_result(func_arn, result, log_output)
+
+        output = OutputLog(result, log_output)
+        LOG.debug(
+            f"Lambda {func_arn} result / log output:"
+            f"\n{output.stdout_formatted()}"
+            f"\n>{output.stderr_formatted()}"
+        )
 
         # store log output - TODO get live logs from `process` above?
         store_lambda_logs(lambda_function, log_output)
 
         if error:
+            output.output_file()
             raise InvocationException(
                 "Lambda process returned with error. Result: %s. Output:\n%s"
                 % (result, log_output),
@@ -1277,6 +1286,7 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         process = run(cmd, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs)
         result, log_output = process.communicate()
+
         try:
             result = to_str(result).strip()
         except Exception:
@@ -1299,12 +1309,18 @@ class LambdaExecutorLocal(LambdaExecutor):
                 log_output += "\n%s" % additional_logs
 
         func_arn = lambda_function and lambda_function.arn()
-        log_lambda_result(func_arn, result, log_output)
+        output = OutputLog(result, log_output)
+        LOG.debug(
+            f"Lambda {func_arn} result / log output:"
+            f"\n{output.stdout_formatted()}"
+            f"\n>{output.stderr_formatted()}"
+        )
 
         # store log output - TODO get live logs from `process` above?
         # store_lambda_logs(lambda_function, log_output)
 
         if return_code != 0:
+            output.output_file()
             raise InvocationException(
                 "Lambda process returned error status code: %s. Result: %s. Output:\n%s"
                 % (return_code, result, log_output),
@@ -1617,11 +1633,26 @@ class Util:
         return env_vars
 
 
-def log_lambda_result(func_arn, result, log_output):
-    result = to_str(result or "")
-    log_output = truncate(to_str(log_output or ""), max_length=2000)
-    log_formatted = log_output.strip().replace("\n", "\n> ")
-    LOG.debug("Lambda %s result / log output:\n%s\n> %s", func_arn, result.strip(), log_formatted)
+class OutputLog:
+
+    __slots__ = ["_stdout", "_stderr"]
+
+    def __init__(self, stdout, stderr):
+        self._stdout = stdout
+        self._stderr = stderr
+
+    def stderr_formatted(self, truncated_to: int = LAMBDA_TRUNCATE_STDOUT):
+        return truncate(to_str(self._stderr).strip().replace("\n", "\n> "), truncated_to)
+
+    def stdout_formatted(self, truncated_to: int = LAMBDA_TRUNCATE_STDOUT):
+        return truncate(to_str(self._stdout).strip(), truncated_to)
+
+    def output_file(self):
+        with tempfile.NamedTemporaryFile(
+            dir=TMP_FOLDER, delete=False, suffix=".log", prefix="lambda_"
+        ) as f:
+            LOG.info(f"writing log to file '{f.name}'")
+            f.write(self._stderr)
 
 
 # --------------
