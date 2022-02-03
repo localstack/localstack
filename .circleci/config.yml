@@ -227,11 +227,8 @@ jobs:
           name: Build full docker image
           command: make docker-build
       - run:
-          name: Run tests
-          command: |
-            PYTEST_ARGS='--junitxml=target/reports/test-report-<< parameters.platform >>.xml' \
-            COVERAGE_FILE='target/coverage/.coverage.<< parameters.platform >>' \
-            make docker-run-tests
+          name: Save full docker image
+          command: PLATFORM="<< parameters.platform >>" make docker-save-image
       - when:
           condition:
             equal: [ master, << pipeline.git.branch >> ]
@@ -243,9 +240,6 @@ jobs:
                 name: Run pre-release smoke tests
                 command: make ci-pro-smoke-tests
             - run:
-                name: Save full docker image
-                command: PLATFORM="<< parameters.platform >>" make docker-save-image
-            - run:
                 name: Save light docker image
                 command: PLATFORM="<< parameters.platform >>" make docker-save-image-light
       - persist_to_workspace:
@@ -253,8 +247,45 @@ jobs:
             /tmp/workspace
           paths:
             - repo/target/
+
+  docker-test:
+    parameters:
+      platform:
+        description: "Platform to build for"
+        default: "amd64"
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: "ubuntu-2004:202107-02"
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker localstack-full image
+          command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
+      - run:
+          name: Run tests
+          command: |
+            PYTEST_ARGS='--junitxml=target/reports/test-report-<< parameters.platform >>.xml' \
+            COVERAGE_FILE='target/coverage/.coverage.<< parameters.platform >>' \
+            make docker-run-tests
       - store_test_results:
           path: target/reports/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/reports/
+            - repo/target/coverage/
 
   report:
     docker:
@@ -346,13 +377,27 @@ workflows:
           resource_class: arm.medium
           requires:
             - preflight
+      - docker-test:
+          name: docker-test-arm64
+          platform: arm64
+          resource_class: arm.medium
+          machine_image: ubuntu-2004:202101-01
+          requires:
+            - docker-build-arm64
+      - docker-test:
+          name: docker-test-amd64
+          platform: amd64
+          resource_class: medium
+          machine_image: ubuntu-2004:202107-02
+          requires:
+            - docker-build-amd64
       - report:
           requires:
             - itest-lambda-docker
             - itest-sqs-provider
             - itest-bootstrap
-            - docker-build-amd64
-            - docker-build-arm64
+            - docker-test-amd64
+            - docker-test-arm64
       - docker-push:
           filters:
             branches:
@@ -361,5 +406,5 @@ workflows:
             - itest-lambda-docker
             - itest-sqs-provider
             - itest-bootstrap
-            - docker-build-amd64
-            - docker-build-arm64
+            - docker-test-amd64
+            - docker-test-arm64

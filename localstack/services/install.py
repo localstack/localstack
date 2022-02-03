@@ -150,7 +150,9 @@ def get_elasticsearch_install_version(version: str) -> str:
 
 
 def get_elasticsearch_install_dir(version: str) -> str:
-    if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
+    if version == get_elasticsearch_install_version(
+        ELASTICSEARCH_DEFAULT_VERSION
+    ) and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         # install the default version into a subfolder of the code base
         install_dir = os.path.join(dirs.static_libs, "elasticsearch")
     else:
@@ -195,7 +197,8 @@ def install_elasticsearch(version=None):
                 LOG.info("Installing Elasticsearch plugin %s", plugin)
 
                 def try_install():
-                    safe_run([plugin_binary, "install", "-b", plugin])
+                    output = safe_run([plugin_binary, "install", "-b", plugin])
+                    LOG.debug("Plugin installation output: %s", output)
 
                 # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
                 download_attempts = 3
