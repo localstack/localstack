@@ -88,6 +88,7 @@ docker-save-image-light:
 TAG ?= $(IMAGE_NAME_FULL)
 # By default we load the result to the docker daemon
 DOCKER_BUILD_FLAGS ?= "--load"
+DOCKERFILE ?= "./Dockerfile"
 docker-build: 			  ## Build Docker image
 	# prepare
 	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
@@ -100,7 +101,7 @@ docker-build: 			  ## Build Docker image
 		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
 		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
 		--add-host="localhost.localdomain:127.0.0.1" \
-		-t $(TAG) $(DOCKER_BUILD_FLAGS) .
+		-t $(TAG) $(DOCKER_BUILD_FLAGS) . -f $(DOCKERFILE)
 
 docker-build-light: 	  ## Build Light Docker image
 	make DOCKER_BUILD_FLAGS="--build-arg IMAGE_TYPE=light --load" \
@@ -234,13 +235,16 @@ test-docker-mount-code:
 
 # Note: the ci-* targets below should only be used in CI builds!
 
+CI_SMOKE_IMAGE_NAME ?= $(IMAGE_NAME_LIGHT)
 ci-pro-smoke-tests:
 	pip3 install --upgrade awscli-local
 	pip3 install --upgrade localstack
-	IMAGE_NAME=$(IMAGE_NAME_LIGHT) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DNS_ADDRESS=0 DEBUG=1 localstack start -d
+	IMAGE_NAME=$(CI_SMOKE_IMAGE_NAME) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DNS_ADDRESS=0 DEBUG=1 localstack start -d
 	docker logs -f $(MAIN_CONTAINER_NAME) &
 	localstack wait -t 120
+	awslocal s3 mb s3://test-bucket
 	awslocal qldb list-ledgers
+	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup --db-cluster-parameter-group-name mydbclusterparametergroup
 	awslocal rds describe-db-instances
 	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
 	awslocal lambda list-layers
@@ -278,9 +282,5 @@ clean:             		  ## Clean up (npm dependencies, downloaded infrastructure 
 clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
-
-# deprecated commands
-infra:             		  # legacy command used in the supervisord file to. Do not use subshell to allow proper signal handling.
-	$(VENV_RUN); LOCALSTACK_INFRA_PROCESS=1 exec bin/localstack start --host --no-banner
 
 .PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints init init-testlibs dist publish coveralls start docker-save-image docker-save-image-light docker-build docker-build-light docker-build-multi-platform docker-push-master docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra
