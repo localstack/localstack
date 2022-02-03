@@ -6,12 +6,11 @@ services:
     image: localstack/localstack
     network_mode: bridge
     ports:
-      - "127.0.0.1:53:53"                # only required for Pro
-      - "127.0.0.1:53:53/udp"            # only required for Pro
-      - "127.0.0.1:443:443"              # only required for Pro
-      - "127.0.0.1:4510-4559:4510-4559"
-      - "127.0.0.1:4566:4566"
-      - "127.0.0.1:4571:4571"
+      - "127.0.0.1:53:53"                # only required for Pro (DNS)
+      - "127.0.0.1:53:53/udp"            # only required for Pro (DNS)
+      - "127.0.0.1:443:443"              # only required for Pro (LocalStack HTTPS Edge Proxy)
+      - "127.0.0.1:4510-4559:4510-4559"  # external service port range
+      - "127.0.0.1:4566:4566"            # LocalStack Edge Proxy
     environment:
       - SERVICES=${SERVICES-}
       - DEBUG=${DEBUG-}
