@@ -261,19 +261,25 @@ class TestOpensearchProvider:
 
     def test_create_domain(self, opensearch_client):
         domain_name = f"opensearch-domain-{short_uid()}"
-        opensearch_client.create_domain(DomainName=domain_name)
+        try:
+            opensearch_client.create_domain(DomainName=domain_name)
 
-        response = opensearch_client.list_domain_names(EngineType="OpenSearch")
-        domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+            response = opensearch_client.list_domain_names(EngineType="OpenSearch")
+            domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
 
-        assert domain_name in domain_names
+            assert domain_name in domain_names
+        finally:
+            opensearch_client.delete_domain(DomainName=domain_name)
 
     def test_create_existing_domain_causes_exception(self, opensearch_client):
         domain_name = f"opensearch-domain-{short_uid()}"
-        opensearch_client.create_domain(DomainName=domain_name)
-        with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+        try:
             opensearch_client.create_domain(DomainName=domain_name)
-        assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
+            with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+                opensearch_client.create_domain(DomainName=domain_name)
+            assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
+        finally:
+            opensearch_client.delete_domain(DomainName=domain_name)
 
     def test_describe_domains(self, opensearch_client, opensearch_domain):
         response = opensearch_client.describe_domains(DomainNames=[opensearch_domain])

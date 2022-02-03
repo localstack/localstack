@@ -104,19 +104,25 @@ class TestElasticsearchProvider:
 
     def test_create_domain(self, es_client):
         domain_name = f"es-domain-{short_uid()}"
-        es_client.create_elasticsearch_domain(DomainName=domain_name)
+        try:
+            es_client.create_elasticsearch_domain(DomainName=domain_name)
 
-        response = es_client.list_domain_names(EngineType="Elasticsearch")
-        domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+            response = es_client.list_domain_names(EngineType="Elasticsearch")
+            domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
 
-        assert domain_name in domain_names
+            assert domain_name in domain_names
+        finally:
+            es_client.delete_elasticsearch_domain(DomainName=domain_name)
 
     def test_create_existing_domain_causes_exception(self, es_client):
         domain_name = f"es-domain-{short_uid()}"
-        es_client.create_elasticsearch_domain(DomainName=domain_name)
-        with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+        try:
             es_client.create_elasticsearch_domain(DomainName=domain_name)
-        assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
+            with pytest.raises(botocore.exceptions.ClientError) as exc_info:
+                es_client.create_elasticsearch_domain(DomainName=domain_name)
+            assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
+        finally:
+            es_client.delete_elasticsearch_domain(DomainName=domain_name)
 
     def test_describe_domains(self, es_client, opensearch_domain):
         response = es_client.describe_elasticsearch_domains(DomainNames=[opensearch_domain])
