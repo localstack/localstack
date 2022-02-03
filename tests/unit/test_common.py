@@ -13,7 +13,6 @@ import yaml
 
 from localstack import config
 from localstack.utils import common
-from localstack.utils.bootstrap import in_ci
 from localstack.utils.common import (
     ExternalServicePortsManager,
     Mock,
@@ -359,9 +358,6 @@ class TestCommon:
         assert fn(-12.521, decimals=4) == "-12.521"
         assert fn(-1.2234354123e3, decimals=4) == "-1223.4354"
 
-    @pytest.mark.skipif(
-        in_ci(), reason="we do not want to cleanup threads and processes while running the tests"
-    )
     def test_cleanup_threads_and_processes_calls_shutdown_hooks(self):
         # TODO: move all run/concurrency related tests into separate class
 

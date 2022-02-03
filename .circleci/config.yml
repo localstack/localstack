@@ -44,11 +44,21 @@ jobs:
           command: make lint
       - run:
           name: Unit tests
-          command: |
-            source .venv/bin/activate
-            pytest tests/unit --junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests
+          environment:
+            TEST_PATH: "tests/unit"
+            PYTEST_ARGS: "--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
       - store_test_results:
           path: target/reports/
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
 
   itest-lambda-docker:
     machine:
@@ -276,7 +286,7 @@ jobs:
       - run:
           name: Run integration tests
           command: |
-            TEST_FILES=$(circleci tests glob "tests/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
+            TEST_FILES=$(circleci tests glob "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
             PYTEST_ARGS="-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
             COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
             TEST_PATH=$TEST_FILES \
