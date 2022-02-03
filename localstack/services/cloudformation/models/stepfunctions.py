@@ -93,7 +93,7 @@ class SFNStateMachine(GenericBaseModel):
                 "name": params.get("StateMachineName", PLACEHOLDER_RESOURCE_NAME),
                 "definition": _get_definition(params),
                 "roleArn": params.get("RoleArn"),
-                "type": params.get("StateMachineTyp", None),
+                "type": params.get("StateMachineType", None),
             }
 
         return {
