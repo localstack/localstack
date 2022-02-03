@@ -266,6 +266,7 @@ jobs:
       image: << parameters.machine_image >>
     resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
+    parallelism: 2
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -275,8 +276,10 @@ jobs:
       - run:
           name: Run tests
           command: |
-            PYTEST_ARGS='--junitxml=target/reports/test-report-<< parameters.platform >>.xml' \
-            COVERAGE_FILE='target/coverage/.coverage.<< parameters.platform >>' \
+            TEST_PATH=$(circleci tests glob "tests/**/test_*.py" | circleci tests split --split-by=timings)
+            echo $TEST_PATH
+            PYTEST_ARGS="--junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+            COVERAGE_FILE='target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}' \
             make docker-run-tests
       - store_test_results:
           path: target/reports/
