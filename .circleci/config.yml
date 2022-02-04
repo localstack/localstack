@@ -42,6 +42,14 @@ jobs:
       - run:
           name: Linting
           command: make lint
+
+  unit-tests:
+    docker:
+      - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           name: Unit tests
           environment:
@@ -227,12 +235,6 @@ jobs:
                   # (https://github.com/docker/compose/issues/6678#issuecomment-526831488)
                   sudo apt-get install docker-ce docker-ce-cli containerd.io haveged -y
                   sudo usermod -aG docker $USER
-            - run:
-                # Install the emulation support before starting to build (resets the build cache)
-                name: Install amd64 emulation support for lambda tests
-                command: |
-                  docker run --rm --privileged tonistiigi/binfmt:latest --install all
-                  docker buildx create --name multiarch-builder --use
       - run:
           name: Build full docker image
           command: make docker-build
@@ -374,6 +376,9 @@ workflows:
       - itest-bootstrap:
           requires:
             - preflight
+      - unit-tests:
+          requires:
+            - preflight
       - docker-build:
           name: docker-build-amd64
           platform: amd64
@@ -411,6 +416,7 @@ workflows:
             - itest-bootstrap
             - docker-test-amd64
             - docker-test-arm64
+            - unit-tests
       - docker-push:
           filters:
             branches:
@@ -421,3 +427,4 @@ workflows:
             - itest-bootstrap
             - docker-test-amd64
             - docker-test-arm64
+            - unit-tests
