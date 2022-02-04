@@ -232,9 +232,8 @@ class OpensearchCluster(Server):
             "OPENSEARCH_TMPDIR": self.directories.tmp,
         }
 
-    @staticmethod
-    def _log_listener(line, **_kwargs):
-        LOG.info(line.rstrip())
+    def _log_listener(self, line, **_kwargs):
+        LOG.info("[%s] %s", self.port, line.rstrip())
 
 
 class CustomEndpoint:
