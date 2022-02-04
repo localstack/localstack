@@ -9,7 +9,6 @@ from datetime import datetime
 from io import BytesIO
 
 import pytest
-from integration.awslambda.functions import lambda_integration
 
 from localstack import config
 from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
@@ -66,6 +65,8 @@ from localstack.utils.testutil import (
     create_lambda_archive,
     get_lambda_log_events,
 )
+
+from .functions import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_integration.py")
