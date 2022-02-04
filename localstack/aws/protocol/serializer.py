@@ -122,7 +122,7 @@ class ResponseSerializer(abc.ABC):
         shape = operation_model.output_shape
         # The shape can also be none (for empty responses), but it still needs to be serialized (to add some metadata)
         shape_members = shape.members if shape is not None else None
-        self._serialize_payload(
+        self._serialize_response(
             response, serialized_response, shape, shape_members, operation_model
         )
         serialized_response = self._prepare_additional_traits_in_response(
@@ -184,15 +184,14 @@ class ResponseSerializer(abc.ABC):
         )
         return serialized_response
 
-    def _serialize_payload(
+    def _serialize_response(
         self,
         parameters: dict,
-        serialized: HttpResponse,
+        response: HttpResponse,
         shape: Optional[Shape],
         shape_members: dict,
         operation_model: OperationModel,
     ) -> None:
-        # TODO implement the handling of location traits (where "location" is "header", "headers")
         # TODO implement the handling of eventstreams (where "streaming" is True)
         raise NotImplementedError
 
@@ -201,7 +200,7 @@ class ResponseSerializer(abc.ABC):
         error: ServiceException,
         code: str,
         sender_fault: bool,
-        serialized: HttpResponse,
+        response: HttpResponse,
         shape: Shape,
         operation_model: OperationModel,
     ) -> None:
@@ -295,10 +294,10 @@ class BaseXMLResponseSerializer(ResponseSerializer):
     When implementing services with this serializer, some edge cases might not work out-of-the-box.
     """
 
-    def _serialize_payload(
+    def _serialize_response(
         self,
         parameters: dict,
-        serialized: HttpResponse,
+        response: HttpResponse,
         shape: Optional[Shape],
         shape_members: dict,
         operation_model: OperationModel,
@@ -307,12 +306,14 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         Serializes the given parameters as XML.
 
         :param parameters: The user input params
-        :param serialized: The final serialized response dict
+        :param response: The final serialized HttpResponse
         :param shape: Describes the expected output shape (can be None in case of an "empty" response)
         :param shape_members: The members of the output struct shape
         :param operation_model: The specification of the operation of which the response is serialized here
         :return: None - the given `serialized` dict is modified
         """
+        # TODO implement the handling of location traits (where "location" is "header", "headers")
+
         payload_member = shape.serialization.get("payload") if shape is not None else None
         if payload_member is not None and shape_members[payload_member].type_name in [
             "blob",
@@ -321,19 +322,19 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             # If it's streaming, then the body is just the value of the payload.
             body_payload = parameters.get(payload_member, b"")
             body_payload = self._encode_payload(body_payload)
-            serialized.data = body_payload
+            response.data = body_payload
         elif payload_member is not None:
             # If there's a payload member, we serialized that member to the body.
             body_params = parameters.get(payload_member)
             if body_params is not None:
-                serialized.data = self._encode_payload(
+                response.data = self._encode_payload(
                     self._serialize_body_params(
                         body_params, shape_members[payload_member], operation_model
                     )
                 )
         else:
             # Otherwise, we use the "traditional" way of serializing the whole parameters dict recursively.
-            serialized.data = self._encode_payload(
+            response.data = self._encode_payload(
                 self._serialize_body_params(parameters, shape, operation_model)
             )
 
@@ -342,7 +343,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         error: ServiceException,
         code: str,
         sender_fault: bool,
-        serialized: HttpResponse,
+        response: HttpResponse,
         shape: Shape,
         operation_model: OperationModel,
     ) -> None:
@@ -358,7 +359,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestId")
         request_id.text = gen_amzn_requestid_long()
-        serialized.data = self._encode_payload(self._xml_to_string(root))
+        response.data = self._encode_payload(self._xml_to_string(root))
 
     def _add_error_tags(
         self, code: str, error: ServiceException, error_tag: ETree.Element, sender_fault: bool
@@ -574,7 +575,7 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
         error: ServiceException,
         code: str,
         sender_fault: bool,
-        serialized: HttpResponse,
+        response: HttpResponse,
         shape: Shape,
         operation_model: OperationModel,
     ) -> None:
@@ -590,9 +591,9 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
             self._add_error_tags(code, error, root, sender_fault)
             request_id = ETree.SubElement(root, "RequestId")
             request_id.text = gen_amzn_requestid_long()
-            serialized.data = self._encode_payload(self._xml_to_string(root))
+            response.data = self._encode_payload(self._xml_to_string(root))
         else:
-            super()._serialize_error(error, code, sender_fault, serialized, shape, operation_model)
+            super()._serialize_error(error, code, sender_fault, response, shape, operation_model)
 
 
 class QueryResponseSerializer(BaseXMLResponseSerializer):
@@ -649,7 +650,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         error: ServiceException,
         code: str,
         sender_fault: bool,
-        serialized: HttpResponse,
+        response: HttpResponse,
         shape: Shape,
         operation_model: OperationModel,
     ) -> None:
@@ -675,7 +676,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         self._add_error_tags(code, error, error_tag, sender_fault)
         request_id = ETree.SubElement(root, "RequestID")
         request_id.text = gen_amzn_requestid_long()
-        serialized.data = self._encode_payload(self._xml_to_string(root))
+        response.data = self._encode_payload(self._xml_to_string(root))
 
     def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
         # The EC2 protocol does not use the root output shape, therefore we need to remove the hierarchy level
@@ -708,29 +709,76 @@ class JSONResponseSerializer(ResponseSerializer):
         error: ServiceException,
         code: str,
         sender_fault: bool,
-        serialized: HttpResponse,
+        response: HttpResponse,
         shape: Shape,
         operation_model: OperationModel,
     ) -> None:
         # TODO handle error shapes with members
         body = {"__type": code, "message": str(error)}
-        serialized.set_json(body)
+        response.set_json(body)
 
-    def _serialize_payload(
+    def _serialize_response(
         self,
         parameters: dict,
-        serialized: HttpResponse,
+        response: HttpResponse,
         shape: Optional[Shape],
         shape_members: dict,
         operation_model: OperationModel,
     ) -> None:
         json_version = operation_model.metadata.get("jsonVersion")
         if json_version is not None:
-            serialized.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
+            response.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
+
+        self._serialize_non_payload_attributes(parameters, response, shape, shape_members)
+        self._serialize_payload(parameters, response, shape, shape_members)
+
+    def _serialize_non_payload_attributes(
+        self,
+        parameters: dict,
+        response: HttpResponse,
+        shape: Optional[Shape],
+        shape_members: dict,
+    ) -> None:
+        """Serializes all top-level shape members whose location is header, headers, or statusCode into the
+        HttpRequest object."""
+        headers = dict()
+
+        for name in shape_members:
+            member_shape = shape_members[name]
+            location = member_shape.serialization.get("location")
+            if location is None:
+                continue
+
+            if name not in parameters:
+                # TODO: check if required and raise validation error?
+                continue
+
+            if location == "header":
+                # removing the value from the parameters to avoid re-serialization by _serialize_payload
+                val = parameters.pop(name)
+                header_name = member_shape.serialization.get("name", name)
+                self._serialize(headers, val, member_shape, key=header_name)
+            elif location == "statusCode":
+                # statusCode is quite rare, and it looks like it's always just an int shape, so taking a shortcut here
+                val = parameters.pop(name)
+                response.status_code = int(val)
+            elif location == "headers":
+                # this location only exists in s3/2006-03-01 (rest-xml) so should never be invoked here
+                raise NotImplementedError
+
+        response.headers.update(headers)
+
+    def _serialize_payload(
+        self,
+        parameters: dict,
+        response: HttpResponse,
+        shape: Optional[Shape],
+        shape_members: dict,
+    ) -> None:
         body = {}
         if shape is not None:
             self._serialize(body, parameters, shape)
-        serialized.set_json(body)
+        response.set_json(body)
 
     def _serialize(self, body: dict, value: any, shape, key: Optional[str] = None):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
