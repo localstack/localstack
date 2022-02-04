@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudwatch import CloudWatchClient
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_ec2 import EC2Client
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_firehose import FirehoseClient
@@ -168,6 +169,11 @@ def cloudwatch_client() -> "CloudWatchClient":
 @pytest.fixture(scope="class")
 def sts_client() -> "STSClient":
     return _client("sts")
+
+
+@pytest.fixture(scope="class")
+def ec2_client() -> "EC2Client":
+    return _client("ec2")
 
 
 @pytest.fixture
