@@ -45,11 +45,12 @@ def pytest_runtestloop(session):
     for item in session.items:
         if item.parent and item.parent.cls:
             test_classes.add(item.parent.cls)
-        # OpenSearch is a pytest, not a unit test class, therefore we check based on the item parent's name
-        # (test_opensearch.py).
-        if "opensearch" in str(item.parent).lower():
+        # OpenSearch/Elasticsearch are pytests, not unit test classes, so we check based on the item parent's name.
+        # Any pytests that rely on opensearch/elasticsearch must be special-cased by adding them to the list below
+        parent_name = str(item.parent).lower()
+        if any(opensearch_test in parent_name for opensearch_test in ["opensearch", "firehose"]):
             test_init_functions.add(opensearch_install_async)
-        if "es" in str(item.parent).lower():
+        if any(opensearch_test in parent_name for opensearch_test in ["es", "firehose"]):
             test_init_functions.add(es_install_async)
 
     # add init functions for certain tests that download/install things

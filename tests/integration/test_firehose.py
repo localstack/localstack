@@ -221,7 +221,11 @@ class TestFirehoseIntegration:
 
             def assert_elasticsearch_contents():
                 response = requests.get(f"{es_url}/activity/_search")
-                result = response.json()["hits"]["hits"]
+                response_bod = response.json()
+                assert "hits" in response_bod
+                response_bod_hits = response_bod["hits"]
+                assert "hits" in response_bod_hits
+                result = response_bod_hits["hits"]
                 assert len(result) == 2
                 sources = [item["_source"] for item in result]
                 assert firehose_record in sources
@@ -245,6 +249,111 @@ class TestFirehoseIntegration:
         finally:
             firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
             es_client.delete_elasticsearch_domain(DomainName=domain_name)
+
+    @pytest.mark.parametrize("opensearch_endpoint_strategy", ["domain", "path"])
+    def test_kinesis_firehose_opensearch_s3_backup(
+        self,
+        firehose_client,
+        kinesis_client,
+        opensearch_client,
+        s3_client,
+        s3_bucket,
+        kinesis_create_stream,
+        monkeypatch,
+        opensearch_endpoint_strategy,
+    ):
+        domain_name = f"test-domain-{short_uid()}"
+        stream_name = f"test-stream-{short_uid()}"
+        role_arn = "arn:aws:iam::000000000000:role/Firehose-Role"
+        delivery_stream_name = f"test-delivery-stream-{short_uid()}"
+        monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", opensearch_endpoint_strategy)
+        try:
+            opensearch_create_response = opensearch_client.create_domain(DomainName=domain_name)
+            opensearch_url = f"http://{opensearch_create_response['DomainStatus']['Endpoint']}"
+            opensearch_arn = opensearch_create_response["DomainStatus"]["ARN"]
+
+            # create s3 backup bucket arn
+            bucket_arn = aws_stack.s3_bucket_arn(s3_bucket)
+
+            # create kinesis stream
+            kinesis_create_stream(StreamName=stream_name, ShardCount=2)
+            stream_arn = kinesis_client.describe_stream(StreamName=stream_name)[
+                "StreamDescription"
+            ]["StreamARN"]
+
+            kinesis_stream_source_def = {
+                "KinesisStreamARN": stream_arn,
+                "RoleARN": role_arn,
+            }
+            opensearch_destination_configuration = {
+                "RoleARN": role_arn,
+                "DomainARN": opensearch_arn,
+                "IndexName": "activity",
+                "TypeName": "activity",
+                "S3BackupMode": "AllDocuments",
+                "S3Configuration": {
+                    "RoleARN": role_arn,
+                    "BucketARN": bucket_arn,
+                },
+            }
+            firehose_client.create_delivery_stream(
+                DeliveryStreamName=delivery_stream_name,
+                DeliveryStreamType="KinesisStreamAsSource",
+                KinesisStreamSourceConfiguration=kinesis_stream_source_def,
+                AmazonopensearchserviceDestinationConfiguration=opensearch_destination_configuration,
+            )
+
+            # wait for opensearch cluster to be ready
+            def check_domain_state():
+                result = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"][
+                    "Processing"
+                ]
+                return not result
+
+            assert poll_condition(check_domain_state, 30, 1)
+
+            # put kinesis stream record
+            kinesis_record = {"target": "hello"}
+            kinesis_client.put_record(
+                StreamName=stream_name, Data=to_bytes(json.dumps(kinesis_record)), PartitionKey="1"
+            )
+
+            firehose_record = {"target": "world"}
+            firehose_client.put_record(
+                DeliveryStreamName=delivery_stream_name,
+                Record={"Data": to_bytes(json.dumps(firehose_record))},
+            )
+
+            def assert_opensearch_contents():
+                response = requests.get(f"{opensearch_url}/activity/_search")
+                response_bod = response.json()
+                assert "hits" in response_bod
+                response_bod_hits = response_bod["hits"]
+                assert "hits" in response_bod_hits
+                result = response_bod_hits["hits"]
+                assert len(result) == 2
+                sources = [item["_source"] for item in result]
+                assert firehose_record in sources
+                assert kinesis_record in sources
+
+            retry(assert_opensearch_contents)
+
+            def assert_s3_contents():
+                result = s3_client.list_objects(Bucket=s3_bucket)
+                contents = []
+                for o in result.get("Contents"):
+                    data = s3_client.get_object(Bucket=s3_bucket, Key=o.get("Key"))
+                    content = data["Body"].read()
+                    contents.append(content)
+                assert len(contents) == 2
+                assert to_bytes(json.dumps(firehose_record)) in contents
+                assert to_bytes(json.dumps(kinesis_record)) in contents
+
+            retry(assert_s3_contents)
+
+        finally:
+            firehose_client.delete_delivery_stream(DeliveryStreamName=delivery_stream_name)
+            opensearch_client.delete_domain(DomainName=domain_name)
 
     def test_delivery_stream_with_kinesis_as_source(
         self,

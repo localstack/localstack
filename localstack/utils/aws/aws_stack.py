@@ -1097,27 +1097,35 @@ def apigateway_invocations_arn(lambda_uri):
     )
 
 
-def get_elasticsearch_endpoint(region_name: str, domain_arn: str = None):
-    if not domain_arn:
-        return config.service_url("elasticsearch")
-    # get endpoint from API
-    es_client = connect_to_service(service_name="es", region_name=region_name)
+def get_opensearch_endpoint(domain_arn: str) -> str:
+    """
+    Get an OpenSearch cluster endpoint by describing the cluster associated with the domain_arn
+    :param domain_arn: ARN of the cluster.
+    :returns: cluster endpoint
+    :raises: ValueError if the domain_arn is malformed
+    """
+    region_name = extract_region_from_arn(domain_arn)
+    if region_name is None:
+        raise ValueError("unable to parse region from opensearch domain ARN")
+    opensearch_client = connect_to_service(service_name="opensearch", region_name=region_name)
     domain_name = domain_arn.rpartition("/")[2]
-    info = es_client.describe_elasticsearch_domain(DomainName=domain_name)
+    info = opensearch_client.describe_domain(DomainName=domain_name)
     base_domain = info["DomainStatus"]["Endpoint"]
     endpoint = base_domain if base_domain.startswith("http") else f"https://{base_domain}"
     return endpoint
 
 
-def connect_elasticsearch(endpoint: str = None, domain: str = None, region_name: str = None):
-    from elasticsearch import Elasticsearch, RequestsHttpConnection
+def get_search_db_connection(endpoint: str, region_name: str):
+    """
+    Get a connection to an ElasticSearch or OpenSearch DB
+    :param endpoint: cluster endpoint
+    :param region_name: cluster region e.g. us-east-1
+    """
+    from opensearchpy import OpenSearch, RequestsHttpConnection
     from requests_aws4auth import AWS4Auth
 
-    region = region_name or get_region()
     verify_certs = False
     use_ssl = False
-    if not endpoint:
-        endpoint = get_elasticsearch_endpoint(domain_arn=domain, region_name=region)
     # use ssl?
     if "https://" in endpoint:
         use_ssl = True
@@ -1131,16 +1139,16 @@ def connect_elasticsearch(endpoint: str = None, domain: str = None, region_name:
         access_key = os.environ.get(ENV_ACCESS_KEY)
         secret_key = os.environ.get(ENV_SECRET_KEY)
         session_token = os.environ.get(ENV_SESSION_TOKEN)
-        awsauth = AWS4Auth(access_key, secret_key, region, "es", session_token=session_token)
+        awsauth = AWS4Auth(access_key, secret_key, region_name, "es", session_token=session_token)
         connection_class = RequestsHttpConnection
-        return Elasticsearch(
+        return OpenSearch(
             hosts=[endpoint],
             verify_certs=verify_certs,
             use_ssl=use_ssl,
             connection_class=connection_class,
             http_auth=awsauth,
         )
-    return Elasticsearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
+    return OpenSearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
 
 
 def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
