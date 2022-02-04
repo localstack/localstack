@@ -16,6 +16,7 @@ class TestIAMIntegrations(unittest.TestCase):
     def setUp(self):
         self.iam_client = aws_stack.create_external_boto_client("iam")
 
+    # TODO what does this test do?
     def test_run_kcl_with_iam_assume_role(self):
         env_vars = {}
         if os.environ.get("AWS_ASSUME_ROLE_ARN"):
@@ -29,7 +30,7 @@ class TestIAMIntegrations(unittest.TestCase):
                 print(records)
 
             # start Kinesis client
-            stream_name = "test-foobar"
+            stream_name = f"test-foobar-{short_uid()}"
             kinesis_connector.listen_to_kinesis(
                 stream_name=stream_name,
                 listener_func=process_records,
