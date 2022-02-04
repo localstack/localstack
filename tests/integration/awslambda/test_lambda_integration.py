@@ -22,17 +22,17 @@ from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.testutil import check_expected_lambda_log_events_length, get_lambda_log_events
 
 from .test_lambda import (
-    TEST_LAMBDA_ECHO_FILE,
     TEST_LAMBDA_FUNCTION_PREFIX,
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
 )
 
 TEST_STAGE_NAME = "testing"
 TEST_SNS_TOPIC_NAME = "sns-topic-1"
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PARALLEL_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_parallel.py")
+TEST_LAMBDA_PARALLEL_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_parallel.py")
 
 
 class TestLambdaEventSourceMappings(unittest.TestCase):
@@ -43,7 +43,7 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         ddb_table = "ddb_table-{}".format(short_uid())
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -107,7 +107,7 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         ddb_table = "ddb_table-{}".format(short_uid())
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -157,7 +157,7 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         ddb_table = "ddb_table-{}".format(short_uid())
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -187,7 +187,7 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         queue_name_1 = "queue-{}-1".format(short_uid())
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -216,7 +216,7 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         stream_name = "test-foobar"
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -265,7 +265,7 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         function_name = "{}-{}".format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )

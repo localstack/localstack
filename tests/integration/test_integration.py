@@ -25,8 +25,8 @@ from localstack.utils.common import (
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.testutil import get_lambda_log_events
 
-from .lambdas import lambda_integration
-from .test_lambda import (
+from .awslambda.functions import lambda_integration
+from .awslambda.test_lambda import (
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,

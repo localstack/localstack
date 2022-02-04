@@ -11,11 +11,10 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import clone, load_file, retry, short_uid
 from localstack.utils.generic.wait_utils import ShortCircuitWaitException, wait_until
 
-from .lambdas import lambda_environment
+from .awslambda.functions import lambda_environment
+from .awslambda.test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_PYTHON_ECHO
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_environment.py")
-TEST_LAMBDA_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 TEST_LAMBDA_NAME_1 = "lambda_sfn_1"
 TEST_LAMBDA_NAME_2 = "lambda_sfn_2"
 TEST_RESULT_VALUE = "testresult1"
@@ -173,8 +172,10 @@ class TestStateMachine(unittest.TestCase):
         cls.s3_client = aws_stack.create_external_boto_client("s3")
         cls.sfn_client = aws_stack.create_external_boto_client("stepfunctions")
 
-        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True)
-        zip_file2 = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ECHO), get_content=True)
+        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True)
+        zip_file2 = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True
+        )
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_1,
             zip_file=zip_file,

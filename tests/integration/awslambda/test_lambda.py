@@ -9,6 +9,7 @@ from datetime import datetime
 from io import BytesIO
 
 import pytest
+from integration.awslambda.functions import lambda_integration
 
 from localstack import config
 from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
@@ -66,37 +67,39 @@ from localstack.utils.testutil import (
     get_lambda_log_events,
 )
 
-from .lambdas import lambda_integration
-
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.py")
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
-TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "lambdas", "lambda_python_version.py")
-TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "lambdas", "lambda_python3.py")
-TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.js")
-TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "lambdas", "golang", "handler.zip")
-TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "lambdas", "lambda_integration.rb")
-TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore2", "dotnetcore2.zip")
-TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, "lambdas", "dotnetcore31", "dotnetcore31.zip")
-TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "lambdas", "custom-runtime")
+TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_integration.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions", "lambda_echo.py")
+TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions", "lambda_python_version.py")
+TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "functions", "lambda_python3.py")
+TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_integration.js")
+TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_handler.js")
+TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions", "golang", "handler.zip")
+TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions", "lambda_integration.rb")
+TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "functions", "dotnetcore2", "dotnetcore2.zip")
+TEST_LAMBDA_DOTNETCORE31 = os.path.join(
+    THIS_FOLDER, "functions", "dotnetcore31", "dotnetcore31.zip"
+)
+TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions", "custom-runtime")
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
-    THIS_FOLDER, "lambdas", "java", "lambda_echo", "lambda-function-with-lib-0.0.1.jar"
+    THIS_FOLDER, "functions", "java", "lambda_echo", "lambda-function-with-lib-0.0.1.jar"
 )
 TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
     THIS_FOLDER,
-    "lambdas",
+    "functions",
     "java",
     "lambda_multiple_handlers",
     "build",
     "distributions",
     "lambda-function-with-multiple-handlers.zip",
 )
-TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "lambdas", "lambda_environment.py")
+TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions", "lambda_environment.py")
 
-TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
-TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_send_message.py")
-TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_put_item.py")
-TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_start_execution.py")
+TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_send_message.py")
+TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_put_item.py")
+TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(
+    THIS_FOLDER, "functions", "lambda_start_execution.py"
+)
 
 TEST_LAMBDA_FUNCTION_PREFIX = "lambda-function"
 
@@ -114,22 +117,34 @@ TEST_LAMBDA_LIBS = [
     "dns",
 ]
 
-PYTHON_TEST_RUNTIMES = [
-    LAMBDA_RUNTIME_PYTHON36,
-    LAMBDA_RUNTIME_PYTHON37,
-    LAMBDA_RUNTIME_PYTHON38,
-    LAMBDA_RUNTIME_PYTHON39,
-]
-NODE_TEST_RUNTIMES = [
-    LAMBDA_RUNTIME_NODEJS10X,
-    LAMBDA_RUNTIME_NODEJS12X,
-    LAMBDA_RUNTIME_NODEJS14X,
-]
-JAVA_TEST_RUNTIMES = [
-    LAMBDA_RUNTIME_JAVA8,
-    LAMBDA_RUNTIME_JAVA8_AL2,
-    LAMBDA_RUNTIME_JAVA11,
-]
+PYTHON_TEST_RUNTIMES = (
+    [
+        LAMBDA_RUNTIME_PYTHON36,
+        LAMBDA_RUNTIME_PYTHON37,
+        LAMBDA_RUNTIME_PYTHON38,
+        LAMBDA_RUNTIME_PYTHON39,
+    ]
+    if use_docker()
+    else [LAMBDA_RUNTIME_PYTHON38]
+)
+NODE_TEST_RUNTIMES = (
+    [
+        LAMBDA_RUNTIME_NODEJS10X,
+        LAMBDA_RUNTIME_NODEJS12X,
+        LAMBDA_RUNTIME_NODEJS14X,
+    ]
+    if use_docker()
+    else [LAMBDA_RUNTIME_NODEJS14X]
+)
+JAVA_TEST_RUNTIMES = (
+    [
+        LAMBDA_RUNTIME_JAVA8,
+        LAMBDA_RUNTIME_JAVA8_AL2,
+        LAMBDA_RUNTIME_JAVA11,
+    ]
+    if use_docker()
+    else [LAMBDA_RUNTIME_JAVA11]
+)
 PROVIDED_TEST_RUNTIMES = [
     LAMBDA_RUNTIME_PROVIDED,
     # TODO remove skip once we use correct images
@@ -218,7 +233,7 @@ class TestLambdaAPI:
     def test_add_lambda_permission(self, lambda_client, iam_client, create_lambda_function):
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -269,7 +284,7 @@ class TestLambdaAPI:
     ):
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -323,7 +338,7 @@ class TestLambdaAPI:
     def test_lambda_asynchronous_invocations(self, lambda_client, create_lambda_function):
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -379,7 +394,7 @@ class TestLambdaAPI:
     def test_function_concurrency(self, lambda_client, create_lambda_function):
         function_name = f"lambda_func-{short_uid()}"
         create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -397,7 +412,7 @@ class TestLambdaAPI:
         function_name = f"lambda_func-{short_uid()}"
 
         create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -607,7 +622,7 @@ class TestLambdaBaseFeatures:
 
         function_name = f"large_payload-{short_uid()}"
         create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -894,7 +909,7 @@ class TestPythonRuntimes:
         )
 
         create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=resource_lambda_name,
             runtime=runtime,
         )
@@ -976,7 +991,7 @@ class TestNodeJSRuntimes:
         function_name = f"test-function-{short_uid()}"
         create_lambda_function(
             func_name=function_name,
-            handler_file=TEST_LAMBDA_NODEJS,
+            handler_file=TEST_LAMBDA_INTEGRATION_NODEJS,
             handler="lambda_integration.handler",
             runtime=runtime,
         )
@@ -1005,10 +1020,9 @@ class TestNodeJSRuntimes:
     @parametrize_node_runtimes
     def test_invoke_nodejs_lambda(self, lambda_client, create_lambda_function, runtime):
         function_name = f"test-function-{short_uid()}"
-        handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_handler.js")
         create_lambda_function(
             func_name=function_name,
-            zip_file=testutil.create_zip_file(handler_file, get_content=True),
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
             runtime=runtime,
             handler="lambda_handler.handler",
         )
@@ -1030,11 +1044,10 @@ class TestNodeJSRuntimes:
     def test_invoke_nodejs_lambda_with_payload_containing_quotes(
         self, lambda_client, create_lambda_function, runtime
     ):
-        handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_handler.js")
         function_name = "test_lambda_%s" % short_uid()
         create_lambda_function(
             func_name=function_name,
-            zip_file=testutil.create_zip_file(handler_file, get_content=True),
+            zip_file=testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True),
             runtime=runtime,
             handler="lambda_handler.handler",
         )
@@ -1095,7 +1108,7 @@ class TestCustomRuntimes:
 
 class TestDotNetCoreRuntimes:
     @pytest.mark.skipif(
-        not use_docker(), reason="Dotnet lambdas only supported with docker executor"
+        not use_docker(), reason="Dotnet functions only supported with docker executor"
     )
     @pytest.mark.parametrize(
         "zip_file,handler,runtime,expected_lines",
@@ -1266,7 +1279,7 @@ class TestJavaRuntimes:
         java_zip_with_lib_gradle = load_file(
             os.path.join(
                 THIS_FOLDER,
-                "lambdas",
+                "functions",
                 "java",
                 "lambda_echo",
                 "build",
@@ -1470,9 +1483,9 @@ class TestJavaRuntimes:
         check_lambda_logs(function_name, expected_lines=expected)
 
 
-TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "lambdas", "lambda_cache.js")
-TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_cache.py")
-TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "lambdas", "lambda_timeout.py")
+TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_cache.js")
+TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_cache.py")
+TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_timeout.py")
 
 
 class TestLambdaBehavior:

@@ -17,6 +17,7 @@ from localstack.utils.testutil import create_zip_file, list_all_resources
 from tests.integration.cloudformation.utils import load_template
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+LAMBDA_FOLDER = os.path.join(THIS_FOLDER, "awslambda", "functions")
 
 TEST_TEMPLATE_1 = os.path.join(THIS_FOLDER, "templates", "template1.yaml")
 
@@ -1598,7 +1599,7 @@ class TestCloudFormation:
         key_name = "lambda-package"
         role_name = "role-{}".format(short_uid())
         function_name = "func-{}".format(short_uid())
-        package_path = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.js")
+        package_path = os.path.join(LAMBDA_FOLDER, "lambda_echo.js")
 
         stack_name = "stack-{}".format(short_uid())
 
@@ -1638,7 +1639,7 @@ class TestCloudFormation:
         stack_name = "stack-%s" % short_uid()
         bucket_name = "hofund-local-deployment"
         key_name = "serverless/hofund/local/1599143878432/authorizer.zip"
-        package_path = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.js")
+        package_path = os.path.join(LAMBDA_FOLDER, "lambda_echo.js")
 
         template = template_preparer.template_to_json(load_file(APIGW_INTEGRATION_TEMPLATE))
 
@@ -1865,7 +1866,7 @@ class TestCloudFormation:
         bucket = "bucket-%s" % short_uid()
         key = "key-%s" % short_uid()
 
-        package_path = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.js")
+        package_path = os.path.join(LAMBDA_FOLDER, "lambda_echo.js")
 
         s3 = aws_stack.create_external_boto_client("s3")
         s3.create_bucket(Bucket=bucket, ACL="public-read")

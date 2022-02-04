@@ -65,9 +65,11 @@ TEST_GET_OBJECT_RANGE = 17
 TEST_REGION_1 = "eu-west-1"
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_triggered_by_s3.py")
+TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
+    THIS_FOLDER, "awslambda", "functions", "lambda_triggered_by_s3.py"
+)
 TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3 = os.path.join(
-    THIS_FOLDER, "lambdas", "lambda_triggered_by_sqs_download_s3_file.py"
+    THIS_FOLDER, "awslambda", "functions", "lambda_triggered_by_sqs_download_s3_file.py"
 )
 
 BATCH_DELETE_BODY = """
@@ -1604,7 +1606,7 @@ class TestS3(unittest.TestCase):
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler_file=TEST_LAMBDA_PYTHON_TRIGGERED_S3,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -2358,7 +2360,9 @@ class TestS3(unittest.TestCase):
         if not use_docker():
             return
         temp_folder = new_tmp_dir()
-        handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_s3_integration.js")
+        handler_file = os.path.join(
+            THIS_FOLDER, "awslambda", "functions", "lambda_s3_integration.js"
+        )
         shutil.copy(handler_file, temp_folder)
         run("cd %s; npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner" % temp_folder)
 

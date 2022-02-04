@@ -30,10 +30,10 @@ from .test_lambda import TEST_LAMBDA_ENV, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 # TestLocalLambda variables
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE1 = os.path.join(
-    THIS_FOLDER, "lambdas", "python3", "lambda1", "lambda1.zip"
+    THIS_FOLDER, "functions", "python3", "lambda1", "lambda1.zip"
 )
 TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2 = os.path.join(
-    THIS_FOLDER, "lambdas", "python3", "lambda2", "lambda2.zip"
+    THIS_FOLDER, "functions", "python3", "lambda2", "lambda2.zip"
 )
 
 
