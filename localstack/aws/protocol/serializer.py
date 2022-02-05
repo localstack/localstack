@@ -741,6 +741,9 @@ class JSONResponseSerializer(ResponseSerializer):
     ) -> None:
         """Serializes all top-level shape members whose location is header, headers, or statusCode into the
         HttpRequest object."""
+        if not shape_members:
+            return
+
         headers = dict()
 
         for name in shape_members:
@@ -750,7 +753,6 @@ class JSONResponseSerializer(ResponseSerializer):
                 continue
 
             if name not in parameters:
-                # TODO: check if required and raise validation error?
                 continue
 
             if location == "header":
