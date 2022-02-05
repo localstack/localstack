@@ -776,10 +776,9 @@ class JSONResponseSerializer(ResponseSerializer):
         payload_shape = shape.members[payload_key]
 
         if payload_key not in body:
-            # TODO: the payload attribute was not in the parameters
-            raise KeyError("missing payload attribute %s in body" % payload_key)
+            LOG.warning("missing payload attribute %s in body", payload_key)
 
-        value = body.pop(payload_key)
+        value = body.pop(payload_key, None)
 
         if body:
             # in principle, if a payload attribute is specified in the shape, all other attributes should be in other
@@ -788,10 +787,9 @@ class JSONResponseSerializer(ResponseSerializer):
 
         # a payload can be a string, blob, or structure: https://gist.github.com/thrau/39fd20b437f8719ffc361ad9a908c0c6
         if payload_shape.type_name == "structure":
-            response.set_json(value)
+            response.set_json(value if value is not None else {})
         else:
-            # FIXME: how to deal with other types?
-            response.data = value
+            response.data = value if value is not None else b""
 
     def _serialize(self, body: dict, value: any, shape, key: Optional[str] = None):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""

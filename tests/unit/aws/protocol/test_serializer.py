@@ -743,6 +743,30 @@ def test_restjson_payload_serialization():
     assert headers["content-type"] == "application/json"
 
 
+@pytest.mark.xfail(
+    reason="fails until botocore#2609 is fixed: https://github.com/boto/botocore/issues/2609"
+)
+def test_restjson_int_header_serialization():
+    response = {
+        "Configuration": b'{"foo": "bar"}',
+        "ContentType": "application/json",
+        "NextPollConfigurationToken": "abcdefg",
+        "NextPollIntervalInSeconds": 42,
+    }
+    expected = {
+        "Configuration": "eyJmb28iOiAiYmFyIn0=",  # base64 encoding of b'{"foo": "bar"}
+        "ContentType": "application/json",
+        "NextPollConfigurationToken": "abcdefg",
+        "NextPollIntervalInSeconds": 42,
+    }
+    result = _botocore_serializer_integration_test(
+        "appconfigdata", "GetLatestConfiguration", response, expected_response_content=expected
+    )
+
+    headers = result["ResponseMetadata"]["HTTPHeaders"]
+    assert headers["next-poll-interval-in-seconds"] == "42"
+
+
 def test_ec2_serializer_ec2_with_botocore():
     parameters = {
         "InstanceEventWindow": {
