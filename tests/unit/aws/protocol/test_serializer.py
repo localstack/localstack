@@ -694,6 +694,55 @@ def test_restjson_header_target_serialization():
     assert headers["x-amz-job-output-path"] == "/there"
 
 
+def test_restjson_payload_serialization():
+    """
+    Tests the serialization of specific member attributes as payload, based on an appconfig example:
+
+        "Configuration":{
+          "type":"structure",
+          "members":{
+            "Content":{
+              "shape":"Blob",
+            },
+            "ConfigurationVersion":{
+              "shape":"Version",
+              "location":"header",
+              "locationName":"Configuration-Version"
+            },
+            "ContentType":{
+              "shape":"String",
+              "location":"header",
+              "locationName":"Content-Type"
+            }
+          },
+          "payload":"Content"
+        },
+    """
+
+    response = {
+        "Content": b'{"foo": "bar"}',
+        "ConfigurationVersion": "123",
+        "ContentType": "application/json",
+    }
+    expected = {
+        "Content": "eyJmb28iOiAiYmFyIn0=",  # base64 encoding of b'{"foo": "bar"}
+        "ConfigurationVersion": "123",
+        "ContentType": "application/json",
+    }
+
+    result = _botocore_serializer_integration_test(
+        "appconfig",
+        "GetConfiguration",
+        response,
+        status_code=200,
+        expected_response_content=expected,
+    )
+    headers = result["ResponseMetadata"]["HTTPHeaders"]
+    assert "configuration-version" in headers
+    assert headers["configuration-version"] == "123"
+    assert headers["content-type"] == "application/json"
+
+
 def test_ec2_serializer_ec2_with_botocore():
     parameters = {
         "InstanceEventWindow": {

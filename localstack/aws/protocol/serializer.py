@@ -76,7 +76,6 @@ not work out-of-the-box.
 """
 import abc
 import base64
-import copy
 import logging
 from abc import ABC
 from datetime import datetime
@@ -730,67 +729,69 @@ class JSONResponseSerializer(ResponseSerializer):
         if json_version is not None:
             response.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
 
+        if shape is None:
+            response.set_json({})
+            return
+
+        # first, serialize everything into a dictionary
+        data = {}
+        self._serialize(data, parameters, shape)
+
         if shape.serialization is None:
-            # if there is no special serialization instructions, we can take this shortcut and just serialize
-            # everything as payload directly.
-            self._serialize_payload(parameters, response, shape, shape_members)
+            # if there are no special serialization instructions then just set the data dict as JSON payload
+            response.set_json(data)
             return
 
-        # this is currently necessary because we remove values when parsing non-payload parameters from the
-        # parameters dictionary to avoid re-serialization by _serialize_payload
-        parameters = copy.deepcopy(parameters)
-
-        self._serialize_non_payload_attributes(parameters, response, shape, shape_members)
-        self._serialize_payload(parameters, response, shape, shape_members)
-
-    def _serialize_non_payload_attributes(
-        self,
-        parameters: dict,
-        response: HttpResponse,
-        shape: Optional[Shape],
-        shape_members: dict,
-    ) -> None:
-        """Serializes all top-level shape members whose location is header, headers, or statusCode into the
-        HttpRequest object."""
-        if not shape_members:
-            return
-
-        headers = dict()
-
+        # otherwise, move data attributes into their appropriate locations
+        # (some shapes have a serialization dict, but don't actually have
+        body = {}
         for name in shape_members:
             member_shape = shape_members[name]
+            key = member_shape.serialization.get("name", name)
+            if key not in data:
+                continue
+            value = data[key]
+
             location = member_shape.serialization.get("location")
-            if location is None:
-                continue
 
-            if name not in parameters:
-                continue
-
-            if location == "header":
-                value = parameters.pop(name)
-                key = member_shape.serialization.get("name", name)
-                self._serialize(headers, value, member_shape, key=key)
+            if not location:
+                body[key] = value
+            elif location == "header":
+                # FIXME: what about non-string values?
+                response.headers[key] = value
+            elif location == "headers":
+                # FIXME
+                raise NotImplementedError
             elif location == "statusCode":
                 # statusCode is quite rare, and it looks like it's always just an int shape, so taking a shortcut here
-                value = parameters.pop(name)
                 response.status_code = int(value)
-            elif location == "headers":
-                # this location only exists in s3/2006-03-01 (rest-xml) so should never be invoked here
-                raise NotImplementedError
+            else:
+                raise ValueError("unknown location %s" % location)
 
-        response.headers.update(headers)
+        # the shape defines a specific attribute that should be serialized as payload
+        payload_key = shape.serialization.get("payload")
+        if not payload_key:
+            response.set_json(body)
+            return
+        payload_shape = shape.members[payload_key]
 
-    def _serialize_payload(
-        self,
-        parameters: dict,
-        response: HttpResponse,
-        shape: Optional[Shape],
-        shape_members: dict,
-    ) -> None:
-        body = {}
-        if shape is not None:
-            self._serialize(body, parameters, shape)
-        response.set_json(body)
+        if payload_key not in body:
+            # TODO: the payload attribute was not in the parameters
+            raise KeyError("missing payload attribute %s in body" % payload_key)
+
+        value = body.pop(payload_key)
+
+        if body:
+            # in principle, if a payload attribute is specified in the shape, all other attributes should be in other
+            # locations, so this is just a logging guard to warn if that assumption is violated
+            LOG.warning("dangling attributes in body: %s", body.keys())
+
+        # a payload can be a string, blob, or structure: https://gist.github.com/thrau/39fd20b437f8719ffc361ad9a908c0c6
+        if payload_shape.type_name == "structure":
+            response.set_json(value)
+        else:
+            # FIXME: how to deal with other types?
+            response.data = value
 
     def _serialize(self, body: dict, value: any, shape, key: Optional[str] = None):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
