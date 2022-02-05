@@ -62,6 +62,7 @@ from localstack.utils.aws.aws_responses import (
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.common import (
+    NetrcBypassAuth,
     camel_to_snake_case,
     json_safe,
     long_uid,
@@ -742,22 +743,40 @@ def invoke_rest_api_integration_backend(
                 target = kinesis_listener.ACTION_LIST_STREAMS
             else:
                 LOG.info(
-                    "Unexpected API Gateway integration URI '%s' for integration type %s",
-                    uri,
-                    integration_type,
+                    f"Unexpected API Gateway integration URI '{uri}' for integration type {integration_type}",
                 )
                 target = ""
 
-            # apply request templates
-            new_data = apply_request_response_templates(
-                data, integration.get("requestTemplates"), content_type=APPLICATION_JSON
-            )
+            try:
+                json_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
+                json_str = apply_template(
+                    integration,
+                    "request",
+                    json_str,
+                    path_params=path_params,
+                    query_params=query_string_params,
+                    headers=headers,
+                )
+                payload = json.loads(json_str)
+            except Exception as e:
+                LOG.error("Unable to convert API Gateway payload to str", e)
+                raise
+
             # forward records to target kinesis stream
-            headers = aws_stack.mock_aws_request_headers(service="kinesis")
-            headers["X-Amz-Target"] = target
-            result = common.make_http_request(
-                url=config.service_url("kinesis"), method="POST", data=new_data, headers=headers
+            headers = aws_stack.mock_aws_request_headers(
+                service="kinesis", region_name=invocation_context.region_name
             )
+            headers["X-Amz-Target"] = target
+
+            result = requests.request(
+                url=config.service_url("kinesis"),
+                method="POST",
+                headers=headers,
+                json=payload,
+                auth=NetrcBypassAuth(),
+                verify=False,
+            )
+
             # apply response template
             result = apply_request_response_templates(
                 result, response_templates, content_type=APPLICATION_JSON
