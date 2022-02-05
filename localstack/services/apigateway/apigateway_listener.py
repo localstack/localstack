@@ -556,6 +556,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
     # run gateway authorizers for this request
     authorize_invocation(invocation_context)
+
     extracted_path, resource = get_target_resource_details(invocation_context)
     if not resource:
         return make_error_response("Unable to find path %s" % invocation_context.path, 404)
