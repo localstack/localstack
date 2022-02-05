@@ -205,9 +205,7 @@ class TestSecretsManager:
             'Content-Type': 'application/x-amz-json-1.1',
             'Authorization': f"AWS4-HMAC-SHA256 Credential=test/20220202/{region}/secretsmanager/aws4_request, "
                              'SignedHeaders=content-type;host;x-amz-date;x-amz-target, '
-                             'Signature=0c921412dc327a81fa7ee1199a69437285faef19d0764e4b7913c908ca053810',
-            # 'User-Agent': 'Boto3/1.20.45 Python/3.9.7 Darwin/21.3.0 Botocore/1.23.45',
-            # 'X-Amz-Date': '20220202T085041Z'
+                             'Signature=0c921412dc327a81fa7ee1199a69437285faef19d0764e4b7913c908ca053810'
         }
 
     def secretsmanager_http_json_post(self, amz_target: str, http_body: json) -> requests.Response:
