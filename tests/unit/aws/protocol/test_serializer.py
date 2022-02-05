@@ -53,6 +53,8 @@ def _botocore_serializer_integration_test(
         service.operation_model(action).output_shape,
     )
 
+    return_response = copy.deepcopy(parsed_response)
+
     # Check if the result is equal to the initial response params
     assert "ResponseMetadata" in parsed_response
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
@@ -63,6 +65,8 @@ def _botocore_serializer_integration_test(
     if expected_response_content is None:
         expected_response_content = response
     assert parsed_response == expected_response_content
+
+    return return_response
 
 
 def _botocore_error_serializer_integration_test(
@@ -637,6 +641,57 @@ def test_restjson_serializer_xray_with_botocore():
     }
 
     _botocore_serializer_integration_test("xray", "UpdateSamplingRule", parameters)
+
+
+def test_restjson_header_target_serialization():
+    """
+    Tests the serialization of attributes into a specified header key based on this example from glacier:
+
+        "InitiateJobOutput":{
+          "type":"structure",
+          "members":{
+            "location":{
+              "shape":"string",
+              "location":"header",
+              "locationName":"Location"
+            },
+            "jobId":{
+              "shape":"string",
+              "location":"header",
+              "locationName":"x-amz-job-id"
+            },
+            "jobOutputPath":{
+              "shape":"string",
+              "location":"header",
+              "locationName":"x-amz-job-output-path"
+            }
+          },
+          "documentation":"<p>Contains the Amazon S3 Glacier response to your request.</p>"
+        },
+    """
+    response = {
+        "location": "/here",
+        "jobId": "42069",
+        "jobOutputPath": "/there",
+    }
+
+    result = _botocore_serializer_integration_test(
+        "glacier",
+        "InitiateJob",
+        response,
+        status_code=202,
+    )
+
+    headers = result["ResponseMetadata"]["HTTPHeaders"]
+    assert "location" in headers
+    assert "x-amz-job-id" in headers
+    assert "x-amz-job-output-path" in headers
+    assert "locationName" not in headers
+    assert "jobOutputPath" not in headers
+
+    assert headers["location"] == "/here"
+    assert headers["x-amz-job-id"] == "42069"
+    assert headers["x-amz-job-output-path"] == "/there"
 
 
 def test_ec2_serializer_ec2_with_botocore():

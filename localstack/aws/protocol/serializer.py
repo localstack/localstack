@@ -76,6 +76,7 @@ not work out-of-the-box.
 """
 import abc
 import base64
+import copy
 import logging
 from abc import ABC
 from datetime import datetime
@@ -729,6 +730,16 @@ class JSONResponseSerializer(ResponseSerializer):
         if json_version is not None:
             response.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
 
+        if shape.serialization is None:
+            # if there is no special serialization instructions, we can take this shortcut and just serialize
+            # everything as payload directly.
+            self._serialize_payload(parameters, response, shape, shape_members)
+            return
+
+        # this is currently necessary because we remove values when parsing non-payload parameters from the
+        # parameters dictionary to avoid re-serialization by _serialize_payload
+        parameters = copy.deepcopy(parameters)
+
         self._serialize_non_payload_attributes(parameters, response, shape, shape_members)
         self._serialize_payload(parameters, response, shape, shape_members)
 
@@ -756,14 +767,13 @@ class JSONResponseSerializer(ResponseSerializer):
                 continue
 
             if location == "header":
-                # removing the value from the parameters to avoid re-serialization by _serialize_payload
-                val = parameters.pop(name)
-                header_name = member_shape.serialization.get("name", name)
-                self._serialize(headers, val, member_shape, key=header_name)
+                value = parameters.pop(name)
+                key = member_shape.serialization.get("name", name)
+                self._serialize(headers, value, member_shape, key=key)
             elif location == "statusCode":
                 # statusCode is quite rare, and it looks like it's always just an int shape, so taking a shortcut here
-                val = parameters.pop(name)
-                response.status_code = int(val)
+                value = parameters.pop(name)
+                response.status_code = int(value)
             elif location == "headers":
                 # this location only exists in s3/2006-03-01 (rest-xml) so should never be invoked here
                 raise NotImplementedError
