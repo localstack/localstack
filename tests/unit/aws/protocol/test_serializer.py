@@ -11,6 +11,8 @@ from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.spec import load_service
 from localstack.utils.common import to_str
 
+_skip_assert = {}
+
 
 def _botocore_serializer_integration_test(
     service: str,
@@ -62,9 +64,11 @@ def _botocore_serializer_integration_test(
     assert "RequestId" in parsed_response["ResponseMetadata"]
     assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
     del parsed_response["ResponseMetadata"]
+
     if expected_response_content is None:
         expected_response_content = response
-    assert parsed_response == expected_response_content
+    if expected_response_content is not _skip_assert:
+        assert parsed_response == expected_response_content
 
     return return_response
 
@@ -692,6 +696,33 @@ def test_restjson_header_target_serialization():
     assert headers["location"] == "/here"
     assert headers["x-amz-job-id"] == "42069"
     assert headers["x-amz-job-output-path"] == "/there"
+
+
+def test_restjson_headers_target_serialization():
+    # SendApiAssetResponse
+    response = {
+        "Body": "hello",
+        "ResponseHeaders": {
+            "foo": "bar",
+            "baz": "ed",
+        },
+    }
+
+    # skipping assert here, because the response will contain all HTTP headers (given the nature of "ResponseHeaders"
+    # attribute).
+    result = _botocore_serializer_integration_test(
+        "dataexchange", "SendApiAsset", response, expected_response_content=_skip_assert
+    )
+
+    assert result["Body"] == "hello"
+    assert result["ResponseHeaders"]["foo"] == "bar"
+    assert result["ResponseHeaders"]["baz"] == "ed"
+
+    headers = result["ResponseMetadata"]["HTTPHeaders"]
+    assert "foo" in headers
+    assert "baz" in headers
+    assert headers["foo"] == "bar"
+    assert headers["baz"] == "ed"
 
 
 def test_restjson_payload_serialization():

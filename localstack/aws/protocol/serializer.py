@@ -757,11 +757,9 @@ class JSONResponseSerializer(ResponseSerializer):
             if not location:
                 body[key] = value
             elif location == "header":
-                # FIXME: what about non-string values?
                 response.headers[key] = value
             elif location == "headers":
-                # FIXME
-                raise NotImplementedError
+                response.headers.update(value)
             elif location == "statusCode":
                 # statusCode is quite rare, and it looks like it's always just an int shape, so taking a shortcut here
                 response.status_code = int(value)
