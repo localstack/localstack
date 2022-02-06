@@ -11,7 +11,7 @@ from urllib.parse import urljoin
 import pytz
 import requests
 from flask import Response as FlaskResponse
-from jsonschema import ValidationError
+from jsonschema import ValidationError, validate
 from moto.apigateway.models import apigateway_backends
 from requests.models import Response
 
@@ -315,6 +315,60 @@ class ProxyListenerApiGateway(ProxyListener):
             )
 
 
+class RequestValidator:
+    __slots__ = ["context", "apigateway_client"]
+
+    def __init__(self, context: ApiInvocationContext, apigateway_client):
+        self.context = context
+        self.apigateway_client = apigateway_client
+
+    def is_request_valid(self) -> bool:
+        # make all the positive checks first
+        if self.context.resource is None or "resourceMethods" not in self.context.resource:
+            return True
+
+        resource_methods = self.context.resource["resourceMethods"]
+        if self.context.method not in resource_methods:
+            return True
+
+        # check if there is validator for the resource
+        resource = resource_methods[self.context.method]
+        if (
+            "requestValidatorId" not in resource
+            or resource["requestValidatorId"] is None
+            or not resource["requestValidatorId"].strip()
+        ):
+            return True
+
+        # check if there is a validator for this request
+        validator = self.apigateway_client.get_request_validator(
+            restApiId=self.context.api_id, requestValidatorId=resource["requestValidatorId"]
+        )
+        if validator is None:
+            return True
+
+        # are we validating the body?
+        if validator["validateRequestBody"]:
+            # we need a model to validate the body
+            if "requestModels" not in resource or not resource["requestModels"]:
+                return False
+
+            schema_name = resource["requestModels"].get(APPLICATION_JSON)
+            model = self.apigateway_client.get_model(
+                restApiId=self.context.api_id,
+                modelName=schema_name,
+            )
+            if not model:
+                return False
+
+            try:
+                validate(instance=json.loads(self.context.data), schema=json.loads(model["schema"]))
+                return True
+            except ValidationError as e:
+                LOG.error("failed to validate request body", e)
+                return False
+
+
 # ------------
 # API METHODS
 # ------------
@@ -563,7 +617,8 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
         return make_error_response("Unable to find path %s" % invocation_context.path, 404)
 
     # validate request
-    if not is_request_valid(invocation_context):
+    validator = RequestValidator(invocation_context, aws_stack.connect_to_service("apigateway"))
+    if not validator.is_request_valid():
         return make_error_response("Invalid request body", 400)
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
@@ -1081,32 +1136,6 @@ def apply_request_response_templates(
 
 def is_test_invoke_method(method, path):
     return method == "POST" and bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
-
-
-def is_request_valid(invocation_context: ApiInvocationContext) -> bool:
-    from jsonschema import validate
-
-    resource_methods = invocation_context.resource.get("resourceMethods")
-    if resource_methods:
-        resource = resource_methods[invocation_context.method]
-        client = aws_stack.connect_to_service("apigateway")
-        validator = client.get_request_validator(
-            restApiId=invocation_context.api_id, requestValidatorId=resource["requestValidatorId"]
-        )
-        if validator is not None and validator["validateRequestBody"]:
-            schema_name = resource.get("requestModels").get(APPLICATION_JSON)
-            model = client.get_model(
-                restApiId=invocation_context.api_id,
-                modelName=schema_name,
-            )
-            try:
-                validate(
-                    instance=json.loads(invocation_context.data), schema=json.loads(model["schema"])
-                )
-                return True
-            except ValidationError as e:
-                LOG.error("failed to validate request body", e)
-                return False
 
 
 # instantiate listener
