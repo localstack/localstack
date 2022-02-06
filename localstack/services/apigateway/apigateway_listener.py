@@ -45,7 +45,7 @@ from localstack.services.apigateway.helpers import (
     handle_gateway_responses,
     handle_validators,
     handle_vpc_links,
-    make_error_response
+    make_error_response,
 )
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -616,9 +616,7 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
 
 # TODO: refactor this to have a class per integration type to make it easy to
 # test the encapsulated logic
-def invoke_rest_api_integration_backend(
-    invocation_context: ApiInvocationContext
-):
+def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
     # define local aliases from invocation context
     invocation_path = invocation_context.path_with_query_string
     method = invocation_context.method
@@ -1087,13 +1085,13 @@ def is_test_invoke_method(method, path):
 
 def is_request_valid(invocation_context: ApiInvocationContext) -> bool:
     from jsonschema import validate
-    resource_methods = invocation_context.resource.get('resourceMethods')
+
+    resource_methods = invocation_context.resource.get("resourceMethods")
     if resource_methods:
         resource = resource_methods[invocation_context.method]
         client = aws_stack.connect_to_service("apigateway")
         validator = client.get_request_validator(
-            restApiId=invocation_context.api_id,
-            requestValidatorId=resource["requestValidatorId"]
+            restApiId=invocation_context.api_id, requestValidatorId=resource["requestValidatorId"]
         )
         if validator is not None and validator["validateRequestBody"]:
             schema_name = resource.get("requestModels").get(APPLICATION_JSON)
@@ -1103,8 +1101,7 @@ def is_request_valid(invocation_context: ApiInvocationContext) -> bool:
             )
             try:
                 validate(
-                    instance=json.loads(invocation_context.data),
-                    schema=json.loads(model["schema"])
+                    instance=json.loads(invocation_context.data), schema=json.loads(model["schema"])
                 )
                 return True
             except ValidationError as e:

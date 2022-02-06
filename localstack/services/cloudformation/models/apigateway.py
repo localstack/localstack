@@ -388,7 +388,7 @@ class GatewayMethod(GenericBaseModel):
                         "authorizerId": "AuthorizerId",
                         "requestParameters": "RequestParameters",
                         "requestModels": "RequestModels",
-                        "requestValidatorId": "RequestValidatorId"
+                        "requestValidatorId": "RequestValidatorId",
                     },
                 },
                 {
@@ -664,7 +664,7 @@ class GatewayModel(GenericBaseModel):
                     "name": "Name",
                     "restApiId": "RestApiId",
                     "schema": "Schema",
-                    "contentType": "ContentType"
+                    "contentType": "ContentType",
                 },
                 "defaults": {"contentType": "application/json"},
             }
