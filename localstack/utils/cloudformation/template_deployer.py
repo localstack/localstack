@@ -1082,6 +1082,12 @@ def determine_resource_physical_id(resource_id, stack=None, attribute=None):
             return table_name
     elif resource_type == "Logs::LogGroup":
         return resource_props.get("LogGroupName")
+    elif resource_type == "ApiGateway::Model":
+        model_name = resource_props.get("Name")
+        if model_name:
+            if attribute == "Ref":
+                return model_name
+            return model_name
 
     res_id = resource.get("PhysicalResourceId")
     if res_id and attribute in [None, "Ref", "PhysicalResourceId"]:

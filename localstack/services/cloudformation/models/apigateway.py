@@ -359,17 +359,16 @@ class GatewayMethod(GenericBaseModel):
                     **kwargs,
                 )
 
-
-            request_models = resource.resolve_refs_recursively(
-                stack_name, props["RequestModels"]["application/json"], resources
-            )
-            apigateway.put_method(
-                restApiId=api_id,
-                resourceId=res_id,
-                httpMethod=props["HttpMethod"],
-                authorizationType=props["AuthorizationType"],
-                requestModels=props["RequestModels"]
-            )
+            # request_models = resource.resolve_refs_recursively(
+            #     stack_name, props["RequestModels"]["application/json"], resources
+            # )
+            # apigateway.put_method(
+            #     restApiId=api_id,
+            #     resourceId=res_id,
+            #     httpMethod=props["HttpMethod"],
+            #     authorizationType=props["AuthorizationType"],
+            #     requestModels=props["RequestModels"]
+            # )
 
             responses = props.get("MethodResponses") or []
             for response in responses:
@@ -399,7 +398,8 @@ class GatewayMethod(GenericBaseModel):
                         "authorizationType": "AuthorizationType",
                         "authorizerId": "AuthorizerId",
                         "requestParameters": "RequestParameters",
-                        "requestModels": "RequestModels"
+                        "requestModels": "RequestModels",
+                        "requestValidatorId": "RequestValidatorId"
                     },
                 },
                 {

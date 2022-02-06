@@ -11,6 +11,7 @@ from urllib.parse import urljoin
 import pytz
 import requests
 from flask import Response as FlaskResponse
+from jsonschema import ValidationError
 from moto.apigateway.models import apigateway_backends
 from requests.models import Response
 
@@ -44,7 +45,7 @@ from localstack.services.apigateway.helpers import (
     handle_gateway_responses,
     handle_validators,
     handle_vpc_links,
-    make_error_response,
+    make_error_response
 )
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -561,6 +562,10 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
     if not resource:
         return make_error_response("Unable to find path %s" % invocation_context.path, 404)
 
+    # validate request
+    if not is_request_valid(invocation_context):
+        return make_error_response("Invalid request body", 400)
+
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
     if not is_api_key_valid(api_key_required, headers, invocation_context.stage):
         return make_error_response("Access denied - invalid API key", 403)
@@ -599,9 +604,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
 def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
     try:
-        response = invoke_rest_api_integration_backend(
-            invocation_context, invocation_context.integration
-        )
+        response = invoke_rest_api_integration_backend(invocation_context)
         invocation_context.response = response
         response = apply_response_parameters(invocation_context)
         return response
@@ -614,7 +617,7 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
 # TODO: refactor this to have a class per integration type to make it easy to
 # test the encapsulated logic
 def invoke_rest_api_integration_backend(
-    invocation_context: ApiInvocationContext, integration: Dict
+    invocation_context: ApiInvocationContext
 ):
     # define local aliases from invocation context
     invocation_path = invocation_context.path_with_query_string
@@ -626,6 +629,7 @@ def invoke_rest_api_integration_backend(
     stage = invocation_context.stage
     resource_path = invocation_context.resource_path
     response_templates = invocation_context.response_templates
+    integration = invocation_context.integration
 
     # extract integration type and path parameters
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
@@ -971,6 +975,7 @@ def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tup
     relative_path = invocation_context.invocation_path
     try:
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+        invocation_context.resource = resource
         return extracted_path, resource
     except Exception:
         return None, None
@@ -1078,6 +1083,33 @@ def apply_request_response_templates(
 
 def is_test_invoke_method(method, path):
     return method == "POST" and bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
+
+
+def is_request_valid(invocation_context: ApiInvocationContext) -> bool:
+    from jsonschema import validate
+    resource_methods = invocation_context.resource.get('resourceMethods')
+    if resource_methods:
+        resource = resource_methods[invocation_context.method]
+        client = aws_stack.connect_to_service("apigateway")
+        validator = client.get_request_validator(
+            restApiId=invocation_context.api_id,
+            requestValidatorId=resource["requestValidatorId"]
+        )
+        if validator is not None and validator["validateRequestBody"]:
+            schema_name = resource.get("requestModels").get(APPLICATION_JSON)
+            model = client.get_model(
+                restApiId=invocation_context.api_id,
+                modelName=schema_name,
+            )
+            try:
+                validate(
+                    instance=json.loads(invocation_context.data),
+                    schema=json.loads(model["schema"])
+                )
+                return True
+            except ValidationError as e:
+                LOG.error("failed to validate request body", e)
+                return False
 
 
 # instantiate listener
