@@ -751,12 +751,7 @@ def test_restjson_payload_serialization():
     """
 
     response = {
-        "Content": b'{"foo": "bar"}',
-        "ConfigurationVersion": "123",
-        "ContentType": "application/json",
-    }
-    expected = {
-        "Content": "eyJmb28iOiAiYmFyIn0=",  # base64 encoding of b'{"foo": "bar"}
+        "Content": '{"foo": "bar"}',
         "ConfigurationVersion": "123",
         "ContentType": "application/json",
     }
@@ -766,7 +761,6 @@ def test_restjson_payload_serialization():
         "GetConfiguration",
         response,
         status_code=200,
-        expected_response_content=expected,
     )
     headers = result["ResponseMetadata"]["HTTPHeaders"]
     assert "configuration-version" in headers

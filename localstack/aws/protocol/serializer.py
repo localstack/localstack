@@ -786,6 +786,9 @@ class JSONResponseSerializer(ResponseSerializer):
         # a payload can be a string, blob, or structure: https://gist.github.com/thrau/39fd20b437f8719ffc361ad9a908c0c6
         if payload_shape.type_name == "structure":
             response.set_json(value if value is not None else {})
+        elif payload_shape.type_name == "blob":
+            # payloads blobs are not base64 encoded, but the `_serialize` recursion doesn't know that
+            response.data = base64.b64decode(value) if value is not None else b""
         else:
             response.data = value if value is not None else b""
 
