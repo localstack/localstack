@@ -347,8 +347,10 @@ class TestSecretsManager:
     def secretsmanager_http_put_pending_secret_value_with_val_res(
             res: requests.Response, secret_name: str, client_request_token: str) -> json:
         # TODO: is it true that the crt value should be ignored when updating the secrets version stage?
+        assert res.status_code == 200
+        res_json: json = res.json()
         return TestSecretsManager.secretsmanager_http_put_secret_value_with_val_res(
-            res, secret_name, client_request_token)
+            res, secret_name, res_json['VersionId'])
 
     def test_http_put_secret_value_with_new_custom_client_request_token(self):
         secret_name: str = 'test_http_put_secret_value_with_new_custom_client_request_token'
@@ -641,7 +643,7 @@ class TestSecretsManager:
         while crt_v1 == cr_v0_res_json['VersionId']:
             crt_v1 = str(uuid.uuid4())
         #
-        pv_v1_res_json = self.secretsmanager_http_put_pending_secret_value_with_val_res(
+        self.secretsmanager_http_put_pending_secret_value_with_val_res(
             self.secretsmanager_http_put_pending_secret_value_with(secret_name, secret_string_v1, crt_v1),
             secret_name,
             crt_v1)
