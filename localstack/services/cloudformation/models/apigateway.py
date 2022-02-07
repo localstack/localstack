@@ -666,6 +666,7 @@ class GatewayModel(GenericBaseModel):
                     "schema": "Schema",
                     "contentType": "ContentType",
                 },
+                "types": {"schema": str},
                 "defaults": {"contentType": "application/json"},
             }
         }
