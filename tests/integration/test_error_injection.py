@@ -7,7 +7,7 @@ from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
-from .lambdas import lambda_integration
+from .awslambda.functions import lambda_integration
 from .test_integration import PARTITION_KEY, TEST_TABLE_NAME
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME

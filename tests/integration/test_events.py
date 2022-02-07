@@ -25,6 +25,8 @@ from localstack.utils.common import (
 )
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
+from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
 TEST_EVENT_BUS_NAME = "command-bus-dev"
@@ -378,9 +380,8 @@ class EventsTest(unittest.TestCase):
         target_id = "target-{}".format(short_uid())
         bus_name = "bus-{}".format(short_uid())
 
-        handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
         rs = testutil.create_lambda_function(
-            handler_file=handler_file,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )

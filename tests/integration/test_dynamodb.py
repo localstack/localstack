@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import json
-import os
 import unittest
 from datetime import datetime
 from time import sleep
@@ -17,6 +16,8 @@ from localstack.utils.aws.aws_stack import get_environment
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
+from .awslambda.test_lambda import TEST_LAMBDA_PYTHON_ECHO
+
 PARTITION_KEY = "id"
 
 TEST_DDB_TABLE_NAME = "test-ddb-table-1"
@@ -27,9 +28,6 @@ TEST_DDB_TAGS = [
     {"Key": "Name", "Value": "test-table"},
     {"Key": "TestKey", "Value": "true"},
 ]
-
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 
 
 class TestDynamoDB(unittest.TestCase):
@@ -774,7 +772,7 @@ class TestDynamoDB(unittest.TestCase):
         latest_stream_arn = table.latest_stream_arn
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )

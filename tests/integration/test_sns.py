@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import os
 import random
 import time
 
@@ -28,8 +27,13 @@ from localstack.utils.common import (
 )
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
-from .lambdas import lambda_integration
-from .test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
+from .awslambda.functions import lambda_integration
+from .awslambda.test_lambda import (
+    LAMBDA_RUNTIME_PYTHON36,
+    TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
+)
 
 TEST_TOPIC_NAME = "TestTopic_snsTest"
 TEST_QUEUE_NAME = "TestQueue_snsTest"
@@ -38,9 +42,6 @@ TEST_TOPIC_NAME_2 = "topic-test-2"
 
 PUBLICATION_TIMEOUT = 0.500
 PUBLICATION_RETRIES = 4
-
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 
 
 @pytest.fixture(scope="class")
@@ -680,7 +681,7 @@ class TestSNS:
         topic_arn = self.sns_client.create_topic(Name=topic_name)["TopicArn"]
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=func_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )

@@ -41,13 +41,16 @@ from localstack.utils.common import clone, get_free_tcp_port, json_safe, load_fi
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import select_attributes, short_uid, to_str
 
-from .test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
+from .awslambda.test_lambda import (
+    TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_NODEJS,
+    TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
+)
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, "files", "swagger.json")
 TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, "files", "pets.json")
-TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
-TEST_LAMBDA_HANDLER_JS = os.path.join(THIS_FOLDER, "lambdas", "lambda_handler.js")
 
 ApiGatewayLambdaProxyIntegrationTestResult = namedtuple(
     "ApiGatewayLambdaProxyIntegrationTestResult",
@@ -1180,7 +1183,7 @@ class TestAPIGateway(unittest.TestCase):
         # create state machine
         fn_name = "test-stepfunctions-apigw"
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=fn_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -1584,7 +1587,7 @@ class TestAPIGateway(unittest.TestCase):
         # create test Lambda
         fn_name = f"test-{short_uid()}"
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_HANDLER_JS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
+            handler_file=TEST_LAMBDA_NODEJS, func_name=fn_name, runtime=LAMBDA_RUNTIME_NODEJS12X
         )
         lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
 

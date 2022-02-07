@@ -25,12 +25,12 @@ from localstack.utils.common import (
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.testutil import get_lambda_log_events
 
-from .lambdas import lambda_integration
-from .test_lambda import (
+from .awslambda.functions import lambda_integration
+from .awslambda.test_lambda import (
     TEST_LAMBDA_LIBS,
     TEST_LAMBDA_PYTHON,
     TEST_LAMBDA_PYTHON_ECHO,
-    LambdaTestBase,
+    get_lambda_logs,
 )
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
@@ -706,7 +706,7 @@ class IntegrationTest(unittest.TestCase):
 
     def test_scheduled_lambda(self):
         def check_invocation(*args):
-            log_events = LambdaTestBase.get_lambda_logs(self.scheduled_lambda_name)
+            log_events = get_lambda_logs(self.scheduled_lambda_name)
             self.assertGreater(len(log_events), 0)
 
         # wait for up to 1 min for invocations to get triggered
