@@ -743,12 +743,13 @@ class JSONResponseSerializer(ResponseSerializer):
             return
 
         # otherwise, move data attributes into their appropriate locations
-        # (some shapes have a serialization dict, but don't actually have
+        # (some shapes have a serialization dict, but don't actually have attributes with special locations)
         body = {}
         for name in shape_members:
             member_shape = shape_members[name]
             key = member_shape.serialization.get("name", name)
             if key not in data:
+                # ignores optional keys
                 continue
             value = data[key]
 
