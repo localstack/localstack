@@ -372,7 +372,7 @@ class RequestValidator:
             validate(instance=json.loads(self.context.data), schema=json.loads(model["schema"]))
             return True
         except ValidationError as e:
-            LOG.error("failed to validate request body", e)
+            LOG.warning("failed to validate request body", e)
             return False
 
     # TODO implement parameters and headers
@@ -835,7 +835,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     headers=headers,
                 )
             except Exception as e:
-                LOG.error("Unable to convert API Gateway payload to str", e)
+                LOG.warning("Unable to convert API Gateway payload to str", e)
                 raise
 
             # forward records to target kinesis stream
