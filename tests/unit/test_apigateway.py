@@ -142,12 +142,45 @@ class ApiGatewayPathsTest(unittest.TestCase):
             "resourceMethods": {
                 "POST": {
                     "requestValidatorId": "112233",
-                    "requestModels": {"application/json": '{ "id": "1"}'},
+                    "requestModels": {"application/json": "schemaName"},
                 }
             }
         }
         validator = RequestValidator(ctx, apigateway_client)
         self.assertTrue(validator.is_request_valid())
+
+    def test_request_validate_body_with_no_request_model(self):
+        apigateway_client = Mock(boto3.client(service_name="apigateway"))
+        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
+        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        ctx.api_id = "deadbeef"
+        ctx.resource = {
+            "resourceMethods": {
+                "POST": {
+                    "requestValidatorId": "112233",
+                    "requestModels": None,
+                }
+            }
+        }
+        validator = RequestValidator(ctx, apigateway_client)
+        self.assertFalse(validator.is_request_valid())
+
+    def test_request_validate_body_with_no_model_for_schema_name(self):
+        apigateway_client = Mock(boto3.client(service_name="apigateway"))
+        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
+        apigateway_client.get_model.return_value = None
+        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        ctx.api_id = "deadbeef"
+        ctx.resource = {
+            "resourceMethods": {
+                "POST": {
+                    "requestValidatorId": "112233",
+                    "requestModels": {"application/json": "schemaName"},
+                }
+            }
+        }
+        validator = RequestValidator(ctx, apigateway_client)
+        self.assertFalse(validator.is_request_valid())
 
 
 def test_render_template_values():

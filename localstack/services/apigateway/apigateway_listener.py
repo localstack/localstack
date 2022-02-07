@@ -63,7 +63,6 @@ from localstack.utils.aws.aws_responses import (
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
 from localstack.utils.common import (
-    NetrcBypassAuth,
     camel_to_snake_case,
     json_safe,
     long_uid,
@@ -333,11 +332,7 @@ class RequestValidator:
 
         # check if there is validator for the resource
         resource = resource_methods[self.context.method]
-        if (
-            "requestValidatorId" not in resource
-            or resource["requestValidatorId"] is None
-            or not resource["requestValidatorId"].strip()
-        ):
+        if not (resource.get("requestValidatorId") or "").strip():
             return True
 
         # check if there is a validator for this request
@@ -830,16 +825,15 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 target = ""
 
             try:
-                json_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
-                json_str = apply_template(
+                data = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
+                payload = apply_template(
                     integration,
                     "request",
-                    json_str,
+                    data,
                     path_params=path_params,
                     query_params=query_string_params,
                     headers=headers,
                 )
-                payload = json.loads(json_str)
             except Exception as e:
                 LOG.error("Unable to convert API Gateway payload to str", e)
                 raise
@@ -850,13 +844,8 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             )
             headers["X-Amz-Target"] = target
 
-            result = requests.request(
-                url=config.service_url("kinesis"),
-                method="POST",
-                headers=headers,
-                json=payload,
-                auth=NetrcBypassAuth(),
-                verify=False,
+            result = common.make_http_request(
+                url=config.service_url("kineses"), data=payload, headers=headers, method="POST"
             )
 
             # apply response template
