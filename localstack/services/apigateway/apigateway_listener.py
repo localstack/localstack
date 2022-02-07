@@ -385,7 +385,7 @@ class RequestValidator:
 
     @staticmethod
     def should_validate_request(validator):
-        return validator["validateRequestParameters"]
+        return validator.get("validateRequestParameters")
 
 
 # ------------
