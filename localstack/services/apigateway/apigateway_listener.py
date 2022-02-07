@@ -348,25 +348,49 @@ class RequestValidator:
             return True
 
         # are we validating the body?
-        if validator["validateRequestBody"]:
-            # we need a model to validate the body
-            if "requestModels" not in resource or not resource["requestModels"]:
-                return False
+        if self.should_validate_body(validator):
+            is_body_valid = self.validate_body(resource)
+            if not is_body_valid:
+                return is_body_valid
 
-            schema_name = resource["requestModels"].get(APPLICATION_JSON)
-            model = self.apigateway_client.get_model(
-                restApiId=self.context.api_id,
-                modelName=schema_name,
-            )
-            if not model:
-                return False
+        if self.should_validate_request(validator):
+            is_valid_parameters = self.validate_parameters_and_headers(resource)
+            if not is_valid_parameters:
+                return is_valid_parameters
 
-            try:
-                validate(instance=json.loads(self.context.data), schema=json.loads(model["schema"]))
-                return True
-            except ValidationError as e:
-                LOG.error("failed to validate request body", e)
-                return False
+        return True
+
+    def validate_body(self, resource):
+        # we need a model to validate the body
+        if "requestModels" not in resource or not resource["requestModels"]:
+            return False
+
+        schema_name = resource["requestModels"].get(APPLICATION_JSON)
+        model = self.apigateway_client.get_model(
+            restApiId=self.context.api_id,
+            modelName=schema_name,
+        )
+        if not model:
+            return False
+
+        try:
+            validate(instance=json.loads(self.context.data), schema=json.loads(model["schema"]))
+            return True
+        except ValidationError as e:
+            LOG.error("failed to validate request body", e)
+            return False
+
+    # TODO implement parameters and headers
+    def validate_parameters_and_headers(self, resource):
+        return True
+
+    @staticmethod
+    def should_validate_body(validator):
+        return validator["validateRequestBody"]
+
+    @staticmethod
+    def should_validate_request(validator):
+        return validator["validateRequestParameters"]
 
 
 # ------------
