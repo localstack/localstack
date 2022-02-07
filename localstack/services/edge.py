@@ -445,6 +445,9 @@ def get_api_from_custom_rules(method, path, data, headers):
     if _in_path_or_payload("Action=AssumeRoleWithSAML"):
         return "sts", config.service_port("sts")
 
+    if _in_path_or_payload("Action=AssumeRole"):
+        return "sts", config.service_port("sts")
+
     # CloudWatch backdoor API to retrieve raw metrics
     if path.startswith(PATH_GET_RAW_METRICS):
         return "cloudwatch", config.service_port("cloudwatch")
