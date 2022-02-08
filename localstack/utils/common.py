@@ -486,6 +486,43 @@ class HashableList(list):
         return result
 
 
+class PaginatedList(list):
+    """List which can be paginated and filtered. For usage in AWS APIs with paginated responses"""
+
+    DEFAULT_PAGE_SIZE = 50
+
+    def get_page(
+        self,
+        next_token: str,
+        token_generator: Callable,
+        page_size: int,
+        filter_function: Callable = None,
+    ) -> (list, str):
+        if filter_function is not None:
+            result_list = list(filter(filter_function, self))
+        else:
+            result_list = self
+
+        if page_size is None:
+            page_size = self.DEFAULT_PAGE_SIZE
+
+        if len(result_list) <= page_size:
+            return result_list, None
+
+        start_idx = 0
+
+        try:
+            start_item = next(item for item in result_list if token_generator(item) == next_token)
+            start_idx = result_list.index(start_item)
+        except StopIteration:
+            pass
+
+        if start_idx + page_size <= len(result_list[start_idx:]):
+            next_token = token_generator(result_list[start_idx + page_size])
+
+        return result_list[start_idx : start_idx + page_size], next_token
+
+
 class FileMappedDocument(dict):
     """A dictionary that is mapped to a json document on disk.
 
