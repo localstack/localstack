@@ -622,7 +622,7 @@ def test_parse_cloudtrail_with_botocore():
     )
 
 
-def test_parse_cloudfront_with_botocore():
+def test_parse_cloudfront_uri_location_with_botocore():
     _botocore_parser_integration_test(
         service="cloudfront",
         action="GetDistribution",
