@@ -10,7 +10,9 @@ from dateutil.tz import tzutc
 from localstack import config
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_str
+from localstack.utils.common import retry, short_uid, to_str
+
+PUBLICATION_RETRIES = 5
 
 
 class CloudWatchTest(unittest.TestCase):
@@ -267,3 +269,171 @@ class CloudWatchTest(unittest.TestCase):
         # asserting only unique values are returned
         results = cloudwatch.list_metrics(Namespace="AWS/EC2")["Metrics"]
         self.assertEqual(2, len(results))
+
+
+def check_message(
+    sqs_client,
+    expected_queue_url,
+    expected_topic_arn,
+    expected_new,
+    expected_reason,
+    alarm_name,
+    alarm_description,
+    expected_trigger,
+):
+    receive_result = sqs_client.receive_message(QueueUrl=expected_queue_url)
+    message = None
+    for msg in receive_result["Messages"]:
+        body = json.loads(msg["Body"])
+        if body["TopicArn"] == expected_topic_arn:
+            message = json.loads(body["Message"])
+            break
+    assert message["NewStateValue"] == expected_new
+    assert message["NewStateReason"] == expected_reason
+    assert message["AlarmName"] == alarm_name
+    assert message["AlarmDescription"] == alarm_description
+    assert message["Trigger"] == expected_trigger
+    return message
+
+
+def get_sqs_policy(sqs_queue_arn, sns_topic_arn):
+    return f"""
+{{
+  "Version":"2012-10-17",
+  "Statement":[
+    {{
+      "Effect": "Allow",
+      "Principal": {{ "AWS": "*" }},
+      "Action": "sqs:SendMessage",
+      "Resource": "{sqs_queue_arn}",
+      "Condition":{{
+        "ArnEquals":{{
+        "aws:SourceArn":"{sns_topic_arn}"
+        }}
+      }}
+    }}
+  ]
+}}
+"""
+
+
+class TestCloudwatch:
+    def test_set_alarm(
+        self, sns_client, cloudwatch_client, sqs_client, sns_create_topic, sqs_create_queue
+    ):
+        # create topics for state 'ALARM' and 'OK'
+        sns_topic_alarm = sns_create_topic()
+        topic_arn_alarm = sns_topic_alarm["TopicArn"]
+        sns_topic_ok = sns_create_topic()
+        topic_arn_ok = sns_topic_ok["TopicArn"]
+
+        # create queues for 'ALARM' and 'OK' (will receive sns messages)
+        uid = short_uid()
+        queue_url_alarm = sqs_create_queue(QueueName=f"AlarmQueue-{uid}")
+        queue_url_ok = sqs_create_queue(QueueName=f"OKQueue-{uid}")
+
+        arn_queue_alarm = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url_alarm, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        arn_queue_ok = sqs_client.get_queue_attributes(
+            QueueUrl=queue_url_ok, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url_alarm,
+            Attributes={"Policy": get_sqs_policy(arn_queue_alarm, topic_arn_alarm)},
+        )
+        sqs_client.set_queue_attributes(
+            QueueUrl=queue_url_ok, Attributes={"Policy": get_sqs_policy(arn_queue_ok, topic_arn_ok)}
+        )
+
+        alarm_name = "test-alarm"
+        alarm_description = "Test Alarm when CPU exceeds 50 percent"
+
+        expected_trigger = {
+            "MetricName": "CPUUtilization",
+            "Namespace": "AWS/EC2",
+            "Unit": "Percent",
+            "Period": 300,
+            "EvaluationPeriods": 1,
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "EvaluateLowSampleCountPercentile": "",
+            "Dimensions": [{"value": "i-0317828c84edbe100", "name": "InstanceId"}],
+            "StatisticType": "Statistic",
+            "Statistic": "AVERAGE",
+        }
+        try:
+            # subscribe to SQS
+            subscription_alarm = sns_client.subscribe(
+                TopicArn=topic_arn_alarm, Protocol="sqs", Endpoint=arn_queue_alarm
+            )
+            subscription_ok = sns_client.subscribe(
+                TopicArn=topic_arn_ok, Protocol="sqs", Endpoint=arn_queue_ok
+            )
+
+            # create alarm with actions for "OK" and "ALARM"
+            cloudwatch_client.put_metric_alarm(
+                AlarmName=alarm_name,
+                AlarmDescription=alarm_description,
+                MetricName=expected_trigger["MetricName"],
+                Namespace=expected_trigger["Namespace"],
+                ActionsEnabled=True,
+                Period=expected_trigger["Period"],
+                Threshold=expected_trigger["Threshold"],
+                Dimensions=[{"Name": "InstanceId", "Value": "i-0317828c84edbe100"}],
+                Unit=expected_trigger["Unit"],
+                Statistic=expected_trigger["Statistic"].capitalize(),
+                OKActions=[topic_arn_ok],
+                AlarmActions=[topic_arn_alarm],
+                EvaluationPeriods=expected_trigger["EvaluationPeriods"],
+                ComparisonOperator=expected_trigger["ComparisonOperator"],
+                TreatMissingData=expected_trigger["TreatMissingData"],
+            )
+
+            # trigger alarm
+            state_value = "ALARM"
+            state_reason = "testing alarm"
+            cloudwatch_client.set_alarm_state(
+                AlarmName=alarm_name, StateReason=state_reason, StateValue=state_value
+            )
+
+            retry(
+                check_message,
+                retries=PUBLICATION_RETRIES,
+                sleep_before=1,
+                sqs_client=sqs_client,
+                expected_queue_url=queue_url_alarm,
+                expected_topic_arn=topic_arn_alarm,
+                expected_new=state_value,
+                expected_reason=state_reason,
+                alarm_name=alarm_name,
+                alarm_description=alarm_description,
+                expected_trigger=expected_trigger,
+            )
+
+            # trigger OK
+            state_value = "OK"
+            state_reason = "resetting alarm"
+            cloudwatch_client.set_alarm_state(
+                AlarmName=alarm_name, StateReason=state_reason, StateValue=state_value
+            )
+
+            retry(
+                check_message,
+                retries=PUBLICATION_RETRIES,
+                sleep_before=1,
+                sqs_client=sqs_client,
+                expected_queue_url=queue_url_ok,
+                expected_topic_arn=topic_arn_ok,
+                expected_new=state_value,
+                expected_reason=state_reason,
+                alarm_name=alarm_name,
+                alarm_description=alarm_description,
+                expected_trigger=expected_trigger,
+            )
+        finally:
+            # cleanup
+            sns_client.unsubscribe(SubscriptionArn=subscription_alarm["SubscriptionArn"])
+            sns_client.unsubscribe(SubscriptionArn=subscription_ok["SubscriptionArn"])
+            cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
