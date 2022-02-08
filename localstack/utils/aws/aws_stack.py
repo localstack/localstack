@@ -1024,7 +1024,8 @@ def create_api_gateway(
                 authorizationType=method.get("authorizationType") or "NONE",
                 apiKeyRequired=method.get("apiKeyRequired") or False,
                 requestParameters=method.get("requestParameters") or {},
-                requestModels=method.get("requestModels") or {} ** kwargs,
+                requestModels=method.get("requestModels") or {},
+                **kwargs,
             )
             # create integrations for this API resource/method
             integrations = method["integrations"]
