@@ -505,8 +505,14 @@ class TestSingletonClusterManager:
         # check if the second url matches the first one
         assert cluster_0.url == cluster_1.url
 
-        call_safe(cluster_0.shutdown)
-        call_safe(cluster_1.shutdown)
+        try:
+            # wait for the two clusters
+            assert cluster_0.wait_is_up(240)
+            # make sure cluster_0 (which is equal to cluster_1) is reachable
+            retry(lambda: try_cluster_health(cluster_0.url), retries=3, sleep=5)
+        finally:
+            call_safe(cluster_0.shutdown)
+            call_safe(cluster_1.shutdown)
 
 
 class TestCustomBackendManager:
