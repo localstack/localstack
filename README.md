@@ -181,30 +181,4 @@ Copyright (c) 2017-2021 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
-This version of LocalStack is released under the Apache License, Version 2.0 (see LICENSE.txt).
-By downloading and using this software you agree to the
-[End-User License Agreement (EULA)](doc/end_user_license_agreement).
-
-We build on a number of third-party software tools, including the following:
-
-Third-Party software      |   License
---------------------------|-----------------------
-**Python/pip modules:**   |
-airspeed                  | BSD License
-amazon_kclpy              | Amazon Software License
-boto3                     | Apache License 2.0
-coverage                  | Apache License 2.0
-docopt                    | MIT License
-elasticsearch             | Apache License 2.0
-flask                     | BSD License
-flask_swagger             | MIT License
-jsonpath-rw               | Apache License 2.0
-moto                      | Apache License 2.0
-requests                  | Apache License 2.0
-subprocess32              | PSF License
-**Node.js/npm modules:**  |
-kinesalite                | MIT License
-**Other tools:**          |
-Elasticsearch             | Apache License 2.0
-local-kms                 | MIT License
-kinesis-mock              | MIT License
+This version of LocalStack is released under the Apache License, Version 2.0 (see LICENSE.txt). By downloading and using this software you agree to the [End-User License Agreement (EULA)](doc/end_user_license_agreement). To know about the external software we use, look at our [third party software tools](doc/third-party-software-tools/README.md) page.
