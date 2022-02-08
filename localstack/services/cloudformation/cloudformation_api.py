@@ -183,6 +183,11 @@ class Stack(object):
         result = self._lookup(self.resource_states, resource_id)
         return result
 
+    def latest_template_raw(self):
+        if self.change_sets:
+            return self.change_sets[-1]._template_raw
+        return self._template_raw
+
     @property
     def resource_states(self):
         for resource_id in list(self._resource_states.keys()):
@@ -937,7 +942,7 @@ def get_template(req_params):
         stack = find_change_set(stack_name=stack_name, cs_name=cs_name)
     if not stack:
         return stack_not_found_error(stack_name)
-    result = {"TemplateBody": json.dumps(stack._template_raw)}
+    result = {"TemplateBody": json.dumps(stack.latest_template_raw())}
     return result
 
 
