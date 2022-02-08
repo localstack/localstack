@@ -574,28 +574,31 @@ class BaseRestRequestParser(RequestParser):
         final_parsed: dict,
     ) -> None:
         """Parses all attributes which are located in the payload / body of the incoming request."""
+        payload_parsed = {}
         if "payload" in shape.serialization:
             # If a payload is specified in the output shape, then only that shape is used for the body payload.
             payload_member_name = shape.serialization["payload"]
             body_shape = member_shapes[payload_member_name]
             if body_shape.serialization.get("eventstream"):
                 body = self._create_event_stream(request, body_shape)
-                final_parsed[payload_member_name] = body
+                payload_parsed[payload_member_name] = body
             elif body_shape.type_name in ["string", "blob"]:
                 # This is a stream
                 body = request.data
                 if isinstance(body, bytes):
                     body = body.decode(self.DEFAULT_ENCODING)
-                final_parsed[payload_member_name] = body
+                payload_parsed[payload_member_name] = body
             else:
                 original_parsed = self._initial_body_parse(request.data)
-                final_parsed[payload_member_name] = self._parse_shape(
+                payload_parsed[payload_member_name] = self._parse_shape(
                     request, body_shape, original_parsed, path_regex
                 )
         # even if the payload has been parsed, the rest of the shape needs to be processed as well
         original_parsed = self._initial_body_parse(request.data)
         body_parsed = self._parse_shape(request, shape, original_parsed, path_regex)
+        # update the final result with the parsed body and the parsed payload (where the payload has precedence)
         final_parsed.update(body_parsed)
+        final_parsed.update(payload_parsed)
 
     def _initial_body_parse(self, body_contents: bytes) -> any:
         """
@@ -641,15 +644,15 @@ class RestXMLRequestParser(BaseRestRequestParser):
         parsed = {}
         xml_dict = self._build_name_to_xml_node(node)
         for member_name, member_shape in shape.members.items():
-            if "location" in member_shape.serialization or member_shape.serialization.get(
-                "eventheader"
-            ):
-                # All members with locations have already been handled in ``_parse_non_payload_attrs``,
-                # so we don't need to parse these members.
-                continue
             xml_name = self._member_key_name(member_shape, member_name)
             member_node = xml_dict.get(xml_name)
-            if member_node is not None:
+            # If a shape defines a location trait, the node might be None (since these are extracted from the request's
+            # metadata like headers or the URI)
+            if (
+                member_node is not None
+                or "location" in member_shape.serialization
+                or member_shape.serialization.get("eventheader")
+            ):
                 parsed[member_name] = self._parse_shape(
                     request, member_shape, member_node, path_regex
                 )

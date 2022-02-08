@@ -622,6 +622,28 @@ def test_parse_cloudtrail_with_botocore():
     )
 
 
+def test_parse_cloudfront_uri_location_with_botocore():
+    _botocore_parser_integration_test(
+        service="cloudfront",
+        action="GetDistribution",
+        Id="001",
+    )
+
+
+def test_parse_cloudfront_payload_with_botocore():
+    _botocore_parser_integration_test(
+        service="cloudfront",
+        action="CreateOriginRequestPolicy",
+        OriginRequestPolicyConfig={
+            "Comment": "comment1",
+            "Name": "name",
+            "HeadersConfig": {"HeaderBehavior": "none"},
+            "CookiesConfig": {"CookieBehavior": "all"},
+            "QueryStringsConfig": {"QueryStringBehavior": "all"},
+        },
+    )
+
+
 def test_parse_opensearch_conflicting_request_uris():
     """
     Tests if the operation detection works with conflicting regular expressions:
