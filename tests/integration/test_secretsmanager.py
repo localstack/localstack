@@ -231,6 +231,19 @@ class TestSecretsManager:
         assert res_json['Name'] == secret_name
         return res_json
 
+    def secretsmanager_http_delete_secret(self, secret_id: str) -> requests.Response:
+        http_body: json = {
+            'SecretId': secret_id
+        }
+        return self.secretsmanager_http_json_post('secretsmanager.DeleteSecret', http_body)
+
+    @staticmethod
+    def secretsmanager_http_delete_secret_val_res(res: requests.Response, secret_id: str) -> json:
+        assert res.status_code == 200
+        res_json: json = res.json()
+        assert res_json['Name'] == secret_id
+        return res_json
+
     def secretsmanager_http_get_secret_value(self, secret_id: str) -> requests.Response:
         http_body: json = {
             'SecretId': secret_id
@@ -256,13 +269,9 @@ class TestSecretsManager:
 
     @staticmethod
     def secretsmanager_http_get_secret_value_with_val_res(
-            res: requests.Response, secret_name: str, secret_string: str, version_stage: str) -> json:
-        assert res.status_code == 200
-        res_json: json = res.json()
-        # TODO: is it true that the version id value returned for put requests updating the version stage is equal
-        # TODO: to that of the AWSCURRENT version?
+            res: requests.Response, secret_name: str, secret_string: str, version_id: str, version_stage: str) -> json:
         res_json = TestSecretsManager.secretsmanager_http_get_secret_value_val_res(
-            res, secret_name, secret_string, res_json['VersionId'])
+            res, secret_name, secret_string, version_id)
         assert res_json['VersionStages'] == [version_stage]
         return res_json
 
@@ -333,24 +342,30 @@ class TestSecretsManager:
         assert res_json['VersionId'] == client_request_token
         return res_json
 
-    def secretsmanager_http_put_pending_secret_value_with(
-            self, secret_id: str, secret_string: str, client_request_token: Optional[str]) -> requests.Response:
+    def secretsmanager_http_put_secret_value_with_version(
+            self, secret_id: str, secret_string: str, client_request_token: Optional[str], version_stages: [str]) \
+            -> requests.Response:
         http_body: json = {
             'SecretId': secret_id,
             'SecretString': secret_string,
             'ClientRequestToken': client_request_token,
-            'VersionStages': ['AWSPENDING']
+            'VersionStages': version_stages
         }
         return self.secretsmanager_http_json_post('secretsmanager.PutSecretValue', http_body)
 
     @staticmethod
-    def secretsmanager_http_put_pending_secret_value_with_val_res(
-            res: requests.Response, secret_name: str, client_request_token: str) -> json:
-        # TODO: is it true that the crt value should be ignored when updating the secrets version stage?
-        assert res.status_code == 200
-        res_json: json = res.json()
-        return TestSecretsManager.secretsmanager_http_put_secret_value_with_val_res(
-            res, secret_name, res_json['VersionId'])
+    def secretsmanager_http_put_secret_value_with_version_val_res(
+            res: requests.Response, secret_name: str, client_request_token: Optional[str], version_stages: [str]) -> json:
+        req_version_id: str
+        if client_request_token is None:
+            assert res.status_code == 200
+            req_version_id = res.json()['VersionId']
+        else:
+            req_version_id = client_request_token
+        res_json = TestSecretsManager.secretsmanager_http_put_secret_value_with_val_res(
+            res, secret_name, req_version_id)
+        assert res_json['VersionStages'] == version_stages
+        return res_json
 
     def test_http_put_secret_value_with_new_custom_client_request_token(self):
         secret_name: str = 'test_http_put_secret_value_with_new_custom_client_request_token'
@@ -392,6 +407,8 @@ class TestSecretsManager:
         self.secretsmanager_http_list_secret_version_ids_val_res(
             self.secretsmanager_http_list_secret_version_ids(secret_name), secret_name, versions_v0_v1)
 
+        self.secretsmanager_http_delete_secret_val_res(self.secretsmanager_http_delete_secret(secret_name), secret_name)
+
     def test_http_put_secret_value_with_duplicate_client_request_token(self):
         secret_name: str = 'test_http_put_secret_value_with_duplicate_client_request_token'
 
@@ -429,6 +446,8 @@ class TestSecretsManager:
         self.secretsmanager_http_list_secret_version_ids_val_res(
             self.secretsmanager_http_list_secret_version_ids(secret_name), secret_name, versions_v0_v1)
 
+        self.secretsmanager_http_delete_secret_val_res(self.secretsmanager_http_delete_secret(secret_name), secret_name)
+
     def test_http_put_secret_value_with_null_client_request_token(self):
         secret_name: str = 'test_http_put_secret_value_with_null_client_request_token'
 
@@ -464,6 +483,8 @@ class TestSecretsManager:
         ]
         self.secretsmanager_http_list_secret_version_ids_val_res(
             self.secretsmanager_http_list_secret_version_ids(secret_name), secret_name, versions_v0_v1)
+
+        self.secretsmanager_http_delete_secret_val_res(self.secretsmanager_http_delete_secret(secret_name), secret_name)
 
     def test_http_put_secret_value_with_undefined_client_request_token(self):
         secret_name: str = 'test_http_put_secret_value_with_undefined_client_request_token'
@@ -501,6 +522,8 @@ class TestSecretsManager:
         self.secretsmanager_http_list_secret_version_ids_val_res(
             self.secretsmanager_http_list_secret_version_ids(secret_name), secret_name, versions_v0_v1)
 
+        self.secretsmanager_http_delete_secret_val_res(self.secretsmanager_http_delete_secret(secret_name), secret_name)
+
     def test_http_put_secret_value_duplicate_req(self):
         secret_name: str = 'test_http_put_secret_value_duplicate_req'
 
@@ -535,8 +558,10 @@ class TestSecretsManager:
         self.secretsmanager_http_list_secret_version_ids_val_res(
             self.secretsmanager_http_list_secret_version_ids(secret_name), secret_name, versions_v0_v1)
 
-    def test_http_put_pending_secret_value_undefined_client_request_token(self):
-        secret_name: str = 'test_http_put_pending_secret_value_undefined_client_request_token'
+        self.secretsmanager_http_delete_secret_val_res(self.secretsmanager_http_delete_secret(secret_name), secret_name)
+
+    def test_http_put_secret_value_null_client_request_token_new_version_stages(self):
+        secret_name: str = 'test_http_put_secret_value_null_client_request_token_new_version_stages'
 
         # Create v0.
         secret_string_v0: str = 'MySecretString'
@@ -552,15 +577,21 @@ class TestSecretsManager:
 
         # Update v0 with null ClientRequestToken.
         secret_string_v1: str = 'MyNewSecretString'
+        version_stages_v1: [str] = ['AWSPENDING']
         #
-        self.secretsmanager_http_put_pending_secret_value_val_res(
-            self.secretsmanager_http_put_pending_secret_value(secret_name, secret_string_v1), secret_name)
+        pv_v1_res_json = self.secretsmanager_http_put_secret_value_with_version_val_res(
+            self.secretsmanager_http_put_secret_value_with_version(
+                secret_name, secret_string_v1, None, version_stages_v1),
+            secret_name, None, version_stages_v1)
+        #
+        assert pv_v1_res_json['VersionId'] != cr_v0_res_json['VersionId']
         #
         # Check v1 base consistency.
-        gt_v1_res_json = self.secretsmanager_http_get_secret_value_with_val_res(
+        self.secretsmanager_http_get_secret_value_with_val_res(
             self.secretsmanager_http_get_secret_value_with(secret_name, 'AWSPENDING'),
             secret_name,
             secret_string_v1,
+            pv_v1_res_json['VersionId'],
             'AWSPENDING')
         #
         # Check v0 base consistency.
@@ -573,54 +604,14 @@ class TestSecretsManager:
         # Check versioning base consistency.
         versions_v0_v1: json = [
             {'VersionId': cr_v0_res_json['VersionId'], 'VersionStages': ['AWSCURRENT']},
-            {'VersionId': gt_v1_res_json['VersionId'], 'VersionStages': ['AWSPENDING']}
+            {'VersionId': pv_v1_res_json['VersionId'], 'VersionStages': ['AWSPENDING']}
         ]
         self.secretsmanager_http_list_secret_version_ids_val_res(
             self.secretsmanager_http_list_secret_version_ids(secret_name), secret_name, versions_v0_v1)
 
-    def test_http_put_pending_secret_value_null_client_request_token(self):
-        secret_name: str = 'test_http_put_pending_secret_value_null_client_request_token'
+        self.secretsmanager_http_delete_secret_val_res(self.secretsmanager_http_delete_secret(secret_name), secret_name)
 
-        # Create v0.
-        secret_string_v0: str = 'MySecretString'
-        cr_v0_res_json: json = self.secretsmanager_http_create_secret_string_val_res(
-            self.secretsmanager_http_create_secret_string(secret_name, secret_string_v0), secret_name)
-        #
-        # Check v0 base consistency.
-        self.secretsmanager_http_get_secret_value_val_res(
-            self.secretsmanager_http_get_secret_value(secret_name),
-            secret_name,
-            secret_string_v0,
-            cr_v0_res_json['VersionId'])
-
-        # Update v0 with null ClientRequestToken.
-        secret_string_v1: str = 'MyNewSecretString'
-        #
-        self.secretsmanager_http_put_secret_value_val_res(
-            self.secretsmanager_http_put_pending_secret_value_with(secret_name, secret_string_v1, None), secret_name)
-        #
-        # Check v1 base consistency.
-        gt_v1_res_json = self.secretsmanager_http_get_secret_value_with_val_res(
-            self.secretsmanager_http_get_secret_value_with(secret_name, 'AWSPENDING'),
-            secret_name,
-            secret_string_v1,
-            'AWSPENDING')
-        #
-        # Check v0 base consistency.
-        self.secretsmanager_http_get_secret_value_val_res(
-            self.secretsmanager_http_get_secret_value(secret_name),
-            secret_name,
-            secret_string_v0,
-            cr_v0_res_json['VersionId'])
-        #
-        # Check versioning base consistency.
-        versions_v0_v1: json = [
-            {'VersionId': cr_v0_res_json['VersionId'], 'VersionStages': ['AWSCURRENT']},
-            {'VersionId': gt_v1_res_json['VersionId'], 'VersionStages': ['AWSPENDING']}
-        ]
-        self.secretsmanager_http_list_secret_version_ids_val_res(
-            self.secretsmanager_http_list_secret_version_ids(secret_name), secret_name, versions_v0_v1)
-
+    # TODO
     def test_http_put_pending_secret_value_custom_client_request_token(self):
         secret_name: str = 'test_http_put_pending_secret_value_custom_client_request_token'
 
@@ -644,7 +635,7 @@ class TestSecretsManager:
             crt_v1 = str(uuid.uuid4())
         #
         self.secretsmanager_http_put_pending_secret_value_with_val_res(
-            self.secretsmanager_http_put_pending_secret_value_with(secret_name, secret_string_v1, crt_v1),
+            self.secretsmanager_http_put_secret_value_with_version(secret_name, secret_string_v1, crt_v1),
             secret_name,
             crt_v1)
         #
@@ -671,3 +662,8 @@ class TestSecretsManager:
         ]
         self.secretsmanager_http_list_secret_version_ids_val_res(
             self.secretsmanager_http_list_secret_version_ids(secret_name), secret_name, versions_v0_v1)
+
+        self.secretsmanager_http_delete_secret_val_res(self.secretsmanager_http_delete_secret(secret_name), secret_name)
+
+
+    # TODO: add tests for verion_stages updates through PutSecretValue

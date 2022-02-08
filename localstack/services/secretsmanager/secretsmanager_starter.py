@@ -6,7 +6,7 @@ import string
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.exceptions import SecretNotFoundException
-from moto.secretsmanager.models import SecretsManagerBackend, secretsmanager_backends
+from moto.secretsmanager.models import SecretsManagerBackend, secretsmanager_backends, FakeSecret
 from moto.secretsmanager.responses import SecretsManagerResponse
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -116,6 +116,49 @@ def apply_patches():
     if not hasattr(SecretsManagerResponse, "put_resource_policy"):
         setattr(SecretsManagerResponse, "put_resource_policy", put_resource_policy_response)
 
+    def put_secret_value(
+            self,
+            secret_id,
+            secret_string,
+            secret_binary,
+            client_request_token,
+            version_stages,
+    ):
+        # TODO: invoke moto implementation instead of overriding it completely? Check.
+        if not self._is_valid_identifier(secret_id):
+            raise SecretNotFoundException()
+        else:
+            secret = self.secrets[secret_id]
+            tags = secret.tags
+            description = secret.description
+
+        secret: FakeSecret = self._add_secret(
+            secret_id,
+            secret_string,
+            secret_binary,
+            version_id=client_request_token,
+            description=description,
+            tags=tags,
+            version_stages=version_stages,
+        )
+
+        stage_response: json = json.loads(secret.to_short_dict(include_version_stages=True))
+
+        fake_secret_to_aws_key: dict[str, str] = {  # Not conversion to CamelCase on purpose: control these parameters.
+            'version_id': 'VersionId',
+            'version_stages': 'VersionStages'
+        }
+        #
+        secret_versions_vs: [dict] = [v for v in secret.versions.values() if v['version_stages'] == version_stages]
+        if secret_versions_vs:
+            secret_version: dict = secret_versions_vs[0]  # TODO: what version if more than one?
+            for skn, skn_aws in fake_secret_to_aws_key.items():
+                if skn in secret_version and skn_aws in stage_response:
+                    stage_response[skn_aws] = secret_version[skn]
+
+        return json.dumps(stage_response)
+
+    setattr(SecretsManagerBackend, 'put_secret_value', put_secret_value)
 
 def start_secretsmanager(port=None, asynchronous=None, backend_port=None, update_listener=None):
     apply_patches()
