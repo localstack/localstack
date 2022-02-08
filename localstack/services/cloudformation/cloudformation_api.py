@@ -274,7 +274,7 @@ class Stack(object):
         for stack in self.nested_stacks:
             result.extend(stack.outputs_list())
         # now, fetch the outputs of this stack
-        for k, details in self.template.outputs.items():
+        for k, details in self.outputs.items():
             value = None
             try:
                 template_deployer.resolve_refs_recursively(self, details)
