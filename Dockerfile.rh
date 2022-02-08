@@ -15,7 +15,7 @@ RUN dnf install -y cyrus-sasl-devel gcc gcc-c++ git iputils make npm openssl-dev
 RUN useradd -ms /bin/bash localstack
 
 # Install python packages
-RUN python3 -m pip install supervisor awscli awscli-local localstack[runtime]>=0.14.0 localstack-ext[runtime]>=0.14.0 --upgrade --no-cache-dir
+RUN python3 -m pip install supervisor awscli awscli-local 'localstack[runtime]>=0.14.0' 'localstack-ext[runtime]>=0.14.0' --upgrade --no-cache-dir
 # Install the basic libraries
 RUN python3 -m localstack.services.install libs
 

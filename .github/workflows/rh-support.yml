@@ -3,6 +3,10 @@ on:
   pull_request:
     branches:
       - master
+# TODO remove pull request trigger and uncomment trigger below before merge
+#  push:
+#    branches:
+#      - master
 
 jobs:
   test-redhat:
