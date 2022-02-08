@@ -493,9 +493,9 @@ class PaginatedList(list):
 
     def get_page(
         self,
-        next_token: str,
         token_generator: Callable,
-        page_size: int,
+        next_token: str = None,
+        page_size: int = None,
         filter_function: Callable = None,
     ) -> (list, str):
         if filter_function is not None:
@@ -517,8 +517,10 @@ class PaginatedList(list):
         except StopIteration:
             pass
 
-        if start_idx + page_size <= len(result_list[start_idx:]):
+        if start_idx + page_size <= len(result_list):
             next_token = token_generator(result_list[start_idx + page_size])
+        else:
+            next_token = None
 
         return result_list[start_idx : start_idx + page_size], next_token
 
