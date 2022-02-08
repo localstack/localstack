@@ -287,6 +287,7 @@ class GatewayMethod(GenericBaseModel):
             if integration.get("Uri"):
                 kwargs["uri"] = integration.get("Uri")
             kwargs["requestParameters"] = integration.get("RequestParameters") or {}
+            kwargs["requestTemplates"] = integration.get("RequestTemplates") or {}
             return client.put_integration(**kwargs)
         kwargs["authorizationType"] = props.get("AuthorizationType")
 
@@ -386,6 +387,8 @@ class GatewayMethod(GenericBaseModel):
                         "authorizationType": "AuthorizationType",
                         "authorizerId": "AuthorizerId",
                         "requestParameters": "RequestParameters",
+                        "requestModels": "RequestModels",
+                        "requestValidatorId": "RequestValidatorId",
                     },
                 },
                 {
@@ -660,7 +663,10 @@ class GatewayModel(GenericBaseModel):
                 "parameters": {
                     "name": "Name",
                     "restApiId": "RestApiId",
+                    "schema": "Schema",
+                    "contentType": "ContentType",
                 },
+                "types": {"schema": str},
                 "defaults": {"contentType": "application/json"},
             }
         }

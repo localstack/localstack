@@ -1509,35 +1509,38 @@ class TestAPIGateway(unittest.TestCase):
         )
 
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
-        resources = {}
         template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
         resource_path = self.API_PATH_DATA_INBOUND.replace("/", "")
-        resources[resource_path] = [
-            {
-                "httpMethod": "POST",
-                "authorizationType": "NONE",
-                "integrations": [
-                    {
-                        "type": "AWS",
-                        "uri": "arn:aws:apigateway:%s:kinesis:action/PutRecords"
-                        % aws_stack.get_region(),
-                        "requestTemplates": {"application/json": template},
-                    }
-                ],
-            },
-            {
-                "httpMethod": "GET",
-                "authorizationType": "NONE",
-                "integrations": [
-                    {
-                        "type": "AWS",
-                        "uri": "arn:aws:apigateway:%s:kinesis:action/ListStreams"
-                        % aws_stack.get_region(),
-                        "requestTemplates": {"application/json": "{}"},
-                    }
-                ],
-            },
-        ]
+        resources = {
+            resource_path: [
+                {
+                    "httpMethod": "POST",
+                    "authorizationType": "NONE",
+                    "requestModels": {"application/json": "Empty"},
+                    "integrations": [
+                        {
+                            "type": "AWS",
+                            "uri": "arn:aws:apigateway:%s:kinesis:action/PutRecords"
+                            % aws_stack.get_region(),
+                            "requestTemplates": {"application/json": template},
+                        }
+                    ],
+                },
+                {
+                    "httpMethod": "GET",
+                    "authorizationType": "NONE",
+                    "requestModels": {"application/json": "Empty"},
+                    "integrations": [
+                        {
+                            "type": "AWS",
+                            "uri": "arn:aws:apigateway:%s:kinesis:action/ListStreams"
+                            % aws_stack.get_region(),
+                            "requestTemplates": {"application/json": "{}"},
+                        }
+                    ],
+                },
+            ]
+        }
         return aws_stack.create_api_gateway(
             name=gateway_name, resources=resources, stage_name=self.TEST_STAGE_NAME
         )

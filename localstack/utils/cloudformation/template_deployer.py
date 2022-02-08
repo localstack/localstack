@@ -1077,11 +1077,13 @@ def determine_resource_physical_id(resource_id, stack=None, attribute=None):
     elif resource_type == "DynamoDB::Table":
         table_name = resource_props.get("TableName")
         if table_name:
-            if attribute == "Ref":
-                return table_name  # Note: "Ref" returns table name in AWS
             return table_name
     elif resource_type == "Logs::LogGroup":
         return resource_props.get("LogGroupName")
+    elif resource_type == "ApiGateway::Model":
+        model_name = resource_props.get("Name")
+        if model_name:
+            return model_name
 
     res_id = resource.get("PhysicalResourceId")
     if res_id and attribute in [None, "Ref", "PhysicalResourceId"]:

@@ -601,8 +601,7 @@ def get_validator_id_from_path(path):
 def _find_validator(api_id, validator_id):
     region_details = APIGatewayRegion.get()
     auth_list = region_details.validators.get(api_id) or []
-    validator = ([a for a in auth_list if a["id"] == validator_id] or [None])[0]
-    return validator
+    return ([a for a in auth_list if a["id"] == validator_id] or [None])[0]
 
 
 def get_validators(path):

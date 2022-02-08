@@ -11,6 +11,7 @@ from urllib.parse import urljoin
 import pytz
 import requests
 from flask import Response as FlaskResponse
+from jsonschema import ValidationError, validate
 from moto.apigateway.models import apigateway_backends
 from requests.models import Response
 
@@ -313,6 +314,80 @@ class ProxyListenerApiGateway(ProxyListener):
             )
 
 
+class RequestValidator:
+    __slots__ = ["context", "apigateway_client"]
+
+    def __init__(self, context: ApiInvocationContext, apigateway_client):
+        self.context = context
+        self.apigateway_client = apigateway_client
+
+    def is_request_valid(self) -> bool:
+        # make all the positive checks first
+        if self.context.resource is None or "resourceMethods" not in self.context.resource:
+            return True
+
+        resource_methods = self.context.resource["resourceMethods"]
+        if self.context.method not in resource_methods:
+            return True
+
+        # check if there is validator for the resource
+        resource = resource_methods[self.context.method]
+        if not (resource.get("requestValidatorId") or "").strip():
+            return True
+
+        # check if there is a validator for this request
+        validator = self.apigateway_client.get_request_validator(
+            restApiId=self.context.api_id, requestValidatorId=resource["requestValidatorId"]
+        )
+        if validator is None:
+            return True
+
+        # are we validating the body?
+        if self.should_validate_body(validator):
+            is_body_valid = self.validate_body(resource)
+            if not is_body_valid:
+                return is_body_valid
+
+        if self.should_validate_request(validator):
+            is_valid_parameters = self.validate_parameters_and_headers(resource)
+            if not is_valid_parameters:
+                return is_valid_parameters
+
+        return True
+
+    def validate_body(self, resource):
+        # we need a model to validate the body
+        if "requestModels" not in resource or not resource["requestModels"]:
+            return False
+
+        schema_name = resource["requestModels"].get(APPLICATION_JSON)
+        model = self.apigateway_client.get_model(
+            restApiId=self.context.api_id,
+            modelName=schema_name,
+        )
+        if not model:
+            return False
+
+        try:
+            validate(instance=json.loads(self.context.data), schema=json.loads(model["schema"]))
+            return True
+        except ValidationError as e:
+            LOG.warning("failed to validate request body", e)
+            return False
+
+    # TODO implement parameters and headers
+    def validate_parameters_and_headers(self, resource):
+        return True
+
+    @staticmethod
+    def should_validate_body(validator):
+        return validator["validateRequestBody"]
+
+    @staticmethod
+    def should_validate_request(validator):
+        return validator.get("validateRequestParameters")
+
+
 # ------------
 # API METHODS
 # ------------
@@ -555,9 +630,15 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
     # run gateway authorizers for this request
     authorize_invocation(invocation_context)
+
     extracted_path, resource = get_target_resource_details(invocation_context)
     if not resource:
         return make_error_response("Unable to find path %s" % invocation_context.path, 404)
+
+    # validate request
+    validator = RequestValidator(invocation_context, aws_stack.connect_to_service("apigateway"))
+    if not validator.is_request_valid():
+        return make_error_response("Invalid request body", 400)
 
     api_key_required = resource.get("resourceMethods", {}).get(method, {}).get("apiKeyRequired")
     if not is_api_key_valid(api_key_required, headers, invocation_context.stage):
@@ -597,9 +678,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
 def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
     try:
-        response = invoke_rest_api_integration_backend(
-            invocation_context, invocation_context.integration
-        )
+        response = invoke_rest_api_integration_backend(invocation_context)
         invocation_context.response = response
         response = apply_response_parameters(invocation_context)
         return response
@@ -611,9 +690,7 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
 
 # TODO: refactor this to have a class per integration type to make it easy to
 # test the encapsulated logic
-def invoke_rest_api_integration_backend(
-    invocation_context: ApiInvocationContext, integration: Dict
-):
+def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext):
     # define local aliases from invocation context
     invocation_path = invocation_context.path_with_query_string
     method = invocation_context.method
@@ -624,6 +701,7 @@ def invoke_rest_api_integration_backend(
     stage = invocation_context.stage
     resource_path = invocation_context.resource_path
     response_templates = invocation_context.response_templates
+    integration = invocation_context.integration
 
     # extract integration type and path parameters
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
@@ -742,22 +820,34 @@ def invoke_rest_api_integration_backend(
                 target = kinesis_listener.ACTION_LIST_STREAMS
             else:
                 LOG.info(
-                    "Unexpected API Gateway integration URI '%s' for integration type %s",
-                    uri,
-                    integration_type,
+                    f"Unexpected API Gateway integration URI '{uri}' for integration type {integration_type}",
                 )
                 target = ""
 
-            # apply request templates
-            new_data = apply_request_response_templates(
-                data, integration.get("requestTemplates"), content_type=APPLICATION_JSON
-            )
+            try:
+                data = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
+                payload = apply_template(
+                    integration,
+                    "request",
+                    data,
+                    path_params=path_params,
+                    query_params=query_string_params,
+                    headers=headers,
+                )
+            except Exception as e:
+                LOG.warning("Unable to convert API Gateway payload to str", e)
+                raise
+
             # forward records to target kinesis stream
-            headers = aws_stack.mock_aws_request_headers(service="kinesis")
-            headers["X-Amz-Target"] = target
-            result = common.make_http_request(
-                url=config.service_url("kinesis"), method="POST", data=new_data, headers=headers
+            headers = aws_stack.mock_aws_request_headers(
+                service="kinesis", region_name=invocation_context.region_name
             )
+            headers["X-Amz-Target"] = target
+
+            result = common.make_http_request(
+                url=config.service_url("kineses"), data=payload, headers=headers, method="POST"
+            )
+
             # apply response template
             result = apply_request_response_templates(
                 result, response_templates, content_type=APPLICATION_JSON
@@ -951,6 +1041,7 @@ def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tup
     relative_path = invocation_context.invocation_path
     try:
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+        invocation_context.resource = resource
         return extracted_path, resource
     except Exception:
         return None, None
