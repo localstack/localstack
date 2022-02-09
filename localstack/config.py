@@ -867,10 +867,11 @@ class ServiceProviderConfig(Mapping[str, str]):
 
 SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 
+override_prefix = "PROVIDER_OVERRIDE_"
 for key, value in os.environ.items():
-    if key.startswith("PROVIDER_OVERRIDE_"):
+    if key.startswith(override_prefix):
         SERVICE_PROVIDER_CONFIG.set_provider(
-            key.lstrip("PROVIDER_OVERRIDE_").lower().replace("_", "-"), value
+            key[len(override_prefix) :].lower().replace("_", "-"), value
         )
 
 # initialize directories
