@@ -1,0 +1,46 @@
+# Disclaimer: This Dockerfile is used to regularly test compatibility with RedHat based images.
+#             It is _not_ the usually Dockerfile and currently _not_ officially supported.
+
+FROM redhat/ubi8
+
+LABEL authors="LocalStack Contributors"
+LABEL maintainer="LocalStack Team (info@localstack.cloud)"
+LABEL description="LocalStack Docker image"
+
+RUN dnf install -y cyrus-sasl-devel gcc gcc-c++ git iputils make npm openssl-devel procps python38-devel zip \
+  && dnf clean all \
+  && rm -rf /var/cache/yum
+
+# Create a localstack user
+RUN useradd -ms /bin/bash localstack
+
+# Install python packages
+RUN python3 -m pip install supervisor awscli awscli-local 'localstack[runtime]>=0.14.0' 'localstack-ext[runtime]>=0.14.0' --upgrade --no-cache-dir
+# Install the basic libraries
+RUN python3 -m localstack.services.install libs
+
+# install entrypoint script
+ADD bin/docker-entrypoint.sh /usr/local/bin/
+# add the script to start LocalStack and add the supervisor.d config
+RUN mkdir -p /opt/code/localstack/bin/
+WORKDIR /opt/code/localstack/
+ADD bin/localstack /opt/code/localstack/bin/
+ADD bin/supervisord.conf /etc/supervisord.conf
+
+# Set default settings
+ENV USER=localstack
+ENV PYTHONUNBUFFERED=1
+ENV EDGE_BIND_HOST=0.0.0.0
+ENV LOCALSTACK_HOSTNAME=localhost
+
+# Add the build date and git hash at last (changes everytime)
+ARG LOCALSTACK_BUILD_DATE
+ARG LOCALSTACK_BUILD_GIT_HASH
+ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE}
+ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
+
+# expose ports
+EXPOSE 4510-4559 4566
+
+# define command at startup
+ENTRYPOINT ["docker-entrypoint.sh"]

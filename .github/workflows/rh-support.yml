@@ -1,0 +1,31 @@
+name: smoke-tests-against-redhat
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test-redhat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Open Source
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.8
+        id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Build RH Docker Image
+        run: |
+          docker build  -t localstack-redhat -f ./Dockerfile.rh \
+            --build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
+            --build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
+            .
+
+      - name: Execute Smoke Tests
+        env:
+          TEST_LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
+        run: |
+          CI_SMOKE_IMAGE_NAME="localstack-redhat" make ci-pro-smoke-tests
