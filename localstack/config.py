@@ -839,9 +839,9 @@ class ServiceProviderConfig(Mapping[str, str]):
         self._provider_config = {}
         self.default_value = default_value
 
-    def load_from_environment(self, env: Dict[str, str] = None):
+    def load_from_environment(self, env: Mapping[str, str] = None):
         if env is None:
-            env = dict(os.environ)
+            env = os.environ
         for key, value in env.items():
             if key.startswith(self.override_prefix):
                 self.set_provider(key[len(self.override_prefix) :].lower().replace("_", "-"), value)
