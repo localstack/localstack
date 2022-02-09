@@ -833,10 +833,18 @@ if LS_LOG in TRACE_LOG_LEVELS:
 class ServiceProviderConfig(Mapping[str, str]):
     _provider_config: Dict[str, str]
     default_value: str
+    override_prefix: str = "PROVIDER_OVERRIDE_"
 
     def __init__(self, default_value: str):
         self._provider_config = {}
         self.default_value = default_value
+
+    def load_from_environment(self, env: Dict[str, str] = None):
+        if env is None:
+            env = dict(os.environ)
+        for key, value in env.items():
+            if key.startswith(self.override_prefix):
+                self.set_provider(key[len(self.override_prefix) :].lower().replace("_", "-"), value)
 
     def get_provider(self, service: str) -> str:
         return self._provider_config.get(service, self.default_value)
@@ -867,17 +875,7 @@ class ServiceProviderConfig(Mapping[str, str]):
 
 SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 
-
-def process_provider_overrides(provider_config):
-    override_prefix = "PROVIDER_OVERRIDE_"
-    for key, value in os.environ.items():
-        if key.startswith(override_prefix):
-            provider_config.set_provider(
-                key[len(override_prefix) :].lower().replace("_", "-"), value
-            )
-
-
-process_provider_overrides(SERVICE_PROVIDER_CONFIG)
+SERVICE_PROVIDER_CONFIG.load_from_environment()
 
 # initialize directories
 if is_in_docker:

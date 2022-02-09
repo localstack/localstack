@@ -38,11 +38,11 @@ class TestProviderConfig:
         override_value = "override_value"
         provider_config = config.ServiceProviderConfig(default_value=default_value)
         monkeypatch.setenv("PROVIDER_OVERRIDE_EC2", override_value)
-        config.process_provider_overrides(provider_config)
+        provider_config.load_from_environment()
         assert provider_config.get_provider("ec2") == override_value
         assert provider_config.get_provider("sqs") == default_value
         monkeypatch.setenv("PROVIDER_OVERRIDE_SQS", override_value)
-        config.process_provider_overrides(provider_config)
+        provider_config.load_from_environment()
         assert provider_config.get_provider("sqs") == override_value
 
     def test_bulk_set_if_not_exists(self):
