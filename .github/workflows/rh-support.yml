@@ -29,5 +29,7 @@ jobs:
             .
 
       - name: Execute Smoke Tests
+        env:
+          TEST_LOCALSTACK_API_KEY: ${{ secrets.TEST_LOCALSTACK_API_KEY }}
         run: |
           CI_SMOKE_IMAGE_NAME="localstack-redhat" make ci-pro-smoke-tests
