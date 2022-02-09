@@ -206,7 +206,7 @@ class TestCloudwatch:
             ComparisonOperator="GreaterThanThreshold",
         )
         try:
-            result = cloudwatch_client.describe_alarms()
+            result = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
             alarm = result["MetricAlarms"][0]
             assert isinstance(alarm["AlarmConfigurationUpdatedTimestamp"], datetime)
             assert isinstance(alarm["StateUpdatedTimestamp"], datetime)
