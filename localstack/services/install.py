@@ -9,6 +9,7 @@ import shutil
 import stat
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
@@ -139,6 +140,8 @@ TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
 )
 
+OS_INSTALL_LOCKS = {}
+
 
 def get_elasticsearch_install_version(version: str) -> str:
     from localstack.services.opensearch import versions
@@ -256,24 +259,26 @@ def install_opensearch(version=None):
     install_dir = get_opensearch_install_dir(version)
     installed_executable = os.path.join(install_dir, "bin", "opensearch")
     if not os.path.exists(installed_executable):
-        log_install_msg("OpenSearch (%s)" % version)
-        opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
-        install_dir_parent = os.path.dirname(install_dir)
-        mkdir(install_dir_parent)
-        # download and extract archive
-        tmp_archive = os.path.join(
-            config.dirs.tmp, f"localstack.{os.path.basename(opensearch_url)}"
-        )
-        download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
-        opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
-        if not opensearch_dir:
-            raise Exception("Unable to find OpenSearch folder in %s" % install_dir_parent)
-        shutil.move(opensearch_dir[0], install_dir)
+        with OS_INSTALL_LOCKS.setdefault(version, threading.Lock()):
+            if not os.path.exists(installed_executable):
+                log_install_msg("OpenSearch (%s)" % version)
+                opensearch_url = versions.get_download_url(version, EngineType.OpenSearch)
+                install_dir_parent = os.path.dirname(install_dir)
+                mkdir(install_dir_parent)
+                # download and extract archive
+                tmp_archive = os.path.join(
+                    config.dirs.tmp, f"localstack.{os.path.basename(opensearch_url)}"
+                )
+                download_and_extract_with_retry(opensearch_url, tmp_archive, install_dir_parent)
+                opensearch_dir = glob.glob(os.path.join(install_dir_parent, "opensearch*"))
+                if not opensearch_dir:
+                    raise Exception("Unable to find OpenSearch folder in %s" % install_dir_parent)
+                shutil.move(opensearch_dir[0], install_dir)
 
-        for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
-            dir_path = os.path.join(install_dir, dir_name)
-            mkdir(dir_path)
-            chmod_r(dir_path, 0o777)
+                for dir_name in ("data", "logs", "modules", "plugins", "config/scripts"):
+                    dir_path = os.path.join(install_dir, dir_name)
+                    mkdir(dir_path)
+                    chmod_r(dir_path, 0o777)
 
     # patch JVM options file - replace hardcoded heap size settings
     jvm_options_file = os.path.join(install_dir, "config", "jvm.options")

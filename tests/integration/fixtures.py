@@ -337,7 +337,21 @@ def kms_grant_and_key(kms_client, kms_key):
 
 
 @pytest.fixture
-def opensearch_create_domain(opensearch_client):
+def opensearch_wait_for_cluster(opensearch_client):
+    def _wait_for_cluster(domain_name: str):
+        def finished_processing():
+            status = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"]
+            return status["Processing"] is False
+
+        assert poll_condition(
+            finished_processing, timeout=5 * 60
+        ), f"could not start domain: {domain_name}"
+
+    return _wait_for_cluster
+
+
+@pytest.fixture
+def opensearch_create_domain(opensearch_client, opensearch_wait_for_cluster):
     domains = []
 
     def factory(**kwargs) -> str:
@@ -346,15 +360,7 @@ def opensearch_create_domain(opensearch_client):
 
         opensearch_client.create_domain(**kwargs)
 
-        def finished_processing():
-            status = opensearch_client.describe_domain(DomainName=kwargs["DomainName"])[
-                "DomainStatus"
-            ]
-            return status["Processing"] is False
-
-        assert poll_condition(
-            finished_processing, timeout=120
-        ), f"could not start domain: {kwargs['DomainName']}"
+        opensearch_wait_for_cluster(domain_name=kwargs["DomainName"])
 
         domains.append(kwargs["DomainName"])
         return kwargs["DomainName"]

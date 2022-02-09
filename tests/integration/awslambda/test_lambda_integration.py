@@ -212,8 +212,8 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         lambda_client.delete_function(FunctionName=function_name)
 
     def test_create_kinesis_event_source_mapping(self):
-        function_name = "lambda_func-{}".format(short_uid())
-        stream_name = "test-foobar"
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-foobar-{short_uid()}"
 
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
@@ -229,7 +229,6 @@ class TestLambdaEventSourceMappings(unittest.TestCase):
         def process_records(record):
             assert record
 
-        stream_name = "test-foobar"
         aws_stack.create_kinesis_stream(stream_name, delete=True)
         kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,
@@ -346,8 +345,8 @@ class TestLambdaHttpInvocation(unittest.TestCase):
 class TestKinesisSource:
     @patch.object(config, "SYNCHRONOUS_KINESIS_EVENTS", False)
     def test_kinesis_lambda_parallelism(self, lambda_client, kinesis_client):
-        function_name = "lambda_func-{}".format(short_uid())
-        stream_name = "test-foobar-{}".format(short_uid())
+        function_name = f"lambda_func-{short_uid()}"
+        stream_name = f"test-foobar-{short_uid()}"
 
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PARALLEL_FILE,

@@ -305,7 +305,7 @@ class TestKinesisPythonClient(unittest.TestCase):
             result.extend(records)
 
         # start Kinesis client
-        stream_name = "test-foobar"
+        stream_name = f"test-foobar-{short_uid()}"
         aws_stack.create_kinesis_stream(stream_name, delete=True)
         kinesis_connector.listen_to_kinesis(
             stream_name=stream_name,

@@ -259,7 +259,7 @@ class TestOpensearchProvider:
         # Just check if 1.1 is contained (not equality) to avoid breaking the test if new versions are supported
         assert "OpenSearch_1.1" in compatibility["TargetVersions"]
 
-    def test_create_domain(self, opensearch_client):
+    def test_create_domain(self, opensearch_client, opensearch_wait_for_cluster):
         domain_name = f"opensearch-domain-{short_uid()}"
         try:
             opensearch_client.create_domain(DomainName=domain_name)
@@ -268,16 +268,22 @@ class TestOpensearchProvider:
             domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
 
             assert domain_name in domain_names
+            # wait for the cluster
+            opensearch_wait_for_cluster(domain_name=domain_name)
+
         finally:
             opensearch_client.delete_domain(DomainName=domain_name)
 
-    def test_create_existing_domain_causes_exception(self, opensearch_client):
+    def test_create_existing_domain_causes_exception(
+        self, opensearch_client, opensearch_wait_for_cluster
+    ):
         domain_name = f"opensearch-domain-{short_uid()}"
         try:
             opensearch_client.create_domain(DomainName=domain_name)
             with pytest.raises(botocore.exceptions.ClientError) as exc_info:
                 opensearch_client.create_domain(DomainName=domain_name)
             assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
+            opensearch_wait_for_cluster(domain_name=domain_name)
         finally:
             opensearch_client.delete_domain(DomainName=domain_name)
 

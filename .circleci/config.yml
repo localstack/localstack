@@ -42,13 +42,31 @@ jobs:
       - run:
           name: Linting
           command: make lint
+
+  unit-tests:
+    docker:
+      - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           name: Unit tests
-          command: |
-            source .venv/bin/activate
-            pytest tests/unit --junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests
+          environment:
+            TEST_PATH: "tests/unit"
+            PYTEST_ARGS: "--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
       - store_test_results:
           path: target/reports/
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
 
   itest-lambda-docker:
     machine:
@@ -217,12 +235,6 @@ jobs:
                   # (https://github.com/docker/compose/issues/6678#issuecomment-526831488)
                   sudo apt-get install docker-ce docker-ce-cli containerd.io haveged -y
                   sudo usermod -aG docker $USER
-            - run:
-                # Install the emulation support before starting to build (resets the build cache)
-                name: Install amd64 emulation support for lambda tests
-                command: |
-                  docker run --rm --privileged tonistiigi/binfmt:latest --install all
-                  docker buildx create --name multiarch-builder --use
       - run:
           name: Build full docker image
           command: make docker-build
@@ -266,6 +278,7 @@ jobs:
       image: << parameters.machine_image >>
     resource_class: << parameters.resource_class >>
     working_directory: /tmp/workspace/repo
+    parallelism: 2
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -273,10 +286,13 @@ jobs:
           name: Load docker localstack-full image
           command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
       - run:
-          name: Run tests
+          name: Run integration tests
+          # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
           command: |
-            PYTEST_ARGS='--junitxml=target/reports/test-report-<< parameters.platform >>.xml' \
-            COVERAGE_FILE='target/coverage/.coverage.<< parameters.platform >>' \
+            TEST_FILES=$(circleci tests glob "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
+            PYTEST_ARGS="-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+            COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
+            TEST_PATH=$TEST_FILES \
             make docker-run-tests
       - store_test_results:
           path: target/reports/
@@ -361,6 +377,9 @@ workflows:
       - itest-bootstrap:
           requires:
             - preflight
+      - unit-tests:
+          requires:
+            - preflight
       - docker-build:
           name: docker-build-amd64
           platform: amd64
@@ -398,6 +417,7 @@ workflows:
             - itest-bootstrap
             - docker-test-amd64
             - docker-test-arm64
+            - unit-tests
       - docker-push:
           filters:
             branches:
@@ -408,3 +428,4 @@ workflows:
             - itest-bootstrap
             - docker-test-amd64
             - docker-test-arm64
+            - unit-tests

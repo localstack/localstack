@@ -1399,34 +1399,37 @@ class TestAPIGateway(unittest.TestCase):
         apigw_client = aws_stack.create_external_boto_client("apigateway")
         s3_client = aws_stack.create_external_boto_client("s3")
 
-        bucket_name = "test-bucket"
-        object_name = "test.json"
-        object_content = '{ "success": "true" }'
-        object_content_type = "application/json"
+        try:
+            bucket_name = f"test-bucket-{short_uid()}"
+            apigateway_name = f"test-api-{short_uid()}"
+            object_name = "test.json"
+            object_content = '{ "success": "true" }'
+            object_content_type = "application/json"
 
-        api = apigw_client.create_rest_api(name="test")
-        api_id = api["id"]
+            api = apigw_client.create_rest_api(name=apigateway_name)
+            api_id = api["id"]
 
-        s3_client.create_bucket(Bucket=bucket_name)
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=object_name,
-            Body=object_content,
-            ContentType=object_content_type,
-        )
+            s3_client.create_bucket(Bucket=bucket_name)
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=object_name,
+                Body=object_content,
+                ContentType=object_content_type,
+            )
 
-        self.connect_api_gateway_to_s3(bucket_name, object_name, api_id, "GET")
+            self.connect_api_gateway_to_s3(bucket_name, object_name, api_id, "GET")
 
-        apigw_client.create_deployment(restApiId=api_id, stageName="test")
-        url = gateway_request_url(api_id, "test", "/")
-        result = requests.get(url)
-        self.assertEqual(200, result.status_code)
-        self.assertEqual(object_content, result.text)
-        self.assertEqual(object_content_type, result.headers["content-type"])
-        # clean up
-        apigw_client.delete_rest_api(restApiId=api_id)
-        s3_client.delete_object(Bucket=bucket_name, Key=object_name)
-        s3_client.delete_bucket(Bucket=bucket_name)
+            apigw_client.create_deployment(restApiId=api_id, stageName="test")
+            url = gateway_request_url(api_id, "test", "/")
+            result = requests.get(url)
+            self.assertEqual(200, result.status_code)
+            self.assertEqual(object_content, result.text)
+            self.assertEqual(object_content_type, result.headers["content-type"])
+        finally:
+            # clean up
+            apigw_client.delete_rest_api(restApiId=api_id)
+            s3_client.delete_object(Bucket=bucket_name, Key=object_name)
+            s3_client.delete_bucket(Bucket=bucket_name)
 
     def test_api_mock_integration_response_params(self):
         # apigw_client = aws_stack.create_external_boto_client('apigateway')
