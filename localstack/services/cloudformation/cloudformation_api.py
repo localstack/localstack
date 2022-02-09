@@ -124,10 +124,10 @@ class Stack(object):
         ]
         result = select_attributes(self.metadata, attrs)
         result["Tags"] = self.tags
-        result["Outputs"] = self.outputs
+        result["Outputs"] = self.outputs_list()
         result["Parameters"] = self.stack_parameters()
-        for attr in ["Capabilities", "Tags", "Outputs", "Parameters"]:
-            result[attr] = result.get(attr, [])
+        for attr in ["Capabilities", "Outputs", "Parameters", "Tags"]:
+            result.setdefault(attr, [])
         return result
 
     def set_stack_status(self, status):
@@ -267,14 +267,14 @@ class Stack(object):
         recurse_object(self.resources, _collect)
         return result
 
-    @property
-    def outputs(self):
+    def outputs_list(self) -> List[Dict]:
+        """Returns a copy of the outputs of this stack."""
         result = []
         # first, fetch the outputs of nested child stacks
         for stack in self.nested_stacks:
-            result.extend(stack.outputs)
+            result.extend(stack.outputs_list())
         # now, fetch the outputs of this stack
-        for k, details in self.template.get("Outputs", {}).items():
+        for k, details in self.outputs.items():
             value = None
             try:
                 template_deployer.resolve_refs_recursively(self, details)
@@ -337,11 +337,18 @@ class Stack(object):
 
     @property
     def conditions(self):
-        return self.template.get("Conditions", {})
+        """Returns the (mutable) dict of stack conditions."""
+        return self.template.setdefault("Conditions", {})
 
     @property
     def mappings(self):
-        return self.template.get("Mappings", {})
+        """Returns the (mutable) dict of stack mappings."""
+        return self.template.setdefault("Mappings", {})
+
+    @property
+    def outputs(self):
+        """Returns the (mutable) dict of stack outputs."""
+        return self.template.setdefault("Outputs", {})
 
     @property
     def exports_map(self):
@@ -434,7 +441,7 @@ class CloudFormationRegion(RegionBackend):
         exports = []
         output_keys = {}
         for stack_id, stack in self.stacks.items():
-            for output in stack.outputs:
+            for output in stack.outputs_list():
                 export_name = output.get("ExportName")
                 if not export_name:
                     continue

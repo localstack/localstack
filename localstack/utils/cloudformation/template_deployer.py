@@ -1515,8 +1515,8 @@ class TemplateDeployer(object):
             raise NoStackUpdates("No updates are to be performed.")
 
         # merge stack outputs and conditions
-        existing_stack.template["Outputs"].update(new_stack.template.get("Outputs", {}))
-        existing_stack.template["Conditions"].update(new_stack.template.get("Conditions", {}))
+        existing_stack.outputs.update(new_stack.outputs)
+        existing_stack.conditions.update(new_stack.conditions)
 
         # start deployment loop
         return self.apply_changes_in_loop(
