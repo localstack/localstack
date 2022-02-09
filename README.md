@@ -181,47 +181,4 @@ Copyright (c) 2017-2021 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
-This version of LocalStack is released under the Apache License, Version 2.0 (see LICENSE.txt).
-By downloading and using this software you agree to the
-[End-User License Agreement (EULA)](doc/end_user_license_agreement).
-
-We build on a number of third-party software tools, including the following:
-
-Third-Party software      |   License
---------------------------|-----------------------
-**Python/pip modules:**   |
-airspeed                  | BSD License
-amazon_kclpy              | Amazon Software License
-boto3                     | Apache License 2.0
-coverage                  | Apache License 2.0
-docopt                    | MIT License
-elasticsearch             | Apache License 2.0
-flask                     | BSD License
-flask_swagger             | MIT License
-jsonpath-rw               | Apache License 2.0
-moto                      | Apache License 2.0
-requests                  | Apache License 2.0
-subprocess32              | PSF License
-**Node.js/npm modules:**  |
-kinesalite                | MIT License
-**Other tools:**          |
-Elasticsearch             | Apache License 2.0
-local-kms                 | MIT License
-kinesis-mock              | MIT License
-
-# Announcements
-
-* **2021-09-24**: **We're hiring again!** - We are expanding our team, and looking for full-stack Python engineers, technical writers, and more, to help us take LocalStack to the next level! Check out our [jobs board](https://localstack.cloud/jobs)!
-* **2021-04-24**: **We're hiring!** - If you love what we're doing at LocalStack, check out our [jobs board](https://localstack.cloud/jobs) and shoot us an email with your CV/background/portfolio. We look forward to hearing from you!
-* **2020-12-28**: Check out the LocalStack Pro **feature roadmap** here: https://roadmap.localstack.cloud - please help us prioritize our backlog by creating and upvoting feature requests. Looking forward to getting your feedback!
-* **2020-09-15**: A major (breaking) change has been merged in PR #2905 - starting with releases after `v0.11.5`, all services are now exposed via the edge service (port 4566) only! Please update your client configurations to use this new endpoint.
-* **2019-10-09**: **LocalStack Pro is out!** We're incredibly excited to announce the launch of LocalStack Pro - the enterprise version of LocalStack with additional APIs and advanced features. Check out the free trial at https://localstack.cloud
-* **2018-01-10**: **Help wanted!** Please [fill out this survey](https://lambdastudy.typeform.com/to/kDUvvy?source=localstack-github) to support a research study on the usage of Serverless and Function-as-a-Service (FaaS) services, conducted at the Chalmers University of Technology. The survey only takes 5-10 minutes of your time. Many thanks for your participation!!
-  * The result from this study can be found [here](https://research.chalmers.se/en/publication/508147)
-* **2017-08-27**: **We need your support!** LocalStack is growing fast, we now have thousands of developers using the platform regularly. Last month we have recorded a staggering 100k test runs, with 25k+ DynamoDB tables, 20k+ SQS queues, 15k+ Kinesis streams, 13k+ S3 buckets, and 10k+ Lambda functions created locally - for 0$ costs (more details to be published soon). Bug and feature requests are pouring in, and we now need some support from _you_ to keep the open-source version actively maintained. Please check out [Open Collective](https://opencollective.com/localstack) and become a [backer](https://github.com/localstack/localstack#backers) or [supporter](https://github.com/localstack/localstack#backers) of the project today! Thanks, everybody for contributing. ♥
-* **2017-07-20**: Please note: Starting with version `0.7.0`, the Docker image will be pushed
-and kept up to date under the **new name** `localstack/localstack`. (This means that you may
-have to update your CI configurations.) Please refer to the updated
-**[End-User License Agreement (EULA)](doc/end_user_license_agreement)** for the new versions.
-The old Docker image (`atlassianlabs/localstack`) is still available but will not be maintained
-any longer.
+This version of LocalStack is released under the Apache License, Version 2.0 (see LICENSE.txt). By downloading and using this software you agree to the [End-User License Agreement (EULA)](doc/end_user_license_agreement). To know about the external software we use, look at our [third party software tools](doc/third-party-software-tools/README.md) page.
