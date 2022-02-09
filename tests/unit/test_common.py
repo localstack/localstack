@@ -16,6 +16,7 @@ from localstack.utils import common
 from localstack.utils.common import (
     ExternalServicePortsManager,
     Mock,
+    PaginatedList,
     PortNotAvailableException,
     fully_qualified_class_name,
     get_free_tcp_port,
@@ -600,3 +601,40 @@ class TestExternalServicePortsManager:
         external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
         with pytest.raises(PortNotAvailableException):
             external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
+
+
+@pytest.fixture()
+def paginated_list():
+    yield PaginatedList([{"Id": i, "Filter": i.upper()} for i in ["a", "b", "c", "d", "e"]])
+
+
+class TestPaginatedList:
+    def test_list_smaller_than_max(self, paginated_list):
+        page, next_token = paginated_list.get_page(lambda i: i["Id"], page_size=6)
+        assert len(page) == 5
+        assert next_token is None
+
+    def test_next_token(self, paginated_list):
+        page, next_token = paginated_list.get_page(lambda i: i["Id"], page_size=2)
+        assert len(page) == 2
+        assert next_token == "c"
+
+    def test_continuation(self, paginated_list):
+        page, next_token = paginated_list.get_page(lambda i: i["Id"], page_size=2, next_token="c")
+        assert len(page) == 2
+        assert next_token == "e"
+
+    def test_end(self, paginated_list):
+        page, next_token = paginated_list.get_page(lambda i: i["Id"], page_size=2, next_token="e")
+        assert len(page) == 1
+        assert next_token is None
+
+    def test_filter(self, paginated_list):
+        page, next_token = paginated_list.get_page(
+            lambda i: i["Id"], page_size=6, filter_function=lambda i: i["Filter"] in ["B", "E"]
+        )
+        assert len(page) == 2
+        ids = [i["Id"] for i in page]
+        assert "b" in ids and "e" in ids
+        assert "a" not in ids
+        assert next_token is None
