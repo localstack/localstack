@@ -130,31 +130,20 @@ def get_main_container_name():
     return MAIN_CONTAINER_NAME_CACHED
 
 
-def get_server_version():
+def get_image_environment_variable(env_name: str):
+    image_name = get_docker_image_to_start()
+    image_info = DOCKER_CLIENT.inspect_image(image_name)
+    image_envs = image_info["Config"]["Env"]
+
     try:
-        # try to extract from existing running container
-        container_name = get_main_container_name()
-        version, _ = DOCKER_CLIENT.exec_in_container(
-            container_name, interactive=True, command=["bin/localstack", "--version"]
-        )
-        version = to_str(version).strip().splitlines()[-1]
-        return version
-    except ContainerException:
-        try:
-            # try to extract by starting a new container
-            img_name = get_docker_image_to_start()
-            version, _ = DOCKER_CLIENT.run_container(
-                img_name,
-                remove=True,
-                interactive=True,
-                entrypoint="",
-                command=["bin/localstack", "--version"],
-            )
-            version = to_str(version).strip().splitlines()[-1]
-            return version
-        except ContainerException:
-            # fall back to default constant
-            return constants.VERSION
+        found_env = next(env for env in image_envs if env.startswith(env_name))
+    except StopIteration:
+        return None
+    return found_env.split("=")[1]
+
+
+def get_server_version():
+    return get_image_environment_variable("LOCALSTACK_BUILD_VERSION")
 
 
 def setup_logging(log_level=None):
