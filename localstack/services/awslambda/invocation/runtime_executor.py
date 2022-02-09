@@ -33,7 +33,8 @@ class RuntimeExecutor:
         return f"{IMAGE_PREFIX}{runtime}:{version}"
 
     def start(self):
-        pass
+        env_vars = {"LOCALSTACK_RUNTIME_ID": self.id, "LAMBDA_FUNCTION_ARN": self.function_arn}
+        env_vars
 
     def stop(self):
         pass

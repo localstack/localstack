@@ -6,7 +6,7 @@ from datetime import datetime
 from queue import Queue
 from typing import Dict, Optional
 
-from localstack.aws.api.awslambda import FunctionConfiguration
+from localstack.services.awslambda.invocation.lambda_service import FunctionVersion
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
 
 LOG = logging.getLogger(__name__)
@@ -31,13 +31,13 @@ class RunningInvocation:
 class LambdaVersionManager:
     # arn this Lambda Version manager manages
     function_arn: str
-    function_version: FunctionConfiguration
+    function_version: FunctionVersion
     # mapping from invocation id to invocation storage
     running_invocations: Dict[str, RunningInvocation]
     running_executors: Dict[str, RuntimeExecutor]
     queued_invocations: Queue
 
-    def __init__(self, function_arn: str, function_configuration: FunctionConfiguration):
+    def __init__(self, function_arn: str, function_configuration: FunctionVersion):
         self.function_arn = function_arn
         self.function_configuration = function_configuration
         self.running_invocations = {}

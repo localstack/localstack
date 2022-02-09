@@ -1,11 +1,20 @@
+import dataclasses
 from concurrent.futures import Future
 from threading import RLock
 from typing import Dict, Optional
 
 from localstack.services.awslambda.invocation.runtime_api import LambdaRuntimeAPI
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_free_tcp_port
+
+
+@dataclasses.dataclass
+class FunctionVersion:
+    qualified_arn: str  # qualified arn for the version
+    code: bytes  # zip file
+    runtime: str  # runtime
+    architecture: str  # architecture
+    role: str  # lambda role
 
 
 class LambdaService:
@@ -33,41 +42,37 @@ class LambdaService:
         :return: LambdaVersionManager for the arn
         """
         version_manager = self.lambda_version_managers.get(function_arn)
-        if version_manager:
-            return version_manager
+        if not version_manager:
+            raise Exception("Version '%s' not created", function_arn)
+
+        return version_manager
+
+    def create_function(self, function_version_definition: FunctionVersion):
         with self.lambda_version_manager_lock:
-            version_manager = self.lambda_version_managers.get(function_arn)
-            if version_manager:
-                return version_manager
-            # TODO function configuration source depends on storage location
-            version_manager = LambdaVersionManager(
-                function_arn=function_arn, function_configuration={}
+            version_manager = self.lambda_version_managers.get(
+                function_version_definition.qualified_arn
             )
-            self.lambda_version_managers[function_arn] = version_manager
-            return version_manager
+            if version_manager:
+                raise Exception(
+                    "Version '%s' already created", function_version_definition.qualified_arn
+                )
+            version_manager = LambdaVersionManager(
+                function_arn=function_version_definition.qualified_arn,
+                function_configuration=function_version_definition,
+            )
+            self.lambda_version_managers[
+                function_version_definition.qualified_arn
+            ] = version_manager
 
     def invoke(
         self,
-        function_name: str,
-        account: str,
-        region: str,
+        function_arn_qualified: str,
         invocation_type: Optional[str],
         log_type: Optional[str],
         client_context: Optional[str],
         payload: Optional[bytes],
-        qualifier: Optional[str],
     ) -> Future:
-        qualified_arn = qualified_lambda_arn(function_name, qualifier, account, region)
-        version_manager = self.get_lambda_version_manager(qualified_arn)
-        version_manager.invoke(
+        version_manager = self.get_lambda_version_manager(function_arn_qualified)
+        return version_manager.invoke(
             payload=payload, client_context=client_context, invocation_type=invocation_type
         )
-        return Future()
-
-
-def qualified_lambda_arn(
-    function_name: str, qualifier: Optional[str], account: str, region: str
-) -> str:
-    partition = aws_stack.get_partition(region)
-    qualifier = qualifier or "$LATEST"
-    return f"arn:{partition}:lambda:{region}:{account}:function:{function_name}:{qualifier}"
