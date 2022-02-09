@@ -176,7 +176,7 @@ def store_lambda_logs(
     return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
 
-def get_main_endpoint_from_container():
+def get_main_endpoint_from_container() -> str:
     global DOCKER_MAIN_CONTAINER_IP
     if not config.HOSTNAME_FROM_LAMBDA and DOCKER_MAIN_CONTAINER_IP is None:
         DOCKER_MAIN_CONTAINER_IP = False
