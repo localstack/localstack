@@ -24,6 +24,7 @@ from localstack.utils.docker_utils import (
 )
 
 # set up logger
+from localstack.utils.generic.file_utils import cache_dir
 from localstack.utils.run import run, to_str
 from localstack.utils.serving import Server
 
@@ -142,8 +143,49 @@ def get_image_environment_variable(env_name: str):
     return found_env.split("=")[1]
 
 
+def get_server_version_from_running_container():
+    try:
+        # try to extract from existing running container
+        container_name = get_main_container_name()
+        version, _ = DOCKER_CLIENT.exec_in_container(
+            container_name, interactive=True, command=["bin/localstack", "--version"]
+        )
+        version = to_str(version).strip().splitlines()[-1]
+        return version
+    except ContainerException:
+        try:
+            # try to extract by starting a new container
+            img_name = get_docker_image_to_start()
+            version, _ = DOCKER_CLIENT.run_container(
+                img_name,
+                remove=True,
+                interactive=True,
+                entrypoint="",
+                command=["bin/localstack", "--version"],
+            )
+            version = to_str(version).strip().splitlines()[-1]
+            return version
+        except ContainerException:
+            # fall back to default constant
+            return constants.VERSION
+
+
 def get_server_version():
-    return get_image_environment_variable("LOCALSTACK_BUILD_VERSION")
+    env_version = get_image_environment_variable("LOCALSTACK_BUILD_VERSION")
+    if env_version is not None:
+        # No caching needed if the less resource intensive version check succeeds
+        return env_version
+
+    version_cache = cache_dir() / "version"
+    if version_cache.exists():
+        cached_version = version_cache.read_text()
+        return cached_version.strip()
+
+    container_version = get_server_version_from_running_container()
+    version_cache.parent.mkdir(exist_ok=True, parents=True)
+    version_cache.write_text(container_version)
+
+    return container_version
 
 
 def setup_logging(log_level=None):
