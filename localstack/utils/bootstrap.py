@@ -131,6 +131,14 @@ def get_main_container_name():
     return MAIN_CONTAINER_NAME_CACHED
 
 
+def get_image_hash():
+    image_name = get_docker_image_to_start()
+    image_id = DOCKER_CLIENT.inspect_image(image_name)["Id"]
+    if image_id.startswith("sha256:"):
+        return image_id.split(":")[1][:12]
+    return image_id
+
+
 def get_image_environment_variable(env_name: str):
     image_name = get_docker_image_to_start()
     image_info = DOCKER_CLIENT.inspect_image(image_name)
@@ -171,15 +179,17 @@ def get_server_version_from_running_container():
 
 
 def get_server_version():
-    env_version = get_image_environment_variable("LOCALSTACK_BUILD_VERSION")
-    if env_version is not None:
-        # No caching needed if the less resource intensive version check succeeds
-        return env_version
-
-    version_cache = cache_dir() / "version"
+    image_hash = get_image_hash()
+    version_cache = cache_dir() / "image_metadata" / image_hash / "localstack_version"
     if version_cache.exists():
         cached_version = version_cache.read_text()
         return cached_version.strip()
+
+    env_version = get_image_environment_variable("LOCALSTACK_BUILD_VERSION")
+    if env_version is not None:
+        version_cache.parent.mkdir(exist_ok=True, parents=True)
+        version_cache.write_text(env_version)
+        return env_version
 
     container_version = get_server_version_from_running_container()
     version_cache.parent.mkdir(exist_ok=True, parents=True)
@@ -805,3 +815,7 @@ def in_ci():
         if os.environ.get(key, "") not in [False, "", "0", "false"]:
             return True
     return False
+
+
+if __name__ == "__main__":
+    print(get_server_version())
