@@ -2,6 +2,8 @@ import json
 import logging
 import random
 import string
+import uuid
+from typing import Optional
 
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
@@ -124,7 +126,14 @@ def apply_patches():
             client_request_token,
             version_stages,
     ):
-        # TODO: invoke moto implementation instead of overriding it completely? Check.
+        """
+        Patches Moto's put_secret_value function, to return a representation of the secret version
+        just added; ie. the secret's version with the same version id as the one being added.
+        This is different from the original implementation, which returned the default (or AWSCURRENT)
+        version of the secret. To enable the retrieval of the injected version, the derivation of the
+        new VersionId is computed at this depth, with this however promoting no logical variations to
+        the expected put_secret_value routine.
+        """
         if not self._is_valid_identifier(secret_id):
             raise SecretNotFoundException()
         else:
@@ -132,33 +141,46 @@ def apply_patches():
             tags = secret.tags
             description = secret.description
 
+        # Compute the new VersionId at this depth, with equal logic to the one found in the _add_secret
+        # function. This enables retrieval of the version being added, but does not have logical effects
+        # on the evaluation of _add_secret, not update_secret_value.
+        # Note null client_request_token values are handled by the invoker of this function, in Moto's
+        # implementation.
+        version_id = client_request_token
+        if version_id:
+            self._client_request_token_validator(version_id)
+        else:
+            version_id = str(uuid.uuid4())
+
         secret: FakeSecret = self._add_secret(
             secret_id,
             secret_string,
             secret_binary,
-            version_id=client_request_token,
+            version_id=version_id,  # client_request_token overriding.
             description=description,
             tags=tags,
             version_stages=version_stages,
         )
-
+        #
         stage_response: json = json.loads(secret.to_short_dict(include_version_stages=True))
 
-        fake_secret_to_aws_key: dict[str, str] = {  # Not conversion to CamelCase on purpose: control these parameters.
-            'version_id': 'VersionId',
-            'version_stages': 'VersionStages'
-        }
-        #
-        secret_versions_vs: [dict] = [v for v in secret.versions.values() if v['version_stages'] == version_stages]
-        if secret_versions_vs:
-            secret_version: dict = secret_versions_vs[0]  # TODO: what version if more than one?
-            for skn, skn_aws in fake_secret_to_aws_key.items():
+        # Define which fields to update from Moto FakeSecret secret version implementation
+        # to the response structure of put_secret_value.  Not converting these fields to CamelCase
+        # by design: we wish to control these parameters directly.
+        fake_secret_to_aws_key: [(str, str)] = [
+            ('version_id', 'VersionId'), ('version_stages', 'VersionStages')
+        ]
+
+        secret_version = secret.versions.get(version_id, None)
+        if secret_version:
+            for skn, skn_aws in fake_secret_to_aws_key:
                 if skn in secret_version and skn_aws in stage_response:
                     stage_response[skn_aws] = secret_version[skn]
 
         return json.dumps(stage_response)
-
+    #
     setattr(SecretsManagerBackend, 'put_secret_value', put_secret_value)
+
 
 def start_secretsmanager(port=None, asynchronous=None, backend_port=None, update_listener=None):
     apply_patches()

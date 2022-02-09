@@ -611,9 +611,8 @@ class TestSecretsManager:
 
         self.secretsmanager_http_delete_secret_val_res(self.secretsmanager_http_delete_secret(secret_name), secret_name)
 
-    # TODO
-    def test_http_put_pending_secret_value_custom_client_request_token(self):
-        secret_name: str = 'test_http_put_pending_secret_value_custom_client_request_token'
+    def test_http_put_secret_value_custom_client_request_token_new_version_stages(self):
+        secret_name: str = 'test_http_put_secret_value_custom_client_request_token_new_version_stages'
 
         # Create v0.
         secret_string_v0: str = 'MySecretString'
@@ -629,24 +628,23 @@ class TestSecretsManager:
 
         # Update v0 with null ClientRequestToken.
         secret_string_v1: str = 'MyNewSecretString'
-        #
+        version_stages_v1: [str] = ['AWSPENDING']
         crt_v1: str = str(uuid.uuid4())
         while crt_v1 == cr_v0_res_json['VersionId']:
             crt_v1 = str(uuid.uuid4())
         #
-        self.secretsmanager_http_put_pending_secret_value_with_val_res(
-            self.secretsmanager_http_put_secret_value_with_version(secret_name, secret_string_v1, crt_v1),
-            secret_name,
-            crt_v1)
+        pv_v1_res_json = self.secretsmanager_http_put_secret_value_with_version_val_res(
+            self.secretsmanager_http_put_secret_value_with_version(
+                secret_name, secret_string_v1, crt_v1, version_stages_v1),
+            secret_name, crt_v1, version_stages_v1)
         #
         # Check v1 base consistency.
-        gt_v1_res_json = self.secretsmanager_http_get_secret_value_with_val_res(
+        self.secretsmanager_http_get_secret_value_with_val_res(
             self.secretsmanager_http_get_secret_value_with(secret_name, 'AWSPENDING'),
             secret_name,
             secret_string_v1,
+            crt_v1,
             'AWSPENDING')
-        #
-        assert gt_v1_res_json['VersionId'] == crt_v1
         #
         # Check v0 base consistency.
         self.secretsmanager_http_get_secret_value_val_res(
@@ -664,6 +662,3 @@ class TestSecretsManager:
             self.secretsmanager_http_list_secret_version_ids(secret_name), secret_name, versions_v0_v1)
 
         self.secretsmanager_http_delete_secret_val_res(self.secretsmanager_http_delete_secret(secret_name), secret_name)
-
-
-    # TODO: add tests for verion_stages updates through PutSecretValue
