@@ -83,7 +83,7 @@ class IntegrationTest(unittest.TestCase):
     def tearDownClass(cls):
         testutil.delete_lambda_function(cls.scheduled_lambda_name)
 
-    def test_firehose_s3(self, s3_bucket):
+    def test_firehose_s3(self):
         s3_resource = aws_stack.connect_to_resource("s3")
         firehose = aws_stack.create_external_boto_client("firehose")
 
