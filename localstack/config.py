@@ -867,12 +867,17 @@ class ServiceProviderConfig(Mapping[str, str]):
 
 SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 
-override_prefix = "PROVIDER_OVERRIDE_"
-for key, value in os.environ.items():
-    if key.startswith(override_prefix):
-        SERVICE_PROVIDER_CONFIG.set_provider(
-            key[len(override_prefix) :].lower().replace("_", "-"), value
-        )
+
+def process_provider_overrides(provider_config):
+    override_prefix = "PROVIDER_OVERRIDE_"
+    for key, value in os.environ.items():
+        if key.startswith(override_prefix):
+            provider_config.set_provider(
+                key[len(override_prefix) :].lower().replace("_", "-"), value
+            )
+
+
+process_provider_overrides(SERVICE_PROVIDER_CONFIG)
 
 # initialize directories
 if is_in_docker:
