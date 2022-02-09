@@ -601,7 +601,7 @@ def create_lambda_function(lambda_client: "LambdaClient", iam_client):
     lambda_arns = []
     role_names = []
 
-    def _create_lambda_function(*args, **kwargs):
+    def _create_lambda_function(**kwargs):
         kwargs["client"] = lambda_client
 
         if not kwargs.get("role"):
@@ -618,7 +618,7 @@ def create_lambda_function(lambda_client: "LambdaClient", iam_client):
             kwargs["role"] = role["Arn"]
 
         def _create_function():
-            resp = testutil.create_lambda_function(*args, **kwargs)
+            resp = testutil.create_lambda_function(**kwargs)
             lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
 
             def _is_not_pending():

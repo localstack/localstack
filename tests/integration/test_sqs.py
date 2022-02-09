@@ -355,7 +355,7 @@ class TestSqsProvider:
 
         lambda_name = f"lambda-{short_uid()}"
         create_lambda_function(
-            lambda_name,
+            func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=LAMBDA_RUNTIME_PYTHON36,
@@ -968,7 +968,7 @@ class TestSqsProvider:
 
         lambda_name = f"lambda-{short_uid()}"
         create_lambda_function(
-            lambda_name,
+            func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=LAMBDA_RUNTIME_PYTHON36,
@@ -1438,7 +1438,7 @@ class TestSqsProvider:
 
         lambda_name = "lambda-{}".format(short_uid())
         create_lambda_function(
-            lambda_name,
+            func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=LAMBDA_RUNTIME_PYTHON36,
