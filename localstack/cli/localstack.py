@@ -82,7 +82,15 @@ def cmd_status_services(format):
         health = requests.get(f"{url}/health")
         doc = health.json()
         services = doc.get("services", [])
-        print_service_table(services)
+        if format == "table":
+            print_service_table(services)
+        if format == "plain":
+            for service, status in services.items():
+                console.print(f"{service}={status}")
+        if format == "dict":
+            console.print(services)
+        if format == "json":
+            console.print(json.dumps(services))
     except requests.ConnectionError:
         err = "[bold][red]:heavy_multiplication_x: ERROR[/red][/bold]"
         console.print(f"{err}: could not connect to LocalStack health endpoint at {url}")
