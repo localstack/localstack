@@ -15,23 +15,6 @@ TAGS = TaggingService()
 
 class ProxyListenerCloudWatch(ProxyListener):
     def forward_request(self, method, path, data, headers):
-        req_data = parse_request_data(method, path, data)
-        action = req_data.get("Action")
-        if action == "TagResource":
-            arn = req_data.get("ResourceARN")
-            tags = aws_responses.extract_tags(req_data)
-            TAGS.tag_resource(arn, tags)
-            return aws_responses.requests_response_xml(action, {}, xmlns=XMLNS_CLOUDWATCH)
-        if action == "UntagResource":
-            arn = req_data.get("ResourceARN")
-            tag_names = [v for k, v in req_data.items() if k.startswith("TagKeys.member.")]
-            TAGS.untag_resource(arn, tag_names)
-            return aws_responses.requests_response_xml(action, {}, xmlns=XMLNS_CLOUDWATCH)
-        if action == "ListTagsForResource":
-            arn = req_data.get("ResourceARN")
-            tags = TAGS.list_tags_for_resource(arn)
-            result = {"Tags": tags.get("Tags", [])}
-            return aws_responses.requests_response_xml(action, result, xmlns=XMLNS_CLOUDWATCH)
         if path.startswith(PATH_GET_RAW_METRICS):
             result = cloudwatch_backends[aws_stack.get_region()].metric_data
             result = [

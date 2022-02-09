@@ -35,11 +35,16 @@ def awsconfig():
 
 @aws_provider()
 def cloudwatch():
+    from localstack.aws.proxy import AsfWithFallbackListener
     from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
+    from localstack.services.cloudwatch.provider import CloudwatchProvider
 
+    asf_listener = AsfWithFallbackListener(
+        "cloudwatch", CloudwatchProvider(), cloudwatch_listener.UPDATE_CLOUD_WATCH
+    )
     return Service(
         "cloudwatch",
-        listener=cloudwatch_listener.UPDATE_CLOUD_WATCH,
+        listener=asf_listener,
         start=cloudwatch_starter.start_cloudwatch,
     )
 
