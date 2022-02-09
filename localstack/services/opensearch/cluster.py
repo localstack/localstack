@@ -233,6 +233,7 @@ class OpensearchCluster(Server):
         }
 
     def _log_listener(self, line, **_kwargs):
+        # logging the port before each line to be able to connect logs to specific instances
         LOG.info("[%s] %s", self.port, line.rstrip())
 
 
