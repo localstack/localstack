@@ -198,6 +198,21 @@ class TestCloudwatch:
         assert metrics
         assert len(metrics) == len(namespaces) * num_dimensions
 
+    def test_describe_alarms_converts_date_format_correctly(self, cloudwatch_client):
+        alarm_name = "a-%s" % short_uid()
+        cloudwatch_client.put_metric_alarm(
+            AlarmName=alarm_name,
+            EvaluationPeriods=1,
+            ComparisonOperator="GreaterThanThreshold",
+        )
+        try:
+            result = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
+            alarm = result["MetricAlarms"][0]
+            assert isinstance(alarm["AlarmConfigurationUpdatedTimestamp"], datetime)
+            assert isinstance(alarm["StateUpdatedTimestamp"], datetime)
+        finally:
+            cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
+
     def test_store_tags(self, cloudwatch_client):
         alarm_name = "a-%s" % short_uid()
         response = cloudwatch_client.put_metric_alarm(
