@@ -556,8 +556,6 @@ def test_restjson_awslambda_invoke_with_botocore():
     _botocore_parser_integration_test(
         service="lambda",
         action="Invoke",
-        headers={},
-        expected={"FunctionName": "test-function", "Payload": b""},
         FunctionName="test-function",
     )
 

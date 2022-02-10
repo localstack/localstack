@@ -590,12 +590,16 @@ class BaseRestRequestParser(RequestParser):
                 body = self._create_event_stream(request, body_shape)
                 payload_parsed[payload_member_name] = body
             elif body_shape.type_name == "string":
-                body = request.data
-                if isinstance(body, bytes):
-                    body = body.decode(self.DEFAULT_ENCODING)
-                payload_parsed[payload_member_name] = body
+                # Only set the value if it's not empty (the request's data is an empty binary by default)
+                if request.data:
+                    body = request.data
+                    if isinstance(body, bytes):
+                        body = body.decode(self.DEFAULT_ENCODING)
+                    payload_parsed[payload_member_name] = body
             elif body_shape.type_name == "blob":
-                payload_parsed[payload_member_name] = request.data
+                # Only set the value if it's not empty (the request's data is an empty binary by default)
+                if request.data:
+                    payload_parsed[payload_member_name] = request.data
             else:
                 original_parsed = self._initial_body_parse(request.data)
                 payload_parsed[payload_member_name] = self._parse_shape(
