@@ -50,8 +50,8 @@ class ElasticsearchDomain(GenericBaseModel):
             ]
             result = select_attributes(params, attributes)
             result = remove_none_values(result)
-            cluster_config = result.setdefault("ElasticsearchClusterConfig", {})
-            if not cluster_config.get("DedicatedMasterType"):
+            cluster_config = result.get("ElasticsearchClusterConfig")
+            if isinstance(cluster_config, dict):
                 # set defaults required for boto3 calls
                 cluster_config.setdefault("DedicatedMasterType", "m3.medium.elasticsearch")
                 cluster_config.setdefault("WarmType", "ultrawarm1.medium.elasticsearch")
