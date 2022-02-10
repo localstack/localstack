@@ -18,7 +18,6 @@ import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
-from localstack.aws.api.opensearch import EngineType
 from localstack.config import dirs, has_docker
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
@@ -166,6 +165,8 @@ def get_elasticsearch_install_dir(version: str) -> str:
 
 
 def install_elasticsearch(version=None):
+    # locally import to avoid having a dependency on ASF when starting the CLI
+    from localstack.aws.api.opensearch import EngineType
     from localstack.services.opensearch import versions
 
     if not version:
@@ -250,6 +251,8 @@ def get_opensearch_install_dir(version: str) -> str:
 
 
 def install_opensearch(version=None):
+    # locally import to avoid having a dependency on ASF when starting the CLI
+    from localstack.aws.api.opensearch import EngineType
     from localstack.services.opensearch import versions
 
     if not version:

@@ -421,14 +421,14 @@ class BaseXMLResponseSerializer(ResponseSerializer):
                 attribute_name += ":%s" % namespace_metadata["prefix"]
             structure_node.attrib[attribute_name] = namespace_metadata["uri"]
         for key, value in params.items():
+            if value is None:
+                # Don't serialize any param whose value is None.
+                continue
             member_shape = shape.members[key]
             member_name = member_shape.serialization.get("name", key)
             # We need to special case member shapes that are marked as an xmlAttribute.
             # Rather than serializing into an XML child node, we instead serialize the shape to
             # an XML attribute of the *current* node.
-            if value is None:
-                # Don't serialize any param whose value is None.
-                continue
             if member_shape.serialization.get("xmlAttribute"):
                 # xmlAttributes must have a serialization name.
                 xml_attribute_name = member_shape.serialization["name"]
@@ -439,6 +439,9 @@ class BaseXMLResponseSerializer(ResponseSerializer):
     def _serialize_type_list(
         self, xmlnode: ETree.Element, params: list, shape: ListShape, name: str
     ) -> None:
+        if params is None:
+            # Don't serialize any param whose value is None.
+            return
         member_shape = shape.member
         if shape.serialization.get("flattened"):
             # If the list is flattened, either take the member's "name" or the name of the usual name for the parent
@@ -449,7 +452,9 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             element_name = self._get_serialized_name(member_shape, "member")
             list_node = ETree.SubElement(xmlnode, name)
         for item in params:
-            self._serialize(member_shape, item, list_node, element_name)
+            # Don't serialize any item which is None
+            if item is not None:
+                self._serialize(member_shape, item, list_node, element_name)
 
     def _serialize_type_map(
         self, xmlnode: ETree.Element, params: dict, shape: MapShape, name: str
@@ -477,6 +482,9 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             <value>val2</value>
           </MyMap>
         """
+        if params is None:
+            # Don't serialize a non-existing map
+            return
         if shape.serialization.get("flattened"):
             entries_node = xmlnode
             entry_node_name = name
@@ -485,6 +493,9 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             entry_node_name = "entry"
 
         for key, value in params.items():
+            if value is None:
+                # Don't serialize any param whose value is None.
+                continue
             entry_node = ETree.SubElement(entries_node, entry_node_name)
             key_name = self._get_serialized_name(shape.key, default_name="key")
             val_name = self._get_serialized_name(shape.value, default_name="value")
@@ -815,6 +826,8 @@ class JSONResponseSerializer(ResponseSerializer):
                 body = new_serialized
             members = shape.members
             for member_key, member_value in value.items():
+                if member_value is None:
+                    continue
                 try:
                     member_shape = members[member_key]
                 except KeyError:
@@ -827,22 +840,28 @@ class JSONResponseSerializer(ResponseSerializer):
                 self._serialize(body, member_value, member_shape, member_key)
 
     def _serialize_type_map(self, body: dict, value: dict, shape: MapShape, key: str):
+        if value is None:
+            return
         map_obj = {}
         body[key] = map_obj
         for sub_key, sub_value in value.items():
-            self._serialize(map_obj, sub_value, shape.value, sub_key)
+            if sub_value is not None:
+                self._serialize(map_obj, sub_value, shape.value, sub_key)
 
     def _serialize_type_list(self, body: dict, value: list, shape: ListShape, key: str):
+        if value is None:
+            return
         list_obj = []
         body[key] = list_obj
         for list_item in value:
-            wrapper = {}
-            # The JSON list serialization is the only case where we aren't
-            # setting a key on a dict.  We handle this by using
-            # a __current__ key on a wrapper dict to serialize each
-            # list item before appending it to the serialized list.
-            self._serialize(wrapper, list_item, shape.member, "__current__")
-            list_obj.append(wrapper["__current__"])
+            if list_item is not None:
+                wrapper = {}
+                # The JSON list serialization is the only case where we aren't
+                # setting a key on a dict.  We handle this by using
+                # a __current__ key on a wrapper dict to serialize each
+                # list item before appending it to the serialized list.
+                self._serialize(wrapper, list_item, shape.member, "__current__")
+                list_obj.append(wrapper["__current__"])
 
     def _default_serialize(self, body: dict, value: any, _, key: str):
         body[key] = value

@@ -21,9 +21,9 @@ from typing_extensions import OrderedDict
 from localstack.aws.spec import load_service
 from localstack.utils.common import camel_to_snake_case, mkdir, snake_to_camel_case
 
-
-def is_keyword(name: str) -> bool:
-    return name in keyword.kwlist
+# Some minification packages might treat "type" as a keyword.
+KEYWORDS = list(keyword.kwlist) + ["type"]
+is_keyword = KEYWORDS.__contains__
 
 
 def is_bad_param_name(name: str) -> bool:

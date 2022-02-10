@@ -556,8 +556,6 @@ def test_restjson_awslambda_invoke_with_botocore():
     _botocore_parser_integration_test(
         service="lambda",
         action="Invoke",
-        headers={},
-        expected={"FunctionName": "test-function", "Payload": ""},
         FunctionName="test-function",
     )
 
@@ -660,6 +658,59 @@ def test_parse_opensearch_conflicting_request_uris():
         service="opensearch",
         action="DescribeDomain",
         DomainName="test-domain",
+    )
+
+
+def test_parse_appconfig_non_json_blob_payload():
+    """
+    Tests if the parsing works correctly if the request contains a blob payload shape which does not contain valid JSON.
+    """
+    _botocore_parser_integration_test(
+        service="appconfig",
+        action="CreateHostedConfigurationVersion",
+        ApplicationId="test-application-id",
+        ConfigurationProfileId="test-configuration-profile-id",
+        Content=b"<html></html>",
+        ContentType="application/html",
+    )
+
+
+def test_parse_s3_with_extended_uri_pattern():
+    """
+    Tests if the parsing works for operations where the operation defines a request URI with a "+" in the variable name,
+    (for example "requestUri":"/{Bucket}/{Key+}").
+    The parameter with the "+" directive is greedy. There can only be one explicitly greedy param.
+    The corresponding shape definition does not contain the "+" in the "locationName" directive.
+    """
+    _botocore_parser_integration_test(
+        service="s3",
+        action="ListParts",
+        Bucket="foo",
+        Key="bar/test",
+        UploadId="test-upload-id",
+        expected={
+            "Bucket": "foo",
+            "Key": "bar/test",
+            "UploadId": "test-upload-id",
+            "ExpectedBucketOwner": None,
+            "MaxParts": None,
+            "PartNumberMarker": None,
+            "RequestPayer": None,
+        },
+    )
+
+
+def test_parse_restjson_uri_location():
+    """
+    Tests if the parsing of uri parameters works correctly for the rest-json protocol
+    """
+    _botocore_parser_integration_test(
+        service="lambda",
+        action="AddPermission",
+        Action="lambda:InvokeFunction",
+        FunctionName="arn:aws:lambda:us-east-1:000000000000:function:test-forward-sns",
+        Principal="sns.amazonaws.com",
+        StatementId="2e25f762",
     )
 
 

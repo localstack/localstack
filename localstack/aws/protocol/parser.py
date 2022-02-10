@@ -75,7 +75,7 @@ from abc import ABC
 from collections import OrderedDict, defaultdict
 from email.utils import parsedate_to_datetime
 from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Tuple, Union
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, unquote
 from xml.etree import ElementTree as ETree
 
 import dateutil.parser
@@ -192,7 +192,7 @@ class RequestParser(abc.ABC):
             elif location == "uri":
                 regex_group_name = shape.serialization.get("name")
                 match = path_regex.match(request.path)
-                payload = match.group(regex_group_name)
+                payload = unquote(match.group(regex_group_name))
             else:
                 raise RequestParserError("Unknown shape location '%s'." % location)
         else:
@@ -303,6 +303,13 @@ class RequestParser(abc.ABC):
         request_uri_regex = re.sub(
             "{(?P<VariableName>[^}]+)}", r"(?P<\g<VariableName>>.+)", request_uri
         )
+        # The variable name (now regex group name) can also contain trailing "+" signs (f.e. S3).
+        # This means that the key should be greedy (there can only be one greedy param).
+        # This is implemented by making groups which do not contain a "+" and are not at the end of the URI non-greedy
+        # (with a trailing ?).
+        request_uri_regex = request_uri_regex.replace("+>.+)", ">._greedy_+)")
+        request_uri_regex = request_uri_regex.replace(">.+)", ">.+?)")
+        request_uri_regex = request_uri_regex.replace(">._greedy_+)", ">.+)")
         # Put regex in fences to make sure that we do not match any substrings
         request_uri_regex = f"^{request_uri_regex}$"
         # The result is a regex itself.
@@ -526,8 +533,7 @@ class BaseRestRequestParser(RequestParser):
         for operation_model in sorted_operation_models:
             http = operation_model.http
             method = http.get("method")
-            request_uri = http.get("requestUri")
-            request_uri_regex = self._convert_request_uri_to_regex(request_uri)
+            request_uri_regex = self._get_request_uri_regex(operation_model)
             self.operation_lookup[method][request_uri_regex] = operation_model
 
     def _get_normalized_request_uri_length(self, operation_model: OperationModel) -> str:
@@ -575,6 +581,7 @@ class BaseRestRequestParser(RequestParser):
     ) -> None:
         """Parses all attributes which are located in the payload / body of the incoming request."""
         payload_parsed = {}
+        non_payload_parsed = {}
         if "payload" in shape.serialization:
             # If a payload is specified in the output shape, then only that shape is used for the body payload.
             payload_member_name = shape.serialization["payload"]
@@ -582,22 +589,30 @@ class BaseRestRequestParser(RequestParser):
             if body_shape.serialization.get("eventstream"):
                 body = self._create_event_stream(request, body_shape)
                 payload_parsed[payload_member_name] = body
-            elif body_shape.type_name in ["string", "blob"]:
-                # This is a stream
-                body = request.data
-                if isinstance(body, bytes):
-                    body = body.decode(self.DEFAULT_ENCODING)
-                payload_parsed[payload_member_name] = body
+            elif body_shape.type_name == "string":
+                # Only set the value if it's not empty (the request's data is an empty binary by default)
+                if request.data:
+                    body = request.data
+                    if isinstance(body, bytes):
+                        body = body.decode(self.DEFAULT_ENCODING)
+                    payload_parsed[payload_member_name] = body
+            elif body_shape.type_name == "blob":
+                # Only set the value if it's not empty (the request's data is an empty binary by default)
+                if request.data:
+                    payload_parsed[payload_member_name] = request.data
             else:
                 original_parsed = self._initial_body_parse(request.data)
                 payload_parsed[payload_member_name] = self._parse_shape(
                     request, body_shape, original_parsed, path_regex
                 )
+        else:
+            # The payload covers the whole body. We only parse the body if it hasn't been handled by the payload logic.
+            non_payload_parsed = self._initial_body_parse(request.data)
         # even if the payload has been parsed, the rest of the shape needs to be processed as well
-        original_parsed = self._initial_body_parse(request.data)
-        body_parsed = self._parse_shape(request, shape, original_parsed, path_regex)
+        # (for members which are located outside of the body, like uri or header)
+        non_payload_parsed = self._parse_shape(request, shape, non_payload_parsed, path_regex)
         # update the final result with the parsed body and the parsed payload (where the payload has precedence)
-        final_parsed.update(body_parsed)
+        final_parsed.update(non_payload_parsed)
         final_parsed.update(payload_parsed)
 
     def _initial_body_parse(self, body_contents: bytes) -> any:
