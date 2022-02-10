@@ -677,6 +677,31 @@ def test_parse_appconfig_non_json_blob_payload():
     )
 
 
+def test_parse_s3_with_extended_uri_pattern():
+    """
+    Tests if the parsing works for operations where the operation defines a request URI with a "+" in the variable name,
+    (for example "requestUri":"/{Bucket}/{Key+}").
+    The parameter with the "+" directive is greedy. There can only be one explicitly greedy param.
+    The corresponding shape definition does not contain the "+" in the "locationName" directive.
+    """
+    _botocore_parser_integration_test(
+        service="s3",
+        action="ListParts",
+        Bucket="foo",
+        Key="bar/test",
+        UploadId="test-upload-id",
+        expected={
+            "Bucket": "foo",
+            "Key": "bar/test",
+            "UploadId": "test-upload-id",
+            "ExpectedBucketOwner": None,
+            "MaxParts": None,
+            "PartNumberMarker": None,
+            "RequestPayer": None,
+        },
+    )
+
+
 # TODO Add additional tests (or even automate the creation)
 # - Go to the Boto3 Docs (https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/index.html)
 # - Look for boto3 request syntax definition for services that use the protocol you want to test

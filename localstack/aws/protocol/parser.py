@@ -303,6 +303,13 @@ class RequestParser(abc.ABC):
         request_uri_regex = re.sub(
             "{(?P<VariableName>[^}]+)}", r"(?P<\g<VariableName>>.+)", request_uri
         )
+        # The variable name (now regex group name) can also contain trailing "+" signs (f.e. S3).
+        # This means that the key should be greedy (there can only be one greedy param).
+        # This is implemented by making groups which do not contain a "+" and are not at the end of the URI non-greedy
+        # (with a trailing ?).
+        request_uri_regex = request_uri_regex.replace("+>.+)", ">._greedy_+)")
+        request_uri_regex = request_uri_regex.replace(">.+)", ">.+?)")
+        request_uri_regex = request_uri_regex.replace(">._greedy_+)", ">.+)")
         # Put regex in fences to make sure that we do not match any substrings
         request_uri_regex = f"^{request_uri_regex}$"
         # The result is a regex itself.
@@ -526,8 +533,7 @@ class BaseRestRequestParser(RequestParser):
         for operation_model in sorted_operation_models:
             http = operation_model.http
             method = http.get("method")
-            request_uri = http.get("requestUri")
-            request_uri_regex = self._convert_request_uri_to_regex(request_uri)
+            request_uri_regex = self._get_request_uri_regex(operation_model)
             self.operation_lookup[method][request_uri_regex] = operation_model
 
     def _get_normalized_request_uri_length(self, operation_model: OperationModel) -> str:
