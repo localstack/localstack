@@ -111,7 +111,6 @@ class TestSqsProvider:
         # list queues regardless of prefix prefix
         result = sqs_client.list_queues()
         assert "QueueUrls" in result
-        assert len(result["QueueUrls"]) == 3
         for url in queue_urls:
             assert url in result["QueueUrls"]
 
