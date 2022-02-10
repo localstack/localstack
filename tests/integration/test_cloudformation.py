@@ -117,6 +117,11 @@ Resources:
     Type: AWS::Elasticsearch::Domain
     Properties:
       DomainName: !Ref "DomainName"
+      ElasticsearchClusterConfig:
+        InstanceCount: 1
+        InstanceType: 'm5.large.elasticsearch'
+        ZoneAwarenessEnabled: false
+        # remaining required attributes (DedicatedMasterType, WarmType) should get filled in by template deployer
       Tags:
         - Key: k1
           Value: v1
