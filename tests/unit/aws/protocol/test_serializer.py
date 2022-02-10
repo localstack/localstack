@@ -768,6 +768,41 @@ def test_restjson_payload_serialization():
     assert headers["content-type"] == "application/json"
 
 
+def test_restjson_none_serialization():
+    parameters = {
+        "FunctionName": "test-name",
+        "VpcConfig": {"SubnetIds": None, "SecurityGroupIds": [None], "VpcId": "123"},
+        "TracingConfig": None,
+        "DeadLetterConfig": {},
+    }
+    expected = {
+        "FunctionName": "test-name",
+        "VpcConfig": {"SecurityGroupIds": [], "VpcId": "123"},
+        "DeadLetterConfig": {},
+    }
+    _botocore_serializer_integration_test(
+        "lambda", "CreateFunction", parameters, status_code=201, expected_response_content=expected
+    )
+
+
+def test_restxml_none_serialization():
+    # Structure = None
+    _botocore_serializer_integration_test(
+        "route53", "ListHostedZonesByName", {}, expected_response_content={}
+    )
+    # Structure Value = None
+    parameters = {"HostedZones": None}
+    _botocore_serializer_integration_test(
+        "route53", "ListHostedZonesByName", parameters, expected_response_content={}
+    )
+    # List Value = None
+    parameters = {"HostedZones": [None]}
+    expected = {"HostedZones": []}
+    _botocore_serializer_integration_test(
+        "route53", "ListHostedZonesByName", parameters, expected_response_content=expected
+    )
+
+
 @pytest.mark.xfail(
     reason="fails until botocore#2609 is fixed: https://github.com/boto/botocore/issues/2609"
 )
