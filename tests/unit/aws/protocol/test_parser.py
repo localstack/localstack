@@ -702,6 +702,20 @@ def test_parse_s3_with_extended_uri_pattern():
     )
 
 
+def test_parse_restjson_uri_location():
+    """
+    Tests if the parsing of uri parameters works correctly for the rest-json protocol
+    """
+    _botocore_parser_integration_test(
+        service="lambda",
+        action="AddPermission",
+        Action="lambda:InvokeFunction",
+        FunctionName="arn:aws:lambda:us-east-1:000000000000:function:test-forward-sns",
+        Principal="sns.amazonaws.com",
+        StatementId="2e25f762",
+    )
+
+
 # TODO Add additional tests (or even automate the creation)
 # - Go to the Boto3 Docs (https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/index.html)
 # - Look for boto3 request syntax definition for services that use the protocol you want to test

@@ -75,7 +75,7 @@ from abc import ABC
 from collections import OrderedDict, defaultdict
 from email.utils import parsedate_to_datetime
 from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Tuple, Union
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, unquote
 from xml.etree import ElementTree as ETree
 
 import dateutil.parser
@@ -192,7 +192,7 @@ class RequestParser(abc.ABC):
             elif location == "uri":
                 regex_group_name = shape.serialization.get("name")
                 match = path_regex.match(request.path)
-                payload = match.group(regex_group_name)
+                payload = unquote(match.group(regex_group_name))
             else:
                 raise RequestParserError("Unknown shape location '%s'." % location)
         else:
