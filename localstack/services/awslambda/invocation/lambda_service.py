@@ -1,7 +1,7 @@
 import dataclasses
 from concurrent.futures import Future
 from threading import RLock
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from localstack.services.awslambda.invocation.runtime_api import LambdaRuntimeAPI
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
@@ -15,6 +15,17 @@ class FunctionVersion:
     runtime: str  # runtime
     architecture: str  # architecture
     role: str  # lambda role
+    environment: Dict[str, str]  # Environment set when creating the function
+    handler: str
+
+
+@dataclasses.dataclass
+class LambdaRuntimeConfig:
+    """
+    Configuration of the current runtime environment
+    """
+
+    api_port: int
 
 
 class LambdaService:
@@ -22,18 +33,20 @@ class LambdaService:
     lambda_version_managers: Dict[str, LambdaVersionManager]
     lambda_version_manager_lock: RLock
     lambda_runtime_api: LambdaRuntimeAPI
+    lambda_runtime_config: LambdaRuntimeConfig
 
     def __init__(self) -> None:
         self.lambda_version_managers = {}
-        self.lambda_runtime_api = self._build_runtime_api()
+        self.lambda_runtime_api, api_port = self._build_runtime_api()
         self.lambda_version_manager_lock = RLock()
+        self.lambda_runtime_config = LambdaRuntimeConfig(api_port=api_port)
 
     # TODO do not start in the constructor? maybe a separate start method or handle the runtime api above
-    def _build_runtime_api(self) -> LambdaRuntimeAPI:
+    def _build_runtime_api(self) -> Tuple[LambdaRuntimeAPI, int]:
         port = get_free_tcp_port()
         runtime_api = LambdaRuntimeAPI(port, lambda_service=self)
         runtime_api.start()
-        return runtime_api
+        return runtime_api, port
 
     def get_lambda_version_manager(self, function_arn: str) -> LambdaVersionManager:
         """
@@ -47,7 +60,7 @@ class LambdaService:
 
         return version_manager
 
-    def create_function(self, function_version_definition: FunctionVersion):
+    def create_function_version(self, function_version_definition: FunctionVersion) -> None:
         with self.lambda_version_manager_lock:
             version_manager = self.lambda_version_managers.get(
                 function_version_definition.qualified_arn
@@ -58,7 +71,8 @@ class LambdaService:
                 )
             version_manager = LambdaVersionManager(
                 function_arn=function_version_definition.qualified_arn,
-                function_configuration=function_version_definition,
+                function_version=function_version_definition,
+                runtime_config=self.lambda_runtime_config,
             )
             self.lambda_version_managers[
                 function_version_definition.qualified_arn

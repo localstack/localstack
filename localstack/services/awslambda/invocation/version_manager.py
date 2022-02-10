@@ -4,9 +4,14 @@ import uuid
 from concurrent.futures import Future
 from datetime import datetime
 from queue import Queue
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
-from localstack.services.awslambda.invocation.lambda_service import FunctionVersion
+if TYPE_CHECKING:
+    from localstack.services.awslambda.invocation.lambda_service import (
+        FunctionVersion,
+        LambdaRuntimeConfig,
+    )
+
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
 
 LOG = logging.getLogger(__name__)
@@ -17,8 +22,8 @@ class InvocationStorage:
     invocation_id: str
     result_future: Future
     retries: int
-    payload: bytes
-    client_context: str
+    payload: Optional[bytes]
+    client_context: Optional[str]
 
 
 @dataclasses.dataclass
@@ -31,22 +36,34 @@ class RunningInvocation:
 class LambdaVersionManager:
     # arn this Lambda Version manager manages
     function_arn: str
-    function_version: FunctionVersion
+    function_version: "FunctionVersion"
     # mapping from invocation id to invocation storage
     running_invocations: Dict[str, RunningInvocation]
     running_executors: Dict[str, RuntimeExecutor]
     queued_invocations: Queue
+    reserved_concurrent_executions: int
+    runtime_config: "LambdaRuntimeConfig"
 
-    def __init__(self, function_arn: str, function_configuration: FunctionVersion):
+    def __init__(
+        self,
+        function_arn: str,
+        function_version: "FunctionVersion",
+        runtime_config: "LambdaRuntimeConfig",
+    ):
         self.function_arn = function_arn
-        self.function_configuration = function_configuration
+        self.function_configuration = function_version
+        self.runtime_config = runtime_config
         self.running_invocations = {}
         self.running_executors = {}
         self.queued_invocations = Queue()
+        self.reserved_concurrent_executions = 0
 
-    def init(self):
-        # TODO initialized reserved concurrency
+    def init(self) -> None:
+        # TODO initialize runners if applicable
         pass
+
+    def update_reserved_concurrency_config(self, reserved_concurrent_executions: int) -> None:
+        self.reserved_concurrent_executions = reserved_concurrent_executions
 
     def invoke(
         self,

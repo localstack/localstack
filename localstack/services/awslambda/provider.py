@@ -72,9 +72,6 @@ class LambdaServiceBackend(RegionBackend):
 
     provisioned_concurrency_configs: Dict[str, ProvisionedConcurrencyConfig]
 
-
-    event_invoke
-
     # static tagging service instance
     TAGS = TaggingService()
 
@@ -84,6 +81,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     validations
 
     """
+
     lambda_service: LambdaService
 
     def __init__(self) -> None:
@@ -116,7 +114,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> FunctionConfiguration:
 
         # TODO: validations
-        FunctionConfiguration(FunctionName="bla", FunctionArn="bla", Runtime="", Ver)
+        FunctionConfiguration(FunctionName="bla", FunctionArn="bla", Runtime="")
 
         # TODO: handle directly
         # publish
@@ -141,14 +139,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # TODO discuss where function data is stored - might need to be passed here
         result = self.lambda_service.invoke(
-            function_name=function_name,
-            account=context.account_id,
-            region=context.region,
+            function_arn_qualified=function_name,  # TODO replace with arn
             invocation_type=invocation_type,
             log_type=log_type,
             client_context=client_context,
             payload=payload,
-            qualifier=qualifier,
         )
         result = result.result()
         LOG.debug("Result: %s", result)

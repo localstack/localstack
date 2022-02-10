@@ -205,7 +205,7 @@ def get_main_endpoint_from_container() -> str:
     )
 
 
-def get_container_network_for_lambda():
+def get_container_network_for_lambda() -> str:
     global LAMBDA_CONTAINER_NETWORK
     if config.LAMBDA_DOCKER_NETWORK:
         return config.LAMBDA_DOCKER_NETWORK
