@@ -557,7 +557,7 @@ def test_restjson_awslambda_invoke_with_botocore():
         service="lambda",
         action="Invoke",
         headers={},
-        expected={"FunctionName": "test-function", "Payload": ""},
+        expected={"FunctionName": "test-function", "Payload": b""},
         FunctionName="test-function",
     )
 
@@ -660,6 +660,20 @@ def test_parse_opensearch_conflicting_request_uris():
         service="opensearch",
         action="DescribeDomain",
         DomainName="test-domain",
+    )
+
+
+def test_parse_appconfig_non_json_blob_payload():
+    """
+    Tests if the parsing works correctly if the request contains a blob payload shape which does not contain valid JSON.
+    """
+    _botocore_parser_integration_test(
+        service="appconfig",
+        action="CreateHostedConfigurationVersion",
+        ApplicationId="test-application-id",
+        ConfigurationProfileId="test-configuration-profile-id",
+        Content=b"<html></html>",
+        ContentType="application/html",
     )
 
 

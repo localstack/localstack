@@ -575,6 +575,7 @@ class BaseRestRequestParser(RequestParser):
     ) -> None:
         """Parses all attributes which are located in the payload / body of the incoming request."""
         payload_parsed = {}
+        non_payload_parsed = {}
         if "payload" in shape.serialization:
             # If a payload is specified in the output shape, then only that shape is used for the body payload.
             payload_member_name = shape.serialization["payload"]
@@ -582,22 +583,26 @@ class BaseRestRequestParser(RequestParser):
             if body_shape.serialization.get("eventstream"):
                 body = self._create_event_stream(request, body_shape)
                 payload_parsed[payload_member_name] = body
-            elif body_shape.type_name in ["string", "blob"]:
-                # This is a stream
+            elif body_shape.type_name == "string":
                 body = request.data
                 if isinstance(body, bytes):
                     body = body.decode(self.DEFAULT_ENCODING)
                 payload_parsed[payload_member_name] = body
+            elif body_shape.type_name == "blob":
+                payload_parsed[payload_member_name] = request.data
             else:
                 original_parsed = self._initial_body_parse(request.data)
                 payload_parsed[payload_member_name] = self._parse_shape(
                     request, body_shape, original_parsed, path_regex
                 )
+        else:
+            # The payload covers the whole body. We only parse the body if it hasn't been handled by the payload logic.
+            non_payload_parsed = self._initial_body_parse(request.data)
         # even if the payload has been parsed, the rest of the shape needs to be processed as well
-        original_parsed = self._initial_body_parse(request.data)
-        body_parsed = self._parse_shape(request, shape, original_parsed, path_regex)
+        # (for members which are located outside of the body, like uri or header)
+        non_payload_parsed = self._parse_shape(request, shape, non_payload_parsed, path_regex)
         # update the final result with the parsed body and the parsed payload (where the payload has precedence)
-        final_parsed.update(body_parsed)
+        final_parsed.update(non_payload_parsed)
         final_parsed.update(payload_parsed)
 
     def _initial_body_parse(self, body_contents: bytes) -> any:
