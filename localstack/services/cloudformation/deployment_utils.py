@@ -43,12 +43,12 @@ def param_defaults(param_func, defaults):
 
 
 def remove_none_values(params):
-    """Remove None values recursively in the given object."""
+    """Remove None values and AWS::NoValue placeholders (recursively) in the given object."""
 
     def remove_nones(o, **kwargs):
         if isinstance(o, dict):
             for k, v in dict(o).items():
-                if v is None:
+                if v in [None, PLACEHOLDER_AWS_NO_VALUE]:
                     o.pop(k)
         if isinstance(o, list):
             common.run_safe(o.remove, None)
