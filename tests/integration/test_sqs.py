@@ -108,7 +108,7 @@ class TestSqsProvider:
         assert queue_urls[1] not in result["QueueUrls"]
         assert queue_urls[2] in result["QueueUrls"]
 
-        # list queues without prefix
+        # list queues regardless of prefix prefix
         result = sqs_client.list_queues()
         assert "QueueUrls" in result
         assert len(result["QueueUrls"]) == 3
