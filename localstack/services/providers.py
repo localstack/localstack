@@ -166,20 +166,10 @@ def awslambda():
 
 @aws_provider(api="lambda", name="asf")
 def awslambda_asf():
-    from localstack.aws.proxy import AsfWithFallbackListener
-    from localstack.services.awslambda import lambda_starter
-    from localstack.services.awslambda.provider import LambdaProvider, NoopListener
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.awslambda.provider import LambdaProvider
 
-    provider = LambdaProvider()
-    listener = AsfWithFallbackListener("lambda", provider, fallback=NoopListener())
-
-    return Service(
-        "lambda",
-        listener=listener,
-        start=lambda_starter.start_lambda,
-        stop=lambda_starter.stop_lambda,
-        check=lambda_starter.check_lambda,
-    )
+    return Service("lambda", listener=AwsApiListener("lambda", LambdaProvider()))
 
 
 @aws_provider()
