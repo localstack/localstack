@@ -108,6 +108,12 @@ class TestSqsProvider:
         assert queue_urls[1] not in result["QueueUrls"]
         assert queue_urls[2] in result["QueueUrls"]
 
+        # list queues regardless of prefix prefix
+        result = sqs_client.list_queues()
+        assert "QueueUrls" in result
+        for url in queue_urls:
+            assert url in result["QueueUrls"]
+
     def test_create_queue_and_get_attributes(self, sqs_client, sqs_queue):
         result = sqs_client.get_queue_attributes(
             QueueUrl=sqs_queue, AttributeNames=["QueueArn", "CreatedTimestamp", "VisibilityTimeout"]
