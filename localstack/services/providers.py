@@ -63,9 +63,15 @@ def dynamodb():
 
 @aws_provider()
 def dynamodbstreams():
-    from localstack.services.dynamodbstreams import dynamodbstreams_starter
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.dynamodbstreams.provider import DynamoDBStreamsProvider
 
-    return Service("dynamodbstreams", start=dynamodbstreams_starter.start_dynamodbstreams)
+    provider = DynamoDBStreamsProvider()
+    return Service(
+        "dynamodbstreams",
+        listener=AwsApiListener("dynamodbstreams", provider),
+        lifecycle_hook=provider,
+    )
 
 
 @aws_provider()
