@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Dict
 
@@ -7,6 +8,9 @@ from localstack.services.cloudformation.deployment_utils import (
 )
 from localstack.services.cloudformation.service_models import GenericBaseModel
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import to_str
+
+LOG = logging.getLogger(__name__)
 
 
 class SFNActivity(GenericBaseModel):
@@ -84,6 +88,15 @@ class SFNStateMachine(GenericBaseModel):
         def _create_params(params, **kwargs):
             def _get_definition(params):
                 definition_str = params.get("DefinitionString")
+                s3_location = params.get("DefinitionS3Location")
+                if not definition_str and s3_location:
+                    # TODO: currently not covered by tests - add a test to mimick the behavior of "sam deploy ..."
+                    s3_client = aws_stack.connect_to_service("s3")
+                    LOG.debug("Fetching state machine definition from S3: %s", s3_location)
+                    result = s3_client.get_object(
+                        Bucket=s3_location["Bucket"], Key=s3_location["Key"]
+                    )
+                    definition_str = to_str(result["Body"].read())
                 substitutions = params.get("DefinitionSubstitutions")
                 if substitutions is not None:
                     definition_str = _apply_substitutions(definition_str, substitutions)
