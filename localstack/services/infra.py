@@ -285,13 +285,14 @@ def start_local_api(name, port, api, method, asynchronous=False):
 def stop_infra():
     if common.INFRA_STOPPED:
         return
-    common.INFRA_STOPPED = True
+    # also used to signal shutdown for edge proxy so that any further requests will be rejected
+    common.INFRA_STOPPED = True  # TODO: should probably be STOPPING since it isn't stopped yet
 
     event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
     analytics.log.event("infra_stop")
 
     try:
-        generic_proxy.QUIET = True
+        generic_proxy.QUIET = True  # TODO: this doesn't seem to be doing anything
         LOG.debug("[shutdown] Cleaning up services ...")
         SERVICE_PLUGINS.stop_all_services()
         LOG.debug("[shutdown] Cleaning up files ...")
