@@ -313,6 +313,10 @@ class ServiceManager:
             if not poll_condition(lambda: container.state != ServiceState.STARTING, timeout=30):
                 raise TimeoutError("gave up waiting for service %s to start" % name)
 
+        if container.state == ServiceState.STOPPING:
+            if not poll_condition(lambda: container.state == ServiceState.STOPPED, timeout=30):
+                raise TimeoutError("gave up waiting for service %s to stop" % name)
+
         with container.lock:
             if container.state == ServiceState.DISABLED:
                 raise ServiceDisabled("service %s is disabled" % name)
@@ -324,7 +328,7 @@ class ServiceManager:
                 # raise any capture error
                 raise container.errors[-1]
 
-            if container.state == ServiceState.AVAILABLE:
+            if container.state == ServiceState.AVAILABLE or container.state == ServiceState.STOPPED:
                 if container.start():
                     return container.service
                 else:

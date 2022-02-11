@@ -219,6 +219,10 @@ class ClusterEndpoint(FakeEndpointProxyServer):
     def health(self):
         return super().health() and self.cluster.health()
 
+    def do_shutdown(self):
+        super(FakeEndpointProxyServer, self).do_shutdown()
+        self.cluster.shutdown()
+
 
 def _get_port_from_url(url: str) -> int:
     return int(url.split(":")[2])
@@ -263,8 +267,9 @@ class MultiplexingClusterManager(ClusterManager):
                     self.cluster.start()  # start may block during install
 
                 start_thread(_start_async)
-
-        return ClusterEndpoint(self.cluster, EndpointProxy(url, self.cluster.url))
+            cluster_endpoint = ClusterEndpoint(self.cluster, EndpointProxy(url, self.cluster.url))
+            self.clusters[arn] = cluster_endpoint
+            return cluster_endpoint
 
     def remove(self, arn: str):
         super().remove(arn)  # removes the fake server

@@ -27,7 +27,7 @@ from localstack.services.infra import PROXY_LISTENERS
 from localstack.services.plugins import SERVICE_PLUGINS
 from localstack.services.s3.s3_utils import uses_host_addressing
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
-from localstack.utils import persistence
+from localstack.utils import common, persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import is_internal_call_context, set_default_region_in_headers
 from localstack.utils.aws.request_routing import extract_version_and_action, matches_service_action
@@ -73,6 +73,9 @@ class ProxyListenerEdge(ProxyListener):
         self.service_manager = service_manager or SERVICE_PLUGINS
 
     def forward_request(self, method, path, data, headers):
+
+        if common.INFRA_STOPPED:
+            return 503
 
         if config.EDGE_FORWARD_URL:
             return do_forward_request_network(

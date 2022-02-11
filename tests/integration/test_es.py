@@ -5,7 +5,7 @@ import botocore.exceptions
 import pytest
 
 from localstack import config
-from localstack.constants import OPENSEARCH_DEFAULT_VERSION
+from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, OPENSEARCH_DEFAULT_VERSION
 from localstack.services.install import install_elasticsearch, install_opensearch
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread
@@ -102,29 +102,21 @@ class TestElasticsearchProvider:
         # The default version is the latest version, which is not compatible with any previous versions
         assert len(versions) == 0
 
-    def test_create_domain(self, es_client):
-        domain_name = f"es-domain-{short_uid()}"
-        try:
+    def test_create_domain(self, es_client, opensearch_create_domain):
+        es_domain = opensearch_create_domain(EngineVersion=ELASTICSEARCH_DEFAULT_VERSION)
+        response = es_client.list_domain_names(EngineType="Elasticsearch")
+        domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+        assert es_domain in domain_names
+
+    def test_create_existing_domain_causes_exception(self, es_client, opensearch_create_domain):
+        domain_name = opensearch_create_domain(EngineVersion=ELASTICSEARCH_DEFAULT_VERSION)
+
+        with pytest.raises(botocore.exceptions.ClientError) as exc_info:
             es_client.create_elasticsearch_domain(DomainName=domain_name)
+        assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
 
-            response = es_client.list_domain_names(EngineType="Elasticsearch")
-            domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
-
-            assert domain_name in domain_names
-        finally:
-            es_client.delete_elasticsearch_domain(DomainName=domain_name)
-
-    def test_create_existing_domain_causes_exception(self, es_client):
-        domain_name = f"es-domain-{short_uid()}"
-        try:
-            es_client.create_elasticsearch_domain(DomainName=domain_name)
-            with pytest.raises(botocore.exceptions.ClientError) as exc_info:
-                es_client.create_elasticsearch_domain(DomainName=domain_name)
-            assert exc_info.type.__name__ == "ResourceAlreadyExistsException"
-        finally:
-            es_client.delete_elasticsearch_domain(DomainName=domain_name)
-
-    def test_describe_domains(self, es_client, opensearch_domain):
+    def test_describe_domains(self, es_client, opensearch_create_domain):
+        opensearch_domain = opensearch_create_domain(EngineVersion=ELASTICSEARCH_DEFAULT_VERSION)
         response = es_client.describe_elasticsearch_domains(DomainNames=[opensearch_domain])
         assert len(response["DomainStatusList"]) == 1
         assert response["DomainStatusList"][0]["DomainName"] == opensearch_domain
@@ -135,7 +127,7 @@ class TestElasticsearchProvider:
         status = response["DomainStatus"]
         assert "ElasticsearchVersion" in status
         assert status["ElasticsearchVersion"] == OPENSEARCH_DEFAULT_VERSION
-        domain_name = opensearch_create_domain(EngineVersion="Elasticsearch_7.10")
+        domain_name = opensearch_create_domain(EngineVersion=ELASTICSEARCH_DEFAULT_VERSION)
         response = es_client.describe_elasticsearch_domain(DomainName=domain_name)
         assert "DomainStatus" in response
         status = response["DomainStatus"]
