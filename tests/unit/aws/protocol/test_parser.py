@@ -701,9 +701,7 @@ def test_parse_s3_with_extended_uri_pattern():
 
 
 def test_parse_restjson_uri_location():
-    """
-    Tests if the parsing of uri parameters works correctly for the rest-json protocol
-    """
+    """Tests if the parsing of uri parameters works correctly for the rest-json protocol"""
     _botocore_parser_integration_test(
         service="lambda",
         action="AddPermission",
@@ -711,6 +709,27 @@ def test_parse_restjson_uri_location():
         FunctionName="arn:aws:lambda:us-east-1:000000000000:function:test-forward-sns",
         Principal="sns.amazonaws.com",
         StatementId="2e25f762",
+    )
+
+
+def test_parse_restjson_header_parsing():
+    """Tests parsing shapes from the header location."""
+    _botocore_parser_integration_test(
+        service="ebs",
+        action="CompleteSnapshot",
+        SnapshotId="123",
+        ChangedBlocksCount=5,
+        Checksum="test-checksum-header-field",
+    )
+
+
+def test_parse_restjson_querystring_list_parsing():
+    """Tests the parsing of lists of shapes with location querystring."""
+    _botocore_parser_integration_test(
+        service="amplify",
+        action="UntagResource",
+        resourceArn="arn:aws:lambda:us-east-1:000000000000:function:test-forward-sns",
+        tagKeys=["Tag1", "Tag2"],
     )
 
 

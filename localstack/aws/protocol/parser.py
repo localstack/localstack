@@ -66,8 +66,8 @@ When implementing services with these parsers, some edge cases might
 not work out-of-the-box.
 """
 import abc
+import ast
 import base64
-import copy
 import datetime
 import json
 import re
@@ -167,16 +167,7 @@ class RequestParser(abc.ABC):
         if location is not None:
             if location == "header":
                 header_name = shape.serialization.get("name")
-                if header_name in request.headers:
-                    # set the location to None to avoid an unlimited recursion with header parameters
-                    copied_shape = copy.deepcopy(shape)
-                    copied_shape.serialization["location"] = None
-                    payload = self._parse_shape(
-                        request, copied_shape, request.headers[header_name], path_regex
-                    )
-                else:
-                    # if header is optional and not set
-                    payload = None
+                payload = request.headers.get(header_name)
             elif location == "headers":
                 payload = self._parse_header_map(shape, request.headers)
             elif location == "querystring":
@@ -208,6 +199,10 @@ class RequestParser(abc.ABC):
     def _parse_list(
         self, request: HttpRequest, shape: ListShape, node: list, path_regex: Pattern[str] = None
     ):
+        if isinstance(node, str):
+            # If the incoming node is an instance of string, the list has not properly been parsed
+            # (for example when a list is extracted from a query string)
+            node = ast.literal_eval(node)
         parsed = []
         member_shape = shape.member
         for item in node:
