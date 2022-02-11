@@ -90,6 +90,7 @@ class SFNStateMachine(GenericBaseModel):
                 definition_str = params.get("DefinitionString")
                 s3_location = params.get("DefinitionS3Location")
                 if not definition_str and s3_location:
+                    # TODO: currently not covered by tests - add a test to mimick the behavior of "sam deploy ..."
                     s3_client = aws_stack.connect_to_service("s3")
                     LOG.debug("Fetching state machine definition from S3: %s", s3_location)
                     result = s3_client.get_object(
