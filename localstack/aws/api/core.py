@@ -219,7 +219,9 @@ class RequestContext:
         return ServiceOperation(self.service.service_name, self.operation.name)
 
 
-ServiceRequestHandler = Callable[[RequestContext, ServiceRequest], Optional[ServiceResponse]]
+ServiceRequestHandler = Callable[
+    [RequestContext, ServiceRequest], Optional[Union[ServiceResponse, HttpResponse]]
+]
 
 
 def handler(operation: str = None, context: bool = True, expand: bool = True):
