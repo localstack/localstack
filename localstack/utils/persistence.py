@@ -225,14 +225,14 @@ class StartupInfo(NamedTuple):
 
 
 def save_startup_info():
-    from localstack_ext.constants import VERSION as LOCALSTACK_EXT_VERSION
+    from localstack_ext import __version__ as localstack_ext_version
 
     file_path = os.path.join(config.dirs.data, STARTUP_INFO_FILE)
 
     info = StartupInfo(
         timestamp=datetime.datetime.now().isoformat(),
         localstack_version=constants.VERSION,
-        localstack_ext_version=LOCALSTACK_EXT_VERSION,
+        localstack_ext_version=localstack_ext_version,
         pro_activated=is_env_true(constants.ENV_PRO_ACTIVATED),
     )
     LOG.debug("saving startup info %s", info)

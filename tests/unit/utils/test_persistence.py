@@ -1,8 +1,9 @@
 import json
 
-from localstack_ext import constants as ext_constants
+from localstack_ext import __version__ as localstack_ext_version
 
-from localstack import config, constants
+from localstack import __version__ as localstack_version
+from localstack import config
 from localstack.utils.persistence import (
     STARTUP_INFO_FILE,
     StartupInfo,
@@ -64,6 +65,6 @@ class TestStartupInfo:
         d = doc[0]
 
         assert d["timestamp"]
-        assert d["localstack_version"] == constants.VERSION
-        assert d["localstack_ext_version"] == ext_constants.VERSION
+        assert d["localstack_version"] == localstack_version
+        assert d["localstack_ext_version"] == localstack_ext_version
         assert d["pro_activated"] in [False, True]
