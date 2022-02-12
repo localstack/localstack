@@ -82,7 +82,7 @@ TARGET_REGEX_S3_URI = (
 )
 # regex path pattern for user requests
 PATH_REGEX_USER_REQUEST = (
-    r"^/restapis/([A-Za-z0-9_\-]+)(?:/([A-Za-z0-9_\/-]+))?/%s/(.*)$" % PATH_USER_REQUEST
+    r"^/restapis/([A-Za-z0-9_\-]+)(?:/([A-Za-z0-9_\-]+))?/%s/(.*)$" % PATH_USER_REQUEST
 )
 # URL pattern for invocations
 HOST_REGEX_EXECUTE_API = (
