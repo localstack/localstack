@@ -3,9 +3,9 @@ from unittest import mock
 import requests
 
 from localstack.constants import VERSION
+from localstack.http import Request
 from localstack.services.internal import HealthResource, LocalstackResourceHandler
 from localstack.services.plugins import ServiceManager, ServiceState
-from localstack.services.routing import Request
 from localstack.utils.testutil import proxy_server
 
 
@@ -20,12 +20,11 @@ class TestHealthResource:
             Request(
                 "PUT",
                 "/",
-                b'{"features:initScripts": "initializing","features:persistence": "disabled"}',
-                {},
+                body=b'{"features:initScripts": "initializing","features:persistence": "disabled"}',
             )
         )
 
-        state = resource.on_get(Request("GET", "/", b"None", {}))
+        state = resource.on_get(Request("GET", "/", body=b"None"))
 
         assert state == {
             "features": {
@@ -48,14 +47,13 @@ class TestHealthResource:
             Request(
                 "PUT",
                 "/",
-                b'{"features:initScripts": "initializing","features:persistence": "disabled"}',
-                {},
+                body=b'{"features:initScripts": "initializing","features:persistence": "disabled"}',
             )
         )
 
-        resource.on_put(Request("PUT", "/", b'{"features:initScripts": "initialized"}', {}))
+        resource.on_put(Request("PUT", "/", body=b'{"features:initScripts": "initialized"}'))
 
-        state = resource.on_get(Request("GET", "/", b"None", {}))
+        state = resource.on_get(Request("GET", "/", body=b"None"))
 
         assert state == {
             "features": {
