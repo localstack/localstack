@@ -84,7 +84,7 @@ def proxy_moto(context: RequestContext) -> HttpResponse:
 def MotoFallbackDispatcher(provider: object) -> DispatchTable:
     """
     Wraps a provider with a moto fallthrough mechanism. It does by creating a new DispatchTable from the original
-    provider, and wrapping each method with a fallthrough method that calls ``reqest`` if the original provider
+    provider, and wrapping each method with a fallthrough method that calls ``request`` if the original provider
     raises a ``NotImplementedError``.
 
     :param provider: the ASF provider
@@ -120,7 +120,7 @@ def dispatch_to_moto(context: RequestContext) -> MotoResponse:
     request = context.request
 
     # hack to avoid call to request.form (see moto's BaseResponse.dispatch)
-    setattr(request, "body", request.data)
+    request.body = request.data
 
     # this is where we skip the HTTP roundtrip between the moto server and the boto client
     dispatch = get_dispatcher(service.service_name, request.path)
