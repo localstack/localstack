@@ -302,6 +302,10 @@ def test_query_serializer_sqs_empty_return_shape_with_botocore():
     _botocore_serializer_integration_test("sqs", "SetQueueAttributes", {})
 
 
+def test_xml_serializer_cloudfront_empty_return_shape_with_botocore():
+    _botocore_serializer_integration_test("cloudfront", "DeleteDistribution", {}, status_code=204)
+
+
 def test_query_serializer_sqs_flattened_list_with_botocore():
     response = {
         "QueueUrls": [

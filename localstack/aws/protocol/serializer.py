@@ -333,6 +333,8 @@ class BaseXMLResponseSerializer(ResponseSerializer):
                     )
                 )
         else:
+            if shape is None and operation_model.service_model.protocol == "rest-xml":
+                return
             # Otherwise, we use the "traditional" way of serializing the whole parameters dict recursively.
             response.data = self._encode_payload(
                 self._serialize_body_params(parameters, shape, operation_model)
