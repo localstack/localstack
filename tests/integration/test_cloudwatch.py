@@ -7,7 +7,7 @@ import requests
 from dateutil.tz import tzutc
 
 from localstack import config
-from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
+from localstack.services.cloudwatch.provider import PATH_GET_RAW_METRICS
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry, short_uid, to_str
 

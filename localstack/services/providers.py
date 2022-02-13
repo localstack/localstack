@@ -1,4 +1,4 @@
-from localstack.aws.proxy import AsfWithFallbackListener
+from localstack.aws.proxy import AwsApiListener
 from localstack.services.plugins import Service, aws_provider
 
 
@@ -36,20 +36,16 @@ def awsconfig():
 
 @aws_provider()
 def cloudwatch():
-    from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
     from localstack.services.cloudwatch.provider import CloudwatchProvider
     from localstack.services.moto import MotoFallbackDispatcher
 
-    listener = AsfWithFallbackListener(
-        "cloudwatch",
-        MotoFallbackDispatcher(CloudwatchProvider()),  # ASF provider that falls through to moto
-        cloudwatch_listener.UPDATE_CLOUD_WATCH,  # if both moto and ASF fail, invoke the fallback listener
-    )
+    provider = CloudwatchProvider()
+    listener = AwsApiListener("cloudwatch", MotoFallbackDispatcher(provider))
 
     return Service(
         "cloudwatch",
         listener=listener,
-        start=cloudwatch_starter.start_cloudwatch,
+        lifecycle_hook=provider,
     )
 
 

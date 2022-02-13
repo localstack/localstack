@@ -23,7 +23,6 @@ from localstack.constants import (
 )
 from localstack.http import Router
 from localstack.http.dispatcher import Handler, handler_dispatcher
-from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.services.plugins import SERVICE_PLUGINS
@@ -452,10 +451,6 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     if _in_path_or_payload("Action=AssumeRole"):
         return "sts", config.service_port("sts")
-
-    # CloudWatch backdoor API to retrieve raw metrics
-    if path.startswith(PATH_GET_RAW_METRICS):
-        return "cloudwatch", config.service_port("cloudwatch")
 
     # SQS queue requests
     if _in_path_or_payload("QueueUrl=") and _in_path_or_payload("Action="):
