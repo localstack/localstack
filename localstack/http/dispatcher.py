@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Protocol, Union
 
 from werkzeug.exceptions import MethodNotAllowed
 
@@ -7,6 +7,9 @@ from .response import Response
 from .router import Dispatcher, RequestArguments
 
 ResultValue = Union[
+    Response,
+    str,
+    bytes,
     Dict[str, Any],  # a JSON dict
 ]
 
@@ -63,5 +66,29 @@ def resource_dispatcher(pass_response: bool = False) -> Dispatcher:
             return response
         else:
             raise MethodNotAllowed()
+
+    return _dispatch
+
+
+class Handler(Protocol):
+    def __call__(self, request: Request, **kwargs) -> ResultValue:
+        ...
+
+
+def handler_dispatcher() -> Dispatcher:
+    """
+    Creates a Dispatcher that treats endpoints like callables of the Handler Protocol.
+
+    :return: a new dispatcher
+    """
+
+    def _dispatch(request: Request, endpoint: Handler, args: RequestArguments) -> Response:
+        result = endpoint(request, **args)
+        if isinstance(result, Response):
+            return result
+        response = Response()
+        if result is not None:
+            _populate_response(response, result)
+        return response
 
     return _dispatch
