@@ -331,7 +331,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
                         body_params, shape_members[payload_member], operation_model
                     )
                 )
-        else:
+        elif shape is not None:
             # Otherwise, we use the "traditional" way of serializing the whole parameters dict recursively.
             response.data = self._encode_payload(
                 self._serialize_body_params(parameters, shape, operation_model)

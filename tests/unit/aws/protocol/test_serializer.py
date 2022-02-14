@@ -876,6 +876,10 @@ def test_ec2_protocol_custom_error_serialization():
     )
 
 
+def test_restxml_without_output_shape():
+    _botocore_serializer_integration_test("cloudfront", "DeleteDistribution", {}, status_code=204)
+
+
 # TODO Add additional tests (or even automate the creation)
 # - Go to the AWS CLI reference (https://docs.aws.amazon.com)
 # - Look at the CLI reference for APIs that use the protocol you want to test
