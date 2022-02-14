@@ -3,12 +3,7 @@ import logging
 import time
 from datetime import datetime
 
-import six
-
 from localstack.utils.common import timestamp_millis
-
-if six.PY3:
-    long = int
 
 LOG = logging.getLogger(__name__)
 
@@ -118,7 +113,7 @@ class KinesisShard(Component):
             c.print_tree(indent=indent + "   ")
 
     def length(self):
-        return long(self.end_key) - long(self.start_key)
+        return int(self.end_key) - int(self.start_key)
 
     def percent(self):
         return 100.0 * self.length() / float(KinesisShard.MAX_KEY)
@@ -135,8 +130,8 @@ class KinesisShard(Component):
     @staticmethod
     def sort(shards):
         def compare(x, y):
-            s1 = long(x.start_key)
-            s2 = long(y.start_key)
+            s1 = int(x.start_key)
+            s2 = int(y.start_key)
             if s1 < s2:
                 return -1
             elif s1 > s2:
@@ -149,7 +144,7 @@ class KinesisShard(Component):
     @staticmethod
     def max(shards):
         max_shard = None
-        max_length = long(0)
+        max_length = int(0)
         for s in shards:
             if s.length() > max_length:
                 max_shard = s
@@ -452,4 +447,4 @@ class EventSource(Component):
 
     @staticmethod
     def filter_type(pool, type):
-        return [obj for obj in six.itervalues(pool) if isinstance(obj, type)]
+        return [obj for obj in pool.values() if isinstance(obj, type)]

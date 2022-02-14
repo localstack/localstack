@@ -4,8 +4,6 @@ import re
 import tempfile
 from typing import Dict, List
 
-from six import iteritems
-
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import (
     DynamoDB,
@@ -485,7 +483,7 @@ def extract_endpoints(code_map, pool=None):
         pool = {}
     result = []
     identifiers = []
-    for key, code in iteritems(code_map):
+    for key, code in code_map.items():
         # Elasticsearch references
         pattern = r'[\'"](.*\.es\.amazonaws\.com)[\'"]'
         for es in re.findall(pattern, code):

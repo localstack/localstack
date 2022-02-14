@@ -12,7 +12,8 @@ import unittest
 import uuid
 from io import BytesIO
 from unittest.mock import patch
-from urllib.parse import parse_qs, quote
+from urllib.parse import parse_qs, quote, urlparse
+from urllib.request import Request, urlopen
 
 import boto3
 import pytest
@@ -21,8 +22,6 @@ from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from pytz import timezone
-from six.moves.urllib import parse as urlparse
-from six.moves.urllib.request import Request, urlopen
 
 from localstack import config, constants
 from localstack.constants import (
@@ -1965,7 +1964,7 @@ class TestS3(unittest.TestCase):
         expires = 4
 
         def make_v2_url_invalid(url):
-            parsed = urlparse.urlparse(url)
+            parsed = urlparse(url)
             query_params = parse_qs(parsed.query)
             url = "{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}".format(
                 url_prefix,
@@ -1977,7 +1976,7 @@ class TestS3(unittest.TestCase):
             return url
 
         def make_v4_url_invalid(url):
-            parsed = urlparse.urlparse(url)
+            parsed = urlparse(url)
             query_params = parse_qs(parsed.query)
             url = (
                 "{}/{}?X-Amz-Algorithm=AWS4-HMAC-SHA256&"

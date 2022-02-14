@@ -11,7 +11,6 @@ from typing import Dict, List
 from urllib.parse import parse_qs, urlparse
 
 import requests
-import six
 import xmltodict
 from flask import Response as FlaskResponse
 from moto.sns.exceptions import DuplicateSnsEndpointError
@@ -906,10 +905,6 @@ def make_error(message, code=400, code_string="InvalidParameter"):
 def create_sns_message_body(subscriber, req_data, message_id=None):
     message = req_data["Message"][0]
     protocol = subscriber["Protocol"]
-
-    if six.PY2 and type(message).__name__ == "unicode":
-        # fix non-ascii unicode characters under Python 2
-        message = message.encode("raw-unicode-escape")
 
     if req_data.get("MessageStructure") == ["json"]:
         message = json.loads(message)

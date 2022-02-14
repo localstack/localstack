@@ -8,7 +8,6 @@ import tempfile
 import time
 from typing import Any, Dict, List, Mapping, Tuple
 
-import six
 from boto3 import Session
 
 from localstack.constants import (
@@ -756,7 +755,7 @@ SERVICE_PORTS = parse_service_ports()
 def populate_config_env_var_names():
     global CONFIG_ENV_VARS
 
-    for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
+    for key, value in DEFAULT_SERVICE_PORTS.items():
         clean_key = key.upper().replace("-", "_")
         CONFIG_ENV_VARS += [
             clean_key + "_BACKEND",

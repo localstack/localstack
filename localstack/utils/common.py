@@ -33,7 +33,6 @@ from urllib.parse import parse_qs, urlparse
 import cachetools
 import dns.resolver
 import requests
-import six
 from requests import Response
 from requests.models import CaseInsensitiveDict
 
@@ -137,7 +136,7 @@ class CustomEncoder(json.JSONEncoder):
                 return bool(o.value)
             return str(o.value)
         try:
-            if isinstance(o, six.binary_type):
+            if isinstance(o, bytes):
                 return to_str(o)
             return super(CustomEncoder, self).default(o)
         except Exception:
@@ -705,17 +704,17 @@ def prevent_stack_overflow(match_parameters=False):
 
 
 def is_string(s, include_unicode=True, exclude_binary=False):
-    if isinstance(s, six.binary_type) and exclude_binary:
+    if isinstance(s, bytes) and exclude_binary:
         return False
     if isinstance(s, str):
         return True
-    if include_unicode and isinstance(s, six.text_type):
+    if include_unicode and isinstance(s, str):
         return True
     return False
 
 
 def is_string_or_bytes(s):
-    return is_string(s) or isinstance(s, six.string_types) or isinstance(s, bytes)
+    return is_string(s) or isinstance(s, str) or isinstance(s, bytes)
 
 
 def is_base64(s):
@@ -797,7 +796,7 @@ def is_port_open(
     host = "localhost"
     protocol = "http"
     protocols = protocols if isinstance(protocols, list) else [protocols]
-    if isinstance(port, six.string_types):
+    if isinstance(port, str):
         url = urlparse(port_or_url)
         port = url.port
         host = url.hostname
@@ -947,7 +946,7 @@ def to_unique_items_list(inputs, comparator=None):
 def timestamp(time=None, format: str = TIMESTAMP_FORMAT) -> str:
     if not time:
         time = datetime.utcnow()
-    if isinstance(time, six.integer_types + (float,)):
+    if isinstance(time, (int, float)):
         time = datetime.fromtimestamp(time)
     return time.strftime(format)
 
@@ -1589,7 +1588,7 @@ def extract_from_jsonpointer_path(target, path: str, delimiter: str = "/", auto_
 
 def save_file(file, content, append=False, permissions=None):
     mode = "a" if append else "w+"
-    if not isinstance(content, six.string_types):
+    if not isinstance(content, str):
         mode = mode + "b"
 
     def _opener(path, flags):
@@ -1635,13 +1634,13 @@ def replace_in_file(search, replace, file_path):
 def to_str(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> str:
     """If ``obj`` is an instance of ``binary_type``, return
     ``obj.decode(encoding, errors)``, otherwise return ``obj``"""
-    return obj.decode(encoding, errors) if isinstance(obj, six.binary_type) else obj
+    return obj.decode(encoding, errors) if isinstance(obj, bytes) else obj
 
 
 def to_bytes(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> bytes:
     """If ``obj`` is an instance of ``text_type``, return
     ``obj.encode(encoding, errors)``, otherwise return ``obj``"""
-    return obj.encode(encoding, errors) if isinstance(obj, six.text_type) else obj
+    return obj.encode(encoding, errors) if isinstance(obj, str) else obj
 
 
 def str_to_bool(value):
@@ -2126,7 +2125,7 @@ class NetrcBypassAuth(requests.auth.AuthBase):
         return r
 
 
-class _RequestsSafe(type):
+class _RequestsSafe:
     """Wrapper around requests library, which can prevent it from verifying
     SSL certificates or reading credentials from ~/.netrc file"""
 
@@ -2146,6 +2145,10 @@ class _RequestsSafe(type):
             return method(*args, **kwargs)
 
         return _wrapper
+
+
+# create safe_requests instance
+safe_requests = _RequestsSafe()
 
 
 class FileListener:
@@ -2228,26 +2231,12 @@ class FileListener:
         return FuncThread(func=_run_follow, on_stop=lambda *_: tailer.close())
 
 
-# create class-of-a-class
-class safe_requests(six.with_metaclass(_RequestsSafe)):
-    pass
-
-
 def make_http_request(
     url: str, data: Union[bytes, str] = None, headers: Dict[str, str] = None, method: str = "GET"
 ) -> Response:
     return requests.request(
         url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
     )
-
-
-class SafeStringIO(io.StringIO):
-    """Safe StringIO implementation that doesn't fail if str is passed in Python 2."""
-
-    def write(self, obj):
-        if six.PY2 and isinstance(obj, str):
-            obj = obj.decode("unicode-escape")
-        return super(SafeStringIO, self).write(obj)
 
 
 def clean_cache(file_pattern=CACHE_FILE_PATTERN, last_clean_time=None, max_age=CACHE_MAX_AGE):
