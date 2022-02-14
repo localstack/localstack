@@ -363,6 +363,15 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def remove_image(self, image: str, force: bool = True) -> None:
+        """Removes an image with given name
+
+        :param image: Image name and tag
+        :param force: Force removal
+        """
+        pass
+
+    @abstractmethod
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
         """List all containers matching the given filters
 
@@ -650,6 +659,22 @@ class CmdDockerClient(ContainerClient):
         except subprocess.CalledProcessError as e:
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
+    def remove_image(self, image: str, force: bool = True) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["rmi", image]
+        if force:
+            cmd += ["--force"]
+        LOG.debug("Removing image %s %s", image, "(forced)" if force else "")
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such image" in to_str(e.stdout):
+                raise NoSuchImage(image, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -1543,6 +1568,14 @@ class SdkDockerClient(ContainerClient):
             return True
         except APIError:
             return False
+
+    def remove_image(self, image: str, force: bool = True):
+        LOG.debug("Removing image %s %s", image, "(forced)" if force else "")
+        try:
+            self.client().images.remove(image=image, force=force)
+        except ImageNotFound:
+            if not force:
+                raise NoSuchImage(image)
 
     def commit(
         self,
