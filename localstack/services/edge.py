@@ -657,7 +657,8 @@ def run_process_as_sudo(component, port, asynchronous=False, env_vars=None):
         sudo_cmd,
         env_vars_str,
         python_cmd,
-        __file__,
+        "-m",
+        "localstack.services.edge",
         component,
         str(port),
     ]
