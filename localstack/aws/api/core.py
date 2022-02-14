@@ -2,7 +2,7 @@ import functools
 import json
 import sys
 from io import BytesIO
-from typing import IO, Any, Callable, Dict, NamedTuple, Optional, Type, Union
+from typing import IO, Any, Callable, Dict, NamedTuple, Optional, Tuple, Type, Union
 
 from localstack.utils.common import to_bytes
 
@@ -70,6 +70,7 @@ class HttpRequest(_SansIORequest):
         root_path: str = "/",
         query_string: Union[bytes, str] = b"",
         remote_addr: str = None,
+        server: Optional[Tuple[str, Optional[int]]] = None,
     ):
         if not headers:
             self.headers = Headers()
@@ -88,7 +89,7 @@ class HttpRequest(_SansIORequest):
         super(HttpRequest, self).__init__(
             method=method,
             scheme=scheme,
-            server=("127.0.0.1", None),
+            server=server or ("127.0.0.1", None),
             root_path=root_path,
             path=path,
             query_string=to_bytes(query_string),
@@ -218,7 +219,9 @@ class RequestContext:
         return ServiceOperation(self.service.service_name, self.operation.name)
 
 
-ServiceRequestHandler = Callable[[RequestContext, ServiceRequest], Optional[ServiceResponse]]
+ServiceRequestHandler = Callable[
+    [RequestContext, ServiceRequest], Optional[Union[ServiceResponse, HttpResponse]]
+]
 
 
 def handler(operation: str = None, context: bool = True, expand: bool = True):
