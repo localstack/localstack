@@ -941,6 +941,20 @@ class TestDockerClient:
         assert is_ipv4_address(ip)
         assert "127.0.0.1" != ip
 
+    def test_commit_creates_image_from_running_container(self, docker_client: ContainerClient):
+        container_name = _random_container_name()
+        try:
+            docker_client.run_container(
+                "alpine",
+                name=container_name,
+                command=["sleep", "60"],
+                detach=True,
+            )
+            docker_client.commit(container_name, "lorem", "ipsum")
+            assert "lorem:ipsum" in docker_client.get_docker_image_names()
+        finally:
+            docker_client.remove_container(container_name)
+
     def test_get_container_ip_with_network(
         self, docker_client: ContainerClient, create_container, create_network
     ):
