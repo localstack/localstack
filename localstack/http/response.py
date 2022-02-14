@@ -3,6 +3,8 @@ from typing import Dict
 
 from werkzeug.wrappers import Response as WerkzeugResponse
 
+from localstack.utils.common import CustomEncoder
+
 
 class Response(WerkzeugResponse):
     """
@@ -15,7 +17,7 @@ class Response(WerkzeugResponse):
         self.headers.update(other.headers)
 
     def set_json(self, doc: Dict):
-        self.data = json.dumps(doc)
+        self.data = json.dumps(doc, cls=CustomEncoder)
         self.mimetype = "application/json"
 
     def to_readonly_response_dict(self) -> Dict:
