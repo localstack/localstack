@@ -8,7 +8,7 @@ from unittest.mock import patch
 from botocore.exceptions import ClientError
 
 from localstack import config
-from localstack.services.apigateway.helpers import gateway_request_url
+from localstack.services.apigateway.helpers import path_based_url
 from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (
     BATCH_SIZE_RANGES,
@@ -324,7 +324,7 @@ class TestLambdaHttpInvocation(unittest.TestCase):
         )
 
         api_id = result["id"]
-        url = gateway_request_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path=lambda_path)
+        url = path_based_url(api_id=api_id, stage_name=TEST_STAGE_NAME, path=lambda_path)
         result = safe_requests.post(
             url, data=b"{}", headers={"User-Agent": "python-requests/testing"}
         )
