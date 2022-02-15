@@ -12,7 +12,12 @@ from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
+from localstack.constants import (
+    APPLICATION_JSON,
+    LOCALHOST_HOSTNAME,
+    PATH_USER_REQUEST,
+    TEST_AWS_ACCOUNT_ID,
+)
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
@@ -867,13 +872,26 @@ def find_api_subentity_by_id(api_id, entity_id, map_name):
     return entity
 
 
-def gateway_request_url(api_id, stage_name, path):
+def path_based_url(api_id, stage_name, path):
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
     pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
         config.service_url("apigateway"),
         PATH_USER_REQUEST,
     )
     return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
+
+
+def host_based_url(rest_api_id: str, path: str, stage_name: str = None):
+    """Return URL for inbound API gateway for given API ID, stage name, and path with custom dns
+    format"""
+    pattern = "http://{endpoint}{stage}{path}"
+    stage = stage_name and f"/{stage_name}" or ""
+    return pattern.format(endpoint=get_execute_api_endpoint(rest_api_id), stage=stage, path=path)
+
+
+def get_execute_api_endpoint(api_id: str, protocol: str = "") -> str:
+    port = config.get_edge_port_http()
+    return f"{protocol}{api_id}.execute-api.{LOCALHOST_HOSTNAME}:{port}"
 
 
 def tokenize_path(path):

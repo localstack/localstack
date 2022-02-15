@@ -24,9 +24,9 @@ from localstack.constants import (
 from localstack.services.apigateway.helpers import (
     TAG_KEY_CUSTOM_ID,
     connect_api_gateway_to_sqs,
-    gateway_request_url,
     get_resource_for_path,
     get_rest_api_paths,
+    path_based_url,
 )
 from localstack.services.awslambda.lambda_api import add_event_source
 from localstack.services.awslambda.lambda_utils import (
@@ -154,7 +154,7 @@ class TestAPIGateway(unittest.TestCase):
             ]
         }
 
-        url = gateway_request_url(
+        url = path_based_url(
             api_id=result["id"],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_DATA_INBOUND,
@@ -200,7 +200,7 @@ class TestAPIGateway(unittest.TestCase):
         # generate test data
         test_data = {"spam": "eggs & beans"}
 
-        url = gateway_request_url(
+        url = path_based_url(
             api_id=result["id"],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_DATA_INBOUND,
@@ -238,7 +238,7 @@ class TestAPIGateway(unittest.TestCase):
         # generate test data
         test_data = {"spam": "eggs"}
 
-        url = gateway_request_url(
+        url = path_based_url(
             api_id=result["id"],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_DATA_INBOUND,
@@ -267,7 +267,7 @@ class TestAPIGateway(unittest.TestCase):
             int_type, "test_gateway2", backend_url, path=self.API_PATH_HTTP_BACKEND
         )
 
-        url = gateway_request_url(
+        url = path_based_url(
             api_id=result["id"],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_HTTP_BACKEND,
@@ -372,9 +372,7 @@ class TestAPIGateway(unittest.TestCase):
         path_with_replace = path.replace("{test_param1}", "foo1")
         path_with_params = path_with_replace + "?foo=foo&bar=bar&bar=baz"
 
-        url = gateway_request_url(
-            api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path_with_params
-        )
+        url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path_with_params)
 
         # These values get read in `lambda_integration.py`
         data = {"return_status_code": 203, "return_headers": {"foo": "bar123"}}
@@ -576,7 +574,7 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(target_uri, rs["uri"])
 
         # invoke the gateway endpoint
-        url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/test")
+        url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/test")
         response = requests.get("%s?param1=foobar" % url)
         self.assertLess(response.status_code, 400)
         content = response.json()
@@ -655,7 +653,7 @@ class TestAPIGateway(unittest.TestCase):
 
         # make test request to gateway and check response
         path = path.replace("{test_param1}", "foo1")
-        url = gateway_request_url(api_id=result["id"], stage_name=self.TEST_STAGE_NAME, path=path)
+        url = path_based_url(api_id=result["id"], stage_name=self.TEST_STAGE_NAME, path=path)
         data = {}
 
         for method in ("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"):
@@ -985,7 +983,7 @@ class TestAPIGateway(unittest.TestCase):
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
         api_id = self.create_api_gateway_and_deploy({})
-        url = gateway_request_url(api_id=api_id, stage_name="staging", path="/")
+        url = path_based_url(api_id=api_id, stage_name="staging", path="/")
         response = requests.put(
             url,
             json.dumps({"id": "id1", "data": "foobar123"}),
@@ -1004,7 +1002,7 @@ class TestAPIGateway(unittest.TestCase):
         }
 
         api_id = self.create_api_gateway_and_deploy(response_templates)
-        url = gateway_request_url(api_id=api_id, stage_name="staging", path="/")
+        url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
         response = requests.put(
             url,
@@ -1028,7 +1026,7 @@ class TestAPIGateway(unittest.TestCase):
         }
 
         api_id = self.create_api_gateway_and_deploy(response_templates, True)
-        url = gateway_request_url(api_id=api_id, stage_name="staging", path="/")
+        url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
         payload = {
             "name": "TEST-PLAN-2",
@@ -1079,7 +1077,7 @@ class TestAPIGateway(unittest.TestCase):
         }
 
         api_id = self.create_api_gateway_and_deploy(response_templates, True)
-        url = gateway_request_url(api_id=api_id, stage_name="staging", path="/")
+        url = path_based_url(api_id=api_id, stage_name="staging", path="/")
 
         client = aws_stack.create_external_boto_client("apigateway")
 
@@ -1261,7 +1259,7 @@ class TestAPIGateway(unittest.TestCase):
 
         # invoke stepfunction via API GW, assert results
         client.create_deployment(restApiId=rest_api["id"], stageName="dev")
-        url = gateway_request_url(api_id=rest_api["id"], stage_name="dev", path="/")
+        url = path_based_url(api_id=rest_api["id"], stage_name="dev", path="/")
         test_data = {"test": "test-value"}
         resp = requests.post(url, data=json.dumps(test_data))
         self.assertEqual(200, resp.status_code)
@@ -1420,7 +1418,7 @@ class TestAPIGateway(unittest.TestCase):
             self.connect_api_gateway_to_s3(bucket_name, object_name, api_id, "GET")
 
             apigw_client.create_deployment(restApiId=api_id, stageName="test")
-            url = gateway_request_url(api_id, "test", "/")
+            url = path_based_url(api_id, "test", "/")
             result = requests.get(url)
             self.assertEqual(200, result.status_code)
             self.assertEqual(object_content, result.text)
@@ -1448,7 +1446,7 @@ class TestAPIGateway(unittest.TestCase):
             integration_type="MOCK", integration_responses=resps
         )
 
-        url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/")
+        url = path_based_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path="/")
         result = requests.options(url)
         self.assertLess(result.status_code, 400)
         self.assertEqual("Origin", result.headers.get("vary"))
