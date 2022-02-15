@@ -743,6 +743,11 @@ def test_restjson_operation_detection_with_query_suffix_in_requesturi():
     _botocore_parser_integration_test(service="apigateway", action="ImportRestApi", body=b"Test")
 
 
+# TODO fix operation detection for API Gateway:
+# Expected: 	PutIntegrationResponse	PUT 	/restapis/{restapi_id}/resources/{resource_id}/methods/{http_method}/integration/responses/{status_code}
+# Actual:		PutMethodResponse		PUT 	/restapis/{restapi_id}/resources/{resource_id}/methods/{http_method}/responses/{status_code}
+
+
 # TODO Add additional tests (or even automate the creation)
 # - Go to the Boto3 Docs (https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/index.html)
 # - Look for boto3 request syntax definition for services that use the protocol you want to test
