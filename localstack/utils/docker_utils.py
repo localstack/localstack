@@ -1588,11 +1588,11 @@ class SdkDockerClient(ContainerClient):
         )
         try:
             container = self.client().containers.get(container_name_or_id)
+            container.commit(repository=image_name, tag=image_tag)
         except NotFound:
             raise NoSuchContainer(container_name_or_id)
         except APIError:
             raise ContainerException()
-        container.commit(repository=image_name, tag=image_tag)
 
     def start_container(
         self,
