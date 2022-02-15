@@ -8,7 +8,12 @@ import pytest
 
 from localstack import config
 from localstack.utils.bootstrap import extract_port_flags
-from localstack.utils.docker_utils import CmdDockerClient, DockerContainerStatus, PortMappings, Util
+from localstack.utils.container_utils.container_client import (
+    DockerContainerStatus,
+    PortMappings,
+    Util,
+)
+from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 
 LOG = logging.getLogger(__name__)
 

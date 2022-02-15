@@ -10,7 +10,7 @@ import pytest
 from localstack import config
 from localstack.config import in_docker
 from localstack.utils.common import is_ipv4_address, safe_run, short_uid, to_str
-from localstack.utils.docker_utils import (
+from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
