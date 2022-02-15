@@ -9,7 +9,6 @@ from abc import ABCMeta, abstractmethod
 from typing import NamedTuple
 
 import requests
-from six import add_metaclass
 
 from localstack import config, constants
 from localstack.config import is_env_not_false, is_env_true
@@ -41,8 +40,7 @@ API_CALLS_RESTORED = False
 LOG = logging.getLogger(__name__)
 
 
-@add_metaclass(ABCMeta)
-class PersistingProxyListener(ProxyListener):
+class PersistingProxyListener(ProxyListener, metaclass=ABCMeta):
     """
     This proxy listener could be extended by any API that wishes to record its requests and responses,
     via the existing persistence facility.

@@ -83,7 +83,6 @@ from email.utils import formatdate
 from typing import Optional, Union
 from xml.etree import ElementTree as ETree
 
-import six
 from boto.utils import ISO8601
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601_MICRO
@@ -260,7 +259,7 @@ class ResponseSerializer(abc.ABC):
         both strings and bytes. The returned value is a string
         via the default encoding.
         """
-        if isinstance(value, six.text_type):
+        if isinstance(value, str):
             value = value.encode(self.DEFAULT_ENCODING)
         return base64.b64encode(value).strip().decode(self.DEFAULT_ENCODING)
 
@@ -393,7 +392,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         return real_root
 
     def _encode_payload(self, body: Union[bytes, str]) -> bytes:
-        if isinstance(body, six.text_type):
+        if isinstance(body, str):
             return body.encode(self.DEFAULT_ENCODING)
         return body
 
@@ -531,7 +530,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
 
     def _default_serialize(self, xmlnode: ETree.Element, params: str, _, name: str) -> None:
         node = ETree.SubElement(xmlnode, name)
-        node.text = six.text_type(params)
+        node.text = str(params)
 
     def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
         """
@@ -913,7 +912,7 @@ class SqsResponseSerializer(QueryResponseSerializer):
     def _default_serialize(self, xmlnode: ETree.Element, params: str, _, name: str) -> None:
         """Ensures that XML text nodes use HTML entities instead of " or \r"""
         node = ETree.SubElement(xmlnode, name)
-        node.text = six.text_type(params).replace('"', "&quot;").replace("\r", "&#xD;")
+        node.text = str(params).replace('"', "&quot;").replace("\r", "&#xD;")
 
     def _xml_to_string(self, root: Optional[ETree.ElementTree]) -> Optional[str]:
         """

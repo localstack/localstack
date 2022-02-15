@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
 import os
 from glob import glob
 
 from amazon_kclpy import kcl
-from six import iteritems
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import save_file
@@ -135,7 +132,7 @@ def create_config_file(
         region_name,
     )
     # optional properties
-    for key, value in iteritems(kwargs):
+    for key, value in kwargs.items():
         content += """
             %s = %s""" % (
             key,

@@ -12,7 +12,6 @@ from urllib.parse import parse_qs, parse_qsl, quote, unquote, urlencode, urlpars
 
 import botocore.config
 import dateutil.parser
-import six
 import xmltodict
 from botocore.client import ClientError
 from moto.s3.exceptions import InvalidFilterRuleName
@@ -818,7 +817,7 @@ def set_lifecycle(bucket_name, lifecycle):
     if not exists:
         return xml_response(body, status_code=code)
 
-    if isinstance(to_str(lifecycle), six.string_types):
+    if isinstance(to_str(lifecycle), str):
         lifecycle = xmltodict.parse(lifecycle)
     BUCKET_LIFECYCLE[bucket_name] = lifecycle
     return 200
@@ -840,7 +839,7 @@ def set_replication(bucket_name, replication):
     if not exists:
         return xml_response(body, status_code=code)
 
-    if isinstance(to_str(replication), six.string_types):
+    if isinstance(to_str(replication), str):
         replication = xmltodict.parse(replication)
     BUCKET_REPLICATIONS[bucket_name] = replication
     return 200
@@ -1107,7 +1106,7 @@ def handle_put_bucket_notification(bucket, data):
         configs = config if isinstance(config, list) else [config] if config else []
         for config in configs:
             events = config.get("Event")
-            if isinstance(events, six.string_types):
+            if isinstance(events, str):
                 events = [events]
             event_filter = config.get("Filter", {})
             # make sure FilterRule is an array
@@ -1543,7 +1542,7 @@ class ProxyListenerS3(PersistingProxyListener):
                         response.headers[header_name] = query_map[param_name][0]
 
             if response_content_str and response_content_str.startswith("<"):
-                is_bytes = isinstance(response._content, six.binary_type)
+                is_bytes = isinstance(response._content, bytes)
                 response._content = response_content_str
 
                 append_last_modified_headers(response=response, content=response_content_str)

@@ -13,7 +13,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import boto3
 import requests
-from six import iteritems
 
 from localstack import config
 from localstack.constants import (
@@ -411,7 +410,7 @@ def find_object(expected_object, object_list):
             if not isinstance(expected_object, dict):
                 all_ok = False
             else:
-                for k, v in iteritems(expected_object):
+                for k, v in expected_object.items():
                     if not find_recursive(k, v, obj):
                         all_ok = False
                         break
@@ -422,7 +421,7 @@ def find_object(expected_object, object_list):
 
 def find_recursive(key, value, obj):
     if isinstance(obj, dict):
-        for k, v in iteritems(obj):
+        for k, v in obj.items():
             if k == key and v == value:
                 return True
             if find_recursive(key, value, v):
