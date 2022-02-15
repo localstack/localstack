@@ -867,7 +867,7 @@ def find_api_subentity_by_id(api_id, entity_id, map_name):
     return entity
 
 
-def path_based(api_id, stage_name, path):
+def path_based_url(api_id, stage_name, path):
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
     pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
         config.service_url("apigateway"),
