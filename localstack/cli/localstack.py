@@ -92,8 +92,8 @@ def cmd_status_services(format):
         if format == "json":
             console.print(json.dumps(services))
     except requests.ConnectionError:
-        err = "[bold][red]:heavy_multiplication_x: ERROR[/red][/bold]"
-        console.print(f"{err}: could not connect to LocalStack health endpoint at {url}")
+        error = f"could not connect to LocalStack health endpoint at {url}"
+        print_error(format, error)
         if config.DEBUG:
             console.print_exception()
         sys.exit(1)
@@ -398,7 +398,6 @@ def print_docker_status_table(status: DockerStatus):
     console.print(grid)
 
 
-# TODO format
 def print_service_table(services: Dict[str, str]):
     from rich.table import Table
 
@@ -427,6 +426,18 @@ def print_service_table(services: Dict[str, str]):
 
 def print_version():
     console.print(" :laptop_computer: [bold]LocalStack CLI[/bold] [blue]%s[/blue]" % __version__)
+
+
+def print_error(format, error):
+    if format == "table":
+        symbol = "[bold][red]:heavy_multiplication_x: ERROR[/red][/bold]"
+        console.print(f"{symbol}: {error}")
+    if format == "plain":
+        console.print(f"error={error}")
+    if format == "dict":
+        console.print({"error": error})
+    if format == "json":
+        console.print(json.dumps({"error": error}))
 
 
 def print_banner():

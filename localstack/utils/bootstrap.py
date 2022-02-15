@@ -7,7 +7,7 @@ import signal
 import threading
 import warnings
 from functools import wraps
-from typing import Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Optional, Set
 
 from localstack import config, constants
 from localstack.config import Directories
@@ -90,7 +90,7 @@ def log_duration(name=None, min_ms=500):
     return wrapper
 
 
-def get_docker_image_details(image_name=None):
+def get_docker_image_details(image_name: str = None) -> Dict[str, str]:
     image_name = image_name or get_docker_image_to_start()
     try:
         result = DOCKER_CLIENT.inspect_image(image_name)
@@ -131,15 +131,7 @@ def get_main_container_name():
     return MAIN_CONTAINER_NAME_CACHED
 
 
-def get_image_hash():
-    image_name = get_docker_image_to_start()
-    image_id = DOCKER_CLIENT.inspect_image(image_name)["Id"]
-    if image_id.startswith("sha256:"):
-        return image_id.split(":")[1][:12]
-    return image_id
-
-
-def get_image_environment_variable(env_name: str):
+def get_image_environment_variable(env_name: str) -> Optional[str]:
     image_name = get_docker_image_to_start()
     image_info = DOCKER_CLIENT.inspect_image(image_name)
     image_envs = image_info["Config"]["Env"]
@@ -151,7 +143,7 @@ def get_image_environment_variable(env_name: str):
     return found_env.split("=")[1]
 
 
-def get_server_version_from_running_container():
+def get_server_version_from_running_container() -> str:
     try:
         # try to extract from existing running container
         container_name = get_main_container_name()
@@ -178,8 +170,8 @@ def get_server_version_from_running_container():
             return constants.VERSION
 
 
-def get_server_version():
-    image_hash = get_image_hash()
+def get_server_version() -> str:
+    image_hash = get_docker_image_details()["id"]
     version_cache = cache_dir() / "image_metadata" / image_hash / "localstack_version"
     if version_cache.exists():
         cached_version = version_cache.read_text()
@@ -815,7 +807,3 @@ def in_ci():
         if os.environ.get(key, "") not in [False, "", "0", "false"]:
             return True
     return False
-
-
-if __name__ == "__main__":
-    print(get_server_version())

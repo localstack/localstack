@@ -41,4 +41,5 @@ def cache_dir() -> Path:
         string_path = os.environ.get("XDG_CACHE_HOME")
         if string_path and os.path.isabs(string_path):
             return Path(string_path)
-        return Path.home() / ".cache" / "localstack"
+    # Use the common place to store caches in Linux as a default
+    return Path.home() / ".cache" / "localstack"
