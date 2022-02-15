@@ -12,7 +12,9 @@ def _check_skip():
         pytest.skip("Docker is not available")
 
 
-@pytest.fixture(params=[CmdDockerClient(), SdkDockerClient()])
+@pytest.fixture(
+    params=[CmdDockerClient(), SdkDockerClient()], ids=["CmdDockerClient", "SdkDockerClient"]
+)
 def docker_client(request):
     _check_skip()  # this is a hack to get a global skip for all tests that require the docker client
     yield request.param

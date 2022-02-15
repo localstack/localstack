@@ -363,6 +363,15 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def remove_image(self, image: str, force: bool = True) -> None:
+        """Removes an image with given name
+
+        :param image: Image name and tag
+        :param force: Force removal
+        """
+        pass
+
+    @abstractmethod
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
         """List all containers matching the given filters
 
@@ -504,6 +513,21 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def commit(
+        self,
+        container_name_or_id: str,
+        image_name: str,
+        image_tag: str,
+    ):
+        """Create an image from a running container.
+
+        :param container_name_or_id: Source container
+        :param image_name: Destination image name
+        :param image_tag: Destination image tag
+        """
+        pass
+
+    @abstractmethod
     def create_container(
         self,
         image_name: str,
@@ -635,6 +659,43 @@ class CmdDockerClient(ContainerClient):
         except subprocess.CalledProcessError as e:
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
+    def remove_image(self, image: str, force: bool = True) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["rmi", image]
+        if force:
+            cmd += ["--force"]
+        LOG.debug("Removing image %s %s", image, "(forced)" if force else "")
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such image" in to_str(e.stdout):
+                raise NoSuchImage(image, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
+    def commit(
+        self,
+        container_name_or_id: str,
+        image_name: str,
+        image_tag: str,
+    ):
+        cmd = self._docker_cmd()
+        cmd += ["commit", container_name_or_id, f"{image_name}:{image_tag}"]
+        LOG.debug(
+            "Creating image from container %s as %s:%s", container_name_or_id, image_name, image_tag
+        )
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in to_str(e.stdout):
+                raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
             else:
                 raise ContainerException(
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -1507,6 +1568,31 @@ class SdkDockerClient(ContainerClient):
             return True
         except APIError:
             return False
+
+    def remove_image(self, image: str, force: bool = True):
+        LOG.debug("Removing image %s %s", image, "(forced)" if force else "")
+        try:
+            self.client().images.remove(image=image, force=force)
+        except ImageNotFound:
+            if not force:
+                raise NoSuchImage(image)
+
+    def commit(
+        self,
+        container_name_or_id: str,
+        image_name: str,
+        image_tag: str,
+    ):
+        LOG.debug(
+            "Creating image from container %s as %s:%s", container_name_or_id, image_name, image_tag
+        )
+        try:
+            container = self.client().containers.get(container_name_or_id)
+            container.commit(repository=image_name, tag=image_tag)
+        except NotFound:
+            raise NoSuchContainer(container_name_or_id)
+        except APIError:
+            raise ContainerException()
 
     def start_container(
         self,
