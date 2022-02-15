@@ -89,7 +89,10 @@ def store_cloudwatch_logs(
                     raise e
 
     # create a new log stream for this lambda invocation
-    logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
+    try:
+        logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
+    except Exception:  # TODO: narrow down
+        pass
 
     # store new log events under the log stream
     finish_time = int(time.time() * 1000)
