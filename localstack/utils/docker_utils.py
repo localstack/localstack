@@ -1586,7 +1586,10 @@ class SdkDockerClient(ContainerClient):
         LOG.debug(
             "Creating image from container %s as %s:%s", container_name_or_id, image_name, image_tag
         )
-        container = self.client().containers.get(container_name_or_id)
+        try:
+            container = self.client().containers.get(container_name_or_id)
+        except NotFound:
+            raise NoSuchContainer(container_name_or_id)
         container.commit(repository=image_name, tag=image_tag)
 
     def start_container(

@@ -960,7 +960,11 @@ class TestDockerClient:
             docker_client.remove_container(container_name)
             docker_client.remove_image(image, force=True)
 
-    def test_remove_image_raises_for_nonexistent(self, docker_client: ContainerClient):
+    def test_commit_image_raises_for_nonexistent_container(self, docker_client: ContainerClient):
+        with pytest.raises(NoSuchContainer):
+            docker_client.commit("nonexistent_container", "image_name", "should_not_matter")
+
+    def test_remove_image_raises_for_nonexistent_image(self, docker_client: ContainerClient):
         image_name = "this_image"
         image_tag = "does_not_exist"
         image = f"{image_name}:{image_tag}"
