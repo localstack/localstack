@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Protocol, Union
 
 from werkzeug.exceptions import MethodNotAllowed
 
@@ -70,7 +70,7 @@ def resource_dispatcher(pass_response: bool = False) -> Dispatcher:
     return _dispatch
 
 
-class Handler:  # TODO: use Protocol as subtype once upgrade to python 3.8
+class Handler(Protocol):
     def __call__(self, request: Request, **kwargs) -> ResultValue:
         pass
 

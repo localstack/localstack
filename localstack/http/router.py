@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Callable, Generic, Iterable, Mapping, Optional, TypeVar
+from typing import Any, Callable, Generic, Iterable, Mapping, Optional, Protocol, TypeVar
 
 from werkzeug.routing import Map, Rule, RuleFactory
 
@@ -12,7 +12,7 @@ E = TypeVar("E")
 RequestArguments = Mapping[str, Any]
 
 
-class Dispatcher:  # TODO: use Protocol as supertype once upgrade to python 3.8
+class Dispatcher(Protocol):
     """
     A Dispatcher is called when a URL route matches a request. The dispatcher is responsible for appropriately
     creating a Response from the incoming Request and the matching endpoint.

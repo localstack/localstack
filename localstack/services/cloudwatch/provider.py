@@ -18,7 +18,7 @@ from localstack.aws.api.cloudwatch import (
 )
 from localstack.http import Request
 from localstack.services import moto
-from localstack.services.edge import router
+from localstack.services.edge import ROUTER
 from localstack.services.moto import create_aws_request_context
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
@@ -115,7 +115,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self.tags = TaggingService()
 
     def on_after_init(self):
-        router.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
+        ROUTER.add(PATH_GET_RAW_METRICS, self.get_raw_metrics)
 
     def get_raw_metrics(self, request: Request):
         region = aws_stack.extract_region_from_auth_header(request.headers)

@@ -513,7 +513,9 @@ def get_service_port_for_account(service, headers):
 
 
 PROXY_LISTENER_EDGE = ProxyListenerEdge()
-router: Router[Handler] = Router(dispatcher=handler_dispatcher())
+# the ROUTER is part of the edge proxy. use the router to inject custom handlers that are handled before actual
+# service calls
+ROUTER: Router[Handler] = Router(dispatcher=handler_dispatcher())
 
 
 def is_trace_logging_enabled(headers):
@@ -533,7 +535,7 @@ def do_start_edge(bind_address, port, use_ssl, asynchronous=False):
 
     listeners = [
         LocalstackResourceHandler(),  # handle internal resources first
-        RouterListener(router),  # then custom routes
+        RouterListener(ROUTER),  # then custom routes
         PROXY_LISTENER_EDGE,  # then call the edge proxy listener
     ]
 
