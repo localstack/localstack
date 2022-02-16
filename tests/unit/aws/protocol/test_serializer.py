@@ -928,7 +928,73 @@ def test_restjson_headers_location():
     assert "headers_value2" == response["ResponseHeaders"]["headers_key2"]
 
 
-# TODO Add additional tests (or even automate the creation)
-# - Go to the AWS CLI reference (https://docs.aws.amazon.com)
-# - Look at the CLI reference for APIs that use the protocol you want to test
-# - Use the output examples to verify that the serialization works
+def test_all_non_existing_key():
+    """Tests the different protocols to allow non-existing keys in strucutres / dicts."""
+    # query
+    _botocore_serializer_integration_test(
+        "cloudformation",
+        "DetectStackResourceDrift",
+        {
+            "StackResourceDrift": {
+                "StackId": "arn:aws:cloudformation:us-west-2:123456789012:stack/MyStack/d0a825a0-e4cd-xmpl-b9fb-061c69e99204",
+                "unknown": {"foo": "bar"},
+            }
+        },
+        expected_response_content={
+            "StackResourceDrift": {
+                "StackId": "arn:aws:cloudformation:us-west-2:123456789012:stack/MyStack/d0a825a0-e4cd-xmpl-b9fb-061c69e99204",
+            }
+        },
+    )
+    # json
+    _botocore_serializer_integration_test(
+        "cognito-idp",
+        "DescribeUserPool",
+        {
+            "UserPool": {
+                "Id": "string",
+                "Unknown": "Ignored",
+            }
+        },
+        expected_response_content={
+            "UserPool": {
+                "Id": "string",
+            }
+        },
+    )
+    # rest-json
+    _botocore_serializer_integration_test(
+        "xray",
+        "UpdateSamplingRule",
+        {
+            "SamplingRuleRecord": {
+                "SamplingRule": {
+                    "ResourceARN": "123456789001234567890",
+                    "Unknown": "Ignored",
+                },
+            }
+        },
+        expected_response_content={
+            "SamplingRuleRecord": {
+                "SamplingRule": {
+                    "ResourceARN": "123456789001234567890",
+                },
+            }
+        },
+    )
+    # rest-xml
+    _botocore_serializer_integration_test(
+        "cloudfront",
+        "TestFunction",
+        {
+            "TestResult": {
+                "FunctionErrorMessage": "string",
+            },
+            "Unknown": "Ignored",
+        },
+        expected_response_content={
+            "TestResult": {
+                "FunctionErrorMessage": "string",
+            },
+        },
+    )
