@@ -190,3 +190,4 @@ class SecretsManagerTest(unittest.TestCase):
         self.secretsmanager_client.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
+        testutil.delete_lambda_function(function_name)
