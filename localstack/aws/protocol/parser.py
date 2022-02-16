@@ -67,7 +67,6 @@ not work out-of-the-box.
 """
 import abc
 import base64
-import copy
 import datetime
 import json
 import re
@@ -167,16 +166,7 @@ class RequestParser(abc.ABC):
         if location is not None:
             if location == "header":
                 header_name = shape.serialization.get("name")
-                if header_name in request.headers:
-                    # set the location to None to avoid an unlimited recursion with header parameters
-                    copied_shape = copy.deepcopy(shape)
-                    copied_shape.serialization["location"] = None
-                    payload = self._parse_shape(
-                        request, copied_shape, request.headers[header_name], path_regex
-                    )
-                else:
-                    # if header is optional and not set
-                    payload = None
+                payload = request.headers.get(header_name)
             elif location == "headers":
                 payload = self._parse_header_map(shape, request.headers)
             elif location == "querystring":
@@ -185,10 +175,11 @@ class RequestParser(abc.ABC):
                 # If the query param is in the parsed dict, take the first element of the value
                 # (the parsed query params are always lists, even if only a single value).
                 payload = (
-                    next(iter(parsed_query[query_name]), None)
-                    if query_name in parsed_query
-                    else None
+                    list(iter(parsed_query[query_name])) if query_name in parsed_query else None
                 )
+                # The result is always a list. If the shape is not of type list, we extract the only element
+                if shape.type_name != "list":
+                    payload = payload[0] if payload else None
             elif location == "uri":
                 regex_group_name = shape.serialization.get("name")
                 match = path_regex.match(request.path)
@@ -298,20 +289,28 @@ class RequestParser(abc.ABC):
         """
         if request_uri is None:
             return None
+        # Escape characters within the request_uri for the usage in a regex
+        escaped_request_uri = re.escape(request_uri)
         # Replace the variable placeholder (f.e. {ConnectionId} in "/fuu/{ConnectionId}/bar/") with a
         # named regex group. Note: allowing slashes in param values, as required, e.g., for ARNs in paths.
+        # The curly braces have been escaped previously and need to be captured here. Hence the "\\\\" in the pattern.
+        # The request URL may contain the first query parameter (starting with a ?). Hence the exclusion of ? and &.
+        # A group will have the following regex: /fuu/(?P<\g<VariableName>>[^?&]+))/bar
         request_uri_regex = re.sub(
-            "{(?P<VariableName>[^}]+)}", r"(?P<\g<VariableName>>.+)", request_uri
+            "\\\\{(?P<VariableName>[^}]+)\\\\}",
+            r"(?P<\g<VariableName>>[^?&]+)",
+            escaped_request_uri,
         )
         # The variable name (now regex group name) can also contain trailing "+" signs (f.e. S3).
         # This means that the key should be greedy (there can only be one greedy param).
         # This is implemented by making groups which do not contain a "+" and are not at the end of the URI non-greedy
         # (with a trailing ?).
-        request_uri_regex = request_uri_regex.replace("+>.+)", ">._greedy_+)")
-        request_uri_regex = request_uri_regex.replace(">.+)", ">.+?)")
-        request_uri_regex = request_uri_regex.replace(">._greedy_+)", ">.+)")
-        # Put regex in fences to make sure that we do not match any substrings
-        request_uri_regex = f"^{request_uri_regex}$"
+        if "\\+>[^?&]+)" in request_uri_regex:
+            request_uri_regex = request_uri_regex.replace("\\+>[^?&]+)", ">[^?&]_greedy_+)")
+            request_uri_regex = request_uri_regex.replace(">[^?&]+)", ">[^?&]+?)")
+            request_uri_regex = request_uri_regex.replace(">[^?&]_greedy_+)", ">[^?&]+)")
+        # Make sure the URL starts with our regex, do not add a fence to the end (there might be optional query params).
+        request_uri_regex = f"^{request_uri_regex}"
         # The result is a regex itself.
         return re.compile(request_uri_regex)
 
@@ -552,11 +551,15 @@ class BaseRestRequestParser(RequestParser):
         return re.sub(r"{(.*?)}", " param", request_uri)
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
+        # Use the path and the query string for the matching
+        url = request.path
+        if request.query_string:
+            url += f"?{to_str(request.query_string)}"
         # Find the regex which matches the given path (as well as its operation)
         try:
             path_regex, operation = next(
                 filter(
-                    lambda item: item[0].match(request.path),
+                    lambda item: item[0].match(url),
                     self.operation_lookup[request.method].items(),
                 )
             )

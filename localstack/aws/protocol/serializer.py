@@ -76,6 +76,8 @@ not work out-of-the-box.
 """
 import abc
 import base64
+import calendar
+import json
 import logging
 from abc import ABC
 from datetime import datetime
@@ -86,7 +88,7 @@ from xml.etree import ElementTree as ETree
 from boto.utils import ISO8601
 from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import ISO8601_MICRO
-from botocore.utils import calculate_md5, parse_to_aware_datetime
+from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 from moto.core.utils import gen_amzn_requestid_long
 
 from localstack.aws.api import CommonServiceException, HttpResponse, ServiceException
@@ -194,6 +196,19 @@ class ResponseSerializer(abc.ABC):
         # TODO implement the handling of eventstreams (where "streaming" is True)
         raise NotImplementedError
 
+    def _serialize_body_params(
+        self, params: dict, shape: Shape, operation_model: OperationModel
+    ) -> Optional[str]:
+        """
+        Actually serializes the given params for the given shape to a string for the transmission in the body of the
+        response.
+        :param params: to serialize
+        :param shape: to know how to serialize the params
+        :param operation_model: for additional metadata
+        :return: string containing the serialized body
+        """
+        raise NotImplementedError
+
     def _serialize_error(
         self,
         error: ServiceException,
@@ -263,22 +278,33 @@ class ResponseSerializer(abc.ABC):
             value = value.encode(self.DEFAULT_ENCODING)
         return base64.b64encode(value).strip().decode(self.DEFAULT_ENCODING)
 
+    def _encode_payload(self, body: Union[bytes, str]) -> bytes:
+        if isinstance(body, str):
+            return body.encode(self.DEFAULT_ENCODING)
+        return body
+
     def _prepare_additional_traits_in_response(
         self, response: HttpResponse, operation_model: OperationModel
     ):
         """Applies additional traits on the raw response for a given model or protocol."""
         if operation_model.http_checksum_required:
-            add_md5_header(response)
+            self.add_md5_header(response)
         return response
 
+    def has_header(self, header_name: str, headers: dict):
+        """Case-insensitive check for header key."""
+        if header_name is None:
+            return False
+        else:
+            return header_name.lower() in [key.lower() for key in headers.keys()]
 
-def add_md5_header(response: HttpResponse):
-    """Add a Content-MD5 header if not yet there. Adapted from botocore.utils"""
-    headers = response.headers
-    body = response.data
-    if body is not None and "Content-MD5" not in headers:
-        md5_digest = calculate_md5(body)
-        headers["Content-MD5"] = md5_digest
+    def add_md5_header(self, response: HttpResponse):
+        """Add a Content-MD5 header if not yet there. Adapted from botocore.utils"""
+        headers = response.headers
+        body = response.data
+        if body is not None and "Content-MD5" not in headers:
+            md5_digest = calculate_md5(body)
+            headers["Content-MD5"] = md5_digest
 
 
 class BaseXMLResponseSerializer(ResponseSerializer):
@@ -292,50 +318,6 @@ class BaseXMLResponseSerializer(ResponseSerializer):
     **Experimental:** This serializer is still experimental.
     When implementing services with this serializer, some edge cases might not work out-of-the-box.
     """
-
-    def _serialize_response(
-        self,
-        parameters: dict,
-        response: HttpResponse,
-        shape: Optional[Shape],
-        shape_members: dict,
-        operation_model: OperationModel,
-    ) -> None:
-        """
-        Serializes the given parameters as XML.
-
-        :param parameters: The user input params
-        :param response: The final serialized HttpResponse
-        :param shape: Describes the expected output shape (can be None in case of an "empty" response)
-        :param shape_members: The members of the output struct shape
-        :param operation_model: The specification of the operation of which the response is serialized here
-        :return: None - the given `serialized` dict is modified
-        """
-        # TODO implement the handling of location traits (where "location" is "header", "headers")
-
-        payload_member = shape.serialization.get("payload") if shape is not None else None
-        if payload_member is not None and shape_members[payload_member].type_name in [
-            "blob",
-            "string",
-        ]:
-            # If it's streaming, then the body is just the value of the payload.
-            body_payload = parameters.get(payload_member, b"")
-            body_payload = self._encode_payload(body_payload)
-            response.data = body_payload
-        elif payload_member is not None:
-            # If there's a payload member, we serialized that member to the body.
-            body_params = parameters.get(payload_member)
-            if body_params is not None:
-                response.data = self._encode_payload(
-                    self._serialize_body_params(
-                        body_params, shape_members[payload_member], operation_model
-                    )
-                )
-        else:
-            # Otherwise, we use the "traditional" way of serializing the whole parameters dict recursively.
-            response.data = self._encode_payload(
-                self._serialize_body_params(parameters, shape, operation_model)
-            )
 
     def _serialize_error(
         self,
@@ -390,11 +372,6 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         self._serialize(shape, params, pseudo_root, root_name)
         real_root = list(pseudo_root)[0]
         return real_root
-
-    def _encode_payload(self, body: Union[bytes, str]) -> bytes:
-        if isinstance(body, str):
-            return body.encode(self.DEFAULT_ENCODING)
-        return body
 
     def _serialize(self, shape: Shape, params: any, xmlnode: ETree.Element, name: str) -> None:
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
@@ -559,6 +536,78 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
     In our case it basically only adds the request metadata to the HTTP header.
     """
 
+    HEADER_TIMESTAMP_FORMAT = "rfc822"
+
+    def _serialize_response(
+        self,
+        parameters: dict,
+        response: HttpResponse,
+        shape: Optional[Shape],
+        shape_members: dict,
+        operation_model: OperationModel,
+    ) -> None:
+        self._process_header_members(parameters, response, shape)
+        self._serialize_payload(parameters, response, shape, shape_members, operation_model)
+        self._serialize_content_type(response, shape, shape_members)
+        self._prepare_additional_traits_in_response(response, operation_model)
+
+    def _serialize_payload(
+        self,
+        parameters: dict,
+        response: HttpResponse,
+        shape: Optional[Shape],
+        shape_members: dict,
+        operation_model: OperationModel,
+    ) -> None:
+        """
+        Serializes the given payload.
+
+        :param parameters: The user input params
+        :param response: The final serialized HttpResponse
+        :param shape: Describes the expected output shape (can be None in case of an "empty" response)
+        :param shape_members: The members of the output struct shape
+        :param operation_model: The specification of the operation of which the response is serialized here
+        :return: None - the given `serialized` dict is modified
+        """
+        if shape is None:
+            return
+
+        payload_member = shape.serialization.get("payload")
+        if payload_member is not None and shape_members[payload_member].type_name in [
+            "blob",
+            "string",
+        ]:
+            # If it's streaming, then the body is just the value of the payload.
+            body_payload = parameters.get(payload_member, b"")
+            body_payload = self._encode_payload(body_payload)
+            response.data = body_payload
+        elif payload_member is not None:
+            # If there's a payload member, we serialized that member to the body.
+            body_params = parameters.get(payload_member)
+            if body_params is not None:
+                response.data = self._encode_payload(
+                    self._serialize_body_params(
+                        body_params, shape_members[payload_member], operation_model
+                    )
+                )
+        else:
+            # Otherwise, we use the "traditional" way of serializing the whole parameters dict recursively.
+            response.data = self._encode_payload(
+                self._serialize_body_params(parameters, shape, operation_model)
+            )
+
+    def _serialize_content_type(self, serialized: HttpResponse, shape: Shape, shape_members: dict):
+        """
+        Some protocols require varied Content-Type headers
+        depending on user input. This allows subclasses to apply
+        this conditionally.
+        """
+        pass
+
+    def _has_streaming_payload(self, payload: Optional[str], shape_members):
+        """Determine if payload is streaming (a blob or string)."""
+        return payload is not None and shape_members[payload].type_name in ["blob", "string"]
+
     def _prepare_additional_traits_in_response(
         self, response: HttpResponse, operation_model: OperationModel
     ):
@@ -566,6 +615,52 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         response = super()._prepare_additional_traits_in_response(response, operation_model)
         response.headers["x-amz-request-id"] = gen_amzn_requestid_long()
         return response
+
+    def _process_header_members(self, parameters: dict, response: HttpResponse, shape: Shape):
+        shape_members = shape.members if isinstance(shape, StructureShape) else []
+        for name in shape_members:
+            member_shape = shape_members[name]
+            location = member_shape.serialization.get("location")
+            if not location:
+                continue
+            if name not in parameters:
+                # ignores optional keys
+                continue
+            key = member_shape.serialization.get("name", name)
+            value = parameters[name]
+            if location == "header":
+                response.headers[key] = self._serialize_header_value(member_shape, value)
+            elif location == "headers":
+                header_prefix = key
+                self._serialize_header_map(header_prefix, response, value)
+            del parameters[name]
+
+    def _serialize_header_map(self, prefix: str, response: HttpResponse, params: dict) -> None:
+        """Serializes the header map for the location trait "headers"."""
+        for key, val in params.items():
+            actual_key = prefix + key
+            response.headers[actual_key] = val
+
+    def _serialize_header_value(self, shape: Shape, value: any):
+        """Serializes a value for the location trait "header"."""
+        if shape.type_name == "timestamp":
+            datetime_obj = parse_to_aware_datetime(value)
+            timestamp = calendar.timegm(datetime_obj.utctimetuple())
+            timestamp_format = shape.serialization.get(
+                "timestampFormat", self.HEADER_TIMESTAMP_FORMAT
+            )
+            return self._convert_timestamp_to_str(timestamp, timestamp_format)
+        elif shape.type_name == "list":
+            converted_value = [
+                self._serialize_header_value(shape.member, v) for v in value if v is not None
+            ]
+            return ",".join(converted_value)
+        elif is_json_value_header(shape):
+            # Serialize with no spaces after separators to save space in
+            # the header.
+            return self._get_base64(json.dumps(value, separators=(",", ":")))
+        else:
+            return value
 
 
 class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSerializer):
@@ -609,12 +704,34 @@ class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSeria
 class QueryResponseSerializer(BaseXMLResponseSerializer):
     """
     The ``QueryResponseSerializer`` is responsible for the serialization of responses from services which use the
-    ``query`` protocol. The responses of these services also use XML, but with a few subtle differences to the
-    ``rest-xml`` protocol.
+    ``query`` protocol. The responses of these services also use XML. It is basically a subset of the features, since it
+    does not allow any payload or location traits.
 
     **Experimental:** This serializer is still experimental.
     When implementing services with this serializer, some edge cases might not work out-of-the-box.
     """
+
+    def _serialize_response(
+        self,
+        parameters: dict,
+        response: HttpResponse,
+        shape: Optional[Shape],
+        shape_members: dict,
+        operation_model: OperationModel,
+    ) -> None:
+        """
+        Serializes the given parameters as XML for the query protocol.
+
+        :param parameters: The user input params
+        :param response: The final serialized HttpResponse
+        :param shape: Describes the expected output shape (can be None in case of an "empty" response)
+        :param shape_members: The members of the output struct shape
+        :param operation_model: The specification of the operation of which the response is serialized here
+        :return: None - the given `serialized` dict is modified
+        """
+        response.data = self._encode_payload(
+            self._serialize_body_params(parameters, shape, operation_model)
+        )
 
     def _serialize_body_params_to_xml(
         self, params: dict, shape: Shape, operation_model: OperationModel
@@ -738,70 +855,15 @@ class JSONResponseSerializer(ResponseSerializer):
         json_version = operation_model.metadata.get("jsonVersion")
         if json_version is not None:
             response.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
+        response.data = self._serialize_body_params(parameters, shape, operation_model)
 
-        if shape is None:
-            response.set_json({})
-            return
-
-        # first, serialize everything into a dictionary
-        data = {}
-        self._serialize(data, parameters, shape)
-
-        if shape.serialization is None:
-            # if there are no special serialization instructions then just set the data dict as JSON payload
-            response.set_json(data)
-            return
-
-        # otherwise, move data attributes into their appropriate locations
-        # (some shapes have a serialization dict, but don't actually have attributes with special locations)
+    def _serialize_body_params(
+        self, params: dict, shape: Shape, operation_model: OperationModel
+    ) -> Optional[str]:
         body = {}
-        for name in shape_members:
-            member_shape = shape_members[name]
-            key = member_shape.serialization.get("name", name)
-            if key not in data:
-                # ignores optional keys
-                continue
-            value = data[key]
-
-            location = member_shape.serialization.get("location")
-
-            if not location:
-                body[key] = value
-            elif location == "header":
-                response.headers[key] = value
-            elif location == "headers":
-                response.headers.update(value)
-            elif location == "statusCode":
-                # statusCode is quite rare, and it looks like it's always just an int shape, so taking a shortcut here
-                response.status_code = int(value)
-            else:
-                raise ValueError("unknown location %s" % location)
-
-        # the shape defines a specific attribute that should be serialized as payload
-        payload_key = shape.serialization.get("payload")
-        if not payload_key:
-            response.set_json(body)
-            return
-        payload_shape = shape.members[payload_key]
-
-        if payload_key not in body:
-            LOG.warning("missing payload attribute %s in body", payload_key)
-
-        value = body.pop(payload_key, None)
-
-        if body:
-            # in principle, if a payload attribute is specified in the shape, all other attributes should be in other
-            # locations, so this is just a logging guard to warn if that assumption is violated
-            LOG.warning("dangling attributes in body: %s", body.keys())
-
-        # a payload can be a string, blob, or structure: https://gist.github.com/thrau/39fd20b437f8719ffc361ad9a908c0c6
-        if payload_shape.type_name == "structure":
-            response.set_json(value if value is not None else {})
-        elif payload_shape.type_name == "blob":
-            # payloads blobs are not base64 encoded, but the `_serialize` recursion doesn't know that
-            response.data = base64.b64decode(value) if value is not None else b""
-        else:
-            response.data = value if value is not None else b""
+        if shape is not None:
+            self._serialize(body, params, shape)
+        return json.dumps(body)
 
     def _serialize(self, body: dict, value: any, shape, key: Optional[str] = None):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
@@ -892,7 +954,17 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
     When implementing services with this serializer, some edge cases might not work out-of-the-box.
     """
 
-    pass
+    def _serialize_content_type(self, serialized: HttpResponse, shape: Shape, shape_members: dict):
+        """Set Content-Type to application/json for all structured bodies."""
+        payload = shape.serialization.get("payload") if shape is not None else None
+        if self._has_streaming_payload(payload, shape_members):
+            # Don't apply content-type to streaming bodies
+            return
+
+        has_body = serialized.data != b""
+        has_content_type = self.has_header("Content-Type", serialized.headers)
+        if has_body and not has_content_type:
+            serialized.headers["Content-Type"] = "application/json"
 
 
 class SqsResponseSerializer(QueryResponseSerializer):

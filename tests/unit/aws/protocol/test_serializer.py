@@ -44,8 +44,10 @@ def _botocore_serializer_integration_test(
 
     # Use our serializer to serialize the response
     response_serializer = create_serializer(service)
+    # The serializer changes the incoming dict, therefore copy it before passing it to the serializer
+    response_to_parse = copy.deepcopy(response)
     serialized_response = response_serializer.serialize_to_response(
-        response, service.operation_model(action)
+        response_to_parse, service.operation_model(action)
     )
 
     # Use the parser from botocore to parse the serialized response
@@ -803,28 +805,14 @@ def test_restxml_none_serialization():
     )
 
 
-@pytest.mark.xfail(
-    reason="fails until botocore#2609 is fixed: https://github.com/boto/botocore/issues/2609"
-)
 def test_restjson_int_header_serialization():
     response = {
-        "Configuration": b'{"foo": "bar"}',
+        "Configuration": '{"foo": "bar"}',
         "ContentType": "application/json",
         "NextPollConfigurationToken": "abcdefg",
         "NextPollIntervalInSeconds": 42,
     }
-    expected = {
-        "Configuration": "eyJmb28iOiAiYmFyIn0=",  # base64 encoding of b'{"foo": "bar"}
-        "ContentType": "application/json",
-        "NextPollConfigurationToken": "abcdefg",
-        "NextPollIntervalInSeconds": 42,
-    }
-    result = _botocore_serializer_integration_test(
-        "appconfigdata", "GetLatestConfiguration", response, expected_response_content=expected
-    )
-
-    headers = result["ResponseMetadata"]["HTTPHeaders"]
-    assert headers["next-poll-interval-in-seconds"] == "42"
+    _botocore_serializer_integration_test("appconfigdata", "GetLatestConfiguration", response)
 
 
 def test_ec2_serializer_ec2_with_botocore():
@@ -874,6 +862,70 @@ def test_ec2_protocol_custom_error_serialization():
         400,
         "Different payload, same token?!",
     )
+
+
+def test_restxml_without_output_shape():
+    _botocore_serializer_integration_test("cloudfront", "DeleteDistribution", {}, status_code=204)
+
+
+def test_restxml_header_location():
+    """Tests fields with the location trait "header" for rest-xml."""
+    _botocore_serializer_integration_test(
+        "cloudfront",
+        "CreateCloudFrontOriginAccessIdentity",
+        {
+            "Location": "location-header-field",
+            "ETag": "location-etag-field",
+            "CloudFrontOriginAccessIdentity": {},
+        },
+        status_code=201,
+    )
+
+
+def test_restxml_headers_location():
+    """Tests fields with the location trait "headers" for rest-xml."""
+    _botocore_serializer_integration_test(
+        "s3",
+        "HeadObject",
+        {
+            "DeleteMarker": False,
+            "Metadata": {"headers_key1": "headers_value1", "headers_key2": "headers_value2"},
+        },
+        # The spec defines the ContentType and the ContentLength, which is automatically set
+        expected_response_content={
+            "DeleteMarker": False,
+            "Metadata": {"headers_key1": "headers_value1", "headers_key2": "headers_value2"},
+            "ContentType": "text/xml",
+            "ContentLength": 59,
+        },
+    )
+
+
+def test_restjson_header_location():
+    """Tests fields with the location trait "header" for rest-xml."""
+    _botocore_serializer_integration_test(
+        "ebs", "GetSnapshotBlock", {"BlockData": "binary-data", "DataLength": 15}
+    )
+
+
+def test_restjson_headers_location():
+    """Tests fields with the location trait "headers" for rest-json."""
+    response = _botocore_serializer_integration_test(
+        "dataexchange",
+        "SendApiAsset",
+        {
+            "ResponseHeaders": {"headers_key1": "headers_value1", "headers_key2": "headers_value2"},
+        },
+        expected_response_content=_skip_assert,
+    )
+    # The spec does not define a locationName for ResponseHeaders, which means there is no header field prefix.
+    # Therefore, _all_ header fields are parsed by botocore (which is technically correct).
+    # We only check if the two header fields are present.
+    assert "ResponseHeaders" in response
+    assert "headers_key1" in response["ResponseHeaders"]
+    assert "headers_key2" in response["ResponseHeaders"]
+    assert "headers_value1" == response["ResponseHeaders"]["headers_key1"]
+    assert "headers_value2" == response["ResponseHeaders"]["headers_key2"]
 
 
 # TODO Add additional tests (or even automate the creation)

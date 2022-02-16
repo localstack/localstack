@@ -1,12 +1,13 @@
 from datetime import datetime
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
+from botocore.awsrequest import prepare_request_dict
 from botocore.serialize import create_serializer
 
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.parser import QueryRequestParser, RestJSONRequestParser, create_parser
 from localstack.aws.spec import load_service
-from localstack.utils.common import to_bytes
+from localstack.utils.common import to_bytes, to_str
 
 
 def test_query_parser():
@@ -201,8 +202,11 @@ def _botocore_parser_integration_test(
 
     operation_model = service.operation_model(action)
     serialized_request = serializer.serialize_to_request(kwargs, operation_model)
+    prepare_request_dict(serialized_request, "")
+    split_url = urlsplit(serialized_request.get("url"))
+    path = split_url.path
+    query_string = split_url.query
     body = serialized_request["body"]
-    query_string = urlencode(serialized_request.get("query_string") or "", doseq=False)
     # use custom headers (if provided), or headers from serialized request as default
     headers = serialized_request.get("headers") if headers is None else headers
 
@@ -215,8 +219,8 @@ def _botocore_parser_integration_test(
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
-            path=serialized_request.get("url_path") or "",
-            query_string=query_string,
+            path=path,
+            query_string=to_str(query_string),
             headers=headers,
             body=body,
         )
@@ -701,9 +705,7 @@ def test_parse_s3_with_extended_uri_pattern():
 
 
 def test_parse_restjson_uri_location():
-    """
-    Tests if the parsing of uri parameters works correctly for the rest-json protocol
-    """
+    """Tests if the parsing of uri parameters works correctly for the rest-json protocol"""
     _botocore_parser_integration_test(
         service="lambda",
         action="AddPermission",
@@ -712,6 +714,38 @@ def test_parse_restjson_uri_location():
         Principal="sns.amazonaws.com",
         StatementId="2e25f762",
     )
+
+
+def test_parse_restjson_header_parsing():
+    """Tests parsing shapes from the header location."""
+    _botocore_parser_integration_test(
+        service="ebs",
+        action="CompleteSnapshot",
+        SnapshotId="123",
+        ChangedBlocksCount=5,
+        Checksum="test-checksum-header-field",
+    )
+
+
+def test_parse_restjson_querystring_list_parsing():
+    """Tests the parsing of lists of shapes with location querystring."""
+    _botocore_parser_integration_test(
+        service="amplify",
+        action="UntagResource",
+        resourceArn="arn:aws:lambda:us-east-1:000000000000:function:test-forward-sns",
+        tagKeys=["Tag1", "Tag2"],
+    )
+
+
+def test_restjson_operation_detection_with_query_suffix_in_requesturi():
+    # Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
+    # parameter, f.e. API Gateway's ImportRestApi: "/restapis?mode=import"
+    _botocore_parser_integration_test(service="apigateway", action="ImportRestApi", body=b"Test")
+
+
+# TODO fix operation detection for API Gateway:
+# Expected: 	PutIntegrationResponse	PUT 	/restapis/{restapi_id}/resources/{resource_id}/methods/{http_method}/integration/responses/{status_code}
+# Actual:		PutMethodResponse		PUT 	/restapis/{restapi_id}/resources/{resource_id}/methods/{http_method}/responses/{status_code}
 
 
 # TODO Add additional tests (or even automate the creation)
