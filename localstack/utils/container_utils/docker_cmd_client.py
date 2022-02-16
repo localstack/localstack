@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import shlex
 import subprocess
@@ -7,7 +8,6 @@ from typing import Dict, List, Optional, Tuple, Union
 from localstack import config
 from localstack.utils.common import safe_run
 from localstack.utils.container_utils.container_client import (
-    LOG,
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
@@ -20,6 +20,8 @@ from localstack.utils.container_utils.container_client import (
     Util,
 )
 from localstack.utils.run import to_str
+
+LOG = logging.getLogger(__name__)
 
 
 class CmdDockerClient(ContainerClient):
