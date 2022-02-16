@@ -1,6 +1,6 @@
 import json
 from io import BytesIO
-from typing import IO, Any, Dict, Optional, Union
+from typing import IO, Any, Dict, Optional, Tuple, Union
 
 from werkzeug.datastructures import Headers
 from werkzeug.sansio.request import Request as _SansIORequest
@@ -27,6 +27,7 @@ class Request(_SansIORequest):
         root_path: str = "/",
         query_string: Union[bytes, str] = b"",
         remote_addr: str = None,
+        server: Optional[Tuple[str, Optional[int]]] = None,
     ):
         if not headers:
             headers = Headers()
@@ -45,7 +46,7 @@ class Request(_SansIORequest):
         super(Request, self).__init__(
             method=method,
             scheme=scheme,
-            server=("127.0.0.1", None),
+            server=server or ("127.0.0.1", None),
             root_path=root_path,
             path=path,
             query_string=to_bytes(query_string),

@@ -59,6 +59,39 @@ class TestRouter:
         assert router.dispatch(Request("GET", "/")).json == {}
         assert router.dispatch(Request("GET", "/users/12")).json == {"user_id": 12}
 
+    def test_dispatch_with_host_matching(self):
+        router = Router()
+
+        def ep_all(_: Request, args) -> Response:
+            response = Response()
+            response.set_json(dict(method="all", **args))
+            return response
+
+        def ep_index1(_: Request, args) -> Response:
+            response = Response()
+            response.set_json(dict(method="1", **args))
+            return response
+
+        def ep_index2(_: Request, args) -> Response:
+            response = Response()
+            response.set_json(dict(method="2", **args))
+            return response
+
+        router.add("/", ep_index1, host="localhost:<port>")
+        router.add("/", ep_index2, host="localhost:12345")
+        router.add("/all", ep_all, host="<host>")
+
+        def invoke(path, server, port):
+            return router.dispatch(Request("GET", path, server=(server, port))).json
+
+        assert invoke("/", "localhost", 4566) == {"method": "1", "port": "4566"}
+        assert invoke("/", "localhost", 12345) == {"method": "2"}
+        assert invoke("/all", "127.0.0.1", None) == {"method": "all", "host": "127.0.0.1"}
+        assert invoke("/all", "127.0.0.1", 12345) == {"method": "all", "host": "127.0.0.1:12345"}
+
+        with pytest.raises(NotFound):
+            invoke("/", "localstack.cloud", None)
+
     def test_custom_dispatcher(self):
         collector = RequestCollector()
         router = Router(dispatcher=collector)

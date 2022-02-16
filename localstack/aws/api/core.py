@@ -1,6 +1,6 @@
 import functools
 import sys
-from typing import Any, Callable, NamedTuple, Optional, Type
+from typing import Any, Callable, NamedTuple, Optional, Type, Union
 
 if sys.version_info >= (3, 8):
     from typing import TypedDict
@@ -79,7 +79,9 @@ class RequestContext:
         return ServiceOperation(self.service.service_name, self.operation.name)
 
 
-ServiceRequestHandler = Callable[[RequestContext, ServiceRequest], Optional[ServiceResponse]]
+ServiceRequestHandler = Callable[
+    [RequestContext, ServiceRequest], Optional[Union[ServiceResponse, HttpResponse]]
+]
 
 
 def handler(operation: str = None, context: bool = True, expand: bool = True):
