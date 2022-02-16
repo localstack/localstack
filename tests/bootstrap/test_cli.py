@@ -24,7 +24,7 @@ def container_exists(client, container_name):
 
 @pytest.fixture(autouse=True)
 def container_client():
-    client = localstack.utils.dockerutils.docker_sdk_client.SdkDockerClient()
+    client = localstack.utils.container_utils.docker_sdk_client.SdkDockerClient()
 
     yield client
 
