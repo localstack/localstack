@@ -6,7 +6,6 @@ import re
 from gzip import GzipFile
 from typing import Callable, Dict
 
-from moto.awslambda.models import LambdaBackend
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
 from moto.logs.exceptions import InvalidParameterException, ResourceNotFoundException
@@ -96,18 +95,6 @@ def publish_log_metrics_for_events(data):
 def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:
     """Returns a pattern matcher. Can be patched by plugins to return a more sophisticated pattern matcher."""
     return lambda _pattern, _log_event: True
-
-
-def moto_lambda_get_function(get_function, *args, **kwargs):
-    result = get_function(*args, **kwargs)
-    if result:
-        return result
-    # in case if lambda is not present in moto fall back to
-    #  fetching Lambda details from LocalStack API directly
-    client = aws_stack.connect_to_service("lambda")
-    lambda_name = aws_stack.lambda_function_name(args[0])
-    response = client.get_function(FunctionName=lambda_name)
-    return response
 
 
 def moto_put_log_events(_, self, log_group_name, log_stream_name, log_events, sequence_token):
@@ -251,7 +238,6 @@ def moto_filter_log_events(
 
 
 def add_patches(patches: Patches):
-    patches.function(LambdaBackend.get_function, moto_lambda_get_function)
 
     patches.function(LogsBackend.put_subscription_filter, moto_put_subscription_filter)
     patches.function(LogStream.put_log_events, moto_put_log_events)
