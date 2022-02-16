@@ -758,3 +758,36 @@ def test_restjson_operation_detection_with_length_prio():
         httpMethod="POST",
         statusCode="201",
     )
+
+
+def test_s3_operation_detection():
+    """
+    Test if the S3 operation detection works for ambiguous operations. GetObject is the worst, because it is
+    overloaded with the exact same requestURI by another non-deprecated function where the only distinction is the
+    matched required parameter.
+    """
+    expected = {
+        "Bucket": "test-bucket",
+        "Key": "test.json",
+        "ExpectedBucketOwner": None,
+        "IfMatch": None,
+        "IfModifiedSince": None,
+        "IfNoneMatch": None,
+        "IfUnmodifiedSince": None,
+        "PartNumber": None,
+        "Range": None,
+        "RequestPayer": None,
+        "ResponseCacheControl": None,
+        "ResponseContentDisposition": None,
+        "ResponseContentEncoding": None,
+        "ResponseContentLanguage": None,
+        "ResponseContentType": None,
+        "ResponseExpires": None,
+        "SSECustomerAlgorithm": None,
+        "SSECustomerKey": None,
+        "SSECustomerKeyMD5": None,
+        "VersionId": None,
+    }
+    _botocore_parser_integration_test(
+        service="s3", action="GetObject", Bucket="test-bucket", Key="test.json", expected=expected
+    )
