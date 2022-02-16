@@ -7,7 +7,7 @@ import signal
 import threading
 import warnings
 from functools import wraps
-from typing import Iterable, List, Optional, Set
+from typing import Dict, Iterable, List, Optional, Set
 
 from localstack import config, constants
 from localstack.config import Directories
@@ -24,6 +24,7 @@ from localstack.utils.docker_utils import (
 )
 
 # set up logger
+from localstack.utils.generic.file_utils import cache_dir
 from localstack.utils.run import run, to_str
 from localstack.utils.serving import Server
 
@@ -89,7 +90,7 @@ def log_duration(name=None, min_ms=500):
     return wrapper
 
 
-def get_docker_image_details(image_name=None):
+def get_docker_image_details(image_name: str = None) -> Dict[str, str]:
     image_name = image_name or get_docker_image_to_start()
     try:
         result = DOCKER_CLIENT.inspect_image(image_name)
@@ -130,7 +131,19 @@ def get_main_container_name():
     return MAIN_CONTAINER_NAME_CACHED
 
 
-def get_server_version():
+def get_image_environment_variable(env_name: str) -> Optional[str]:
+    image_name = get_docker_image_to_start()
+    image_info = DOCKER_CLIENT.inspect_image(image_name)
+    image_envs = image_info["Config"]["Env"]
+
+    try:
+        found_env = next(env for env in image_envs if env.startswith(env_name))
+    except StopIteration:
+        return None
+    return found_env.split("=")[1]
+
+
+def get_server_version_from_running_container() -> str:
     try:
         # try to extract from existing running container
         container_name = get_main_container_name()
@@ -155,6 +168,26 @@ def get_server_version():
         except ContainerException:
             # fall back to default constant
             return constants.VERSION
+
+
+def get_server_version() -> str:
+    image_hash = get_docker_image_details()["id"]
+    version_cache = cache_dir() / "image_metadata" / image_hash / "localstack_version"
+    if version_cache.exists():
+        cached_version = version_cache.read_text()
+        return cached_version.strip()
+
+    env_version = get_image_environment_variable("LOCALSTACK_BUILD_VERSION")
+    if env_version is not None:
+        version_cache.parent.mkdir(exist_ok=True, parents=True)
+        version_cache.write_text(env_version)
+        return env_version
+
+    container_version = get_server_version_from_running_container()
+    version_cache.parent.mkdir(exist_ok=True, parents=True)
+    version_cache.write_text(container_version)
+
+    return container_version
 
 
 def setup_logging(log_level=None):

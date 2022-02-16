@@ -2,9 +2,10 @@ import configparser
 import os
 
 # TODO: move other file utils from common.py in here as well
+from pathlib import Path
 from typing import Dict
 
-from localstack.utils.common import load_file
+from localstack.utils.common import is_linux, is_mac_os, is_windows, load_file
 
 
 def parse_config_file(file_or_str: str, single_section: bool = True) -> Dict:
@@ -29,3 +30,16 @@ def parse_config_file(file_or_str: str, single_section: bool = True) -> Dict:
         result = result[sections[0]]
 
     return result
+
+
+def cache_dir() -> Path:
+    if is_windows():
+        return Path("%LOCALAPPDATA%", "cache", "localstack")
+    if is_mac_os():
+        return Path.home() / "Library" / "Caches" / "localstack"
+    if is_linux():
+        string_path = os.environ.get("XDG_CACHE_HOME")
+        if string_path and os.path.isabs(string_path):
+            return Path(string_path)
+    # Use the common place to store caches in Linux as a default
+    return Path.home() / ".cache" / "localstack"

@@ -1,6 +1,7 @@
+import json
 import os
 import sys
-from typing import Dict, Optional
+from typing import Dict, Optional, TypedDict
 
 import click
 
@@ -62,13 +63,15 @@ def localstack_status(ctx):
 @localstack_status.command(
     name="docker", help="Query information about the LocalStack Docker image and runtime"
 )
-def cmd_status_docker():
+@click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
+def cmd_status_docker(format):
     with console.status("Querying Docker status"):
-        print_docker_status()
+        print_docker_status(format)
 
 
 @localstack_status.command(name="services", help="Query information about running services")
-def cmd_status_services():
+@click.option("--format", type=click.Choice(["table", "plain", "dict", "json"]), default="table")
+def cmd_status_services(format):
     import requests
 
     from localstack import config
@@ -79,10 +82,18 @@ def cmd_status_services():
         health = requests.get(f"{url}/health")
         doc = health.json()
         services = doc.get("services", [])
-        print_service_table(services)
+        if format == "table":
+            print_service_table(services)
+        if format == "plain":
+            for service, status in services.items():
+                console.print(f"{service}={status}")
+        if format == "dict":
+            console.print(services)
+        if format == "json":
+            console.print(json.dumps(services))
     except requests.ConnectionError:
-        err = "[bold][red]:heavy_multiplication_x: ERROR[/red][/bold]"
-        console.print(f"{err}: could not connect to LocalStack health endpoint at {url}")
+        error = f"could not connect to LocalStack health endpoint at {url}"
+        print_error(format, error)
         if config.DEBUG:
             console.print_exception()
         sys.exit(1)
@@ -318,9 +329,17 @@ def cmd_infra_start(ctx, *args, **kwargs):
     ctx.invoke(cmd_start, *args, **kwargs)
 
 
-def print_docker_status():
-    from rich.table import Table
+class DockerStatus(TypedDict, total=False):
+    running: bool
+    runtime_version: str
+    image_tag: str
+    image_id: str
+    image_created: str
+    container_name: Optional[str]
+    container_ip: Optional[str]
 
+
+def print_docker_status(format):
     from localstack import config
     from localstack.utils import docker_utils
     from localstack.utils.bootstrap import (
@@ -330,30 +349,52 @@ def print_docker_status():
         get_server_version,
     )
 
+    img = get_docker_image_details()
+    cont_name = config.MAIN_CONTAINER_NAME
+    running = docker_utils.DOCKER_CLIENT.is_container_running(cont_name)
+    status = DockerStatus(
+        runtime_version=get_server_version(),
+        image_tag=img["tag"],
+        image_id=img["id"],
+        image_created=img["created"],
+        running=running,
+    )
+    if running:
+        status["container_name"] = get_main_container_name()
+        status["container_ip"] = get_main_container_ip()
+
+    if format == "dict":
+        console.print(status)
+    if format == "table":
+        print_docker_status_table(status)
+    if format == "json":
+        console.print(json.dumps(status))
+    if format == "plain":
+        for key, value in status.items():
+            console.print(f"{key}={value}")
+
+
+def print_docker_status_table(status: DockerStatus):
+    from rich.table import Table
+
     grid = Table(show_header=False)
     grid.add_column()
     grid.add_column()
 
-    # version
-    grid.add_row("Runtime version", "[bold]%s[/bold]" % get_server_version())
-
-    # image
-    img = get_docker_image_details()
+    grid.add_row("Runtime version", f'[bold]{status["runtime_version"]}[/bold]')
     grid.add_row(
-        "Docker image", "tag: %s, id: %s, :calendar: %s" % (img["tag"], img["id"], img["created"])
+        "Docker image",
+        f"tag: {status['image_tag']}, "
+        f"id: {status['image_id']}, "
+        f":calendar: {status['image_created']}",
     )
-
-    # container
-    cont_name = config.MAIN_CONTAINER_NAME
-    running = docker_utils.DOCKER_CLIENT.is_container_running(cont_name)
     cont_status = "[bold][red]:heavy_multiplication_x: stopped"
-    if running:
-        cont_status = '[bold][green]:heavy_check_mark: running[/green][/bold] (name: "[italic]%s[/italic]", IP: %s)' % (
-            get_main_container_name(),
-            get_main_container_ip(),
+    if status["running"]:
+        cont_status = (
+            f"[bold][green]:heavy_check_mark: running[/green][/bold] "
+            f'(name: "[italic]{status["container_name"]}[/italic]", IP: {status["container_ip"]})'
         )
     grid.add_row("Runtime status", cont_status)
-
     console.print(grid)
 
 
@@ -385,6 +426,18 @@ def print_service_table(services: Dict[str, str]):
 
 def print_version():
     console.print(" :laptop_computer: [bold]LocalStack CLI[/bold] [blue]%s[/blue]" % __version__)
+
+
+def print_error(format, error):
+    if format == "table":
+        symbol = "[bold][red]:heavy_multiplication_x: ERROR[/red][/bold]"
+        console.print(f"{symbol}: {error}")
+    if format == "plain":
+        console.print(f"error={error}")
+    if format == "dict":
+        console.print({"error": error})
+    if format == "json":
+        console.print(json.dumps({"error": error}))
 
 
 def print_banner():

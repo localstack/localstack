@@ -100,6 +100,7 @@ docker-build: 			  ## Build Docker image
 		--cache-from $(TAG) --build-arg BUILDKIT_INLINE_CACHE=1 \
 		--build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
 		--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y-%m-%d") \
+		--build-arg=LOCALSTACK_BUILD_VERSION=$(IMAGE_TAG) \
 		--add-host="localhost.localdomain:127.0.0.1" \
 		-t $(TAG) $(DOCKER_BUILD_FLAGS) . -f $(DOCKERFILE)
 
