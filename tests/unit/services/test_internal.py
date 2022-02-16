@@ -4,6 +4,7 @@ import requests
 
 from localstack.constants import VERSION
 from localstack.http import Request
+from localstack.services.generic_proxy import ProxyListener
 from localstack.services.internal import HealthResource, LocalstackResourceHandler
 from localstack.services.plugins import ServiceManager, ServiceState
 from localstack.utils.testutil import proxy_server
@@ -88,11 +89,15 @@ class TestLocalstackResourceHandlerIntegration:
             assert "</html>" in response.text, "deploy UI did not render HTML"
 
     def test_fallthrough(self):
-        with proxy_server(LocalstackResourceHandler()) as url:
-            # some other error is thrown by the proxy if there are no more listeners
+        class RaiseError(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                raise ValueError("this error is expected")
+
+        with proxy_server([LocalstackResourceHandler(), RaiseError()]) as url:
+            # the RaiseError handler is called since this is not a /_localstack resource
             response = requests.get(f"{url}/foobar")
             assert not response.ok
-            assert not response.status_code == 404
+            assert response.status_code >= 500
 
             # internal paths are 404ed
             response = requests.get(f"{url}/_localstack/foobar")
