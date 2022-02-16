@@ -535,7 +535,14 @@ class BaseRestRequestParser(RequestParser):
             request_uri_regex = self._get_request_uri_regex(operation_model)
             self.operation_lookup[method][request_uri_regex] = operation_model
 
-    def _get_normalized_request_uri_length(self, operation_model: OperationModel) -> str:
+    def _get_normalized_request_uri_length(self, operation_model: OperationModel) -> int:
+        """
+        Fings the length of the normalized request URI for the given operation model.
+        See #_get_normalized_request_uri for a description of the normalization.
+        """
+        return len(self._get_normalized_request_uri(operation_model))
+
+    def _get_normalized_request_uri(self, operation_model: OperationModel) -> str:
         """
         Fings the normalized request URI for the given operation model.
         A normalized request URI has a static, common replacement for path parameter placeholders, starting with a

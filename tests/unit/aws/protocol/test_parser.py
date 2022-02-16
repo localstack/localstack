@@ -743,12 +743,18 @@ def test_restjson_operation_detection_with_query_suffix_in_requesturi():
     _botocore_parser_integration_test(service="apigateway", action="ImportRestApi", body=b"Test")
 
 
-# TODO fix operation detection for API Gateway:
-# Expected: 	PutIntegrationResponse	PUT 	/restapis/{restapi_id}/resources/{resource_id}/methods/{http_method}/integration/responses/{status_code}
-# Actual:		PutMethodResponse		PUT 	/restapis/{restapi_id}/resources/{resource_id}/methods/{http_method}/responses/{status_code}
-
-
-# TODO Add additional tests (or even automate the creation)
-# - Go to the Boto3 Docs (https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/index.html)
-# - Look for boto3 request syntax definition for services that use the protocol you want to test
-# - Take request syntax, remove the "or" ("|") and call the helper function with these named params
+def test_restjson_operation_detection_with_length_prio():
+    """
+    Tests if the correct operation is detected if the requestURI patterns are conflicting and the length of the
+    normalized regular expression for the path matching solves the conflict.
+    For example: The detection of API Gateway PutIntegrationResponse (without the normalization PutMethodResponse would
+                    be detected).
+    """
+    _botocore_parser_integration_test(
+        service="apigateway",
+        action="PutIntegrationResponse",
+        restApiId="rest-api-id",
+        resourceId="resource-id",
+        httpMethod="POST",
+        statusCode="201",
+    )
