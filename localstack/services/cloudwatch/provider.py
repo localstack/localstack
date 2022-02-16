@@ -19,7 +19,6 @@ from localstack.aws.api.cloudwatch import (
 from localstack.http import Request
 from localstack.services import moto
 from localstack.services.edge import ROUTER
-from localstack.services.moto import create_aws_request_context
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
@@ -111,6 +110,13 @@ def create_message_response_update_state(alarm, old_state):
 
 
 class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
+    """
+    Cloudwatch provider.
+
+    LIMITATIONS:
+        - no alarm rule evaluation
+    """
+
     def __init__(self):
         self.tags = TaggingService()
 
@@ -173,7 +179,30 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutCompositeAlarmInput,
     ) -> None:
-        ctx = create_aws_request_context(
-            "cloudwatch", "PutMetricAlarm", request, region=context.region
+        pass
+        backend = cloudwatch_backends[context.region]
+        backend.put_metric_alarm(
+            name=request.get("AlarmName"),
+            namespace=None,
+            metric_name=None,
+            metric_data_queries=None,
+            comparison_operator=None,
+            evaluation_periods=None,
+            datapoints_to_alarm=None,
+            period=None,
+            threshold=None,
+            statistic=None,
+            extended_statistic=None,
+            description=request.get("AlarmDescription"),
+            dimensions=[],
+            alarm_actions=request.get("AlarmActions", []),
+            ok_actions=request.get("OKActions", []),
+            insufficient_data_actions=request.get("InsufficientDataActions", []),
+            unit=None,
+            actions_enabled=request.get("ActionsEnabled"),
+            treat_missing_data=None,
+            evaluate_low_sample_count_percentile=None,
+            threshold_metric_id=None,
+            rule=request.get("AlarmRule"),
+            tags=request.get("Tags", []),
         )
-        moto.call_moto(ctx)

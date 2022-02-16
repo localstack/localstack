@@ -213,6 +213,23 @@ class TestCloudwatch:
         finally:
             cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
 
+    def test_put_composite_alarm_describe_alarms_converts_date_format_correctly(
+        self, cloudwatch_client
+    ):
+        alarm_name = "a-%s" % short_uid()
+        alarm_rule = 'ALARM("my_other_alarm")'
+        cloudwatch_client.put_composite_alarm(
+            AlarmName=alarm_name,
+            AlarmRule=alarm_rule,
+        )
+        try:
+            result = cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
+            alarm = result["CompositeAlarms"][0]
+            assert alarm["AlarmName"] == alarm_name
+            assert alarm["AlarmRule"] == alarm_rule
+        finally:
+            cloudwatch_client.delete_alarms(AlarmNames=[alarm_name])
+
     def test_store_tags(self, cloudwatch_client):
         alarm_name = "a-%s" % short_uid()
         response = cloudwatch_client.put_metric_alarm(
