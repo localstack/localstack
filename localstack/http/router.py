@@ -125,9 +125,9 @@ class Router(Generic[E]):
 
             for r in old.iter_rules():
                 if r == rule:
+                    # this works even with copied rules because of the __eq__ implementation of Rule
                     continue
-                r.map = None
-                new.add(r)
+                new.add(r.empty())
             self.url_map = new
 
     def dispatch(self, request: Request) -> Response:

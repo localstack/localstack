@@ -119,15 +119,21 @@ class TestRouter:
         def users(_: Request, args) -> Response:
             return Response(b"users")
 
-        router.add("/", index)
-        rule = router.add("/users/<int:user_id>", users)
+        rule0 = router.add("/", index)
+        rule1 = router.add("/users/<int:user_id>", users)
 
         assert router.dispatch(Request("GET", "/")).data == b"index"
         assert router.dispatch(Request("GET", "/users/12")).data == b"users"
 
-        router.remove_rule(rule)
+        router.remove_rule(rule1)
 
         assert router.dispatch(Request("GET", "/")).data == b"index"
+        with pytest.raises(NotFound):
+            assert router.dispatch(Request("GET", "/users/12"))
+
+        router.remove_rule(rule0)
+        with pytest.raises(NotFound):
+            assert router.dispatch(Request("GET", "/"))
         with pytest.raises(NotFound):
             assert router.dispatch(Request("GET", "/users/12"))
 
