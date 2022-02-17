@@ -230,7 +230,11 @@ def _botocore_parser_integration_test(
     assert parsed_operation_model == operation_model
 
     # Check if the result is equal to the given "expected" dict or the kwargs (if "expected" has not been set)
-    assert parsed_request == (expected or kwargs)
+    expected = expected or kwargs
+    # The parser adds None for none-existing members on purpose. Remove those for the assert
+    expected = {key: value for key, value in expected.items() if value is not None}
+    parsed_request = {key: value for key, value in parsed_request.items() if value is not None}
+    assert parsed_request == expected
 
 
 def test_query_parser_sqs_with_botocore():
@@ -277,7 +281,7 @@ def test_query_parser_empty_required_members_sqs_with_botocore():
         action="SendMessageBatch",
         QueueUrl="string",
         Entries=[],
-        expected={"QueueUrl": "string", "Entries": None},
+        expected={"QueueUrl": "string"},
     )
 
 
@@ -687,20 +691,7 @@ def test_parse_s3_with_extended_uri_pattern():
     The corresponding shape definition does not contain the "+" in the "locationName" directive.
     """
     _botocore_parser_integration_test(
-        service="s3",
-        action="ListParts",
-        Bucket="foo",
-        Key="bar/test",
-        UploadId="test-upload-id",
-        expected={
-            "Bucket": "foo",
-            "Key": "bar/test",
-            "UploadId": "test-upload-id",
-            "ExpectedBucketOwner": None,
-            "MaxParts": None,
-            "PartNumberMarker": None,
-            "RequestPayer": None,
-        },
+        service="s3", action="ListParts", Bucket="foo", Key="bar/test", UploadId="test-upload-id"
     )
 
 
@@ -766,28 +757,17 @@ def test_s3_operation_detection():
     overloaded with the exact same requestURI by another non-deprecated function where the only distinction is the
     matched required parameter.
     """
-    expected = {
-        "Bucket": "test-bucket",
-        "Key": "test.json",
-        "ExpectedBucketOwner": None,
-        "IfMatch": None,
-        "IfModifiedSince": None,
-        "IfNoneMatch": None,
-        "IfUnmodifiedSince": None,
-        "PartNumber": None,
-        "Range": None,
-        "RequestPayer": None,
-        "ResponseCacheControl": None,
-        "ResponseContentDisposition": None,
-        "ResponseContentEncoding": None,
-        "ResponseContentLanguage": None,
-        "ResponseContentType": None,
-        "ResponseExpires": None,
-        "SSECustomerAlgorithm": None,
-        "SSECustomerKey": None,
-        "SSECustomerKeyMD5": None,
-        "VersionId": None,
-    }
     _botocore_parser_integration_test(
-        service="s3", action="GetObject", Bucket="test-bucket", Key="test.json", expected=expected
+        service="s3", action="GetObject", Bucket="test-bucket", Key="test.json"
+    )
+
+
+def test_restxml_headers_parsing():
+    """Test the parsing of a map with the location trait 'headers'."""
+    _botocore_parser_integration_test(
+        service="s3",
+        action="PutObject",
+        Bucket="test-bucket",
+        Key="test.json",
+        Metadata={"key": "value", "key2": "value2"},
     )

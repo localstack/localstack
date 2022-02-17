@@ -170,6 +170,8 @@ class RequestParser(abc.ABC):
                 payload = request.headers.get(header_name)
             elif location == "headers":
                 payload = self._parse_header_map(shape, request.headers)
+                # shapes with the location trait "headers" only contain strings and are not further processed
+                return payload
             elif location == "querystring":
                 query_name = shape.serialization.get("name")
                 parsed_query = parse_qs(to_str(request.query_string))
