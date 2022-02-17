@@ -143,6 +143,8 @@ class RequestParser(abc.ABC):
     DEFAULT_ENCODING = "utf-8"
     # The default timestamp format is ISO8601, but this can be overwritten by subclasses.
     TIMESTAMP_FORMAT = "iso8601"
+    # The default timestamp format for header fields
+    HEADER_TIMESTAMP_FORMAT = "rfc822"
 
     def __init__(self, service: ServiceModel) -> None:
         super().__init__()
@@ -234,7 +236,10 @@ class RequestParser(abc.ABC):
 
     @_text_content
     def _parse_timestamp(self, _, shape: Shape, node: str, ___) -> datetime.datetime:
-        return self._convert_str_to_timestamp(node, shape.serialization.get("timestampFormat"))
+        timestamp_format = shape.serialization.get("timestampFormat")
+        if not timestamp_format and shape.serialization.get("location") == "header":
+            timestamp_format = self.HEADER_TIMESTAMP_FORMAT
+        return self._convert_str_to_timestamp(node, timestamp_format)
 
     @_text_content
     def _parse_boolean(self, _, __, node: str, ___) -> bool:

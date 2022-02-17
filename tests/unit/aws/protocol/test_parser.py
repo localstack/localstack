@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlencode, urlsplit
 
 from botocore.awsrequest import prepare_request_dict
@@ -771,6 +771,19 @@ def test_restxml_headers_parsing():
         Bucket="test-bucket",
         Key="test.json",
         Metadata={"key": "value", "key2": "value2"},
+    )
+
+
+def test_restxml_header_date_parsing():
+    """Test the parsing of a map with the location trait 'headers'."""
+    _botocore_parser_integration_test(
+        service="s3",
+        action="PutObject",
+        Bucket="test-bucket",
+        Key="test-key",
+        Body=b"foo",
+        Metadata={},
+        Expires=datetime(2015, 1, 1, 0, 0, tzinfo=timezone.utc),
     )
 
 
