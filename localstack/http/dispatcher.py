@@ -56,11 +56,14 @@ def resource_dispatcher(pass_response: bool = False) -> Dispatcher:
         fn = getattr(endpoint, fn_name, None)
 
         if fn:
-            response = Response()
             if pass_response:
+                response = Response()
                 fn(request, response, **args)
             else:
                 result = fn(request, **args)
+                if isinstance(result, Response):
+                    return result
+                response = Response()
                 _populate_response(response, result)
 
             return response

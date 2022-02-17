@@ -141,7 +141,6 @@ class TestWsgiIntegration:
             return Response(b"index")
 
         def echo_json(request: Request, args) -> Response:
-            print(request.form)
             response = Response()
             response.set_json(request.json)
             return response
