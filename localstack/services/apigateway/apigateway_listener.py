@@ -780,12 +780,10 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 )
                 return result
             elif uri.startswith("arn:aws:apigateway:") and ":sns:path" in uri:
-                response = SnsIntegration(invocation_context).invoke()
-                # apply response template
-                result = apply_request_response_templates(
-                    response, response_templates, content_type=APPLICATION_JSON
+                integration_response = SnsIntegration(invocation_context).invoke()
+                return apply_request_response_templates(
+                    integration_response, response_templates, content_type=APPLICATION_JSON
                 )
-                return result
 
         raise Exception(
             'API Gateway AWS integration action URI "%s", method "%s" not yet implemented'
