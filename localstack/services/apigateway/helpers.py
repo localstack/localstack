@@ -41,8 +41,10 @@ PATH_REGEX_DOC_PARTS = r"^/restapis/([A-Za-z0-9_\-]+)/documentation/parts/?([^?/
 PATH_REGEX_PATH_MAPPINGS = r"/domainnames/([^/]+)/basepathmappings/?(.*)"
 PATH_REGEX_CLIENT_CERTS = r"/clientcertificates/?([^/]+)?$"
 PATH_REGEX_VPC_LINKS = r"/vpclinks/([^/]+)?(.*)"
-PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([" \
-                             r"A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
+PATH_REGEX_TEST_INVOKE_API = (
+    r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/(["
+    r"A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
+)
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
@@ -728,8 +730,10 @@ def get_gateway_responses(api_id):
     region_details = APIGatewayRegion.get()
     result = region_details.gateway_responses.get(api_id, [])
 
-    href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{" \
-           "rel}.html"
+    href = (
+        "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{"
+        "rel}.html"
+    )
     base_path = "/restapis/%s/gatewayresponses" % api_id
 
     result = {
@@ -866,7 +870,7 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
     result["_links"]["self"] = {"href": self_link}
     result["_links"]["curies"] = {
         "href": "https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer"
-                "-latest.html",
+        "-latest.html",
         "name": model_type,
         "templated": True,
     }
@@ -1048,7 +1052,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
                 {
                     "type": "AWS",
                     "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
-                           % (sqs_region, TEST_AWS_ACCOUNT_ID, queue_name),
+                    % (sqs_region, TEST_AWS_ACCOUNT_ID, queue_name),
                     "requestTemplates": {"application/json": template},
                 }
             ],

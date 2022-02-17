@@ -33,6 +33,7 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_RESPONSES,
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_VALIDATORS,
+    apply_template,
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
@@ -45,7 +46,7 @@ from localstack.services.apigateway.helpers import (
     handle_gateway_responses,
     handle_validators,
     handle_vpc_links,
-    make_error_response, apply_template,
+    make_error_response,
 )
 from localstack.services.apigateway.integration import SnsIntegration
 from localstack.services.awslambda import lambda_api
@@ -62,13 +63,7 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.common import (
-    camel_to_snake_case,
-    json_safe,
-    long_uid,
-    to_bytes,
-    to_str,
-)
+from localstack.utils.common import camel_to_snake_case, json_safe, long_uid, to_bytes, to_str
 
 # set up logger
 from localstack.utils.http_utils import add_query_params_to_url
@@ -340,8 +335,6 @@ def apply_request_parameters(
                 query_params.pop(key)
 
     return add_query_params_to_url(uri, query_params)
-
-
 
 
 def apply_response_parameters(invocation_context: ApiInvocationContext):
