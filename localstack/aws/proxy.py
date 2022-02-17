@@ -1,15 +1,18 @@
+"""
+Adapters and other utilities to use ASF together with the edge proxy.
+"""
 import logging
 from typing import Any, Optional
-from urllib.parse import urlsplit
 
 from botocore.model import ServiceModel
-from requests.models import Response
 from werkzeug.datastructures import Headers
 
 from localstack import constants
-from localstack.aws.api import HttpRequest, HttpResponse, RequestContext
+from localstack.aws.api import RequestContext
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
+from localstack.http import Request, Response
+from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.messages import MessagePayload
 from localstack.utils.aws.request_context import extract_region_from_headers
@@ -18,52 +21,34 @@ from localstack.utils.persistence import PersistingProxyListener
 LOG = logging.getLogger(__name__)
 
 
-def get_region(request: HttpRequest) -> str:
+def get_region(request: Request) -> str:
     return extract_region_from_headers(request.headers)
 
 
-def get_account_id(_: HttpRequest) -> str:
+def get_account_id(_: Request) -> str:
     # TODO: at some point we may want to get the account id from credentials
     return constants.TEST_AWS_ACCOUNT_ID
 
 
-class AwsApiListener(ProxyListener):
+class AwsApiListener(ProxyListenerAdapter):
     service: ServiceModel
 
     def __init__(self, api: str, delegate: Any):
         self.service = load_service(api)
         self.skeleton = Skeleton(self.service, delegate)
 
-    def forward_request(self, method, path, data, headers):
-        split_url = urlsplit(path)
-        request = HttpRequest(
-            method=method,
-            path=split_url.path,
-            query_string=split_url.query,
-            headers=headers,
-            body=data,
-        )
-
+    def request(self, request: Request) -> Response:
         context = self.create_request_context(request)
         response = self.skeleton.invoke(context)
-        return self.to_server_response(response)
+        return response
 
-    def create_request_context(self, request: HttpRequest) -> RequestContext:
+    def create_request_context(self, request: Request) -> RequestContext:
         context = RequestContext()
         context.service = self.service
         context.request = request
         context.region = get_region(request)
         context.account_id = get_account_id(request)
         return context
-
-    def to_server_response(self, response: HttpResponse):
-        # TODO: creating response objects in this way (re-using the requests library instead of an HTTP server
-        #  framework) is a bit ugly, but it's the way that the edge proxy expects them.
-        resp = Response()
-        resp._content = response.get_data()
-        resp.status_code = response.status_code
-        resp.headers.update(response.headers)
-        return resp
 
 
 def _raise_not_implemented_error(*args, **kwargs):
