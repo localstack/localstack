@@ -79,7 +79,15 @@ from urllib.parse import parse_qs, unquote
 from xml.etree import ElementTree as ETree
 
 import dateutil.parser
-from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
+from botocore.model import (
+    ListShape,
+    MapShape,
+    OperationModel,
+    OperationNotFoundError,
+    ServiceModel,
+    Shape,
+    StructureShape,
+)
 
 from localstack.aws.api import HttpRequest
 from localstack.utils.common import to_str
@@ -349,11 +357,26 @@ class QueryRequestParser(RequestParser):
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         body = request.get_data(as_text=True)
         instance = parse_qs(body, keep_blank_values=True)
+        if not instance:
+            # if the body does not contain any information, fallback to the actual query parameters
+            instance = parse_qs(to_str(request.query_string))
         # The query parsing returns a list for each entry in the dict (this is how HTTP handles lists in query params).
         # However, the AWS Query format does not have any duplicates.
         # Therefore we take the first element of each entry in the dict.
         instance = {k: self._get_first(v) for k, v in instance.items()}
-        operation: OperationModel = self.service.operation_model(instance["Action"])
+        if "Action" not in instance:
+            raise RequestParserError(
+                f"Operation detection failed. "
+                f"Missing Action in request for query-protocol service {self.service}."
+            )
+        action = instance["Action"]
+        try:
+            operation: OperationModel = self.service.operation_model(action)
+        except OperationNotFoundError:
+            raise RequestParserError(
+                f"Operation detection failed."
+                f"Operation {action} could not be found for service {self.service}."
+            )
         # Extract the URI for the operation and convert it to a regex
         request_uri_regex = self._get_request_uri_regex(operation)
         input_shape: StructureShape = operation.input_shape
@@ -974,6 +997,7 @@ class EC2RequestParser(QueryRequestParser):
 
 
 class S3RequestParser(RestXMLRequestParser):
+    # TODO: Support virtual host addressing (see botocore.utils.switch_to_virtual_host_style)
     def _detect_operation(self, request: HttpRequest) -> Tuple[OperationModel, Pattern[str]]:
         """
         Performs a specific operation detection to resolve conflicts with request URIs which are only contained in the
