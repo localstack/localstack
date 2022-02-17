@@ -18,11 +18,13 @@ from localstack.constants import (
     PATH_USER_REQUEST,
     TEST_AWS_ACCOUNT_ID,
 )
+from localstack.services.apigateway.context import InvocationPayload
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.aws_stack import parse_arn
+from localstack.utils.common import try_json
 
 LOG = logging.getLogger(__name__)
 
@@ -39,7 +41,8 @@ PATH_REGEX_DOC_PARTS = r"^/restapis/([A-Za-z0-9_\-]+)/documentation/parts/?([^?/
 PATH_REGEX_PATH_MAPPINGS = r"/domainnames/([^/]+)/basepathmappings/?(.*)"
 PATH_REGEX_CLIENT_CERTS = r"/clientcertificates/?([^/]+)?$"
 PATH_REGEX_VPC_LINKS = r"/vpclinks/([^/]+)?(.*)"
-PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
+PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([" \
+                             r"A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?"
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = (
@@ -52,7 +55,9 @@ TAG_KEY_CUSTOM_ID = "_custom_id_"
 # map API IDs to region names
 API_REGIONS = {}
 
-# TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
+
+# TODO: make the CRUD operations in this file generic for the different model types (authorizes,
+#  validators, ...)
 
 
 class APIGatewayRegion(RegionBackend):
@@ -392,7 +397,8 @@ def add_base_path_mapping(path, data):
 
     domain_name = get_domain_from_path(path)
     # Note: "(none)" is a special value in API GW:
-    # https://docs.aws.amazon.com/apigateway/api-reference/link-relation/basepathmapping-by-base-path
+    # https://docs.aws.amazon.com/apigateway/api-reference/link-relation/basepathmapping-by-base
+    # -path
     base_path = data["basePath"] = data.get("basePath") or "(none)"
     result = common.clone(data)
 
@@ -722,7 +728,8 @@ def get_gateway_responses(api_id):
     region_details = APIGatewayRegion.get()
     result = region_details.gateway_responses.get(api_id, [])
 
-    href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{rel}.html"
+    href = "http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{" \
+           "rel}.html"
     base_path = "/restapis/%s/gatewayresponses" % api_id
 
     result = {
@@ -737,7 +744,8 @@ def get_gateway_responses(api_id):
             "item": [{"href": "%s/%s" % (base_path, r["responseType"])} for r in result],
         },
         "_embedded": {"item": [gateway_response_to_response_json(i, api_id) for i in result]},
-        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the docs:
+        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the
+        # docs:
         # https://docs.aws.amazon.com/apigateway/api-reference/resource/gateway-responses/
         "item": [gateway_response_to_response_json(i, api_id) for i in result],
     }
@@ -857,7 +865,8 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
         result["_links"] = {}
     result["_links"]["self"] = {"href": self_link}
     result["_links"]["curies"] = {
-        "href": "https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html",
+        "href": "https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer"
+                "-latest.html",
         "name": model_type,
         "templated": True,
     }
@@ -1039,7 +1048,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
                 {
                     "type": "AWS",
                     "uri": "arn:aws:apigateway:%s:sqs:path/%s/%s"
-                    % (sqs_region, TEST_AWS_ACCOUNT_ID, queue_name),
+                           % (sqs_region, TEST_AWS_ACCOUNT_ID, queue_name),
                     "requestTemplates": {"application/json": template},
                 }
             ],
@@ -1081,8 +1090,10 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True, return_list=
                     common.assign_to_path(subject, path, value=value, delimiter="/")
                 target = common.extract_from_jsonpointer_path(subject, path)
                 if isinstance(target, list) and not path.endswith("/-"):
-                    # if "path" is an attribute name pointing to an array in "subject", and we're running
-                    # an "add" operation, then we should use the standard-compliant notation "/path/-"
+                    # if "path" is an attribute name pointing to an array in "subject", and we're
+                    # running
+                    # an "add" operation, then we should use the standard-compliant notation
+                    # "/path/-"
                     operation["path"] = "%s/-" % path
 
             result = apply_patch(subject, [operation], in_place=in_place)
@@ -1185,3 +1196,58 @@ def import_api_from_openapi_spec(
         rest_api.endpoint_configuration = endpoint_config
 
     return rest_api
+
+
+def apply_template(
+    integration: Dict[str, Any],
+    req_res_type: str,
+    data: InvocationPayload,
+    path_params=None,
+    query_params=None,
+    headers=None,
+    context=None,
+):
+    if path_params is None:
+        path_params = {}
+    if query_params is None:
+        query_params = {}
+    if headers is None:
+        headers = {}
+    if context is None:
+        context = {}
+    integration_type = integration.get("type") or integration.get("integrationType")
+    if integration_type in ["HTTP", "AWS"]:
+        # apply custom request template
+        content_type = APPLICATION_JSON  # TODO: make configurable!
+        template = integration.get("%sTemplates" % req_res_type, {}).get(content_type)
+        if template:
+            variables = {"context": context or {}}
+            input_ctx = {"body": data}
+            # little trick to flatten the input context so velocity templates
+            # work from the root.
+            # orig - { "body": '{"action": "$default","message":"foobar"}'
+            # after - {
+            #   "body": '{"action": "$default","message":"foobar"}',
+            #   "action": "$default",
+            #   "message": "foobar"
+            # }
+            if data:
+                dict_pack = try_json(data)
+                if isinstance(dict_pack, dict):
+                    for k, v in dict_pack.items():
+                        input_ctx.update({k: v})
+
+            def _params(name=None):
+                # See https://docs.aws.amazon.com/apigateway/latest/developerguide/
+                #    api-gateway-mapping-template-reference.html#input-variable-reference
+                # Returns "request parameter from the path, query string, or header value (
+                # searched in that order)"
+                combined = {}
+                combined.update(path_params or {})
+                combined.update(query_params or {})
+                combined.update(headers or {})
+                return combined if not name else combined.get(name)
+
+            input_ctx["params"] = _params
+            data = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
+    return data

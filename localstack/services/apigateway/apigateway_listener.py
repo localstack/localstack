@@ -4,7 +4,6 @@ import json
 import logging
 import re
 import time
-from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
 from urllib.parse import urljoin
 
@@ -24,7 +23,7 @@ from localstack.constants import (
     TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services.apigateway import helpers
-from localstack.services.apigateway.context import ApiInvocationContext, InvocationPayload
+from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     API_REGIONS,
     PATH_REGEX_AUTHORIZERS,
@@ -46,7 +45,7 @@ from localstack.services.apigateway.helpers import (
     handle_gateway_responses,
     handle_validators,
     handle_vpc_links,
-    make_error_response,
+    make_error_response, apply_template,
 )
 from localstack.services.apigateway.integration import SnsIntegration
 from localstack.services.awslambda import lambda_api
@@ -59,7 +58,6 @@ from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
     flask_to_requests_response,
-    parse_query_string,
     request_response_stream,
     requests_response,
 )
@@ -70,7 +68,6 @@ from localstack.utils.common import (
     long_uid,
     to_bytes,
     to_str,
-    try_json,
 )
 
 # set up logger
@@ -345,58 +342,6 @@ def apply_request_parameters(
     return add_query_params_to_url(uri, query_params)
 
 
-def apply_template(
-    integration: Dict[str, Any],
-    req_res_type: str,
-    data: InvocationPayload,
-    path_params=None,
-    query_params=None,
-    headers=None,
-    context=None,
-):
-    if path_params is None:
-        path_params = {}
-    if query_params is None:
-        query_params = {}
-    if headers is None:
-        headers = {}
-    if context is None:
-        context = {}
-    integration_type = integration.get("type") or integration.get("integrationType")
-    if integration_type in ["HTTP", "AWS"]:
-        # apply custom request template
-        content_type = APPLICATION_JSON  # TODO: make configurable!
-        template = integration.get("%sTemplates" % req_res_type, {}).get(content_type)
-        if template:
-            variables = {"context": context or {}}
-            input_ctx = {"body": data}
-            # little trick to flatten the input context so velocity templates
-            # work from the root.
-            # orig - { "body": '{"action": "$default","message":"foobar"}'
-            # after - {
-            #   "body": '{"action": "$default","message":"foobar"}',
-            #   "action": "$default",
-            #   "message": "foobar"
-            # }
-            if data:
-                dict_pack = try_json(data)
-                if isinstance(dict_pack, dict):
-                    for k, v in dict_pack.items():
-                        input_ctx.update({k: v})
-
-            def _params(name=None):
-                # See https://docs.aws.amazon.com/apigateway/latest/developerguide/
-                #    api-gateway-mapping-template-reference.html#input-variable-reference
-                # Returns "request parameter from the path, query string, or header value (searched in that order)"
-                combined = {}
-                combined.update(path_params or {})
-                combined.update(query_params or {})
-                combined.update(headers or {})
-                return combined if not name else combined.get(name)
-
-            input_ctx["params"] = _params
-            data = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
-    return data
 
 
 def apply_response_parameters(invocation_context: ApiInvocationContext):
