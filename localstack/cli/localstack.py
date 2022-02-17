@@ -142,7 +142,9 @@ def cmd_start(docker: bool, host: bool, no_banner: bool, detached: bool):
 @localstack.command(name="stop", help="Stop the running LocalStack container")
 def cmd_stop():
     from localstack import config
-    from localstack.utils.docker_utils import DOCKER_CLIENT, NoSuchContainer
+    from localstack.utils.docker_utils import DOCKER_CLIENT
+
+    from ..utils.container_utils.container_client import NoSuchContainer
 
     container_name = config.MAIN_CONTAINER_NAME
 

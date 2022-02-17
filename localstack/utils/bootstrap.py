@@ -13,15 +13,15 @@ from localstack import config, constants
 from localstack.config import Directories
 from localstack.runtime import hooks
 from localstack.utils.common import FileListener, chmod_r, mkdir, poll_condition
-from localstack.utils.docker_utils import (
-    DOCKER_CLIENT,
-    CmdDockerClient,
+from localstack.utils.container_utils.container_client import (
     ContainerException,
     PortMappings,
     SimpleVolumeBind,
     VolumeBind,
     VolumeMappings,
 )
+from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
+from localstack.utils.docker_utils import DOCKER_CLIENT
 
 # set up logger
 from localstack.utils.generic.file_utils import cache_dir
