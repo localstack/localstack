@@ -324,11 +324,11 @@ class RequestParser(abc.ABC):
         # Note that headers are case insensitive, so we .lower() all header names and header prefixes.
         parsed = {}
         prefix = shape.serialization.get("name", "").lower()
-        for header_name in headers:
+        for header_name, header_value in headers.items():
             if header_name.lower().startswith(prefix):
                 # The key name inserted into the parsed hash strips off the prefix.
                 name = header_name[len(prefix) :]
-                parsed[name] = headers[header_name]
+                parsed[name] = header_value
         return parsed
 
 
