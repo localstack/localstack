@@ -75,7 +75,7 @@ from collections import OrderedDict, defaultdict
 from email.utils import parsedate_to_datetime
 from functools import partial
 from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Tuple, Union
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urlsplit
 from xml.etree import ElementTree as ETree
 
 import dateutil.parser
@@ -997,7 +997,29 @@ class EC2RequestParser(QueryRequestParser):
 
 
 class S3RequestParser(RestXMLRequestParser):
-    # TODO: Support virtual host addressing (see botocore.utils.switch_to_virtual_host_style)
+    def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
+        """Handle virtual-host-addressing for S3."""
+        if (
+            # TODO implement a more sophisticated determination if the host contains S3 virtual host addressing
+            not request.host.startswith("s3.")
+            and not request.host.startswith("localhost.")
+            and not request.host.startswith("127.0.0.1")
+        ):
+            self._revert_virtual_host_style(request)
+        return super().parse(request)
+
+    def _revert_virtual_host_style(self, request: HttpRequest):
+        # extract the bucket name from the host part of the request
+        bucket_name = request.host.split(".")[0]
+        # split the url and put the bucket name at the front
+        parts = urlsplit(request.url)
+        path_parts = parts.path.split("/")
+        path_parts = [bucket_name] + path_parts
+        path_parts = [part for part in path_parts if part]
+        path = "/" + "/".join(path_parts) or "/"
+        # set the path with the bucket name in the front at the request
+        request.path = path
+
     def _detect_operation(self, request: HttpRequest) -> Tuple[OperationModel, Pattern[str]]:
         """
         Performs a specific operation detection to resolve conflicts with request URIs which are only contained in the

@@ -7,6 +7,7 @@ from botocore.serialize import create_serializer
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.parser import QueryRequestParser, RestJSONRequestParser, create_parser
 from localstack.aws.spec import load_service
+from localstack.services.s3 import s3_utils
 from localstack.utils.common import to_bytes, to_str
 
 
@@ -771,3 +772,15 @@ def test_restxml_headers_parsing():
         Key="test.json",
         Metadata={"key": "value", "key2": "value2"},
     )
+
+
+def test_s3_virtual_host_addressing():
+    """Test the parsing of a map with the location trait 'headers'."""
+    request = HttpRequest(
+        method="PUT", headers={"host": s3_utils.get_bucket_hostname("test-bucket")}
+    )
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "CreateBucket"
+    assert "Bucket" in parsed_request
+    assert parsed_request["Bucket"] == "test-bucket"
