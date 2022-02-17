@@ -78,6 +78,7 @@ from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Tuple, Union
 from urllib.parse import parse_qs, unquote, urlsplit
 from xml.etree import ElementTree as ETree
 
+import cbor2
 import dateutil.parser
 from botocore.model import (
     ListShape,
@@ -669,13 +670,13 @@ class BaseRestRequestParser(RequestParser):
                 if request.data:
                     payload_parsed[payload_member_name] = request.data
             else:
-                original_parsed = self._initial_body_parse(request.data)
+                original_parsed = self._initial_body_parse(request)
                 payload_parsed[payload_member_name] = self._parse_shape(
                     request, body_shape, original_parsed, path_regex
                 )
         else:
             # The payload covers the whole body. We only parse the body if it hasn't been handled by the payload logic.
-            non_payload_parsed = self._initial_body_parse(request.data)
+            non_payload_parsed = self._initial_body_parse(request)
         # even if the payload has been parsed, the rest of the shape needs to be processed as well
         # (for members which are located outside of the body, like uri or header)
         non_payload_parsed = self._parse_shape(request, shape, non_payload_parsed, path_regex)
@@ -683,13 +684,13 @@ class BaseRestRequestParser(RequestParser):
         final_parsed.update(non_payload_parsed)
         final_parsed.update(payload_parsed)
 
-    def _initial_body_parse(self, body_contents: bytes) -> any:
+    def _initial_body_parse(self, request: HttpRequest) -> any:
         """
-        This method executes the initial XML or JSON parsing of the body.
+        This method executes the initial parsing of the body (XML, JSON, or CBOR).
         The parsed body will afterwards still be walked through and the nodes will be converted to the appropriate
         types, but this method does the first round of parsing.
 
-        :param body_contents: which should be parsed
+        :param request: of which the body should be parsed
         :return: depending on the actual implementation
         """
         raise NotImplementedError("_initial_body_parse")
@@ -712,10 +713,11 @@ class RestXMLRequestParser(BaseRestRequestParser):
         super(RestXMLRequestParser, self).__init__(service_model)
         self._namespace_re = re.compile("{.*}")
 
-    def _initial_body_parse(self, xml_string: str) -> ETree.Element:
-        if not xml_string:
+    def _initial_body_parse(self, request: HttpRequest) -> ETree.Element:
+        body = request.data
+        if not body:
             return ETree.Element("")
-        return self._parse_xml_string_to_dom(xml_string)
+        return self._parse_xml_string_to_dom(body)
 
     def _parse_structure(
         self,
@@ -806,7 +808,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
             return serialized_name
         return member_name
 
-    def _parse_xml_string_to_dom(self, xml_string: str) -> ETree.Element:
+    def _parse_xml_string_to_dom(self, xml_string: bytes) -> ETree.Element:
         try:
             parser = ETree.XMLParser(target=ETree.TreeBuilder(), encoding=self.DEFAULT_ENCODING)
             parser.feed(xml_string)
@@ -896,15 +898,21 @@ class BaseJSONRequestParser(RequestParser, ABC):
             parsed[actual_key] = actual_value
         return parsed
 
-    def _parse_body_as_json(self, body_contents: bytes) -> dict:
+    def _parse_body_as_json(self, request: HttpRequest) -> dict:
+        body_contents = request.data
         if not body_contents:
             return {}
-        body = body_contents.decode(self.DEFAULT_ENCODING)
-        try:
-            original_parsed = json.loads(body)
-            return original_parsed
-        except ValueError:
-            raise RequestParserError("HTTP body could not be parsed as JSON.")
+        if request.content_type and request.content_type.startswith("application/x-amz-cbor"):
+            try:
+                return cbor2.loads(body_contents)
+            except ValueError:
+                raise RequestParserError("HTTP body could not be parsed as CBOR.")
+        else:
+            try:
+                body = body_contents.decode(self.DEFAULT_ENCODING)
+                return json.loads(body)
+            except ValueError:
+                raise RequestParserError("HTTP body could not be parsed as JSON.")
 
     def _parse_boolean(
         self, request: HttpRequest, shape: Shape, node: bool, path_regex: Pattern[str] = None
@@ -942,7 +950,7 @@ class JSONRequestParser(BaseJSONRequestParser):
             if event_name:
                 parsed = self._handle_event_stream(request, shape, event_name)
             else:
-                parsed = self._handle_json_body(request, request.data, shape, path_regex)
+                parsed = self._handle_json_body(request, shape, path_regex)
         return parsed
 
     def _handle_event_stream(self, request: HttpRequest, shape: Shape, event_name: str):
@@ -950,11 +958,11 @@ class JSONRequestParser(BaseJSONRequestParser):
         raise NotImplementedError
 
     def _handle_json_body(
-        self, request: HttpRequest, raw_body: bytes, shape: Shape, path_regex: Pattern[str] = None
+        self, request: HttpRequest, shape: Shape, path_regex: Pattern[str] = None
     ) -> any:
         # The json.loads() gives us the primitive JSON types, but we need to traverse the parsed JSON data to convert
         # to richer types (blobs, timestamps, etc.)
-        parsed_json = self._parse_body_as_json(raw_body)
+        parsed_json = self._parse_body_as_json(request)
         return self._parse_shape(request, shape, parsed_json, path_regex)
 
 
@@ -969,8 +977,8 @@ class RestJSONRequestParser(BaseRestRequestParser, BaseJSONRequestParser):
     When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
-    def _initial_body_parse(self, body_contents: bytes) -> dict:
-        return self._parse_body_as_json(body_contents)
+    def _initial_body_parse(self, request: HttpRequest) -> dict:
+        return self._parse_body_as_json(request)
 
     def _create_event_stream(self, request: HttpRequest, shape: Shape) -> any:
         raise NotImplementedError
