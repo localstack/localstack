@@ -1,4 +1,4 @@
-from localstack.aws.proxy import AsfWithFallbackListener
+from localstack.aws.proxy import AsfWithFallbackListener, AwsApiListener
 from localstack.services.plugins import Service, aws_provider
 
 
@@ -194,15 +194,13 @@ def s3():
 
 @aws_provider()
 def secretsmanager():
-    from localstack.services.secretsmanager.secretsmanager_listener import (
-        AsfWithPersistingFallbackListenerSecretsManager,
-    )
-    from localstack.services.secretsmanager.secretsmanager_starter import start_secretsmanager
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.secretsmanager.provider import SecretsmanagerProvider
 
+    provider = SecretsmanagerProvider()
     return Service(
         "secretsmanager",
-        listener=AsfWithPersistingFallbackListenerSecretsManager(),
-        start=start_secretsmanager,
+        listener=AwsApiListener("secretsmanager", MotoFallbackDispatcher(provider)),
     )
 
 

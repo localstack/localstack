@@ -1,4 +1,7 @@
-from localstack.aws.api import RequestContext
+import json
+import logging
+
+from localstack.aws.api import HttpRequest, RequestContext
 from localstack.aws.api.secretsmanager import (
     AddReplicaRegionListType,
     BooleanType,
@@ -55,16 +58,49 @@ from localstack.aws.api.secretsmanager import (
 )
 from localstack.services.moto import call_moto
 from localstack.services.secretsmanager.secretsmanager_patches import apply_patches
+from localstack.utils.aws import aws_stack
+from localstack.utils.common import to_str
+
+LOG = logging.getLogger(__name__)
 
 
 class SecretsmanagerProvider(SecretsmanagerApi):
     def __init__(self):
         apply_patches()
 
+    @staticmethod
+    def __transform_context_secret_id(context: RequestContext) -> RequestContext:
+        data_dict = json.loads(to_str(context.request.data or "{}"))
+        secret_id = data_dict.get("SecretId", "")
+        if ":" in secret_id:
+            request = context.request
+            parts = secret_id.split(":")
+            if parts[3] != aws_stack.get_region():
+                LOG.info(
+                    'Unexpected request region %s for secret "%s"',
+                    aws_stack.get_region(),
+                    secret_id,
+                )
+            # secret ARN ends with "-<randomId>" which we remove in the request for upstream compatibility
+            # if the full arn is being sent then we remove the string in the end
+            if parts[-1][-7] == "-":
+                data_dict["SecretId"] = parts[-1][: len(parts[-1]) - 7]
+            elif parts[-1][-1] != "-":
+                data_dict["SecretId"] = data_dict["SecretId"] + "-"
+            #
+            context.request = HttpRequest(
+                method=request.method,
+                path=request.path,
+                query_string=request.query_string,
+                headers=request.headers,
+                body=bytes(json.dumps(data_dict), "utf-8"),
+            )
+        return context
+
     def cancel_rotate_secret(
         self, context: RequestContext, secret_id: SecretIdType
     ) -> CancelRotateSecretResponse:
-        raise NotImplementedError
+        return CreateSecretResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def create_secret(
         self,
@@ -79,14 +115,14 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         add_replica_regions: AddReplicaRegionListType = None,
         force_overwrite_replica_secret: BooleanType = None,
     ) -> CreateSecretResponse:
-        res = call_moto(context)
-        return CreateSecretResponse(**res)
+        return CreateSecretResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def delete_resource_policy(
         self, context: RequestContext, secret_id: SecretIdType
     ) -> DeleteResourcePolicyResponse:
-        res = call_moto(context)
-        return DeleteResourcePolicyResponse(**res)
+        return DeleteResourcePolicyResponse(
+            **call_moto(self.__transform_context_secret_id(context))
+        )
 
     def delete_secret(
         self,
@@ -95,15 +131,14 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         recovery_window_in_days: RecoveryWindowInDaysType = None,
         force_delete_without_recovery: BooleanType = None,
     ) -> DeleteSecretResponse:
-        res = call_moto(context)
-        return DeleteSecretResponse(**res)
+        return DeleteSecretResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def describe_secret(
         self, context: RequestContext, secret_id: SecretIdType
     ) -> DescribeSecretResponse:
-        res = call_moto(context)
-        return DescribeSecretResponse(**res)
+        return DescribeSecretResponse(**call_moto(self.__transform_context_secret_id(context)))
 
+    # TODO: remove
     def get_random_password(
         self,
         context: RequestContext,
@@ -116,14 +151,12 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         include_space: IncludeSpaceType = None,
         require_each_included_type: RequireEachIncludedTypeType = None,
     ) -> GetRandomPasswordResponse:
-        res = call_moto(context)
-        return GetRandomPasswordResponse(**res)
+        return GetRandomPasswordResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def get_resource_policy(
         self, context: RequestContext, secret_id: SecretIdType
     ) -> GetResourcePolicyResponse:
-        res = call_moto(context)
-        return GetResourcePolicyResponse(**res)
+        return GetResourcePolicyResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def get_secret_value(
         self,
@@ -132,8 +165,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         version_id: SecretVersionIdType = None,
         version_stage: SecretVersionStageType = None,
     ) -> GetSecretValueResponse:
-        res = call_moto(context)
-        return GetSecretValueResponse(**res)
+        return GetSecretValueResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def list_secret_version_ids(
         self,
@@ -143,9 +175,11 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         next_token: NextTokenType = None,
         include_deprecated: BooleanType = None,
     ) -> ListSecretVersionIdsResponse:
-        res = call_moto(context)
-        return ListSecretVersionIdsResponse(**res)
+        return ListSecretVersionIdsResponse(
+            **call_moto(self.__transform_context_secret_id(context))
+        )
 
+    # TODO: remove
     def list_secrets(
         self,
         context: RequestContext,
@@ -154,8 +188,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         filters: FiltersListType = None,
         sort_order: SortOrderType = None,
     ) -> ListSecretsResponse:
-        res = call_moto(context)
-        return ListSecretsResponse(**res)
+        return ListSecretsResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def put_resource_policy(
         self,
@@ -164,8 +197,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         resource_policy: NonEmptyResourcePolicyType,
         block_public_policy: BooleanType = None,
     ) -> PutResourcePolicyResponse:
-        res = call_moto(context)
-        return PutResourcePolicyResponse(**res)
+        return PutResourcePolicyResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def put_secret_value(
         self,
@@ -176,8 +208,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         secret_string: SecretStringType = None,
         version_stages: SecretVersionStagesType = None,
     ) -> PutSecretValueResponse:
-        res = call_moto(context)
-        return PutSecretValueResponse(**res)
+        return PutSecretValueResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def remove_regions_from_replication(
         self,
@@ -185,8 +216,9 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         secret_id: SecretIdType,
         remove_replica_regions: RemoveReplicaRegionListType,
     ) -> RemoveRegionsFromReplicationResponse:
-        res = call_moto(context)
-        return RemoveRegionsFromReplicationResponse(**res)
+        return RemoveRegionsFromReplicationResponse(
+            **call_moto(self.__transform_context_secret_id(context))
+        )
 
     def replicate_secret_to_regions(
         self,
@@ -195,14 +227,14 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         add_replica_regions: AddReplicaRegionListType,
         force_overwrite_replica_secret: BooleanType = None,
     ) -> ReplicateSecretToRegionsResponse:
-        res = call_moto(context)
-        return ReplicateSecretToRegionsResponse(**res)
+        return ReplicateSecretToRegionsResponse(
+            **call_moto(self.__transform_context_secret_id(context))
+        )
 
     def restore_secret(
         self, context: RequestContext, secret_id: SecretIdType
     ) -> RestoreSecretResponse:
-        res = call_moto(context)
-        return RestoreSecretResponse(**res)
+        return RestoreSecretResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def rotate_secret(
         self,
@@ -213,24 +245,24 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         rotation_rules: RotationRulesType = None,
         rotate_immediately: BooleanType = None,
     ) -> RotateSecretResponse:
-        res = call_moto(context)
-        return RotateSecretResponse(**res)
+        return RotateSecretResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def stop_replication_to_replica(
         self, context: RequestContext, secret_id: SecretIdType
     ) -> StopReplicationToReplicaResponse:
-        res = call_moto(context)
-        return StopReplicationToReplicaResponse(**res)
+        return StopReplicationToReplicaResponse(
+            **call_moto(self.__transform_context_secret_id(context))
+        )
 
     def tag_resource(
         self, context: RequestContext, secret_id: SecretIdType, tags: TagListType
     ) -> None:
-        call_moto(context)
+        call_moto(self.__transform_context_secret_id(context))
 
     def untag_resource(
         self, context: RequestContext, secret_id: SecretIdType, tag_keys: TagKeyListType
     ) -> None:
-        call_moto(context)
+        call_moto(self.__transform_context_secret_id(context))
 
     def update_secret(
         self,
@@ -242,8 +274,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         secret_binary: SecretBinaryType = None,
         secret_string: SecretStringType = None,
     ) -> UpdateSecretResponse:
-        res = call_moto(context)
-        return UpdateSecretResponse(**res)
+        return UpdateSecretResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def update_secret_version_stage(
         self,
@@ -253,8 +284,9 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         remove_from_version_id: SecretVersionIdType = None,
         move_to_version_id: SecretVersionIdType = None,
     ) -> UpdateSecretVersionStageResponse:
-        res = call_moto(context)
-        return UpdateSecretVersionStageResponse(**res)
+        return UpdateSecretVersionStageResponse(
+            **call_moto(self.__transform_context_secret_id(context))
+        )
 
     def validate_resource_policy(
         self,
@@ -262,5 +294,6 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         resource_policy: NonEmptyResourcePolicyType,
         secret_id: SecretIdType = None,
     ) -> ValidateResourcePolicyResponse:
-        res = call_moto(context)
-        return ValidateResourcePolicyResponse(**res)
+        return ValidateResourcePolicyResponse(
+            **call_moto(self.__transform_context_secret_id(context))
+        )
