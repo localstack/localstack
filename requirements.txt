@@ -13,7 +13,6 @@ cachetools>=3.1.1,<4.0.0
 # dataclasses needed for python3.6 compat
 dataclasses; python_version < '3.7'
 #dnspython==1.16.0
-docker==5.0.0
 localstack-client>=1.31
 localstack-ext>=0.14.0
 localstack-plugin-loader>=0.1.0
@@ -40,6 +39,7 @@ botocore>=1.12.13
 cbor2>=5.2.0
 crontab>=0.22.6
 cryptography
+docker==5.0.0
 flask>=1.0.2
 flask-cors>=3.0.3,<3.1.0
 flask_swagger==0.2.12

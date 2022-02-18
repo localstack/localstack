@@ -65,13 +65,13 @@ from localstack.utils.common import (
     truncate,
     wait_for_port_open,
 )
-from localstack.utils.docker_utils import (
-    DOCKER_CLIENT,
+from localstack.utils.container_utils.container_client import (
     ContainerConfiguration,
     ContainerException,
     DockerContainerStatus,
     PortMappings,
 )
+from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.run import FuncThread
 
 # constants
