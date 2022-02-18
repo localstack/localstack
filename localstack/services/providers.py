@@ -1,4 +1,5 @@
 from localstack.aws.proxy import AwsApiListener
+from localstack.services.moto import MotoFallbackDispatcher
 from localstack.services.plugins import Service, aws_provider
 
 
@@ -166,9 +167,12 @@ def opensearch():
 
 @aws_provider()
 def redshift():
-    from localstack.services.redshift import redshift_starter
+    from localstack.services.redshift.provider import RedshiftProvider
 
-    return Service("redshift", start=redshift_starter.start_redshift)
+    provider = RedshiftProvider()
+    listener = AwsApiListener("redshift", MotoFallbackDispatcher(provider))
+
+    return Service("redshift", listener=listener)
 
 
 @aws_provider()
