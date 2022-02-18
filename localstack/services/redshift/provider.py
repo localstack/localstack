@@ -1,15 +1,17 @@
 from moto.redshift import responses as redshift_responses
 
-from localstack import config
-from localstack.services.infra import start_moto_server
+from localstack.aws.api.redshift import RedshiftApi
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.common import recurse_object
+from localstack.utils.patch import patch
 
 
 def apply_patches():
 
     # patch itemize() to return proper XML response tags
 
-    def itemize(data, parent_key=None, *args, **kwargs):
+    @patch(redshift_responses.itemize)
+    def itemize(fn, data, parent_key=None, *args, **kwargs):
         # TODO: potentially add additional required tags here!
         list_parent_tags = ["ClusterSubnetGroups"]
 
@@ -21,15 +23,11 @@ def apply_patches():
                             v[k[:-1]] = v.pop("item")
             return o
 
-        result = itemize_orig(data, *args, **kwargs)
+        result = fn(data, *args, **kwargs)
         recurse_object(result, fix_keys)
         return result
 
-    itemize_orig = redshift_responses.itemize
-    redshift_responses.itemize = itemize
 
-
-def start_redshift(port=None, asynchronous=False):
-    port = port or config.service_port("redshift")
-    apply_patches()
-    return start_moto_server("redshift", port, name="Redshift", asynchronous=asynchronous)
+class RedshiftProvider(RedshiftApi, ServiceLifecycleHook):
+    def on_after_init(self):
+        apply_patches()
