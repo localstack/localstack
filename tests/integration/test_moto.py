@@ -72,6 +72,22 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
     assert qname not in sqs_backends.get(config.AWS_REGION_US_EAST_1).queues
 
 
+def test_call_with_modified_request():
+    from moto.sqs.models import sqs_backends
+
+    qname1 = f"queue-{short_uid()}"
+    qname2 = f"queue-{short_uid()}"
+
+    context = moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname1})
+    response = moto.call_moto_with_request(context, {"QueueName": qname2})  # overwrite old request
+
+    url = response["QueueUrl"]
+    assert qname2 in sqs_backends.get(config.AWS_REGION_US_EAST_1).queues
+    assert qname1 not in sqs_backends.get(config.AWS_REGION_US_EAST_1).queues
+
+    moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
+
+
 def test_call_with_es_creates_state_correctly():
     domain_name = f"domain-{short_uid()}"
     response = moto.call_moto(
