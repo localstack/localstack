@@ -71,6 +71,6 @@ class AcmProvider(AcmApi):
         backend = acm_backends.get(context.region)
         cert = backend._certificates[cert_arn]
         if not hasattr(cert, "domain_validation_options"):
-            cert.domain_validation_options = request["DomainValidationOptions"]
+            cert.domain_validation_options = request.get("DomainValidationOptions")
 
         return response
