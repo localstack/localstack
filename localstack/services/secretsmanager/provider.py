@@ -12,31 +12,20 @@ from localstack.aws.api.secretsmanager import (
     DeleteSecretResponse,
     DescribeSecretResponse,
     DescriptionType,
-    ExcludeCharactersType,
-    ExcludeLowercaseType,
-    ExcludeNumbersType,
-    ExcludePunctuationType,
-    ExcludeUppercaseType,
-    FiltersListType,
-    GetRandomPasswordResponse,
     GetResourcePolicyResponse,
     GetSecretValueResponse,
-    IncludeSpaceType,
     KmsKeyIdType,
-    ListSecretsResponse,
     ListSecretVersionIdsResponse,
     MaxResultsType,
     NameType,
     NextTokenType,
     NonEmptyResourcePolicyType,
-    PasswordLengthType,
     PutResourcePolicyResponse,
     PutSecretValueResponse,
     RecoveryWindowInDaysType,
     RemoveRegionsFromReplicationResponse,
     RemoveReplicaRegionListType,
     ReplicateSecretToRegionsResponse,
-    RequireEachIncludedTypeType,
     RestoreSecretResponse,
     RotateSecretResponse,
     RotationLambdaARNType,
@@ -48,7 +37,6 @@ from localstack.aws.api.secretsmanager import (
     SecretVersionIdType,
     SecretVersionStagesType,
     SecretVersionStageType,
-    SortOrderType,
     StopReplicationToReplicaResponse,
     TagKeyListType,
     TagListType,
@@ -66,7 +54,7 @@ LOG = logging.getLogger(__name__)
 
 class SecretsmanagerProvider(SecretsmanagerApi):
     def __init__(self):
-        apply_patches()
+        apply_patches()  # Adds missing moto attributes.
 
     @staticmethod
     def __transform_context_secret_id(context: RequestContext) -> RequestContext:
@@ -138,21 +126,6 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     ) -> DescribeSecretResponse:
         return DescribeSecretResponse(**call_moto(self.__transform_context_secret_id(context)))
 
-    # TODO: remove
-    def get_random_password(
-        self,
-        context: RequestContext,
-        password_length: PasswordLengthType = None,
-        exclude_characters: ExcludeCharactersType = None,
-        exclude_numbers: ExcludeNumbersType = None,
-        exclude_punctuation: ExcludePunctuationType = None,
-        exclude_uppercase: ExcludeUppercaseType = None,
-        exclude_lowercase: ExcludeLowercaseType = None,
-        include_space: IncludeSpaceType = None,
-        require_each_included_type: RequireEachIncludedTypeType = None,
-    ) -> GetRandomPasswordResponse:
-        return GetRandomPasswordResponse(**call_moto(self.__transform_context_secret_id(context)))
-
     def get_resource_policy(
         self, context: RequestContext, secret_id: SecretIdType
     ) -> GetResourcePolicyResponse:
@@ -178,17 +151,6 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         return ListSecretVersionIdsResponse(
             **call_moto(self.__transform_context_secret_id(context))
         )
-
-    # TODO: remove
-    def list_secrets(
-        self,
-        context: RequestContext,
-        max_results: MaxResultsType = None,
-        next_token: NextTokenType = None,
-        filters: FiltersListType = None,
-        sort_order: SortOrderType = None,
-    ) -> ListSecretsResponse:
-        return ListSecretsResponse(**call_moto(self.__transform_context_secret_id(context)))
 
     def put_resource_policy(
         self,
