@@ -4,6 +4,12 @@ from typing import Callable
 from typing_extensions import Literal
 
 
+class ShortCircuitWaitException(Exception):
+    """raise to immediately stop waiting, e.g. when an operation permanently failed"""
+
+    pass
+
+
 def wait_until(
     fn: Callable[[], bool],
     wait: float = 1.0,
@@ -37,7 +43,38 @@ def wait_until(
         return wait_until(fn, next_wait, max_retries, strategy, _retries + 1, _max_wait)
 
 
-class ShortCircuitWaitException(Exception):
-    """raise to immediately stop waiting, e.g. when an operation permanently failed"""
+def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
+    raise_error = None
+    if sleep_before > 0:
+        time.sleep(sleep_before)
+    retries = int(retries)
+    for i in range(0, retries + 1):
+        try:
+            return function(**kwargs)
+        except Exception as error:
+            raise_error = error
+            time.sleep(sleep)
+    raise raise_error
 
-    pass
+
+def poll_condition(condition, timeout: float = None, interval: float = 0.5) -> bool:
+    """
+    Poll evaluates the given condition until a truthy value is returned. It does this every `interval` seconds
+    (0.5 by default), until the timeout (in seconds, if any) is reached.
+
+    Poll returns True once `condition()` returns a truthy value, or False if the timeout is reached.
+    """
+    remaining = 0
+    if timeout is not None:
+        remaining = timeout
+
+    while not condition():
+        if timeout is not None:
+            remaining -= interval
+
+            if remaining <= 0:
+                return False
+
+        time.sleep(interval)
+
+    return True
