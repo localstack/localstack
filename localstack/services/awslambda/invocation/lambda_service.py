@@ -1,11 +1,9 @@
 import dataclasses
 from concurrent.futures import Future
 from threading import RLock
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
-from localstack.services.awslambda.invocation.runtime_api import LambdaRuntimeAPI
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
-from localstack.utils.common import get_free_tcp_port
 
 
 @dataclasses.dataclass
@@ -17,6 +15,13 @@ class FunctionVersion:
     role: str  # lambda role
     environment: Dict[str, str]  # Environment set when creating the function
     handler: str
+
+
+@dataclasses.dataclass
+class Invocation:
+    payload: Optional[bytes]
+    client_context: Optional[str]
+    invocation_type: str
 
 
 @dataclasses.dataclass
@@ -32,21 +37,13 @@ class LambdaService:
     # mapping from qualified ARN to version manager
     lambda_version_managers: Dict[str, LambdaVersionManager]
     lambda_version_manager_lock: RLock
-    lambda_runtime_api: LambdaRuntimeAPI
     lambda_runtime_config: LambdaRuntimeConfig
 
     def __init__(self) -> None:
         self.lambda_version_managers = {}
-        self.lambda_runtime_api, api_port = self._build_runtime_api()
         self.lambda_version_manager_lock = RLock()
-        self.lambda_runtime_config = LambdaRuntimeConfig(api_port=api_port)
 
     # TODO do not start in the constructor? maybe a separate start method or handle the runtime api above
-    def _build_runtime_api(self) -> Tuple[LambdaRuntimeAPI, int]:
-        port = get_free_tcp_port()
-        runtime_api = LambdaRuntimeAPI(port, lambda_service=self)
-        runtime_api.start()
-        return runtime_api, port
 
     def get_lambda_version_manager(self, function_arn: str) -> LambdaVersionManager:
         """
@@ -88,5 +85,7 @@ class LambdaService:
     ) -> Future:
         version_manager = self.get_lambda_version_manager(function_arn_qualified)
         return version_manager.invoke(
-            payload=payload, client_context=client_context, invocation_type=invocation_type
+            invocation=Invocation(
+                payload=payload, client_context=client_context, invocation_type=invocation_type
+            )
         )
