@@ -170,7 +170,7 @@ def redshift():
     provider = RedshiftProvider()
     listener = AwsApiListener("redshift", MotoFallbackDispatcher(provider))
 
-    return Service("redshift", listener=listener, lifecycle_hook=provider)
+    return Service("redshift", listener=listener)
 
 
 @aws_provider()
