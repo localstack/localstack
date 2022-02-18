@@ -1,23 +1,28 @@
 import json
 import logging
+from urllib.parse import urlsplit
 
-from requests.models import Request
-
+from localstack.aws.api import HttpRequest
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import MessageConversion
 from localstack.utils.common import to_str
-from localstack.utils.persistence import PersistingProxyListener
+
+from localstack.aws.proxy import AwsApiListener
+from localstack.services.secretsmanager.provider import SecretsmanagerProvider
+
 
 LOG = logging.getLogger(__name__)
 
 
-class ProxyListenerSecretsManager(PersistingProxyListener):
-    def api_name(self):
-        return "secretsmanager"
+class AWSSecretsManagerListener(AwsApiListener):
 
-    def forward_request(self, method, path, data, headers):
-        data = json.loads(to_str(data or "{}"))
-        secret_id = data.get("SecretId") or ""
+    def __init__(self):
+        self.provider = SecretsmanagerProvider()
+        super().__init__("secretsmanager", self.provider)
+
+    @staticmethod
+    def __transform_request_data(data: bytes) -> bytes:
+        data_dict = json.loads(to_str(data or "{}"))
+        secret_id = data_dict.get("SecretId", "")
         if ":" in secret_id:
             parts = secret_id.split(":")
             if parts[3] != aws_stack.get_region():
@@ -29,20 +34,11 @@ class ProxyListenerSecretsManager(PersistingProxyListener):
             # secret ARN ends with "-<randomId>" which we remove in the request for upstream compatibility
             # if the full arn is being sent then we remove the string in the end
             if parts[-1][-7] == "-":
-                data["SecretId"] = parts[-1][: len(parts[-1]) - 7]
+                secret_id["SecretId"] = parts[-1][: len(parts[-1]) - 7]
             elif parts[-1][-1] != "-":
-                data["SecretId"] = data["SecretId"] + "-"
+                secret_id["SecretId"] = secret_id["SecretId"] + "-"
 
-            data = json.dumps(data)
-            return Request(data=data, headers=headers, method=method)
-        return True
+        return bytes(json.dumps(data_dict), 'utf-8')
 
-    def return_response(self, method, path, data, headers, response):
-        super(ProxyListenerSecretsManager, self).return_response(
-            method, path, data, headers, response
-        )
-        if response.content:
-            return MessageConversion.fix_account_id(response)
-
-
-UPDATE_SECRETSMANAGER = ProxyListenerSecretsManager()
+    def forward_request(self, method, path, data, headers):
+        return super().forward_request(method, path, self.__transform_request_data(data), headers)
