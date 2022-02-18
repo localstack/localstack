@@ -1,21 +1,16 @@
 import json
 import logging
-from urllib.parse import urlsplit
-
-from localstack.aws.api import HttpRequest
-from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import MessageConversion
-from localstack.utils.common import to_str
 
 from localstack.aws.proxy import AwsApiListener
 from localstack.services.secretsmanager.provider import SecretsmanagerProvider
-
+from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_responses import MessageConversion
+from localstack.utils.common import to_str
 
 LOG = logging.getLogger(__name__)
 
 
 class AWSSecretsManagerListener(AwsApiListener):
-
     def __init__(self):
         self.provider = SecretsmanagerProvider()
         super().__init__("secretsmanager", self.provider)
@@ -39,7 +34,7 @@ class AWSSecretsManagerListener(AwsApiListener):
             elif parts[-1][-1] != "-":
                 data_dict["SecretId"] = data_dict["SecretId"] + "-"
 
-        return bytes(json.dumps(data_dict), 'utf-8')
+        return bytes(json.dumps(data_dict), "utf-8")
 
     def forward_request(self, method, path, data, headers):
         return super(AWSSecretsManagerListener, self).forward_request(
@@ -52,4 +47,3 @@ class AWSSecretsManagerListener(AwsApiListener):
         )
         if response.content:
             return MessageConversion.fix_account_id(response)
-

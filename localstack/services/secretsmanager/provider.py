@@ -2,41 +2,72 @@ import json
 import random
 import string
 
-from localstack.aws.api import RequestContext
-from localstack.aws.api.secretsmanager import (
-    AddReplicaRegionListType,
-    BooleanType,
-    ClientRequestTokenType,
-    CreateSecretResponse,
-    DescriptionType,
-    KmsKeyIdType,
-    NameType,
-    SecretBinaryType,
-    SecretsmanagerApi,
-    SecretStringType,
-    TagListType, SecretIdType, CancelRotateSecretResponse, DeleteResourcePolicyResponse, RecoveryWindowInDaysType,
-    DeleteSecretResponse, DescribeSecretResponse, PasswordLengthType, ExcludeCharactersType, ExcludeNumbersType,
-    ExcludePunctuationType, ExcludeUppercaseType, ExcludeLowercaseType, IncludeSpaceType, RequireEachIncludedTypeType,
-    GetRandomPasswordResponse, GetResourcePolicyResponse, SecretVersionIdType, SecretVersionStageType,
-    GetSecretValueResponse, MaxResultsType, NextTokenType, ListSecretVersionIdsResponse, SortOrderType, FiltersListType,
-    ListSecretsResponse, NonEmptyResourcePolicyType, PutResourcePolicyResponse, SecretVersionStagesType,
-    PutSecretValueResponse, RemoveReplicaRegionListType, RemoveRegionsFromReplicationResponse,
-    ReplicateSecretToRegionsResponse, RestoreSecretResponse, StopReplicationToReplicaResponse, RotateSecretResponse,
-    RotationRulesType, RotationLambdaARNType, TagKeyListType, UpdateSecretVersionStageResponse, UpdateSecretResponse,
-    ValidateResourcePolicyResponse,
-)
-from localstack.services.moto import call_moto
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.exceptions import SecretNotFoundException
 from moto.secretsmanager.models import SecretsManagerBackend, secretsmanager_backends
 from moto.secretsmanager.responses import SecretsManagerResponse
 
+from localstack.aws.api import RequestContext
+from localstack.aws.api.secretsmanager import (
+    AddReplicaRegionListType,
+    BooleanType,
+    CancelRotateSecretResponse,
+    ClientRequestTokenType,
+    CreateSecretResponse,
+    DeleteResourcePolicyResponse,
+    DeleteSecretResponse,
+    DescribeSecretResponse,
+    DescriptionType,
+    ExcludeCharactersType,
+    ExcludeLowercaseType,
+    ExcludeNumbersType,
+    ExcludePunctuationType,
+    ExcludeUppercaseType,
+    FiltersListType,
+    GetRandomPasswordResponse,
+    GetResourcePolicyResponse,
+    GetSecretValueResponse,
+    IncludeSpaceType,
+    KmsKeyIdType,
+    ListSecretsResponse,
+    ListSecretVersionIdsResponse,
+    MaxResultsType,
+    NameType,
+    NextTokenType,
+    NonEmptyResourcePolicyType,
+    PasswordLengthType,
+    PutResourcePolicyResponse,
+    PutSecretValueResponse,
+    RecoveryWindowInDaysType,
+    RemoveRegionsFromReplicationResponse,
+    RemoveReplicaRegionListType,
+    ReplicateSecretToRegionsResponse,
+    RequireEachIncludedTypeType,
+    RestoreSecretResponse,
+    RotateSecretResponse,
+    RotationLambdaARNType,
+    RotationRulesType,
+    SecretBinaryType,
+    SecretIdType,
+    SecretsmanagerApi,
+    SecretStringType,
+    SecretVersionIdType,
+    SecretVersionStagesType,
+    SecretVersionStageType,
+    SortOrderType,
+    StopReplicationToReplicaResponse,
+    TagKeyListType,
+    TagListType,
+    UpdateSecretResponse,
+    UpdateSecretVersionStageResponse,
+    ValidateResourcePolicyResponse,
+)
 from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.services.moto import call_moto
 
 
 class SecretsmanagerProvider(SecretsmanagerApi):
-
     def __init__(self):
         # maps key names to ARNs
         self.SECRET_ARN_STORAGE = {}
