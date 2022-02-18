@@ -3,6 +3,8 @@ import logging
 from functools import lru_cache
 from urllib.parse import urlsplit
 
+from botocore.parsers import create_parser as botocore_create_parser
+
 from localstack.aws.api import (
     CommonServiceException,
     HttpRequest,
@@ -10,11 +12,12 @@ from localstack.aws.api import (
     RequestContext,
     ServiceException,
 )
+from localstack.aws.protocol.parser import create_parser as asf_create_parser
 from localstack.aws.protocol.serializer import create_serializer
 from localstack.aws.proxy import AwsApiListener
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
-from localstack.utils.common import snake_to_camel_case
+from localstack.utils.common import snake_to_camel_case, to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -113,23 +116,83 @@ class AsfChallengerListener(AwsApiListener):
                 headers,
             )
             # we'll try to create a proper HTTP response to the client so it doesn't keep retrying.
-            try:
-                if context and context.operation:
-                    op = context.operation
-                else:
-                    # best-effort to return any type of error
-                    op = self.service.operation_model(self.service.operation_names[0])
+            return self._create_error_response(context, e)
 
-                resp = self.serializer.serialize_error_to_response(
-                    CommonServiceException("ClientError", str(e), status_code=400),
-                    op,
+    def return_response(self, method, path, data, headers, response):
+        # Detect the operation (again)
+        split_url = urlsplit(path)
+        request = HttpRequest(
+            method=method,
+            path=split_url.path,
+            query_string=split_url.query,
+            headers=headers,
+            body=data,
+        )
+        context = self.create_request_context(request)
+
+        try:
+            parser = asf_create_parser(self.service)
+            operation, _ = parser.parse(context.request)
+
+            serializer = create_serializer(self.service)
+            response_parser = botocore_create_parser(self.service.protocol)
+            parsed_response = response_parser.parse(
+                {
+                    "headers": response.headers,
+                    "body": to_bytes(response.content),
+                    "status_code": response.status_code,
+                },
+                operation.output_shape,
+            )
+            # Remove the "ResponseMetadata" (this is added by botocore)
+            parsed_response.pop("ResponseMetadata")
+            if response.status_code < 400:
+                serialized = serializer.serialize_to_response(parsed_response, operation)
+                parsed_serialized = response_parser.parse(
+                    {
+                        "headers": {key: value for key, value in serialized.headers},
+                        "body": to_bytes(serialized.data),
+                        "status_code": serialized.status_code,
+                    },
+                    operation.output_shape,
                 )
-                return self.to_server_response(resp)
-            except Exception:
-                LOG.exception(
-                    "exception while trying to create a response. this is an implementation error of the "
-                    "challenger :("
-                )
+                # Again, remove the "ResponseMetadata" (this is added by botocore)
+                parsed_serialized.pop("ResponseMetadata")
+                # TODO adjust the two here a bit, because this check seems to be a bit too strict?
+                assert parsed_serialized == parsed_response
+            else:
+                # TODO
+                LOG.warning("Ignoring error response (not yet implemented in challenger)")
+        except Exception as e:
+            LOG.exception(
+                "serializer challenge failed for response of %s method=%s path=%s data=%s headers=%s",
+                self.service.service_name,
+                method,
+                path,
+                data,
+                headers,
+            )
+            # we'll try to create a proper HTTP response to the client so it doesn't keep retrying.
+            return self._create_error_response(context, e)
+
+    def _create_error_response(self, context, e):
+        try:
+            if context and context.operation:
+                op = context.operation
+            else:
+                # best-effort to return any type of error
+                op = self.service.operation_model(self.service.operation_names[0])
+
+            resp = self.serializer.serialize_error_to_response(
+                CommonServiceException("ClientError", str(e), status_code=400),
+                op,
+            )
+            return self.to_server_response(resp)
+        except Exception:
+            LOG.exception(
+                "exception while trying to create a response. this is an implementation error of the "
+                "challenger :("
+            )
 
 
 @lru_cache()
