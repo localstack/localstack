@@ -10,8 +10,8 @@ from localstack.utils.common import (
     json_safe,
     recurse_object,
     short_uid,
-    to_number,
 )
+from localstack.utils.generic.number_utils import to_number
 
 
 class VelocityInput(object):

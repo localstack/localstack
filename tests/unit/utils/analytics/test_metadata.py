@@ -35,10 +35,15 @@ def test_get_session_id_cache_not_process_local():
     def _do_get_session_id():
         calls.put(get_session_id())
 
-    multiprocessing.Process(target=_do_get_session_id).start()
-    multiprocessing.Process(target=_do_get_session_id).start()
+    try:
+        multiprocessing.Process(target=_do_get_session_id).start()
+        multiprocessing.Process(target=_do_get_session_id).start()
 
-    sid1 = calls.get(timeout=2)
-    sid2 = calls.get(timeout=2)
+        sid1 = calls.get(timeout=2)
+        sid2 = calls.get(timeout=2)
 
-    assert sid1 == sid2
+        assert sid1 == sid2
+    except AttributeError as e:
+        # fix for MacOS (and potentially other systems) where local functions cannot be used for multiprocessing
+        if "Can't pickle local object" not in str(e):
+            raise
