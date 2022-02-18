@@ -194,9 +194,16 @@ def s3():
 
 @aws_provider()
 def secretsmanager():
-    from localstack.services.secretsmanager.secretsmanager_listener import AWSSecretsManagerListener
+    from localstack.services.secretsmanager.secretsmanager_listener import (
+        AsfWithPersistingFallbackListenerSecretsManager,
+    )
+    from localstack.services.secretsmanager.secretsmanager_starter import start_secretsmanager
 
-    return Service("secretsmanager", listener=AWSSecretsManagerListener())
+    return Service(
+        "secretsmanager",
+        listener=AsfWithPersistingFallbackListenerSecretsManager(),
+        start=start_secretsmanager,
+    )
 
 
 @aws_provider()

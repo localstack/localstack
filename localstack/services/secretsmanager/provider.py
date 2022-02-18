@@ -1,13 +1,3 @@
-import json
-import random
-import string
-
-from moto.iam.policy_validation import IAMPolicyDocumentValidator
-from moto.secretsmanager import models as secretsmanager_models
-from moto.secretsmanager.exceptions import SecretNotFoundException
-from moto.secretsmanager.models import SecretsManagerBackend, secretsmanager_backends
-from moto.secretsmanager.responses import SecretsManagerResponse
-
 from localstack.aws.api import RequestContext
 from localstack.aws.api.secretsmanager import (
     AddReplicaRegionListType,
@@ -63,112 +53,13 @@ from localstack.aws.api.secretsmanager import (
     UpdateSecretVersionStageResponse,
     ValidateResourcePolicyResponse,
 )
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.moto import call_moto
+from localstack.services.secretsmanager.secretsmanager_patches import apply_patches
 
 
 class SecretsmanagerProvider(SecretsmanagerApi):
     def __init__(self):
-        # maps key names to ARNs
-        self.SECRET_ARN_STORAGE = {}
-        #
-        self.__apply_patches()
-
-    def __apply_patches(self):
-        def secretsmanager_models_secret_arn(region, secret_id):
-            k = "{}_{}".format(region, secret_id)
-            if k not in self.SECRET_ARN_STORAGE:
-                id_string = "".join(random.choice(string.ascii_letters) for _ in range(6))
-                arn = "arn:aws:secretsmanager:{0}:{1}:secret:{2}-{3}".format(
-                    region, TEST_AWS_ACCOUNT_ID, secret_id, id_string
-                )
-                self.SECRET_ARN_STORAGE[k] = arn
-
-            return self.SECRET_ARN_STORAGE[k]
-
-        secretsmanager_models.secret_arn = secretsmanager_models_secret_arn
-
-        # patching resource policy in moto
-        def get_resource_policy_model(self, secret_id):
-            if self._is_valid_identifier(secret_id):
-                result = {
-                    "ARN": self.secrets[secret_id].arn,
-                    "Name": self.secrets[secret_id].secret_id,
-                }
-
-                policy = getattr(self.secrets[secret_id], "policy", None)
-                if policy:
-                    result["ResourcePolicy"] = json.dumps(policy)
-
-                return json.dumps(result)
-            else:
-                raise SecretNotFoundException()
-
-        setattr(SecretsManagerBackend, "get_resource_policy", get_resource_policy_model)
-
-        def get_resource_policy_response(self):
-            secret_id = self._get_param("SecretId")
-            return secretsmanager_backends[self.region].get_resource_policy(secret_id=secret_id)
-
-        setattr(SecretsManagerResponse, "get_resource_policy", get_resource_policy_response)
-
-        def delete_resource_policy_model(self, secret_id):
-            if self._is_valid_identifier(secret_id):
-                self.secrets[secret_id].policy = None
-                return json.dumps(
-                    {
-                        "ARN": self.secrets[secret_id].arn,
-                        "Name": self.secrets[secret_id].secret_id,
-                    }
-                )
-            else:
-                raise SecretNotFoundException()
-
-        if not hasattr(SecretsManagerBackend, "delete_resource_policy"):
-            setattr(
-                SecretsManagerBackend,
-                "delete_resource_policy",
-                delete_resource_policy_model,
-            )
-
-        def delete_resource_policy_response(self):
-            secret_id = self._get_param("SecretId")
-            return secretsmanager_backends[self.region].delete_resource_policy(secret_id=secret_id)
-
-        if not hasattr(SecretsManagerResponse, "delete_resource_policy"):
-            setattr(
-                SecretsManagerResponse,
-                "delete_resource_policy",
-                delete_resource_policy_response,
-            )
-
-        def put_resource_policy_model(self, secret_id, resource_policy):
-            policy_validator = IAMPolicyDocumentValidator(resource_policy)
-            policy_validator._validate_top_elements()
-            policy_validator._validate_version_syntax()
-            if self._is_valid_identifier(secret_id):
-                self.secrets[secret_id].policy = resource_policy
-                return json.dumps(
-                    {
-                        "ARN": self.secrets[secret_id].arn,
-                        "Name": self.secrets[secret_id].secret_id,
-                    }
-                )
-            else:
-                raise SecretNotFoundException()
-
-        if not hasattr(SecretsManagerBackend, "put_resource_policy"):
-            setattr(SecretsManagerBackend, "put_resource_policy", put_resource_policy_model)
-
-        def put_resource_policy_response(self):
-            secret_id = self._get_param("SecretId")
-            resource_policy = self._get_param("ResourcePolicy")
-            return secretsmanager_backends[self.region].put_resource_policy(
-                secret_id=secret_id, resource_policy=json.loads(resource_policy)
-            )
-
-        if not hasattr(SecretsManagerResponse, "put_resource_policy"):
-            setattr(SecretsManagerResponse, "put_resource_policy", put_resource_policy_response)
+        apply_patches()
 
     def cancel_rotate_secret(
         self, context: RequestContext, secret_id: SecretIdType
