@@ -29,9 +29,11 @@ def cloudformation():
 
 @aws_provider(api="config")
 def awsconfig():
-    from localstack.services.configservice import configservice_starter
+    from localstack.services.configservice.provider import ConfigProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
-    return Service("config", start=configservice_starter.start_configservice)
+    provider = ConfigProvider()
+    return Service("config", listener=AwsApiListener("config", MotoFallbackDispatcher(provider)))
 
 
 @aws_provider()
