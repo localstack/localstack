@@ -1492,13 +1492,11 @@ class TestAPIGateway(unittest.TestCase):
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]
         proxy_resource = apigw_client.create_resource(
-            restApiId=api_id,
-            parentId=root_resource_id,
-            pathPart="{proxy+}"
+            restApiId=api_id, parentId=root_resource_id, pathPart="{proxy+}"
         )
         apigw_client.put_method(
             restApiId=api_id,
-            resourceId=proxy_resource['id'],
+            resourceId=proxy_resource["id"],
             httpMethod=method,
             authorizationType="NONE",
             apiKeyRequired=False,
@@ -1506,15 +1504,13 @@ class TestAPIGateway(unittest.TestCase):
         )
         apigw_client.put_integration(
             restApiId=api_id,
-            resourceId=proxy_resource['id'],
+            resourceId=proxy_resource["id"],
             httpMethod=method,
             type="AWS",
             integrationHttpMethod=method,
             uri=s3_uri,
             credentials=role_arn,
-            requestParameters={
-                "integration.request.path.proxy": "method.request.path.proxy"
-            },
+            requestParameters={"integration.request.path.proxy": "method.request.path.proxy"},
         )
 
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
