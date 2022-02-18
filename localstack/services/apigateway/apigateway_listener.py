@@ -77,9 +77,10 @@ from localstack.utils.http_utils import add_query_params_to_url
 LOG = logging.getLogger(__name__)
 
 # target ARN patterns
-TARGET_REGEX_S3_URI = (
+TARGET_REGEX_PATH_S3_URI = (
     r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
 )
+TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
 # regex path pattern for user requests
 PATH_REGEX_USER_REQUEST = (
     r"^/restapis/([A-Za-z0-9_\-]+)(?:/([A-Za-z0-9_\-]+))?/%s/(.*)$" % PATH_USER_REQUEST
@@ -912,10 +913,18 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 response, response_templates, content_type=APPLICATION_JSON
             )
             return response
-
-        elif "s3:path/" in uri and method == "GET":
+        # https://docs.aws.amazon.com/apigateway/api-reference/resource/integration/
+        elif ("s3:path/" in uri or "s3:action/" in uri) and method == "GET":
             s3 = aws_stack.connect_to_service("s3")
-            uri_match = re.match(TARGET_REGEX_S3_URI, uri)
+            uri = apply_request_parameters(
+                uri,
+                integration=integration,
+                path_params=path_params,
+                query_params=query_string_params,
+            )
+            uri_match = re.match(TARGET_REGEX_PATH_S3_URI, uri) or re.match(
+                TARGET_REGEX_ACTION_S3_URI, uri
+            )
             if uri_match:
                 bucket, object_key = uri_match.group("bucket", "object")
                 LOG.debug("Getting request for bucket %s object %s", bucket, object_key)
