@@ -34,6 +34,30 @@ def test_query_parser():
     }
 
 
+def test_query_parser_uri():
+    """
+    Basic test for the QueryParser with a simple example (SQS SendMessage request),
+    where the parameters are encoded in the URI instead of the body.
+    """
+    parser = QueryRequestParser(load_service("sqs"))
+    request = HttpRequest(
+        query_string="Action=SendMessage&Version=2012-11-05&"
+        "QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue&"
+        "MessageBody=%7B%22foo%22%3A+%22bared%22%7D&"
+        "DelaySeconds=2",
+        method="POST",
+        headers={},
+        path="",
+    )
+    operation, params = parser.parse(request)
+    assert operation.name == "SendMessage"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/tf-acc-test-queue",
+        "MessageBody": '{"foo": "bared"}',
+        "DelaySeconds": 2,
+    }
+
+
 def test_query_parser_flattened_map():
     """Simple test with a flattened map (SQS SetQueueAttributes request)."""
     parser = QueryRequestParser(load_service("sqs"))
@@ -607,7 +631,7 @@ def test_ec2_parser_ec2_with_botocore():
     )
 
 
-def test_query_parser_path_params_with_slashes():
+def test_restjson_parser_path_params_with_slashes():
     parser = RestJSONRequestParser(load_service("qldb"))
     resource_arn = "arn:aws:qldb:eu-central-1:000000000000:ledger/c-c67c827a"
     request = HttpRequest(

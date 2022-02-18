@@ -68,7 +68,6 @@ not work out-of-the-box.
 import abc
 import base64
 import datetime
-import json
 import re
 from abc import ABC
 from collections import OrderedDict, defaultdict
@@ -185,20 +184,14 @@ class RequestParser(abc.ABC):
                 return payload
             elif location == "querystring":
                 query_name = shape.serialization.get("name")
-                parsed_query = parse_qs(to_str(request.query_string))
-                # If the query param is in the parsed dict, take the first element of the value
-                # (the parsed query params are always lists, even if only a single value).
-                payload = (
-                    list(iter(parsed_query[query_name])) if query_name in parsed_query else None
-                )
-                # The result is always a list. If the shape is not of type list, we extract the only element
-                if shape.type_name != "list":
-                    payload = payload[0] if payload else None
+                parsed_query = request.args
+                if shape.type_name == "list":
+                    payload = parsed_query.getlist(query_name)
+                else:
+                    payload = parsed_query.get(query_name)
             elif location == "uri":
                 # Use the path and the query string for the matching
-                url = request.path
-                if request.query_string:
-                    url += f"?{to_str(request.query_string)}"
+                url = request.full_path if request.query_string else request.path
                 regex_group_name = shape.serialization.get("name")
                 match = path_regex.match(url)
                 payload = unquote(match.group(regex_group_name)) if match is not None else None
@@ -365,7 +358,7 @@ class QueryRequestParser(RequestParser):
         instance = parse_qs(body, keep_blank_values=True)
         if not instance:
             # if the body does not contain any information, fallback to the actual query parameters
-            instance = parse_qs(to_str(request.query_string))
+            instance = request.args
         # The query parsing returns a list for each entry in the dict (this is how HTTP handles lists in query params).
         # However, the AWS Query format does not have any duplicates.
         # Therefore we take the first element of each entry in the dict.
@@ -378,11 +371,11 @@ class QueryRequestParser(RequestParser):
         action = instance["Action"]
         try:
             operation: OperationModel = self.service.operation_model(action)
-        except OperationNotFoundError:
+        except OperationNotFoundError as e:
             raise RequestParserError(
                 f"Operation detection failed."
                 f"Operation {action} could not be found for service {self.service}."
-            )
+            ) from e
         # Extract the URI for the operation and convert it to a regex
         request_uri_regex = self._get_request_uri_regex(operation)
         input_shape: StructureShape = operation.input_shape
@@ -616,9 +609,7 @@ class BaseRestRequestParser(RequestParser):
         :raises: RequestParserError if the operation could not be detected
         """
         # Use the path and the query string for the matching
-        url = request.path
-        if request.query_string:
-            url += f"?{to_str(request.query_string)}"
+        url = request.full_path if request.query_string else request.path
         # Find the regex which matches the given path (as well as its operation)
         try:
             path_regex, operations = next(
@@ -816,7 +807,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         except ETree.ParseError as e:
             raise RequestParserError(
                 "Unable to parse request (%s), invalid XML received:\n%s" % (e, xml_string)
-            )
+            ) from e
         return root
 
     def _build_name_to_xml_node(self, parent_node: Union[list, ETree.Element]) -> dict:
@@ -902,17 +893,16 @@ class BaseJSONRequestParser(RequestParser, ABC):
         body_contents = request.data
         if not body_contents:
             return {}
-        if request.content_type and request.content_type.startswith("application/x-amz-cbor"):
+        if request.mimetype.startswith("application/x-amz-cbor"):
             try:
                 return cbor2.loads(body_contents)
-            except ValueError:
-                raise RequestParserError("HTTP body could not be parsed as CBOR.")
+            except ValueError as e:
+                raise RequestParserError("HTTP body could not be parsed as CBOR.") from e
         else:
             try:
-                body = body_contents.decode(self.DEFAULT_ENCODING)
-                return json.loads(body)
-            except ValueError:
-                raise RequestParserError("HTTP body could not be parsed as JSON.")
+                return request.get_json(force=True)
+            except ValueError as e:
+                raise RequestParserError("HTTP body could not be parsed as JSON.") from e
 
     def _parse_boolean(
         self, request: HttpRequest, shape: Shape, node: bool, path_regex: Pattern[str] = None
@@ -1031,6 +1021,7 @@ class S3RequestParser(RestXMLRequestParser):
         path_parts = [part for part in path_parts if part]
         path = "/" + "/".join(path_parts) or "/"
         # set the path with the bucket name in the front at the request
+        # TODO directly modifying the request can cause issues with our handler chain, instead clone the HTTP request
         request.path = path
 
     def _detect_operation(self, request: HttpRequest) -> Tuple[OperationModel, Pattern[str]]:
