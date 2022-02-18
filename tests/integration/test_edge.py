@@ -3,6 +3,7 @@ import json
 import os
 import time
 
+import pytest
 import requests
 from requests.models import Request as RequestsRequest
 
@@ -21,6 +22,7 @@ from localstack.utils.common import get_free_tcp_port, short_uid, to_str
 
 
 class TestEdgeAPI:
+    @pytest.mark.skip(reason="Challenger: Test uses S3 via edge API (not supported yet)")
     def test_invoke_apis_via_edge(self):
         edge_url = config.get_edge_url()
 

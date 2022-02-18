@@ -2,6 +2,8 @@ import json
 import os
 import urllib.parse
 
+import pytest
+
 from localstack.constants import PATH_USER_REQUEST
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
@@ -135,6 +137,7 @@ def test_nested_statemachine_with_sync2(
         cleanup_stacks([stack_id])
 
 
+@pytest.mark.skip(reason="Challenger: Uses custom resource for API Gateway?")
 def test_apigateway_invoke(cfn_client, deploy_cfn_template, stepfunctions_client):
     deploy_result = deploy_cfn_template(template_file_name="sfn_apigateway.yaml")
     state_machine_arn = deploy_result.outputs["statemachineOutput"]
@@ -156,6 +159,7 @@ def test_apigateway_invoke(cfn_client, deploy_cfn_template, stepfunctions_client
     assert "hello from stepfunctions" in execution_result["output"]
 
 
+@pytest.mark.skip(reason="Challenger: Uses custom resource for API Gateway?")
 def test_apigateway_invoke_with_path(cfn_client, deploy_cfn_template, stepfunctions_client):
     deploy_result = deploy_cfn_template(template_file_name="sfn_apigateway_two_integrations.yaml")
     state_machine_arn = deploy_result.outputs["statemachineOutput"]

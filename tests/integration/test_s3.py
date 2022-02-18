@@ -779,6 +779,7 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    @pytest.mark.skip(reason="Challenger: Test uses S3 Presigned URL (not supported yet)")
     def test_s3_post_object_on_presigned_post(self):
         bucket_name = "test-presigned-%s" % short_uid()
         client = self._get_test_client()
@@ -805,6 +806,7 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    @pytest.mark.skip(reason="Challenger: Test uses S3 Presigned URL (not supported yet)")
     def test_s3_presigned_post_success_action_status_201_response(self):
         bucket_name = "test-presigned-%s" % short_uid()
         client = self._get_test_client()
@@ -844,6 +846,7 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, ["key-my-file"])
 
+    @pytest.mark.skip(reason="Challenger: Test uses S3 Presigned URL (not supported yet)")
     def test_s3_presigned_post_expires(self):
         bucket_name = "test-bucket-%s" % short_uid()
         client = self._get_test_client()
@@ -1928,6 +1931,7 @@ class TestS3(unittest.TestCase):
         finally:
             s3_client.meta.events.unregister("before-sign.s3.GetObject", add_query_param)
 
+    @pytest.mark.skip(reason="Challenger: Test uses S3 Presigned URL (not supported yet)")
     @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
     def test_presigned_url_signature_authentication(self):
         client = boto3.client(
@@ -1951,6 +1955,7 @@ class TestS3(unittest.TestCase):
         )
         self.run_presigned_url_signature_authentication(client, client_v4, bucket_name, url_prefix)
 
+    @pytest.mark.skip(reason="Challenger: Test uses S3 Presigned URL (not supported yet)")
     @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
     def test_presigned_url_signature_authentication_virtual_host_addressing(self):
         virtual_endpoint = "{}://{}:{}".format(
@@ -2714,6 +2719,10 @@ def test_replay_s3_call(api_version, bucket_name, payload):
     assert bucket_head["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
+@pytest.mark.skip(
+    reason="Challenger: This test performs a request with an HTTP method which is not in the spec: "
+    "OPTIONS /bucket-015a8076/424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf"
+)
 @patch.object(config, "DISABLE_CUSTOM_CORS_S3", False)
 def test_cors_with_allowed_origins(s3_client):
     # works with TEST_TARGET=AWS_CLOUD

@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timedelta
 from urllib.request import Request, urlopen
 
+import pytest
 import requests
 from dateutil.tz import tzutc
 
@@ -79,6 +80,10 @@ class TestCloudwatch:
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
 
+    @pytest.mark.skip(
+        reason="Challenger: This test performs a request against a custom route: "
+        "GET /cloudwatch/metrics/raw"
+    )
     def test_get_metric_data(self, cloudwatch_client):
 
         cloudwatch_client.put_metric_data(
