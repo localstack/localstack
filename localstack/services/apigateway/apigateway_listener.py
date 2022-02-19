@@ -1041,7 +1041,9 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
 
 def get_target_resource_details(invocation_context: ApiInvocationContext) -> Tuple[str, Dict]:
     """Look up and return the API GW resource (path pattern + resource dict) for the given invocation context."""
-    path_map = helpers.get_rest_api_paths(rest_api_id=invocation_context.api_id)
+    path_map = helpers.get_rest_api_paths(
+        rest_api_id=invocation_context.api_id, region_name=invocation_context.region_name
+    )
     relative_path = invocation_context.invocation_path
     try:
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
