@@ -1418,7 +1418,7 @@ class TestAPIGateway(unittest.TestCase):
             self.connect_api_gateway_to_s3(bucket_name, object_name, api_id, "GET")
 
             apigw_client.create_deployment(restApiId=api_id, stageName="test")
-            url = path_based_url(api_id, "test", "/")
+            url = path_based_url(api_id, "test", f"/{object_name}")
             result = requests.get(url)
             self.assertEqual(200, result.status_code)
             self.assertEqual(object_content, result.text)
@@ -1482,8 +1482,8 @@ class TestAPIGateway(unittest.TestCase):
     def connect_api_gateway_to_s3(self, bucket_name, file_name, api_id, method):
         """Connects the root resource of an api gateway to the given object of an s3 bucket."""
         apigw_client = aws_stack.create_external_boto_client("apigateway")
-        s3_uri = "arn:aws:apigateway:{}:s3:path/{}/{}".format(
-            aws_stack.get_region(), bucket_name, file_name
+        s3_uri = "arn:aws:apigateway:{}:s3:path/{}/{{proxy}}".format(
+            aws_stack.get_region(), bucket_name
         )
 
         test_role = "test-s3-role"
@@ -1491,9 +1491,12 @@ class TestAPIGateway(unittest.TestCase):
         resources = apigw_client.get_resources(restApiId=api_id)
         # using the root resource '/' directly for this test
         root_resource_id = resources["items"][0]["id"]
+        proxy_resource = apigw_client.create_resource(
+            restApiId=api_id, parentId=root_resource_id, pathPart="{proxy+}"
+        )
         apigw_client.put_method(
             restApiId=api_id,
-            resourceId=root_resource_id,
+            resourceId=proxy_resource["id"],
             httpMethod=method,
             authorizationType="NONE",
             apiKeyRequired=False,
@@ -1501,12 +1504,13 @@ class TestAPIGateway(unittest.TestCase):
         )
         apigw_client.put_integration(
             restApiId=api_id,
-            resourceId=root_resource_id,
+            resourceId=proxy_resource["id"],
             httpMethod=method,
             type="AWS",
             integrationHttpMethod=method,
             uri=s3_uri,
             credentials=role_arn,
+            requestParameters={"integration.request.path.proxy": "method.request.path.proxy"},
         )
 
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
