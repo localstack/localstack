@@ -3,7 +3,7 @@ This module provides tools to call moto using moto and botocore internals withou
 """
 import sys
 from functools import lru_cache
-from typing import Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Mapping, Optional, Tuple, Union
 from urllib.parse import urlsplit
 
 from botocore.awsrequest import AWSPreparedRequest
@@ -23,7 +23,7 @@ from localstack.aws.api import (
     RequestContext,
     ServiceResponse,
 )
-from localstack.aws.api.core import ServiceRequestHandler
+from localstack.aws.api.core import ServiceRequest, ServiceRequestHandler
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
 from localstack.aws.spec import load_service
 from localstack.utils.aws import aws_stack
@@ -66,6 +66,30 @@ def call_moto(context: RequestContext) -> ServiceResponse:
         )
 
     return response
+
+
+def call_moto_with_request(
+    context: RequestContext, service_request: Union[Mapping[str, Any], ServiceRequest]
+) -> ServiceResponse:
+    """
+    Like `call_moto`, but you can pass a modified version of the service request before calling moto. The caveat is
+    that a new HTTP request has to be created. The service_request is serialized into a new RequestContext object,
+    and headers from the old request are merged into the new one.
+
+    :param context: the original request context
+    :param service_request: the dictionary containing the service request parameters
+    :return: a serialized AWS ServiceResponse (same as boto3 would return)
+    """
+    local_context = create_aws_request_context(
+        service_name=context.service.service_name,
+        action=context.operation.name,
+        parameters=service_request,
+        region=context.region,
+    )
+
+    local_context.request.headers.extend(context.request.headers)
+
+    return call_moto(local_context)
 
 
 def proxy_moto(context: RequestContext) -> HttpResponse:
@@ -175,7 +199,7 @@ def load_moto_routing_table(service: str) -> Map:
 def create_aws_request_context(
     service_name: str,
     action: str,
-    parameters: Dict = None,
+    parameters: Mapping[str, Any] = None,
     region: str = None,
     endpoint_url: Optional[str] = None,
 ) -> RequestContext:
