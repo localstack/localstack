@@ -43,7 +43,7 @@ def wait_until(
         return wait_until(fn, next_wait, max_retries, strategy, _retries + 1, _max_wait)
 
 
-def retry(function, retries=3, sleep=1.0, sleep_before=0, **kwargs):
+def retry(function, retries=12, sleep=0.25, sleep_before=0.05, **kwargs):
     raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)
