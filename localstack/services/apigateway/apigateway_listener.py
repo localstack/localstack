@@ -80,9 +80,7 @@ LOG = logging.getLogger(__name__)
 TARGET_REGEX_PATH_S3_URI = (
     r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:path/(?P<bucket>[^/]+)/(?P<object>.+)$"
 )
-TARGET_REGEX_ACTION_S3_URI = (
-    r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
-)
+TARGET_REGEX_ACTION_S3_URI = r"^arn:aws:apigateway:[a-zA-Z0-9\-]+:s3:action/(?:GetObject&Bucket\=(?P<bucket>[^&]+)&Key\=(?P<object>.+))$"
 # regex path pattern for user requests
 PATH_REGEX_USER_REQUEST = (
     r"^/restapis/([A-Za-z0-9_\-]+)(?:/([A-Za-z0-9_\-]+))?/%s/(.*)$" % PATH_USER_REQUEST
