@@ -4,7 +4,6 @@ import json
 import logging
 import re
 import time
-from enum import Enum
 from typing import Any, Dict, Optional, Tuple, Union
 from urllib.parse import urljoin
 
@@ -24,6 +23,7 @@ from localstack.constants import (
     TEST_AWS_ACCOUNT_ID,
 )
 from localstack.services.apigateway import helpers
+from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.apigateway.helpers import (
     API_REGIONS,
     PATH_REGEX_AUTHORIZERS,
@@ -33,6 +33,7 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_RESPONSES,
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_VALIDATORS,
+    apply_template,
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
@@ -47,6 +48,7 @@ from localstack.services.apigateway.helpers import (
     handle_vpc_links,
     make_error_response,
 )
+from localstack.services.apigateway.integration import SnsIntegration
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.kinesis import kinesis_listener
@@ -57,19 +59,11 @@ from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_responses import (
     LambdaResponse,
     flask_to_requests_response,
-    parse_query_string,
     request_response_stream,
     requests_response,
 )
 from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, THREAD_LOCAL
-from localstack.utils.common import (
-    camel_to_snake_case,
-    json_safe,
-    long_uid,
-    to_bytes,
-    to_str,
-    try_json,
-)
+from localstack.utils.common import camel_to_snake_case, json_safe, long_uid, to_bytes, to_str
 
 # set up logger
 from localstack.utils.http_utils import add_query_params_to_url
@@ -94,136 +88,8 @@ HOST_REGEX_EXECUTE_API = (
 REQUEST_TIME_DATE_FORMAT = "%d/%b/%Y:%H:%M:%S %z"
 
 
-class ApiGatewayVersion(Enum):
-    V1 = "v1"
-    V2 = "v2"
-
-
-# type definition for data parameters (i.e., invocation payloads)
-InvocationPayload = Union[Dict, str, bytes]
-
-
 class AuthorizationError(Exception):
     pass
-
-
-class ApiInvocationContext:
-    """Represents the context for an incoming API Gateway invocation."""
-
-    # basic (raw) HTTP invocation details (method, path, data, headers)
-    method: str
-    path: str
-    data: InvocationPayload
-    headers: Dict[str, str]
-
-    # invocation context
-    context: Dict[str, Any]
-    # authentication info for this invocation
-    auth_info: Dict[str, Any]
-
-    # target API/resource details extracted from the invocation
-    apigw_version: ApiGatewayVersion
-    api_id: str
-    stage: str
-    region_name: str
-    # resource path, including any path parameter placeholders (e.g., "/my/path/{id}")
-    resource_path: str
-    integration: Dict
-    resource: Dict
-    # Invocation path with query string, e.g., "/my/path?test". Defaults to "path", can be used
-    #  to overwrite the actual API path, in case the path format "../_user_request_/.." is used.
-    _path_with_query_string: str
-
-    # response templates to be applied to the invocation result
-    response_templates: Dict
-
-    route: Dict
-    connection_id: str
-    path_params: Dict
-
-    # response object
-    response: Response
-
-    def __init__(
-        self,
-        method,
-        path,
-        data,
-        headers,
-        api_id=None,
-        stage=None,
-        context=None,
-        auth_info=None,
-    ):
-        self.method = method
-        self.path = path
-        self.data = data
-        self.headers = headers
-        self.context = {} if context is None else context
-        self.auth_info = {} if auth_info is None else auth_info
-        self.apigw_version = None
-        self.api_id = api_id
-        self.stage = stage
-        self.region_name = None
-        self.integration = None
-        self.resource = None
-        self.resource_path = None
-        self.path_with_query_string = None
-        self.response_templates = {}
-
-    @property
-    def resource_id(self) -> Optional[str]:
-        return (self.resource or {}).get("id")
-
-    @property
-    def invocation_path(self) -> str:
-        """Return the plain invocation path, without query parameters."""
-        path = self.path_with_query_string or self.path
-        return path.split("?")[0]
-
-    @property
-    def path_with_query_string(self) -> str:
-        """Return invocation path with query string - defaults to the value of 'path', unless customized."""
-        return self._path_with_query_string or self.path
-
-    @path_with_query_string.setter
-    def path_with_query_string(self, new_path: str):
-        """Set a custom invocation path with query string (used to handle "../_user_request_/.." paths)."""
-        self._path_with_query_string = new_path
-
-    def query_params(self) -> Dict:
-        """Extract the query parameters from the target URL or path in this request context."""
-        query_string = self.path_with_query_string.partition("?")[2]
-        return parse_query_string(query_string)
-
-    @property
-    def integration_uri(self) -> Optional[str]:
-        integration = self.integration or {}
-        return integration.get("uri") or integration.get("integrationUri")
-
-    @property
-    def auth_context(self) -> Optional[Dict]:
-        if isinstance(self.auth_info, dict):
-            context = self.auth_info.setdefault("context", {})
-            principal = self.auth_info.get("principalId")
-            if principal:
-                context["principalId"] = principal
-            return context
-
-    @property
-    def auth_identity(self) -> Optional[Dict]:
-        if isinstance(self.auth_info, dict):
-            if self.auth_info.get("identity") is None:
-                self.auth_info["identity"] = {}
-            return self.auth_info["identity"]
-
-    def is_websocket_request(self):
-        upgrade_header = str(self.headers.get("upgrade") or "")
-        return upgrade_header.lower() == "websocket"
-
-    def is_v1(self):
-        """Whether this is an API Gateway v1 request"""
-        return self.apigw_version == ApiGatewayVersion.V1
 
 
 class ProxyListenerApiGateway(ProxyListener):
@@ -470,60 +336,6 @@ def apply_request_parameters(
                 query_params.pop(key)
 
     return add_query_params_to_url(uri, query_params)
-
-
-def apply_template(
-    integration: Dict[str, Any],
-    req_res_type: str,
-    data: InvocationPayload,
-    path_params=None,
-    query_params=None,
-    headers=None,
-    context=None,
-):
-    if path_params is None:
-        path_params = {}
-    if query_params is None:
-        query_params = {}
-    if headers is None:
-        headers = {}
-    if context is None:
-        context = {}
-    integration_type = integration.get("type") or integration.get("integrationType")
-    if integration_type in ["HTTP", "AWS"]:
-        # apply custom request template
-        content_type = APPLICATION_JSON  # TODO: make configurable!
-        template = integration.get("%sTemplates" % req_res_type, {}).get(content_type)
-        if template:
-            variables = {"context": context or {}}
-            input_ctx = {"body": data}
-            # little trick to flatten the input context so velocity templates
-            # work from the root.
-            # orig - { "body": '{"action": "$default","message":"foobar"}'
-            # after - {
-            #   "body": '{"action": "$default","message":"foobar"}',
-            #   "action": "$default",
-            #   "message": "foobar"
-            # }
-            if data:
-                dict_pack = try_json(data)
-                if isinstance(dict_pack, dict):
-                    for k, v in dict_pack.items():
-                        input_ctx.update({k: v})
-
-            def _params(name=None):
-                # See https://docs.aws.amazon.com/apigateway/latest/developerguide/
-                #    api-gateway-mapping-template-reference.html#input-variable-reference
-                # Returns "request parameter from the path, query string, or header value (searched in that order)"
-                combined = {}
-                combined.update(path_params or {})
-                combined.update(query_params or {})
-                combined.update(headers or {})
-                return combined if not name else combined.get(name)
-
-            input_ctx["params"] = _params
-            data = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
-    return data
 
 
 def apply_response_parameters(invocation_context: ApiInvocationContext):
@@ -969,6 +781,11 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     url, method="POST", headers=headers, data=new_request
                 )
                 return result
+            elif uri.startswith("arn:aws:apigateway:") and ":sns:path" in uri:
+                integration_response = SnsIntegration(invocation_context).invoke()
+                return apply_request_response_templates(
+                    integration_response, response_templates, content_type=APPLICATION_JSON
+                )
 
         raise Exception(
             'API Gateway AWS integration action URI "%s", method "%s" not yet implemented'
