@@ -76,9 +76,6 @@ from localstack.utils.files import (  # noqa
 )
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
-from localstack.utils.generic.wait_utils import poll_condition, retry  # noqa
-
-# TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.net_utils import (  # noqa
     get_free_tcp_port,
     is_ip_address,
@@ -113,6 +110,15 @@ from localstack.utils.strings import (  # noqa
     to_bytes,
     to_str,
     truncate,
+)
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.sync import (  # noqa
+    poll_condition,
+    retry,
+    sleep_forever,
+    synchronized,
+    wait_until,
 )
 
 # set up logger
@@ -643,23 +649,6 @@ def empty_context_manager():
     return contextlib.nullcontext()
 
 
-def synchronized(lock=None):
-    """
-    Synchronization decorator as described in
-    http://blog.dscpl.com.au/2014/01/the-missing-synchronized-decorator.html.
-    """
-
-    def _decorator(wrapped):
-        @functools.wraps(wrapped)
-        def _wrapper(*args, **kwargs):
-            with lock:
-                return wrapped(*args, **kwargs)
-
-        return _wrapper
-
-    return _decorator
-
-
 def prevent_stack_overflow(match_parameters=False):
     """Function decorator to protect a function from stack overflows -
     raises an exception if a (potential) infinite recursion is detected."""
@@ -710,11 +699,6 @@ def in_docker() -> bool:
 
 def path_from_url(url: str) -> str:
     return "/%s" % str(url).partition("://")[2].partition("/")[2] if "://" in url else url
-
-
-def sleep_forever():
-    while True:
-        time.sleep(1)
 
 
 def get_service_protocol():
