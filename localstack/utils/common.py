@@ -1,6 +1,5 @@
 import base64
 import binascii
-import decimal
 import functools
 import glob
 import hashlib
@@ -16,8 +15,6 @@ import tempfile
 import threading
 import time
 import uuid
-from datetime import date, datetime
-from json import JSONDecodeError
 from multiprocessing.dummy import Pool
 from queue import Queue
 from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, Union
@@ -72,6 +69,22 @@ from localstack.utils.files import (  # noqa
     replace_in_file,
     rm_rf,
     save_file,
+)
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.json import (  # noqa
+    CustomEncoder,
+    JsonObject,
+    assign_to_path,
+    canonical_json,
+    clone,
+    clone_safe,
+    extract_from_jsonpointer_path,
+    extract_jsonpath,
+    fix_json_keys,
+    json_safe,
+    parse_json_or_yaml,
+    try_json,
 )
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
@@ -196,38 +209,6 @@ PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
 
 # user of the currently running process
 CACHED_USER = None
-
-
-# type definitions for JSON-serializable objects
-
-
-class CustomEncoder(json.JSONEncoder):
-    """Helper class to convert JSON documents with datetime, decimals, or bytes."""
-
-    def default(self, o):
-        import yaml  # leave import here, to avoid breaking our Lambda tests!
-
-        if isinstance(o, decimal.Decimal):
-            if o % 1 > 0:
-                return float(o)
-            else:
-                return int(o)
-        if isinstance(o, (datetime, date)):
-            return timestamp_millis(o)
-        if isinstance(o, yaml.ScalarNode):
-            if o.tag == "tag:yaml.org,2002:int":
-                return int(o.value)
-            if o.tag == "tag:yaml.org,2002:float":
-                return float(o.value)
-            if o.tag == "tag:yaml.org,2002:bool":
-                return bool(o.value)
-            return str(o.value)
-        try:
-            if isinstance(o, bytes):
-                return to_str(o)
-            return super(CustomEncoder, self).default(o)
-        except Exception:
-            return None
 
 
 class ShellCommandThread(FuncThread):
@@ -373,53 +354,6 @@ class ShellCommandThread(FuncThread):
             if not quiet:
                 LOG.warning("Unable to run stop handler for shell command thread %s: %s", self, e)
         self.stopped = True
-
-
-class JsonObject(object):
-    """Generic JSON serializable object for simplified subclassing"""
-
-    def to_json(self, indent=None):
-        return json.dumps(
-            self,
-            default=lambda o: (
-                (float(o) if o % 1 > 0 else int(o))
-                if isinstance(o, decimal.Decimal)
-                else o.__dict__
-            ),
-            sort_keys=True,
-            indent=indent,
-        )
-
-    def apply_json(self, j):
-        if isinstance(j, str):
-            j = json.loads(j)
-        self.__dict__.update(j)
-
-    def to_dict(self):
-        return json.loads(self.to_json())
-
-    @classmethod
-    def from_json(cls, j):
-        j = JsonObject.as_dict(j)
-        result = cls()
-        result.apply_json(j)
-        return result
-
-    @classmethod
-    def from_json_list(cls, json_list):
-        return [cls.from_json(j) for j in json_list]
-
-    @classmethod
-    def as_dict(cls, obj):
-        if isinstance(obj, dict):
-            return obj
-        return obj.to_dict()
-
-    def __str__(self):
-        return self.to_json()
-
-    def __repr__(self):
-        return self.__str__()
 
 
 class CaptureOutput(object):
@@ -836,106 +770,6 @@ def long_uid() -> str:
     return str(uuid.uuid4())
 
 
-def parse_json_or_yaml(markup: str) -> Any:
-    import yaml  # leave import here, to avoid breaking our Lambda tests!
-
-    try:
-        return json.loads(markup)
-    except Exception:
-        try:
-            return clone_safe(yaml.safe_load(markup))
-        except Exception:
-            try:
-                return clone_safe(yaml.load(markup, Loader=yaml.SafeLoader))
-            except Exception:
-                raise
-
-
-def try_json(data: str):
-    """
-    Tries to deserialize json input to object if possible, otherwise returns original
-    :param data: string
-    :return: deserialize version of input
-    """
-    try:
-        return json.loads(to_str(data or "{}"))
-    except JSONDecodeError:
-        LOG.warning("failed serialize to json, fallback to original")
-        return data
-
-
-def json_safe(item: Any) -> Any:
-    """Return a copy of the given object (e.g., dict) that is safe for JSON dumping"""
-    try:
-        return json.loads(json.dumps(item, cls=CustomEncoder))
-    except Exception:
-        item = fix_json_keys(item)
-        return json.loads(json.dumps(item, cls=CustomEncoder))
-
-
-def fix_json_keys(item: Any):
-    """make sure the keys of a JSON are strings (not binary type or other)"""
-    item_copy = item
-    if isinstance(item, list):
-        item_copy = []
-        for i in item:
-            item_copy.append(fix_json_keys(i))
-    if isinstance(item, dict):
-        item_copy = {}
-        for k, v in item.items():
-            item_copy[to_str(k)] = fix_json_keys(v)
-    return item_copy
-
-
-def canonical_json(obj):
-    return json.dumps(obj, sort_keys=True)
-
-
-def extract_jsonpath(value, path):
-    from jsonpath_rw import parse
-
-    jsonpath_expr = parse(path)
-    result = [match.value for match in jsonpath_expr.find(value)]
-    result = result[0] if len(result) == 1 else result
-    return result
-
-
-def assign_to_path(target, path: str, value, delimiter: str = "."):
-    parts = path.strip(delimiter).split(delimiter)
-    path_to_parent = delimiter.join(parts[:-1])
-    parent = extract_from_jsonpointer_path(target, path_to_parent, auto_create=True)
-    if not isinstance(parent, dict):
-        LOG.debug(
-            'Unable to find parent (type %s) for path "%s" in object: %s',
-            type(parent),
-            path,
-            target,
-        )
-        return
-    path_end = int(parts[-1]) if is_number(parts[-1]) else parts[-1]
-    parent[path_end] = value
-    return target
-
-
-def extract_from_jsonpointer_path(target, path: str, delimiter: str = "/", auto_create=False):
-    parts = path.strip(delimiter).split(delimiter)
-    for part in parts:
-        path_part = int(part) if is_number(part) else part
-        if isinstance(target, list) and not is_number(path_part):
-            if path_part == "-":
-                # special case where path is like /path/to/list/- where "/-" means "append to list"
-                continue
-            LOG.warning('Attempting to extract non-int index "%s" from list: %s', path_part, target)
-            return None
-        target_new = target[path_part] if isinstance(target, list) else target.get(path_part)
-        if target_new is None:
-            if not auto_create:
-                return
-            target[path_part] = target_new = {}
-        target = target_new
-    return target
-
-
 def cleanup(files=True, env=ENV_DEV, quiet=True):
     if files:
         cleanup_tmp_files()
@@ -1251,14 +1085,6 @@ def safe_run(cmd: List[str], cache_duration_secs=0, **kwargs) -> Union[str, subp
         return localstack.utils.run.run(cmd, shell=False, **kwargs)
 
     return do_run(" ".join(cmd), run_cmd, cache_duration_secs)
-
-
-def clone(item):
-    return json.loads(json.dumps(item))
-
-
-def clone_safe(item):
-    return clone(json_safe(item))
 
 
 class NetrcBypassAuth(requests.auth.AuthBase):
