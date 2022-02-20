@@ -9,7 +9,6 @@ import io
 import json
 import logging
 import os
-import platform
 import re
 import subprocess
 import sys
@@ -90,6 +89,17 @@ from localstack.utils.net_utils import (  # noqa
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.numbers import format_bytes, format_number, is_number  # noqa
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.platform import (  # noqa
+    get_arch,
+    get_os,
+    in_docker,
+    is_debian,
+    is_linux,
+    is_mac_os,
+    is_windows,
+)
 from localstack.utils.run import FuncThread
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
@@ -693,10 +703,6 @@ def md5(string: Union[str, bytes]) -> str:
     return m.hexdigest()
 
 
-def in_docker() -> bool:
-    return config.in_docker()
-
-
 def path_from_url(url: str) -> str:
     return "/%s" % str(url).partition("://")[2].partition("/")[2] if "://" in url else url
 
@@ -905,56 +911,6 @@ def parse_request_data(method: str, path: str, data=None, headers=None) -> Dict:
     # select first elements from result lists (this is assuming we are not using parameter lists!)
     result = {k: v[0] for k, v in result.items()}
     return result
-
-
-def is_mac_os() -> bool:
-    return localstack.utils.run.is_mac_os()
-
-
-def is_linux() -> bool:
-    return localstack.utils.run.is_linux()
-
-
-def is_windows() -> bool:
-    return localstack.utils.run.is_windows()
-
-
-def is_debian() -> bool:
-    cache_key = "_is_debian_"
-    try:
-        with MUTEX_CLEAN:
-            if cache_key not in CACHE:
-                CACHE[cache_key] = False
-                if not os.path.exists("/etc/issue"):
-                    return False
-                out = to_str(subprocess.check_output(["cat", "/etc/issue"]))
-                CACHE[cache_key] = "Debian" in out
-    except subprocess.CalledProcessError:
-        return False
-    return CACHE[cache_key]
-
-
-def get_arch() -> str:
-    """
-    Returns the current machine architecture
-    :return: "amd64" when x86_64, "arm64" if aarch64, platform.machine() otherwise
-    """
-    arch = platform.machine()
-    if arch == "x86_64":
-        return "amd64"
-    if arch == "aarch64":
-        return "arm64"
-    return arch
-
-
-def get_os() -> str:
-    if is_mac_os():
-        return "osx"
-    if is_linux():
-        return "linux"
-    if is_windows():
-        return "windows"
-    raise Exception("Unable to determine local operating system")
 
 
 def is_command_available(cmd: str) -> bool:

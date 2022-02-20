@@ -1,7 +1,6 @@
 import inspect
 import logging
 import os
-import platform
 import select
 import subprocess
 import sys
@@ -11,6 +10,9 @@ from concurrent.futures import Future
 from typing import AnyStr, Callable, Dict, List, Optional, Union
 
 from localstack import config
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.platform import is_linux, is_mac_os, is_windows  # noqa
 
 LOG = logging.getLogger(__name__)
 
@@ -110,18 +112,6 @@ def run(
             print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))
             sys.stdout.flush()
         raise e
-
-
-def is_mac_os() -> bool:
-    return "darwin" == platform.system().lower()
-
-
-def is_linux() -> bool:
-    return "linux" == platform.system().lower()
-
-
-def is_windows() -> bool:
-    return "windows" == platform.system().lower()
 
 
 def to_str(obj: Union[str, bytes], errors="strict"):
