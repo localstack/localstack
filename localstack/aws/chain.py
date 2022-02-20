@@ -4,12 +4,14 @@
 import logging
 from typing import Any, Callable, List, Optional
 
-from localstack.aws.api import HttpResponse, RequestContext
+from localstack.http import Response
+
+from .api import RequestContext
 
 LOG = logging.getLogger(__name__)
 
-Handler = Callable[["HandlerChain", RequestContext, HttpResponse], None]
-ExceptionHandler = Callable[["HandlerChain", Exception, RequestContext, HttpResponse], None]
+Handler = Callable[["HandlerChain", RequestContext, Response], None]
+ExceptionHandler = Callable[["HandlerChain", Exception, RequestContext, Response], None]
 
 
 class HandlerChain:
@@ -26,7 +28,7 @@ class HandlerChain:
     stopped: bool
     terminated: bool
     error: Optional[Exception]
-    response: Optional[HttpResponse]
+    response: Optional[Response]
     context: Optional[RequestContext]
 
     def __init__(
@@ -46,7 +48,7 @@ class HandlerChain:
         self.response = None
         self.context = None
 
-    def handle(self, context: RequestContext, response: HttpResponse):
+    def handle(self, context: RequestContext, response: Response):
         self.context = context
         self.response = response
 
@@ -84,8 +86,12 @@ class HandlerChain:
         self.response.status_code = status_code
         if isinstance(payload, (list, dict)):
             self.response.set_json(payload)
+        elif isinstance(payload, (str, bytes, bytearray)):
+            self.response.data = payload
+        elif payload is None and not self.response.response:
+            self.response.response = []
         else:
-            self.response.set_response(payload)
+            self.response.response = payload
         self.stop()
 
     def stop(self):
@@ -134,7 +140,7 @@ class HandlerChainAdapter(Handler):
     def __init__(self, chain: HandlerChain = None):
         self.chain = chain or HandlerChain()
 
-    def __call__(self, _: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, _: HandlerChain, context: RequestContext, response: Response):
         self.chain.handle(context, response)
 
     def add(self, handler: Handler):

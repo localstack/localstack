@@ -1,15 +1,15 @@
-from requests import Response
+from requests import Response as RequestsResponse
 
-from localstack.aws.api import HttpRequest, HttpResponse
 from localstack.aws.gateway import Gateway
+from localstack.http import Request, Response
 from localstack.utils.run import FuncThread
 from localstack.utils.server import http2_server
 
 
-def to_server_response(response: HttpResponse):
+def to_server_response(response: Response):
     # TODO: creating response objects in this way (re-using the requests library instead of an HTTP server
     #  framework) is a bit ugly, but it's the way that the edge proxy expects them.
-    resp = Response()
+    resp = RequestsResponse()
     resp._content = response.data
     resp.status_code = response.status_code
     resp.headers.update(response.headers)
@@ -28,7 +28,7 @@ class GatewayHandler:
         self.gateway = gateway
 
     def __call__(self, request, data):
-        request = HttpRequest(
+        request = Request(
             method=request.method,
             path=request.path,
             query_string=request.query_string,
@@ -36,7 +36,7 @@ class GatewayHandler:
             body=data,
             remote_addr=request.remote_addr,
         )
-        response: HttpResponse = HttpResponse()
+        response = Response()
 
         self.gateway.process(request, response)
 

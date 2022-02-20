@@ -8,17 +8,17 @@ from botocore.model import ServiceModel
 from werkzeug.datastructures import Headers
 
 from localstack import constants
-from localstack.aws.api import HttpResponse, RequestContext
-from localstack.aws.chain import Handler, HandlerChain
-from localstack.aws.skeleton import Skeleton
-from localstack.aws.spec import load_service
 from localstack.http import Request, Response
 from localstack.http.adapters import ProxyListenerAdapter
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward
 from localstack.services.messages import MessagePayload
 from localstack.utils.aws.request_context import extract_region_from_headers
-from localstack.utils.common import to_str
 from localstack.utils.persistence import PersistingProxyListener
+
+from .api import RequestContext
+from .chain import Handler, HandlerChain
+from .skeleton import Skeleton
+from .spec import load_service
 
 LOG = logging.getLogger(__name__)
 
@@ -111,16 +111,12 @@ class DefaultListenerHandler(Handler):
     Adapter that exposes the ProxyListener.DEFAULT_LISTENERS as a Handler.
     """
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if not ProxyListener.DEFAULT_LISTENERS:
             return
 
         req = context.request
-
-        if req.query_string:
-            path_with_query = req.path + "?" + to_str(req.query_string)
-        else:
-            path_with_query = req.path
+        path_with_query = req.full_path if req.query_string else req.path
 
         try:
             resp = modify_and_forward(

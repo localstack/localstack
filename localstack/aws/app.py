@@ -3,14 +3,15 @@ import threading
 from typing import Any
 
 from localstack.aws import handlers
-from localstack.aws.chain import HandlerChain
-from localstack.aws.handlers import EmptyResponseHandler
-from localstack.aws.plugins import HandlerServiceAdapter, ServiceProvider
-from localstack.aws.proxy import DefaultListenerHandler
+from localstack.http import Response
 from localstack.services.plugins import Service, ServiceManager, ServicePluginManager
 
-from .api import HttpResponse, RequestContext
+from .api import RequestContext
+from .chain import HandlerChain
 from .gateway import Gateway
+from .handlers import EmptyResponseHandler, RouterHandler
+from .plugins import HandlerServiceAdapter, ServiceProvider
+from .proxy import AwsApiListener, DefaultListenerHandler
 
 LOG = logging.getLogger(__name__)
 
@@ -28,11 +29,16 @@ class LocalstackAwsGateway(Gateway):
         # legacy compatibility with DEFAULT_LISTENERS
         serve_default_listeners = DefaultListenerHandler()
 
+        from localstack.services.edge import ROUTER
+
+        serve_custom_routes = RouterHandler(ROUTER)
+
         # the main request handler chain
         self.request_handlers.extend(
             [
                 handlers.serve_localstack_resources,  # try to serve internal resources first
                 serve_default_listeners,
+                serve_custom_routes,
                 # start aws handler chain
                 handlers.process_custom_service_rules,  # translate things like GET requests to SQS Queue URLs
                 handlers.parse_service_name,
@@ -62,7 +68,7 @@ class LocalstackAwsGateway(Gateway):
             ]
         )
 
-    def log_response(self, _: HandlerChain, context: RequestContext, response: HttpResponse):
+    def log_response(self, _: HandlerChain, context: RequestContext, response: Response):
         if context.operation:
             # TODO: log analytics event here
             LOG.info(
@@ -80,7 +86,7 @@ class LocalstackAwsGateway(Gateway):
                 response.status_code,
             )
 
-    def require_service(self, _: HandlerChain, context: RequestContext, response: HttpResponse):
+    def require_service(self, _: HandlerChain, context: RequestContext, response: Response):
         request_router = self.service_request_router
 
         if not context.service:
@@ -108,7 +114,10 @@ class LocalstackAwsGateway(Gateway):
             elif isinstance(service_plugin, HandlerServiceAdapter):
                 request_router.add_handler(service_operation, service_plugin.listener)
             elif isinstance(service_plugin, Service):
-                request_router.add_handler(service_operation, handlers.LegacyPluginHandler())
+                if type(service_plugin.listener) == AwsApiListener:
+                    request_router.add_skeleton(service_plugin.listener.skeleton)
+                else:
+                    request_router.add_handler(service_operation, handlers.LegacyPluginHandler())
             else:
                 LOG.warning(
                     "found plugin for %s, but cannot attach service plugin of type %s",

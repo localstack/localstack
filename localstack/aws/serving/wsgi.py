@@ -1,9 +1,9 @@
-from websockets.datastructures import Headers
 from werkzeug import run_simple
+from werkzeug.datastructures import Headers
 from werkzeug.wrappers import Request
 
-from localstack.aws.api import HttpResponse
 from localstack.aws.gateway import Gateway
+from localstack.http import Response
 
 
 class WsgiGateway:
@@ -20,7 +20,7 @@ class WsgiGateway:
     def __call__(self, environ, start_response):
         http_request = Request(environ)
         http_request.headers = Headers(http_request.headers)
-        http_response = HttpResponse()
+        http_response = Response()
 
         # Request is a drop-in replacement for HttpRequest
         # noinspection PyTypeChecker

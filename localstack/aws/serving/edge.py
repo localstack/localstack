@@ -1,29 +1,30 @@
 from botocore.model import ServiceModel
-from requests.models import Response
+from requests.models import Response as RequestsResponse
 from werkzeug.datastructures import Headers
 
 from localstack import constants
-from localstack.aws.api import HttpRequest, HttpResponse, RequestContext
+from localstack.aws.api import RequestContext
 from localstack.aws.gateway import Gateway
 from localstack.aws.skeleton import Skeleton
 from localstack.aws.spec import load_service
+from localstack.http import Request, Response
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.request_context import extract_region_from_headers
 
 
-def get_region(request: HttpRequest) -> str:
+def get_region(request: Request) -> str:
     return extract_region_from_headers(request.headers)
 
 
-def get_account_id(_: HttpRequest) -> str:
+def get_account_id(_: Request) -> str:
     # TODO: at some point we may want to get the account id from credentials
     return constants.TEST_AWS_ACCOUNT_ID
 
 
-def to_server_response(response: HttpResponse):
+def to_server_response(response: Response):
     # TODO: creating response objects in this way (re-using the requests library instead of an HTTP server
     #  framework) is a bit ugly, but it's the way that the edge proxy expects them.
-    resp = Response()
+    resp = RequestsResponse()
     resp._content = response.data
     resp.status_code = response.status_code
     resp.headers.update(response.headers)
@@ -42,13 +43,13 @@ class GatewayListener(ProxyListener):
         self.gateway = gateway
 
     def forward_request(self, method, path, data, headers):
-        request = HttpRequest(
+        request = Request(
             method=method,
             path=path,
             headers=headers,
             body=data,
         )
-        response: HttpResponse = HttpResponse()
+        response = Response()
 
         self.gateway.process(request, response)
 
@@ -67,7 +68,7 @@ class ServiceListener(ProxyListener):
         self.skeleton = Skeleton(self.service, delegate)
 
     def forward_request(self, method, path, data, headers):
-        request = HttpRequest(
+        request = Request(
             method=method,
             path=path,
             headers=Headers(headers),
@@ -78,7 +79,7 @@ class ServiceListener(ProxyListener):
         response = self.skeleton.invoke(context)
         return to_server_response(response)
 
-    def create_request_context(self, request: HttpRequest) -> RequestContext:
+    def create_request_context(self, request: Request) -> RequestContext:
         context = RequestContext()
         context.service = self.service
         context.request = request

@@ -3,16 +3,18 @@ A set of common handlers to build an AWS server application.
 """
 import json
 import logging
+from functools import lru_cache
 from typing import Any, Dict, Optional, Union
 
 from botocore.model import ServiceModel
 from werkzeug.datastructures import Headers
+from werkzeug.exceptions import NotFound
 
-from .. import constants
-from ..services.internal import LocalstackResources
-from ..services.routing import ResourceRouter
-from ..utils.common import to_str
-from .api import CommonServiceException, HttpRequest, HttpResponse, RequestContext, ServiceException
+from localstack import constants
+from localstack.http import Request, Response, Router
+from localstack.services.internal import LocalstackResources
+
+from .api import CommonServiceException, RequestContext, ServiceException
 from .api.core import ServiceOperation
 from .chain import ExceptionHandler, Handler, HandlerChain, HandlerChainAdapter
 from .protocol.parser import RequestParser, create_parser
@@ -28,29 +30,34 @@ class ServiceNameParser(Handler):
     A handler that parses heuristically from the request the AWS service the request is addressed to.
     """
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         service = self.guess_aws_service(context.request)
 
         if not service:
             LOG.warning("unable to determine service from request")
             return
+        else:
+            LOG.debug("determined service %s", service)
 
-        LOG.debug("loading service for request to %s", service)
-        context.service = load_service(service)
+        context.service = self.get_service_model(service)
         headers = context.request.headers
         headers["x-localstack-tgt-api"] = service
 
-    def guess_aws_service(self, request: HttpRequest) -> Optional[str]:
+    @lru_cache()
+    def get_service_model(self, service: str) -> ServiceModel:
+        return load_service(service)
+
+    def guess_aws_service(self, request: Request) -> Optional[str]:
         headers = request.headers
 
-        target = headers.get("x-amz-target", "")
-        host = headers.get("host", "")
+        host = request.host
         auth_header = headers.get("authorization", "")
+        target = headers.get("x-amz-target", "")
 
         LOG.debug(
             "determining service from request host='%s', x-amz-target='%s', auth_header='%s'",
-            target,
             host,
+            target,
             auth_header,
         )
 
@@ -137,7 +144,7 @@ class CustomServiceRules(HandlerChainAdapter):
 
 class ServiceRequestParser(Handler):
     """
-    A Handler that parses the service request operation and the instance from an HttpRequest. Requires the service to
+    A Handler that parses the service request operation and the instance from an Request. Requires the service to
     already be resolved in the RequestContext (e.g., through a ServiceNameParser)
     """
 
@@ -146,7 +153,7 @@ class ServiceRequestParser(Handler):
     def __init__(self):
         self.parsers = dict()
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         # determine service
         if not context.service:
             LOG.debug("no service set in context, skipping request parsing")
@@ -177,11 +184,11 @@ class RegionContextEnricher(Handler):
     A handler that sets the AWS region of the request in the RequestContext.
     """
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         context.region = self.get_region(context.request)
 
     @staticmethod
-    def get_region(request: HttpRequest) -> str:
+    def get_region(request: Request) -> str:
         from localstack.utils.aws.request_context import extract_region_from_headers
 
         return extract_region_from_headers(request.headers)
@@ -192,7 +199,7 @@ class DefaultAccountIdEnricher(Handler):
     A handler that sets the AWS account of the request in the RequestContext.
     """
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         # TODO: at some point we may want to get the account id from credentials (+ a user repository)
         from localstack import constants
 
@@ -207,7 +214,7 @@ class SkeletonHandler(Handler):
     def __init__(self, skeleton: Skeleton):
         self.skeleton = skeleton
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         skeleton_response = self.skeleton.invoke(context)
         response.update_from(skeleton_response)
 
@@ -222,7 +229,7 @@ class ServiceRequestRouter(Handler):
     def __init__(self):
         self.handlers = dict()
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if not context.service:
             return
 
@@ -272,28 +279,28 @@ class ServiceRequestRouter(Handler):
         return serializer.serialize_error_to_response(error, operation)
 
 
-class ResourceRouterHandler(Handler):
+class RouterHandler(Handler):
     """
-    Adapter to serve a ResourceRouter as a Handler.
+    Adapter to serve a Router as a Handler.
     """
 
-    resources: ResourceRouter
+    resources: Router
 
-    def __init__(self, resources: ResourceRouter) -> None:
-        self.resources = resources
+    def __init__(self, router: Router, respond_not_found=False) -> None:
+        self.router = router
+        self.respond_not_found = respond_not_found
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
-        result = self.resources.dispatch(context.request)
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        try:
+            router_response = self.router.dispatch(context.request)
+            response.update_from(router_response)
+            chain.stop()
+        except NotFound:
+            if self.respond_not_found:
+                chain.respond(404)
 
-        if result is ResourceRouter.NO_ROUTE:
-            response.status_code = 404
-            return
 
-        # serve the content
-        chain.respond(status_code=200, payload=result)
-
-
-class LocalstackResourceHandler(ResourceRouterHandler):
+class LocalstackResourceHandler(Handler):
     """
     Adapter to serve LocalstackResources as a Handler.
     """
@@ -301,19 +308,19 @@ class LocalstackResourceHandler(ResourceRouterHandler):
     resources: LocalstackResources
 
     def __init__(self, resources: LocalstackResources = None) -> None:
-        super().__init__(resources or LocalstackResources())
+        self.resources = resources or LocalstackResources()
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
-        super().__call__(chain, context, response)
-        path = context.request.path
-
-        if response.status_code == 404:
-            if not path.startswith(constants.INTERNAL_RESOURCE_PATH + "/"):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
+        try:
+            # serve
+            response.update_from(self.resources.dispatch(context.request))
+            chain.stop()
+        except NotFound:
+            path = context.request.path
+            if path.startswith(constants.INTERNAL_RESOURCE_PATH + "/"):
                 # only return 404 if we're accessing an internal resource, otherwise fall back to the other handlers
-                response.status_code = 0
-                return
-            else:
                 LOG.warning("Unable to find resource handler for path: %s", path)
+                chain.respond(404)
 
 
 class ExceptionLogger(ExceptionHandler):
@@ -329,7 +336,7 @@ class ExceptionLogger(ExceptionHandler):
         chain: HandlerChain,
         exception: Exception,
         context: RequestContext,
-        response: HttpResponse,
+        response: Response,
     ):
         if self.logger.isEnabledFor(level=logging.DEBUG):
             self.logger.exception("exception during call chain", exc_info=exception)
@@ -352,7 +359,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
         chain: HandlerChain,
         exception: Exception,
         context: RequestContext,
-        response: HttpResponse,
+        response: Response,
     ):
         if not context.service:
             return
@@ -400,7 +407,7 @@ class InternalFailureHandler(ExceptionHandler):
         chain: HandlerChain,
         exception: Exception,
         context: RequestContext,
-        response: HttpResponse,
+        response: Response,
     ):
         if response.data:
             # response already set
@@ -422,17 +429,15 @@ class LegacyPluginHandler(Handler):
     This adapter exposes Services that are developed as ProxyListener as Handler.
     """
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         from localstack.services.edge import do_forward_request
 
         request = context.request
 
         api = context.service.service_name
         method = request.method
-        if request.query_string:
-            path_with_query = request.path + "?" + to_str(request.query_string)
-        else:
-            path_with_query = request.path
+
+        path_with_query = request.full_path if request.query_string else request.path
         data = request.data
         headers = request.headers
 
@@ -458,14 +463,14 @@ class EmptyResponseHandler(Handler):
         self.body = body or b""
         self.headers = headers or Headers()
 
-    def __call__(self, chain: HandlerChain, context: RequestContext, response: HttpResponse):
+    def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if self.is_empty_response(response):
             self.populate_default_response(response)
 
-    def is_empty_response(self, response: HttpResponse):
+    def is_empty_response(self, response: Response):
         return response.status_code in [0, None] or not response.data
 
-    def populate_default_response(self, response: HttpResponse):
+    def populate_default_response(self, response: Response):
         response.status_code = self.status_code
         response.data = self.body
         response.headers.update(self.headers)
