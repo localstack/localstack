@@ -4,6 +4,9 @@ import os
 import tarfile
 import zipfile
 
+from .run import run
+from .strings import truncate
+
 LOG = logging.getLogger(__name__)
 
 
@@ -13,6 +16,8 @@ def is_zip_file(content):
 
 
 def unzip(path, target_dir, overwrite=True):
+    from localstack.utils.common import is_debian
+
     is_in_debian = is_debian()
     if is_in_debian:
         # Running the native command can be an order of magnitude faster in Alpine on Travis-CI

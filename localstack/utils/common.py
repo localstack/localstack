@@ -6,7 +6,6 @@ import glob
 import hashlib
 import inspect
 import io
-import itertools
 import json
 import logging
 import os
@@ -31,7 +30,6 @@ from requests import Response
 
 import localstack.utils.run
 from localstack import config
-from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
@@ -97,6 +95,26 @@ from localstack.utils.net_utils import (  # noqa
 )
 from localstack.utils.run import FuncThread
 
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.strings import (  # noqa
+    camel_to_snake_case,
+    canonicalize_bool_to_str,
+    convert_to_printable_chars,
+    first_char_to_lower,
+    first_char_to_upper,
+    is_base64,
+    is_string,
+    is_string_or_bytes,
+    snake_to_camel_case,
+    str_insert,
+    str_remove,
+    str_startswith_ignore_case,
+    str_to_bool,
+    to_bytes,
+    to_str,
+    truncate,
+)
+
 # set up logger
 LOG = logging.getLogger(__name__)
 
@@ -135,20 +153,6 @@ PEM_CERT_END = "-----END CERTIFICATE-----"
 PEM_KEY_START_REGEX = r"-----BEGIN(.*)PRIVATE KEY-----"
 PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
 
-# regular expression for unprintable characters
-# Based on https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
-#     #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
-_unprintables = (
-    range(0x00, 0x09),
-    range(0x0A, 0x0A),
-    range(0x0B, 0x0D),
-    range(0x0E, 0x20),
-    range(0xD800, 0xE000),
-    range(0xFFFE, 0x10000),
-)
-REGEX_UNPRINTABLE_CHARS = re.compile(
-    f"[{re.escape(''.join(map(chr, itertools.chain(*_unprintables))))}]"
-)
 
 # user of the currently running process
 CACHED_USER = None
@@ -694,25 +698,6 @@ def prevent_stack_overflow(match_parameters=False):
     return _decorator
 
 
-def is_string(s, include_unicode=True, exclude_binary=False):
-    if isinstance(s, bytes) and exclude_binary:
-        return False
-    if isinstance(s, str):
-        return True
-    if include_unicode and isinstance(s, str):
-        return True
-    return False
-
-
-def is_string_or_bytes(s):
-    return is_string(s) or isinstance(s, str) or isinstance(s, bytes)
-
-
-def is_base64(s):
-    regex = r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
-    return is_string(s) and re.match(regex, s)
-
-
 def md5(string: Union[str, bytes]) -> str:
     m = hashlib.md5()
     m.update(to_bytes(string))
@@ -802,20 +787,6 @@ def keys_to_lower(obj: JsonComplexType, skip_children_of: List[str] = None) -> J
 
     result = recurse_object(obj, fix_keys)
     return result
-
-
-_camel_to_snake_case_sub = re.compile("((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
-
-
-def camel_to_snake_case(string: str) -> str:
-    return _camel_to_snake_case_sub.sub(r"_\1", string).replace("__", "_").lower()
-
-
-def snake_to_camel_case(string: str, capitalize_first: bool = True) -> str:
-    components = string.split("_")
-    start_idx = 0 if capitalize_first else 1
-    components = [x.title() for x in components[start_idx:]]
-    return "".join(components)
 
 
 def base64_to_hex(b64_string: str) -> bytes:
@@ -966,14 +937,6 @@ def parse_request_data(method: str, path: str, data=None, headers=None) -> Dict:
     # select first elements from result lists (this is assuming we are not using parameter lists!)
     result = {k: v[0] for k, v in result.items()}
     return result
-
-
-def first_char_to_lower(s: str) -> str:
-    return s and "%s%s" % (s[0].lower(), s[1:])
-
-
-def first_char_to_upper(s: str) -> str:
-    return s and "%s%s" % (s[0].upper(), s[1:])
 
 
 def is_mac_os() -> bool:
@@ -1140,41 +1103,6 @@ def extract_from_jsonpointer_path(target, path: str, delimiter: str = "/", auto_
             target[path_part] = target_new = {}
         target = target_new
     return target
-
-
-def to_str(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> str:
-    """If ``obj`` is an instance of ``binary_type``, return
-    ``obj.decode(encoding, errors)``, otherwise return ``obj``"""
-    return obj.decode(encoding, errors) if isinstance(obj, bytes) else obj
-
-
-def to_bytes(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> bytes:
-    """If ``obj`` is an instance of ``text_type``, return
-    ``obj.encode(encoding, errors)``, otherwise return ``obj``"""
-    return obj.encode(encoding, errors) if isinstance(obj, str) else obj
-
-
-def str_to_bool(value):
-    """Return the boolean value of the given string, or the verbatim value if it is not a string"""
-    true_strings = ["true", "True"]
-    if isinstance(value, str):
-        return value in true_strings
-    return value
-
-
-def str_insert(string, index, content):
-    """Insert a substring into an existing string at a certain index."""
-    return "%s%s%s" % (string[:index], content, string[index:])
-
-
-def str_remove(string, index, end_index=None):
-    """Remove a substring from an existing string at a certain from-to index range."""
-    end_index = end_index or (index + 1)
-    return "%s%s" % (string[:index], string[end_index:])
-
-
-def str_startswith_ignore_case(value: str, prefix: str) -> bool:
-    return value[: len(prefix)].lower() == prefix.lower()
 
 
 def not_none_or(value: Any, alternative: Any) -> Any:
@@ -1642,11 +1570,6 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN, last_clean_time=None, max_age=C
     return time_now
 
 
-def truncate(data: str, max_length: int = 100) -> str:
-    data = str(data or "")
-    return ("%s..." % data[:max_length]) if len(data) > max_length else data
-
-
 # this requires that all subclasses have been imported before(!)
 def get_all_subclasses(clazz: Type) -> List[Type]:
     """Recursively get all subclasses of the given class."""
@@ -1691,25 +1614,6 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
         or (isinstance(obj, str) and obj.strip() == "")
         or (isinstance(obj, Sized) and len(obj) == 0)
     )
-
-
-def canonicalize_bool_to_str(val: bool) -> str:
-    return "true" if str(val).lower() == "true" else "false"
-
-
-def convert_to_printable_chars(value: Union[List, Dict, str]) -> str:
-    """Removes all unprintable characters from the given string."""
-    if isinstance(value, (dict, list)):
-
-        def _convert(obj, **kwargs):
-            if isinstance(obj, str):
-                return convert_to_printable_chars(obj)
-            return obj
-
-        return recurse_object(value, _convert)
-
-    result = REGEX_UNPRINTABLE_CHARS.sub("", value)
-    return result
 
 
 # Code that requires util functions from above
