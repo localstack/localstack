@@ -1,6 +1,6 @@
 from localstack.constants import LOCALHOST
 from localstack.utils.common import short_uid
-from localstack.utils.net_utils import resolve_hostname
+from localstack.utils.net import resolve_hostname
 
 
 def test_resolve_hostname():

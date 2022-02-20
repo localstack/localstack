@@ -88,7 +88,7 @@ from localstack.utils.json import (  # noqa
 )
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
-from localstack.utils.net_utils import (  # noqa
+from localstack.utils.net import (  # noqa
     get_free_tcp_port,
     is_ip_address,
     is_ipv4_address,
