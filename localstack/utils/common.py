@@ -30,12 +30,30 @@ from urllib.parse import parse_qs, urlparse
 import cachetools
 import requests
 from requests import Response
-from requests.models import CaseInsensitiveDict
 
 import localstack.utils.run
 from localstack import config
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.collections import (  # noqa
+    DelSafeDict,
+    HashableList,
+    PaginatedList,
+    ensure_list,
+    is_list_or_tuple,
+    is_sub_dict,
+    items_equivalent,
+    last_index_of,
+    merge_dicts,
+    merge_recursive,
+    remove_attributes,
+    remove_none_values_from_dict,
+    rename_attributes,
+    select_attributes,
+    to_unique_items_list,
+)
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.files import (  # noqa
@@ -365,17 +383,6 @@ class JsonObject(object):
         return self.__str__()
 
 
-class DelSafeDict(dict):
-    """Useful when applying jsonpatch. Use it as follows:
-
-    obj.__dict__ = DelSafeDict(obj.__dict__)
-    apply_patch(obj.__dict__, patch)
-    """
-
-    def __delitem__(self, key, *args, **kwargs):
-        self[key] = None
-
-
 class CaptureOutput(object):
     """A context manager that captures stdout/stderr of the current thread. Use it as follows:
 
@@ -503,55 +510,6 @@ class ArbitraryAccessObj:
 
     def __setitem__(self, *args, **kwargs):
         return ArbitraryAccessObj()
-
-
-class HashableList(list):
-    """Hashable list class that can be used with dicts or hashsets."""
-
-    def __hash__(self):
-        result = 0
-        for i in self:
-            result += hash(i)
-        return result
-
-
-class PaginatedList(list):
-    """List which can be paginated and filtered. For usage in AWS APIs with paginated responses"""
-
-    DEFAULT_PAGE_SIZE = 50
-
-    def get_page(
-        self,
-        token_generator: Callable,
-        next_token: str = None,
-        page_size: int = None,
-        filter_function: Callable = None,
-    ) -> (list, str):
-        if filter_function is not None:
-            result_list = list(filter(filter_function, self))
-        else:
-            result_list = self
-
-        if page_size is None:
-            page_size = self.DEFAULT_PAGE_SIZE
-
-        if len(result_list) <= page_size:
-            return result_list, None
-
-        start_idx = 0
-
-        try:
-            start_item = next(item for item in result_list if token_generator(item) == next_token)
-            start_idx = result_list.index(start_item)
-        except StopIteration:
-            pass
-
-        if start_idx + page_size <= len(result_list):
-            next_token = token_generator(result_list[start_idx + page_size])
-        else:
-            next_token = None
-
-        return result_list[start_idx : start_idx + page_size], next_token
 
 
 class FileMappedDocument(dict):
@@ -758,52 +716,6 @@ def md5(string: Union[str, bytes]) -> str:
     return m.hexdigest()
 
 
-def select_attributes(obj: Dict, attributes: List[str]) -> Dict:
-    """Select a subset of attributes from the given dict (returns a copy)"""
-    attributes = attributes if is_list_or_tuple(attributes) else [attributes]
-    return {k: v for k, v in obj.items() if k in attributes}
-
-
-def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False) -> Dict:
-    """Remove a set of attributes from the given dict (in-place)"""
-    if recursive:
-
-        def _remove(o, **kwargs):
-            if isinstance(o, dict):
-                remove_attributes(o, attributes)
-            return o
-
-        return recurse_object(obj, _remove)
-    attributes = attributes if is_list_or_tuple(attributes) else [attributes]
-    for attr in attributes:
-        obj.pop(attr, None)
-    return obj
-
-
-def rename_attributes(
-    obj: Dict, old_to_new_attributes: Dict[str, str], in_place: bool = False
-) -> Dict:
-    """Rename a set of attributes in the given dict object. Second parameter is a dict that maps old to
-    new attribute names. Default is to return a copy, but can also pass in_place=True."""
-    if not in_place:
-        obj = dict(obj)
-    for old_name, new_name in old_to_new_attributes.items():
-        if old_name in obj:
-            obj[new_name] = obj.pop(old_name)
-    return obj
-
-
-def is_list_or_tuple(obj) -> bool:
-    return isinstance(obj, (list, tuple))
-
-
-def ensure_list(obj: Any, wrap_none=False) -> List:
-    """Wrap the given object in a list, or return the object itself if it already is a list."""
-    if obj is None and not wrap_none:
-        return obj
-    return obj if isinstance(obj, list) else [obj]
-
-
 def in_docker() -> bool:
     return config.in_docker()
 
@@ -827,26 +739,6 @@ def edge_ports_info():
     else:
         result = "port %s" % config.EDGE_PORT
     result = "%s %s" % (get_service_protocol(), result)
-    return result
-
-
-def to_unique_items_list(inputs, comparator=None):
-    """Return a list of unique items from the given input iterable.
-    The comparator(item1, item2) returns True/False or an int for comparison."""
-
-    def contained(item):
-        for r in result:
-            if comparator:
-                cmp_res = comparator(item, r)
-                if cmp_res is True or str(cmp_res) == "0":
-                    return True
-            elif item == r:
-                return True
-
-    result = []
-    for it in inputs:
-        if not contained(it):
-            result.append(it)
     return result
 
 
@@ -875,44 +767,6 @@ def parse_timestamp(ts_str: str) -> datetime:
         except ValueError:
             pass
     raise Exception("Unable to parse timestamp string with any known formats: %s" % ts_str)
-
-
-def merge_recursive(source, destination, none_values=None, overwrite=False):
-    if none_values is None:
-        none_values = [None]
-    for key, value in source.items():
-        if isinstance(value, dict):
-            # get node or create one
-            node = destination.setdefault(key, {})
-            merge_recursive(value, node, none_values=none_values, overwrite=overwrite)
-        else:
-            if not isinstance(destination, (dict, CaseInsensitiveDict)):
-                LOG.warning(
-                    "Destination for merging %s=%s is not dict: %s (%s)",
-                    key,
-                    value,
-                    destination,
-                    type(destination),
-                )
-            if overwrite or destination.get(key) in none_values:
-                destination[key] = value
-    return destination
-
-
-def merge_dicts(*dicts, **kwargs):
-    """Merge all dicts in `*dicts` into a single dict, and return the result. If any of the entries
-    in `*dicts` is None, and `default` is specified as keyword argument, then return `default`."""
-    result = {}
-    for d in dicts:
-        if d is None and "default" in kwargs:
-            return kwargs["default"]
-        if d:
-            result.update(d)
-    return result
-
-
-def remove_none_values_from_dict(dict: Dict) -> Dict:
-    return {k: v for (k, v) in dict.items() if v is not None}
 
 
 def recurse_object(obj: JsonType, func: Callable, path: str = "") -> Any:
@@ -1320,21 +1174,6 @@ def str_startswith_ignore_case(value: str, prefix: str) -> bool:
     return value[: len(prefix)].lower() == prefix.lower()
 
 
-def last_index_of(array, value):
-    """Return the last index of `value` in the given list, or -1 if it does not exist."""
-    result = -1
-    for i in reversed(range(len(array))):
-        entry = array[i]
-        if entry == value or (callable(value) and value(entry)):
-            return i
-    return result
-
-
-def is_sub_dict(child_dict: Dict, parent_dict: Dict) -> bool:
-    """Returns whether the first dict is a sub-dict (subset) of the second dict."""
-    return all(parent_dict.get(key) == val for key, val in child_dict.items())
-
-
 def not_none_or(value: Any, alternative: Any) -> Any:
     """Return 'value' if it is not None, or 'alternative' otherwise."""
     return value if value is not None else alternative
@@ -1396,23 +1235,6 @@ def kill_process_tree(parent_pid):
         except Exception:
             pass
     parent.kill()
-
-
-def items_equivalent(list1, list2, comparator):
-    """Returns whether two lists are equivalent (i.e., same items contained in both lists,
-    irrespective of the items' order) with respect to a comparator function."""
-
-    def contained(item):
-        for _item in list2:
-            if comparator(item, _item):
-                return True
-
-    if len(list1) != len(list2):
-        return False
-    for item in list1:
-        if not contained(item):
-            return False
-    return True
 
 
 def is_zip_file(content):
