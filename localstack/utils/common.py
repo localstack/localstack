@@ -76,9 +76,6 @@ from localstack.utils.files import (  # noqa
 )
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
-from localstack.utils.generic.number_utils import format_number, is_number
-
-# TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.generic.wait_utils import poll_condition, retry  # noqa
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
@@ -93,6 +90,9 @@ from localstack.utils.net_utils import (  # noqa
     wait_for_port_open,
     wait_for_port_status,
 )
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.numbers import format_bytes, format_number, is_number  # noqa
 from localstack.utils.run import FuncThread
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
@@ -832,22 +832,6 @@ def mktime(ts: datetime, millis: bool = False) -> int:
     if millis:
         return int(ts.timestamp() * 1000)
     return int(ts.timestamp())
-
-
-def format_bytes(count: float, default: str = "n/a"):
-    """Format a bytes number as a human-readable unit, e.g., 1.3GB or 21.53MB"""
-    if not is_number(count):
-        return default
-    cnt = float(count)
-    if cnt < 0:
-        return default
-    units = ("B", "KB", "MB", "GB", "TB")
-    for unit in units:
-        if cnt < 1000 or unit == units[-1]:
-            # FIXME: will return '1e+03TB' for 1000TB
-            return f"{format_number(cnt, decimals=3)}{unit}"
-        cnt = cnt / 1000.0
-    return count
 
 
 def get_proxies() -> Dict[str, str]:
