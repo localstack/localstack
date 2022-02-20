@@ -15,7 +15,6 @@ from localstack import config
 from localstack.utils import common
 from localstack.utils.common import (
     ExternalServicePortsManager,
-    Mock,
     PaginatedList,
     PortNotAvailableException,
     fully_qualified_class_name,
@@ -28,6 +27,7 @@ from localstack.utils.common import (
     save_file,
     short_uid,
 )
+from localstack.utils.objects import Mock
 from localstack.utils.testutil import create_zip_file
 
 
@@ -394,7 +394,7 @@ class TestCommon:
         config.OUTBOUND_HTTPS_PROXY = old_https_proxy
 
     def test_fully_qualified_class_name(self):
-        assert fully_qualified_class_name(Mock) == "localstack.utils.common.Mock"
+        assert fully_qualified_class_name(Mock) == "localstack.utils.objects.Mock"
 
 
 class TestCommonFileOperations:

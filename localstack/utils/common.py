@@ -20,7 +20,7 @@ from datetime import date, datetime, timezone, tzinfo
 from json import JSONDecodeError
 from multiprocessing.dummy import Pool
 from queue import Queue
-from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, Union
 from urllib.parse import parse_qs, urlparse
 
 import cachetools
@@ -89,6 +89,19 @@ from localstack.utils.net_utils import (  # noqa
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.numbers import format_bytes, format_number, is_number  # noqa
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.objects import (  # noqa
+    ArbitraryAccessObj,
+    Mock,
+    ObjectIdHashComparator,
+    SubtypesInstanceManager,
+    fully_qualified_class_name,
+    get_all_subclasses,
+    keys_to_lower,
+    not_none_or,
+    recurse_object,
+)
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.platform import (  # noqa
@@ -174,15 +187,6 @@ PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
 CACHED_USER = None
 
 # type definitions for JSON-serializable objects
-JsonComplexType = Union[Dict, List]
-JsonType = Union[JsonComplexType, str, int, float, bool, None]
-SerializableObj = JsonType
-
-
-class Mock(object):
-    """Dummy class that can be used for mocking custom attributes."""
-
-    pass
 
 
 class CustomEncoder(json.JSONEncoder):
@@ -499,42 +503,6 @@ class CaptureOutput(object):
         return stream.getvalue() if hasattr(stream, "getvalue") else stream
 
 
-class ObjectIdHashComparator:
-    """Simple wrapper class that allows us to create a hashset using the object id(..) as the entries' hash value"""
-
-    def __init__(self, obj):
-        self.obj = obj
-        self._hash = id(obj)
-
-    def __hash__(self):
-        return self._hash
-
-    def __eq__(self, other):
-        # assumption here is that we're comparing only against ObjectIdHash instances!
-        return self.obj == other.obj
-
-
-class ArbitraryAccessObj:
-    """Dummy object that can be arbitrarily accessed - any attributes, as a callable, item assignment, ..."""
-
-    def __init__(self, name=None):
-        self.name = name
-
-    def __getattr__(self, name, *args, **kwargs):
-        return ArbitraryAccessObj(name)
-
-    def __call__(self, *args, **kwargs):
-        if self.name in ["items", "keys", "values"] and not args and not kwargs:
-            return []
-        return ArbitraryAccessObj()
-
-    def __getitem__(self, *args, **kwargs):
-        return ArbitraryAccessObj()
-
-    def __setitem__(self, *args, **kwargs):
-        return ArbitraryAccessObj()
-
-
 class FileMappedDocument(dict):
     """A dictionary that is mapped to a json document on disk.
 
@@ -747,43 +715,11 @@ def parse_timestamp(ts_str: str) -> datetime:
     raise Exception("Unable to parse timestamp string with any known formats: %s" % ts_str)
 
 
-def recurse_object(obj: JsonType, func: Callable, path: str = "") -> Any:
-    """Recursively apply `func` to `obj` (may be a list, dict, or other object)."""
-    obj = func(obj, path=path)
-    if isinstance(obj, list):
-        for i in range(len(obj)):
-            tmp_path = "%s[%s]" % (path or ".", i)
-            obj[i] = recurse_object(obj[i], func, tmp_path)
-    elif isinstance(obj, dict):
-        for k, v in obj.items():
-            tmp_path = "%s%s" % ((path + ".") if path else "", k)
-            obj[k] = recurse_object(v, func, tmp_path)
-    return obj
-
-
-def keys_to_lower(obj: JsonComplexType, skip_children_of: List[str] = None) -> JsonComplexType:
-    """Recursively changes all dict keys to first character lowercase. Skip children
-    of any elements whose names are contained in skip_children_of (e.g., ['Tags'])"""
-    skip_children_of = ensure_list(skip_children_of or [])
-
-    def fix_keys(o, path="", **kwargs):
-        if any(re.match(r"(^|.*\.)%s($|[.\[].*)" % k, path) for k in skip_children_of):
-            return o
-        if isinstance(o, dict):
-            for k, v in dict(o).items():
-                o.pop(k)
-                o[first_char_to_lower(k)] = v
-        return o
-
-    result = recurse_object(obj, fix_keys)
-    return result
-
-
 def base64_to_hex(b64_string: str) -> bytes:
     return binascii.hexlify(base64.b64decode(b64_string))
 
 
-def obj_to_xml(obj: SerializableObj) -> str:
+def obj_to_xml(obj: Any) -> str:
     """Return an XML representation of the given object (dict, list, or primitive).
     Does NOT add a common root element if the given obj is a list.
     Does NOT work for nested dict structures."""
@@ -929,7 +865,7 @@ def long_uid() -> str:
     return str(uuid.uuid4())
 
 
-def parse_json_or_yaml(markup: str) -> JsonComplexType:
+def parse_json_or_yaml(markup: str) -> Any:
     import yaml  # leave import here, to avoid breaking our Lambda tests!
 
     try:
@@ -957,7 +893,7 @@ def try_json(data: str):
         return data
 
 
-def json_safe(item: JsonType) -> JsonType:
+def json_safe(item: Any) -> Any:
     """Return a copy of the given object (e.g., dict) that is safe for JSON dumping"""
     try:
         return json.loads(json.dumps(item, cls=CustomEncoder))
@@ -966,7 +902,7 @@ def json_safe(item: JsonType) -> JsonType:
         return json.loads(json.dumps(item, cls=CustomEncoder))
 
 
-def fix_json_keys(item: JsonType):
+def fix_json_keys(item: Any):
     """make sure the keys of a JSON are strings (not binary type or other)"""
     item_copy = item
     if isinstance(item, list):
@@ -1027,11 +963,6 @@ def extract_from_jsonpointer_path(target, path: str, delimiter: str = "/", auto_
             target[path_part] = target_new = {}
         target = target_new
     return target
-
-
-def not_none_or(value: Any, alternative: Any) -> Any:
-    """Return 'value' if it is not None, or 'alternative' otherwise."""
-    return value if value is not None else alternative
 
 
 def cleanup(files=True, env=ENV_DEV, quiet=True):
@@ -1492,21 +1423,6 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN, last_clean_time=None, max_age=C
                 rm_rf(cache_file)
         last_clean_time["time"] = time_now
     return time_now
-
-
-# this requires that all subclasses have been imported before(!)
-def get_all_subclasses(clazz: Type) -> List[Type]:
-    """Recursively get all subclasses of the given class."""
-    result = set()
-    subs = clazz.__subclasses__()
-    for sub in subs:
-        result.add(sub)
-        result.update(get_all_subclasses(sub))
-    return result
-
-
-def fully_qualified_class_name(klass: Type) -> str:
-    return f"{klass.__module__}.{klass.__name__}"
 
 
 def parallelize(func: Callable, arr: List, size: int = None):
