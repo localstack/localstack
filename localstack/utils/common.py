@@ -16,7 +16,7 @@ import tempfile
 import threading
 import time
 import uuid
-from datetime import date, datetime, timezone, tzinfo
+from datetime import date, datetime
 from json import JSONDecodeError
 from multiprocessing.dummy import Pool
 from queue import Queue
@@ -144,6 +144,21 @@ from localstack.utils.sync import (  # noqa
     wait_until,
 )
 
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.time import (  # noqa
+    TIMESTAMP_FORMAT,
+    TIMESTAMP_FORMAT_MICROS,
+    TIMESTAMP_FORMAT_TZ,
+    epoch_timestamp,
+    isoformat_milliseconds,
+    mktime,
+    now,
+    now_utc,
+    parse_timestamp,
+    timestamp,
+    timestamp_millis,
+)
+
 # set up logger
 LOG = logging.getLogger(__name__)
 
@@ -159,9 +174,6 @@ last_cache_clean_time = {"time": 0}
 MUTEX_CLEAN = threading.Lock()
 
 # misc. constants
-TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
-TIMESTAMP_FORMAT_TZ = "%Y-%m-%dT%H:%M:%SZ"
-TIMESTAMP_FORMAT_MICROS = "%Y-%m-%dT%H:%M:%S.%fZ"
 CODEC_HANDLER_UNDERSCORE = "underscore"
 
 # chunk size for file downloads
@@ -182,9 +194,9 @@ PEM_CERT_END = "-----END CERTIFICATE-----"
 PEM_KEY_START_REGEX = r"-----BEGIN(.*)PRIVATE KEY-----"
 PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
 
-
 # user of the currently running process
 CACHED_USER = None
+
 
 # type definitions for JSON-serializable objects
 
@@ -688,33 +700,6 @@ def edge_ports_info():
     return result
 
 
-def timestamp(time=None, format: str = TIMESTAMP_FORMAT) -> str:
-    if not time:
-        time = datetime.utcnow()
-    if isinstance(time, (int, float)):
-        time = datetime.fromtimestamp(time)
-    return time.strftime(format)
-
-
-def timestamp_millis(time=None) -> str:
-    microsecond_time = timestamp(time=time, format=TIMESTAMP_FORMAT_MICROS)
-    # truncating microseconds to milliseconds, while leaving the "Z" indicator
-    return microsecond_time[:-4] + microsecond_time[-1]
-
-
-def epoch_timestamp() -> float:
-    return time.time()
-
-
-def parse_timestamp(ts_str: str) -> datetime:
-    for ts_format in [TIMESTAMP_FORMAT, TIMESTAMP_FORMAT_TZ, TIMESTAMP_FORMAT_MICROS]:
-        try:
-            return datetime.strptime(ts_str, ts_format)
-        except ValueError:
-            pass
-    raise Exception("Unable to parse timestamp string with any known formats: %s" % ts_str)
-
-
 def base64_to_hex(b64_string: str) -> bytes:
     return binascii.hexlify(base64.b64decode(b64_string))
 
@@ -744,20 +729,6 @@ def strip_xmlns(obj: Any) -> Any:
             return obj["#text"]
         return {k: strip_xmlns(v) for k, v in obj.items()}
     return obj
-
-
-def now(millis: bool = False, tz: Optional[tzinfo] = None) -> int:
-    return mktime(datetime.now(tz=tz), millis=millis)
-
-
-def now_utc(millis: bool = False) -> int:
-    return now(millis, timezone.utc)
-
-
-def mktime(ts: datetime, millis: bool = False) -> int:
-    if millis:
-        return int(ts.timestamp() * 1000)
-    return int(ts.timestamp())
 
 
 def get_proxies() -> Dict[str, str]:
@@ -1433,13 +1404,6 @@ def parallelize(func: Callable, arr: List, size: int = None):
 
     with Pool(size) as pool:
         return pool.map(func, arr)
-
-
-def isoformat_milliseconds(t) -> str:
-    try:
-        return t.isoformat(timespec="milliseconds")
-    except TypeError:
-        return t.isoformat()[:-3]
 
 
 # TODO move to aws_responses.py?
