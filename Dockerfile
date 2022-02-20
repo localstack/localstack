@@ -56,14 +56,6 @@ RUN apt-get update && \
 
 SHELL [ "/bin/bash", "-c" ]
 
-# install Docker (CLI only)
-RUN DOCKER_VERSION=20.10.7; \
-  TARGETARCH_SYNONYM=$([[ "$TARGETARCH" == "amd64" ]] && echo "x86_64" || echo "aarch64"); \
-  curl -fsSLO https://download.docker.com/linux/static/stable/${TARGETARCH_SYNONYM}/docker-${DOCKER_VERSION}.tgz \
-  && tar xzvf docker-${DOCKER_VERSION}.tgz \
-  && mv docker/docker /usr/local/bin \
-  && rm -r docker docker-${DOCKER_VERSION}.tgz
-
 # Install Java 11
 ENV LANG C.UTF-8
 RUN { \
