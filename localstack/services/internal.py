@@ -1,9 +1,7 @@
 """Module for localstack internal resources, such as health, graph, or _localstack/cloudformation/deploy. """
-import inspect
 import json
 import logging
 import os
-import socket
 from collections import defaultdict
 from typing import Any, Dict, Optional
 
@@ -15,61 +13,16 @@ from localstack.http import Router
 from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import resource_dispatcher
 from localstack.services.infra import terminate_all_processes_in_docker
-from localstack.utils.bootstrap import get_docker_image_details, get_main_container_name
 from localstack.utils.common import (
+    call_safe,
     load_file,
     merge_recursive,
     parse_json_or_yaml,
     parse_request_data,
     to_str,
 )
-from localstack.utils.container_utils.container_client import NoSuchImage
-from localstack.utils.docker_utils import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
-
-DIAGNOSE_IMAGES = [
-    "localstack/lambda:provided",
-    "localstack/lambda:ruby2.7",
-    "localstack/lambda:ruby2.5",
-    "localstack/lambda:nodejs14.x",
-    "localstack/lambda:nodejs12.x",
-    "localstack/lambda:nodejs10.x",
-    "localstack/lambda:nodejs8.10",
-    "localstack/lambda:nodejs6.10",
-    "localstack/lambda:nodejs4.3",
-    "localstack/lambda:java8",
-    "localstack/lambda:java11",
-    "localstack/lambda:go1.x",
-    "localstack/lambda:dotnetcore3.1",
-    "localstack/lambda:dotnetcore2.1",
-    "localstack/lambda:dotnetcore2.0",
-    "localstack/lambda:python2.7",
-    "localstack/lambda:python3.6",
-    "localstack/lambda:python3.7",
-    "localstack/lambda:python3.8",
-    "localstack/bigdata",
-    "lambci/lambda:provided",
-    "lambci/lambda:ruby2.7",
-    "lambci/lambda:ruby2.5",
-    "lambci/lambda:nodejs14.x",
-    "lambci/lambda:nodejs12.x",
-    "lambci/lambda:nodejs10.x",
-    "lambci/lambda:nodejs8.10",
-    "lambci/lambda:nodejs6.10",
-    "lambci/lambda:nodejs4.3",
-    "lambci/lambda:java8",
-    "lambci/lambda:java11",
-    "lambci/lambda:go1.x",
-    "lambci/lambda:dotnetcore3.1",
-    "lambci/lambda:dotnetcore2.1",
-    "lambci/lambda:dotnetcore2.0",
-    "lambci/lambda:python2.7",
-    "lambci/lambda:python3.6",
-    "lambci/lambda:python3.7",
-    "lambci/lambda:python3.8",
-    "mongo",
-]
 
 
 class HealthResource:
@@ -191,146 +144,24 @@ class CloudFormationUi:
 
 class DiagnoseResource:
     def on_get(self, request):
-        # localstack status
-        #  - version
-        #  - ..
-
-        # service health
-        health = requests.get(f"http://localhost:{config.get_edge_port_http()}/health").json()
-
-        # config
-        config_doc = self.collect_config()
-
-        # logs
-        logs = self.collect_logs()
-
-        # docker information
-        #  - docker inspect <container> output
-
-        # file tree
-        #  - /var/lib/localstack
-        #  - /tmp
-
-        # resolve a few dns records
-        #  - localhost.localstack.cloud -> 127.0.0.1
-        #  - api.localstack.cloud -> aws apigw
-
-        inspect_directories = ["/var/lib/localstack", "/tmp"]
+        from localstack.utils import diagnose
 
         return {
             "version": {
-                "image-version": get_docker_image_details(),
-                "localstack-version": self.get_localstack_version(),
+                "image-version": call_safe(diagnose.get_docker_image_details),
+                "localstack-version": call_safe(diagnose.get_localstack_version),
+                "host": {
+                    "kernel": call_safe(diagnose.get_host_kernel_version),
+                },
             },
-            "host": {
-                "version": load_file("/proc/version", "failed"),
-            },
-            "health": health,
-            "config": config_doc,
-            "docker-inspect": self.inspect_main_container(),
-            "docker-dependent-image-hashes": self.get_important_image_hashes(),
-            "file-tree": {d: self.traverse_file_tree(d) for d in inspect_directories},
-            "important-endpoints": self.resolve_endpoints(),
-            "logs": logs,
+            "services": call_safe(diagnose.get_service_stats),
+            "config": call_safe(diagnose.get_localstack_config),
+            "docker-inspect": call_safe(diagnose.inspect_main_container),
+            "docker-dependent-image-hashes": call_safe(diagnose.get_important_image_hashes),
+            "file-tree": call_safe(diagnose.get_file_tree),
+            "important-endpoints": call_safe(diagnose.resolve_endpoints),
+            "logs": call_safe(diagnose.get_localstack_logs),
         }
-
-    @staticmethod
-    def collect_logs():
-        try:
-            result = DOCKER_CLIENT.get_container_logs(get_main_container_name())
-        except Exception as e:
-            result = "error getting docker logs for container: %s" % e
-
-        return {"docker": result}
-
-    @staticmethod
-    def collect_config():
-        exclude_keys = {
-            "CONFIG_ENV_VARS",
-            "DEFAULT_SERVICE_PORTS",
-            "copyright",
-            "__builtins__",
-            "__cached__",
-            "__doc__",
-            "__file__",
-            "__loader__",
-            "__name__",
-            "__package__",
-            "__spec__",
-        }
-
-        result = {}
-        for k, v in inspect.getmembers(config):
-            if k in exclude_keys:
-                continue
-            if inspect.isbuiltin(v):
-                continue
-            if inspect.isfunction(v):
-                continue
-            if inspect.ismodule(v):
-                continue
-            if inspect.isclass(v):
-                continue
-            if "typing." in str(type(v)):
-                continue
-
-            if hasattr(v, "__dict__"):
-                result[k] = v.__dict__
-            else:
-                result[k] = v
-
-        return result
-
-    @staticmethod
-    def inspect_main_container():
-        try:
-            return DOCKER_CLIENT.inspect_container(get_main_container_name())
-        except Exception as e:
-            return f"inspect failed: {e}"
-
-    @staticmethod
-    def get_localstack_version():
-        return {
-            "build-date": os.environ.get("LOCALSTACK_BUILD_DATE"),
-            "build-git-hash": os.environ.get("LOCALSTACK_BUILD_GIT_HASH"),
-            "build-version": os.environ.get("LOCALSTACK_BUILD_VERSION"),
-        }
-
-    @staticmethod
-    def resolve_endpoints():
-        endpoint_list = ["localhost.localstack.cloud", "api.localstack.cloud"]
-        result = {}
-        for endpoint in endpoint_list:
-            try:
-                resolved_endpoint = socket.gethostbyname(endpoint)
-            except Exception as e:
-                resolved_endpoint = f"unable_to_resolve {e}"
-            result[endpoint] = resolved_endpoint
-        return result
-
-    @staticmethod
-    def get_important_image_hashes():
-        result = {}
-        for image in DIAGNOSE_IMAGES:
-            try:
-                image_version = DOCKER_CLIENT.inspect_image(image, pull=False)["RepoDigests"]
-            except NoSuchImage:
-                image_version = "not_present"
-            except Exception as e:
-                image_version = f"error: {e}"
-            result[image] = image_version
-        return result
-
-    @staticmethod
-    def traverse_file_tree(root: str):
-        try:
-            result = []
-            if config.in_docker():
-                for root, _, _ in os.walk(root):
-                    result.append(root)
-            return result
-        except Exception as e:
-            return ["traversing files failed %s" % e]
 
 
 class LocalstackResources(Router):
