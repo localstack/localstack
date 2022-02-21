@@ -9,19 +9,13 @@ import json
 import logging
 import os
 import re
-import subprocess
-import sys
 import tempfile
 import threading
-import time
 import uuid
-from multiprocessing.dummy import Pool
-from queue import Queue
-from typing import Any, Callable, Dict, List, Optional, Sized, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Sized, Tuple, Union
 
 import cachetools
 
-import localstack.utils.run
 from localstack import config
 from localstack.constants import ENV_DEV
 
@@ -134,7 +128,18 @@ from localstack.utils.platform import (  # noqa
     is_mac_os,
     is_windows,
 )
-from localstack.utils.run import FuncThread
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.run import (  # noqa
+    CaptureOutput,
+    ShellCommandThread,
+    is_command_available,
+    kill_process_tree,
+    run,
+    run_cmd_safe,
+    run_for_max_seconds,
+    run_safe,
+)
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.strings import (  # noqa
@@ -166,6 +171,17 @@ from localstack.utils.sync import (  # noqa
 )
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.threads import (  # noqa
+    TMP_PROCESSES,
+    TMP_THREADS,
+    FuncThread,
+    cleanup_threads_and_processes,
+    parallelize,
+    start_thread,
+    start_worker_thread,
+)
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.time import (  # noqa
     TIMESTAMP_FORMAT,
     TIMESTAMP_FORMAT_MICROS,
@@ -188,10 +204,6 @@ from localstack.utils.xml import obj_to_xml, strip_xmlns  # noqa
 
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# arrays for temporary files and resources
-TMP_THREADS = []
-TMP_PROCESSES = []
 
 # cache clean variables
 CACHE_CLEAN_TIMEOUT = 60 * 5
@@ -220,244 +232,6 @@ PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
 
 # user of the currently running process
 CACHED_USER = None
-
-
-class ShellCommandThread(FuncThread):
-    """Helper class to run a shell command in a background thread."""
-
-    def __init__(
-        self,
-        cmd: Union[str, List[str]],
-        params: Any = None,
-        outfile: Union[str, int] = None,
-        env_vars: Dict[str, str] = None,
-        stdin: bool = False,
-        auto_restart: bool = False,
-        quiet: bool = True,
-        inherit_cwd: bool = False,
-        inherit_env: bool = True,
-        log_listener: Callable = None,
-        stop_listener: Callable = None,
-        strip_color: bool = False,
-    ):
-        params = not_none_or(params, {})
-        env_vars = not_none_or(env_vars, {})
-        self.stopped = False
-        self.cmd = cmd
-        self.process = None
-        self.outfile = outfile
-        self.stdin = stdin
-        self.env_vars = env_vars
-        self.inherit_cwd = inherit_cwd
-        self.inherit_env = inherit_env
-        self.auto_restart = auto_restart
-        self.log_listener = log_listener
-        self.stop_listener = stop_listener
-        self.strip_color = strip_color
-        self.started = threading.Event()
-        FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
-
-    def run_cmd(self, params):
-        while True:
-            self.do_run_cmd()
-            if (
-                INFRA_STOPPED
-                or not self.auto_restart
-                or not self.process
-                or self.process.returncode == 0
-            ):
-                return self.process.returncode if self.process else None
-            LOG.info(
-                "Restarting process (received exit code %s): %s", self.process.returncode, self.cmd
-            )
-
-    def do_run_cmd(self):
-        def convert_line(line):
-            line = to_str(line or "")
-            if self.strip_color:
-                # strip color codes
-                line = re.sub(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))", "", line)
-            return "%s\r\n" % line.strip()
-
-        def filter_line(line):
-            """Return True if this line should be filtered, i.e., not printed"""
-            return "(Press CTRL+C to quit)" in line
-
-        outfile = self.outfile or os.devnull
-        if self.log_listener and outfile == os.devnull:
-            outfile = subprocess.PIPE
-        try:
-            self.process = run(
-                self.cmd,
-                asynchronous=True,
-                stdin=self.stdin,
-                outfile=outfile,
-                env_vars=self.env_vars,
-                inherit_cwd=self.inherit_cwd,
-                inherit_env=self.inherit_env,
-            )
-            self.started.set()
-            if outfile:
-                if outfile == subprocess.PIPE:
-                    # get stdout/stderr from child process and write to parent output
-                    streams = (
-                        (self.process.stdout, sys.stdout),
-                        (self.process.stderr, sys.stderr),
-                    )
-                    for instream, outstream in streams:
-                        if not instream:
-                            continue
-                        for line in iter(instream.readline, None):
-                            # `line` should contain a newline at the end as we're iterating,
-                            # hence we can safely break the loop if `line` is None or empty string
-                            if line in [None, "", b""]:
-                                break
-                            if not (line and line.strip()) and self.is_killed():
-                                break
-                            line = convert_line(line)
-                            if filter_line(line):
-                                continue
-                            if self.log_listener:
-                                self.log_listener(line, stream=instream)
-                            if self.outfile not in [None, os.devnull]:
-                                outstream.write(line)
-                                outstream.flush()
-                if self.process:
-                    self.process.wait()
-            else:
-                self.process.communicate()
-        except Exception as e:
-            self.result_future.set_exception(e)
-            if self.process and not self.quiet:
-                LOG.warning('Shell command error "%s": %s', e, self.cmd)
-        if self.process and not self.quiet and self.process.returncode != 0:
-            LOG.warning('Shell command exit code "%s": %s', self.process.returncode, self.cmd)
-
-    def is_killed(self):
-        if not self.process:
-            return True
-        if INFRA_STOPPED:
-            return True
-        # Note: Do NOT import "psutil" at the root scope, as this leads
-        # to problems when importing this file from our test Lambdas in Docker
-        # (Error: libc.musl-x86_64.so.1: cannot open shared object file)
-        import psutil
-
-        return not psutil.pid_exists(self.process.pid)
-
-    def stop(self, quiet=False):
-        if self.stopped:
-            return
-        if not self.process:
-            LOG.warning("No process found for command '%s'", self.cmd)
-            return
-
-        parent_pid = self.process.pid
-        try:
-            kill_process_tree(parent_pid)
-            self.process = None
-        except Exception as e:
-            if not quiet:
-                LOG.warning("Unable to kill process with pid %s: %s", parent_pid, e)
-        try:
-            self.stop_listener and self.stop_listener(self)
-        except Exception as e:
-            if not quiet:
-                LOG.warning("Unable to run stop handler for shell command thread %s: %s", self, e)
-        self.stopped = True
-
-
-class CaptureOutput(object):
-    """A context manager that captures stdout/stderr of the current thread. Use it as follows:
-
-    with CaptureOutput() as c:
-        ...
-    print(c.stdout(), c.stderr())
-    """
-
-    orig_stdout = sys.stdout
-    orig_stderr = sys.stderr
-    orig___stdout = sys.__stdout__
-    orig___stderr = sys.__stderr__
-    CONTEXTS_BY_THREAD = {}
-
-    class LogStreamIO(io.StringIO):
-        def write(self, s):
-            if isinstance(s, str) and hasattr(s, "decode"):
-                s = s.decode("unicode-escape")
-            return super(CaptureOutput.LogStreamIO, self).write(s)
-
-    def __init__(self):
-        self._stdout = self.LogStreamIO()
-        self._stderr = self.LogStreamIO()
-
-    def __enter__(self):
-        # Note: import werkzeug here (not at top of file) to allow dependency pruning
-        from werkzeug.local import LocalProxy
-
-        ident = self._ident()
-        if ident not in self.CONTEXTS_BY_THREAD:
-            self.CONTEXTS_BY_THREAD[ident] = self
-            self._set(
-                LocalProxy(self._proxy(sys.stdout, "stdout")),
-                LocalProxy(self._proxy(sys.stderr, "stderr")),
-                LocalProxy(self._proxy(sys.__stdout__, "stdout")),
-                LocalProxy(self._proxy(sys.__stderr__, "stderr")),
-            )
-        return self
-
-    def __exit__(self, type, value, traceback):
-        ident = self._ident()
-        removed = self.CONTEXTS_BY_THREAD.pop(ident, None)
-        if not self.CONTEXTS_BY_THREAD:
-            # reset pointers
-            self._set(
-                self.orig_stdout,
-                self.orig_stderr,
-                self.orig___stdout,
-                self.orig___stderr,
-            )
-        # get value from streams
-        removed._stdout.flush()
-        removed._stderr.flush()
-        out = removed._stdout.getvalue()
-        err = removed._stderr.getvalue()
-        # close handles
-        removed._stdout.close()
-        removed._stderr.close()
-        removed._stdout = out
-        removed._stderr = err
-
-    def _set(self, out, err, __out, __err):
-        sys.stdout, sys.stderr, sys.__stdout__, sys.__stderr__ = (
-            out,
-            err,
-            __out,
-            __err,
-        )
-
-    def _proxy(self, original_stream, type):
-        def proxy():
-            ident = self._ident()
-            ctx = self.CONTEXTS_BY_THREAD.get(ident)
-            if ctx:
-                return ctx._stdout if type == "stdout" else ctx._stderr
-            return original_stream
-
-        return proxy
-
-    def _ident(self):
-        # TODO: On some systems we seem to be running into a stack overflow with LAMBDA_EXECUTOR=local here!
-        return threading.current_thread().ident
-
-    def stdout(self):
-        return self._stream_value(self._stdout)
-
-    def stderr(self):
-        return self._stream_value(self._stderr)
-
-    def _stream_value(self, stream):
-        return stream.getvalue() if hasattr(stream, "getvalue") else stream
 
 
 class FileMappedDocument(dict):
@@ -564,20 +338,6 @@ external_service_ports = ExternalServicePortsManager()
 # ----------------
 
 
-def start_thread(method, *args, **kwargs) -> FuncThread:
-    """Start the given method in a background thread, and add the thread to the TMP_THREADS shutdown hook"""
-    _shutdown_hook = kwargs.pop("_shutdown_hook", True)
-    thread = FuncThread(method, *args, **kwargs)
-    thread.start()
-    if _shutdown_hook:
-        TMP_THREADS.append(thread)
-    return thread
-
-
-def start_worker_thread(method, *args, **kwargs):
-    return start_thread(method, *args, _shutdown_hook=False, **kwargs)
-
-
 def empty_context_manager():
     import contextlib
 
@@ -645,14 +405,6 @@ def base64_to_hex(b64_string: str) -> bytes:
     return binascii.hexlify(base64.b64decode(b64_string))
 
 
-def is_command_available(cmd: str) -> bool:
-    try:
-        run("which %s" % cmd, print_error=False)
-        return True
-    except Exception:
-        return False
-
-
 def short_uid() -> str:
     return str(uuid.uuid4())[0:8]
 
@@ -664,59 +416,6 @@ def long_uid() -> str:
 def cleanup(files=True, env=ENV_DEV, quiet=True):
     if files:
         cleanup_tmp_files()
-
-
-def cleanup_threads_and_processes(quiet=True):
-    for thread in TMP_THREADS:
-        if thread:
-            try:
-                # LOG.debug('[shutdown] Cleaning up thread: %s', thread)
-                if hasattr(thread, "shutdown"):
-                    thread.shutdown()
-                    continue
-                if hasattr(thread, "kill"):
-                    thread.kill()
-                    continue
-                thread.stop(quiet=quiet)
-            except Exception as e:
-                print(e)
-    for proc in TMP_PROCESSES:
-        try:
-            # LOG.debug('[shutdown] Cleaning up process: %s', proc)
-            kill_process_tree(proc.pid)
-            # proc.terminate()
-        except Exception as e:
-            print(e)
-    # clean up async tasks
-    try:
-        import asyncio
-
-        for task in asyncio.all_tasks():
-            try:
-                # LOG.debug('[shutdown] Canceling asyncio task: %s', task)
-                task.cancel()
-            except Exception as e:
-                print(e)
-    except Exception:
-        pass
-    LOG.debug("[shutdown] Done cleaning up threads / processes / tasks")
-    # clear lists
-    TMP_THREADS.clear()
-    TMP_PROCESSES.clear()
-
-
-def kill_process_tree(parent_pid):
-    # Note: Do NOT import "psutil" at the root scope
-    import psutil
-
-    parent_pid = getattr(parent_pid, "pid", None) or parent_pid
-    parent = psutil.Process(parent_pid)
-    for child in parent.children(recursive=True):
-        try:
-            child.kill()
-        except Exception:
-            pass
-    parent.kill()
 
 
 def is_root():
@@ -894,88 +593,8 @@ def call_safe(
             LOG.warning("%s: %s", exception_message, e)
 
 
-def run_safe(_python_lambda, *args, _default=None, **kwargs):
-    print_error = kwargs.get("print_error", False)
-    try:
-        return _python_lambda(*args, **kwargs)
-    except Exception as e:
-        if print_error:
-            LOG.warning("Unable to execute function: %s", e)
-        return _default
-
-
-def run_cmd_safe(**kwargs):
-    return run_safe(run, print_error=False, **kwargs)
-
-
-def run_for_max_seconds(max_secs, _function, *args, **kwargs):
-    """Run the given function for a maximum of `max_secs` seconds - continue running
-    in a background thread if the function does not finish in time."""
-
-    def _worker(*_args):
-        try:
-            fn_result = _function(*args, **kwargs)
-        except Exception as e:
-            fn_result = e
-
-        fn_result = True if fn_result is None else fn_result
-        q.put(fn_result)
-        return fn_result
-
-    start = now()
-    q = Queue()
-    start_worker_thread(_worker)
-    for i in range(max_secs * 2):
-        result = None
-        try:
-            result = q.get_nowait()
-        except Exception:
-            pass
-        if result is not None:
-            if isinstance(result, Exception):
-                raise result
-            return result
-        if now() - start >= max_secs:
-            return
-        time.sleep(0.5)
-
-
-def do_run(cmd: str, run_cmd: Callable, cache_duration_secs: float):
-    if cache_duration_secs <= 0:
-        return run_cmd()
-
-    hashcode = md5(cmd)
-    cache_file = CACHE_FILE_PATTERN.replace("*", hashcode)
-    mkdir(os.path.dirname(CACHE_FILE_PATTERN))
-    if os.path.isfile(cache_file):
-        # check file age
-        mod_time = os.path.getmtime(cache_file)
-        time_now = time.time()
-        if mod_time > (time_now - cache_duration_secs):
-            with open(cache_file) as fd:
-                return fd.read()
-    result = run_cmd()
-    with open(cache_file, "w+") as fd:
-        fd.write(result)
-    clean_cache()
-    return result
-
-
-def run(
-    cmd: Union[str, List[str]], cache_duration_secs=0, **kwargs
-) -> Union[str, subprocess.Popen]:
-    # TODO: should be unified and replaced with safe_run(..) over time! (allowing only lists for cmd parameter)
-    def run_cmd():
-        return localstack.utils.run.run(cmd, **kwargs)
-
-    return do_run(cmd, run_cmd, cache_duration_secs)
-
-
-def safe_run(cmd: List[str], cache_duration_secs=0, **kwargs) -> Union[str, subprocess.Popen]:
-    def run_cmd():
-        return localstack.utils.run.run(cmd, shell=False, **kwargs)
-
-    return do_run(" ".join(cmd), run_cmd, cache_duration_secs)
+# TODO: replace references to safe_run with localstack.utils.run.run
+safe_run = run
 
 
 class FileListener:
@@ -1072,16 +691,6 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN, last_clean_time=None, max_age=C
                 rm_rf(cache_file)
         last_clean_time["time"] = time_now
     return time_now
-
-
-def parallelize(func: Callable, arr: List, size: int = None):
-    if not size:
-        size = len(arr)
-    if size <= 0:
-        return None
-
-    with Pool(size) as pool:
-        return pool.map(func, arr)
 
 
 # TODO move to aws_responses.py?

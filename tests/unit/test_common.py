@@ -229,26 +229,6 @@ class TestCommon:
         result = common.run(cmd)
         assert result.strip() == "foobar"
 
-    def test_run_with_cache(self):
-        cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
-        d1 = float(common.run(cmd))
-        d2 = float(common.run(cmd, cache_duration_secs=1))
-        d3 = float(common.run(cmd, cache_duration_secs=1))
-
-        assert d1 != d2
-        assert d2 == d3
-
-    def test_run_with_cache_expiry(self):
-        cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
-
-        d1 = float(common.run(cmd, cache_duration_secs=0.5))
-        d2 = float(common.run(cmd, cache_duration_secs=0.5))
-        time.sleep(0.8)
-        d3 = float(common.run(cmd, cache_duration_secs=0.5))
-
-        assert d1 == d2
-        assert d2 != d3
-
     def test_is_command_available(self):
         assert common.is_command_available("python3")
         assert not common.is_command_available("hopefullydoesntexist")
