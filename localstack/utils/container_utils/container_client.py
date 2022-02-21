@@ -23,6 +23,7 @@ class DockerContainerStatus(Enum):
     DOWN = -1
     NON_EXISTENT = 0
     UP = 1
+    PAUSED = 2
 
 
 class ContainerException(Exception):
@@ -332,6 +333,10 @@ class ContainerClient(metaclass=ABCMeta):
                         If not specified, defaults to `STOP_TIMEOUT`
         """
         pass
+
+    @abstractmethod
+    def pause_container(self, container_name: str):
+        """Pauses a container with the given name."""
 
     @abstractmethod
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
