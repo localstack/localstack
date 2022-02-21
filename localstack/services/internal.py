@@ -227,11 +227,11 @@ class DiagnoseResource:
             },
             "health": health,
             "config": config_doc,
-            "logs": logs,
             "docker-inspect": self.inspect_main_container(),
             "docker-dependent-image-hashes": self.get_important_image_hashes(),
             "file-tree": {d: self.traverse_file_tree(d) for d in inspect_directories},
             "important-endpoints": self.resolve_endpoints(),
+            "logs": logs,
         }
 
     @staticmethod
