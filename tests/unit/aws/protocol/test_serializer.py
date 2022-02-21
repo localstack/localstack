@@ -2,9 +2,8 @@ import copy
 import re
 from datetime import datetime
 
-import pytest
 from botocore.parsers import ResponseParser, create_parser
-from dateutil.tz import tzutc, tzlocal
+from dateutil.tz import tzlocal, tzutc
 
 from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.protocol.serializer import create_serializer
@@ -204,18 +203,16 @@ def test_rest_xml_serializer_s3_with_botocore():
     _botocore_serializer_integration_test("s3", "GetBucketAnalyticsConfiguration", parameters)
 
 
-@pytest.mark.skip(reason="failing! 'Body' has 'streaming=True'!")
 def test_rest_xml_serializer_s3_2_with_botocore():
+    # These date fields in this response are encoded in the header. The max precision is seconds.
     parameters = {
-        # TODO
-        # 'Body': StreamingBody(),
-        "Body": "Fuu",
+        "Body": "body",
         "DeleteMarker": True,
         "AcceptRanges": "string",
         "Expiration": "string",
         "Restore": "string",
-        "LastModified": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
-        "ContentLength": 123,
+        "LastModified": datetime(2015, 1, 1, 23, 59, 59, tzinfo=tzutc()),
+        "ContentLength": 4,
         "ETag": "string",
         "MissingMeta": 123,
         "VersionId": "string",
@@ -225,7 +222,7 @@ def test_rest_xml_serializer_s3_2_with_botocore():
         "ContentLanguage": "string",
         "ContentRange": "string",
         "ContentType": "string",
-        "Expires": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
+        "Expires": datetime(2015, 1, 1, 23, 59, 59, tzinfo=tzutc()),
         "WebsiteRedirectLocation": "string",
         "ServerSideEncryption": "AES256",
         "Metadata": {"string": "string"},
@@ -239,7 +236,7 @@ def test_rest_xml_serializer_s3_2_with_botocore():
         "PartsCount": 123,
         "TagCount": 123,
         "ObjectLockMode": "GOVERNANCE",
-        "ObjectLockRetainUntilDate": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
+        "ObjectLockRetainUntilDate": datetime(2015, 1, 1, 23, 59, 59, tzinfo=tzutc()),
         "ObjectLockLegalHoldStatus": "ON",
     }
     _botocore_serializer_integration_test("s3", "GetObject", parameters)

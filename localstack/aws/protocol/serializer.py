@@ -76,7 +76,6 @@ not work out-of-the-box.
 """
 import abc
 import base64
-import calendar
 import copy
 import json
 import logging
@@ -655,16 +654,17 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         """Serializes a value for the location trait "header"."""
         if shape.type_name == "timestamp":
             datetime_obj = parse_to_aware_datetime(value)
-            timestamp = calendar.timegm(datetime_obj.utctimetuple())
             timestamp_format = shape.serialization.get(
                 "timestampFormat", self.HEADER_TIMESTAMP_FORMAT
             )
-            return self._convert_timestamp_to_str(timestamp, timestamp_format)
+            return self._convert_timestamp_to_str(datetime_obj, timestamp_format)
         elif shape.type_name == "list":
             converted_value = [
                 self._serialize_header_value(shape.member, v) for v in value if v is not None
             ]
             return ",".join(converted_value)
+        elif shape.type_name == "boolean":
+            return "true" if value else "false"
         elif is_json_value_header(shape):
             # Serialize with no spaces after separators to save space in
             # the header.
