@@ -202,6 +202,7 @@ class DiagnoseResource:
         config_doc = self.collect_config()
 
         # logs
+        logs = self.collect_logs()
 
         # docker information
         #  - docker inspect <container> output
@@ -223,11 +224,18 @@ class DiagnoseResource:
             },
             "health": health,
             "config": config_doc,
-            "logs": {},
+            "logs": logs,
             "docker-inspect": self.inspect_main_container(),
             "docker-dependent-image-hashes": self.get_important_image_hashes(),
             "file-tree": {d: self.traverse_file_tree(d) for d in inspect_directories},
             "important-endpoints": self.resolve_endpoints(),
+        }
+
+    @staticmethod
+    def collect_logs():
+        return {
+            "stdout": load_file("/tmp/localstack_infra.log", "failed to get localstack_infra.log"),
+            "stderr": load_file("/tmp/localstack_infra.err", "failed to get localstack_infra.err"),
         }
 
     @staticmethod
