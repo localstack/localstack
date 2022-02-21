@@ -1091,9 +1091,9 @@ def create_api_gateway_integrations(
             )
 
 
-def apigateway_invocations_arn(lambda_uri):
+def apigateway_invocations_arn(lambda_uri, region_name: str = None):
     return "arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations" % (
-        get_region(),
+        region_name or get_region(),
         lambda_uri,
     )
 

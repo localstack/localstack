@@ -68,17 +68,26 @@ not work out-of-the-box.
 import abc
 import base64
 import datetime
-import json
 import re
 from abc import ABC
 from collections import OrderedDict, defaultdict
 from email.utils import parsedate_to_datetime
+from functools import partial
 from typing import Any, DefaultDict, Dict, List, Optional, Pattern, Tuple, Union
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urlsplit
 from xml.etree import ElementTree as ETree
 
+import cbor2
 import dateutil.parser
-from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
+from botocore.model import (
+    ListShape,
+    MapShape,
+    OperationModel,
+    OperationNotFoundError,
+    ServiceModel,
+    Shape,
+    StructureShape,
+)
 
 from localstack.aws.api import HttpRequest
 from localstack.utils.common import to_str
@@ -134,6 +143,8 @@ class RequestParser(abc.ABC):
     DEFAULT_ENCODING = "utf-8"
     # The default timestamp format is ISO8601, but this can be overwritten by subclasses.
     TIMESTAMP_FORMAT = "iso8601"
+    # The default timestamp format for header fields
+    HEADER_TIMESTAMP_FORMAT = "rfc822"
 
     def __init__(self, service: ServiceModel) -> None:
         super().__init__()
@@ -169,21 +180,21 @@ class RequestParser(abc.ABC):
                 payload = request.headers.get(header_name)
             elif location == "headers":
                 payload = self._parse_header_map(shape, request.headers)
+                # shapes with the location trait "headers" only contain strings and are not further processed
+                return payload
             elif location == "querystring":
                 query_name = shape.serialization.get("name")
-                parsed_query = parse_qs(to_str(request.query_string))
-                # If the query param is in the parsed dict, take the first element of the value
-                # (the parsed query params are always lists, even if only a single value).
-                payload = (
-                    list(iter(parsed_query[query_name])) if query_name in parsed_query else None
-                )
-                # The result is always a list. If the shape is not of type list, we extract the only element
-                if shape.type_name != "list":
-                    payload = payload[0] if payload else None
+                parsed_query = request.args
+                if shape.type_name == "list":
+                    payload = parsed_query.getlist(query_name)
+                else:
+                    payload = parsed_query.get(query_name)
             elif location == "uri":
+                # Use the path and the query string for the matching
+                url = request.full_path if request.query_string else request.path
                 regex_group_name = shape.serialization.get("name")
-                match = path_regex.match(request.path)
-                payload = unquote(match.group(regex_group_name))
+                match = path_regex.match(url)
+                payload = unquote(match.group(regex_group_name)) if match is not None else None
             else:
                 raise RequestParserError("Unknown shape location '%s'." % location)
         else:
@@ -219,7 +230,10 @@ class RequestParser(abc.ABC):
 
     @_text_content
     def _parse_timestamp(self, _, shape: Shape, node: str, ___) -> datetime.datetime:
-        return self._convert_str_to_timestamp(node, shape.serialization.get("timestampFormat"))
+        timestamp_format = shape.serialization.get("timestampFormat")
+        if not timestamp_format and shape.serialization.get("location") == "header":
+            timestamp_format = self.HEADER_TIMESTAMP_FORMAT
+        return self._convert_str_to_timestamp(node, timestamp_format)
 
     @_text_content
     def _parse_boolean(self, _, __, node: str, ___) -> bool:
@@ -319,11 +333,11 @@ class RequestParser(abc.ABC):
         # Note that headers are case insensitive, so we .lower() all header names and header prefixes.
         parsed = {}
         prefix = shape.serialization.get("name", "").lower()
-        for header_name in headers:
+        for header_name, header_value in headers.items():
             if header_name.lower().startswith(prefix):
                 # The key name inserted into the parsed hash strips off the prefix.
                 name = header_name[len(prefix) :]
-                parsed[name] = headers[header_name]
+                parsed[name] = header_value
         return parsed
 
 
@@ -342,11 +356,26 @@ class QueryRequestParser(RequestParser):
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         body = request.get_data(as_text=True)
         instance = parse_qs(body, keep_blank_values=True)
+        if not instance:
+            # if the body does not contain any information, fallback to the actual query parameters
+            instance = request.args
         # The query parsing returns a list for each entry in the dict (this is how HTTP handles lists in query params).
         # However, the AWS Query format does not have any duplicates.
         # Therefore we take the first element of each entry in the dict.
         instance = {k: self._get_first(v) for k, v in instance.items()}
-        operation: OperationModel = self.service.operation_model(instance["Action"])
+        if "Action" not in instance:
+            raise RequestParserError(
+                f"Operation detection failed. "
+                f"Missing Action in request for query-protocol service {self.service}."
+            )
+        action = instance["Action"]
+        try:
+            operation: OperationModel = self.service.operation_model(action)
+        except OperationNotFoundError as e:
+            raise RequestParserError(
+                f"Operation detection failed."
+                f"Operation {action} could not be found for service {self.service}."
+            ) from e
         # Extract the URI for the operation and convert it to a regex
         request_uri_regex = self._get_request_uri_regex(operation)
         input_shape: StructureShape = operation.input_shape
@@ -517,7 +546,7 @@ class BaseRestRequestParser(RequestParser):
         # We create a mapping when the parser is initialized.
         # Since the path can contain URI path parameters, the key of the dict is a regex.
         self.operation_lookup: DefaultDict[
-            str, OrderedDict[Pattern[str], OperationModel]
+            str, OrderedDict[Pattern[str], List[OperationModel]]
         ] = defaultdict(lambda: OrderedDict())
         # Extract all operation models from the service spec
         operation_models = [
@@ -533,9 +562,20 @@ class BaseRestRequestParser(RequestParser):
             http = operation_model.http
             method = http.get("method")
             request_uri_regex = self._get_request_uri_regex(operation_model)
-            self.operation_lookup[method][request_uri_regex] = operation_model
+            # there are certain edge cases where specifications can contain overloading request URIs
+            if request_uri_regex not in self.operation_lookup[method]:
+                self.operation_lookup[method][request_uri_regex] = [operation_model]
+            else:
+                self.operation_lookup[method][request_uri_regex].append(operation_model)
 
-    def _get_normalized_request_uri_length(self, operation_model: OperationModel) -> str:
+    def _get_normalized_request_uri_length(self, operation_model: OperationModel) -> int:
+        """
+        Fings the length of the normalized request URI for the given operation model.
+        See #_get_normalized_request_uri for a description of the normalization.
+        """
+        return len(self._get_normalized_request_uri(operation_model))
+
+    def _get_normalized_request_uri(self, operation_model: OperationModel) -> str:
         """
         Fings the normalized request URI for the given operation model.
         A normalized request URI has a static, common replacement for path parameter placeholders, starting with a
@@ -551,28 +591,45 @@ class BaseRestRequestParser(RequestParser):
         return re.sub(r"{(.*?)}", " param", request_uri)
 
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
-        # Use the path and the query string for the matching
-        url = request.path
-        if request.query_string:
-            url += f"?{to_str(request.query_string)}"
-        # Find the regex which matches the given path (as well as its operation)
-        try:
-            path_regex, operation = next(
-                filter(
-                    lambda item: item[0].match(url),
-                    self.operation_lookup[request.method].items(),
-                )
-            )
-        except StopIteration:
-            raise RequestParserError(
-                f"Unable to find operation for request to service "
-                f"{self.service.service_name}: {request.method} {request.path}"
-            )
+        operation, path_regex = self._detect_operation(request)
         shape: StructureShape = operation.input_shape
         final_parsed = {}
         if shape is not None:
             self._parse_payload(request, shape, shape.members, path_regex, final_parsed)
         return operation, final_parsed
+
+    def _detect_operation(self, request: HttpRequest) -> Tuple[OperationModel, Pattern[str]]:
+        """
+        Detects the operation this request is aiming for and returns the detected operation as well as the request URI
+        pattern.
+
+        :param request: to detect the operation for
+        :return: Tuple containing the detected operation the request is targeting and the URI
+                    pattern it was detected with
+        :raises: RequestParserError if the operation could not be detected
+        """
+        # Use the path and the query string for the matching
+        url = request.full_path if request.query_string else request.path
+        # Find the regex which matches the given path (as well as its operation)
+        try:
+            path_regex, operations = next(
+                filter(
+                    lambda item: item[0].match(url),
+                    self.operation_lookup[request.method].items(),
+                )
+            )
+            if len(operations) > 1:
+                raise RequestParserError(
+                    f"Unable to find operation for request to service "
+                    f"{self.service.service_name}: {request.method} {request.path} "
+                    f"(ambiguous results)"
+                )
+            return operations[0], path_regex
+        except StopIteration:
+            raise RequestParserError(
+                f"Unable to find operation for request to service "
+                f"{self.service.service_name}: {request.method} {request.path}"
+            )
 
     def _parse_payload(
         self,
@@ -604,13 +661,13 @@ class BaseRestRequestParser(RequestParser):
                 if request.data:
                     payload_parsed[payload_member_name] = request.data
             else:
-                original_parsed = self._initial_body_parse(request.data)
+                original_parsed = self._initial_body_parse(request)
                 payload_parsed[payload_member_name] = self._parse_shape(
                     request, body_shape, original_parsed, path_regex
                 )
         else:
             # The payload covers the whole body. We only parse the body if it hasn't been handled by the payload logic.
-            non_payload_parsed = self._initial_body_parse(request.data)
+            non_payload_parsed = self._initial_body_parse(request)
         # even if the payload has been parsed, the rest of the shape needs to be processed as well
         # (for members which are located outside of the body, like uri or header)
         non_payload_parsed = self._parse_shape(request, shape, non_payload_parsed, path_regex)
@@ -618,13 +675,13 @@ class BaseRestRequestParser(RequestParser):
         final_parsed.update(non_payload_parsed)
         final_parsed.update(payload_parsed)
 
-    def _initial_body_parse(self, body_contents: bytes) -> any:
+    def _initial_body_parse(self, request: HttpRequest) -> any:
         """
-        This method executes the initial XML or JSON parsing of the body.
+        This method executes the initial parsing of the body (XML, JSON, or CBOR).
         The parsed body will afterwards still be walked through and the nodes will be converted to the appropriate
         types, but this method does the first round of parsing.
 
-        :param body_contents: which should be parsed
+        :param request: of which the body should be parsed
         :return: depending on the actual implementation
         """
         raise NotImplementedError("_initial_body_parse")
@@ -647,10 +704,11 @@ class RestXMLRequestParser(BaseRestRequestParser):
         super(RestXMLRequestParser, self).__init__(service_model)
         self._namespace_re = re.compile("{.*}")
 
-    def _initial_body_parse(self, xml_string: str) -> ETree.Element:
-        if not xml_string:
+    def _initial_body_parse(self, request: HttpRequest) -> ETree.Element:
+        body = request.data
+        if not body:
             return ETree.Element("")
-        return self._parse_xml_string_to_dom(xml_string)
+        return self._parse_xml_string_to_dom(body)
 
     def _parse_structure(
         self,
@@ -741,7 +799,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
             return serialized_name
         return member_name
 
-    def _parse_xml_string_to_dom(self, xml_string: str) -> ETree.Element:
+    def _parse_xml_string_to_dom(self, xml_string: bytes) -> ETree.Element:
         try:
             parser = ETree.XMLParser(target=ETree.TreeBuilder(), encoding=self.DEFAULT_ENCODING)
             parser.feed(xml_string)
@@ -749,7 +807,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         except ETree.ParseError as e:
             raise RequestParserError(
                 "Unable to parse request (%s), invalid XML received:\n%s" % (e, xml_string)
-            )
+            ) from e
         return root
 
     def _build_name_to_xml_node(self, parent_node: Union[list, ETree.Element]) -> dict:
@@ -831,15 +889,20 @@ class BaseJSONRequestParser(RequestParser, ABC):
             parsed[actual_key] = actual_value
         return parsed
 
-    def _parse_body_as_json(self, body_contents: bytes) -> dict:
+    def _parse_body_as_json(self, request: HttpRequest) -> dict:
+        body_contents = request.data
         if not body_contents:
             return {}
-        body = body_contents.decode(self.DEFAULT_ENCODING)
-        try:
-            original_parsed = json.loads(body)
-            return original_parsed
-        except ValueError:
-            raise RequestParserError("HTTP body could not be parsed as JSON.")
+        if request.mimetype.startswith("application/x-amz-cbor"):
+            try:
+                return cbor2.loads(body_contents)
+            except ValueError as e:
+                raise RequestParserError("HTTP body could not be parsed as CBOR.") from e
+        else:
+            try:
+                return request.get_json(force=True)
+            except ValueError as e:
+                raise RequestParserError("HTTP body could not be parsed as JSON.") from e
 
     def _parse_boolean(
         self, request: HttpRequest, shape: Shape, node: bool, path_regex: Pattern[str] = None
@@ -877,7 +940,7 @@ class JSONRequestParser(BaseJSONRequestParser):
             if event_name:
                 parsed = self._handle_event_stream(request, shape, event_name)
             else:
-                parsed = self._handle_json_body(request, request.data, shape, path_regex)
+                parsed = self._handle_json_body(request, shape, path_regex)
         return parsed
 
     def _handle_event_stream(self, request: HttpRequest, shape: Shape, event_name: str):
@@ -885,11 +948,11 @@ class JSONRequestParser(BaseJSONRequestParser):
         raise NotImplementedError
 
     def _handle_json_body(
-        self, request: HttpRequest, raw_body: bytes, shape: Shape, path_regex: Pattern[str] = None
+        self, request: HttpRequest, shape: Shape, path_regex: Pattern[str] = None
     ) -> any:
         # The json.loads() gives us the primitive JSON types, but we need to traverse the parsed JSON data to convert
         # to richer types (blobs, timestamps, etc.)
-        parsed_json = self._parse_body_as_json(raw_body)
+        parsed_json = self._parse_body_as_json(request)
         return self._parse_shape(request, shape, parsed_json, path_regex)
 
 
@@ -904,8 +967,8 @@ class RestJSONRequestParser(BaseRestRequestParser, BaseJSONRequestParser):
     When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
-    def _initial_body_parse(self, body_contents: bytes) -> dict:
-        return self._parse_body_as_json(body_contents)
+    def _initial_body_parse(self, request: HttpRequest) -> dict:
+        return self._parse_body_as_json(request)
 
     def _create_event_stream(self, request: HttpRequest, shape: Shape) -> any:
         raise NotImplementedError
@@ -936,6 +999,112 @@ class EC2RequestParser(QueryRequestParser):
             return default_name
 
 
+class S3RequestParser(RestXMLRequestParser):
+    def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
+        """Handle virtual-host-addressing for S3."""
+        if (
+            # TODO implement a more sophisticated determination if the host contains S3 virtual host addressing
+            not request.host.startswith("s3.")
+            and not request.host.startswith("localhost.")
+            and not request.host.startswith("127.0.0.1")
+        ):
+            self._revert_virtual_host_style(request)
+        return super().parse(request)
+
+    def _revert_virtual_host_style(self, request: HttpRequest):
+        # extract the bucket name from the host part of the request
+        bucket_name = request.host.split(".")[0]
+        # split the url and put the bucket name at the front
+        parts = urlsplit(request.url)
+        path_parts = parts.path.split("/")
+        path_parts = [bucket_name] + path_parts
+        path_parts = [part for part in path_parts if part]
+        path = "/" + "/".join(path_parts) or "/"
+        # set the path with the bucket name in the front at the request
+        # TODO directly modifying the request can cause issues with our handler chain, instead clone the HTTP request
+        request.path = path
+
+    def _detect_operation(self, request: HttpRequest) -> Tuple[OperationModel, Pattern[str]]:
+        """
+        Performs a specific operation detection to resolve conflicts with request URIs which are only contained in the
+        service specification of S3.
+        """
+        # Use the path and the query string for the matching
+        url = request.path
+        if request.query_string:
+            url += f"?{to_str(request.query_string)}"
+        # Find the regexes which match the given path (as well as its operations)
+        regex_operation_list_tuples = list(
+            filter(
+                lambda item: item[0].match(url),
+                self.operation_lookup[request.method].items(),
+            )
+        )
+        if not regex_operation_list_tuples:
+            # couldn't find a single operation
+            raise RequestParserError(
+                f"Unable to find operation for request to service "
+                f"{self.service.service_name}: {request.method} {request.path}"
+            )
+        # flatten the list, such that each entry is a tuple of a single regex to a single operation
+        regex_operation_tuples = [
+            (regex, operation)
+            for regex, operations in regex_operation_list_tuples
+            for operation in operations
+        ]
+        if len(regex_operation_tuples) == 1:
+            # exactly found one operation, no ambiguity
+            path_regex, operation_models = regex_operation_tuples[0]
+            return operation_models, path_regex
+        else:
+            # otherwise, we score the results and pick the lowest score
+            scoring_function = partial(self._score_regex_operation_tuple, request)
+            sorted_operations = sorted(regex_operation_tuples, key=scoring_function)
+            # take the operation with the highest score
+            path_regex, operation_model = sorted_operations[0]
+            return operation_model, path_regex
+
+    def _score_regex_operation_tuple(
+        self, request: HttpRequest, regex_operation_tuple: Tuple[Pattern[str], OperationModel]
+    ) -> int:
+        """
+        Calculates a score how much the request is likely to target the given operation.
+        :param request: to calculate the score for the operation of
+        :param regex_operation_tuple: Tuple containing the request URI pattern regex and the operation model.
+        :return: score which indicates how well the request fits the operation. The lower the better.
+        """
+        score = 0
+        path_regex, operation_model = regex_operation_tuple
+        if operation_model.deprecated:
+            # The best match is required members, but if there's an equal score, the non-deprecated should win
+            score += 1
+
+        input_shape = operation_model.input_shape
+        if input_shape:
+            # check if the request contains all required non-body members
+            for required_member in input_shape.required_members:
+                member_shape = input_shape.members[required_member]
+                # parsing the whole body is expensive and unnecessary, we only consider required members which are
+                # located in the request's metadata (uri, query, headers)
+                if member_shape.serialization.get("location"):
+                    try:
+                        parsed_member_shape = self._parse_shape(
+                            request, member_shape, None, path_regex
+                        )
+                        if parsed_member_shape is None:
+                            # the required member is not present, this operation most likely isn't the right one
+                            score += 10
+                        else:
+                            # add a reward for matched required members:
+                            # methods which define required members which are matched by the request should win
+                            # over methods without any required members
+                            score -= 10
+                    except RequestParserError:
+                        # the required member is not present, this operation most likely isn't the right one
+                        score += 10
+        return score
+
+
 def create_parser(service: ServiceModel) -> RequestParser:
     """
     Creates the right parser for the given service model.
@@ -947,7 +1116,15 @@ def create_parser(service: ServiceModel) -> RequestParser:
     :param service: to create the parser for
     :return: RequestParser which can handle the protocol of the service
     """
-    parsers = {
+    # Unfortunately, some services show subtle differences in their parsing or operation detection behavior, even though
+    # their specification states they implement the same protocol.
+    # In order to avoid bundling the whole complexity in the specific protocols, or even have service-distinctions
+    # within the parser implementations, the service-specific parser implementations (basically the implicit /
+    # informally more specific protocol implementation) has precedence over the more general protocol-specific parsers.
+    service_specific_parsers = {
+        "s3": S3RequestParser,
+    }
+    protocol_specific_parsers = {
         "query": QueryRequestParser,
         "json": JSONRequestParser,
         "rest-json": RestJSONRequestParser,
@@ -955,4 +1132,9 @@ def create_parser(service: ServiceModel) -> RequestParser:
         "ec2": EC2RequestParser,
     }
 
-    return parsers[service.protocol](service)
+    # Try to select a service-specific parser implementation
+    if service.service_name in service_specific_parsers:
+        return service_specific_parsers[service.service_name](service)
+    else:
+        # Otherwise, pick the protocol-specific parser for the protocol of the service
+        return protocol_specific_parsers[service.protocol](service)

@@ -385,7 +385,8 @@ def generate(service: str, doc: bool, save: bool):
 
     # or find the file path and write the code to that location
     here = os.path.dirname(__file__)
-    path = os.path.join(here, "api", service)
+    service_name = service.replace("-", "_")
+    path = os.path.join(here, "api", service_name)
 
     if not os.path.exists(path):
         click.echo("creating directory %s" % path)

@@ -135,8 +135,8 @@ def create_lambda_archive(
         return result
 
 
-def delete_lambda_function(name):
-    client = aws_stack.connect_to_service("lambda")
+def delete_lambda_function(name, region_name: str = None):
+    client = aws_stack.connect_to_service("lambda", region_name=region_name)
     client.delete_function(FunctionName=name)
 
 
@@ -224,6 +224,7 @@ def create_lambda_function(
     client=None,
     role=None,
     timeout=None,
+    region_name=None,
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API"""
@@ -236,7 +237,7 @@ def create_lambda_function(
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
-    client = client or aws_stack.connect_to_service("lambda")
+    client = client or aws_stack.connect_to_service("lambda", region_name=region_name)
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:

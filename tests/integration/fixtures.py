@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_opensearch import OpenSearchServiceClient
+    from mypy_boto3_redshift import RedshiftClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_secretsmanager import SecretsManagerClient
     from mypy_boto3_ses import SESClient
@@ -154,6 +155,11 @@ def es_client() -> "ElasticsearchServiceClient":
 @pytest.fixture(scope="class")
 def opensearch_client() -> "OpenSearchServiceClient":
     return _client("opensearch")
+
+
+@pytest.fixture(scope="class")
+def redshift_client() -> "RedshiftClient":
+    return _client("redshift")
 
 
 @pytest.fixture(scope="class")

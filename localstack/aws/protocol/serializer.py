@@ -400,7 +400,11 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             if value is None:
                 # Don't serialize any param whose value is None.
                 continue
-            member_shape = shape.members[key]
+            try:
+                member_shape = shape.members[key]
+            except KeyError:
+                LOG.exception("Response object contains a member which is not specified: %s", key)
+                continue
             member_name = member_shape.serialization.get("name", key)
             # We need to special case member shapes that are marked as an xmlAttribute.
             # Rather than serializing into an XML child node, we instead serialize the shape to
@@ -893,7 +897,7 @@ class JSONResponseSerializer(ResponseSerializer):
                     member_shape = members[member_key]
                 except KeyError:
                     LOG.exception(
-                        f"Response object contains a member which is not specified: {member_key}"
+                        "Response object contains a member which is not specified: %s", member_key
                     )
                     continue
                 if "name" in member_shape.serialization:
