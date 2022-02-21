@@ -219,7 +219,7 @@ class DiagnoseResource:
 
         return {
             "version": {
-                "image-version": get_docker_image_details(get_main_container_name()),
+                "image-version": get_docker_image_details(),
                 "localstack-version": self.get_localstack_version(),
             },
             "host": {
