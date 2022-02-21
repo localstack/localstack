@@ -3,8 +3,11 @@ import unittest
 from datetime import datetime
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
+from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_VERSION
 
 RESOURCE_POLICY = {
     "Version": "2012-10-17",
@@ -155,3 +158,36 @@ class SecretsManagerTest(unittest.TestCase):
         self.secretsmanager_client.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=True
         )
+
+    def test_rotate_secret_with_lambda(self):
+        secret_name = "s-%s" % short_uid()
+
+        self.secretsmanager_client.create_secret(
+            Name=secret_name,
+            SecretString="my_secret",
+            Description="testing rotation of secrets",
+        )
+
+        function_name = "s-%s" % short_uid()
+        function_arn = testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_VERSION,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+        )["CreateFunctionResponse"]["FunctionArn"]
+
+        response = self.secretsmanager_client.rotate_secret(
+            SecretId=secret_name,
+            RotationLambdaARN=function_arn,
+            RotationRules={
+                "AutomaticallyAfterDays": 1,
+            },
+            RotateImmediately=True,
+        )
+
+        self.assertEqual(response["ResponseMetadata"]["HTTPStatusCode"], 200)
+
+        # clean up
+        self.secretsmanager_client.delete_secret(
+            SecretId=secret_name, ForceDeleteWithoutRecovery=True
+        )
+        testutil.delete_lambda_function(function_name)
