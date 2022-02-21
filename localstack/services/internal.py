@@ -3,6 +3,7 @@ import inspect
 import json
 import logging
 import os
+import socket
 from collections import defaultdict
 from typing import Any, Dict, Optional
 
@@ -14,6 +15,7 @@ from localstack.http import Router
 from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import resource_dispatcher
 from localstack.services.infra import terminate_all_processes_in_docker
+from localstack.utils import bootstrap
 from localstack.utils.common import (
     load_file,
     merge_recursive,
@@ -184,15 +186,27 @@ class DiagnoseResource:
                 "/var/lib/localstack": [],
                 "/tmp": [],
             },
+            "important-endpoints": self.resolve_endpoints(),
         }
 
-    def inspect_main_container(self):
-        from localstack.utils import bootstrap
-
+    @staticmethod
+    def inspect_main_container():
         try:
             return DOCKER_CLIENT.inspect_container(bootstrap.get_main_container_name())
         except Exception as e:
-            return "inspect failed: %s" % e
+            return f"inspect failed: {e}"
+
+    @staticmethod
+    def resolve_endpoints():
+        endpoint_list = ["localhost.localstack.cloud", "api.localstack.cloud"]
+        result = {}
+        for endpoint in endpoint_list:
+            try:
+                resolved_endpoint = socket.gethostbyname(endpoint)
+            except Exception as e:
+                resolved_endpoint = f"unable_to_resolve {e}"
+            result[endpoint] = resolved_endpoint
+        return result
 
 
 class LocalstackResources(Router):
