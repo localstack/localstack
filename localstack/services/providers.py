@@ -287,6 +287,7 @@ def swf():
         listener=AwsApiListener("swf", MotoFallbackDispatcher(provider)),
     )
 
+
 @aws_provider()
 def resourcegroupstaggingapi():
     from localstack.services.resourcegroupstaggingapi import rgta_listener, rgta_starter
