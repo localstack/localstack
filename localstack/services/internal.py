@@ -236,10 +236,12 @@ class DiagnoseResource:
 
     @staticmethod
     def collect_logs():
-        return {
-            "stdout": load_file("/tmp/localstack_infra.log", "failed to get localstack_infra.log"),
-            "stderr": load_file("/tmp/localstack_infra.err", "failed to get localstack_infra.err"),
-        }
+        try:
+            result = DOCKER_CLIENT.get_container_logs(get_main_container_name())
+        except Exception as e:
+            result = "error getting docker logs for container: %s" % e
+
+        return {"docker": result}
 
     @staticmethod
     def collect_config():
