@@ -24,20 +24,10 @@ class Invocation:
     invocation_type: str
 
 
-@dataclasses.dataclass
-class LambdaRuntimeConfig:
-    """
-    Configuration of the current runtime environment
-    """
-
-    api_port: int
-
-
 class LambdaService:
     # mapping from qualified ARN to version manager
     lambda_version_managers: Dict[str, LambdaVersionManager]
     lambda_version_manager_lock: RLock
-    lambda_runtime_config: LambdaRuntimeConfig
 
     def __init__(self) -> None:
         self.lambda_version_managers = {}
@@ -69,11 +59,11 @@ class LambdaService:
             version_manager = LambdaVersionManager(
                 function_arn=function_version_definition.qualified_arn,
                 function_version=function_version_definition,
-                runtime_config=self.lambda_runtime_config,
             )
             self.lambda_version_managers[
                 function_version_definition.qualified_arn
             ] = version_manager
+            version_manager.init()
 
     def invoke(
         self,

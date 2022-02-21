@@ -35,7 +35,8 @@ from localstack.aws.api.awslambda import (
     TracingConfig,
     VpcConfig,
 )
-from localstack.services.awslambda.invocation.lambda_service import LambdaService
+from localstack.services.awslambda.invocation.lambda_service import FunctionVersion, LambdaService
+from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.tagging import TaggingService
@@ -112,16 +113,33 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         code_signing_config_arn: CodeSigningConfigArn = None,
         architectures: ArchitecturesList = None,
     ) -> FunctionConfiguration:
+        LOG.debug("Creating lambda function with params: %s", dict(locals()))
 
         # TODO: validations
         FunctionConfiguration(FunctionName="bla", FunctionArn="bla", Runtime="")
+
+        qualified_arn = qualified_lambda_arn(
+            function_name, "$LATEST", context.account_id, context.region
+        )
+        environment = (
+            environment["Variables"] if environment and environment.get("Variables") else {}
+        )
+        version = FunctionVersion(
+            qualified_arn=qualified_arn,
+            code=code.get("ZipFile"),
+            runtime=runtime,
+            architecture="amd64",
+            role=role,
+            environment=environment,
+            handler=handler,
+        )
+        self.lambda_service.create_function_version(function_version_definition=version)
 
         # TODO: handle directly
         # publish
 
         # create a new version
-        LOG.warning("DSHERE: CREEEATE")
-        return FunctionConfiguration(FunctionName="bla")
+        return FunctionConfiguration(FunctionName=function_name, FunctionArn=qualified_arn)
 
     def invoke(
         self,
@@ -133,13 +151,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         payload: Blob = None,
         qualifier: Qualifier = None,
     ) -> InvocationResponse:
-        LOG.debug("Lambda got invoked!")
-        LOG.debug("DSHERE: WHOOOO")
         LOG.debug("Lambda function got invoked! Params: %s", dict(locals()))
 
         # TODO discuss where function data is stored - might need to be passed here
+        qualified_arn = qualified_lambda_arn(
+            function_name, "$LATEST", context.account_id, context.region
+        )
         result = self.lambda_service.invoke(
-            function_arn_qualified=function_name,  # TODO replace with arn
+            function_arn_qualified=qualified_arn,
             invocation_type=invocation_type,
             log_type=log_type,
             client_context=client_context,

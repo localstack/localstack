@@ -1,23 +1,25 @@
 import abc
 import logging
+from typing import TYPE_CHECKING
 
 from flask import Flask
 from flask.typing import ResponseReturnValue
 
-from localstack.services.awslambda.invocation.version_manager import (
-    InvocationError,
-    InvocationResult,
-)
+if TYPE_CHECKING:
+    from localstack.services.awslambda.invocation.version_manager import (
+        InvocationError,
+        InvocationResult,
+    )
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
 
 
 class ServiceEndpoint(abc.ABC):
-    def invocation_result(self, request_id: str, invocation_result: InvocationResult):
+    def invocation_result(self, request_id: str, invocation_result: "InvocationResult"):
         raise NotImplementedError()
 
-    def invocation_error(self, request_id: str, invocation_error: InvocationError):
+    def invocation_error(self, request_id: str, invocation_error: "InvocationError"):
         raise NotImplementedError()
 
 

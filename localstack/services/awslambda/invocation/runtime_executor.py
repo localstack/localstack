@@ -1,12 +1,21 @@
+import logging
 import re
-from typing import Dict, Literal, Optional, Tuple
+from tempfile import NamedTemporaryFile
+from typing import TYPE_CHECKING, Dict, Literal, Optional, Tuple
 
 from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
 )
+from localstack.utils.common import unzip
+
+if TYPE_CHECKING:
+    from localstack.services.awslambda.invocation.lambda_service import FunctionVersion
+
+from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
-from localstack.utils.docker_utils import ContainerConfiguration
+
+LOG = logging.getLogger(__name__)
 
 RUNTIME_REGEX = r"(?P<runtime>[a-z]+)(?P<version>\d+(\.\d+)?(\.al2)?)(?:.*)"
 
@@ -48,7 +57,7 @@ class RuntimeExecutor:
         runtime, version = get_runtime_split(self.runtime)
         return f"{IMAGE_PREFIX}{runtime}:{version}"
 
-    def start(self, env_vars: Dict[str, str]) -> None:
+    def start(self, env_vars: Dict[str, str], function_version: "FunctionVersion") -> None:
         network = self.get_network_for_executor()
         container_config = ContainerConfiguration(
             image_name=self.get_image(),
@@ -57,6 +66,16 @@ class RuntimeExecutor:
             network=network,
         )
         CONTAINER_CLIENT.create_container_from_config(container_config)
+        CONTAINER_CLIENT.copy_into_container(
+            self.id, "/tmp/localstack/aws-lambda-rie", "/usr/local/bin/aws-lambda-rie"
+        )
+        target_path = f"/tmp/localstack/lambda/{function_version.qualified_arn.replace(':','_')}/"
+        with NamedTemporaryFile() as file:
+            file.write(function_version.code)
+            file.flush()
+            unzip(file.name, target_path)
+        CONTAINER_CLIENT.copy_into_container(self.id, target_path, "/var/task/")
+
         CONTAINER_CLIENT.start_container(self.id)
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
             container_name_or_id=self.id, container_network=network
@@ -69,6 +88,7 @@ class RuntimeExecutor:
     def get_address(self):
         if not self.ip:
             raise LambdaRuntimeException(f"IP address of executor '{self.id}' unknown")
+        LOG.debug("LS endpoint: %s", self.ip)
         return self.ip
 
     def get_endpoint_from_executor(self) -> str:

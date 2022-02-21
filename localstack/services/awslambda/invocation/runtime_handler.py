@@ -5,15 +5,13 @@ from typing import TYPE_CHECKING, Dict
 import requests
 
 from localstack import config
-from localstack.services.awslambda.invocation.version_manager import InvocationStorage
+from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
 from localstack.utils.common import short_uid
 
 if TYPE_CHECKING:
-    from localstack.services.awslambda.invocation.lambda_service import (
-        FunctionVersion,
-        LambdaRuntimeConfig,
-    )
-    from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
+    from localstack.services.awslambda.invocation.executor_endpoint import ExecutorEndpoint
+    from localstack.services.awslambda.invocation.lambda_service import FunctionVersion
+    from localstack.services.awslambda.invocation.version_manager import InvocationStorage
 
 INVOCATION_PORT = 9563
 
@@ -40,18 +38,19 @@ class RuntimeEnvironment:
     runtime_executor: RuntimeExecutor
     status_lock: RLock
     status: RuntimeStatus
+    executor_endpoint: "ExecutorEndpoint"
 
     def __init__(
         self,
         function_version: "FunctionVersion",
-        runtime_config: "LambdaRuntimeConfig",
+        executor_endpoint: "ExecutorEndpoint",
         initialization_type: str,
     ):
         self.id = short_uid()
         self.status = RuntimeStatus.INACTIVE
         self.status_lock = RLock()
         self.function_version = function_version
-        self.runtime_config = runtime_config
+        self.executor_endpoint = executor_endpoint
         self.initialization_type = initialization_type
         self.runtime_executor = RuntimeExecutor(self.id, function_version.runtime)
 
@@ -63,7 +62,7 @@ class RuntimeEnvironment:
         env_vars = {
             # Runtime API specifics
             "LOCALSTACK_RUNTIME_ID": self.id,
-            "LOCALSTACK_RUNTIME_ENDPOINT": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{self.runtime_config.api_port}",
+            "LOCALSTACK_RUNTIME_ENDPOINT": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{self.executor_endpoint.port}",
             "_HANDLER": self.function_version.handler,
             # General Lambda Environment Variables
             "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/",  # TODO correct value
@@ -96,8 +95,8 @@ class RuntimeEnvironment:
         with self.status_lock:
             if self.status != RuntimeStatus.INACTIVE:
                 raise InvalidStatusException("Runtime Handler can only be started when inactive")
-            self.status = RuntimeStatus.STARTING
-            self.runtime_executor.start(self.get_environment_variables())
+            self.status = RuntimeStatus.READY
+            self.runtime_executor.start(self.get_environment_variables(), self.function_version)
             # TODO start startup-timer to set timeout on starting phase
 
     def shutdown(self) -> None:
@@ -125,7 +124,7 @@ class RuntimeEnvironment:
     def _invocation_url(self) -> str:
         return f"http://{self.runtime_executor.get_address()}:{INVOCATION_PORT}"
 
-    def invoke(self, invocation_event: InvocationStorage) -> None:
+    def invoke(self, invocation_event: "InvocationStorage") -> None:
         if self.status != RuntimeStatus.READY:
             raise InvalidStatusException("Invoke can only happen if status is ready")
         invoke_payload = {

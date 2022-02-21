@@ -14,11 +14,7 @@ from localstack.services.awslambda.invocation.runtime_handler import RuntimeEnvi
 from localstack.utils.common import get_free_tcp_port
 
 if TYPE_CHECKING:
-    from localstack.services.awslambda.invocation.lambda_service import (
-        FunctionVersion,
-        Invocation,
-        LambdaRuntimeConfig,
-    )
+    from localstack.services.awslambda.invocation.lambda_service import FunctionVersion, Invocation
 
 
 LOG = logging.getLogger(__name__)
@@ -67,15 +63,14 @@ class LambdaVersionManager(ServiceEndpoint):
         self,
         function_arn: str,
         function_version: "FunctionVersion",
-        runtime_config: "LambdaRuntimeConfig",
     ):
         self.function_arn = function_arn
         self.function_configuration = function_version
-        self.runtime_config = runtime_config
         self.running_invocations = {}
         self.available_environments = {}
         self.queued_invocations = Queue()
         self.reserved_concurrent_executions = 0
+        self.executor_endpoint = None
 
     def _build_executor_endpoint(self) -> ExecutorEndpoint:
         port = get_free_tcp_port()
@@ -90,6 +85,16 @@ class LambdaVersionManager(ServiceEndpoint):
         self.reserved_concurrent_executions = reserved_concurrent_executions
         # TODO initialize/destroy runners if applicable
 
+    def start_environment(self) -> RuntimeEnvironment:
+        runtime_environment = RuntimeEnvironment(
+            function_version=self.function_version,
+            executor_endpoint=self.executor_endpoint,
+            initialization_type="on-demand",
+        )
+        runtime_environment.start()
+        self.available_environments[runtime_environment.id] = runtime_environment
+        return runtime_environment
+
     def invoke(self, *, invocation: "Invocation") -> Future:
         invocation_storage = InvocationStorage(
             invocation_id=str(uuid.uuid4()),
@@ -97,7 +102,13 @@ class LambdaVersionManager(ServiceEndpoint):
             retries=1,
             invocation=invocation,
         )
-        self.queued_invocations.put(invocation_storage)
+        ## self.queued_invocations.put(invocation_storage)
+        environment = self.start_environment()
+        self.running_invocations[invocation_storage.invocation_id] = RunningInvocation(
+            invocation_storage, datetime.now(), executor=environment
+        )
+        environment.invoke(invocation_event=invocation_storage)
+
         return invocation_storage.result_future
 
     def get_next_invocation(self, executor_id: str) -> InvocationStorage:
@@ -122,7 +133,10 @@ class LambdaVersionManager(ServiceEndpoint):
         return invocation
 
     def invocation_result(self, request_id: str, invocation_result: InvocationResult):
-        pass
+        running_invocation = self.running_invocations.pop(request_id, None)
+        if running_invocation is None:
+            raise Exception("Fucked up")
+        running_invocation.invocation.result_future.set_result(invocation_result)
 
     def invocation_error(self, request_id: str, invocation_error: InvocationError):
-        pass
+        LOG.error("Fucked up %s", request_id)
