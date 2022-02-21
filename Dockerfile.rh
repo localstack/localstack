@@ -1,7 +1,7 @@
 # Disclaimer: This Dockerfile is used to regularly test compatibility with RedHat based images.
 #             It is _not_ the usually Dockerfile and currently _not_ officially supported.
 
-FROM redhat/ubi8
+FROM redhat/ubi8@sha256:f3e11575aee05d474cb994c0ece89d992ece85be0596480582251fdec7a68f0b
 
 LABEL authors="LocalStack Contributors"
 LABEL maintainer="LocalStack Team (info@localstack.cloud)"
