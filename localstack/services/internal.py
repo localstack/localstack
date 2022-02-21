@@ -199,10 +199,7 @@ class DiagnoseResource:
         health = requests.get(f"http://localhost:{config.get_edge_port_http()}/health").json()
 
         # config
-        for k, v in inspect.getmembers(config):
-            if k == "copyright":
-                continue
-            print(k, v)
+        config_doc = self.collect_config()
 
         # logs
 
@@ -223,7 +220,7 @@ class DiagnoseResource:
                 "version": load_file("/proc/version", "failed"),
             },
             "health": health,
-            "config": {},
+            "config": config_doc,
             "logs": {},
             "docker-inspect": self.inspect_main_container(),
             "docker-dependent-image-hashes": self.get_important_image_hashes(),
@@ -233,6 +230,44 @@ class DiagnoseResource:
             },
             "important-endpoints": self.resolve_endpoints(),
         }
+
+    @staticmethod
+    def collect_config():
+        exclude_keys = {
+            "CONFIG_ENV_VARS",
+            "DEFAULT_SERVICE_PORTS",
+            "copyright",
+            "__builtins__",
+            "__cached__",
+            "__doc__",
+            "__file__",
+            "__loader__",
+            "__name__",
+            "__package__",
+            "__spec__",
+        }
+
+        result = {}
+        for k, v in inspect.getmembers(config):
+            if k in exclude_keys:
+                continue
+            if inspect.isbuiltin(v):
+                continue
+            if inspect.isfunction(v):
+                continue
+            if inspect.ismodule(v):
+                continue
+            if inspect.isclass(v):
+                continue
+            if "typing." in str(type(v)):
+                continue
+
+            if hasattr(v, "__dict__"):
+                result[k] = v.__dict__
+            else:
+                result[k] = v
+
+        return result
 
     @staticmethod
     def inspect_main_container():
