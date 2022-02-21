@@ -220,7 +220,11 @@ class ProxyListenerEdge(ProxyListener):
             response.headers["Content-Length"] = str(len(response._content))
             response.headers["Content-Encoding"] = "gzip"
         if api:
-            get_asf_challenge_listener(api).return_response(method, path, data, headers, response)
+            response = get_asf_challenge_listener(api).return_response(
+                method, path, data, headers, response
+            )
+
+        return response
 
     def _require_service(self, api):
         if not self.service_manager.exists(api):

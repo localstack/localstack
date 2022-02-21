@@ -83,6 +83,7 @@ class AsfChallengerListener(AwsApiListener):
         self.api_module = importlib.import_module(module_name)
         self.api = api
         self.serializer = create_serializer(self.service)
+        super().__init__(api, {})
 
     def forward_request(self, method, path, data, headers):
         context = None
@@ -108,7 +109,7 @@ class AsfChallengerListener(AwsApiListener):
 
             raise ChallengeFailed("invocation returned a result, that's not right!")
 
-        except Exception as e:
+        except Exception:
             LOG.exception(
                 "parser challenge failed for request to %s method=%s path=%s data=%s headers=%s",
                 self.service.service_name,
@@ -118,7 +119,7 @@ class AsfChallengerListener(AwsApiListener):
                 headers,
             )
             # we'll try to create a proper HTTP response to the client so it doesn't keep retrying.
-            return self._create_error_response(context, e)
+            return self._create_error_response(context)
 
     def return_response(self, method, path, data, headers, response):
         # Detect the operation (again)
@@ -135,6 +136,7 @@ class AsfChallengerListener(AwsApiListener):
         try:
             parser = asf_create_parser(self.service)
             operation, _ = parser.parse(context.request)
+            context.operation = operation
 
             serializer = create_serializer(self.service)
             response_parser = botocore_create_parser(self.service.protocol)
@@ -180,7 +182,7 @@ class AsfChallengerListener(AwsApiListener):
             # Test if the initially parsed response and the parsed response which was created by the
             # serializer are equal
             assert parsed_serialized == parsed_response
-        except Exception as e:
+        except Exception:
             LOG.exception(
                 "serializer challenge failed for response of %s method=%s path=%s headers=%s",
                 self.service.service_name,
@@ -189,9 +191,9 @@ class AsfChallengerListener(AwsApiListener):
                 headers,
             )
             # we'll try to create a proper HTTP response to the client so it doesn't keep retrying.
-            return self._create_error_response(context, e)
+            return self._create_error_response(context)
 
-    def _create_error_response(self, context, e):
+    def _create_error_response(self, context):
         try:
             if context and context.operation:
                 op = context.operation
@@ -199,11 +201,15 @@ class AsfChallengerListener(AwsApiListener):
                 # best-effort to return any type of error
                 op = self.service.operation_model(self.service.operation_names[0])
 
-            resp = self.serializer.serialize_error_to_response(
-                CommonServiceException("ClientError", str(e), status_code=400),
-                op,
+            exception = CommonServiceException(
+                code="AsfSerializerChallengeFailed",
+                status_code=400,
+                sender_fault=True,
+                message="ASF Serializer Challenge failed.",
             )
-            return self.to_server_response(resp)
+            return self.to_proxy_response(
+                self.serializer.serialize_error_to_response(exception, op)
+            )
         except Exception:
             LOG.exception(
                 "exception while trying to create a response. this is an implementation error of the "
