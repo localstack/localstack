@@ -1,4 +1,5 @@
 """Module for localstack internal resources, such as health, graph, or _localstack/cloudformation/deploy. """
+import inspect
 import json
 import logging
 import os
@@ -20,6 +21,7 @@ from localstack.utils.common import (
     parse_request_data,
     to_str,
 )
+from localstack.utils.docker_utils import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
 
@@ -141,6 +143,58 @@ class CloudFormationUi:
         return deploy_html
 
 
+class DiagnoseResource:
+    def on_get(self, request):
+        # localstack status
+        #  - version
+        #  - ..
+
+        # service health
+
+        # config
+        for k, v in inspect.getmembers(config):
+            if k == "copyright":
+                continue
+            print(k, v)
+
+        # logs
+
+        # docker information
+        #  - docker inspect <container> output
+
+        # file tree
+        #  - /var/lib/localstack
+        #  - /tmp
+
+        # resolve a few dns records
+        #  - localhost.localstack.cloud -> 127.0.0.1
+        #  - api.localstack.cloud -> aws apigw
+
+        return {
+            "version": {},
+            "host": {
+                "version": load_file("/proc/version", "failed"),
+            },
+            "services": {},
+            "config": {},
+            "logs": {},
+            "docker-inspect": self.inspect_main_container(),
+            "docker-dependent-image-hashes": {},
+            "file-tree": {
+                "/var/lib/localstack": [],
+                "/tmp": [],
+            },
+        }
+
+    def inspect_main_container(self):
+        from localstack.utils import bootstrap
+
+        try:
+            return DOCKER_CLIENT.inspect_container(bootstrap.get_main_container_name())
+        except Exception as e:
+            return "inspect failed: %s" % e
+
+
 class LocalstackResources(Router):
     """
     Router for localstack-internal HTTP resources.
@@ -164,6 +218,7 @@ class LocalstackResources(Router):
         self.add("/health", health_resource)
         self.add("/graph", graph_resource)
         self.add("/cloudformation/deploy", CloudFormationUi())
+        self.add("/diagnose", DiagnoseResource())
 
     def add(self, path, *args, **kwargs):
         super().add(f"{constants.INTERNAL_RESOURCE_PATH}{path}", *args, **kwargs)
