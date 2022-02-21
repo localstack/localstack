@@ -15,7 +15,7 @@ from localstack.http import Router
 from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import resource_dispatcher
 from localstack.services.infra import terminate_all_processes_in_docker
-from localstack.utils import bootstrap
+from localstack.utils.bootstrap import get_docker_image_details, get_main_container_name
 from localstack.utils.common import (
     load_file,
     merge_recursive,
@@ -218,7 +218,10 @@ class DiagnoseResource:
         inspect_directories = ["/var/lib/localstack", "/tmp"]
 
         return {
-            "version": {},
+            "version": {
+                "image-version": get_docker_image_details(get_main_container_name()),
+                "localstack-version": self.get_localstack_version(),
+            },
             "host": {
                 "version": load_file("/proc/version", "failed"),
             },
@@ -279,9 +282,17 @@ class DiagnoseResource:
     @staticmethod
     def inspect_main_container():
         try:
-            return DOCKER_CLIENT.inspect_container(bootstrap.get_main_container_name())
+            return DOCKER_CLIENT.inspect_container(get_main_container_name())
         except Exception as e:
             return f"inspect failed: {e}"
+
+    @staticmethod
+    def get_localstack_version():
+        return {
+            "build-date": os.environ.get("LOCALSTACK_BUILD_DATE"),
+            "build-git-hash": os.environ.get("LOCALSTACK_BUILD_GIT_HASH"),
+            "build-version": os.environ.get("LOCALSTACK_BUILD_VERSION"),
+        }
 
     @staticmethod
     def resolve_endpoints():
