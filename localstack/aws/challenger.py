@@ -79,6 +79,8 @@ class MockOperationModel:
 class AsfChallengerListener(AwsApiListener):
     def __init__(self, api: str):
         self.service = load_service(api)
+        module_name = f"localstack.aws.api.{self.service.service_name}"
+        self.api_module = importlib.import_module(module_name)
         self.api = api
         self.serializer = create_serializer(self.service)
 
@@ -148,21 +150,36 @@ class AsfChallengerListener(AwsApiListener):
             parsed_response.pop("ResponseMetadata")
             if response.status_code < 400:
                 serialized = serializer.serialize_to_response(parsed_response, operation)
-                parsed_serialized = response_parser.parse(
-                    {
-                        "headers": {key: value for key, value in serialized.headers},
-                        "body": to_bytes(serialized.data),
-                        "status_code": serialized.status_code,
-                    },
-                    operation.output_shape,
-                )
-                # Again, remove the "ResponseMetadata" (this is added by botocore)
-                parsed_serialized.pop("ResponseMetadata")
-                # TODO adjust the two here a bit, because this check seems to be a bit too strict?
-                assert parsed_serialized == parsed_response
             else:
-                # TODO
-                LOG.warning("Ignoring error response (not yet implemented in challenger)")
+                if "Error" in parsed_response and "Code" in parsed_response["Error"]:
+                    # Create the exception which will be serialized
+                    code = parsed_response["Error"]["Code"]
+                    exception_cls = getattr(self.api_module, code)
+                    message = parsed_response["Error"].get(
+                        "Message", parsed_response["Error"].get("message")
+                    )
+                    exception = exception_cls(message)
+                    # Parse the error
+                    serialized = serializer.serialize_error_to_response(exception, operation)
+                else:
+                    raise ChallengeFailed(
+                        "Status code >= 400, but no error metadata in the response."
+                    )
+            # Parse the serialized response with botocore
+            parsed_serialized = response_parser.parse(
+                {
+                    "headers": {key: value for key, value in serialized.headers},
+                    "body": to_bytes(serialized.data),
+                    "status_code": serialized.status_code,
+                },
+                operation.output_shape,
+            )
+            # Again, remove the "ResponseMetadata" (this is added by botocore)
+            parsed_serialized.pop("ResponseMetadata")
+            # TODO adjust the two here a bit, because this check seems to be a bit too strict?
+            # Test if the initially parsed response and the parsed response which was created by the
+            # serializer are equal
+            assert parsed_serialized == parsed_response
         except Exception as e:
             LOG.exception(
                 "serializer challenge failed for response of %s method=%s path=%s headers=%s",
