@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pytest
 from botocore.parsers import ResponseParser, create_parser
-from dateutil.tz import tzutc
+from dateutil.tz import tzutc, tzlocal
 
 from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.protocol.serializer import create_serializer
@@ -587,6 +587,15 @@ def test_json_serializer_cognito_with_botocore():
                     {"Priority": 123, "Name": "verified_email"},
                 ]
             },
+        }
+    }
+    _botocore_serializer_integration_test("cognito-idp", "DescribeUserPool", parameters)
+
+
+def test_json_serializer_date_serialization_with_botocore():
+    parameters = {
+        "UserPool": {
+            "LastModifiedDate": datetime(2022, 2, 8, 9, 17, 40, 122939, tzinfo=tzlocal()),
         }
     }
     _botocore_serializer_integration_test("cognito-idp", "DescribeUserPool", parameters)

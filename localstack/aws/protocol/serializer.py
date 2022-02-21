@@ -243,7 +243,7 @@ class ResponseSerializer(abc.ABC):
 
     @staticmethod
     def _timestamp_unixtimestamp(value: datetime) -> float:
-        return round(value.timestamp(), 3)
+        return value.timestamp()
 
     def _timestamp_rfc822(self, value: datetime) -> str:
         if isinstance(value, datetime):
