@@ -32,7 +32,6 @@ class Challenger(Skeleton):
         class_name = service_name + "_api"
         class_name = snake_to_camel_case(class_name)
         module_name = f"localstack.aws.api.{service_name}"
-
         module = importlib.import_module(module_name)
         cls = getattr(module, class_name)
         super(Challenger, self).__init__(load_service(service), cls())
@@ -79,7 +78,8 @@ class MockOperationModel:
 class AsfChallengerListener(AwsApiListener):
     def __init__(self, api: str):
         self.service = load_service(api)
-        module_name = f"localstack.aws.api.{self.service.service_name}"
+        service_name = self.service.service_name.replace("-", "_")
+        module_name = f"localstack.aws.api.{service_name}"
         self.api_module = importlib.import_module(module_name)
         self.api = api
         self.serializer = create_serializer(self.service)
@@ -148,19 +148,33 @@ class AsfChallengerListener(AwsApiListener):
                 },
                 operation.output_shape,
             )
-            # Remove the "ResponseMetadata" (this is added by botocore)
-            parsed_response.pop("ResponseMetadata")
+
+            # Remove the response metadata
+            parsed_response.pop("ResponseMetadata", None)
+            if "Error" in parsed_response:
+                # Error responses can contain a "Type" Sender, which is often not set by Moto or LocalStack. We ignore this here.
+                parsed_response["Error"].pop("Type", None)
+                # Some responses by Moto or LocalStack have the RequestId in the error body
+                parsed_response["Error"].pop("RequestId", None)
+
             if response.status_code < 400:
                 serialized = serializer.serialize_to_response(parsed_response, operation)
             else:
                 if "Error" in parsed_response and "Code" in parsed_response["Error"]:
                     # Create the exception which will be serialized
                     code = parsed_response["Error"]["Code"]
-                    exception_cls = getattr(self.api_module, code)
                     message = parsed_response["Error"].get(
                         "Message", parsed_response["Error"].get("message")
                     )
-                    exception = exception_cls(message)
+                    shape = self.service.shape_for_error_code(code)
+                    if shape is not None:
+                        exception_class = shape.name
+                        exception_cls = getattr(self.api_module, exception_class)
+                        exception = exception_cls(message)
+                    else:
+                        exception = CommonServiceException(
+                            code=code, message=message, status_code=response.status_code
+                        )
                     # Parse the error
                     serialized = serializer.serialize_error_to_response(exception, operation)
                 else:
@@ -176,12 +190,13 @@ class AsfChallengerListener(AwsApiListener):
                 },
                 operation.output_shape,
             )
-            # Again, remove the "ResponseMetadata" (this is added by botocore)
-            parsed_serialized.pop("ResponseMetadata")
-            # TODO adjust the two here a bit, because this check seems to be a bit too strict?
-            # Test if the initially parsed response and the parsed response which was created by the
-            # serializer are equal
-            assert parsed_serialized == parsed_response
+
+            # Some Moto or LocalStack responses do not set the fault type "Sender" (even though they should)
+            if "Error" in parsed_serialized:
+                parsed_serialized["Error"].pop("Type", None)
+
+            # Test if the parsed serialized response is a (top-level) superset of the parsed response
+            assert dict(parsed_serialized, **parsed_response) == parsed_serialized
         except Exception:
             LOG.exception(
                 "serializer challenge failed for response of %s method=%s path=%s headers=%s",
