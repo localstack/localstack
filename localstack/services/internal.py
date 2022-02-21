@@ -214,6 +214,8 @@ class DiagnoseResource:
         #  - localhost.localstack.cloud -> 127.0.0.1
         #  - api.localstack.cloud -> aws apigw
 
+        inspect_directories = ["/var/lib/localstack", "/tmp"]
+
         return {
             "version": {},
             "host": {
@@ -224,10 +226,7 @@ class DiagnoseResource:
             "logs": {},
             "docker-inspect": self.inspect_main_container(),
             "docker-dependent-image-hashes": self.get_important_image_hashes(),
-            "file-tree": {
-                "/var/lib/localstack": [],
-                "/tmp": [],
-            },
+            "file-tree": {d: self.traverse_file_tree(d) for d in inspect_directories},
             "important-endpoints": self.resolve_endpoints(),
         }
 
@@ -300,6 +299,17 @@ class DiagnoseResource:
                 image_version = f"error: {e}"
             result[image] = image_version
         return result
+
+    @staticmethod
+    def traverse_file_tree(root: str):
+        try:
+            result = []
+            if config.in_docker():
+                for root, _, _ in os.walk(root):
+                    result.append(root)
+            return result
+        except Exception as e:
+            return ["traversing files failed %s" % e]
 
 
 class LocalstackResources(Router):
