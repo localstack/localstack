@@ -850,6 +850,10 @@ def test_ec2_serializer_ec2_with_botocore():
     _botocore_serializer_integration_test("ec2", "CreateInstanceEventWindow", parameters)
 
 
+def test_ec2_serializer_ec2_with_empty_response():
+    _botocore_serializer_integration_test("ec2", "CreateTags", {})
+
+
 def test_ec2_protocol_custom_error_serialization():
     exception = CommonServiceException(
         "IdempotentParameterMismatch", "Different payload, same token?!"
@@ -943,6 +947,23 @@ def test_all_non_existing_key():
         expected_response_content={
             "StackResourceDrift": {
                 "StackId": "arn:aws:cloudformation:us-west-2:123456789012:stack/MyStack/d0a825a0-e4cd-xmpl-b9fb-061c69e99204",
+            }
+        },
+    )
+    # ec2
+    _botocore_serializer_integration_test(
+        "ec2",
+        "CreateInstanceEventWindow",
+        {
+            "InstanceEventWindow": {
+                "InstanceEventWindowId": "string",
+                "unknown": {"foo": "bar"},
+            },
+            "unknown": {"foo": "bar"},
+        },
+        expected_response_content={
+            "InstanceEventWindow": {
+                "InstanceEventWindowId": "string",
             }
         },
     )

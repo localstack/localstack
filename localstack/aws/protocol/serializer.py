@@ -818,10 +818,11 @@ class EC2ResponseSerializer(QueryResponseSerializer):
     def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
         # The EC2 protocol does not use the root output shape, therefore we need to remove the hierarchy level
         # below the root level
-        output_node = root[0]
-        for child in output_node:
-            root.append(child)
-        root.remove(output_node)
+        if len(root) > 0:
+            output_node = root[0]
+            for child in output_node:
+                root.append(child)
+            root.remove(output_node)
 
         # Add the requestId here (it's not defined in the specs)
         # For the ec2 and the query protocol, the root cannot be None at this time.
