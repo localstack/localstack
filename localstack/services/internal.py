@@ -152,6 +152,7 @@ class DiagnoseResource:
         #  - ..
 
         # service health
+        health = requests.get(f"http://localhost:{config.get_edge_port_http()}/health").json()
 
         # config
         for k, v in inspect.getmembers(config):
@@ -177,7 +178,7 @@ class DiagnoseResource:
             "host": {
                 "version": load_file("/proc/version", "failed"),
             },
-            "services": {},
+            "health": health,
             "config": {},
             "logs": {},
             "docker-inspect": self.inspect_main_container(),
