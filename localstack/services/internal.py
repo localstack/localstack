@@ -23,9 +23,53 @@ from localstack.utils.common import (
     parse_request_data,
     to_str,
 )
+from localstack.utils.container_utils.container_client import NoSuchImage
 from localstack.utils.docker_utils import DOCKER_CLIENT
 
 LOG = logging.getLogger(__name__)
+
+DIAGNOSE_IMAGES = [
+    "localstack/lambda:provided",
+    "localstack/lambda:ruby2.7",
+    "localstack/lambda:ruby2.5",
+    "localstack/lambda:nodejs14.x",
+    "localstack/lambda:nodejs12.x",
+    "localstack/lambda:nodejs10.x",
+    "localstack/lambda:nodejs8.10",
+    "localstack/lambda:nodejs6.10",
+    "localstack/lambda:nodejs4.3",
+    "localstack/lambda:java8",
+    "localstack/lambda:java11",
+    "localstack/lambda:go1.x",
+    "localstack/lambda:dotnetcore3.1",
+    "localstack/lambda:dotnetcore2.1",
+    "localstack/lambda:dotnetcore2.0",
+    "localstack/lambda:python2.7",
+    "localstack/lambda:python3.6",
+    "localstack/lambda:python3.7",
+    "localstack/lambda:python3.8",
+    "localstack/bigdata",
+    "lambci/lambda:provided",
+    "lambci/lambda:ruby2.7",
+    "lambci/lambda:ruby2.5",
+    "lambci/lambda:nodejs14.x",
+    "lambci/lambda:nodejs12.x",
+    "lambci/lambda:nodejs10.x",
+    "lambci/lambda:nodejs8.10",
+    "lambci/lambda:nodejs6.10",
+    "lambci/lambda:nodejs4.3",
+    "lambci/lambda:java8",
+    "lambci/lambda:java11",
+    "lambci/lambda:go1.x",
+    "lambci/lambda:dotnetcore3.1",
+    "lambci/lambda:dotnetcore2.1",
+    "lambci/lambda:dotnetcore2.0",
+    "lambci/lambda:python2.7",
+    "lambci/lambda:python3.6",
+    "lambci/lambda:python3.7",
+    "lambci/lambda:python3.8",
+    "mongo",
+]
 
 
 class HealthResource:
@@ -182,7 +226,7 @@ class DiagnoseResource:
             "config": {},
             "logs": {},
             "docker-inspect": self.inspect_main_container(),
-            "docker-dependent-image-hashes": {},
+            "docker-dependent-image-hashes": self.get_important_image_hashes(),
             "file-tree": {
                 "/var/lib/localstack": [],
                 "/tmp": [],
@@ -207,6 +251,19 @@ class DiagnoseResource:
             except Exception as e:
                 resolved_endpoint = f"unable_to_resolve {e}"
             result[endpoint] = resolved_endpoint
+        return result
+
+    @staticmethod
+    def get_important_image_hashes():
+        result = {}
+        for image in DIAGNOSE_IMAGES:
+            try:
+                image_version = DOCKER_CLIENT.inspect_image(image, pull=False)["RepoDigests"]
+            except NoSuchImage:
+                image_version = "not_present"
+            except Exception as e:
+                image_version = f"error: {e}"
+            result[image] = image_version
         return result
 
 
