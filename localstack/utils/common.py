@@ -181,6 +181,9 @@ from localstack.utils.time import (  # noqa
 )
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.urls import path_from_url  # noqa
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.xml import obj_to_xml, strip_xmlns  # noqa
 
 # set up logger
@@ -623,10 +626,6 @@ def md5(string: Union[str, bytes]) -> str:
     m = hashlib.md5()
     m.update(to_bytes(string))
     return m.hexdigest()
-
-
-def path_from_url(url: str) -> str:
-    return "/%s" % str(url).partition("://")[2].partition("/")[2] if "://" in url else url
 
 
 def get_service_protocol():
