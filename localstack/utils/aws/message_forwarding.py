@@ -18,7 +18,7 @@ from localstack.utils.common import long_uid, now_utc
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import timestamp_millis, to_bytes
 from localstack.utils.generic import dict_utils
-from localstack.utils.http_utils import add_query_params_to_url
+from localstack.utils.http import add_query_params_to_url
 
 LOG = logging.getLogger(__name__)
 

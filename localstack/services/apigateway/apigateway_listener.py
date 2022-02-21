@@ -66,7 +66,7 @@ from localstack.utils.aws.request_context import MARKER_APIGW_REQUEST_REGION, TH
 from localstack.utils.common import camel_to_snake_case, json_safe, long_uid, to_bytes, to_str
 
 # set up logger
-from localstack.utils.http_utils import add_query_params_to_url
+from localstack.utils.http import add_query_params_to_url
 
 LOG = logging.getLogger(__name__)
 

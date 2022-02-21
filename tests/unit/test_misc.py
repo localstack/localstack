@@ -13,7 +13,7 @@ from localstack.utils import async_utils, config_listener
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import TMP_FILES, download, json_safe, load_file, now_utc, parallelize
 from localstack.utils.container_utils.container_client import PortMappings
-from localstack.utils.http_utils import create_chunked_data, parse_chunked_data
+from localstack.utils.http import create_chunked_data, parse_chunked_data
 
 
 class TestMisc(unittest.TestCase):
