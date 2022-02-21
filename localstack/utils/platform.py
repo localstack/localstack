@@ -23,6 +23,13 @@ def is_debian() -> bool:
     return "Debian" in load_file("/etc/issue", "")
 
 
+@lru_cache()
+def is_redhat() -> bool:
+    from localstack.utils.files import load_file
+
+    return "rhel" in load_file("/etc/os-release", "")
+
+
 def get_arch() -> str:
     """
     Returns the current machine architecture
