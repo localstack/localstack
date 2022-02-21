@@ -165,11 +165,10 @@ class AsfChallengerListener(AwsApiListener):
                 LOG.warning("Ignoring error response (not yet implemented in challenger)")
         except Exception as e:
             LOG.exception(
-                "serializer challenge failed for response of %s method=%s path=%s data=%s headers=%s",
+                "serializer challenge failed for response of %s method=%s path=%s headers=%s",
                 self.service.service_name,
                 method,
                 path,
-                data,
                 headers,
             )
             # we'll try to create a proper HTTP response to the client so it doesn't keep retrying.
