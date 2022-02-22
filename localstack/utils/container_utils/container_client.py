@@ -390,6 +390,16 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def build_image(self, dockerfile_path: str, image_name: str, context_path: str = None) -> None:
+        """Builds an image from the given Dockerfile
+
+        :param dockerfile_path: Path to Dockerfile, or a directory that contains a Dockerfile
+        :param image_name: Name of the image to be built
+        :param context_path: Path for build context (defaults to dirname of Dockerfile)
+        """
+        pass
+
+    @abstractmethod
     def get_docker_image_names(self, strip_latest=True, include_tags=True) -> List[str]:
         """
         Get all names of docker images available to the container engine
@@ -794,3 +804,11 @@ class Util:
                 mount_volumes,
             )
         )
+
+    @staticmethod
+    def resolve_dockerfile_path(dockerfile_path: str) -> str:
+        """If the given path is a directory that contains a Dockerfile, then return the file path to it."""
+        rel_path = os.path.join(dockerfile_path, "Dockerfile")
+        if os.path.isdir(dockerfile_path) and os.path.exists(rel_path):
+            return rel_path
+        return dockerfile_path
