@@ -1,9 +1,10 @@
 import decimal
 import json
 import logging
+import os
 from datetime import date, datetime
 from json import JSONDecodeError
-from typing import Any
+from typing import Any, Union
 
 from .numbers import is_number
 from .strings import to_str
@@ -86,6 +87,47 @@ class JsonObject(object):
 
     def __repr__(self):
         return self.__str__()
+
+
+class FileMappedDocument(dict):
+    """A dictionary that is mapped to a json document on disk.
+
+    When the document is created, an attempt is made to load existing contents from disk. To load changes from
+    concurrent writes, run load(). To save and overwrite the current document on disk, run save().
+    """
+
+    path: Union[str, os.PathLike]
+
+    def __init__(self, path: Union[str, os.PathLike], mode=0o664):
+        super().__init__()
+        self.path = path
+        self.mode = mode
+        self.load()
+
+    def load(self):
+        if not os.path.exists(self.path):
+            return
+
+        if os.path.isdir(self.path):
+            raise IsADirectoryError
+
+        with open(self.path, "r") as fd:
+            self.update(json.load(fd))
+
+    def save(self):
+        if os.path.isdir(self.path):
+            raise IsADirectoryError
+
+        if not os.path.exists(self.path):
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+
+        def opener(path, flags):
+            _fd = os.open(path, flags, self.mode)
+            os.chmod(path, mode=self.mode, follow_symlinks=True)
+            return _fd
+
+        with open(self.path, "w", opener=opener) as fd:
+            json.dump(self, fd)
 
 
 def clone(item):
