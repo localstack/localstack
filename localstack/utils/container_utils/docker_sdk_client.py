@@ -13,6 +13,7 @@ from docker.utils.socket import STDERR, STDOUT, frames_iter
 
 from localstack.utils.common import start_worker_thread, to_bytes
 from localstack.utils.container_utils.container_client import (
+    AccessDenied,
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
@@ -20,6 +21,7 @@ from localstack.utils.container_utils.container_client import (
     NoSuchImage,
     NoSuchNetwork,
     PortMappings,
+    RegistryConnectionError,
     SimpleVolumeBind,
     Util,
 )
@@ -191,15 +193,32 @@ class SdkDockerClient(ContainerClient):
             raise ContainerException()
 
     def pull_image(self, docker_image: str) -> None:
-        LOG.debug("Pulling image: %s", docker_image)
+        LOG.debug("Pulling Docker image: %s", docker_image)
         # some path in the docker image string indicates a custom repository
         try:
-            LOG.debug("Repository: %s", docker_image)
             self.client().images.pull(docker_image)
         except ImageNotFound:
             raise NoSuchImage(docker_image)
         except APIError:
             raise ContainerException()
+
+    def push_image(self, docker_image: str) -> None:
+        LOG.debug("Pushing Docker image: %s", docker_image)
+        try:
+            result = self.client().images.push(docker_image)
+            # some SDK clients (e.g., 5.0.0) seem to return an error string, instead of raising
+            if isinstance(result, (str, bytes)) and '"errorDetail"' in to_str(result):
+                if "image does not exist locally" in to_str(result):
+                    raise NoSuchImage(docker_image)
+                if "is denied" in to_str(result):
+                    raise AccessDenied(docker_image)
+                if "connection refused" in to_str(result):
+                    raise RegistryConnectionError(result)
+                raise ContainerException(result)
+        except ImageNotFound:
+            raise NoSuchImage(docker_image)
+        except APIError as e:
+            raise ContainerException() from e
 
     def build_image(self, dockerfile_path: str, image_name: str, context_path: str = None):
         try:
@@ -211,6 +230,16 @@ class SdkDockerClient(ContainerClient):
             )
         except APIError as e:
             raise ContainerException("Unable to build Docker image") from e
+
+    def tag_image(self, source_ref: str, target_name: str) -> None:
+        try:
+            LOG.debug("Tagging Docker image '%s' as '%s'", source_ref, target_name)
+            image = self.client().images.get(source_ref)
+            image.tag(target_name)
+        except APIError as e:
+            if e.status_code == 404:
+                raise NoSuchImage(source_ref)
+            raise ContainerException("Unable to tag Docker image") from e
 
     def get_docker_image_names(self, strip_latest=True, include_tags=True):
         try:

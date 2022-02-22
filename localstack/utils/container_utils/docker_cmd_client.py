@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from localstack import config
 from localstack.utils.common import safe_run
 from localstack.utils.container_utils.container_client import (
+    AccessDenied,
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
@@ -17,6 +18,7 @@ from localstack.utils.container_utils.container_client import (
     NoSuchNetwork,
     NoSuchObject,
     PortMappings,
+    RegistryConnectionError,
     SimpleVolumeBind,
     Util,
 )
@@ -220,6 +222,23 @@ class CmdDockerClient(ContainerClient):
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
 
+    def push_image(self, docker_image: str) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["push", docker_image]
+        LOG.debug("Pushing image with cmd: %s", cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "is denied" in to_str(e.stdout):
+                raise AccessDenied(docker_image)
+            if "does not exist" in to_str(e.stdout):
+                raise NoSuchImage(docker_image)
+            if "connection refused" in to_str(e.stdout):
+                raise RegistryConnectionError(e.stdout)
+            raise ContainerException(
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
+            ) from e
+
     def build_image(self, dockerfile_path: str, image_name: str, context_path: str = None):
         cmd = self._docker_cmd()
         dockerfile_path = Util.resolve_dockerfile_path(dockerfile_path)
@@ -231,6 +250,19 @@ class CmdDockerClient(ContainerClient):
         except subprocess.CalledProcessError as e:
             raise ContainerException(
                 f"Docker build process returned with error code {e.returncode}", e.stdout, e.stderr
+            ) from e
+
+    def tag_image(self, source_ref: str, target_name: str) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["tag", source_ref, target_name]
+        LOG.debug("Tagging Docker image: %s", cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such image" in to_str(e.stdout):
+                raise NoSuchImage(source_ref)
+            raise ContainerException(
+                f"Docker process returned with error code {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def get_docker_image_names(self, strip_latest=True, include_tags=True):
