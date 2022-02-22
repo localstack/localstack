@@ -50,6 +50,8 @@ class CmdDockerClient(ContainerClient):
         container_status = cmd_result.strip().lower()
         if len(container_status) == 0:
             return DockerContainerStatus.NON_EXISTENT
+        elif "(paused)" in container_status:
+            return DockerContainerStatus.PAUSED
         elif container_status.startswith("up "):
             return DockerContainerStatus.UP
         else:
@@ -61,6 +63,20 @@ class CmdDockerClient(ContainerClient):
         cmd = self._docker_cmd()
         cmd += ["stop", "--time", str(timeout), container_name]
         LOG.debug("Stopping container with cmd %s", cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in to_str(e.stdout):
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
+    def pause_container(self, container_name: str) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["pause", container_name]
+        LOG.debug("Pausing container with cmd %s", cmd)
         try:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:

@@ -6,7 +6,7 @@
   "enabledManagers": ["dockerfile"],
   "docker": {
     "pinDigests": true,
-    "ignorePaths": ["bin/lambda/Dockerfile.nodejs14x"]
+    "ignorePaths": ["bin/lambda/Dockerfile.nodejs14x", "Dockerfile.rh"]
   },
   "major": {
     "enabled": false

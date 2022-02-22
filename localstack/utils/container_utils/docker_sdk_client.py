@@ -89,6 +89,8 @@ class SdkDockerClient(ContainerClient):
             container = self.client().containers.get(container_name)
             if container.status == "running":
                 return DockerContainerStatus.UP
+            elif container.status == "paused":
+                return DockerContainerStatus.PAUSED
             else:
                 return DockerContainerStatus.DOWN
         except NotFound:
@@ -103,6 +105,16 @@ class SdkDockerClient(ContainerClient):
         try:
             container = self.client().containers.get(container_name)
             container.stop(timeout=timeout)
+        except NotFound:
+            raise NoSuchContainer(container_name)
+        except APIError:
+            raise ContainerException()
+
+    def pause_container(self, container_name: str) -> None:
+        LOG.debug("Pausing container: %s", container_name)
+        try:
+            container = self.client().containers.get(container_name)
+            container.pause()
         except NotFound:
             raise NoSuchContainer(container_name)
         except APIError:
