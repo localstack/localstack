@@ -9,12 +9,14 @@ from localstack.services.awslambda.invocation.version_manager import LambdaVersi
 @dataclasses.dataclass
 class FunctionVersion:
     qualified_arn: str  # qualified arn for the version
-    code: bytes  # zip file
-    runtime: str  # runtime
     architecture: str  # architecture
     role: str  # lambda role
     environment: Dict[str, str]  # Environment set when creating the function
-    handler: str
+    zip_file: Optional[bytes]  # zip file
+    runtime: Optional[str]  # runtime
+    handler: Optional[str]
+    image_uri: Optional[str]
+    image_config: Optional[Dict[str, str]]
 
 
 @dataclasses.dataclass

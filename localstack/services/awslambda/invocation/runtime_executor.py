@@ -75,7 +75,7 @@ class RuntimeExecutor:
         )
         target_path = f"/tmp/localstack/lambda/{function_version.qualified_arn.replace(':','_')}/"
         with NamedTemporaryFile() as file:
-            file.write(function_version.code)
+            file.write(function_version.zip_file)
             file.flush()
             unzip(file.name, target_path)
         CONTAINER_CLIENT.copy_into_container(self.id, target_path, "/var/task/")

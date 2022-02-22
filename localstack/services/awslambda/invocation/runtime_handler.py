@@ -1,7 +1,7 @@
 import logging
 from enum import Enum, auto
 from threading import RLock
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Literal
 
 import requests
 
@@ -23,8 +23,12 @@ class RuntimeStatus(Enum):
     INACTIVE = auto()
     STARTING = auto()
     READY = auto()
+    RUNNING = auto()
     FAILED = auto()
     STOPPED = auto()
+
+
+InitializationType = Literal["on-demand", "provisioned-concurrency"]
 
 
 class InvalidStatusException(Exception):
@@ -42,12 +46,14 @@ class RuntimeEnvironment:
     status_lock: RLock
     status: RuntimeStatus
     executor_endpoint: "ExecutorEndpoint"
+    initialization_type: InitializationType
+    last_returned: float
 
     def __init__(
         self,
         function_version: "FunctionVersion",
         executor_endpoint: "ExecutorEndpoint",
-        initialization_type: str,
+        initialization_type: InitializationType,
     ):
         self.id = short_uid()
         self.status = RuntimeStatus.INACTIVE
@@ -56,6 +62,7 @@ class RuntimeEnvironment:
         self.executor_endpoint = executor_endpoint
         self.initialization_type = initialization_type
         self.runtime_executor = RuntimeExecutor(self.id, function_version.runtime)
+        self.last_returned = -1
 
     def get_environment_variables(self) -> Dict[str, str]:
         """
@@ -128,8 +135,10 @@ class RuntimeEnvironment:
         return f"http://{self.runtime_executor.get_address()}:{INVOCATION_PORT}/invoke"
 
     def invoke(self, invocation_event: "InvocationStorage") -> None:
-        if self.status != RuntimeStatus.READY:
-            raise InvalidStatusException("Invoke can only happen if status is ready")
+        with self.status_lock:
+            if self.status != RuntimeStatus.READY:
+                raise InvalidStatusException("Invoke can only happen if status is ready")
+            self.status = RuntimeStatus.RUNNING
         invoke_payload = {
             "invoke-id": invocation_event.invocation_id,
             "payload": to_str(invocation_event.invocation.payload),

@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import queue
 import time
 import uuid
 from concurrent.futures import Future
@@ -44,9 +45,10 @@ class LambdaVersionManager(ServiceEndpoint):
     function_version: "FunctionVersion"
     # mapping from invocation id to invocation storage
     running_invocations: Dict[str, RunningInvocation]
-    available_environments: Dict[str, RuntimeEnvironment]
+    available_environments: queue.LifoQueue
+    all_environments: Dict[str, RuntimeEnvironment]
     queued_invocations: Queue
-    reserved_concurrent_executions: int
+    provisioned_concurrent_executions: int
     executor_endpoint: Optional[ExecutorEndpoint]
 
     def __init__(
@@ -57,9 +59,10 @@ class LambdaVersionManager(ServiceEndpoint):
         self.function_arn = function_arn
         self.function_version = function_version
         self.running_invocations = {}
-        self.available_environments = {}
+        self.available_environments = queue.LifoQueue()
+        self.all_environments = {}
         self.queued_invocations = Queue()
-        self.reserved_concurrent_executions = 0
+        self.provisioned_concurrent_executions = 0
         self.executor_endpoint = None
 
     def _build_executor_endpoint(self) -> ExecutorEndpoint:
@@ -71,8 +74,8 @@ class LambdaVersionManager(ServiceEndpoint):
     def init(self) -> None:
         self.executor_endpoint = self._build_executor_endpoint()
 
-    def update_reserved_concurrency_config(self, reserved_concurrent_executions: int) -> None:
-        self.reserved_concurrent_executions = reserved_concurrent_executions
+    def update_provisioned_concurrency_config(self, provisioned_concurrent_executions: int) -> None:
+        self.provisioned_concurrent_executions = provisioned_concurrent_executions
         # TODO initialize/destroy runners if applicable
 
     def start_environment(self) -> RuntimeEnvironment:
@@ -82,7 +85,7 @@ class LambdaVersionManager(ServiceEndpoint):
             initialization_type="on-demand",
         )
         runtime_environment.start()
-        self.available_environments[runtime_environment.id] = runtime_environment
+        self.available_environments.put(runtime_environment)
         return runtime_environment
 
     def invoke(self, *, invocation: "Invocation") -> Future:
@@ -93,7 +96,7 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation=invocation,
         )
         ## self.queued_invocations.put(invocation_storage)
-        if len(self.available_environments) == 0:
+        if self.available_environments.qsize() == 0:
             environment = self.start_environment()
             time.sleep(15)
         else:
@@ -136,3 +139,8 @@ class LambdaVersionManager(ServiceEndpoint):
 
     def invocation_error(self, request_id: str, invocation_error: InvocationError):
         LOG.error("Fucked up %s", request_id)
+
+    def status_ready(self, executor_id: str):
+        # set state to ready
+        # put into lifo queue
+        pass
