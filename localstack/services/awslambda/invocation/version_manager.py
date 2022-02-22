@@ -1,5 +1,6 @@
 import dataclasses
 import logging
+import time
 import uuid
 from concurrent.futures import Future
 from datetime import datetime
@@ -65,7 +66,7 @@ class LambdaVersionManager(ServiceEndpoint):
         function_version: "FunctionVersion",
     ):
         self.function_arn = function_arn
-        self.function_configuration = function_version
+        self.function_version = function_version
         self.running_invocations = {}
         self.available_environments = {}
         self.queued_invocations = Queue()
@@ -103,7 +104,12 @@ class LambdaVersionManager(ServiceEndpoint):
             invocation=invocation,
         )
         ## self.queued_invocations.put(invocation_storage)
-        environment = self.start_environment()
+        if len(self.available_environments) == 0:
+            environment = self.start_environment()
+            time.sleep(1)
+        else:
+            key = next(item for item in self.available_environments.keys())
+            environment = self.available_environments.pop(key)
         self.running_invocations[invocation_storage.invocation_id] = RunningInvocation(
             invocation_storage, datetime.now(), executor=environment
         )
@@ -137,6 +143,7 @@ class LambdaVersionManager(ServiceEndpoint):
         if running_invocation is None:
             raise Exception("Fucked up")
         running_invocation.invocation.result_future.set_result(invocation_result)
+        self.available_environments[running_invocation.executor.id] = running_invocation.executor
 
     def invocation_error(self, request_id: str, invocation_error: InvocationError):
         LOG.error("Fucked up %s", request_id)

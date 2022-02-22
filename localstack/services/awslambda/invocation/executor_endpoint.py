@@ -56,7 +56,7 @@ class ExecutorEndpoint(Server):
 
     def do_run(self) -> None:
         runtime_api = self._create_runtime()
-        LOG.debug("Running lambda runtime API on %s:%s", self.host, self.port)
+        LOG.debug("Running executor endpoint API on %s:%s", self.host, self.port)
         runtime_api.run(self.host, self.port)
 
     def do_shutdown(self) -> None:

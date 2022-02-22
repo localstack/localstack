@@ -19,7 +19,10 @@ LOG = logging.getLogger(__name__)
 
 RUNTIME_REGEX = r"(?P<runtime>[a-z]+)(?P<version>\d+(\.\d+)?(\.al2)?)(?:.*)"
 
-IMAGE_PREFIX = "gallery.ecr.aws/lambda/"
+# IMAGE_PREFIX = "gallery.ecr.aws/lambda/"
+IMAGE_PREFIX = "amazon/aws-lambda-"
+
+RAPID_ENTRYPOINT = "/var/rapid/init"
 
 InitializationType = Literal["on-demand", "provisioned-concurrency"]
 
@@ -64,10 +67,11 @@ class RuntimeExecutor:
             name=self.id,
             env_vars=env_vars,
             network=network,
+            entrypoint=RAPID_ENTRYPOINT,
         )
         CONTAINER_CLIENT.create_container_from_config(container_config)
         CONTAINER_CLIENT.copy_into_container(
-            self.id, "/tmp/localstack/aws-lambda-rie", "/usr/local/bin/aws-lambda-rie"
+            self.id, "/tmp/localstack/aws-lambda-rie", RAPID_ENTRYPOINT
         )
         target_path = f"/tmp/localstack/lambda/{function_version.qualified_arn.replace(':','_')}/"
         with NamedTemporaryFile() as file:
