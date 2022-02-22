@@ -1,8 +1,4 @@
-import glob
 import logging
-import os
-import tempfile
-import threading
 
 from localstack import config
 from localstack.constants import ENV_DEV
@@ -222,13 +218,6 @@ from localstack.utils.xml import obj_to_xml, strip_xmlns  # noqa
 # set up logger
 LOG = logging.getLogger(__name__)
 
-# cache clean variables
-CACHE_CLEAN_TIMEOUT = 60 * 5
-CACHE_MAX_AGE = 60 * 60
-CACHE_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "_random_dir_", "cache.*.json")
-last_cache_clean_time = {"time": 0}
-MUTEX_CLEAN = threading.Lock()
-
 # misc. constants
 CODEC_HANDLER_UNDERSCORE = "underscore"
 
@@ -267,23 +256,3 @@ def cleanup_resources():
 
 # TODO: replace references to safe_run with localstack.utils.run.run
 safe_run = run
-
-
-def clean_cache(file_pattern=CACHE_FILE_PATTERN, last_clean_time=None, max_age=CACHE_MAX_AGE):
-    if last_clean_time is None:
-        last_clean_time = last_cache_clean_time
-
-    with MUTEX_CLEAN:
-        time_now = now()
-        if last_clean_time["time"] > time_now - CACHE_CLEAN_TIMEOUT:
-            return
-        for cache_file in set(glob.glob(file_pattern)):
-            mod_time = os.path.getmtime(cache_file)
-            if time_now > mod_time + max_age:
-                rm_rf(cache_file)
-        last_clean_time["time"] = time_now
-    return time_now
-
-
-# Code that requires util functions from above
-CACHE_FILE_PATTERN = CACHE_FILE_PATTERN.replace("_random_dir_", short_uid())
