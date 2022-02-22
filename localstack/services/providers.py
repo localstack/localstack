@@ -306,6 +306,11 @@ def resource_groups():
 
 @aws_provider()
 def support():
-    from localstack.services.support import support_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.support.provider import SupportProvider
 
-    return Service("support", start=support_starter.start_support)
+    provider = SupportProvider()
+    return Service(
+        "support",
+        listener=AwsApiListener("support", MotoFallbackDispatcher(provider)),
+    )

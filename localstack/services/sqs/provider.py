@@ -525,7 +525,8 @@ class FifoQueue(SqsQueue):
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):
             raise InvalidParameterValue(
-                "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
+                "The name of a FIFO queue can only include alphanumeric characters, hyphens, or underscores, "
+                "must end with .fifo suffix and be 1 to 80 in length"
             )
         # The .fifo suffix counts towards the 80-character queue name quota.
         queue_name = name[:-5] + "_fifo"
