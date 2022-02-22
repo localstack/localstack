@@ -1,3 +1,4 @@
+import copy
 import inspect
 import logging
 from typing import Any, Callable, Dict, NamedTuple, Optional, Union
@@ -168,8 +169,11 @@ class Skeleton:
         if isinstance(result, HttpResponse):
             return result
 
+        # use a deep copy of the dict result to avoid unwanted mutations in service backends
+        copied_result = copy.deepcopy(result)
+
         # Serialize result dict to an HTTPResponse and return it
-        return self.serializer.serialize_to_response(result, operation)
+        return self.serializer.serialize_to_response(copied_result, operation)
 
     def on_service_exception(
         self, context: RequestContext, exception: ServiceException
