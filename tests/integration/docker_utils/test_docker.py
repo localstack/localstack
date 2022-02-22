@@ -780,9 +780,9 @@ class TestDockerClient:
     def test_build_image(
         self, docker_client: ContainerClient, custom_context, dockerfile_as_dir, tmp_path
     ):
-        dockerfile_dir = tmp_path
+        dockerfile_dir = tmp_path / "dockerfile"
         tmp_file = short_uid()
-        ctx_dir = tmp_path if custom_context else dockerfile_dir
+        ctx_dir = tmp_path / "context" if custom_context else dockerfile_dir
         dockerfile_path = os.path.join(dockerfile_dir, "Dockerfile")
         dockerfile = f"""
         FROM alpine
