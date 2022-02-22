@@ -1,5 +1,6 @@
 import ipaddress
 import logging
+import os
 import re
 import time
 from subprocess import CalledProcessError
@@ -9,7 +10,7 @@ import pytest
 
 from localstack import config
 from localstack.config import in_docker
-from localstack.utils.common import is_ipv4_address, safe_run, short_uid, to_str
+from localstack.utils.common import is_ipv4_address, safe_run, save_file, short_uid, to_str
 from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
@@ -772,6 +773,37 @@ class TestDockerClient:
         message = "test message"
         stdout, _ = docker_client.run_container("alpine", command=["echo", message], remove=True)
         assert message == stdout.decode(config.DEFAULT_ENCODING).strip()
+
+    @pytest.mark.skip_offline
+    @pytest.mark.parametrize("custom_context", [True, False])
+    @pytest.mark.parametrize("dockerfile_as_dir", [True, False])
+    def test_build_image(
+        self, docker_client: ContainerClient, custom_context, dockerfile_as_dir, tmp_path
+    ):
+        dockerfile_dir = tmp_path / "dockerfile"
+        tmp_file = short_uid()
+        ctx_dir = tmp_path / "context" if custom_context else dockerfile_dir
+        dockerfile_path = os.path.join(dockerfile_dir, "Dockerfile")
+        dockerfile = f"""
+        FROM alpine
+        ADD {tmp_file} .
+        ENV foo=bar
+        EXPOSE 45329
+        """
+        save_file(dockerfile_path, dockerfile)
+        save_file(os.path.join(ctx_dir, tmp_file), "test content 123")
+
+        kwargs = {"context_path": str(ctx_dir)} if custom_context else {}
+        dockerfile_ref = str(dockerfile_dir) if dockerfile_as_dir else dockerfile_path
+
+        image_name = f"img-{short_uid()}"
+        docker_client.build_image(dockerfile_path=dockerfile_ref, image_name=image_name, **kwargs)
+        assert image_name in docker_client.get_docker_image_names()
+        result = docker_client.inspect_image(image_name, pull=False)
+        assert "foo=bar" in result["Config"]["Env"]
+        assert "45329/tcp" in result["Config"]["ExposedPorts"]
+
+        docker_client.remove_image(image_name, force=True)
 
     @pytest.mark.skip_offline
     def test_run_container_non_existent_image(self, docker_client: ContainerClient):
