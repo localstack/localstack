@@ -3,12 +3,11 @@ import logging
 import random
 import string
 import uuid
-from typing import Optional
 
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.exceptions import SecretNotFoundException
-from moto.secretsmanager.models import SecretsManagerBackend, secretsmanager_backends, FakeSecret
+from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
 from moto.secretsmanager.responses import SecretsManagerResponse
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -119,12 +118,12 @@ def apply_patches():
         setattr(SecretsManagerResponse, "put_resource_policy", put_resource_policy_response)
 
     def put_secret_value(
-            self,
-            secret_id,
-            secret_string,
-            secret_binary,
-            client_request_token,
-            version_stages,
+        self,
+        secret_id,
+        secret_string,
+        secret_binary,
+        client_request_token,
+        version_stages,
     ):
         """
         Patches Moto's put_secret_value function, to return a representation of the secret version
@@ -168,7 +167,8 @@ def apply_patches():
         # to the response structure of put_secret_value.  Not converting these fields to CamelCase
         # by design: we wish to control these parameters directly.
         fake_secret_to_aws_key: [(str, str)] = [
-            ('version_id', 'VersionId'), ('version_stages', 'VersionStages')
+            ("version_id", "VersionId"),
+            ("version_stages", "VersionStages"),
         ]
 
         secret_version = secret.versions.get(version_id, None)
@@ -178,8 +178,9 @@ def apply_patches():
                     stage_response[skn_aws] = secret_version[skn]
 
         return json.dumps(stage_response)
+
     #
-    setattr(SecretsManagerBackend, 'put_secret_value', put_secret_value)
+    setattr(SecretsManagerBackend, "put_secret_value", put_secret_value)
 
 
 def start_secretsmanager(port=None, asynchronous=None, backend_port=None, update_listener=None):

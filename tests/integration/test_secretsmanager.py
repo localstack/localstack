@@ -797,7 +797,7 @@ class TestSecretsManager:
         while crt_v1 == cr_v0_res_json["VersionId"]:
             crt_v1 = str(uuid.uuid4())
         #
-        pv_v1_res_json = self.secretsmanager_http_put_secret_value_with_version_val_res(
+        self.secretsmanager_http_put_secret_value_with_version_val_res(
             self.secretsmanager_http_put_secret_value_with_version(
                 secret_name, secret_string_v1, crt_v1, version_stages_v1
             ),
