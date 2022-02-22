@@ -14,6 +14,7 @@ from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import resource_dispatcher
 from localstack.services.infra import terminate_all_processes_in_docker
 from localstack.utils.common import (
+    call_safe,
     load_file,
     merge_recursive,
     parse_json_or_yaml,
@@ -141,6 +142,28 @@ class CloudFormationUi:
         return deploy_html
 
 
+class DiagnoseResource:
+    def on_get(self, request):
+        from localstack.utils import diagnose
+
+        return {
+            "version": {
+                "image-version": call_safe(diagnose.get_docker_image_details),
+                "localstack-version": call_safe(diagnose.get_localstack_version),
+                "host": {
+                    "kernel": call_safe(diagnose.get_host_kernel_version),
+                },
+            },
+            "services": call_safe(diagnose.get_service_stats),
+            "config": call_safe(diagnose.get_localstack_config),
+            "docker-inspect": call_safe(diagnose.inspect_main_container),
+            "docker-dependent-image-hashes": call_safe(diagnose.get_important_image_hashes),
+            "file-tree": call_safe(diagnose.get_file_tree),
+            "important-endpoints": call_safe(diagnose.resolve_endpoints),
+            "logs": call_safe(diagnose.get_localstack_logs),
+        }
+
+
 class LocalstackResources(Router):
     """
     Router for localstack-internal HTTP resources.
@@ -165,6 +188,13 @@ class LocalstackResources(Router):
         self.add("/graph", graph_resource)
         self.add("/cloudformation/deploy", CloudFormationUi())
 
+        if config.DEBUG:
+            LOG.warning(
+                "Enabling diagnose endpoint, "
+                "please be aware that this can expose sensitive information via your network."
+            )
+            self.add("/diagnose", DiagnoseResource())
+
     def add(self, path, *args, **kwargs):
         super().add(f"{constants.INTERNAL_RESOURCE_PATH}{path}", *args, **kwargs)
 
@@ -177,7 +207,7 @@ class LocalstackResourceHandler(RouterListener):
     resources: LocalstackResources
 
     def __init__(self, resources: LocalstackResources = None) -> None:
-        super().__init__(resources or LocalstackResources(), fall_through=False)
+        super().__init__(resources or get_internal_apis(), fall_through=False)
 
     def forward_request(self, method, path, data, headers):
         try:
