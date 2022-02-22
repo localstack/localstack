@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
+    InvocationError,
+    InvocationResult,
     ServiceEndpoint,
 )
 from localstack.services.awslambda.invocation.runtime_handler import RuntimeEnvironment
@@ -34,19 +36,6 @@ class RunningInvocation:
     invocation: InvocationStorage
     start_time: datetime
     executor: RuntimeEnvironment
-
-
-@dataclasses.dataclass
-class InvocationResult:
-    invocation_id: str
-    payload: Optional[bytes]
-
-
-@dataclasses.dataclass
-class InvocationError:
-    invocation_id: str
-    payload: Optional[bytes]
-    stacktrace: Optional[str]
 
 
 class LambdaVersionManager(ServiceEndpoint):
@@ -106,7 +95,7 @@ class LambdaVersionManager(ServiceEndpoint):
         ## self.queued_invocations.put(invocation_storage)
         if len(self.available_environments) == 0:
             environment = self.start_environment()
-            time.sleep(1)
+            time.sleep(15)
         else:
             key = next(item for item in self.available_environments.keys())
             environment = self.available_environments.pop(key)

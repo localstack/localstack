@@ -300,7 +300,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
         result = result.result()
         LOG.debug("Result: %s", result)
-        return result
+        return InvocationResponse(StatusCode=200, Payload=result.payload)
 
     # TODO: does deleting the latest published version affect the next versions number?
     def delete_function(

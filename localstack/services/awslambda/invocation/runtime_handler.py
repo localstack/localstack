@@ -1,3 +1,4 @@
+import logging
 from enum import Enum, auto
 from threading import RLock
 from typing import TYPE_CHECKING, Dict
@@ -6,7 +7,7 @@ import requests
 
 from localstack import config
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
-from localstack.utils.common import short_uid
+from localstack.utils.common import short_uid, to_str
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.executor_endpoint import ExecutorEndpoint
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.version_manager import InvocationStorage
 
 INVOCATION_PORT = 9563
+
+LOG = logging.getLogger(__name__)
 
 
 class RuntimeStatus(Enum):
@@ -122,15 +125,16 @@ class RuntimeEnvironment:
             self.status = RuntimeStatus.FAILED
 
     def _invocation_url(self) -> str:
-        return f"http://{self.runtime_executor.get_address()}:{INVOCATION_PORT}"
+        return f"http://{self.runtime_executor.get_address()}:{INVOCATION_PORT}/invoke"
 
     def invoke(self, invocation_event: "InvocationStorage") -> None:
         if self.status != RuntimeStatus.READY:
             raise InvalidStatusException("Invoke can only happen if status is ready")
         invoke_payload = {
             "invoke-id": invocation_event.invocation_id,
-            "payload": invocation_event.invocation.payload,
+            "payload": to_str(invocation_event.invocation.payload),
         }
+        LOG.debug("Sending invoke-payload '%s'", invoke_payload)
         response = requests.post(url=self._invocation_url(), json=invoke_payload)
         if not response.ok:
             raise InvocationError(

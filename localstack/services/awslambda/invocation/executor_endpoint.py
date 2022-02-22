@@ -1,25 +1,34 @@
 import abc
+import dataclasses
 import logging
-from typing import TYPE_CHECKING
+from typing import Optional
 
-from flask import Flask
+from flask import Flask, request
 from flask.typing import ResponseReturnValue
 
-if TYPE_CHECKING:
-    from localstack.services.awslambda.invocation.version_manager import (
-        InvocationError,
-        InvocationResult,
-    )
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class InvocationResult:
+    invocation_id: str
+    payload: Optional[bytes]
+
+
+@dataclasses.dataclass
+class InvocationError:
+    invocation_id: str
+    payload: Optional[bytes]
+    stacktrace: Optional[str]
+
+
 class ServiceEndpoint(abc.ABC):
-    def invocation_result(self, request_id: str, invocation_result: "InvocationResult"):
+    def invocation_result(self, request_id: str, invocation_result: InvocationResult):
         raise NotImplementedError()
 
-    def invocation_error(self, request_id: str, invocation_error: "InvocationError"):
+    def invocation_error(self, request_id: str, invocation_error: InvocationError):
         raise NotImplementedError()
 
 
@@ -33,12 +42,15 @@ class ExecutorEndpoint(Server):
     def _create_runtime(self) -> Flask:
         executor_endpoint = Flask(f"executor_endpoint_{self.port}")
 
-        @executor_endpoint.route("/invocation/<req_id>/response", methods=["POST"])
+        @executor_endpoint.route("/invocations/<req_id>/response", methods=["POST"])
         def invocation_response(req_id: str) -> ResponseReturnValue:
+            LOG.debug("Got invocation response for %s", req_id)
+            result = InvocationResult(req_id, request.data)
+            self.service_endpoint.invocation_result(request_id=req_id, invocation_result=result)
             return ""
 
         @executor_endpoint.route(
-            "/invocation/<req_id>/error",
+            "/invocations/<req_id>/error",
             methods=["POST"],
         )
         def invocation_error(req_id: str) -> ResponseReturnValue:
