@@ -23,14 +23,14 @@ from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
 
+PARAM_PREFIX_SECRETSMANAGER = "/aws/reference/secretsmanager"
+
 
 class SsmProvider(SsmApi, ABC):
-    _SECRETS_PREFIX = "/aws/reference/secretsmanager"
-
     @staticmethod
     def _has_secrets(names: ParameterNameList) -> Boolean:
         maybe_secret = next(
-            filter(lambda n: n.startswith(SsmProvider._SECRETS_PREFIX), names), None
+            filter(lambda n: n.startswith(PARAM_PREFIX_SECRETSMANAGER), names), None
         )
         return maybe_secret is not None
 
@@ -71,9 +71,9 @@ class SsmProvider(SsmApi, ABC):
         result = {"Parameters": [], "InvalidParameters": []}
 
         for name in names:
-            if name.startswith(SsmProvider._SECRETS_PREFIX):
+            if name.startswith(PARAM_PREFIX_SECRETSMANAGER):
                 secret = SsmProvider._get_secrets_information(
-                    name, name[len(SsmProvider._SECRETS_PREFIX) + 1 :]
+                    name, name[len(PARAM_PREFIX_SECRETSMANAGER) + 1 :]
                 )
                 if secret is not None:
                     secret = secret["Parameter"]
