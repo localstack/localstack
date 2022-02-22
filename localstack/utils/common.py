@@ -1,15 +1,11 @@
-import base64
-import binascii
 import glob
-import hashlib
 import io
 import logging
 import os
 import re
 import tempfile
 import threading
-import uuid
-from typing import Callable, Optional, Sized, Union
+from typing import Callable, Optional
 
 from localstack import config
 from localstack.constants import ENV_DEV
@@ -24,6 +20,7 @@ from localstack.utils.collections import (  # noqa
     PaginatedList,
     ensure_list,
     is_list_or_tuple,
+    is_none_or_empty,
     is_sub_dict,
     items_equivalent,
     last_index_of,
@@ -73,6 +70,7 @@ from localstack.utils.http import (  # noqa
     get_proxies,
     make_http_request,
     parse_request_data,
+    replace_response_content,
     safe_requests,
 )
 
@@ -139,7 +137,9 @@ from localstack.utils.platform import (  # noqa
 from localstack.utils.run import (  # noqa
     CaptureOutput,
     ShellCommandThread,
+    get_os_user,
     is_command_available,
+    is_root,
     kill_process_tree,
     run,
     run_for_max_seconds,
@@ -147,6 +147,7 @@ from localstack.utils.run import (  # noqa
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.strings import (  # noqa
+    base64_to_hex,
     camel_to_snake_case,
     canonicalize_bool_to_str,
     convert_to_printable_chars,
@@ -155,6 +156,9 @@ from localstack.utils.strings import (  # noqa
     is_base64,
     is_string,
     is_string_or_bytes,
+    long_uid,
+    md5,
+    short_uid,
     snake_to_camel_case,
     str_insert,
     str_remove,
@@ -248,17 +252,6 @@ class ExternalServicePortsManager(PortRange):
 external_service_ports = ExternalServicePortsManager()
 
 
-# ----------------
-# UTILITY METHODS
-# ----------------
-
-
-def md5(string: Union[str, bytes]) -> str:
-    m = hashlib.md5()
-    m.update(to_bytes(string))
-    return m.hexdigest()
-
-
 def get_service_protocol():
     return "https" if config.USE_SSL else "http"
 
@@ -272,35 +265,9 @@ def edge_ports_info():
     return result
 
 
-def base64_to_hex(b64_string: str) -> bytes:
-    return binascii.hexlify(base64.b64decode(b64_string))
-
-
-def short_uid() -> str:
-    return str(uuid.uuid4())[0:8]
-
-
-def long_uid() -> str:
-    return str(uuid.uuid4())
-
-
 def cleanup(files=True, env=ENV_DEV, quiet=True):
     if files:
         cleanup_tmp_files()
-
-
-def is_root():
-    return get_os_user() == "root"
-
-
-def get_os_user():
-    global CACHED_USER
-    if not CACHED_USER:
-        # TODO: using getpass.getuser() seems to be reporting a different/invalid user in Docker/MacOS
-        # import getpass
-        # CACHED_USER = getpass.getuser()
-        CACHED_USER = run("whoami").strip()
-    return CACHED_USER
 
 
 def cleanup_resources():
@@ -533,20 +500,6 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN, last_clean_time=None, max_age=C
                 rm_rf(cache_file)
         last_clean_time["time"] = time_now
     return time_now
-
-
-# TODO move to aws_responses.py?
-def replace_response_content(response, pattern, replacement):
-    content = to_str(response.content or "")
-    response._content = re.sub(pattern, replacement, content)
-
-
-def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
-    return (
-        obj is None
-        or (isinstance(obj, str) and obj.strip() == "")
-        or (isinstance(obj, Sized) and len(obj) == 0)
-    )
 
 
 # Code that requires util functions from above

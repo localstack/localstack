@@ -218,3 +218,9 @@ def download(url: str, path: str, verify_ssl: bool = True, timeout: float = None
         if r is not None:
             r.close()
         s.close()
+
+
+# TODO move to aws_responses.py?
+def replace_response_content(response, pattern, replacement):
+    content = to_str(response.content or "")
+    response._content = re.sub(pattern, replacement, content)

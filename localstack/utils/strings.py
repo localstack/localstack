@@ -1,5 +1,9 @@
+import base64
+import binascii
+import hashlib
 import itertools
 import re
+import uuid
 from typing import Dict, List, Union
 
 from localstack.config import DEFAULT_ENCODING
@@ -121,3 +125,21 @@ def str_remove(string, index, end_index=None):
 
 def str_startswith_ignore_case(value: str, prefix: str) -> bool:
     return value[: len(prefix)].lower() == prefix.lower()
+
+
+def short_uid() -> str:
+    return str(uuid.uuid4())[0:8]
+
+
+def long_uid() -> str:
+    return str(uuid.uuid4())
+
+
+def md5(string: Union[str, bytes]) -> str:
+    m = hashlib.md5()
+    m.update(to_bytes(string))
+    return m.hexdigest()
+
+
+def base64_to_hex(b64_string: str) -> bytes:
+    return binascii.hexlify(base64.b64decode(b64_string))

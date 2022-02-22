@@ -3,7 +3,7 @@ dicts, list, sets). """
 
 import logging
 import re
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Sized, Union
 
 LOG = logging.getLogger(__name__)
 
@@ -339,3 +339,11 @@ def items_equivalent(list1, list2, comparator):
         if not contained(item):
             return False
     return True
+
+
+def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
+    return (
+        obj is None
+        or (isinstance(obj, str) and obj.strip() == "")
+        or (isinstance(obj, Sized) and len(obj) == 0)
+    )

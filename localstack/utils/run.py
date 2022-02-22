@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 import time
+from functools import lru_cache
 from queue import Queue
 from typing import Any, AnyStr, Callable, Dict, List, Optional, Union
 
@@ -169,6 +170,16 @@ def kill_process_tree(parent_pid):
         except Exception:
             pass
     parent.kill()
+
+
+def is_root() -> bool:
+    return get_os_user() == "root"
+
+
+@lru_cache()
+def get_os_user() -> str:
+    # using getpass.getuser() seems to be reporting a different/invalid user in Docker/MacOS
+    return run("whoami").strip()
 
 
 def to_str(obj: Union[str, bytes], errors="strict"):
