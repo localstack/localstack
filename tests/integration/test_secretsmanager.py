@@ -271,19 +271,14 @@ class TestSecretsManager:
         secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
     @staticmethod
-    def secretsmanager_http_json_headers(amz_target: str) -> dict[str, str]:
-        region: str = aws_stack.get_region()
-        return {
-            "X-Amz-Target": f"{amz_target}",
-            "Content-Type": "application/x-amz-json-1.1",
-            "Authorization": f"AWS4-HMAC-SHA256 Credential=test/20220202/{region}/secretsmanager/aws4_request, "
-            "SignedHeaders=content-type;host;x-amz-date;x-amz-target, "
-            "Signature=0c921412dc327a81fa7ee1199a69437285faef19d0764e4b7913c908ca053810",
-        }
+    def secretsmanager_http_json_headers(amz_target: str) -> dict:
+        headers = aws_stack.mock_aws_request_headers("secretsmanager")
+        headers["X-Amz-Target"] = amz_target
+        return headers
 
     def secretsmanager_http_json_post(self, amz_target: str, http_body: json) -> requests.Response:
         ep_url: str = aws_stack.get_local_service_url("secretsmanager")
-        http_headers: dict[str, str] = self.secretsmanager_http_json_headers(amz_target)
+        http_headers: dict = self.secretsmanager_http_json_headers(amz_target)
         return requests.post(ep_url, headers=http_headers, data=json.dumps(http_body))
 
     def secretsmanager_http_create_secret_string(
