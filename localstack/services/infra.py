@@ -40,10 +40,12 @@ from localstack.utils.common import (
     run,
     start_thread,
 )
+from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.patch import patch
 from localstack.utils.run import FuncThread
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
+from localstack.utils.threads import cleanup_threads_and_processes
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
@@ -294,10 +296,8 @@ def stop_infra():
         generic_proxy.QUIET = True  # TODO: this doesn't seem to be doing anything
         LOG.debug("[shutdown] Cleaning up services ...")
         SERVICE_PLUGINS.stop_all_services()
-        LOG.debug("[shutdown] Cleaning up files ...")
-        common.cleanup(files=True, quiet=True)
         LOG.debug("[shutdown] Cleaning up resources ...")
-        common.cleanup_resources()
+        cleanup_resources()
 
         if config.FORCE_SHUTDOWN:
             LOG.debug("[shutdown] Force shutdown, not waiting for infrastructure to shut down")
@@ -308,6 +308,11 @@ def stop_infra():
         LOG.debug("[shutdown] Infrastructure is shut down")
     finally:
         SHUTDOWN_INFRA.set()
+
+
+def cleanup_resources():
+    cleanup_tmp_files()
+    cleanup_threads_and_processes()
 
 
 def log_startup_message(service):

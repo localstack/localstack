@@ -1,7 +1,4 @@
-import logging
-
 from localstack import config
-from localstack.constants import ENV_DEV
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.archives import is_zip_file, untar, unzip  # noqa
@@ -215,22 +212,11 @@ from localstack.utils.urls import path_from_url  # noqa
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.xml import obj_to_xml, strip_xmlns  # noqa
 
-# set up logger
-LOG = logging.getLogger(__name__)
-
-# misc. constants
-CODEC_HANDLER_UNDERSCORE = "underscore"
-
 # flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
 
-# generic cache object
-CACHE = {}
 
-# user of the currently running process
-CACHED_USER = None
-
-
+# TODO: move somewhere sensible (probably localstack.runtime)
 class ExternalServicePortsManager(PortRange):
     """Manages the ports used for starting external services like ElasticSearch, OpenSearch,..."""
 
@@ -242,17 +228,6 @@ external_service_ports = ExternalServicePortsManager()
 
 # TODO: replace references with config.get_protocol/config.edge_ports_info
 get_service_protocol = config.get_protocol
-
-
-def cleanup(files=True, env=ENV_DEV, quiet=True):
-    if files:
-        cleanup_tmp_files()
-
-
-def cleanup_resources():
-    cleanup_tmp_files()
-    cleanup_threads_and_processes()
-
 
 # TODO: replace references to safe_run with localstack.utils.run.run
 safe_run = run
