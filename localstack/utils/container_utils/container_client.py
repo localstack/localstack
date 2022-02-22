@@ -339,6 +339,10 @@ class ContainerClient(metaclass=ABCMeta):
         """Pauses a container with the given name."""
 
     @abstractmethod
+    def unpause_container(self, container_name: str):
+        """Unpauses a container with the given name."""
+
+    @abstractmethod
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         """Removes container with given name"""
         pass
@@ -349,6 +353,15 @@ class ContainerClient(metaclass=ABCMeta):
 
         :param image: Image name and tag
         :param force: Force removal
+        """
+        pass
+
+    @abstractmethod
+    def tag_image(self, image: str, new_image: str) -> None:
+        """Create a new tag for an existing image.
+
+        :param image: Existing image name and tag
+        :param new_image: New image name and tag
         """
         pass
 

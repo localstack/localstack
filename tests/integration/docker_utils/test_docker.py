@@ -114,6 +114,9 @@ class TestDockerClient:
                 container_name
             )
 
+            docker_client.unpause_container(container_id)
+            assert DockerContainerStatus.UP == docker_client.get_container_status(container_name)
+
             docker_client.stop_container(container_id)
             assert DockerContainerStatus.DOWN == docker_client.get_container_status(container_name)
         finally:
@@ -255,6 +258,10 @@ class TestDockerClient:
             docker_client.stop_container("this_container_does_not_exist")
 
     def test_pause_non_existing_container(self, docker_client: ContainerClient):
+        with pytest.raises(NoSuchContainer):
+            docker_client.pause_container("this_container_does_not_exist")
+
+    def test_unpause_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchContainer):
             docker_client.pause_container("this_container_does_not_exist")
 
@@ -1013,6 +1020,13 @@ class TestDockerClient:
 
         with pytest.raises(NoSuchImage):
             docker_client.remove_image(image, force=False)
+
+    def test_docker_tag(self, docker_client: ContainerClient):
+        docker_client.tag_image("alpine:latest", "foo:bar")
+        assert "foo:bar" in docker_client.get_docker_image_names()
+
+        docker_client.remove_image("foo:bar", force=True)
+        assert "foo:bar" not in docker_client.get_docker_image_names()
 
     def test_get_container_ip_with_network(
         self, docker_client: ContainerClient, create_container, create_network

@@ -120,6 +120,16 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             raise ContainerException()
 
+    def unpause_container(self, container_name: str) -> None:
+        LOG.debug("Unpausing container: %s", container_name)
+        try:
+            container = self.client().containers.get(container_name)
+            container.unpause()
+        except NotFound:
+            raise NoSuchContainer(container_name)
+        except APIError:
+            raise ContainerException()
+
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         LOG.debug("Removing container: %s", container_name)
         if check_existence and container_name not in self.get_running_container_names():
@@ -211,6 +221,16 @@ class SdkDockerClient(ContainerClient):
             )
         except APIError as e:
             raise ContainerException("Unable to build Docker image") from e
+
+    def tag_image(self, image: str, new_image: str) -> None:
+        LOG.debug("Tagging image %s as %s", image, new_image)
+        try:
+            target_image = self.client().images.get(image)
+            target_image.tag(*new_image.split(":"))
+        except ImageNotFound:
+            raise NoSuchImage(image)
+        except APIError:
+            raise ContainerException()
 
     def get_docker_image_names(self, strip_latest=True, include_tags=True):
         try:
