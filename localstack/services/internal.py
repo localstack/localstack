@@ -187,7 +187,13 @@ class LocalstackResources(Router):
         self.add("/health", health_resource)
         self.add("/graph", graph_resource)
         self.add("/cloudformation/deploy", CloudFormationUi())
-        self.add("/diagnose", DiagnoseResource())
+
+        if config.DEBUG:
+            LOG.warning(
+                "Enabling diagnose endpoint, "
+                "please be aware that this can expose sensitive information via your network."
+            )
+            self.add("/diagnose", DiagnoseResource())
 
     def add(self, path, *args, **kwargs):
         super().add(f"{constants.INTERNAL_RESOURCE_PATH}{path}", *args, **kwargs)
@@ -201,7 +207,7 @@ class LocalstackResourceHandler(RouterListener):
     resources: LocalstackResources
 
     def __init__(self, resources: LocalstackResources = None) -> None:
-        super().__init__(resources or LocalstackResources(), fall_through=False)
+        super().__init__(resources or get_internal_apis(), fall_through=False)
 
     def forward_request(self, method, path, data, headers):
         try:
