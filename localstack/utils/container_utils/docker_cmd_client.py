@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 import shlex
 import subprocess
@@ -188,7 +189,7 @@ class CmdDockerClient(ContainerClient):
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             )
 
     def copy_from_container(
@@ -218,6 +219,19 @@ class CmdDockerClient(ContainerClient):
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             )
+
+    def build_image(self, dockerfile_path: str, image_name: str, context_path: str = None):
+        cmd = self._docker_cmd()
+        dockerfile_path = Util.resolve_dockerfile_path(dockerfile_path)
+        context_path = context_path or os.path.dirname(dockerfile_path)
+        cmd += ["build", "-t", image_name, "-f", dockerfile_path, context_path]
+        LOG.debug("Building Docker image: %s", cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            raise ContainerException(
+                f"Docker build process returned with error code {e.returncode}", e.stdout, e.stderr
+            ) from e
 
     def get_docker_image_names(self, strip_latest=True, include_tags=True):
         format_string = "{{.Repository}}:{{.Tag}}" if include_tags else "{{.Repository}}"
