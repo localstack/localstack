@@ -1,9 +1,7 @@
 import base64
 import binascii
-import functools
 import glob
 import hashlib
-import inspect
 import io
 import logging
 import os
@@ -11,7 +9,7 @@ import re
 import tempfile
 import threading
 import uuid
-from typing import Any, Callable, Dict, Optional, Sized, Tuple, Union
+from typing import Callable, Optional, Sized, Union
 
 from localstack import config
 from localstack.constants import ENV_DEV
@@ -57,6 +55,14 @@ from localstack.utils.files import (  # noqa
     replace_in_file,
     rm_rf,
     save_file,
+)
+
+# TODO: remove imports from here (need to update any client code that imports these from utils.common)
+from localstack.utils.functions import (  # noqa
+    call_safe,
+    empty_context_manager,
+    prevent_stack_overflow,
+    run_safe,
 )
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
@@ -136,9 +142,7 @@ from localstack.utils.run import (  # noqa
     is_command_available,
     kill_process_tree,
     run,
-    run_cmd_safe,
     run_for_max_seconds,
-    run_safe,
 )
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
@@ -247,50 +251,6 @@ external_service_ports = ExternalServicePortsManager()
 # ----------------
 # UTILITY METHODS
 # ----------------
-
-
-def empty_context_manager():
-    import contextlib
-
-    return contextlib.nullcontext()
-
-
-def prevent_stack_overflow(match_parameters=False):
-    """Function decorator to protect a function from stack overflows -
-    raises an exception if a (potential) infinite recursion is detected."""
-
-    def _decorator(wrapped):
-        @functools.wraps(wrapped)
-        def func(*args, **kwargs):
-            def _matches(frame):
-                if frame.function != wrapped.__name__:
-                    return False
-                frame = frame.frame
-
-                if not match_parameters:
-                    return False
-
-                # construct dict of arguments this stack frame has been called with
-                prev_call_args = {
-                    frame.f_code.co_varnames[i]: frame.f_locals[frame.f_code.co_varnames[i]]
-                    for i in range(frame.f_code.co_argcount)
-                }
-
-                # construct dict of arguments the original function has been called with
-                sig = inspect.signature(wrapped)
-                this_call_args = dict(zip(sig.parameters.keys(), args))
-                this_call_args.update(kwargs)
-
-                return prev_call_args == this_call_args
-
-            matching_frames = [frame[2] for frame in inspect.stack(context=1) if _matches(frame)]
-            if matching_frames:
-                raise RecursionError("(Potential) infinite recursion detected")
-            return wrapped(*args, **kwargs)
-
-        return func
-
-    return _decorator
 
 
 def md5(string: Union[str, bytes]) -> str:
@@ -473,35 +433,6 @@ def generate_ssl_cert(
         if not return_content:
             return target_file, cert_file_name, key_file_name
     return file_content
-
-
-def call_safe(
-    func: Callable, args: Tuple = None, kwargs: Dict = None, exception_message: str = None
-) -> Optional[Any]:
-    """
-    Call the given function with the given arguments, and if it fails, log the given exception_message.
-    If logging.DEBUG is set for the logger, then we also log the traceback.
-
-    :param func: function to call
-    :param args: arguments to pass
-    :param kwargs: keyword arguments to pass
-    :param exception_message: message to log on exception
-    :return: whatever the func returns
-    """
-    if exception_message is None:
-        exception_message = "error calling function %s" % func.__name__
-    if args is None:
-        args = ()
-    if kwargs is None:
-        kwargs = {}
-
-    try:
-        return func(*args, **kwargs)
-    except Exception as e:
-        if LOG.isEnabledFor(logging.DEBUG):
-            LOG.exception(exception_message)
-        else:
-            LOG.warning("%s: %s", exception_message, e)
 
 
 # TODO: replace references to safe_run with localstack.utils.run.run

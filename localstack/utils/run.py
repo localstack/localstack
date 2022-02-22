@@ -117,20 +117,6 @@ def run(
         raise e
 
 
-def run_safe(_python_lambda, *args, _default=None, **kwargs):
-    print_error = kwargs.get("print_error", False)
-    try:
-        return _python_lambda(*args, **kwargs)
-    except Exception as e:
-        if print_error:
-            LOG.warning("Unable to execute function: %s", e)
-        return _default
-
-
-def run_cmd_safe(**kwargs):
-    return run_safe(run, print_error=False, **kwargs)
-
-
 def run_for_max_seconds(max_secs, _function, *args, **kwargs):
     """Run the given function for a maximum of `max_secs` seconds - continue running
     in a background thread if the function does not finish in time."""
