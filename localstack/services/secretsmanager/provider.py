@@ -1,7 +1,7 @@
 import json
 import logging
 from abc import ABC
-from typing import Any, Optional
+from typing import Optional
 
 from localstack.aws.api import RequestContext, ServiceResponse
 from localstack.aws.api.secretsmanager import (
@@ -59,7 +59,7 @@ class SecretsmanagerProvider(SecretsmanagerApi, ABC):
         apply_patches()  # Adds missing moto attributes.
 
     @staticmethod
-    def _transform_context_secret_id(context: RequestContext) -> Optional[dict[str, Any]]:
+    def _transform_context_secret_id(context: RequestContext) -> Optional[dict]:
         data_dict = json.loads(to_str(context.request.data or "{}"))
         secret_id = data_dict.get("SecretId", None)
         if secret_id and ":" in secret_id:
