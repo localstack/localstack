@@ -32,7 +32,6 @@ from localstack.utils.bootstrap import (
 from localstack.utils.common import (
     TMP_THREADS,
     ShellCommandThread,
-    edge_ports_info,
     get_free_tcp_port,
     in_docker,
     is_linux,
@@ -312,7 +311,7 @@ def stop_infra():
 
 
 def log_startup_message(service):
-    LOG.info("Starting mock %s service on %s ...", service, edge_ports_info())
+    LOG.info("Starting mock %s service on %s ...", service, config.edge_ports_info())
 
 
 def check_aws_credentials():
