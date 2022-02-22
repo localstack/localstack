@@ -25,10 +25,12 @@ from localstack.utils.bootstrap import is_api_enabled
 
 
 class SsmProvider(SsmApi, ABC):
+    _SECRETS_PREFIX = "/aws/reference/secretsmanager"
+
     @staticmethod
     def _has_secrets(names: ParameterNameList) -> Boolean:
         maybe_secret = next(
-            filter(lambda n: n.startswith("/aws/reference/secretsmanager"), names), None
+            filter(lambda n: n.startswith(SsmProvider._SECRETS_PREFIX), names), None
         )
         return maybe_secret is not None
 
@@ -67,11 +69,12 @@ class SsmProvider(SsmApi, ABC):
     def _get_params_and_secrets(names: ParameterNameList) -> GetParametersResult:
         ssm_client = aws_stack.connect_to_service("ssm")
         result = {"Parameters": [], "InvalidParameters": []}
-        secrets_prefix = "/aws/reference/secretsmanager"
 
         for name in names:
-            if name.startswith(secrets_prefix):
-                secret = SsmProvider._get_secrets_information(name, name[len(secrets_prefix) + 1 :])
+            if name.startswith(SsmProvider._SECRETS_PREFIX):
+                secret = SsmProvider._get_secrets_information(
+                    name, name[len(SsmProvider._SECRETS_PREFIX) + 1 :]
+                )
                 if secret is not None:
                     secret = secret["Parameter"]
                     result["Parameters"].append(secret)
@@ -111,8 +114,7 @@ class SsmProvider(SsmApi, ABC):
     ) -> GetParametersResult:
         if SsmProvider._has_secrets(names):
             return SsmProvider._get_params_and_secrets(names)
-        else:
-            names = list([SsmProvider._normalize_name(name) for name in names])
+        names = list([SsmProvider._normalize_name(name) for name in names])
         request = {"Names": names, "WithDecryption": bool(with_decryption)}
         res = call_moto_with_request(context, request)
         return GetParametersResult(**res)
