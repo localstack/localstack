@@ -1,12 +1,12 @@
-import requests
-
 from localstack import config
+from localstack.http import Request
+from localstack.services.internal import DiagnoseResource
 
 
-def test_diagnose_endpoint():
-    # simple smoke test diagnose endpoint
-
-    result = requests.get(f"{config.get_edge_url()}/_localstack/diagnose").json()
+def test_diagnose_resource():
+    # simple smoke test diagnose resource
+    resource = DiagnoseResource()
+    result = resource.on_get(Request(path="/_localstack/diagnose"))
 
     assert "/tmp" in result["file-tree"]
     assert "/var/lib/localstack" in result["file-tree"]
