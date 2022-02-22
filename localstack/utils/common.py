@@ -13,8 +13,6 @@ import threading
 import uuid
 from typing import Any, Callable, Dict, Optional, Sized, Tuple, Union
 
-import cachetools
-
 from localstack import config
 from localstack.constants import ENV_DEV
 
@@ -91,6 +89,8 @@ from localstack.utils.json import (  # noqa
 
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.net import (  # noqa
+    PortNotAvailableException,
+    PortRange,
     get_free_tcp_port,
     is_ip_address,
     is_ipv4_address,
@@ -234,59 +234,11 @@ PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
 CACHED_USER = None
 
 
-class PortNotAvailableException(Exception):
-    """Exception which indicates that the ExternalServicePortsManager could not reserve a port."""
-
-    pass
-
-
-class ExternalServicePortsManager:
+class ExternalServicePortsManager(PortRange):
     """Manages the ports used for starting external services like ElasticSearch, OpenSearch,..."""
 
     def __init__(self):
-        # cache for locally available ports (ports are reserved for a short period of a few seconds)
-        self._PORTS_CACHE = cachetools.TTLCache(maxsize=100, ttl=6)
-        self._PORTS_LOCK = threading.RLock()
-
-    def reserve_port(self, port: int = None) -> int:
-        """
-        Reserves the given port (if it is still free). If the given port is None, it reserves a free port from the
-        configured port range for external services. If a port is given, it has to be within the configured
-        range of external services (i.e. in [config#EXTERNAL_SERVICE_PORTS_START, config#EXTERNAL_SERVICE_PORTS_END)).
-        :param port: explicit port to check or None if a random port from the configured range should be selected
-        :return: reserved, free port number (int)
-        :raises: PortNotAvailableException if the given port is outside the configured range, it is already bound or
-                    reserved, or if the given port is none and there is no free port in the configured service range.
-        """
-        ports_range = range(config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END)
-        if port is not None and port not in ports_range:
-            raise PortNotAvailableException(
-                f"The requested port ({port}) is not in the configured external "
-                f"service port range ({ports_range})."
-            )
-        with self._PORTS_LOCK:
-            if port is not None:
-                return self._check_port(port)
-            else:
-                for port_in_range in ports_range:
-                    try:
-                        return self._check_port(port_in_range)
-                    except PortNotAvailableException:
-                        # We ignore the fact that this single port is reserved, we just check the next one
-                        pass
-        raise PortNotAvailableException(
-            "No free network ports available to start service instance (currently reserved: %s)",
-            list(self._PORTS_CACHE.keys()),
-        )
-
-    def _check_port(self, port: int) -> int:
-        """Checks if the given port is currently not reserved and can be bound."""
-        if not self._PORTS_CACHE.get(port) and port_can_be_bound(port):
-            # reserve the port for a short period of time
-            self._PORTS_CACHE[port] = "__reserved__"
-            return port
-        else:
-            raise PortNotAvailableException(f"The given port ({port}) is already reserved.")
+        super().__init__(config.EXTERNAL_SERVICE_PORTS_START, config.EXTERNAL_SERVICE_PORTS_END)
 
 
 external_service_ports = ExternalServicePortsManager()
