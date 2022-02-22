@@ -77,6 +77,7 @@ not work out-of-the-box.
 import abc
 import base64
 import calendar
+import copy
 import json
 import logging
 from abc import ABC
@@ -550,8 +551,12 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         shape_members: dict,
         operation_model: OperationModel,
     ) -> None:
-        self._process_header_members(parameters, response, shape)
-        self._serialize_payload(parameters, response, shape, shape_members, operation_model)
+        # use a deep copy of the dict result to avoid unwanted mutations in service backends
+        # this fix comes at the cost of performance, updating the processing to not mutate the dict might be better
+        copied_parameters = copy.deepcopy(parameters)
+
+        self._process_header_members(copied_parameters, response, shape)
+        self._serialize_payload(copied_parameters, response, shape, shape_members, operation_model)
         self._serialize_content_type(response, shape, shape_members)
         self._prepare_additional_traits_in_response(response, operation_model)
 
@@ -637,6 +642,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             elif location == "headers":
                 header_prefix = key
                 self._serialize_header_map(header_prefix, response, value)
+            # TODO: this mutates the original return value of the service handler response which makes a copy necessary
             del parameters[name]
 
     def _serialize_header_map(self, prefix: str, response: HttpResponse, params: dict) -> None:
