@@ -332,6 +332,18 @@ class ProxyListenerSQS(PersistingProxyListener):
 
             elif action == "CreateQueue":
                 req_data = self.fix_missing_tag_values(req_data)
+
+                def _is_fifo():
+                    for k, v in req_data.items():
+                        if v == "FifoQueue":
+                            return req_data[k.replace("Name", "Value")].lower() == "true"
+                    return False
+
+                if req_data.get("QueueName").endswith(".fifo") and not _is_fifo():
+                    msg = "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
+                    return make_requests_error(
+                        code=400, code_string="InvalidParameterValue", message=msg
+                    )
                 changed_attrs = _fix_dlq_arn_in_attributes(req_data)
                 if changed_attrs:
                     return _get_attributes_forward_request(
