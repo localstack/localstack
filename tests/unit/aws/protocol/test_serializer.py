@@ -998,3 +998,23 @@ def test_all_non_existing_key():
             },
         },
     )
+
+
+def test_no_mutation_of_parameters():
+    service = load_service("appconfig")
+    response_serializer = create_serializer(service)
+
+    parameters = {
+        "ApplicationId": "app_id",
+        "ConfigurationProfileId": "conf_id",
+        "VersionNumber": 1,
+        "Content": b'{"Id":"foo"}',
+        "ContentType": "application/json",
+    }
+    expected = parameters.copy()
+
+    # serialize response and check whether parameters are unchanged
+    _ = response_serializer.serialize_to_response(
+        parameters, service.operation_model("CreateHostedConfigurationVersion")
+    )
+    assert parameters == expected
