@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from random import randint
 from typing import Dict, Optional
 
-from localstack.aws.api import RequestContext
+from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.opensearch import (
     ARN,
     AccessPoliciesStatus,
@@ -67,6 +67,8 @@ from localstack.aws.api.opensearch import (
     StringList,
     TagList,
     TLSSecurityPolicy,
+    UpdateDomainConfigRequest,
+    UpdateDomainConfigResponse,
     ValidationException,
     VersionStatus,
     VersionString,
@@ -83,7 +85,7 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.utils.analytics import event_publisher
-from localstack.utils.common import synchronized
+from localstack.utils.common import PaginatedList, remove_none_values_from_dict, synchronized
 from localstack.utils.serving import Server
 from localstack.utils.tagging import TaggingService
 
@@ -462,6 +464,25 @@ class OpensearchProvider(OpensearchApi):
             status = get_domain_status(domain_key)
         return DescribeDomainResponse(DomainStatus=status)
 
+    @handler("UpdateDomainConfig", expand=False)
+    def update_domain_config(
+        self, context: RequestContext, payload: UpdateDomainConfigRequest
+    ) -> UpdateDomainConfigResponse:
+        domain_key = DomainKey(
+            domain_name=payload["DomainName"],
+            region=context.region,
+            account=context.account_id,
+        )
+        region = OpenSearchServiceBackend.get(domain_key.region)
+        with _domain_mutex:
+            domain_status = region.opensearch_domains.get(domain_key.domain_name, None)
+            if domain_status is None:
+                raise ResourceNotFoundException(f"Domain not found: {domain_key.domain_name}")
+
+            # TODO add update of status
+
+        return UpdateDomainConfigResponse(DomainConfig={})
+
     def describe_domains(
         self, context: RequestContext, domain_names: DomainNameList
     ) -> DescribeDomainsResponse:
@@ -498,7 +519,14 @@ class OpensearchProvider(OpensearchApi):
         max_results: MaxResults = None,
         next_token: NextToken = None,
     ) -> ListVersionsResponse:
-        return ListVersionsResponse(Versions=list(versions.install_versions.keys()))
+        version_list = PaginatedList(versions.install_versions.keys())
+        page, nxt = version_list.get_page(
+            lambda x: x,
+            next_token=next_token,
+            page_size=max_results,
+        )
+        response = ListVersionsResponse(Versions=page, NextToken=nxt)
+        return remove_none_values_from_dict(response)
 
     def get_compatible_versions(
         self, context: RequestContext, domain_name: DomainName = None
