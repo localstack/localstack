@@ -10,15 +10,7 @@ import pytest
 
 from localstack import config
 from localstack.config import in_docker
-from localstack.utils.common import (
-    is_ipv4_address,
-    new_tmp_dir,
-    rm_rf,
-    safe_run,
-    save_file,
-    short_uid,
-    to_str,
-)
+from localstack.utils.common import is_ipv4_address, safe_run, save_file, short_uid, to_str
 from localstack.utils.container_utils.container_client import (
     ContainerClient,
     ContainerException,
@@ -785,10 +777,12 @@ class TestDockerClient:
     @pytest.mark.skip_offline
     @pytest.mark.parametrize("custom_context", [True, False])
     @pytest.mark.parametrize("dockerfile_as_dir", [True, False])
-    def test_build_image(self, docker_client: ContainerClient, custom_context, dockerfile_as_dir):
-        dockerfile_dir = new_tmp_dir()
+    def test_build_image(
+        self, docker_client: ContainerClient, custom_context, dockerfile_as_dir, tmp_path
+    ):
+        dockerfile_dir = tmp_path
         tmp_file = short_uid()
-        ctx_dir = new_tmp_dir() if custom_context else dockerfile_dir
+        ctx_dir = tmp_path if custom_context else dockerfile_dir
         dockerfile_path = os.path.join(dockerfile_dir, "Dockerfile")
         dockerfile = f"""
         FROM alpine
@@ -799,8 +793,8 @@ class TestDockerClient:
         save_file(dockerfile_path, dockerfile)
         save_file(os.path.join(ctx_dir, tmp_file), "test content 123")
 
-        kwargs = {"context_path": ctx_dir} if custom_context else {}
-        dockerfile_ref = dockerfile_dir if dockerfile_as_dir else dockerfile_path
+        kwargs = {"context_path": str(ctx_dir)} if custom_context else {}
+        dockerfile_ref = str(dockerfile_dir) if dockerfile_as_dir else dockerfile_path
 
         image_name = f"img-{short_uid()}"
         docker_client.build_image(dockerfile_path=dockerfile_ref, image_name=image_name, **kwargs)
@@ -810,8 +804,6 @@ class TestDockerClient:
         assert "45329/tcp" in result["Config"]["ExposedPorts"]
 
         docker_client.remove_image(image_name, force=True)
-        rm_rf(dockerfile_dir)
-        rm_rf(ctx_dir)
 
     @pytest.mark.skip_offline
     def test_run_container_non_existent_image(self, docker_client: ContainerClient):
