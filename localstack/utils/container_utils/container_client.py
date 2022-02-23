@@ -353,6 +353,10 @@ class ContainerClient(metaclass=ABCMeta):
         """Pauses a container with the given name."""
 
     @abstractmethod
+    def unpause_container(self, container_name: str):
+        """Unpauses a container with the given name."""
+
+    @abstractmethod
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         """Removes container with given name"""
         pass
