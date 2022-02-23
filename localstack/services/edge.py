@@ -65,7 +65,7 @@ API_UNKNOWN = "_unknown_"
 # APIs for which no gzip encoding should be applied when returning the response
 HEADER_SKIP_RESPONSE_ZIPPING = "_skip_response_gzipping_"
 SKIP_GZIP_APIS = [S3]
-S3CONTROL_COMMON_PATH = '/v20180820/configuration/publicAccessBlock'
+S3CONTROL_COMMON_PATH = "v20180820"
 
 
 class ProxyListenerEdge(ProxyListener):
@@ -352,7 +352,7 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = "cognito-idp", config.service_port("cognito-idp")
     elif target.startswith("AWSCognitoIdentityService") or "cognito-identity." in host:
         result = "cognito-identity", config.service_port("cognito-identity")
-    elif result[0] == "s3" and path == S3CONTROL_COMMON_PATH:
+    elif result[0] == "s3" and S3CONTROL_COMMON_PATH in path:
         result = "s3control", config.service_port("s3control")
     elif result[0] == "s3" or uses_host_addressing(headers):
         result = "s3", config.service_port("s3")

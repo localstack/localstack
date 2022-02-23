@@ -208,7 +208,9 @@ def s3control():
     from localstack.services.s3control import s3control_listener, s3control_starter
 
     return Service(
-        "s3control", listener=s3control_listener.UPDATE_S3CONTROL, start=s3control_starter.start_s3control
+        "s3control",
+        listener=s3control_listener.UPDATE_S3CONTROL,
+        start=s3control_starter.start_s3control,
     )
 
 
