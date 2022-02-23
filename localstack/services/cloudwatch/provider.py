@@ -1,8 +1,9 @@
 import json
 import logging
+from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
-from moto.cloudwatch.models import FakeAlarm
+from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudwatch import (
@@ -58,6 +59,64 @@ def update_state(target, self, reason, reason_data, state_value):
                 data["service"],
                 action,
             )
+
+
+@patch(target=CloudWatchBackend.put_metric_alarm)
+def put_metric_alarm(
+    target,
+    self,
+    name,
+    namespace,
+    metric_name,
+    metric_data_queries,
+    comparison_operator,
+    evaluation_periods,
+    datapoints_to_alarm,
+    period,
+    threshold,
+    statistic,
+    extended_statistic,
+    description,
+    dimensions,
+    alarm_actions,
+    ok_actions,
+    insufficient_data_actions,
+    unit,
+    actions_enabled,
+    treat_missing_data,
+    evaluate_low_sample_count_percentile,
+    threshold_metric_id,
+    rule=None,
+    tags=None,
+):
+    if description:
+        description = escape(description)
+    target(
+        self,
+        name,
+        namespace,
+        metric_name,
+        metric_data_queries,
+        comparison_operator,
+        evaluation_periods,
+        datapoints_to_alarm,
+        period,
+        threshold,
+        statistic,
+        extended_statistic,
+        description,
+        dimensions,
+        alarm_actions,
+        ok_actions,
+        insufficient_data_actions,
+        unit,
+        actions_enabled,
+        treat_missing_data,
+        evaluate_low_sample_count_percentile,
+        threshold_metric_id,
+        rule,
+        tags,
+    )
 
 
 def create_message_response_update_state(alarm, old_state):
