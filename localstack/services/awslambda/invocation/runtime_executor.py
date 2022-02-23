@@ -86,8 +86,6 @@ def prepare_version(function_version: "FunctionVersion") -> None:
     docker_file_path = target_path / "Dockerfile"
     docker_file = LAMBDA_DOCKERFILE.format(
         base_img=get_image_for_runtime(function_version.runtime),
-        code_src=str(target_code),
-        init_src=str(target_init),
         rapid_entrypoint=RAPID_ENTRYPOINT,
     )
     with docker_file_path.open(mode="w") as f:
