@@ -23,7 +23,7 @@ from localstack.utils.container_utils.container_client import (
     RegistryConnectionError,
     Util,
 )
-from localstack.utils.net_utils import get_free_tcp_port
+from localstack.utils.net import get_free_tcp_port
 
 ContainerInfo = NamedTuple(
     "ContainerInfo",
