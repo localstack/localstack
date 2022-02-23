@@ -27,7 +27,6 @@ from localstack.config import (
     EXTRA_CORS_ALLOWED_HEADERS,
     EXTRA_CORS_ALLOWED_ORIGINS,
     EXTRA_CORS_EXPOSE_HEADERS,
-    is_env_true,
 )
 from localstack.constants import (
     APPLICATION_JSON,
@@ -995,7 +994,7 @@ def install_predefined_cert_if_available():
     try:
         from localstack_ext.bootstrap import install
 
-        if is_env_true("SKIP_SSL_CERT_DOWNLOAD"):
+        if config.SKIP_SSL_CERT_DOWNLOAD:
             LOG.debug("Skipping download of local SSL cert, as SKIP_SSL_CERT_DOWNLOAD=1")
             return
         install.setup_ssl_cert()
