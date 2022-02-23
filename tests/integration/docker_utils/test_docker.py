@@ -12,6 +12,7 @@ from localstack import config
 from localstack.config import in_docker
 from localstack.utils.common import is_ipv4_address, safe_run, save_file, short_uid, to_str
 from localstack.utils.container_utils.container_client import (
+    AccessDenied,
     ContainerClient,
     ContainerException,
     DockerContainerStatus,
@@ -19,8 +20,10 @@ from localstack.utils.container_utils.container_client import (
     NoSuchImage,
     NoSuchNetwork,
     PortMappings,
+    RegistryConnectionError,
     Util,
 )
+from localstack.utils.net_utils import get_free_tcp_port
 
 ContainerInfo = NamedTuple(
     "ContainerInfo",
@@ -782,6 +785,55 @@ class TestDockerClient:
         assert message == stdout.decode(config.DEFAULT_ENCODING).strip()
 
     @pytest.mark.skip_offline
+    def test_push_non_existent_docker_image(self, docker_client: ContainerClient):
+        with pytest.raises(NoSuchImage):
+            docker_client.push_image("localstack_non_existing_image_for_tests")
+
+    @pytest.mark.skip_offline
+    def test_push_access_denied(self, docker_client: ContainerClient):
+        with pytest.raises(AccessDenied):
+            docker_client.push_image("alpine")
+        with pytest.raises(AccessDenied):
+            docker_client.push_image("alpine:latest")
+
+    @pytest.mark.skip_offline
+    def test_push_invalid_registry(self, docker_client: ContainerClient):
+        image_name = f"localhost:{get_free_tcp_port()}/localstack_dummy_image"
+        try:
+            docker_client.tag_image("alpine", image_name)
+            with pytest.raises(RegistryConnectionError):
+                docker_client.push_image(image_name)
+        finally:
+            docker_client.remove_image(image_name)
+
+    @pytest.mark.skip_offline
+    def test_tag_image(self, docker_client: ContainerClient):
+        docker_client.pull_image("alpine")
+        img_refs = [
+            "localstack_dummy_image",
+            "localstack_dummy_image:latest",
+            "localstack_dummy_image:test",
+            "docker.io/localstack_dummy_image:test2",
+            "example.com:4510/localstack_dummy_image:test3",
+        ]
+        try:
+            for img_ref in img_refs:
+                docker_client.tag_image("alpine", img_ref)
+                images = docker_client.get_docker_image_names(strip_latest=":latest" not in img_ref)
+                expected = img_ref.split("/")[-1] if len(img_ref.split(":")) < 3 else img_ref
+                assert expected in images
+        finally:
+            for img_ref in img_refs:
+                docker_client.remove_image(img_ref)
+
+    @pytest.mark.skip_offline
+    def test_tag_non_existing_image(self, docker_client: ContainerClient):
+        with pytest.raises(NoSuchImage):
+            docker_client.tag_image(
+                "localstack_non_existing_image_for_tests", "localstack_dummy_image"
+            )
+
+    @pytest.mark.skip_offline
     @pytest.mark.parametrize("custom_context", [True, False])
     @pytest.mark.parametrize("dockerfile_as_dir", [True, False])
     def test_build_image(
@@ -1020,13 +1072,6 @@ class TestDockerClient:
 
         with pytest.raises(NoSuchImage):
             docker_client.remove_image(image, force=False)
-
-    def test_docker_tag(self, docker_client: ContainerClient):
-        docker_client.tag_image("alpine:latest", "foo:bar")
-        assert "foo:bar" in docker_client.get_docker_image_names()
-
-        docker_client.remove_image("foo:bar", force=True)
-        assert "foo:bar" not in docker_client.get_docker_image_names()
 
     def test_get_container_ip_with_network(
         self, docker_client: ContainerClient, create_container, create_network

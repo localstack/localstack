@@ -61,6 +61,20 @@ class NoSuchNetwork(ContainerException):
         self.network_name = network_name
 
 
+class RegistryConnectionError(ContainerException):
+    def __init__(self, details: str, message=None, stdout=None, stderr=None) -> None:
+        message = message or f"Connection error: {details}"
+        super().__init__(message, stdout, stderr)
+        self.details = details
+
+
+class AccessDenied(ContainerException):
+    def __init__(self, object_name: str, message=None, stdout=None, stderr=None) -> None:
+        message = message or f"Access denied to {object_name}"
+        super().__init__(message, stdout, stderr)
+        self.object_name = object_name
+
+
 class PortMappings(object):
     """Maps source to target port ranges for Docker port mappings."""
 
@@ -357,15 +371,6 @@ class ContainerClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def tag_image(self, image: str, new_image: str) -> None:
-        """Create a new tag for an existing image.
-
-        :param image: Existing image name and tag
-        :param new_image: New image name and tag
-        """
-        pass
-
-    @abstractmethod
     def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
         """List all containers matching the given filters
 
@@ -399,7 +404,12 @@ class ContainerClient(metaclass=ABCMeta):
 
     @abstractmethod
     def pull_image(self, docker_image: str) -> None:
-        """Pulls a image with a given name from a docker registry"""
+        """Pulls a image with a given name from a Docker registry"""
+        pass
+
+    @abstractmethod
+    def push_image(self, docker_image: str) -> None:
+        """Pushes a image with a given name to a Docker registry"""
         pass
 
     @abstractmethod
@@ -409,6 +419,15 @@ class ContainerClient(metaclass=ABCMeta):
         :param dockerfile_path: Path to Dockerfile, or a directory that contains a Dockerfile
         :param image_name: Name of the image to be built
         :param context_path: Path for build context (defaults to dirname of Dockerfile)
+        """
+        pass
+
+    @abstractmethod
+    def tag_image(self, source_ref: str, target_name: str) -> None:
+        """Tags an image with a new name
+
+        :param source_ref: Name or ID of the image to be tagged
+        :param target_name: New name (tag) of the tagged image
         """
         pass
 
