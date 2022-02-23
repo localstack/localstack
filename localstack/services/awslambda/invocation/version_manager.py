@@ -9,6 +9,7 @@ from queue import Queue
 from threading import Thread
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+from localstack.aws.api.awslambda import State
 from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
     InvocationError,
@@ -16,7 +17,10 @@ from localstack.services.awslambda.invocation.executor_endpoint import (
     InvocationResult,
     ServiceEndpoint,
 )
-from localstack.services.awslambda.invocation.runtime_executor import prepare_version
+from localstack.services.awslambda.invocation.runtime_executor import (
+    cleanup_version,
+    prepare_version,
+)
 from localstack.services.awslambda.invocation.runtime_handler import (
     InvalidStatusException,
     RuntimeEnvironment,
@@ -62,6 +66,7 @@ class LambdaVersionManager(ServiceEndpoint):
     executor_endpoint: Optional[ExecutorEndpoint]
     invocation_thread: Optional[Thread]
     shutdown_event: threading.Event
+    state: str
 
     def __init__(
         self,
@@ -78,6 +83,7 @@ class LambdaVersionManager(ServiceEndpoint):
         self.executor_endpoint = None
         self.invocation_thread = None
         self.shutdown_event = threading.Event()
+        self.state = State.Inactive
 
     def _build_executor_endpoint(self) -> ExecutorEndpoint:
         port = get_free_tcp_port()
@@ -86,14 +92,19 @@ class LambdaVersionManager(ServiceEndpoint):
         return executor_endpoint
 
     def start(self) -> None:
-        prepare_version(self.function_version)
         self.executor_endpoint = self._build_executor_endpoint()
         invocation_thread = Thread(target=self.invocation_loop)
         invocation_thread.start()
         self.invocation_thread = invocation_thread
 
+        prepare_version(self.function_version)
+        LOG.debug(f"Lambda '{self.function_arn}' changed to active")
+        self.state = State.Active
+        LOG.debug("Init complete")
+
     def stop(self) -> None:
         LOG.debug("Stopping lambda version '%s'", self.function_arn)
+        cleanup_version(self.function_version)
         self.shutdown_event.set()
         try:
             self.invocation_thread.join(timeout=5.0)
@@ -218,7 +229,7 @@ class LambdaVersionManager(ServiceEndpoint):
 
         return invocation_storage.result_future
 
-    def set_ready(self, executor_id: str) -> None:
+    def set_environment_ready(self, executor_id: str) -> None:
         environment = self.all_environments.get(executor_id)
         if not environment:
             raise Exception(
@@ -227,6 +238,15 @@ class LambdaVersionManager(ServiceEndpoint):
             )
         environment.set_ready()
         self.available_environments.put(environment)
+
+    def set_environment_failed(self, executor_id: str) -> None:
+        environment = self.all_environments.get(executor_id)
+        if not environment:
+            raise Exception(
+                "Inconsistent state detected: Non existing environment '%s' reported error.",
+                executor_id,
+            )
+        environment.errored()
 
     # Service Endpoint implementation
     def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
@@ -256,10 +276,7 @@ class LambdaVersionManager(ServiceEndpoint):
         running_invocation.logs = invocation_logs.logs
 
     def status_ready(self, executor_id: str) -> None:
-        self.set_ready(executor_id=executor_id)
+        self.set_environment_ready(executor_id=executor_id)
 
     def status_error(self, executor_id: str) -> None:
-
-        # set state to failed
-        # start cleanup
-        pass
+        self.set_environment_failed(executor_id=executor_id)

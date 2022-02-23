@@ -139,6 +139,7 @@ class RuntimeEnvironment:
             self.status = RuntimeStatus.READY
             if self.startup_timer:
                 self.startup_timer.cancel()
+                self.startup_timer = None
 
     def invocation_done(self):
         self.last_returned = datetime.now()
@@ -153,13 +154,16 @@ class RuntimeEnvironment:
             self.id,
             self.function_version.qualified_arn,
         )
-        self.set_errored()
+        self.startup_timer = None
+        self.errored()
 
-    def set_errored(self) -> None:
+    def errored(self) -> None:
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException("Runtime Handler can only error while starting")
             self.status = RuntimeStatus.FAILED
+        if self.startup_timer:
+            self.startup_timer.cancel()
         try:
             self.runtime_executor.stop()
         except Exception:
