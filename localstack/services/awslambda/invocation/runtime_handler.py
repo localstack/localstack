@@ -8,7 +8,7 @@ import requests
 
 from localstack import config
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
-from localstack.utils.common import short_uid, to_str
+from localstack.utils.strings import short_uid, to_str
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.executor_endpoint import ExecutorEndpoint

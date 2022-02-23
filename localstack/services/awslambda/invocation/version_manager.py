@@ -26,7 +26,7 @@ from localstack.services.awslambda.invocation.runtime_handler import (
     RuntimeEnvironment,
     RuntimeStatus,
 )
-from localstack.utils.common import get_free_tcp_port
+from localstack.utils.net import get_free_tcp_port
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_service import FunctionVersion, Invocation
@@ -138,12 +138,6 @@ class LambdaVersionManager(ServiceEndpoint):
         # TODO async?
         runtime_environment.start()
 
-        # TODO remove timer logic once ready state is posted by
-        # def mark_ready():
-        #     self.set_ready(runtime_environment.id)
-
-        # timer = Timer(15.0, mark_ready)
-        # timer.start()
         return runtime_environment
 
     def stop_environment(self, environment: RuntimeEnvironment):

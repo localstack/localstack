@@ -1,6 +1,7 @@
 import logging
 import re
 import shutil
+import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Dict, Literal, Optional, Tuple
@@ -10,7 +11,7 @@ from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
 )
-from localstack.utils.common import unzip
+from localstack.utils.archives import unzip
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_service import FunctionVersion
@@ -30,10 +31,10 @@ RAPID_ENTRYPOINT = "/var/rapid/init"
 InitializationType = Literal["on-demand", "provisioned-concurrency"]
 
 LAMBDA_DOCKERFILE = """FROM {base_img}
-COPY {code_src} /var/task
-COPY {init_src} /var/runtime/init
+COPY code/ /var/task
+COPY aws-lambda-rie {rapid_entrypoint}
 
-ENTRYPOINT /var/runtime/init
+ENTRYPOINT {rapid_entrypoint}
 """
 
 
@@ -51,11 +52,13 @@ def get_runtime_split(runtime: str) -> Tuple[str, str]:
 
 
 def get_path_for_function(function_version: "FunctionVersion") -> Path:
-    return Path(f"{config.dirs.tmp}/lambda/{function_version.qualified_arn.replace(':', '_')}/")
+    return Path(
+        f"{config.dirs.tmp}/lambda/{function_version.qualified_arn.replace(':', '_').replace('$', '_')}/"
+    )
 
 
 def get_image_name_for_function(function_version: "FunctionVersion"):
-    return f"localstack/lambda-{function_version.qualified_arn.replace(':', '_')}/"
+    return f"localstack/lambda-{function_version.qualified_arn.replace(':', '_').replace('$', '_').lower()}"
 
 
 def get_image_for_runtime(runtime: str) -> str:
@@ -65,10 +68,10 @@ def get_image_for_runtime(runtime: str) -> str:
 
 
 def prepare_version(function_version: "FunctionVersion") -> None:
-    #  time_before = time.perf_counter()
+    time_before = time.perf_counter()
     src_init = Path(f"{config.dirs.tmp}/aws-lambda-rie")
     target_path = get_path_for_function(function_version)
-    target_path.mkdir(parents=True)
+    target_path.mkdir(parents=True, exist_ok=True)
     # copy init file
     target_init = target_path / "aws-lambda-rie"
     shutil.copy(src_init, target_init)
@@ -85,10 +88,19 @@ def prepare_version(function_version: "FunctionVersion") -> None:
         base_img=get_image_for_runtime(function_version.runtime),
         code_src=str(target_code),
         init_src=str(target_init),
+        rapid_entrypoint=RAPID_ENTRYPOINT,
     )
     with docker_file_path.open(mode="w") as f:
         f.write(docker_file)
-    #  CONTAINER_CLIENT.build_image()
+    try:
+        CONTAINER_CLIENT.build_image(
+            dockerfile_path=str(docker_file_path),
+            image_name=get_image_name_for_function(function_version),
+        )
+    except Exception as e:
+        LOG.error("Exception: %s", e)
+
+    LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
 
 
 def cleanup_version(function_version: "FunctionVersion") -> None:
@@ -113,20 +125,13 @@ class RuntimeExecutor:
     def start(self, env_vars: Dict[str, str], function_version: "FunctionVersion") -> None:
         network = self.get_network_for_executor()
         container_config = ContainerConfiguration(
-            image_name=self.get_image(),
+            image_name=get_image_name_for_function(function_version),
             name=self.id,
             env_vars=env_vars,
             network=network,
             entrypoint=RAPID_ENTRYPOINT,
         )
         CONTAINER_CLIENT.create_container_from_config(container_config)
-        CONTAINER_CLIENT.copy_into_container(
-            self.id, "/tmp/localstack/aws-lambda-rie", RAPID_ENTRYPOINT
-        )
-        CONTAINER_CLIENT.copy_into_container(
-            self.id, get_path_for_function(function_version), "/var/task/"
-        )
-
         CONTAINER_CLIENT.start_container(self.id)
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(
             container_name_or_id=self.id, container_network=network
