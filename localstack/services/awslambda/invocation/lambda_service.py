@@ -12,11 +12,11 @@ class FunctionVersion:
     architecture: str  # architecture
     role: str  # lambda role
     environment: Dict[str, str]  # Environment set when creating the function
-    zip_file: Optional[bytes]  # zip file
-    runtime: Optional[str]  # runtime
-    handler: Optional[str]
-    image_uri: Optional[str]
-    image_config: Optional[Dict[str, str]]
+    zip_file: Optional[bytes] = None
+    runtime: Optional[str] = None
+    handler: Optional[str] = None
+    image_uri: Optional[str] = None
+    image_config: Optional[Dict[str, str]] = None
 
 
 @dataclasses.dataclass
@@ -35,7 +35,9 @@ class LambdaService:
         self.lambda_version_managers = {}
         self.lambda_version_manager_lock = RLock()
 
-    # TODO do not start in the constructor? maybe a separate start method or handle the runtime api above
+    def stop(self) -> None:
+        for version_manager in self.lambda_version_managers.values():
+            version_manager.stop()
 
     def get_lambda_version_manager(self, function_arn: str) -> LambdaVersionManager:
         """
@@ -45,7 +47,7 @@ class LambdaService:
         """
         version_manager = self.lambda_version_managers.get(function_arn)
         if not version_manager:
-            raise Exception("Version '%s' not created", function_arn)
+            raise Exception(f"Version '{function_arn}' not created")
 
         return version_manager
 
@@ -65,7 +67,7 @@ class LambdaService:
             self.lambda_version_managers[
                 function_version_definition.qualified_arn
             ] = version_manager
-            version_manager.init()
+            version_manager.start()
 
     def invoke(
         self,

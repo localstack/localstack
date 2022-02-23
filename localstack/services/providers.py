@@ -169,7 +169,9 @@ def awslambda_asf():
     from localstack.aws.proxy import AwsApiListener
     from localstack.services.awslambda.provider import LambdaProvider
 
-    return Service("lambda", listener=AwsApiListener("lambda", LambdaProvider()))
+    provider = LambdaProvider()
+
+    return Service("lambda", listener=AwsApiListener("lambda", provider), lifecycle_hook=provider)
 
 
 @aws_provider()

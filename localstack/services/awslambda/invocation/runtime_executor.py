@@ -40,6 +40,18 @@ def get_runtime_split(runtime: str) -> Tuple[str, str]:
     raise Exception("Cannot process runtime '%s'" % runtime)
 
 
+def get_path_for_function(function_version: "FunctionVersion"):
+    return f"/tmp/localstack/lambda/{function_version.qualified_arn.replace(':', '_')}/"
+
+
+def prepare_version(function_version: "FunctionVersion") -> None:
+    target_path = get_path_for_function(function_version)
+    with NamedTemporaryFile() as file:
+        file.write(function_version.zip_file)
+        file.flush()
+        unzip(file.name, target_path)
+
+
 class LambdaRuntimeException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
@@ -73,12 +85,9 @@ class RuntimeExecutor:
         CONTAINER_CLIENT.copy_into_container(
             self.id, "/tmp/localstack/aws-lambda-rie", RAPID_ENTRYPOINT
         )
-        target_path = f"/tmp/localstack/lambda/{function_version.qualified_arn.replace(':','_')}/"
-        with NamedTemporaryFile() as file:
-            file.write(function_version.zip_file)
-            file.flush()
-            unzip(file.name, target_path)
-        CONTAINER_CLIENT.copy_into_container(self.id, target_path, "/var/task/")
+        CONTAINER_CLIENT.copy_into_container(
+            self.id, get_path_for_function(function_version), "/var/task/"
+        )
 
         CONTAINER_CLIENT.start_container(self.id)
         self.ip = CONTAINER_CLIENT.get_container_ipv4_for_network(

@@ -1,6 +1,7 @@
 import dataclasses
 import logging
 import threading
+import time
 import uuid
 from typing import Dict
 
@@ -117,6 +118,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def __init__(self) -> None:
         self.lambda_service = LambdaService()
         self.lock = threading.RLock()
+
+    def on_before_stop(self):
+        self.lambda_service.stop()
 
     def create_function(
         self,
@@ -250,7 +254,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: downstream setup (actual lambda provisioning)
         version = FunctionVersion(
             qualified_arn=qualified_arn,
-            code=code.get("ZipFile"),
+            zip_file=code.get("ZipFile"),
             runtime=runtime,
             architecture=Architecture.x86_64,
             role=role,
@@ -291,6 +295,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualified_arn = qualified_lambda_arn(
             function_name, "$LATEST", context.account_id, context.region
         )
+        time_before = time.perf_counter()
         result = self.lambda_service.invoke(
             function_arn_qualified=qualified_arn,
             invocation_type=invocation_type,
@@ -299,6 +304,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             payload=payload,
         )
         result = result.result()
+        LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
         LOG.debug("Result: %s", result)
         return InvocationResponse(StatusCode=200, Payload=result.payload)
 

@@ -1,7 +1,8 @@
 import logging
+from datetime import datetime
 from enum import Enum, auto
-from threading import RLock
-from typing import TYPE_CHECKING, Dict, Literal
+from threading import RLock, Timer
+from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 import requests
 
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.version_manager import InvocationStorage
 
 INVOCATION_PORT = 9563
+STARTUP_TIMEOUT_SEC = 20.0
 
 LOG = logging.getLogger(__name__)
 
@@ -47,7 +49,8 @@ class RuntimeEnvironment:
     status: RuntimeStatus
     executor_endpoint: "ExecutorEndpoint"
     initialization_type: InitializationType
-    last_returned: float
+    last_returned: datetime
+    startup_timer: Optional[Timer]
 
     def __init__(
         self,
@@ -62,7 +65,8 @@ class RuntimeEnvironment:
         self.executor_endpoint = executor_endpoint
         self.initialization_type = initialization_type
         self.runtime_executor = RuntimeExecutor(self.id, function_version.runtime)
-        self.last_returned = -1
+        self.last_returned = datetime.min
+        self.startup_timer = None
 
     def get_environment_variables(self) -> Dict[str, str]:
         """
@@ -102,14 +106,23 @@ class RuntimeEnvironment:
 
     # Lifecycle methods
     def start(self) -> None:
+        """
+        Starting the runtime environment
+        """
         with self.status_lock:
             if self.status != RuntimeStatus.INACTIVE:
                 raise InvalidStatusException("Runtime Handler can only be started when inactive")
-            self.status = RuntimeStatus.READY
+            self.status = RuntimeStatus.STARTING
             self.runtime_executor.start(self.get_environment_variables(), self.function_version)
+            self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
+            self.startup_timer.start()
+
             # TODO start startup-timer to set timeout on starting phase
 
-    def shutdown(self) -> None:
+    def stop(self) -> None:
+        """
+        Stopping the runtime environment
+        """
         with self.status_lock:
             if self.status in [RuntimeStatus.INACTIVE, RuntimeStatus.STOPPED]:
                 raise InvalidStatusException("Runtime Handler cannot be shutdown before started")
@@ -124,12 +137,33 @@ class RuntimeEnvironment:
                     "Runtime Handler can only be set active while starting"
                 )
             self.status = RuntimeStatus.READY
+            if self.startup_timer:
+                self.startup_timer.cancel()
+
+    def invocation_done(self):
+        self.last_returned = datetime.now()
+        with self.status_lock:
+            if self.status != RuntimeStatus.RUNNING:
+                raise InvalidStatusException("Runtime Handler can only be set ready while running")
+            self.status = RuntimeStatus.READY
+
+    def timed_out(self) -> None:
+        LOG.debug(
+            "Executor %s for function %s timed out during startup",
+            self.id,
+            self.function_version.qualified_arn,
+        )
+        self.set_errored()
 
     def set_errored(self) -> None:
         with self.status_lock:
             if self.status != RuntimeStatus.STARTING:
                 raise InvalidStatusException("Runtime Handler can only error while starting")
             self.status = RuntimeStatus.FAILED
+        try:
+            self.runtime_executor.stop()
+        except Exception:
+            LOG.debug("Unable to shutdown runtime handler '%s'", self.id)
 
     def _invocation_url(self) -> str:
         return f"http://{self.runtime_executor.get_address()}:{INVOCATION_PORT}/invoke"
@@ -143,7 +177,7 @@ class RuntimeEnvironment:
             "invoke-id": invocation_event.invocation_id,
             "payload": to_str(invocation_event.invocation.payload),
         }
-        LOG.debug("Sending invoke-payload '%s'", invoke_payload)
+        LOG.debug("Sending invoke-payload '%s' to executor '%s'", invoke_payload, self.id)
         response = requests.post(url=self._invocation_url(), json=invoke_payload)
         if not response.ok:
             raise InvocationError(
