@@ -85,8 +85,9 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.utils.analytics import event_publisher
-from localstack.utils.common import PaginatedList, remove_none_values_from_dict, synchronized
+from localstack.utils.collections import PaginatedList, remove_none_values_from_dict
 from localstack.utils.serving import Server
+from localstack.utils.sync import synchronized
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -370,6 +371,12 @@ def _ensure_domain_exists(arn: ARN) -> None:
         raise ValidationException("Invalid ARN. Domain not found.")
 
 
+def _transform_domain_config_request_to_status(request: Dict) -> Dict:
+    request.pop("DryRun")
+    request.pop("DomainName")
+    return request
+
+
 class OpensearchProvider(OpensearchApi):
     def create_domain(
         self,
@@ -479,7 +486,8 @@ class OpensearchProvider(OpensearchApi):
             if domain_status is None:
                 raise ResourceNotFoundException(f"Domain not found: {domain_key.domain_name}")
 
-            # TODO add update of status
+            status_update = _transform_domain_config_request_to_status(payload)
+            domain_status.update(status_update)
 
         return UpdateDomainConfigResponse(DomainConfig={})
 
