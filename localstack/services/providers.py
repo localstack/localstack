@@ -204,6 +204,15 @@ def s3():
 
 
 @aws_provider()
+def s3control():
+    from localstack.services.s3control import s3control_listener, s3control_starter
+
+    return Service(
+        "s3control", listener=s3control_listener.UPDATE_S3CONTROL, start=s3control_starter.start_s3control
+    )
+
+
+@aws_provider()
 def secretsmanager():
     from localstack.services.secretsmanager import secretsmanager_listener, secretsmanager_starter
 
