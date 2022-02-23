@@ -802,13 +802,21 @@ class TestSqsProvider:
         )
 
         result_receive = sqs_client.receive_message(
-            QueueUrl=queue_url, MessageAttributeNames=["All"]
+            QueueUrl=queue_url, VisibilityTimeout=0, MessageAttributeNames=["All"]
+        )
+        # Receive should work with wildcard attribute name as well as 'All'
+        result_receive_wildcard = sqs_client.receive_message(
+            QueueUrl=queue_url, MessageAttributeNames=[".*"]
         )
         messages = result_receive["Messages"]
+        messages_wildcard = result_receive_wildcard["Messages"]
 
         assert messages[0]["MessageId"] == result_send["MessageId"]
         assert messages[0]["MessageAttributes"] == attributes
         assert messages[0]["MD5OfMessageAttributes"] == result_send["MD5OfMessageAttributes"]
+        assert messages_wildcard[0]["MessageId"] == result_send["MessageId"]
+        assert messages_wildcard[0]["MessageAttributes"] == attributes
+        assert messages_wildcard[0]["MD5OfMessageAttributes"] == result_send["MD5OfMessageAttributes"]
 
     def test_sent_message_retains_attributes_after_receive(self, sqs_client, sqs_create_queue):
         # Old name: test_send_message_retains_attributes

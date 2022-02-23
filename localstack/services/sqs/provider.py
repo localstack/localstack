@@ -1031,7 +1031,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
                 continue
             # filter attributes
             if message_attribute_names:
-                if "All" not in message_attribute_names:
+                if len([i for i in ["All", ".*"] if i in message_attribute_names]) == 0:
                     msg["MessageAttributes"] = {
                         k: v
                         for k, v in msg["MessageAttributes"].items()
