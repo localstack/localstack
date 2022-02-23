@@ -380,6 +380,9 @@ EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
+# Whether to skip downloading our signed SSL cert.
+SKIP_SSL_CERT_DOWNLOAD = is_env_true("SKIP_SSL_CERT_DOWNLOAD")
+
 # whether to enable legacy record&replay persistence mechanism (default true, but will be disabled in a future release!)
 LEGACY_PERSISTENCE = is_env_not_false("LEGACY_PERSISTENCE")
 
@@ -670,6 +673,7 @@ CONFIG_ENV_VARS = [
     "S3_SKIP_SIGNATURE_VALIDATION",
     "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
+    "SKIP_SSL_CERT_DOWNLOAD",
     "SQS_PORT_EXTERNAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "SYNCHRONOUS_API_GATEWAY_EVENTS",
