@@ -444,6 +444,28 @@ def test_query_protocol_error_serialization_sender_fault():
     )
 
 
+def test_restxml_protocol_error_serialization_not_specified_for_operation():
+    """
+    Tests if the serializer can serialize an error which is not explicitly defined as an error shape for the
+    specific operation.
+    This can happen if the specification is not specific enough (f.e. S3's GetBucketAcl does not define the NoSuchBucket
+    error, even though it obviously can be raised).
+    """
+
+    class NoSuchBucket(ServiceException):
+        pass
+
+    exception = NoSuchBucket("Exception message!")
+    _botocore_error_serializer_integration_test(
+        "s3",
+        "GetBucketAcl",
+        exception,
+        "NoSuchBucket",
+        400,
+        "Exception message!",
+    )
+
+
 def test_restxml_protocol_error_serialization():
     class CloudFrontOriginAccessIdentityAlreadyExists(ServiceException):
         pass

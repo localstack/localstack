@@ -96,6 +96,12 @@ from localstack.utils.common import to_bytes, to_str
 LOG = logging.getLogger(__name__)
 
 
+class ResponseSerializerError(Exception):
+    """Error which is thrown if the request serialization fails."""
+
+    pass
+
+
 class ResponseSerializer(abc.ABC):
     """
     The response serializer is responsible for the serialization of a service implementation's result to an actual
@@ -153,15 +159,38 @@ class ResponseSerializer(abc.ABC):
             status_code = error.status_code
             shape = None
         else:
-            # It it's not a CommonServiceException, the exception is being serialized based on the specification
+            # It's not a CommonServiceException, the exception is being serialized based on the specification
 
             # The shape name is equal to the class name (since the classes are generated from the shape's name)
             error_shape_name = error.__class__.__name__
 
-            # Lookup the corresponding error shape in the operation model
-            shape = next(
-                shape for shape in operation_model.error_shapes if shape.name == error_shape_name
-            )
+            try:
+                # Lookup the corresponding error shape in the operation model
+                shape = next(
+                    shape
+                    for shape in operation_model.error_shapes
+                    if shape.name == error_shape_name
+                )
+            except StopIteration:
+                LOG.warning(
+                    "Error shape %s not found for operation %s. Falling back to search across operations.",
+                    error_shape_name,
+                    operation_model.name,
+                )
+                try:
+                    # The exception to serialize is not defined for the specific operation.
+                    # Look for the error shape across all operations in the service.
+                    shape = next(
+                        shape
+                        for shape in operation_model.service_model.error_shapes
+                        if shape.name == error_shape_name
+                    )
+                except StopIteration as e:
+                    raise ResponseSerializerError(
+                        "Error to serialize neither is a CommonServiceException, nor is its "
+                        "shape contained in the service's specification."
+                    ) from e
+
             error_spec = shape.metadata.get("error", {})
             status_code = error_spec.get("httpStatusCode")
 
