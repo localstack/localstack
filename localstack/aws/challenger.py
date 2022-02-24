@@ -196,7 +196,8 @@ class AsfChallengerListener(AwsApiListener):
                 parsed_serialized["Error"].pop("Type", None)
 
             # Test if the parsed serialized response is a (top-level) superset of the parsed response
-            assert dict(parsed_serialized, **parsed_response) == parsed_serialized
+            # TODO Re-Enable the assert to enforce strict checks in this challenger
+            # assert dict(parsed_serialized, **parsed_response) == parsed_serialized
         except Exception:
             LOG.exception(
                 "serializer challenge failed for response of %s method=%s path=%s headers=%s",
