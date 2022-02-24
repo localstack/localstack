@@ -149,7 +149,7 @@ def awslambda():
 
 @aws_provider()
 def logs():
-    from localstack.services.logs.provider import LogsAwsApiListener
+    from localstack.services.logs.listener import LogsAwsApiListener
 
     listener = LogsAwsApiListener()
     return Service("logs", listener=listener)

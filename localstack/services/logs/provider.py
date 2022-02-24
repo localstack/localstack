@@ -22,9 +22,7 @@ from localstack.aws.api.logs import (
     PutLogEventsResponse,
     SequenceToken,
 )
-from localstack.aws.proxy import AwsApiListener
-from localstack.constants import APPLICATION_AMZ_JSON_1_1
-from localstack.services.moto import MotoFallbackDispatcher, call_moto
+from localstack.services.moto import call_moto
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
@@ -70,25 +68,6 @@ class LogsProvider(LogsApi, ABC):
 def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:
     """Returns a pattern matcher. Can be patched by plugins to return a more sophisticated pattern matcher."""
     return lambda _pattern, _log_event: True
-
-
-class LogsAwsApiListener(AwsApiListener):
-    def __init__(self):
-        self.provider = LogsProvider()
-        super().__init__("logs", MotoFallbackDispatcher(self.provider))
-
-    def return_response(self, method, path, data, headers, response):
-        # Fix Incorrect response content-type header from cloudwatch logs #1343
-        response.headers["content-type"] = APPLICATION_AMZ_JSON_1_1
-        # str_content = re.sub(
-        #     r"arn:aws:logs:([^:]+):1:",
-        #     r"arn:aws:logs:\1:%s:" % TEST_AWS_ACCOUNT_ID,
-        #     to_str(response.content or ""),
-        # )
-        # response._content = str.encode(str_content)
-        # if "nextToken" in str_content:
-        #     self._fix_next_token_response(response)
-        #     response.headers["Content-Length"] = str(len(response._content))
 
 
 @patch(LogsBackend.put_subscription_filter)
