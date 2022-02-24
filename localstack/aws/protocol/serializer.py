@@ -76,13 +76,12 @@ not work out-of-the-box.
 """
 import abc
 import base64
-import copy
 import json
 import logging
 from abc import ABC
 from datetime import datetime
 from email.utils import formatdate
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 from boto.utils import ISO8601
@@ -550,12 +549,9 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         shape_members: dict,
         operation_model: OperationModel,
     ) -> None:
-        # use a deep copy of the dict result to avoid unwanted mutations in service backends
-        # this fix comes at the cost of performance, updating the processing to not mutate the dict might be better
-        copied_parameters = copy.deepcopy(parameters)
-
-        self._process_header_members(copied_parameters, response, shape)
-        self._serialize_payload(copied_parameters, response, shape, shape_members, operation_model)
+        header_params, payload_params = self._partition_members(parameters, shape)
+        self._process_header_members(header_params, response, shape)
+        self._serialize_payload(payload_params, response, shape, shape_members, operation_model)
         self._serialize_content_type(response, shape, shape_members)
         self._prepare_additional_traits_in_response(response, operation_model)
 
@@ -641,8 +637,6 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             elif location == "headers":
                 header_prefix = key
                 self._serialize_header_map(header_prefix, response, value)
-            # TODO: this mutates the original return value of the service handler response which makes a copy necessary
-            del parameters[name]
 
     def _serialize_header_map(self, prefix: str, response: HttpResponse, params: dict) -> None:
         """Serializes the header map for the location trait "headers"."""
@@ -671,6 +665,26 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             return self._get_base64(json.dumps(value, separators=(",", ":")))
         else:
             return value
+
+    def _partition_members(self, parameters: dict, shape: Optional[Shape]) -> Tuple[dict, dict]:
+        """Separates the top-level keys in the given parameters dict into header- and payload-located params."""
+        if not isinstance(shape, StructureShape):
+            # If the shape isn't a structure, we default to the whole response being parsed in the body.
+            # Non-payload members are only loated in the top-level hierarchy and those are always structures.
+            return {}, parameters
+        header_params = {}
+        payload_params = {}
+        shape_members = shape.members
+        for name in shape_members:
+            member_shape = shape_members[name]
+            if name not in parameters:
+                continue
+            location = member_shape.serialization.get("location")
+            if location:
+                header_params[name] = parameters[name]
+            else:
+                payload_params[name] = parameters[name]
+        return header_params, payload_params
 
 
 class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSerializer):
