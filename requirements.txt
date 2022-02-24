@@ -28,7 +28,7 @@ typing-extensions; python_version < '3.8'
 tailer>=0.4.1
 
 # extra=runtime
-airspeed>=0.5.14
+airspeed>=0.5.18
 # Use our "ext" version until this bug is fixed: https://github.com/awslabs/amazon-kinesis-client-python/issues/99
 amazon_kclpy-ext==1.5.1
 # amazon-kclpy==1.5.1

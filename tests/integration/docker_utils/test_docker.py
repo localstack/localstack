@@ -23,7 +23,7 @@ from localstack.utils.container_utils.container_client import (
     RegistryConnectionError,
     Util,
 )
-from localstack.utils.net_utils import get_free_tcp_port
+from localstack.utils.net import get_free_tcp_port
 
 ContainerInfo = NamedTuple(
     "ContainerInfo",
@@ -116,6 +116,9 @@ class TestDockerClient:
             assert DockerContainerStatus.PAUSED == docker_client.get_container_status(
                 container_name
             )
+
+            docker_client.unpause_container(container_id)
+            assert DockerContainerStatus.UP == docker_client.get_container_status(container_name)
 
             docker_client.stop_container(container_id)
             assert DockerContainerStatus.DOWN == docker_client.get_container_status(container_name)
@@ -258,6 +261,10 @@ class TestDockerClient:
             docker_client.stop_container("this_container_does_not_exist")
 
     def test_pause_non_existing_container(self, docker_client: ContainerClient):
+        with pytest.raises(NoSuchContainer):
+            docker_client.pause_container("this_container_does_not_exist")
+
+    def test_unpause_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchContainer):
             docker_client.pause_container("this_container_does_not_exist")
 

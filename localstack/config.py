@@ -820,6 +820,15 @@ def get_edge_url(localstack_hostname=None, protocol=None):
     return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
 
+def edge_ports_info():
+    if EDGE_PORT_HTTP:
+        result = "ports %s/%s" % (EDGE_PORT, EDGE_PORT_HTTP)
+    else:
+        result = "port %s" % EDGE_PORT
+    result = "%s %s" % (get_protocol(), result)
+    return result
+
+
 # set log levels
 if DEBUG:
     logging.getLogger("").setLevel(logging.DEBUG)
