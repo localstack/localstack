@@ -351,7 +351,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             self._default_serialize(error_tag, message, None, "Message")
         if sender_fault:
             # The sender fault is either not set or "Sender"
-            self._default_serialize(error_tag, "Sender", None, "Fault")
+            self._default_serialize(error_tag, "Sender", None, "Type")
 
     def _serialize_body_params(
         self, params: dict, shape: Shape, operation_model: OperationModel

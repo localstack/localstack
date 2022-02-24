@@ -81,6 +81,7 @@ def _botocore_error_serializer_integration_test(
     code: str,
     status_code: int,
     message: str,
+    is_sender_fault: bool = False,
 ):
     """
     Performs an integration test for the error serialization using botocore as parser.
@@ -129,6 +130,11 @@ def _botocore_error_serializer_integration_test(
     assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
     assert parsed_response["ResponseMetadata"]["HTTPStatusCode"] == status_code
+    type = parsed_response["Error"].get("Type")
+    if is_sender_fault:
+        assert type == "Sender"
+    else:
+        assert type is None
 
 
 def test_rest_xml_serializer_cloudfront_with_botocore():
@@ -418,6 +424,23 @@ def test_query_protocol_custom_error_serialization():
     exception = CommonServiceException("InvalidParameterValue", "Parameter x was invalid!")
     _botocore_error_serializer_integration_test(
         "sqs", "SendMessage", exception, "InvalidParameterValue", 400, "Parameter x was invalid!"
+    )
+
+
+def test_query_protocol_error_serialization_sender_fault():
+    # Specific exception thrown by SQS which defines the "Sender" fault
+    class UnsupportedOperation(ServiceException):
+        pass
+
+    exception = UnsupportedOperation("Operation not supported.")
+    _botocore_error_serializer_integration_test(
+        "sqs",
+        "SendMessage",
+        exception,
+        "AWS.SimpleQueueService.UnsupportedOperation",
+        400,
+        "Operation not supported.",
+        True,
     )
 
 
