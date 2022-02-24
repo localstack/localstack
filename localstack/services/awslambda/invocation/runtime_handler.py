@@ -64,7 +64,7 @@ class RuntimeEnvironment:
         self.function_version = function_version
         self.executor_endpoint = executor_endpoint
         self.initialization_type = initialization_type
-        self.runtime_executor = RuntimeExecutor(self.id, function_version.runtime)
+        self.runtime_executor = RuntimeExecutor(self.id, function_version)
         self.last_returned = datetime.min
         self.startup_timer = None
 
@@ -113,7 +113,7 @@ class RuntimeEnvironment:
             if self.status != RuntimeStatus.INACTIVE:
                 raise InvalidStatusException("Runtime Handler can only be started when inactive")
             self.status = RuntimeStatus.STARTING
-            self.runtime_executor.start(self.get_environment_variables(), self.function_version)
+            self.runtime_executor.start(self.get_environment_variables())
             self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
             self.startup_timer.start()
 
