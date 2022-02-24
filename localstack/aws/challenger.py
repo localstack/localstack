@@ -200,8 +200,7 @@ class AsfChallengerListener(AwsApiListener):
                 parsed_serialized["Error"].pop("Type", None)
 
             # Test if the parsed serialized response is a (top-level) superset of the parsed response
-            # TODO Re-Enable the assert to enforce strict checks in this challenger
-            # assert dict(parsed_serialized, **parsed_response) == parsed_serialized
+            assert dict(parsed_serialized, **parsed_response) == parsed_serialized
         except ResponseParserError:
             LOG.warning(
                 "serializer challenge couldn't be executed, since response could not be parsed by botocore in the "
