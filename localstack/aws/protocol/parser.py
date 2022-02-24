@@ -350,9 +350,6 @@ class QueryRequestParser(RequestParser):
     When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
-    # Prefix for non-flattened lists
-    NON_FLATTENED_LIST_PREFIX = "member."
-
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         body = request.get_data(as_text=True)
         instance = parse_qs(body, keep_blank_values=True)
@@ -492,11 +489,8 @@ class QueryRequestParser(RequestParser):
           }
         ::
         """
-        key_prefix = ""
-        # Non-flattened lists have an additional hierarchy level named "member"
-        # https://awslabs.github.io/smithy/1.0/spec/core/xml-traits.html#xmlflattened-trait
-        if not shape.serialization.get("flattened"):
-            key_prefix += self.NON_FLATTENED_LIST_PREFIX
+        # The keys might be prefixed (f.e. for flattened lists)
+        key_prefix = self._get_list_key_prefix(shape)
 
         # We collect the list value as well as the integer indicating the list position so we can
         # later sort the list by the position, in case they attribute values are unordered
@@ -531,6 +525,15 @@ class QueryRequestParser(RequestParser):
         Otherwise it will return the given default_name.
         """
         return shape.serialization.get("name", default_name)
+
+    def _get_list_key_prefix(self, shape: ListShape):
+        key_prefix = ""
+        # Non-flattened lists have an additional hierarchy level:
+        # https://awslabs.github.io/smithy/1.0/spec/core/xml-traits.html#xmlflattened-trait
+        # The hierarchy level's name is the serialization name of its member or (by default) "member".
+        if not shape.serialization.get("flattened"):
+            key_prefix += f"{self._get_serialized_name(shape.member, 'member')}."
+        return key_prefix
 
 
 class BaseRestRequestParser(RequestParser):
@@ -983,9 +986,6 @@ class EC2RequestParser(QueryRequestParser):
     When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
-    # The EC2 protocol does not use a prefix notation for flattened lists
-    NON_FLATTENED_LIST_PREFIX = ""
-
     def _get_serialized_name(self, shape: Shape, default_name: str) -> str:
         # Returns the serialized name for the shape if it exists.
         # Otherwise it will return the passed in default_name.
@@ -997,6 +997,10 @@ class EC2RequestParser(QueryRequestParser):
             return name[0].upper() + name[1:]
         else:
             return default_name
+
+    def _get_list_key_prefix(self, shape: ListShape):
+        # The EC2 protocol does not use a prefix notation for flattened lists
+        return ""
 
 
 class S3RequestParser(RestXMLRequestParser):
