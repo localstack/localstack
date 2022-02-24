@@ -90,6 +90,20 @@ class CmdDockerClient(ContainerClient):
                     "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
                 )
 
+    def unpause_container(self, container_name: str) -> None:
+        cmd = self._docker_cmd()
+        cmd += ["unpause", container_name]
+        LOG.debug("Unpausing container with cmd %s", cmd)
+        try:
+            safe_run(cmd)
+        except subprocess.CalledProcessError as e:
+            if "No such container" in to_str(e.stdout):
+                raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
+            else:
+                raise ContainerException(
+                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                )
+
     def remove_image(self, image: str, force: bool = True) -> None:
         cmd = self._docker_cmd()
         cmd += ["rmi", image]
@@ -255,7 +269,7 @@ class CmdDockerClient(ContainerClient):
     def tag_image(self, source_ref: str, target_name: str) -> None:
         cmd = self._docker_cmd()
         cmd += ["tag", source_ref, target_name]
-        LOG.debug("Tagging Docker image: %s", cmd)
+        LOG.debug("Tagging Docker image %s as %s", source_ref, target_name)
         try:
             safe_run(cmd)
         except subprocess.CalledProcessError as e:

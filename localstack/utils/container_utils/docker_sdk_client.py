@@ -122,6 +122,16 @@ class SdkDockerClient(ContainerClient):
         except APIError:
             raise ContainerException()
 
+    def unpause_container(self, container_name: str) -> None:
+        LOG.debug("Unpausing container: %s", container_name)
+        try:
+            container = self.client().containers.get(container_name)
+            container.unpause()
+        except NotFound:
+            raise NoSuchContainer(container_name)
+        except APIError:
+            raise ContainerException()
+
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         LOG.debug("Removing container: %s", container_name)
         if check_existence and container_name not in self.get_running_container_names():

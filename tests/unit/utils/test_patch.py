@@ -124,11 +124,11 @@ def test_patch_decorator_on_class_method():
 
 
 def test_get_defining_object():
-    from localstack.utils import common
-    from localstack.utils.common import short_uid
+    from localstack.utils import strings
+    from localstack.utils.strings import short_uid
 
     # module
-    assert get_defining_object(short_uid) == common
+    assert get_defining_object(short_uid) == strings
 
     # unbound method (=function defined by a class)
     assert get_defining_object(MyEchoer.do_echo) == MyEchoer

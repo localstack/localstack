@@ -1,5 +1,4 @@
-from localstack.utils import http_utils
-from localstack.utils.http_utils import ACCEPT
+from localstack.utils.http import ACCEPT, add_query_params_to_url, canonicalize_headers
 
 
 def test_canonicalize_headers():
@@ -16,10 +15,44 @@ def test_canonicalize_headers():
         "X-Forwarded-Port": "443",
         "X-Forwarded-Proto": "https",
     }
-    canonicals_headers = http_utils.canonicalize_headers(headers)
+    canonicals_headers = canonicalize_headers(headers)
     result_headers = {
         k: v for k, v in canonicals_headers.items() if not k.lower().startswith(ACCEPT)
     }
     expected_headers = {k: v for k, v in headers.items() if not k.lower().startswith(ACCEPT)}
 
     assert result_headers == expected_headers
+
+
+def test_add_query_params_to_url():
+    tt = [
+        {
+            "uri": "http://localhost.localstack.cloud",
+            "query_params": {"param": "122323"},
+            "expected": "http://localhost.localstack.cloud?param=122323",
+        },
+        {
+            "uri": "http://localhost.localstack.cloud?foo=bar",
+            "query_params": {"param": "122323"},
+            "expected": "http://localhost.localstack.cloud?foo=bar&param" "=122323",
+        },
+        {
+            "uri": "http://localhost.localstack.cloud/foo/bar",
+            "query_params": {"param": "122323"},
+            "expected": "http://localhost.localstack.cloud/foo/bar?param" "=122323",
+        },
+        {
+            "uri": "http://localhost.localstack.cloud/foo/bar?foo=bar",
+            "query_params": {"param": "122323"},
+            "expected": "http://localhost.localstack.cloud/foo/bar?foo=bar" "&param=122323",
+        },
+        {
+            "uri": "http://localhost.localstack.cloud?foo=bar",
+            "query_params": {"foo": "bar"},
+            "expected": "http://localhost.localstack.cloud?foo=bar",
+        },
+    ]
+
+    for t in tt:
+        result = add_query_params_to_url(t["uri"], t["query_params"])
+        assert result == t["expected"]

@@ -1,7 +1,9 @@
+import glob
 import logging
 import os
 import re
 import tempfile
+import threading
 from typing import Dict, List
 
 from localstack.utils.aws import aws_stack
@@ -20,12 +22,12 @@ from localstack.utils.aws.aws_models import (
     SqsQueue,
 )
 from localstack.utils.common import (
-    clean_cache,
     download,
     load_file,
     md5,
     mkdir,
     mktime,
+    now,
     parallelize,
     rm_rf,
     short_uid,
@@ -528,3 +530,28 @@ def resolve_string_or_variable(string, code_map):
         return string.replace('"', "").replace("'", "")
     LOG.warning("Variable resolution not implemented")
     return None
+
+
+# TODO: re-evaluate whether we need this caching (only used for get lambda code)
+# cache clean variables
+CACHE_CLEAN_TIMEOUT = 60 * 5
+CACHE_MAX_AGE = 60 * 60
+CACHE_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "_random_dir_", "cache.*.json")
+last_cache_clean_time = {"time": 0}
+MUTEX_CLEAN = threading.Lock()
+
+
+def clean_cache(file_pattern=CACHE_FILE_PATTERN, last_clean_time=None, max_age=CACHE_MAX_AGE):
+    if last_clean_time is None:
+        last_clean_time = last_cache_clean_time
+
+    with MUTEX_CLEAN:
+        time_now = now()
+        if last_clean_time["time"] > time_now - CACHE_CLEAN_TIMEOUT:
+            return
+        for cache_file in set(glob.glob(file_pattern)):
+            mod_time = os.path.getmtime(cache_file)
+            if time_now > mod_time + max_age:
+                rm_rf(cache_file)
+        last_clean_time["time"] = time_now
+    return time_now
