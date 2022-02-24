@@ -1,5 +1,4 @@
 import sys
-from datetime import datetime
 from typing import Dict, List, Optional
 
 if sys.version_info >= (3, 8):
@@ -782,7 +781,6 @@ class UntagLogGroupRequest(ServiceRequest):
 
 
 class LogsApi:
-
     service = "logs"
     version = "2014-03-28"
 
