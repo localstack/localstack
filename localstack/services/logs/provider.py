@@ -2,7 +2,6 @@ import base64
 import io
 import json
 import logging
-import re
 from abc import ABC
 from gzip import GzipFile
 from typing import Callable, Dict
@@ -10,34 +9,30 @@ from typing import Callable, Dict
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
 from moto.logs.exceptions import InvalidParameterException, ResourceNotFoundException
+from moto.logs.models import LogsBackend
 from moto.logs.models import LogStream as MotoLogStream
-from moto.logs.models import LogsBackend, logs_backends
+from moto.logs.models import logs_backends
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.logs import (
     InputLogEvents,
-    InvalidParameterException,
     LogGroupName,
     LogsApi,
-    LogStream,
     LogStreamName,
     PutLogEventsResponse,
-    ResourceNotFoundException,
     SequenceToken,
 )
 from localstack.aws.proxy import AwsApiListener
-from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
-from localstack.services.moto import call_moto, MotoFallbackDispatcher
-from localstack.services.sns.sns_listener import is_number
+from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.services.moto import MotoFallbackDispatcher, call_moto
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import is_number, to_str
-from localstack.utils.patch import Patches, patch
+from localstack.utils.common import is_number
+from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
 
 
 class LogsProvider(LogsApi, ABC):
-
     def put_log_events(
         self,
         context: RequestContext,
@@ -71,18 +66,6 @@ class LogsProvider(LogsApi, ABC):
                             )
         return PutLogEventsResponse(**call_moto(context))
 
-    # def put_subscription_filter(
-    #     self,
-    #     context: RequestContext,
-    #     log_group_name: LogGroupName,
-    #     filter_name: FilterName,
-    #     filter_pattern: FilterPattern,
-    #     destination_arn: DestinationArn,
-    #     role_arn: RoleArn = None,
-    #     distribution: Distribution = None,
-    # ) -> None:
-    #     raise NotImplementedError
-
 
 def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:
     """Returns a pattern matcher. Can be patched by plugins to return a more sophisticated pattern matcher."""
@@ -90,7 +73,6 @@ def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:
 
 
 class LogsAwsApiListener(AwsApiListener):
-
     def __init__(self):
         self.provider = LogsProvider()
         super().__init__("logs", MotoFallbackDispatcher(self.provider))
