@@ -900,13 +900,9 @@ def test_restxml_headers_location():
         {
             "DeleteMarker": False,
             "Metadata": {"headers_key1": "headers_value1", "headers_key2": "headers_value2"},
-        },
-        # The spec defines the ContentType and the ContentLength, which is automatically set
-        expected_response_content={
-            "DeleteMarker": False,
-            "Metadata": {"headers_key1": "headers_value1", "headers_key2": "headers_value2"},
-            "ContentType": "text/xml",
-            "ContentLength": 59,
+            "ContentType": "application/octet-stream",
+            # The content length should explicitly be tested here.
+            "ContentLength": 159,
         },
     )
 

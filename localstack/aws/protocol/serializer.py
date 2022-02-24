@@ -551,7 +551,10 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
     ) -> None:
         header_params, payload_params = self._partition_members(parameters, shape)
         self._process_header_members(header_params, response, shape)
-        self._serialize_payload(payload_params, response, shape, shape_members, operation_model)
+        # "HEAD" responeses are basically "GET" responses without the actual body.
+        # Do not process the body payload in this case (setting a body could also manipulate the headers)
+        if operation_model.http.get("method") != "HEAD":
+            self._serialize_payload(payload_params, response, shape, shape_members, operation_model)
         self._serialize_content_type(response, shape, shape_members)
         self._prepare_additional_traits_in_response(response, operation_model)
 
