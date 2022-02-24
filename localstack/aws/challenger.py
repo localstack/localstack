@@ -3,6 +3,7 @@ import logging
 from functools import lru_cache
 from urllib.parse import urlsplit
 
+from botocore.parsers import ResponseParserError
 from botocore.parsers import create_parser as botocore_create_parser
 
 from localstack.aws.api import (
@@ -140,14 +141,17 @@ class AsfChallengerListener(AwsApiListener):
 
             serializer = create_serializer(self.service)
             response_parser = botocore_create_parser(self.service.protocol)
-            parsed_response = response_parser.parse(
-                {
-                    "headers": response.headers,
-                    "body": to_bytes(response.content),
-                    "status_code": response.status_code,
-                },
-                operation.output_shape,
-            )
+            try:
+                parsed_response = response_parser.parse(
+                    {
+                        "headers": response.headers,
+                        "body": to_bytes(response.content),
+                        "status_code": response.status_code,
+                    },
+                    operation.output_shape,
+                )
+            except Exception as e:
+                raise ResponseParserError() from e
 
             # Remove the response metadata
             parsed_response.pop("ResponseMetadata", None)
@@ -198,6 +202,15 @@ class AsfChallengerListener(AwsApiListener):
             # Test if the parsed serialized response is a (top-level) superset of the parsed response
             # TODO Re-Enable the assert to enforce strict checks in this challenger
             # assert dict(parsed_serialized, **parsed_response) == parsed_serialized
+        except ResponseParserError:
+            LOG.warning(
+                "serializer challenge couldn't be executed, since response could not be parsed by botocore in the "
+                "first place -> skipped for response of %s method=%s path=%s headers=%s",
+                self.service.service_name,
+                method,
+                path,
+                headers,
+            )
         except Exception:
             LOG.exception(
                 "serializer challenge failed for response of %s method=%s path=%s headers=%s",
