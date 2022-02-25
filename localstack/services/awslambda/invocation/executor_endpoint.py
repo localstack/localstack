@@ -15,7 +15,7 @@ LOG = logging.getLogger(__name__)
 class InvocationResult:
     invocation_id: str
     payload: Optional[bytes]
-    logs: Optional[bytes] = None
+    logs: Optional[str] = None
 
 
 @dataclasses.dataclass
@@ -27,7 +27,7 @@ class InvocationError:
 @dataclasses.dataclass
 class InvocationLogs:
     invocation_id: str
-    logs: Optional[bytes]
+    logs: Optional[str]
 
 
 class ServiceEndpoint(abc.ABC):

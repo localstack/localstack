@@ -1,3 +1,4 @@
+import base64
 import dataclasses
 import logging
 import threading
@@ -55,6 +56,7 @@ from localstack.services.awslambda.invocation.lambda_service import FunctionVers
 from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
+from localstack.utils.strings import to_bytes
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -254,6 +256,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: downstream setup (actual lambda provisioning)
         version = FunctionVersion(
             qualified_arn=qualified_arn,
+            name=function_name,
+            version="$LATEST",
+            region=context.region,
             zip_file=code.get("ZipFile"),
             runtime=runtime,
             architecture=Architecture.x86_64,
@@ -306,7 +311,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         result = result.result()
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
         LOG.debug("Result: %s", result)
-        return InvocationResponse(StatusCode=200, Payload=result.payload)
+
+        response = InvocationResponse(StatusCode=200, Payload=result.payload)
+        if log_type == LogType.Tail:
+            response["LogResult"] = base64.b64encode(to_bytes(result.logs))
+
+        return response
 
     # TODO: does deleting the latest published version affect the next versions number?
     def delete_function(

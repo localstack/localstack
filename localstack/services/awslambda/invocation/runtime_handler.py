@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime
+import random
+from datetime import date, datetime
 from enum import Enum, auto
 from threading import RLock, Timer
 from typing import TYPE_CHECKING, Dict, Literal, Optional
@@ -8,7 +9,7 @@ import requests
 
 from localstack import config
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
-from localstack.utils.strings import short_uid, to_str
+from localstack.utils.strings import to_str
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.executor_endpoint import ExecutorEndpoint
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
 
 INVOCATION_PORT = 9563
 STARTUP_TIMEOUT_SEC = 20.0
+HEX_CHARS = list(range(10)) + ["a", "b", "c", "d", "e", "f"]
 
 LOG = logging.getLogger(__name__)
 
@@ -43,6 +45,10 @@ class InvocationError(Exception):
         super().__init__(message)
 
 
+def generate_runtime_id():
+    return "".join([str(random.choice(HEX_CHARS)) for _ in range(32)])
+
+
 class RuntimeEnvironment:
     runtime_executor: RuntimeExecutor
     status_lock: RLock
@@ -58,7 +64,7 @@ class RuntimeEnvironment:
         executor_endpoint: "ExecutorEndpoint",
         initialization_type: InitializationType,
     ):
-        self.id = short_uid()
+        self.id = generate_runtime_id()
         self.status = RuntimeStatus.INACTIVE
         self.status_lock = RLock()
         self.function_version = function_version
@@ -67,6 +73,12 @@ class RuntimeEnvironment:
         self.runtime_executor = RuntimeExecutor(self.id, function_version)
         self.last_returned = datetime.min
         self.startup_timer = None
+
+    def get_log_group_name(self):
+        return f"/aws/lambda/{self.function_version.name}"
+
+    def get_log_stream_name(self):
+        return f"{date.today():%Y/%m/%d}/[{self.function_version.version}]{self.id}"
 
     def get_environment_variables(self) -> Dict[str, str]:
         """
@@ -79,8 +91,8 @@ class RuntimeEnvironment:
             "LOCALSTACK_RUNTIME_ENDPOINT": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{self.executor_endpoint.port}",
             "_HANDLER": self.function_version.handler,
             # General Lambda Environment Variables
-            "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/",  # TODO correct value
-            "AWS_LAMBDA_LOG_STREAM_NAME": "2022/13/32/...",  # TODO correct value
+            "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
+            "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),
             "AWS_EXECUTION_ENV": f"Aws_Lambda_{self.function_version.runtime}",
             "AWS_LAMBDA_FUNCTION_NAME": self.function_version.qualified_arn,  # TODO use name instead of arn
             "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "128",  # TODO use correct memory size

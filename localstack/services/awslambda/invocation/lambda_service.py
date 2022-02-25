@@ -6,9 +6,12 @@ from typing import Dict, Optional
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class FunctionVersion:
     qualified_arn: str  # qualified arn for the version
+    name: str
+    version: str
+    region: str
     architecture: str  # architecture
     role: str  # lambda role
     environment: Dict[str, str]  # Environment set when creating the function

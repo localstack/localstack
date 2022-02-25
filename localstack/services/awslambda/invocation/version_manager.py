@@ -26,16 +26,16 @@ from localstack.services.awslambda.invocation.runtime_handler import (
     RuntimeEnvironment,
     RuntimeStatus,
 )
+from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 from localstack.utils.net import get_free_tcp_port
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_service import FunctionVersion, Invocation
 
-
 LOG = logging.getLogger(__name__)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class InvocationStorage:
     invocation_id: str
     result_future: Future
@@ -49,6 +49,45 @@ class RunningInvocation:
     start_time: datetime
     executor: RuntimeEnvironment
     logs: Optional[str] = None
+
+
+@dataclasses.dataclass(frozen=True)
+class LogItem:
+    log_group: str
+    log_stream: str
+    logs: str
+
+
+class LogHandler:
+    log_queue: Queue
+    _thread: Optional[Thread]
+    _shutdown_event: threading.Event
+
+    def __init__(self):
+        self.log_queue = Queue()
+        self._shutdown_event = threading.Event()
+        self._thread = None
+
+    def run_log_loop(self):
+        while not self._shutdown_event.is_set():
+            try:
+                log_item = self.log_queue.get(timeout=1)
+            except queue.Empty:
+                continue
+            store_cloudwatch_logs(log_item.log_group, log_item.log_stream, log_item.logs)
+
+    def start_subscriber(self):
+        self._thread = Thread(target=self.run_log_loop)
+        self._thread.start()
+
+    def add_logs(self, log_item: LogItem):
+        self.log_queue.put(log_item)
+
+    def stop(self):
+        self._shutdown_event.set()
+        self._thread.join(timeout=2)
+        if self._thread.is_alive():
+            LOG.error("Could not stop log subscriber in time")
 
 
 class LambdaVersionManager(ServiceEndpoint):
@@ -67,6 +106,7 @@ class LambdaVersionManager(ServiceEndpoint):
     invocation_thread: Optional[Thread]
     shutdown_event: threading.Event
     state: str
+    log_handler: LogHandler
 
     def __init__(
         self,
@@ -84,6 +124,7 @@ class LambdaVersionManager(ServiceEndpoint):
         self.invocation_thread = None
         self.shutdown_event = threading.Event()
         self.state = State.Inactive
+        self.log_handler = LogHandler()
 
     def _build_executor_endpoint(self) -> ExecutorEndpoint:
         port = get_free_tcp_port()
@@ -96,6 +137,7 @@ class LambdaVersionManager(ServiceEndpoint):
         invocation_thread = Thread(target=self.invocation_loop)
         invocation_thread.start()
         self.invocation_thread = invocation_thread
+        self.log_handler.start_subscriber()
 
         prepare_version(self.function_version)
         LOG.debug(f"Lambda '{self.function_arn}' changed to active")
@@ -120,6 +162,7 @@ class LambdaVersionManager(ServiceEndpoint):
                 self.function_arn,
                 e,
             )
+        self.log_handler.stop()
         for environment in list(self.all_environments.values()):
             self.stop_environment(environment)
 
@@ -242,6 +285,12 @@ class LambdaVersionManager(ServiceEndpoint):
             )
         environment.errored()
 
+    def store_logs(self, invocation_result: InvocationResult, executor: RuntimeEnvironment):
+        log_item = LogItem(
+            executor.get_log_group_name(), executor.get_log_stream_name(), invocation_result.logs
+        )
+        self.log_handler.add_logs(log_item)
+
     # Service Endpoint implementation
     def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
         LOG.debug("Got invocation result for invocation '%s'", invoke_id)
@@ -251,11 +300,12 @@ class LambdaVersionManager(ServiceEndpoint):
 
         if not invocation_result.logs:
             invocation_result.logs = running_invocation.logs
+        executor = running_invocation.executor
         running_invocation.invocation.result_future.set_result(invocation_result)
-
         # mark executor available again
-        running_invocation.executor.invocation_done()
-        self.available_environments.put(running_invocation.executor)
+        executor.invocation_done()
+        self.available_environments.put(executor)
+        self.store_logs(invocation_result=invocation_result, executor=executor)
 
     def invocation_error(self, invoke_id: str, invocation_error: InvocationError) -> None:
         LOG.error("Fucked up %s", invoke_id)
