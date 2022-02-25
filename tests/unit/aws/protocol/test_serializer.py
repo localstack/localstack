@@ -1,6 +1,7 @@
 import copy
 import re
 from datetime import datetime
+from typing import Optional
 
 from botocore.parsers import ResponseParser, create_parser
 from dateutil.tz import tzlocal, tzutc
@@ -80,7 +81,7 @@ def _botocore_error_serializer_integration_test(
     exception: ServiceException,
     code: str,
     status_code: int,
-    message: str,
+    message: Optional[str],
     is_sender_fault: bool = False,
 ):
     """
@@ -850,6 +851,15 @@ def test_restjson_none_serialization():
     _botocore_serializer_integration_test(
         "lambda", "CreateFunction", parameters, status_code=201, expected_response_content=expected
     )
+    exception = CommonServiceException("CodeVerificationFailedException", None)
+    _botocore_error_serializer_integration_test(
+        "lambda",
+        "CreateFunction",
+        exception,
+        "CodeVerificationFailedException",
+        400,
+        "",
+    )
 
 
 def test_restxml_none_serialization():
@@ -867,6 +877,16 @@ def test_restxml_none_serialization():
     expected = {"HostedZones": []}
     _botocore_serializer_integration_test(
         "route53", "ListHostedZonesByName", parameters, expected_response_content=expected
+    )
+    # Exception without a message
+    exception = CommonServiceException("NoSuchKeySigningKey", None)
+    _botocore_error_serializer_integration_test(
+        "route53",
+        "DeleteKeySigningKey",
+        exception,
+        "NoSuchKeySigningKey",
+        400,
+        "",
     )
 
 

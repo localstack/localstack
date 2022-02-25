@@ -316,23 +316,26 @@ class ResponseSerializer(abc.ABC):
     ):
         """Applies additional traits on the raw response for a given model or protocol."""
         if operation_model.http_checksum_required:
-            self.add_md5_header(response)
+            self._add_md5_header(response)
         return response
 
-    def has_header(self, header_name: str, headers: dict):
+    def _has_header(self, header_name: str, headers: dict):
         """Case-insensitive check for header key."""
         if header_name is None:
             return False
         else:
             return header_name.lower() in [key.lower() for key in headers.keys()]
 
-    def add_md5_header(self, response: HttpResponse):
+    def _add_md5_header(self, response: HttpResponse):
         """Add a Content-MD5 header if not yet there. Adapted from botocore.utils"""
         headers = response.headers
         body = response.data
         if body is not None and "Content-MD5" not in headers:
             md5_digest = calculate_md5(body)
             headers["Content-MD5"] = md5_digest
+
+    def _get_error_message(self, error: Exception) -> Optional[str]:
+        return str(error) if error is not None and str(error) != "None" else None
 
 
 class BaseXMLResponseSerializer(ResponseSerializer):
@@ -375,8 +378,8 @@ class BaseXMLResponseSerializer(ResponseSerializer):
     ) -> None:
         code_tag = ETree.SubElement(error_tag, "Code")
         code_tag.text = code
-        message = str(error)
-        if len(message) > 0:
+        message = self._get_error_message(error)
+        if message:
             self._default_serialize(error_tag, message, None, "Message")
         if sender_fault:
             # The sender fault is either not set or "Sender"
@@ -902,7 +905,10 @@ class JSONResponseSerializer(ResponseSerializer):
         operation_model: OperationModel,
     ) -> None:
         # TODO handle error shapes with members
-        body = {"__type": code, "message": str(error)}
+        body = {"__type": code}
+        message = self._get_error_message(error)
+        if message is not None:
+            body["message"] = message
         response.set_json(body)
 
     def _serialize_response(
@@ -1023,7 +1029,7 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
             return
 
         has_body = serialized.data != b""
-        has_content_type = self.has_header("Content-Type", serialized.headers)
+        has_content_type = self._has_header("Content-Type", serialized.headers)
         if has_body and not has_content_type:
             serialized.headers["Content-Type"] = "application/json"
 
