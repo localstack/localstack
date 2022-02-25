@@ -11,7 +11,8 @@ def test_call_with_sqs_creates_state_correctly():
     qname = f"queue-{short_uid()}"
 
     response = moto.call_moto(
-        moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname})
+        moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname}),
+        include_response_metadata=True,
     )
     url = response["QueueUrl"]
 
@@ -72,6 +73,16 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
     assert qname not in sqs_backends.get(config.AWS_REGION_US_EAST_1).queues
 
 
+def test_call_include_response_metadata():
+    ctx = moto.create_aws_request_context("sqs", "ListQueues")
+
+    response = moto.call_moto(ctx)
+    assert "ResponseMetadata" not in response
+
+    response = moto.call_moto(ctx, include_response_metadata=True)
+    assert "ResponseMetadata" in response
+
+
 def test_call_with_modified_request():
     from moto.sqs.models import sqs_backends
 
@@ -98,7 +109,8 @@ def test_call_with_es_creates_state_correctly():
                 "DomainName": domain_name,
                 "ElasticsearchVersion": "7.10",
             },
-        )
+        ),
+        include_response_metadata=True,
     )
 
     try:
@@ -109,7 +121,8 @@ def test_call_with_es_creates_state_correctly():
         response = moto.call_moto(
             moto.create_aws_request_context(
                 "es", "DeleteElasticsearchDomain", {"DomainName": domain_name}
-            )
+            ),
+            include_response_metadata=True,
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
