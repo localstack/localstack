@@ -7,7 +7,7 @@ import werkzeug
 from werkzeug.exceptions import NotFound
 
 from localstack.http import Request, Response, Router
-from localstack.http.router import E, RequestArguments
+from localstack.http.router import E, RegexConverter, RequestArguments
 from localstack.utils.common import get_free_tcp_port
 
 
@@ -109,6 +109,13 @@ class TestRouter:
         _, endpoint, args = collector.requests[1]
         assert endpoint == "users"
         assert args == {"id": 12}
+
+    def test_regex_dispatcher(self):
+        router = Router()
+        router.url_map.converters["regex"] = RegexConverter
+        rgx = r"([^.]+)\.cloudfront.(net|localhost\.localstack\.cloud)(.*)"
+        router.add_regex(regex=rgx, endpoint=noop)
+        assert router.dispatch(Request("GET", "8395d242.cloudfront.localhost.localstack.cloud"))
 
     def test_remove_rule(self):
         router = Router()
