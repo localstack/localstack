@@ -20,7 +20,7 @@ def test_cdk_bootstrap(cfn_client, cleanup_stacks, cleanup_changesets, is_change
 
     try:
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
-        assert wait_until(is_change_set_finished(change_set_id), max_retries=5)
+        assert wait_until(is_change_set_finished(change_set_id))
     finally:
         cleanup_changesets([change_set_id])
         cleanup_stacks([stack_id])

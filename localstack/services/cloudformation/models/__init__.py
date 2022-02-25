@@ -5,6 +5,7 @@ __all__ = [
     "cloudwatch",
     "dynamodb",
     "ec2",
+    "ecr",
     "elasticsearch",
     "events",
     "iam",
