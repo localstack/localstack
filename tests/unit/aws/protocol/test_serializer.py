@@ -778,6 +778,20 @@ def test_restjson_headers_target_serialization():
     assert headers["baz"] == "ed"
 
 
+def test_restjson_statuscode_target_serialization():
+    _botocore_serializer_integration_test(
+        "lambda",
+        "Invoke",
+        {
+            "StatusCode": 203,
+            "LogResult": "Log Message!",
+            "ExecutedVersion": "Latest",
+            "Payload": "test payload",
+        },
+        status_code=203,
+    )
+
+
 def test_restjson_payload_serialization():
     """
     Tests the serialization of specific member attributes as payload, based on an appconfig example:

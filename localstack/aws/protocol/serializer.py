@@ -664,11 +664,15 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
                 continue
             key = member_shape.serialization.get("name", name)
             value = parameters[name]
+            if value is None:
+                continue
             if location == "header":
                 response.headers[key] = self._serialize_header_value(member_shape, value)
             elif location == "headers":
                 header_prefix = key
                 self._serialize_header_map(header_prefix, response, value)
+            elif location == "statusCode":
+                response.status_code = int(value)
 
     def _serialize_header_map(self, prefix: str, response: HttpResponse, params: dict) -> None:
         """Serializes the header map for the location trait "headers"."""
