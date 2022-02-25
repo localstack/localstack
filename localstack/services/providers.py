@@ -205,12 +205,12 @@ def s3():
 
 @aws_provider()
 def s3control():
-    from localstack.services.s3control import s3control_listener, s3control_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.s3control.provider import S3ControlProvider
 
+    provider = S3ControlProvider()
     return Service(
-        "s3control",
-        listener=s3control_listener.UPDATE_S3CONTROL,
-        start=s3control_starter.start_s3control,
+        "s3control", listener=AwsApiListener("s3control", MotoFallbackDispatcher(provider))
     )
 
 
