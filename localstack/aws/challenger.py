@@ -156,10 +156,20 @@ class AsfChallengerListener(AwsApiListener):
             # Remove the response metadata
             parsed_response.pop("ResponseMetadata", None)
             if "Error" in parsed_response:
+                if parsed_response["Error"].get("Code") in ["301", "304"]:
+                    # Weird NotModified response with an error body
+                    return
                 # Error responses can contain a "Type" Sender, which is often not set by Moto or LocalStack. We ignore this here.
                 parsed_response["Error"].pop("Type", None)
                 # Some responses by Moto or LocalStack have the RequestId in the error body
                 parsed_response["Error"].pop("RequestId", None)
+                parsed_response["Error"].pop("RequestID", None)
+                # TODO Check if this is _should_ be serializted by the serializer?
+                parsed_response["Error"].pop("BucketName", None)  # S3 BucketAlreadyOwnedByYou
+                parsed_response["Error"].pop("Condition", None)  # S3 PreconditionFailed
+                parsed_response["Error"].pop("Key", None)  # S3 NoSuchKey
+                parsed_response["Error"].pop("ArgumentName", None)  # S3 InvalidArgument
+                parsed_response["Error"].pop("ArgumentValue", None)  # S3 InvalidArgument
 
             if response.status_code < 400:
                 serialized = serializer.serialize_to_response(parsed_response, operation)

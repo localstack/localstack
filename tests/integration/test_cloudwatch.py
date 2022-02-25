@@ -49,6 +49,10 @@ class TestCloudwatch:
         assert 1 == len(rs["Metrics"])
         assert namespace == rs["Metrics"][0]["Namespace"]
 
+    @pytest.mark.skip(
+        reason="Challenger: This test explicitily checks the GZIP de/compression, which is not done by the parser /"
+        "serializer (it will be done by a handler)."
+    )
     def test_put_metric_data_gzip(self, cloudwatch_client):
         metric_name = "test-metric"
         namespace = "namespace"

@@ -360,6 +360,10 @@ class TestS3(unittest.TestCase):
         with self.assertRaises(Exception):
             self.s3_client.head_object(Bucket=bucket_name, Key=key_name)
 
+    @pytest.mark.skip(
+        reason="Challenger: LocalStack potentially returns a list of permissions, even though the spec"
+        "does not allow that."
+    )
     def test_s3_multipart_upload_acls(self):
         bucket_name = "test-bucket-%s" % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name, ACL="public-read")
@@ -515,6 +519,7 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [object_key])
 
     @patch.object(config, "S3_SKIP_SIGNATURE_VALIDATION", False)
+    @pytest.mark.skip(reason="Challenger: Test uses S3 Presigned URL (not supported yet)")
     def test_s3_presigned_url_expired(self):
         bucket_name = "test-bucket-%s" % short_uid()
         client = self._get_test_client()
