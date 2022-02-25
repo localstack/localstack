@@ -1,10 +1,10 @@
 import copy
 import re
 from datetime import datetime
+from typing import Optional
 
-import pytest
 from botocore.parsers import ResponseParser, create_parser
-from dateutil.tz import tzutc
+from dateutil.tz import tzlocal, tzutc
 
 from localstack.aws.api import CommonServiceException, ServiceException
 from localstack.aws.protocol.serializer import create_serializer
@@ -81,7 +81,8 @@ def _botocore_error_serializer_integration_test(
     exception: ServiceException,
     code: str,
     status_code: int,
-    message: str,
+    message: Optional[str],
+    is_sender_fault: bool = False,
 ):
     """
     Performs an integration test for the error serialization using botocore as parser.
@@ -130,6 +131,11 @@ def _botocore_error_serializer_integration_test(
     assert len(parsed_response["ResponseMetadata"]["RequestId"]) == 52
     assert "HTTPStatusCode" in parsed_response["ResponseMetadata"]
     assert parsed_response["ResponseMetadata"]["HTTPStatusCode"] == status_code
+    type = parsed_response["Error"].get("Type")
+    if is_sender_fault:
+        assert type == "Sender"
+    else:
+        assert type is None
 
 
 def test_rest_xml_serializer_cloudfront_with_botocore():
@@ -204,18 +210,16 @@ def test_rest_xml_serializer_s3_with_botocore():
     _botocore_serializer_integration_test("s3", "GetBucketAnalyticsConfiguration", parameters)
 
 
-@pytest.mark.skip(reason="failing! 'Body' has 'streaming=True'!")
 def test_rest_xml_serializer_s3_2_with_botocore():
+    # These date fields in this response are encoded in the header. The max precision is seconds.
     parameters = {
-        # TODO
-        # 'Body': StreamingBody(),
-        "Body": "Fuu",
+        "Body": "body",
         "DeleteMarker": True,
         "AcceptRanges": "string",
         "Expiration": "string",
         "Restore": "string",
-        "LastModified": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
-        "ContentLength": 123,
+        "LastModified": datetime(2015, 1, 1, 23, 59, 59, tzinfo=tzutc()),
+        "ContentLength": 4,
         "ETag": "string",
         "MissingMeta": 123,
         "VersionId": "string",
@@ -225,7 +229,7 @@ def test_rest_xml_serializer_s3_2_with_botocore():
         "ContentLanguage": "string",
         "ContentRange": "string",
         "ContentType": "string",
-        "Expires": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
+        "Expires": datetime(2015, 1, 1, 23, 59, 59, tzinfo=tzutc()),
         "WebsiteRedirectLocation": "string",
         "ServerSideEncryption": "AES256",
         "Metadata": {"string": "string"},
@@ -239,7 +243,7 @@ def test_rest_xml_serializer_s3_2_with_botocore():
         "PartsCount": 123,
         "TagCount": 123,
         "ObjectLockMode": "GOVERNANCE",
-        "ObjectLockRetainUntilDate": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
+        "ObjectLockRetainUntilDate": datetime(2015, 1, 1, 23, 59, 59, tzinfo=tzutc()),
         "ObjectLockLegalHoldStatus": "ON",
     }
     _botocore_serializer_integration_test("s3", "GetObject", parameters)
@@ -424,6 +428,45 @@ def test_query_protocol_custom_error_serialization():
     )
 
 
+def test_query_protocol_error_serialization_sender_fault():
+    # Specific exception thrown by SQS which defines the "Sender" fault
+    class UnsupportedOperation(ServiceException):
+        pass
+
+    exception = UnsupportedOperation("Operation not supported.")
+    _botocore_error_serializer_integration_test(
+        "sqs",
+        "SendMessage",
+        exception,
+        "AWS.SimpleQueueService.UnsupportedOperation",
+        400,
+        "Operation not supported.",
+        True,
+    )
+
+
+def test_restxml_protocol_error_serialization_not_specified_for_operation():
+    """
+    Tests if the serializer can serialize an error which is not explicitly defined as an error shape for the
+    specific operation.
+    This can happen if the specification is not specific enough (f.e. S3's GetBucketAcl does not define the NoSuchBucket
+    error, even though it obviously can be raised).
+    """
+
+    class NoSuchBucket(ServiceException):
+        pass
+
+    exception = NoSuchBucket("Exception message!")
+    _botocore_error_serializer_integration_test(
+        "s3",
+        "GetBucketAcl",
+        exception,
+        "NoSuchBucket",
+        400,
+        "Exception message!",
+    )
+
+
 def test_restxml_protocol_error_serialization():
     class CloudFrontOriginAccessIdentityAlreadyExists(ServiceException):
         pass
@@ -592,6 +635,15 @@ def test_json_serializer_cognito_with_botocore():
     _botocore_serializer_integration_test("cognito-idp", "DescribeUserPool", parameters)
 
 
+def test_json_serializer_date_serialization_with_botocore():
+    parameters = {
+        "UserPool": {
+            "LastModifiedDate": datetime(2022, 2, 8, 9, 17, 40, 122939, tzinfo=tzlocal()),
+        }
+    }
+    _botocore_serializer_integration_test("cognito-idp", "DescribeUserPool", parameters)
+
+
 def test_restjson_protocol_error_serialization():
     class ThrottledException(ServiceException):
         pass
@@ -727,6 +779,20 @@ def test_restjson_headers_target_serialization():
     assert headers["baz"] == "ed"
 
 
+def test_restjson_statuscode_target_serialization():
+    _botocore_serializer_integration_test(
+        "lambda",
+        "Invoke",
+        {
+            "StatusCode": 203,
+            "LogResult": "Log Message!",
+            "ExecutedVersion": "Latest",
+            "Payload": "test payload",
+        },
+        status_code=203,
+    )
+
+
 def test_restjson_payload_serialization():
     """
     Tests the serialization of specific member attributes as payload, based on an appconfig example:
@@ -785,6 +851,15 @@ def test_restjson_none_serialization():
     _botocore_serializer_integration_test(
         "lambda", "CreateFunction", parameters, status_code=201, expected_response_content=expected
     )
+    exception = CommonServiceException("CodeVerificationFailedException", None)
+    _botocore_error_serializer_integration_test(
+        "lambda",
+        "CreateFunction",
+        exception,
+        "CodeVerificationFailedException",
+        400,
+        "",
+    )
 
 
 def test_restxml_none_serialization():
@@ -802,6 +877,16 @@ def test_restxml_none_serialization():
     expected = {"HostedZones": []}
     _botocore_serializer_integration_test(
         "route53", "ListHostedZonesByName", parameters, expected_response_content=expected
+    )
+    # Exception without a message
+    exception = CommonServiceException("NoSuchKeySigningKey", None)
+    _botocore_error_serializer_integration_test(
+        "route53",
+        "DeleteKeySigningKey",
+        exception,
+        "NoSuchKeySigningKey",
+        400,
+        "",
     )
 
 
@@ -850,6 +935,10 @@ def test_ec2_serializer_ec2_with_botocore():
     _botocore_serializer_integration_test("ec2", "CreateInstanceEventWindow", parameters)
 
 
+def test_ec2_serializer_ec2_with_empty_response():
+    _botocore_serializer_integration_test("ec2", "CreateTags", {})
+
+
 def test_ec2_protocol_custom_error_serialization():
     exception = CommonServiceException(
         "IdempotentParameterMismatch", "Different payload, same token?!"
@@ -880,6 +969,15 @@ def test_restxml_header_location():
         },
         status_code=201,
     )
+    # Test a boolean header location field
+    parameters = {
+        "ContentLength": 0,
+        "Body": "",
+        "DeleteMarker": True,
+        "ContentType": "string",
+        "Metadata": {"string": "string"},
+    }
+    _botocore_serializer_integration_test("s3", "GetObject", parameters)
 
 
 def test_restxml_headers_location():
@@ -890,13 +988,9 @@ def test_restxml_headers_location():
         {
             "DeleteMarker": False,
             "Metadata": {"headers_key1": "headers_value1", "headers_key2": "headers_value2"},
-        },
-        # The spec defines the ContentType and the ContentLength, which is automatically set
-        expected_response_content={
-            "DeleteMarker": False,
-            "Metadata": {"headers_key1": "headers_value1", "headers_key2": "headers_value2"},
-            "ContentType": "text/xml",
-            "ContentLength": 59,
+            "ContentType": "application/octet-stream",
+            # The content length should explicitly be tested here.
+            "ContentLength": 159,
         },
     )
 
@@ -943,6 +1037,23 @@ def test_all_non_existing_key():
         expected_response_content={
             "StackResourceDrift": {
                 "StackId": "arn:aws:cloudformation:us-west-2:123456789012:stack/MyStack/d0a825a0-e4cd-xmpl-b9fb-061c69e99204",
+            }
+        },
+    )
+    # ec2
+    _botocore_serializer_integration_test(
+        "ec2",
+        "CreateInstanceEventWindow",
+        {
+            "InstanceEventWindow": {
+                "InstanceEventWindowId": "string",
+                "unknown": {"foo": "bar"},
+            },
+            "unknown": {"foo": "bar"},
+        },
+        expected_response_content={
+            "InstanceEventWindow": {
+                "InstanceEventWindowId": "string",
             }
         },
     )
