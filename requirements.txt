@@ -71,7 +71,7 @@ black==21.6b0
 coveralls==3.1.0
 Cython
 flake8>=3.6.0
-flake8-black>=0.2.1
+flake8-black==0.2.3
 flake8-isort>=4.0.0
 flake8-quotes>=0.11.0
 # enables flake8 configuration through pyproject.toml
