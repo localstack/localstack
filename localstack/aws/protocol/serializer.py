@@ -163,33 +163,13 @@ class ResponseSerializer(abc.ABC):
 
             # The shape name is equal to the class name (since the classes are generated from the shape's name)
             error_shape_name = error.__class__.__name__
-
-            try:
-                # Lookup the corresponding error shape in the operation model
-                shape = next(
-                    shape
-                    for shape in operation_model.error_shapes
-                    if shape.name == error_shape_name
+            # Lookup the corresponding error shape in the operation model
+            shape = operation_model.service_model.shape_for(error_shape_name)
+            if shape is None or not shape.metadata.get("exception", False):
+                raise ResponseSerializerError(
+                    f"Error to serialize ({error_shape_name}) neither is a CommonServiceException, nor is its error "
+                    f"shape contained in the service's specification ({operation_model.service_model.service_name})."
                 )
-            except StopIteration:
-                LOG.warning(
-                    "Error shape %s not found for operation %s. Falling back to search across operations.",
-                    error_shape_name,
-                    operation_model.name,
-                )
-                try:
-                    # The exception to serialize is not defined for the specific operation.
-                    # Look for the error shape across all operations in the service.
-                    shape = next(
-                        shape
-                        for shape in operation_model.service_model.error_shapes
-                        if shape.name == error_shape_name
-                    )
-                except StopIteration as e:
-                    raise ResponseSerializerError(
-                        "Error to serialize neither is a CommonServiceException, nor is its "
-                        "shape contained in the service's specification."
-                    ) from e
 
             error_spec = shape.metadata.get("error", {})
             status_code = error_spec.get("httpStatusCode")
@@ -697,6 +677,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
             ]
             return ",".join(converted_value)
         elif shape.type_name == "boolean":
+            # Set the header value to "true" if the given value is truthy, otherwise set the header value to "false".
             return "true" if value else "false"
         elif is_json_value_header(shape):
             # Serialize with no spaces after separators to save space in

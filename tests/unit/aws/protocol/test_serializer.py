@@ -969,6 +969,15 @@ def test_restxml_header_location():
         },
         status_code=201,
     )
+    # Test a boolean header location field
+    parameters = {
+        "ContentLength": 0,
+        "Body": "",
+        "DeleteMarker": True,
+        "ContentType": "string",
+        "Metadata": {"string": "string"},
+    }
+    _botocore_serializer_integration_test("s3", "GetObject", parameters)
 
 
 def test_restxml_headers_location():
