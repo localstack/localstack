@@ -245,7 +245,7 @@ def test_generate_ssl_cert():
         assert PEM_CERT_START in cert
         assert PEM_CERT_END in cert
         assert re.match(PEM_KEY_START_REGEX, key.replace("\n", " "))
-        assert re.match(fr".*{PEM_KEY_END_REGEX}", key.replace("\n", " "))
+        assert re.match(rf".*{PEM_KEY_END_REGEX}", key.replace("\n", " "))
 
     # generate cert and get content directly
     cert = generate_ssl_cert()

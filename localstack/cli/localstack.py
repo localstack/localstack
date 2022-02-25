@@ -348,9 +348,12 @@ def print_docker_status():
     running = docker_utils.DOCKER_CLIENT.is_container_running(cont_name)
     cont_status = "[bold][red]:heavy_multiplication_x: stopped"
     if running:
-        cont_status = '[bold][green]:heavy_check_mark: running[/green][/bold] (name: "[italic]%s[/italic]", IP: %s)' % (
-            get_main_container_name(),
-            get_main_container_ip(),
+        cont_status = (
+            '[bold][green]:heavy_check_mark: running[/green][/bold] (name: "[italic]%s[/italic]", IP: %s)'
+            % (
+                get_main_container_name(),
+                get_main_container_ip(),
+            )
         )
     grid.add_row("Runtime status", cont_status)
 

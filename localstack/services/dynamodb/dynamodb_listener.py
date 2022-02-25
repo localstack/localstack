@@ -980,9 +980,12 @@ def find_existing_item(put_item, table_name=None):
     if "Item" not in existing_item:
         if "message" in existing_item:
             table_names = ddb_client.list_tables()["TableNames"]
-            msg = "Unable to get item from DynamoDB (existing tables: %s ...truncated if >100 tables): %s" % (
-                table_names,
-                existing_item["message"],
+            msg = (
+                "Unable to get item from DynamoDB (existing tables: %s ...truncated if >100 tables): %s"
+                % (
+                    table_names,
+                    existing_item["message"],
+                )
             )
             LOGGER.warning(msg)
         return

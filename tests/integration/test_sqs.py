@@ -816,8 +816,9 @@ class TestSqsProvider:
         assert messages[0]["MD5OfMessageAttributes"] == result_send["MD5OfMessageAttributes"]
         assert messages_wildcard[0]["MessageId"] == result_send["MessageId"]
         assert messages_wildcard[0]["MessageAttributes"] == attributes
-        assert messages_wildcard[0]["MD5OfMessageAttributes"] == \
-            result_send["MD5OfMessageAttributes"]
+        assert (
+            messages_wildcard[0]["MD5OfMessageAttributes"] == result_send["MD5OfMessageAttributes"]
+        )
 
     def test_sent_message_retains_attributes_after_receive(self, sqs_client, sqs_create_queue):
         # Old name: test_send_message_retains_attributes
