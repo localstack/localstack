@@ -1,12 +1,12 @@
 import json
 import re
 from typing import Dict
+from urllib.parse import urlencode
 
 import xmltodict
 from moto.sqs.models import TRANSPORT_TYPE_ENCODINGS, Message
 from moto.sqs.utils import parse_message_attributes
 from requests.models import Request, Response
-from six.moves.urllib.parse import urlencode
 
 from localstack import config, constants
 from localstack.config import SQS_PORT_EXTERNAL
@@ -186,7 +186,7 @@ def _queue_url(path, req_data, headers):
     queue_url = req_data.get("QueueUrl")
     if queue_url:
         return queue_url
-    url = config.TEST_SQS_URL
+    url = config.service_url("sqs")
     if headers.get("Host"):
         url = "%s://%s" % (get_service_protocol(), headers["Host"])
     queue_url = "%s%s" % (url, path.partition("?")[0])
@@ -266,7 +266,7 @@ def get_external_port(headers):
     # If we cannot find the Host header, then fall back to the port of SQS itself (i.e., edge proxy).
     # (Note that this could be incorrect, e.g., if running in Docker with a host port that
     #  is different from the internal container port, but there is not much else we can do.)
-    return config.PORT_SQS
+    return config.service_port("sqs")
 
 
 def validate_empty_message_batch(data, req_data):
@@ -332,6 +332,18 @@ class ProxyListenerSQS(PersistingProxyListener):
 
             elif action == "CreateQueue":
                 req_data = self.fix_missing_tag_values(req_data)
+
+                def _is_fifo():
+                    for k, v in req_data.items():
+                        if v == "FifoQueue":
+                            return req_data[k.replace("Name", "Value")].lower() == "true"
+                    return False
+
+                if req_data.get("QueueName").endswith(".fifo") and not _is_fifo():
+                    msg = "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
+                    return make_requests_error(
+                        code=400, code_string="InvalidParameterValue", message=msg
+                    )
                 changed_attrs = _fix_dlq_arn_in_attributes(req_data)
                 if changed_attrs:
                     return _get_attributes_forward_request(

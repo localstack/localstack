@@ -1,12 +1,14 @@
-from datetime import datetime
-from urllib.parse import urlencode
+from datetime import datetime, timezone
+from urllib.parse import urlencode, urlsplit
 
+from botocore.awsrequest import prepare_request_dict
 from botocore.serialize import create_serializer
 
 from localstack.aws.api import HttpRequest
 from localstack.aws.protocol.parser import QueryRequestParser, RestJSONRequestParser, create_parser
 from localstack.aws.spec import load_service
-from localstack.utils.common import to_bytes
+from localstack.services.s3 import s3_utils
+from localstack.utils.common import to_bytes, to_str
 
 
 def test_query_parser():
@@ -19,6 +21,30 @@ def test_query_parser():
             "MessageBody=%7B%22foo%22%3A+%22bared%22%7D&"
             "DelaySeconds=2"
         ),
+        method="POST",
+        headers={},
+        path="",
+    )
+    operation, params = parser.parse(request)
+    assert operation.name == "SendMessage"
+    assert params == {
+        "QueueUrl": "http://localhost:4566/000000000000/tf-acc-test-queue",
+        "MessageBody": '{"foo": "bared"}',
+        "DelaySeconds": 2,
+    }
+
+
+def test_query_parser_uri():
+    """
+    Basic test for the QueryParser with a simple example (SQS SendMessage request),
+    where the parameters are encoded in the URI instead of the body.
+    """
+    parser = QueryRequestParser(load_service("sqs"))
+    request = HttpRequest(
+        query_string="Action=SendMessage&Version=2012-11-05&"
+        "QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue&"
+        "MessageBody=%7B%22foo%22%3A+%22bared%22%7D&"
+        "DelaySeconds=2",
         method="POST",
         headers={},
         path="",
@@ -201,8 +227,11 @@ def _botocore_parser_integration_test(
 
     operation_model = service.operation_model(action)
     serialized_request = serializer.serialize_to_request(kwargs, operation_model)
+    prepare_request_dict(serialized_request, "")
+    split_url = urlsplit(serialized_request.get("url"))
+    path = split_url.path
+    query_string = split_url.query
     body = serialized_request["body"]
-    query_string = urlencode(serialized_request.get("query_string") or "", doseq=False)
     # use custom headers (if provided), or headers from serialized request as default
     headers = serialized_request.get("headers") if headers is None else headers
 
@@ -215,8 +244,8 @@ def _botocore_parser_integration_test(
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
-            path=serialized_request.get("url_path") or "",
-            query_string=query_string,
+            path=path,
+            query_string=to_str(query_string),
             headers=headers,
             body=body,
         )
@@ -226,7 +255,11 @@ def _botocore_parser_integration_test(
     assert parsed_operation_model == operation_model
 
     # Check if the result is equal to the given "expected" dict or the kwargs (if "expected" has not been set)
-    assert parsed_request == (expected or kwargs)
+    expected = expected or kwargs
+    # The parser adds None for none-existing members on purpose. Remove those for the assert
+    expected = {key: value for key, value in expected.items() if value is not None}
+    parsed_request = {key: value for key, value in parsed_request.items() if value is not None}
+    assert parsed_request == expected
 
 
 def test_query_parser_sqs_with_botocore():
@@ -273,7 +306,7 @@ def test_query_parser_empty_required_members_sqs_with_botocore():
         action="SendMessageBatch",
         QueueUrl="string",
         Entries=[],
-        expected={"QueueUrl": "string", "Entries": None},
+        expected={"QueueUrl": "string"},
     )
 
 
@@ -318,6 +351,16 @@ def test_query_parser_cloudformation_with_botocore():
         ],
         ClientRequestToken="string",
         EnableTerminationProtection=False,
+    )
+
+
+def test_query_parser_unflattened_list_of_maps():
+    _botocore_parser_integration_test(
+        service="rds",
+        action="CreateDBCluster",
+        DBClusterIdentifier="mydbcluster",
+        Engine="aurora",
+        Tags=[{"Key": "Hello", "Value": "There"}, {"Key": "Hello1", "Value": "There1"}],
     )
 
 
@@ -556,8 +599,6 @@ def test_restjson_awslambda_invoke_with_botocore():
     _botocore_parser_integration_test(
         service="lambda",
         action="Invoke",
-        headers={},
-        expected={"FunctionName": "test-function", "Payload": ""},
         FunctionName="test-function",
     )
 
@@ -600,7 +641,7 @@ def test_ec2_parser_ec2_with_botocore():
     )
 
 
-def test_query_parser_path_params_with_slashes():
+def test_restjson_parser_path_params_with_slashes():
     parser = RestJSONRequestParser(load_service("qldb"))
     resource_arn = "arn:aws:qldb:eu-central-1:000000000000:ledger/c-c67c827a"
     request = HttpRequest(
@@ -619,6 +660,28 @@ def test_parse_cloudtrail_with_botocore():
         service="cloudtrail",
         action="DescribeTrails",
         trailNameList=["t1"],
+    )
+
+
+def test_parse_cloudfront_uri_location_with_botocore():
+    _botocore_parser_integration_test(
+        service="cloudfront",
+        action="GetDistribution",
+        Id="001",
+    )
+
+
+def test_parse_cloudfront_payload_with_botocore():
+    _botocore_parser_integration_test(
+        service="cloudfront",
+        action="CreateOriginRequestPolicy",
+        OriginRequestPolicyConfig={
+            "Comment": "comment1",
+            "Name": "name",
+            "HeadersConfig": {"HeaderBehavior": "none"},
+            "CookiesConfig": {"CookieBehavior": "all"},
+            "QueryStringsConfig": {"QueryStringBehavior": "all"},
+        },
     )
 
 
@@ -641,7 +704,130 @@ def test_parse_opensearch_conflicting_request_uris():
     )
 
 
-# TODO Add additional tests (or even automate the creation)
-# - Go to the Boto3 Docs (https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/index.html)
-# - Look for boto3 request syntax definition for services that use the protocol you want to test
-# - Take request syntax, remove the "or" ("|") and call the helper function with these named params
+def test_parse_appconfig_non_json_blob_payload():
+    """
+    Tests if the parsing works correctly if the request contains a blob payload shape which does not contain valid JSON.
+    """
+    _botocore_parser_integration_test(
+        service="appconfig",
+        action="CreateHostedConfigurationVersion",
+        ApplicationId="test-application-id",
+        ConfigurationProfileId="test-configuration-profile-id",
+        Content=b"<html></html>",
+        ContentType="application/html",
+    )
+
+
+def test_parse_s3_with_extended_uri_pattern():
+    """
+    Tests if the parsing works for operations where the operation defines a request URI with a "+" in the variable name,
+    (for example "requestUri":"/{Bucket}/{Key+}").
+    The parameter with the "+" directive is greedy. There can only be one explicitly greedy param.
+    The corresponding shape definition does not contain the "+" in the "locationName" directive.
+    """
+    _botocore_parser_integration_test(
+        service="s3", action="ListParts", Bucket="foo", Key="bar/test", UploadId="test-upload-id"
+    )
+
+
+def test_parse_restjson_uri_location():
+    """Tests if the parsing of uri parameters works correctly for the rest-json protocol"""
+    _botocore_parser_integration_test(
+        service="lambda",
+        action="AddPermission",
+        Action="lambda:InvokeFunction",
+        FunctionName="arn:aws:lambda:us-east-1:000000000000:function:test-forward-sns",
+        Principal="sns.amazonaws.com",
+        StatementId="2e25f762",
+    )
+
+
+def test_parse_restjson_header_parsing():
+    """Tests parsing shapes from the header location."""
+    _botocore_parser_integration_test(
+        service="ebs",
+        action="CompleteSnapshot",
+        SnapshotId="123",
+        ChangedBlocksCount=5,
+        Checksum="test-checksum-header-field",
+    )
+
+
+def test_parse_restjson_querystring_list_parsing():
+    """Tests the parsing of lists of shapes with location querystring."""
+    _botocore_parser_integration_test(
+        service="amplify",
+        action="UntagResource",
+        resourceArn="arn:aws:lambda:us-east-1:000000000000:function:test-forward-sns",
+        tagKeys=["Tag1", "Tag2"],
+    )
+
+
+def test_restjson_operation_detection_with_query_suffix_in_requesturi():
+    # Test if the correct operation is detected if the requestURI pattern of the specification contains the first query
+    # parameter, f.e. API Gateway's ImportRestApi: "/restapis?mode=import"
+    _botocore_parser_integration_test(service="apigateway", action="ImportRestApi", body=b"Test")
+
+
+def test_restjson_operation_detection_with_length_prio():
+    """
+    Tests if the correct operation is detected if the requestURI patterns are conflicting and the length of the
+    normalized regular expression for the path matching solves the conflict.
+    For example: The detection of API Gateway PutIntegrationResponse (without the normalization PutMethodResponse would
+                    be detected).
+    """
+    _botocore_parser_integration_test(
+        service="apigateway",
+        action="PutIntegrationResponse",
+        restApiId="rest-api-id",
+        resourceId="resource-id",
+        httpMethod="POST",
+        statusCode="201",
+    )
+
+
+def test_s3_operation_detection():
+    """
+    Test if the S3 operation detection works for ambiguous operations. GetObject is the worst, because it is
+    overloaded with the exact same requestURI by another non-deprecated function where the only distinction is the
+    matched required parameter.
+    """
+    _botocore_parser_integration_test(
+        service="s3", action="GetObject", Bucket="test-bucket", Key="test.json"
+    )
+
+
+def test_restxml_headers_parsing():
+    """Test the parsing of a map with the location trait 'headers'."""
+    _botocore_parser_integration_test(
+        service="s3",
+        action="PutObject",
+        Bucket="test-bucket",
+        Key="test.json",
+        Metadata={"key": "value", "key2": "value2"},
+    )
+
+
+def test_restxml_header_date_parsing():
+    """Test the parsing of a map with the location trait 'headers'."""
+    _botocore_parser_integration_test(
+        service="s3",
+        action="PutObject",
+        Bucket="test-bucket",
+        Key="test-key",
+        Body=b"foo",
+        Metadata={},
+        Expires=datetime(2015, 1, 1, 0, 0, tzinfo=timezone.utc),
+    )
+
+
+def test_s3_virtual_host_addressing():
+    """Test the parsing of a map with the location trait 'headers'."""
+    request = HttpRequest(
+        method="PUT", headers={"host": s3_utils.get_bucket_hostname("test-bucket")}
+    )
+    parser = create_parser(load_service("s3"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "CreateBucket"
+    assert "Bucket" in parsed_request
+    assert parsed_request["Bucket"] == "test-bucket"

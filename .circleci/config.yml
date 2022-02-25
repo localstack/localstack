@@ -42,13 +42,31 @@ jobs:
       - run:
           name: Linting
           command: make lint
+
+  unit-tests:
+    docker:
+      - image: buildpack-deps:focal
+    working_directory: /tmp/workspace/repo
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           name: Unit tests
-          command: |
-            source .venv/bin/activate
-            pytest tests/unit --junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests
+          environment:
+            TEST_PATH: "tests/unit"
+            PYTEST_ARGS: "--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests"
+            COVERAGE_ARGS: "-p"
+          command: make test-coverage
       - store_test_results:
           path: target/reports/
+      - run:
+          name: Store coverage results
+          command: mv .coverage.* target/coverage/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/coverage/
 
   itest-lambda-docker:
     machine:
@@ -89,7 +107,7 @@ jobs:
             LAMBDA_EXECUTOR: "docker"
             USE_SSL: 1
             TEST_ERROR_INJECTION: 1
-            TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
+            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
@@ -98,7 +116,7 @@ jobs:
           environment:
             DEBUG: 1
             LAMBDA_EXECUTOR: "docker-reuse"
-            TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
+            TEST_PATH: "tests/integration/awslambda/ tests/integration/test_integration.py"
             PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
             COVERAGE_ARGS: "-p"
           command: make test-coverage
@@ -217,21 +235,12 @@ jobs:
                   # (https://github.com/docker/compose/issues/6678#issuecomment-526831488)
                   sudo apt-get install docker-ce docker-ce-cli containerd.io haveged -y
                   sudo usermod -aG docker $USER
-            - run:
-                # Install the emulation support before starting to build (resets the build cache)
-                name: Install amd64 emulation support for lambda tests
-                command: |
-                  docker run --rm --privileged tonistiigi/binfmt:latest --install all
-                  docker buildx create --name multiarch-builder --use
       - run:
           name: Build full docker image
           command: make docker-build
       - run:
-          name: Run tests
-          command: |
-            PYTEST_ARGS='--junitxml=target/reports/test-report-<< parameters.platform >>.xml' \
-            COVERAGE_FILE='target/coverage/.coverage.<< parameters.platform >>' \
-            make docker-run-tests
+          name: Save full docker image
+          command: PLATFORM="<< parameters.platform >>" make docker-save-image
       - when:
           condition:
             equal: [ master, << pipeline.git.branch >> ]
@@ -243,9 +252,6 @@ jobs:
                 name: Run pre-release smoke tests
                 command: make ci-pro-smoke-tests
             - run:
-                name: Save full docker image
-                command: PLATFORM="<< parameters.platform >>" make docker-save-image
-            - run:
                 name: Save light docker image
                 command: PLATFORM="<< parameters.platform >>" make docker-save-image-light
       - persist_to_workspace:
@@ -253,8 +259,49 @@ jobs:
             /tmp/workspace
           paths:
             - repo/target/
+
+  docker-test:
+    parameters:
+      platform:
+        description: "Platform to build for"
+        default: "amd64"
+        type: string
+      resource_class:
+        description: "CircleCI machine type to run at"
+        default: "medium"
+        type: string
+      machine_image:
+        description: "CircleCI machine type to run at"
+        default: "ubuntu-2004:202107-02"
+        type: string
+    machine:
+      image: << parameters.machine_image >>
+    resource_class: << parameters.resource_class >>
+    working_directory: /tmp/workspace/repo
+    parallelism: 2
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker localstack-full image
+          command: docker load -i target/localstack-docker-image-<< parameters.platform >>.tar
+      - run:
+          name: Run integration tests
+          # circleci split returns newline separated list, so `tr` is necessary to prevent problems in the Makefile
+          command: |
+            TEST_FILES=$(circleci tests glob "tests/integration/**/test_*.py" | circleci tests split --split-by=timings | tr '\n' ' ')
+            PYTEST_ARGS="-o junit_family=legacy --junitxml=target/reports/test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml" \
+            COVERAGE_FILE="target/coverage/.coverage.<< parameters.platform >>.${CIRCLE_NODE_INDEX}" \
+            TEST_PATH=$TEST_FILES \
+            make docker-run-tests
       - store_test_results:
           path: target/reports/
+      - persist_to_workspace:
+          root:
+            /tmp/workspace
+          paths:
+            - repo/target/reports/
+            - repo/target/coverage/
 
   report:
     docker:
@@ -330,6 +377,9 @@ workflows:
       - itest-bootstrap:
           requires:
             - preflight
+      - unit-tests:
+          requires:
+            - preflight
       - docker-build:
           name: docker-build-amd64
           platform: amd64
@@ -346,13 +396,28 @@ workflows:
           resource_class: arm.medium
           requires:
             - preflight
+      - docker-test:
+          name: docker-test-arm64
+          platform: arm64
+          resource_class: arm.medium
+          machine_image: ubuntu-2004:202101-01
+          requires:
+            - docker-build-arm64
+      - docker-test:
+          name: docker-test-amd64
+          platform: amd64
+          resource_class: medium
+          machine_image: ubuntu-2004:202107-02
+          requires:
+            - docker-build-amd64
       - report:
           requires:
             - itest-lambda-docker
             - itest-sqs-provider
             - itest-bootstrap
-            - docker-build-amd64
-            - docker-build-arm64
+            - docker-test-amd64
+            - docker-test-arm64
+            - unit-tests
       - docker-push:
           filters:
             branches:
@@ -361,5 +426,6 @@ workflows:
             - itest-lambda-docker
             - itest-sqs-provider
             - itest-bootstrap
-            - docker-build-amd64
-            - docker-build-arm64
+            - docker-test-amd64
+            - docker-test-arm64
+            - unit-tests

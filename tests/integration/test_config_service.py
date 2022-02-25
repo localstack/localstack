@@ -68,7 +68,7 @@ class TestConfigService(unittest.TestCase):
         self.create_configuration_recorder(iam_role_arn)
 
         s3_client = aws_stack.create_external_boto_client("s3")
-        test_bucket_name = "test-bucket"
+        test_bucket_name = f"test-bucket-{short_uid()}"
         s3_client.create_bucket(Bucket=test_bucket_name)
 
         sns_client = aws_stack.create_external_boto_client("sns")

@@ -11,7 +11,7 @@ import pytest
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import create_dynamodb_table
-from localstack.utils.common import ensure_list, load_file, poll_condition
+from localstack.utils.common import ensure_list, load_file, poll_condition, retry
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from mypy_boto3_cloudformation import CloudFormationClient
     from mypy_boto3_cloudwatch import CloudWatchClient
     from mypy_boto3_dynamodb import DynamoDBClient
+    from mypy_boto3_ec2 import EC2Client
     from mypy_boto3_es import ElasticsearchServiceClient
     from mypy_boto3_events import EventBridgeClient
     from mypy_boto3_firehose import FirehoseClient
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
     from mypy_boto3_lambda import LambdaClient
     from mypy_boto3_logs import CloudWatchLogsClient
     from mypy_boto3_opensearch import OpenSearchServiceClient
+    from mypy_boto3_redshift import RedshiftClient
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_secretsmanager import SecretsManagerClient
     from mypy_boto3_ses import SESClient
@@ -156,6 +158,11 @@ def opensearch_client() -> "OpenSearchServiceClient":
 
 
 @pytest.fixture(scope="class")
+def redshift_client() -> "RedshiftClient":
+    return _client("redshift")
+
+
+@pytest.fixture(scope="class")
 def firehose_client() -> "FirehoseClient":
     return _client("firehose")
 
@@ -168,6 +175,11 @@ def cloudwatch_client() -> "CloudWatchClient":
 @pytest.fixture(scope="class")
 def sts_client() -> "STSClient":
     return _client("sts")
+
+
+@pytest.fixture(scope="class")
+def ec2_client() -> "EC2Client":
+    return _client("ec2")
 
 
 @pytest.fixture
@@ -254,6 +266,16 @@ def sqs_queue(sqs_create_queue):
 
 
 @pytest.fixture
+def sqs_queue_arn(sqs_client):
+    def _get_arn(queue_url: str) -> str:
+        return sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=["QueueArn"])[
+            "Attributes"
+        ]["QueueArn"]
+
+    return _get_arn
+
+
+@pytest.fixture
 def sns_create_topic(sns_client):
     topic_arns = []
 
@@ -321,7 +343,21 @@ def kms_grant_and_key(kms_client, kms_key):
 
 
 @pytest.fixture
-def opensearch_create_domain(opensearch_client):
+def opensearch_wait_for_cluster(opensearch_client):
+    def _wait_for_cluster(domain_name: str):
+        def finished_processing():
+            status = opensearch_client.describe_domain(DomainName=domain_name)["DomainStatus"]
+            return status["Processing"] is False
+
+        assert poll_condition(
+            finished_processing, timeout=5 * 60
+        ), f"could not start domain: {domain_name}"
+
+    return _wait_for_cluster
+
+
+@pytest.fixture
+def opensearch_create_domain(opensearch_client, opensearch_wait_for_cluster):
     domains = []
 
     def factory(**kwargs) -> str:
@@ -330,15 +366,7 @@ def opensearch_create_domain(opensearch_client):
 
         opensearch_client.create_domain(**kwargs)
 
-        def finished_processing():
-            status = opensearch_client.describe_domain(DomainName=kwargs["DomainName"])[
-                "DomainStatus"
-            ]
-            return status["Processing"] is False
-
-        assert poll_condition(
-            finished_processing, timeout=120
-        ), f"could not start domain: {kwargs['DomainName']}"
+        opensearch_wait_for_cluster(domain_name=kwargs["DomainName"])
 
         domains.append(kwargs["DomainName"])
         return kwargs["DomainName"]
@@ -420,6 +448,7 @@ class DeployResult:
     stack_id: str
     stack_name: str
     change_set_name: str
+    outputs: Dict[str, str]
 
 
 @pytest.fixture
@@ -468,8 +497,12 @@ def deploy_cfn_template(
         cfn_client.execute_change_set(ChangeSetName=change_set_id)
         assert wait_until(is_change_set_finished(change_set_id))
 
+        outputs = cfn_client.describe_stacks(StackName=stack_id)["Stacks"][0]["Outputs"]
+
+        mapped_outputs = {o["OutputKey"]: o["OutputValue"] for o in outputs}
+
         state.append({"stack_id": stack_id, "change_set_id": change_set_id})
-        return DeployResult(change_set_id, stack_id, stack_name, change_set_name)
+        return DeployResult(change_set_id, stack_id, stack_name, change_set_name, mapped_outputs)
 
     yield _deploy
 
@@ -540,20 +573,100 @@ def is_change_set_finished(cfn_client):
     return _is_change_set_finished
 
 
-@pytest.fixture
-def create_lambda_function(lambda_client: "LambdaClient"):
-    lambda_arns = []
+role_assume_policy = """
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+""".strip()
 
-    def _create_lambda_function(*args, **kwargs):
-        # TODO move create function logic here to use lambda_client fixture
-        resp = testutil.create_lambda_function(*args, **kwargs)
-        lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
-        return resp
+role_policy = """
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }
+    ]
+}
+""".strip()
+
+
+@pytest.fixture
+def create_lambda_function(lambda_client: "LambdaClient", iam_client):
+    lambda_arns = []
+    role_names = []
+
+    def _create_lambda_function(**kwargs):
+        kwargs["client"] = lambda_client
+
+        if not kwargs.get("role"):
+            role_name = f"lambda-autogenerated-{short_uid()}"
+            role_names.append(role_name)
+            role = iam_client.create_role(
+                RoleName=role_name, AssumeRolePolicyDocument=role_assume_policy
+            )["Role"]
+            policy_name = f"lambda-autogenerated-{short_uid()}"
+            policy_arn = iam_client.create_policy(
+                PolicyName=policy_name, PolicyDocument=role_policy
+            )["Policy"]["Arn"]
+            iam_client.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+            kwargs["role"] = role["Arn"]
+
+        def _create_function():
+            resp = testutil.create_lambda_function(**kwargs)
+            lambda_arns.append(resp["CreateFunctionResponse"]["FunctionArn"])
+
+            def _is_not_pending():
+                try:
+                    result = (
+                        lambda_client.get_function(FunctionName=kwargs["func_name"])[
+                            "Configuration"
+                        ]["State"]
+                        != "Pending"
+                    )
+                    LOG.debug(f"lambda state result: {result=}")
+                    return result
+                except Exception as e:
+                    LOG.error(e)
+                    raise
+
+            wait_until(_is_not_pending)
+            return resp
+
+        # @AWS, takes about 10s until the role/policy is "active", until then it will fail
+        # localstack should normally not require the retries and will just continue here
+        return retry(_create_function, retries=3, sleep=4)
 
     yield _create_lambda_function
 
     for arn in lambda_arns:
-        lambda_client.delete_function(FunctionName=arn)
+        try:
+            lambda_client.delete_function(FunctionName=arn)
+        except Exception:
+            LOG.debug(f"Unable to delete function {arn=} in cleanup")
+
+    for role_name in role_names:
+        try:
+            iam_client.delete_role(RoleName=role_name)
+        except Exception:
+            LOG.debug(f"Unable to delete role {role_name=} in cleanup")
 
 
 @pytest.fixture

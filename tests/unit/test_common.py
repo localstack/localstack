@@ -15,9 +15,10 @@ from localstack import config
 from localstack.utils import common
 from localstack.utils.common import (
     ExternalServicePortsManager,
-    Mock,
+    PaginatedList,
     PortNotAvailableException,
     fully_qualified_class_name,
+    get_free_tcp_port,
     is_empty_dir,
     load_file,
     mkdir,
@@ -26,6 +27,7 @@ from localstack.utils.common import (
     save_file,
     short_uid,
 )
+from localstack.utils.objects import Mock
 from localstack.utils.testutil import create_zip_file
 
 
@@ -227,26 +229,6 @@ class TestCommon:
         result = common.run(cmd)
         assert result.strip() == "foobar"
 
-    def test_run_with_cache(self):
-        cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
-        d1 = float(common.run(cmd))
-        d2 = float(common.run(cmd, cache_duration_secs=1))
-        d3 = float(common.run(cmd, cache_duration_secs=1))
-
-        assert d1 != d2
-        assert d2 == d3
-
-    def test_run_with_cache_expiry(self):
-        cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
-
-        d1 = float(common.run(cmd, cache_duration_secs=0.5))
-        d2 = float(common.run(cmd, cache_duration_secs=0.5))
-        time.sleep(0.8)
-        d3 = float(common.run(cmd, cache_duration_secs=0.5))
-
-        assert d1 == d2
-        assert d2 != d3
-
     def test_is_command_available(self):
         assert common.is_command_available("python3")
         assert not common.is_command_available("hopefullydoesntexist")
@@ -392,7 +374,7 @@ class TestCommon:
         config.OUTBOUND_HTTPS_PROXY = old_https_proxy
 
     def test_fully_qualified_class_name(self):
-        assert fully_qualified_class_name(Mock) == "localstack.utils.common.Mock"
+        assert fully_qualified_class_name(Mock) == "localstack.utils.objects.Mock"
 
 
 class TestCommonFileOperations:
@@ -557,11 +539,14 @@ def test_save_load_file_with_changing_permissions(tmp_path):
 
 @pytest.fixture()
 def external_service_ports_manager():
+    previous_start = config.EXTERNAL_SERVICE_PORTS_START
     previous_end = config.EXTERNAL_SERVICE_PORTS_END
     # Limit the range to only contain a single port
+    config.EXTERNAL_SERVICE_PORTS_START = get_free_tcp_port()
     config.EXTERNAL_SERVICE_PORTS_END = config.EXTERNAL_SERVICE_PORTS_START + 1
     yield ExternalServicePortsManager()
     config.EXTERNAL_SERVICE_PORTS_END = previous_end
+    config.EXTERNAL_SERVICE_PORTS_START = previous_start
 
 
 class TestExternalServicePortsManager:
@@ -596,3 +581,40 @@ class TestExternalServicePortsManager:
         external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
         with pytest.raises(PortNotAvailableException):
             external_service_ports_manager.reserve_port(config.EXTERNAL_SERVICE_PORTS_START)
+
+
+@pytest.fixture()
+def paginated_list():
+    yield PaginatedList([{"Id": i, "Filter": i.upper()} for i in ["a", "b", "c", "d", "e"]])
+
+
+class TestPaginatedList:
+    def test_list_smaller_than_max(self, paginated_list):
+        page, next_token = paginated_list.get_page(lambda i: i["Id"], page_size=6)
+        assert len(page) == 5
+        assert next_token is None
+
+    def test_next_token(self, paginated_list):
+        page, next_token = paginated_list.get_page(lambda i: i["Id"], page_size=2)
+        assert len(page) == 2
+        assert next_token == "c"
+
+    def test_continuation(self, paginated_list):
+        page, next_token = paginated_list.get_page(lambda i: i["Id"], page_size=2, next_token="c")
+        assert len(page) == 2
+        assert next_token == "e"
+
+    def test_end(self, paginated_list):
+        page, next_token = paginated_list.get_page(lambda i: i["Id"], page_size=2, next_token="e")
+        assert len(page) == 1
+        assert next_token is None
+
+    def test_filter(self, paginated_list):
+        page, next_token = paginated_list.get_page(
+            lambda i: i["Id"], page_size=6, filter_function=lambda i: i["Filter"] in ["B", "E"]
+        )
+        assert len(page) == 2
+        ids = [i["Id"] for i in page]
+        assert "b" in ids and "e" in ids
+        assert "a" not in ids
+        assert next_token is None

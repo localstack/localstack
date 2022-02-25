@@ -17,6 +17,7 @@ MAX_HEAP_SIZE = "256m"
 PROCESS_THREAD = None
 
 
+# TODO: pass env more explicitly
 def get_command(backend_port):
     cmd = (
         "cd %s; PORT=%s java "
@@ -64,21 +65,30 @@ def get_command(backend_port):
 
 
 def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_STEPFUNCTIONS
+    port = port or config.service_port("stepfunctions")
     backend_port = config.LOCAL_PORT_STEPFUNCTIONS
     install.install_stepfunctions_local()
     cmd = get_command(backend_port)
     log_startup_message("StepFunctions")
     start_proxy_for_service("stepfunctions", port, backend_port, update_listener)
     global PROCESS_THREAD
-    PROCESS_THREAD = do_run(cmd, asynchronous, strip_color=True)
+    # TODO: change ports in stepfunctions.jar, then update here
+    PROCESS_THREAD = do_run(
+        cmd,
+        asynchronous,
+        strip_color=True,
+        env_vars={
+            "EDGE_PORT": config.EDGE_PORT_HTTP or config.EDGE_PORT,
+            "EDGE_PORT_HTTP": config.EDGE_PORT_HTTP or config.EDGE_PORT,
+            "DATA_DIR": config.DATA_DIR,
+        },
+    )
     return PROCESS_THREAD
 
 
 def check_stepfunctions(expect_shutdown=False, print_error=False):
     out = None
     try:
-        # check Kinesis
         wait_for_port_open(config.LOCAL_PORT_STEPFUNCTIONS, sleep_time=2)
         endpoint_url = f"http://127.0.0.1:{config.LOCAL_PORT_STEPFUNCTIONS}"
         out = aws_stack.connect_to_service(

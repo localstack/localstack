@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from typing import Any, Dict, List, Optional, Tuple
+from urllib import parse as urlparse
 
 from botocore.utils import InvalidArnException
 from jsonpatch import apply_patch
@@ -9,21 +10,26 @@ from jsonpointer import JsonPointerException
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.utils import create_id as create_resource_id
 from requests.models import Response
-from six.moves.urllib import parse as urlparse
 
 from localstack import config
-from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
+from localstack.constants import (
+    APPLICATION_JSON,
+    LOCALHOST_HOSTNAME,
+    PATH_USER_REQUEST,
+    TEST_AWS_ACCOUNT_ID,
+)
+from localstack.services.apigateway.context import InvocationPayload
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.aws_stack import parse_arn
+from localstack.utils.common import try_json
 
 LOG = logging.getLogger(__name__)
 
 # regex path patterns
 PATH_REGEX_MAIN = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?"
-PATH_REGEX_SUB = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*"
 PATH_REGEX_SUB = r"^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*"
 
 # path regex patterns
@@ -601,8 +607,7 @@ def get_validator_id_from_path(path):
 def _find_validator(api_id, validator_id):
     region_details = APIGatewayRegion.get()
     auth_list = region_details.validators.get(api_id) or []
-    validator = ([a for a in auth_list if a["id"] == validator_id] or [None])[0]
-    return validator
+    return ([a for a in auth_list if a["id"] == validator_id] or [None])[0]
 
 
 def get_validators(path):
@@ -868,13 +873,26 @@ def find_api_subentity_by_id(api_id, entity_id, map_name):
     return entity
 
 
-def gateway_request_url(api_id, stage_name, path):
+def path_based_url(api_id, stage_name, path):
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
     pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
-        config.TEST_APIGATEWAY_URL,
+        config.service_url("apigateway"),
         PATH_USER_REQUEST,
     )
     return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
+
+
+def host_based_url(rest_api_id: str, path: str, stage_name: str = None):
+    """Return URL for inbound API gateway for given API ID, stage name, and path with custom dns
+    format"""
+    pattern = "http://{endpoint}{stage}{path}"
+    stage = stage_name and f"/{stage_name}" or ""
+    return pattern.format(endpoint=get_execute_api_endpoint(rest_api_id), stage=stage, path=path)
+
+
+def get_execute_api_endpoint(api_id: str, protocol: str = "") -> str:
+    port = config.get_edge_port_http()
+    return f"{protocol}{api_id}.execute-api.{LOCALHOST_HOSTNAME}:{port}"
 
 
 def tokenize_path(path):
@@ -1168,3 +1186,58 @@ def import_api_from_openapi_spec(
         rest_api.endpoint_configuration = endpoint_config
 
     return rest_api
+
+
+def apply_template(
+    integration: Dict[str, Any],
+    req_res_type: str,
+    data: InvocationPayload,
+    path_params=None,
+    query_params=None,
+    headers=None,
+    context=None,
+):
+    if path_params is None:
+        path_params = {}
+    if query_params is None:
+        query_params = {}
+    if headers is None:
+        headers = {}
+    if context is None:
+        context = {}
+    integration_type = integration.get("type") or integration.get("integrationType")
+    if integration_type in ["HTTP", "AWS"]:
+        # apply custom request template
+        content_type = APPLICATION_JSON  # TODO: make configurable!
+        template = integration.get("%sTemplates" % req_res_type, {}).get(content_type)
+        if template:
+            variables = {"context": context or {}}
+            input_ctx = {"body": data}
+            # little trick to flatten the input context so velocity templates
+            # work from the root.
+            # orig - { "body": '{"action": "$default","message":"foobar"}'
+            # after - {
+            #   "body": '{"action": "$default","message":"foobar"}',
+            #   "action": "$default",
+            #   "message": "foobar"
+            # }
+            if data:
+                dict_pack = try_json(data)
+                if isinstance(dict_pack, dict):
+                    for k, v in dict_pack.items():
+                        input_ctx.update({k: v})
+
+            def _params(name=None):
+                # See https://docs.aws.amazon.com/apigateway/latest/developerguide/
+                #    api-gateway-mapping-template-reference.html#input-variable-reference
+                # Returns "request parameter from the path, query string, or header value (
+                # searched in that order)"
+                combined = {}
+                combined.update(path_params or {})
+                combined.update(query_params or {})
+                combined.update(headers or {})
+                return combined if not name else combined.get(name)
+
+            input_ctx["params"] = _params
+            data = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
+    return data

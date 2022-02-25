@@ -27,5 +27,13 @@ source = [
 ]
 omit = [
     "localstack/infra/",
-    "localstack/node_modules"
+    "localstack/node_modules",
+    "localstack/aws/api"
+]
+[tool.coverage.report]
+exclude_lines = [
+    "if __name__ == .__main__.:",
+    "raise NotImplemented.",
+    "return NotImplemented",
+    "def __repr__",
 ]

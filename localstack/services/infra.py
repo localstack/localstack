@@ -32,7 +32,6 @@ from localstack.utils.bootstrap import (
 from localstack.utils.common import (
     TMP_THREADS,
     ShellCommandThread,
-    edge_ports_info,
     get_free_tcp_port,
     in_docker,
     is_linux,
@@ -41,10 +40,12 @@ from localstack.utils.common import (
     run,
     start_thread,
 )
+from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.patch import patch
 from localstack.utils.run import FuncThread
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
+from localstack.utils.threads import cleanup_threads_and_processes
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
@@ -285,19 +286,18 @@ def start_local_api(name, port, api, method, asynchronous=False):
 def stop_infra():
     if common.INFRA_STOPPED:
         return
-    common.INFRA_STOPPED = True
+    # also used to signal shutdown for edge proxy so that any further requests will be rejected
+    common.INFRA_STOPPED = True  # TODO: should probably be STOPPING since it isn't stopped yet
 
     event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
     analytics.log.event("infra_stop")
 
     try:
-        generic_proxy.QUIET = True
+        generic_proxy.QUIET = True  # TODO: this doesn't seem to be doing anything
         LOG.debug("[shutdown] Cleaning up services ...")
         SERVICE_PLUGINS.stop_all_services()
-        LOG.debug("[shutdown] Cleaning up files ...")
-        common.cleanup(files=True, quiet=True)
         LOG.debug("[shutdown] Cleaning up resources ...")
-        common.cleanup_resources()
+        cleanup_resources()
 
         if config.FORCE_SHUTDOWN:
             LOG.debug("[shutdown] Force shutdown, not waiting for infrastructure to shut down")
@@ -310,8 +310,13 @@ def stop_infra():
         SHUTDOWN_INFRA.set()
 
 
+def cleanup_resources():
+    cleanup_tmp_files()
+    cleanup_threads_and_processes()
+
+
 def log_startup_message(service):
-    LOG.info("Starting mock %s service on %s ...", service, edge_ports_info())
+    LOG.info("Starting mock %s service on %s ...", service, config.edge_ports_info())
 
 
 def check_aws_credentials():
@@ -335,7 +340,7 @@ def terminate_all_processes_in_docker():
         return
     print("INFO: Received command to restart all processes ...")
     cmd = (
-        'ps aux | grep -v supervisor | grep -v docker-entrypoint.sh | grep -v "make infra" | '
+        'ps aux | grep -v supervisor | grep -v docker-entrypoint.sh | grep -v "bin/localstack" | '
         "grep -v localstack_infra.log | awk '{print $1}' | grep -v PID"
     )
     pids = run(cmd).strip()
@@ -502,10 +507,6 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     @log_duration()
     def start_runtime_components():
         from localstack.services.edge import start_edge
-        from localstack.services.internal import LocalstackResourceHandler, get_internal_apis
-
-        # serve internal APIs through the generic proxy
-        ProxyListener.DEFAULT_LISTENERS.append(LocalstackResourceHandler(get_internal_apis()))
 
         # TODO: we want a composable LocalStack runtime (edge proxy, service manager, dns, ...)
         t = start_thread(start_edge, quiet=False)

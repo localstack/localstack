@@ -13,8 +13,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import boto3
 import requests
-from six import iteritems
 
+from localstack import config
 from localstack.constants import (
     ENV_INTERNAL_TEST_RUN,
     LAMBDA_TEST_ROLE,
@@ -135,8 +135,8 @@ def create_lambda_archive(
         return result
 
 
-def delete_lambda_function(name):
-    client = aws_stack.connect_to_service("lambda")
+def delete_lambda_function(name, region_name: str = None):
+    client = aws_stack.connect_to_service("lambda", region_name=region_name)
     client.delete_function(FunctionName=name)
 
 
@@ -222,6 +222,9 @@ def create_lambda_function(
     delete=False,
     layers=None,
     client=None,
+    role=None,
+    timeout=None,
+    region_name=None,
     **kwargs,
 ):
     """Utility method to create a new function via the Lambda API"""
@@ -234,7 +237,7 @@ def create_lambda_function(
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
-    client = client or aws_stack.connect_to_service("lambda")
+    client = client or aws_stack.connect_to_service("lambda", region_name=region_name)
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:
@@ -274,9 +277,9 @@ def create_lambda_function(
         "FunctionName": func_name,
         "Runtime": runtime,
         "Handler": handler,
-        "Role": LAMBDA_TEST_ROLE,
+        "Role": role or LAMBDA_TEST_ROLE,
         "Code": lambda_code,
-        "Timeout": LAMBDA_TIMEOUT_SEC,
+        "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
         "Environment": dict(Variables=envvars),
         "Tags": tags,
     }
@@ -408,7 +411,7 @@ def find_object(expected_object, object_list):
             if not isinstance(expected_object, dict):
                 all_ok = False
             else:
-                for k, v in iteritems(expected_object):
+                for k, v in expected_object.items():
                     if not find_recursive(k, v, obj):
                         all_ok = False
                         break
@@ -419,7 +422,7 @@ def find_object(expected_object, object_list):
 
 def find_recursive(key, value, obj):
     if isinstance(obj, dict):
-        for k, v in iteritems(obj):
+        for k, v in obj.items():
             if k == key and v == value:
                 return True
             if find_recursive(key, value, v):
@@ -543,7 +546,7 @@ def send_dynamodb_request(path, action, request_body):
         "x-amz-target": "DynamoDB_20120810.{}".format(action),
         "Authorization": aws_stack.mock_aws_request_headers("dynamodb")["Authorization"],
     }
-    url = "{}/{}".format(os.getenv("TEST_DYNAMODB_URL"), path)
+    url = f"{config.service_url('dynamodb')}/{path}"
     return requests.put(url, data=request_body, headers=headers, verify=False)
 
 

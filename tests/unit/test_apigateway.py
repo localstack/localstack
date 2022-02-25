@@ -1,7 +1,16 @@
 import json
 import unittest
+from unittest.mock import Mock
 
+import boto3
+
+from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway import apigateway_listener
+from localstack.services.apigateway.apigateway_listener import (
+    ApiInvocationContext,
+    RequestValidator,
+    apply_template,
+)
 from localstack.services.apigateway.helpers import apply_json_patch_safe
 from localstack.utils.aws import templating
 from localstack.utils.common import clone
@@ -105,6 +114,74 @@ class ApiGatewayPathsTest(unittest.TestCase):
         )
         self.assertEqual("https://httpbin.org/anything/foo/bar/baz?param=foobar", uri)
 
+    def test_if_request_is_valid_with_no_resource_methods(self):
+        ctx = ApiInvocationContext("POST", "/", b"", {})
+        validator = RequestValidator(ctx, None)
+        self.assertTrue(validator.is_request_valid())
+
+    def test_if_request_is_valid_with_no_matching_method(self):
+        ctx = ApiInvocationContext("POST", "/", b"", {})
+        ctx.resource = {"resourceMethods": {"GET": {}}}
+        validator = RequestValidator(ctx, None)
+        self.assertTrue(validator.is_request_valid())
+
+    def test_if_request_is_valid_with_no_validator(self):
+        ctx = ApiInvocationContext("POST", "/", b"", {})
+        ctx.api_id = "deadbeef"
+        ctx.resource = {"resourceMethods": {"POST": {"requestValidatorId": " "}}}
+        validator = RequestValidator(ctx, None)
+        self.assertTrue(validator.is_request_valid())
+
+    def test_if_request_has_body_validator(self):
+        apigateway_client = Mock(boto3.client(service_name="apigateway"))
+        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
+        apigateway_client.get_model.return_value = {"schema": '{"type": "object"}'}
+        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        ctx.api_id = "deadbeef"
+        ctx.resource = {
+            "resourceMethods": {
+                "POST": {
+                    "requestValidatorId": "112233",
+                    "requestModels": {"application/json": "schemaName"},
+                }
+            }
+        }
+        validator = RequestValidator(ctx, apigateway_client)
+        self.assertTrue(validator.is_request_valid())
+
+    def test_request_validate_body_with_no_request_model(self):
+        apigateway_client = Mock(boto3.client(service_name="apigateway"))
+        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
+        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        ctx.api_id = "deadbeef"
+        ctx.resource = {
+            "resourceMethods": {
+                "POST": {
+                    "requestValidatorId": "112233",
+                    "requestModels": None,
+                }
+            }
+        }
+        validator = RequestValidator(ctx, apigateway_client)
+        self.assertFalse(validator.is_request_valid())
+
+    def test_request_validate_body_with_no_model_for_schema_name(self):
+        apigateway_client = Mock(boto3.client(service_name="apigateway"))
+        apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
+        apigateway_client.get_model.return_value = None
+        ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
+        ctx.api_id = "deadbeef"
+        ctx.resource = {
+            "resourceMethods": {
+                "POST": {
+                    "requestValidatorId": "112233",
+                    "requestModels": {"application/json": "schemaName"},
+                }
+            }
+        }
+        validator = RequestValidator(ctx, apigateway_client)
+        self.assertFalse(validator.is_request_valid())
+
 
 def test_render_template_values():
     util = templating.VelocityUtil()
@@ -159,3 +236,31 @@ class TestJSONPatch(unittest.TestCase):
         subject = {"features": ["feat1"]}
         result = apply(clone(subject), operation)
         self.assertEqual(["feat1", "feat2"], result["features"])
+
+
+class TestApplyTemplate(unittest.TestCase):
+    def test_apply_template(self):
+        int_type = {
+            "type": "HTTP",
+            "requestTemplates": {
+                APPLICATION_JSON: "$util.escapeJavaScript($input.json('$.message'))"
+            },
+        }
+        resp_type = "request"
+        inv_payload = '{"action":"$default","message":"foobar"}'
+        rendered = apply_template(int_type, resp_type, inv_payload)
+
+        self.assertEqual('"foobar"', rendered)
+
+    def test_apply_template_no_json_payload(self):
+        int_type = {
+            "type": "HTTP",
+            "requestTemplates": {
+                APPLICATION_JSON: "$util.escapeJavaScript($input.json('$.message'))"
+            },
+        }
+        resp_type = "request"
+        inv_payload = "#foobar123"
+        rendered = apply_template(int_type, resp_type, inv_payload)
+
+        self.assertEqual("[]", rendered)

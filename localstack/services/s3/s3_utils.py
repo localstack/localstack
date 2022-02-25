@@ -3,12 +3,12 @@ import logging
 import re
 import time
 from collections import namedtuple
+from urllib import parse as urlparse
 from urllib.parse import parse_qs, urlencode
 
 from botocore.awsrequest import create_request_object
 from botocore.compat import urlsplit
 from botocore.credentials import Credentials
-from six.moves.urllib import parse as urlparse
 
 from localstack import config
 from localstack.constants import (

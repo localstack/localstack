@@ -2,7 +2,7 @@ import logging
 import threading
 from datetime import datetime, timezone
 from random import randint
-from typing import Dict
+from typing import Dict, Optional
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.opensearch import (
@@ -89,9 +89,6 @@ from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
 
-# timeout in seconds when giving up on waiting for the cluster to start
-CLUSTER_STARTUP_TIMEOUT = 600
-
 # mutex for modifying domains
 _domain_mutex = threading.RLock()
 
@@ -119,30 +116,35 @@ def cluster_manager() -> ClusterManager:
 def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str):
     LOG.debug("running cluster startup monitor for cluster %s", cluster)
 
-    # wait until the cluster is started, or the timeout is reached
+    # wait until the cluster is started
     # NOTE: does not work when DNS rebind protection is active for localhost.localstack.cloud
-    is_up = cluster.wait_is_up(CLUSTER_STARTUP_TIMEOUT)
+    is_up = cluster.wait_is_up()
 
     LOG.debug("cluster state polling for %s returned! status = %s", domain_name, is_up)
     with _domain_mutex:
-        status = OpenSearchServiceBackend.get(region).opensearch_domains[domain_name]
-        status["Processing"] = False
+        status = OpenSearchServiceBackend.get(region).opensearch_domains.get(domain_name)
+        if status is not None:
+            status["Processing"] = False
 
 
-def _create_cluster(
-    domain_key: DomainKey, engine_version: str, domain_endpoint_options: DomainEndpointOptions
+def create_cluster(
+    domain_key: DomainKey,
+    engine_version: str,
+    domain_endpoint_options: Optional[DomainEndpointOptions],
+    preferred_port: Optional[int] = None,
 ):
     """
     Uses the ClusterManager to create a new cluster for the given domain_name in the region of the current request
     context. NOT thread safe, needs to be called around _domain_mutex.
+    If the preferred_port is given, this port will be preferred (if OPENSEARCH_ENDPOINT_STRATEGY == "port").
     """
     region = OpenSearchServiceBackend.get(domain_key.region)
 
     manager = cluster_manager()
     engine_version = engine_version or OPENSEARCH_DEFAULT_VERSION
-    cluster = manager.create(domain_key.arn, engine_version, domain_endpoint_options)
-
-    region.opensearch_clusters[domain_key.domain_name] = cluster
+    cluster = manager.create(
+        domain_key.arn, engine_version, domain_endpoint_options, preferred_port
+    )
 
     # FIXME: in AWS, the Endpoint is set once the cluster is running, not before (like here), but our tests and
     #  in particular cloudformation currently relies on the assumption that it is set when the domain is created.
@@ -165,19 +167,16 @@ def _create_cluster(
 def _remove_cluster(domain_key: DomainKey):
     region = OpenSearchServiceBackend.get(domain_key.region)
     cluster_manager().remove(domain_key.arn)
-    del region.opensearch_clusters[domain_key.domain_name]
+    del region.opensearch_domains[domain_key.domain_name]
 
 
 class OpenSearchServiceBackend(RegionBackend):
-    # maps cluster names to cluster details
-    opensearch_clusters: Dict[str, Server]
     # storage for domain resources (access should be protected with the _domain_mutex)
     opensearch_domains: Dict[str, DomainStatus]
     # static tagging service instance
     TAGS = TaggingService()
 
     def __init__(self):
-        self.opensearch_clusters = {}
         self.opensearch_domains = {}
 
 
@@ -406,7 +405,11 @@ class OpensearchProvider(OpensearchApi):
             region.opensearch_domains[domain_name] = get_domain_status(domain_key)
 
             # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
-            _create_cluster(domain_key, engine_version, domain_endpoint_options)
+            # TODO handle additional parameters (cluster config,...)
+            create_cluster(domain_key, engine_version, domain_endpoint_options)
+
+            # set the tags
+            self.add_tags(context, domain_key.arn, tag_list)
 
             # get the (updated) status
             status = get_domain_status(domain_key)
@@ -433,7 +436,6 @@ class OpensearchProvider(OpensearchApi):
                 raise ResourceNotFoundException(f"Domain not found: {domain_name}")
 
             status = get_domain_status(domain_key, deleted=True)
-            del region.opensearch_domains[domain_name]
             _remove_cluster(domain_key)
 
         # record event
@@ -466,13 +468,13 @@ class OpensearchProvider(OpensearchApi):
         status_list = []
         with _domain_mutex:
             for domain_name in domain_names:
-                domain_key = DomainKey(
-                    domain_name=domain_name,
-                    region=context.region,
-                    account=context.account_id,
-                )
-
-                status_list.append(get_domain_status(domain_key))
+                try:
+                    domain_status = self.describe_domain(context, domain_name)["DomainStatus"]
+                    status_list.append(domain_status)
+                except ResourceNotFoundException:
+                    # ResourceNotFoundExceptions are ignored, we just look for the next domain.
+                    # If no domain can be found, the result will just be empty.
+                    pass
         return DescribeDomainsResponse(DomainStatusList=status_list)
 
     def list_domain_names(
@@ -480,8 +482,13 @@ class OpensearchProvider(OpensearchApi):
     ) -> ListDomainNamesResponse:
         region = OpenSearchServiceBackend.get(context.region)
         domain_names = [
-            DomainInfo(DomainName=DomainName(domain_name), EngineType=EngineType.OpenSearch)
-            for domain_name in region.opensearch_domains.keys()
+            DomainInfo(
+                DomainName=DomainName(domain_name),
+                EngineType=versions.get_engine_type(domain["EngineVersion"]),
+            )
+            for domain_name, domain in region.opensearch_domains.items()
+            if engine_type is None
+            or versions.get_engine_type(domain["EngineVersion"]) == engine_type
         ]
         return ListDomainNamesResponse(DomainNames=domain_names)
 
@@ -491,17 +498,11 @@ class OpensearchProvider(OpensearchApi):
         max_results: MaxResults = None,
         next_token: NextToken = None,
     ) -> ListVersionsResponse:
-        # TODO this implementation currently only handles the OpenSearch engine.
-        # Therefore this function only returns the OpenSearch version(s).
-        # In later iterations, this implementation should handle both engines (OpenSearch and ElasticSearch).
-        # Then the response would also contain ElasticSearch versions.
         return ListVersionsResponse(Versions=list(versions.install_versions.keys()))
 
     def get_compatible_versions(
         self, context: RequestContext, domain_name: DomainName = None
     ) -> GetCompatibleVersionsResponse:
-        # TODO this implementation currently only handles the OpenSearch engine.
-        # In later iterations, this implementation should handle both engines (OpenSearch and ElasticSearch).
         version_filter = None
         if domain_name:
             region = OpenSearchServiceBackend.get(context.region)

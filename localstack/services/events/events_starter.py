@@ -195,7 +195,7 @@ def start_scheduler():
 
 
 def start_events(port=None, asynchronous=None, update_listener=None):
-    port = port or config.PORT_EVENTS
+    port = port or config.service_port("events")
 
     apply_patches()
     start_scheduler()

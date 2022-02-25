@@ -11,7 +11,7 @@ def patch_logs():
 
 
 def start_cloudwatch_logs(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_LOGS
+    port = port or config.service_port("logs")
     patch_logs()
     return start_moto_server(
         "logs",

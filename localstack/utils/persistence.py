@@ -9,7 +9,6 @@ from abc import ABCMeta, abstractmethod
 from typing import NamedTuple
 
 import requests
-from six import add_metaclass
 
 from localstack import config, constants
 from localstack.config import is_env_not_false, is_env_true
@@ -41,8 +40,7 @@ API_CALLS_RESTORED = False
 LOG = logging.getLogger(__name__)
 
 
-@add_metaclass(ABCMeta)
-class PersistingProxyListener(ProxyListener):
+class PersistingProxyListener(ProxyListener, metaclass=ABCMeta):
     """
     This proxy listener could be extended by any API that wishes to record its requests and responses,
     via the existing persistence facility.
@@ -225,14 +223,14 @@ class StartupInfo(NamedTuple):
 
 
 def save_startup_info():
-    from localstack_ext.constants import VERSION as LOCALSTACK_EXT_VERSION
+    from localstack_ext import __version__ as localstack_ext_version
 
     file_path = os.path.join(config.dirs.data, STARTUP_INFO_FILE)
 
     info = StartupInfo(
         timestamp=datetime.datetime.now().isoformat(),
         localstack_version=constants.VERSION,
-        localstack_ext_version=LOCALSTACK_EXT_VERSION,
+        localstack_ext_version=localstack_ext_version,
         pro_activated=is_env_true(constants.ENV_PRO_ACTIVATED),
     )
     LOG.debug("saving startup info %s", info)

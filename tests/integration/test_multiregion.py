@@ -101,7 +101,7 @@ class TestMultiRegion(unittest.TestCase):
 
     def _gateway_request_url(self, api_id, stage_name, path):
         pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
-            config.TEST_APIGATEWAY_URL,
+            config.service_url("apigateway"),
             PATH_USER_REQUEST,
         )
         return pattern.format(api_id=api_id, stage_name=stage_name, path=path)

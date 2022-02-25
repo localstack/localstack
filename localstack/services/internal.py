@@ -6,11 +6,15 @@ from collections import defaultdict
 from typing import Any, Dict, Optional
 
 import requests
+from werkzeug.exceptions import NotFound
 
 from localstack import config, constants
+from localstack.http import Router
+from localstack.http.adapters import RouterListener
+from localstack.http.dispatcher import resource_dispatcher
 from localstack.services.infra import terminate_all_processes_in_docker
-from localstack.services.routing import ResourceRouter, ResourceRouterProxyListener
 from localstack.utils.common import (
+    call_safe,
     load_file,
     merge_recursive,
     parse_json_or_yaml,
@@ -103,7 +107,6 @@ class ResourceGraph:
 
 class CloudFormationUi:
     def on_get(self, request):
-        from localstack.utils.aws.aws_responses import requests_response
 
         path = request.path
         data = request.data
@@ -136,17 +139,38 @@ class CloudFormationUi:
         # using simple string replacement here, for simplicity (could be replaced with, e.g., jinja)
         for key, value in params.items():
             deploy_html = deploy_html.replace(f"<{key}>", value)
-        result = requests_response(deploy_html)
-        return result
+        return deploy_html
 
 
-class LocalstackResources(ResourceRouter):
+class DiagnoseResource:
+    def on_get(self, request):
+        from localstack.utils import diagnose
+
+        return {
+            "version": {
+                "image-version": call_safe(diagnose.get_docker_image_details),
+                "localstack-version": call_safe(diagnose.get_localstack_version),
+                "host": {
+                    "kernel": call_safe(diagnose.get_host_kernel_version),
+                },
+            },
+            "services": call_safe(diagnose.get_service_stats),
+            "config": call_safe(diagnose.get_localstack_config),
+            "docker-inspect": call_safe(diagnose.inspect_main_container),
+            "docker-dependent-image-hashes": call_safe(diagnose.get_important_image_hashes),
+            "file-tree": call_safe(diagnose.get_file_tree),
+            "important-endpoints": call_safe(diagnose.resolve_endpoints),
+            "logs": call_safe(diagnose.get_localstack_logs),
+        }
+
+
+class LocalstackResources(Router):
     """
     Router for localstack-internal HTTP resources.
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__(dispatcher=resource_dispatcher(pass_response=False))
         self.add_default_routes()
         # TODO: load routes as plugins
 
@@ -157,18 +181,25 @@ class LocalstackResources(ResourceRouter):
         graph_resource = ResourceGraph()
 
         # two special routes for legacy support (before `/_localstack` was introduced)
-        super().add_route("/health", health_resource)
-        super().add_route("/graph", graph_resource)
+        super().add("/health", health_resource)
+        super().add("/graph", graph_resource)
 
-        self.add_route("/health", health_resource)
-        self.add_route("/graph", graph_resource)
-        self.add_route("/cloudformation/deploy", CloudFormationUi())
+        self.add("/health", health_resource)
+        self.add("/graph", graph_resource)
+        self.add("/cloudformation/deploy", CloudFormationUi())
 
-    def add_route(self, path: str, resource: Any, suffix: str = None):
-        super().add_route(f"{constants.INTERNAL_RESOURCE_PATH}{path}", resource, suffix)
+        if config.DEBUG:
+            LOG.warning(
+                "Enabling diagnose endpoint, "
+                "please be aware that this can expose sensitive information via your network."
+            )
+            self.add("/diagnose", DiagnoseResource())
+
+    def add(self, path, *args, **kwargs):
+        super().add(f"{constants.INTERNAL_RESOURCE_PATH}{path}", *args, **kwargs)
 
 
-class LocalstackResourceHandler(ResourceRouterProxyListener):
+class LocalstackResourceHandler(RouterListener):
     """
     Adapter to serve LocalstackResources through the edge proxy.
     """
@@ -176,19 +207,18 @@ class LocalstackResourceHandler(ResourceRouterProxyListener):
     resources: LocalstackResources
 
     def __init__(self, resources: LocalstackResources = None) -> None:
-        super().__init__(resources or LocalstackResources())
+        super().__init__(resources or get_internal_apis(), fall_through=False)
 
     def forward_request(self, method, path, data, headers):
-        result = super().forward_request(method, path, data, headers)
-
-        if result == 404:
+        try:
+            return super().forward_request(method, path, data, headers)
+        except NotFound:
             if not path.startswith(constants.INTERNAL_RESOURCE_PATH + "/"):
                 # only return 404 if we're accessing an internal resource, otherwise fall back to the other listeners
                 return True
             else:
                 LOG.warning("Unable to find handler for path: %s", path)
-
-        return result
+                return 404
 
 
 INTERNAL_APIS: Optional[LocalstackResources] = None

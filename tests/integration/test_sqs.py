@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+from urllib.parse import urlencode
 
 import pytest
 import requests
@@ -10,16 +11,15 @@ from botocore.auth import SIGV4_TIMESTAMP, SigV4Auth
 from botocore.awsrequest import AWSRequest
 from botocore.credentials import Credentials
 from botocore.exceptions import ClientError
-from six.moves.urllib.parse import urlencode
 
 from localstack import config, constants
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import get_service_protocol, poll_condition, retry, short_uid, to_str
 
+from .awslambda.functions import lambda_integration
+from .awslambda.test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 from .fixtures import only_localstack
-from .lambdas import lambda_integration
-from .test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
 
 TEST_QUEUE_NAME = "TestQueue"
 
@@ -42,8 +42,6 @@ TEST_POLICY = """
 }
 """
 
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 TEST_LAMBDA_TAGS = {"tag1": "value1", "tag2": "value2", "tag3": ""}
 
 TEST_MESSAGE_ATTRIBUTES = {
@@ -109,6 +107,12 @@ class TestSqsProvider:
         assert queue_urls[0] not in result["QueueUrls"]
         assert queue_urls[1] not in result["QueueUrls"]
         assert queue_urls[2] in result["QueueUrls"]
+
+        # list queues regardless of prefix prefix
+        result = sqs_client.list_queues()
+        assert "QueueUrls" in result
+        for url in queue_urls:
+            assert url in result["QueueUrls"]
 
     def test_create_queue_and_get_attributes(self, sqs_client, sqs_queue):
         result = sqs_client.get_queue_attributes(
@@ -357,7 +361,7 @@ class TestSqsProvider:
 
         lambda_name = f"lambda-{short_uid()}"
         create_lambda_function(
-            lambda_name,
+            func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=LAMBDA_RUNTIME_PYTHON36,
@@ -414,18 +418,16 @@ class TestSqsProvider:
         assert len(result_send["Failed"]) == 1
 
     @only_localstack
-    @pytest.mark.xfail  # We are deprecating this and see what breaks
     def test_external_hostname(self, monkeypatch, sqs_client, sqs_create_queue):
         external_host = "external-host"
         external_port = "12345"
-        SQS_PORT_EXTERNAL = "SQS_PORT_EXTERNAL"
 
-        monkeypatch.setattr(config, SQS_PORT_EXTERNAL, external_port)
+        monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_port)
         monkeypatch.setattr(config, "HOSTNAME_EXTERNAL", external_host)
         # TODO: remove once the old provider is discontinued
         from localstack.services.sqs import sqs_listener as old_sqs_listener
 
-        monkeypatch.setattr(old_sqs_listener, SQS_PORT_EXTERNAL, external_port)
+        monkeypatch.setattr(old_sqs_listener, "SQS_PORT_EXTERNAL", external_port)
 
         queue_name = f"queue-{short_uid()}"
         queue_url = sqs_create_queue(QueueName=queue_name)
@@ -659,6 +661,13 @@ class TestSqsProvider:
 
         result_recv = sqs_client.receive_message(QueueUrl=queue_url)
         assert result_recv["Messages"][0]["MessageId"] == message_id
+
+    def test_fifo_queue_without_fifo_queue_attribute(self, sqs_create_queue):
+        queue_name = f"invalid-{short_uid()}.fifo"
+
+        with pytest.raises(Exception) as e:
+            sqs_create_queue(QueueName=queue_name)
+        e.match("InvalidParameterValue")
 
     def test_fifo_queue_requires_suffix(self, sqs_create_queue):
         queue_name = f"invalid-{short_uid()}"
@@ -982,7 +991,7 @@ class TestSqsProvider:
 
         lambda_name = f"lambda-{short_uid()}"
         create_lambda_function(
-            lambda_name,
+            func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=LAMBDA_RUNTIME_PYTHON36,
@@ -1452,7 +1461,7 @@ class TestSqsProvider:
 
         lambda_name = "lambda-{}".format(short_uid())
         create_lambda_function(
-            lambda_name,
+            func_name=lambda_name,
             libs=TEST_LAMBDA_LIBS,
             handler_file=TEST_LAMBDA_PYTHON,
             runtime=LAMBDA_RUNTIME_PYTHON36,

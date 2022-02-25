@@ -831,7 +831,7 @@ def get_sse_description(data):
 def handle_special_request(method, path, data, headers):
     if path.startswith("/shell") or method == "GET":
         if path == "/shell":
-            headers = {"Refresh": "0; url=%s/shell/" % config.TEST_DYNAMODB_URL}
+            headers = {"Refresh": "0; url=%s/shell/" % config.service_url("dynamodb")}
             return aws_responses.requests_response("", headers=headers)
         return True
 

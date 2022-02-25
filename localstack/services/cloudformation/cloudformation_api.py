@@ -85,6 +85,7 @@ class Stack(object):
         ) or aws_stack.cloudformation_stack_arn(self.stack_name, short_uid())
         self.template["Parameters"] = self.template.get("Parameters") or {}
         self.template["Outputs"] = self.template.get("Outputs") or {}
+        self.template["Conditions"] = self.template.get("Conditions") or {}
         # initialize metadata
         self.metadata["Parameters"] = self.metadata.get("Parameters") or []
         self.metadata["StackStatus"] = "CREATE_IN_PROGRESS"
@@ -123,10 +124,10 @@ class Stack(object):
         ]
         result = select_attributes(self.metadata, attrs)
         result["Tags"] = self.tags
-        result["Outputs"] = self.outputs
+        result["Outputs"] = self.outputs_list()
         result["Parameters"] = self.stack_parameters()
-        for attr in ["Capabilities", "Tags", "Outputs", "Parameters"]:
-            result[attr] = result.get(attr, [])
+        for attr in ["Capabilities", "Outputs", "Parameters", "Tags"]:
+            result.setdefault(attr, [])
         return result
 
     def set_stack_status(self, status):
@@ -181,6 +182,11 @@ class Stack(object):
     def resource_status(self, resource_id: str):
         result = self._lookup(self.resource_states, resource_id)
         return result
+
+    def latest_template_raw(self):
+        if self.change_sets:
+            return self.change_sets[-1]._template_raw
+        return self._template_raw
 
     @property
     def resource_states(self):
@@ -261,25 +267,23 @@ class Stack(object):
         recurse_object(self.resources, _collect)
         return result
 
-    @property
-    def outputs(self):
+    def outputs_list(self) -> List[Dict]:
+        """Returns a copy of the outputs of this stack."""
         result = []
         # first, fetch the outputs of nested child stacks
         for stack in self.nested_stacks:
-            result.extend(stack.outputs)
+            result.extend(stack.outputs_list())
         # now, fetch the outputs of this stack
-        for k, details in self.template.get("Outputs", {}).items():
+        for k, details in self.outputs.items():
             value = None
             try:
-                template_deployer.resolve_refs_recursively(self.stack_name, details, self.resources)
+                template_deployer.resolve_refs_recursively(self, details)
                 value = details["Value"]
             except Exception as e:
                 LOG.debug("Unable to resolve references in stack outputs: %s - %s", details, e)
             exports = details.get("Export") or {}
             export = exports.get("Name")
-            export = template_deployer.resolve_refs_recursively(
-                self.stack_name, export, self.resources
-            )
+            export = template_deployer.resolve_refs_recursively(self, export)
             description = details.get("Description")
             entry = {
                 "OutputKey": k,
@@ -333,11 +337,18 @@ class Stack(object):
 
     @property
     def conditions(self):
-        return self.template.get("Conditions", {})
+        """Returns the (mutable) dict of stack conditions."""
+        return self.template.setdefault("Conditions", {})
 
     @property
     def mappings(self):
-        return self.template.get("Mappings", {})
+        """Returns the (mutable) dict of stack mappings."""
+        return self.template.setdefault("Mappings", {})
+
+    @property
+    def outputs(self):
+        """Returns the (mutable) dict of stack outputs."""
+        return self.template.setdefault("Outputs", {})
 
     @property
     def exports_map(self):
@@ -430,7 +441,7 @@ class CloudFormationRegion(RegionBackend):
         exports = []
         output_keys = {}
         for stack_id, stack in self.stacks.items():
-            for output in stack.outputs:
+            for output in stack.outputs_list():
                 export_name = output.get("ExportName")
                 if not export_name:
                     continue
@@ -935,10 +946,10 @@ def get_template(req_params):
     cs_name = req_params.get("ChangeSetName")
     stack = find_stack(stack_name)
     if cs_name:
-        stack = find_change_set(stack_name, cs_name)
+        stack = find_change_set(stack_name=stack_name, cs_name=cs_name)
     if not stack:
         return stack_not_found_error(stack_name)
-    result = {"TemplateBody": json.dumps(stack._template_raw)}
+    result = {"TemplateBody": json.dumps(stack.latest_template_raw())}
     return result
 
 

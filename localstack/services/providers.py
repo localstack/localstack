@@ -1,3 +1,5 @@
+from localstack.aws.proxy import AwsApiListener
+from localstack.services.moto import MotoFallbackDispatcher
 from localstack.services.plugins import Service, aws_provider
 
 
@@ -28,19 +30,25 @@ def cloudformation():
 
 @aws_provider(api="config")
 def awsconfig():
-    from localstack.services.configservice import configservice_starter
+    from localstack.services.configservice.provider import ConfigProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
-    return Service("config", start=configservice_starter.start_configservice)
+    provider = ConfigProvider()
+    return Service("config", listener=AwsApiListener("config", MotoFallbackDispatcher(provider)))
 
 
 @aws_provider()
 def cloudwatch():
-    from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
+    from localstack.services.cloudwatch.provider import CloudwatchProvider
+    from localstack.services.moto import MotoFallbackDispatcher
+
+    provider = CloudwatchProvider()
+    listener = AwsApiListener("cloudwatch", MotoFallbackDispatcher(provider))
 
     return Service(
         "cloudwatch",
-        listener=cloudwatch_listener.UPDATE_CLOUD_WATCH,
-        start=cloudwatch_starter.start_cloudwatch,
+        listener=listener,
+        lifecycle_hook=provider,
     )
 
 
@@ -58,9 +66,15 @@ def dynamodb():
 
 @aws_provider()
 def dynamodbstreams():
-    from localstack.services.dynamodbstreams import dynamodbstreams_starter
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.dynamodbstreams.provider import DynamoDBStreamsProvider
 
-    return Service("dynamodbstreams", start=dynamodbstreams_starter.start_dynamodbstreams)
+    provider = DynamoDBStreamsProvider()
+    return Service(
+        "dynamodbstreams",
+        listener=AwsApiListener("dynamodbstreams", provider),
+        lifecycle_hook=provider,
+    )
 
 
 @aws_provider()
@@ -72,9 +86,11 @@ def ec2():
 
 @aws_provider()
 def es():
-    from localstack.services.es import es_starter
+    from localstack.aws.proxy import AwsApiListener
+    from localstack.services.es.provider import EsProvider
 
-    return Service("es", start=es_starter.start_elasticsearch_service)
+    provider = EsProvider()
+    return Service("es", listener=AwsApiListener("es", provider))
 
 
 @aws_provider()
@@ -151,9 +167,12 @@ def opensearch():
 
 @aws_provider()
 def redshift():
-    from localstack.services.redshift import redshift_starter
+    from localstack.services.redshift.provider import RedshiftProvider
 
-    return Service("redshift", start=redshift_starter.start_redshift)
+    provider = RedshiftProvider()
+    listener = AwsApiListener("redshift", MotoFallbackDispatcher(provider))
+
+    return Service("redshift", listener=listener)
 
 
 @aws_provider()
@@ -231,9 +250,14 @@ def sqs_asf():
 
 @aws_provider()
 def ssm():
-    from localstack.services.ssm import ssm_listener, ssm_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.ssm.provider import SsmProvider
 
-    return Service("ssm", listener=ssm_listener.UPDATE_SSM, start=ssm_starter.start_ssm)
+    provider = SsmProvider()
+    return Service(
+        "ssm",
+        listener=AwsApiListener("ssm", MotoFallbackDispatcher(provider)),
+    )
 
 
 @aws_provider()
@@ -259,13 +283,11 @@ def stepfunctions():
 
 @aws_provider()
 def swf():
-    from localstack.services.swf import swf_listener, swf_starter
+    from localstack.services.swf import swf_starter
 
     return Service(
         "swf",
-        listener=swf_listener.UPDATE_SWF,
         start=swf_starter.start_swf,
-        check=swf_starter.check_swf,
     )
 
 
@@ -289,6 +311,11 @@ def resource_groups():
 
 @aws_provider()
 def support():
-    from localstack.services.support import support_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.support.provider import SupportProvider
 
-    return Service("support", start=support_starter.start_support)
+    provider = SupportProvider()
+    return Service(
+        "support",
+        listener=AwsApiListener("support", MotoFallbackDispatcher(provider)),
+    )

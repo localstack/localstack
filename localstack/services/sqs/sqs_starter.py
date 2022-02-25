@@ -139,7 +139,7 @@ def patch_moto():
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None) -> Server:
     from localstack.services import motoserver
 
-    port = port or config.PORT_SQS
+    port = port or config.service_port("sqs")
     patch_moto()
     start_moto_server(
         "sqs",

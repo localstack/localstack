@@ -8,7 +8,6 @@ import tempfile
 import time
 from typing import Any, Dict, List, Mapping, Tuple
 
-import six
 from boto3 import Session
 
 from localstack.constants import (
@@ -381,6 +380,9 @@ EAGER_SERVICE_LOADING = is_env_true("EAGER_SERVICE_LOADING")
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get("SKIP_INFRA_DOWNLOADS", "").strip()
 
+# Whether to skip downloading our signed SSL cert.
+SKIP_SSL_CERT_DOWNLOAD = is_env_true("SKIP_SSL_CERT_DOWNLOAD")
+
 # whether to enable legacy record&replay persistence mechanism (default true, but will be disabled in a future release!)
 LEGACY_PERSISTENCE = is_env_not_false("LEGACY_PERSISTENCE")
 
@@ -468,7 +470,7 @@ EXTERNAL_SERVICE_PORTS_START = int(
 EXTERNAL_SERVICE_PORTS_END = int(
     os.environ.get("EXTERNAL_SERVICE_PORTS_END")
     or os.environ.get("SERVICE_INSTANCES_PORTS_END")
-    or (EXTERNAL_SERVICE_PORTS_START + 30)
+    or (EXTERNAL_SERVICE_PORTS_START + 50)
 )
 
 # java options to Lambda
@@ -580,34 +582,35 @@ LAMBDA_CODE_EXTRACT_TIME = int(os.environ.get("LAMBDA_CODE_EXTRACT_TIME") or 25)
 # whether lambdas should use stay open mode if executed in "docker-reuse" executor
 LAMBDA_STAY_OPEN_MODE = is_in_docker and is_env_not_false("LAMBDA_STAY_OPEN_MODE")
 
+# truncate output string slices value
+LAMBDA_TRUNCATE_STDOUT = int(os.getenv("LAMBDA_TRUNCATE_STDOUT") or 2000)
+
 # A comma-delimited string of stream names and its corresponding shard count to
 # initialize during startup.
 # For example: "my-first-stream:1,my-other-stream:2,my-last-stream:1"
 KINESIS_INITIALIZE_STREAMS = os.environ.get("KINESIS_INITIALIZE_STREAMS", "").strip()
 
-# URL to a custom elasticsearch backend cluster. If this is set to a valid URL, then localstack will not create
-# elasticsearch cluster instances, but instead forward all domains to the given backend.
-ES_CUSTOM_BACKEND = os.environ.get("ES_CUSTOM_BACKEND", "").strip()
-
-# Strategy used when creating elasticsearch domain endpoints routed through the edge proxy
-# valid values: domain | path | off
-ES_ENDPOINT_STRATEGY = os.environ.get("ES_ENDPOINT_STRATEGY", "").strip() or "domain"
-
-# Whether to start one cluster per domain (default), or multiplex domains to a single clusters
-ES_MULTI_CLUSTER = is_env_not_false("ES_MULTI_CLUSTER")
-
-# URL to a custom opensearch backend cluster. If this is set to a valid URL, then localstack will not create
-# opensearch cluster instances, but instead forward all domains to the given backend.
-OPENSEARCH_CUSTOM_BACKEND = os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
-
-# Strategy used when creating opensearch domain endpoints routed through the edge proxy
-# valid values: domain | path
-OPENSEARCH_ENDPOINT_STRATEGY = (
-    os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip() or "domain"
+# URL to a custom OpenSearch/Elasticsearch backend cluster. If this is set to a valid URL, then localstack will not
+# create OpenSearch/Elasticsearch cluster instances, but instead forward all domains to the given backend.
+OPENSEARCH_CUSTOM_BACKEND = (
+    os.environ.get("OPENSEARCH_CUSTOM_BACKEND", "").strip()
+    or os.environ.get("ES_CUSTOM_BACKEND", "").strip()
 )
 
-# Whether to start one openseasrch cluster per domain (default), or multiplex opensearch domains to a single clusters
-OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER")
+# Strategy used when creating OpenSearch/Elasticsearch domain endpoints routed through the edge proxy
+# valid values: domain | path | port (off)
+OPENSEARCH_ENDPOINT_STRATEGY = (
+    os.environ.get("OPENSEARCH_ENDPOINT_STRATEGY", "").strip()
+    or os.environ.get("ES_ENDPOINT_STRATEGY", "").strip()
+    or "domain"
+)
+if OPENSEARCH_ENDPOINT_STRATEGY == "off":
+    OPENSEARCH_ENDPOINT_STRATEGY = "port"
+
+# Whether to start one cluster per domain (default), or multiplex opensearch domains to a single clusters
+OPENSEARCH_MULTI_CLUSTER = is_env_not_false("OPENSEARCH_MULTI_CLUSTER") or is_env_true(
+    "ES_MULTI_CLUSTER"
+)
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
@@ -628,6 +631,7 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_READ_ERROR_PROBABILITY",
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
+    "EDGE_BIND_HOST",
     "EDGE_FORWARD_URL",
     "EDGE_PORT",
     "EDGE_PORT_HTTP",
@@ -655,6 +659,7 @@ CONFIG_ENV_VARS = [
     "LAMBDA_REMOTE_DOCKER",
     "LAMBDA_REMOVE_CONTAINERS",
     "LAMBDA_STAY_OPEN_MODE",
+    "LAMBDA_TRUNCATE_STDOUT",
     "LEGACY_DOCKER_CLIENT",
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_HOSTNAME",
@@ -668,6 +673,7 @@ CONFIG_ENV_VARS = [
     "S3_SKIP_SIGNATURE_VALIDATION",
     "SERVICES",
     "SKIP_INFRA_DOWNLOADS",
+    "SKIP_SSL_CERT_DOWNLOAD",
     "SQS_PORT_EXTERNAL",
     "STEPFUNCTIONS_LAMBDA_ENDPOINT",
     "SYNCHRONOUS_API_GATEWAY_EVENTS",
@@ -688,15 +694,6 @@ CONFIG_ENV_VARS = [
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
 ]
-
-for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
-    clean_key = key.upper().replace("-", "_")
-    CONFIG_ENV_VARS += [
-        clean_key + "_BACKEND",
-        clean_key + "_PORT",
-        clean_key + "_PORT_EXTERNAL",
-        "PROVIDER_OVERRIDE_" + clean_key,
-    ]
 
 
 def collect_config_items() -> List[Tuple[str, Any]]:
@@ -750,35 +747,25 @@ def parse_service_ports() -> Dict[str, int]:
     return result
 
 
-# TODO: we need to investigate the performance impact of this
+# TODO: leaving temporarily for patch compatibilty - remove!
 def populate_configs(service_ports=None):
-    global SERVICE_PORTS, CONFIG_ENV_VARS
+    pass
 
-    SERVICE_PORTS = service_ports or parse_service_ports()
-    globs = globals()
-    protocol = get_protocol()
 
-    # define service ports and URLs as environment variables
-    for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
-        key_upper = key.upper().replace("-", "_")
+# TODO: use functools cache, instead of global variable here
+SERVICE_PORTS = parse_service_ports()
 
-        # define PORT_* variables with actual service ports as per configuration
-        port_var_name = "PORT_%s" % key_upper
-        port_number = service_port(key)
-        globs[port_var_name] = port_number
-        url = "%s://%s:%s" % (protocol, LOCALSTACK_HOSTNAME, port_number)
-        # define TEST_*_URL variables with mock service endpoints
-        url_key = "TEST_%s_URL" % key_upper
-        # allow overwriting TEST_*_URL from user-defined environment variables
-        existing = os.environ.get(url_key)
-        url = existing or url
-        # set global variable
-        globs[url_key] = url
-        # expose HOST_*_URL variables as environment variables
-        os.environ[url_key] = url
 
-    # expose LOCALSTACK_HOSTNAME as env. variable
-    os.environ["LOCALSTACK_HOSTNAME"] = LOCALSTACK_HOSTNAME
+def populate_config_env_var_names():
+    global CONFIG_ENV_VARS
+
+    for key, value in DEFAULT_SERVICE_PORTS.items():
+        clean_key = key.upper().replace("-", "_")
+        CONFIG_ENV_VARS += [
+            clean_key + "_BACKEND",
+            clean_key + "_PORT_EXTERNAL",
+            "PROVIDER_OVERRIDE_" + clean_key,
+        ]
 
     # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
     CONFIG_ENV_VARS += [
@@ -787,16 +774,21 @@ def populate_configs(service_ports=None):
     CONFIG_ENV_VARS = list(set(CONFIG_ENV_VARS))
 
 
-def service_port(service_key):
+# populate env var names to be passed to the container
+populate_config_env_var_names()
+
+
+def service_port(service_key: str, external: bool = False) -> int:
     service_key = service_key.lower()
+    if external:
+        if service_key == "sqs" and SQS_PORT_EXTERNAL:
+            return SQS_PORT_EXTERNAL
     if FORWARD_EDGE_INMEM:
         if service_key == "elasticsearch":
             # TODO Elasticsearch domains are a special case - we do not want to route them through
             #  the edge service, as that would require too many route mappings. In the future, we
             #  should integrate them with the port range for external services (4510-4530)
             return SERVICE_PORTS.get(service_key, 0)
-        if service_key == "sqs" and SQS_PORT_EXTERNAL:
-            return SQS_PORT_EXTERNAL
         return get_edge_port_http()
     return SERVICE_PORTS.get(service_key, 0)
 
@@ -805,10 +797,16 @@ def get_protocol():
     return "https" if USE_SSL else "http"
 
 
+def service_url(service_key, host=None, port=None):
+    host = host or LOCALHOST
+    port = port or service_port(service_key)
+    return f"{get_protocol()}://{host}:{port}"
+
+
 def external_service_url(service_key, host=None, port=None):
     host = host or HOSTNAME_EXTERNAL
-    port = port or service_port(service_key)
-    return "%s://%s:%s" % (get_protocol(), host, port)
+    port = port or service_port(service_key, external=True)
+    return service_url(service_key, host=host, port=port)
 
 
 def get_edge_port_http():
@@ -822,8 +820,14 @@ def get_edge_url(localstack_hostname=None, protocol=None):
     return "%s://%s:%s" % (protocol, localstack_hostname, port)
 
 
-# initialize config values
-populate_configs()
+def edge_ports_info():
+    if EDGE_PORT_HTTP:
+        result = "ports %s/%s" % (EDGE_PORT, EDGE_PORT_HTTP)
+    else:
+        result = "port %s" % EDGE_PORT
+    result = "%s %s" % (get_protocol(), result)
+    return result
+
 
 # set log levels
 if DEBUG:
@@ -841,10 +845,18 @@ if LS_LOG in TRACE_LOG_LEVELS:
 class ServiceProviderConfig(Mapping[str, str]):
     _provider_config: Dict[str, str]
     default_value: str
+    override_prefix: str = "PROVIDER_OVERRIDE_"
 
     def __init__(self, default_value: str):
         self._provider_config = {}
         self.default_value = default_value
+
+    def load_from_environment(self, env: Mapping[str, str] = None):
+        if env is None:
+            env = os.environ
+        for key, value in env.items():
+            if key.startswith(self.override_prefix):
+                self.set_provider(key[len(self.override_prefix) :].lower().replace("_", "-"), value)
 
     def get_provider(self, service: str) -> str:
         return self._provider_config.get(service, self.default_value)
@@ -875,11 +887,7 @@ class ServiceProviderConfig(Mapping[str, str]):
 
 SERVICE_PROVIDER_CONFIG = ServiceProviderConfig("default")
 
-for key, value in os.environ.items():
-    if key.startswith("PROVIDER_OVERRIDE_"):
-        SERVICE_PROVIDER_CONFIG.set_provider(
-            key.lstrip("PROVIDER_OVERRIDE_").lower().replace("_", "-"), value
-        )
+SERVICE_PROVIDER_CONFIG.load_from_environment()
 
 # initialize directories
 if is_in_docker:

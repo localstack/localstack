@@ -191,7 +191,7 @@ def _do_start_ssl_proxy_with_listener(
                 method=method, url=url, data=data, headers=headers, verify=False, **requests_kwargs
             )
             # fix encoding of response, based on Accept-Encoding header
-            if headers.get(HEADER_ACCEPT_ENCODING, "").lower() == "gzip":
+            if "gzip" in headers.get(HEADER_ACCEPT_ENCODING, "").lower():
                 response._content = gzip.compress(to_bytes(response._content))
                 response.headers["Content-Length"] = str(len(response._content))
                 response.headers["Content-Encoding"] = "gzip"

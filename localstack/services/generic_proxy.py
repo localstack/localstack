@@ -27,7 +27,6 @@ from localstack.config import (
     EXTRA_CORS_ALLOWED_HEADERS,
     EXTRA_CORS_ALLOWED_ORIGINS,
     EXTRA_CORS_EXPOSE_HEADERS,
-    is_env_true,
 )
 from localstack.constants import (
     APPLICATION_JSON,
@@ -942,13 +941,20 @@ def start_proxy_server(
     bind_address=None,
     forward_url=None,
     use_ssl=None,
-    update_listener=None,
+    update_listener: Optional[Union[ProxyListener, List[ProxyListener]]] = None,
     quiet=False,
     params=None,  # TODO: not being used - should be investigated/removed
     asynchronous=True,
     check_port=True,
 ):
     bind_address = bind_address if bind_address else BIND_HOST
+
+    if update_listener is None:
+        listeners = []
+    elif isinstance(update_listener, list):
+        listeners = update_listener
+    else:
+        listeners = [update_listener]
 
     def handler(request, data):
         parsed_url = urlparse(request.url)
@@ -963,7 +969,7 @@ def start_proxy_server(
             data_bytes=data,
             headers=headers,
             forward_base_url=forward_url,
-            listeners=[update_listener],
+            listeners=listeners,
             client_address=request.remote_addr,
             server_address=parsed_url.netloc,
         )
@@ -988,7 +994,7 @@ def install_predefined_cert_if_available():
     try:
         from localstack_ext.bootstrap import install
 
-        if is_env_true("SKIP_SSL_CERT_DOWNLOAD"):
+        if config.SKIP_SSL_CERT_DOWNLOAD:
             LOG.debug("Skipping download of local SSL cert, as SKIP_SSL_CERT_DOWNLOAD=1")
             return
         install.setup_ssl_cert()

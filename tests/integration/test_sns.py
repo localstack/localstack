@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import os
 import random
 import time
 
@@ -28,8 +27,13 @@ from localstack.utils.common import (
 )
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 
-from .lambdas import lambda_integration
-from .test_lambda import LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON
+from .awslambda.functions import lambda_integration
+from .awslambda.test_lambda import (
+    LAMBDA_RUNTIME_PYTHON36,
+    TEST_LAMBDA_LIBS,
+    TEST_LAMBDA_PYTHON,
+    TEST_LAMBDA_PYTHON_ECHO,
+)
 
 TEST_TOPIC_NAME = "TestTopic_snsTest"
 TEST_QUEUE_NAME = "TestQueue_snsTest"
@@ -38,9 +42,6 @@ TEST_TOPIC_NAME_2 = "topic-test-2"
 
 PUBLICATION_TIMEOUT = 0.500
 PUBLICATION_RETRIES = 4
-
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, "lambdas", "lambda_echo.py")
 
 
 @pytest.fixture(scope="class")
@@ -337,8 +338,12 @@ class TestSNS:
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
 
-    def test_subscribe_sqs_queue(self):
+    @pytest.mark.parametrize("external_sqs_port", [None, 12345])
+    def test_subscribe_sqs_queue(self, monkeypatch, external_sqs_port):
         _, queue_arn, queue_url = self._create_queue()
+
+        if external_sqs_port:
+            monkeypatch.setattr(config, "SQS_PORT_EXTERNAL", external_sqs_port)
 
         # publish message
         subscription = self._publish_sns_message_with_attrs(queue_arn, "sqs")
@@ -676,7 +681,7 @@ class TestSNS:
         topic_arn = self.sns_client.create_topic(Name=topic_name)["TopicArn"]
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_ECHO_FILE,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=func_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -832,8 +837,8 @@ class TestSNS:
         message = "test message {}".format(short_uid())
         topic_arn = self.sns_client.create_topic(Name=topic_name)["TopicArn"]
 
-        base_url = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SNS
+        base_url = (
+            f"{get_service_protocol()}://{config.LOCALSTACK_HOSTNAME}:{config.service_port('sns')}"
         )
         path = "Action=Publish&Version=2010-03-31&TopicArn={}&Message={}".format(topic_arn, message)
 
@@ -1018,6 +1023,10 @@ class TestSNS:
                     "Message": "Test Message without attribute",
                     "Subject": "Subject",
                 },
+                {
+                    "Id": "4",
+                    "Message": "Test Message without subject",
+                },
             ],
         )
 
@@ -1032,7 +1041,7 @@ class TestSNS:
             response = self.sqs_client.receive_message(
                 QueueUrl=queue_url, MessageAttributeNames=["All"], MaxNumberOfMessages=10
             )
-            assert len(response["Messages"]) == 3
+            assert len(response["Messages"]) == 4
             for message in response["Messages"]:
                 assert "Body" in message
 

@@ -13,10 +13,8 @@ cachetools>=3.1.1,<4.0.0
 # dataclasses needed for python3.6 compat
 dataclasses; python_version < '3.7'
 #dnspython==1.16.0
-#docopt>=0.6.2
-docker==5.0.0
 localstack-client>=1.31
-localstack-ext>=0.13.3
+localstack-ext>=0.14.0
 localstack-plugin-loader>=0.1.0
 psutil>=5.4.8,<6.0.0
 python-dotenv>=0.19.1
@@ -24,15 +22,13 @@ pyyaml>=5.1
 rich>=10.7.0
 requests>=2.20.0,<2.26
 semver>=2.10
-# TODO: "six" dependency still needed?
-six>=1.12.0
 stevedore>=3.4.0
 # needed for python3.7 compat (TypedDict, Literal, type hints)
 typing-extensions; python_version < '3.8'
 tailer>=0.4.1
 
 # extra=runtime
-airspeed>=0.5.14
+airspeed>=0.5.18
 # Use our "ext" version until this bug is fixed: https://github.com/awslabs/amazon-kinesis-client-python/issues/99
 amazon_kclpy-ext==1.5.1
 # amazon-kclpy==1.5.1
@@ -43,16 +39,15 @@ botocore>=1.12.13
 cbor2>=5.2.0
 crontab>=0.22.6
 cryptography
-elasticsearch>=7.0.0,<7.14.0
+docker==5.0.0
 flask>=1.0.2
 flask-cors>=3.0.3,<3.1.0
 flask_swagger==0.2.12
-#forbiddenfruit==0.1.3
-#jsondiff>=1.2.0
 jsonpatch>=1.24,<2.0
 jsonpath-rw>=1.4.0,<2.0.0
 localstack-ext[full]>=0.13.2
-moto-ext[all]>=2.2.8.2
+moto-ext[all]==3.0.4
+opensearch-py>=1.0.0
 pproxy>=2.7.0
 #pympler>=0.6
 pyopenssl>=21.0.0
@@ -76,7 +71,7 @@ black==21.6b0
 coveralls==3.1.0
 Cython
 flake8>=3.6.0
-flake8-black>=0.2.1
+flake8-black==0.2.3
 flake8-isort>=4.0.0
 flake8-quotes>=0.11.0
 # enables flake8 configuration through pyproject.toml

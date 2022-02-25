@@ -101,7 +101,7 @@ LOG_LEVELS = ("trace-internal", "trace", "debug", "info", "warn", "error", "warn
 LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
 
 # the version of elasticsearch that is pre-seeded into the base image (sync with Dockerfile.base)
-ELASTICSEARCH_DEFAULT_VERSION = "7.10.0"
+ELASTICSEARCH_DEFAULT_VERSION = "Elasticsearch_7.10"
 # See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
 ELASTICSEARCH_PLUGIN_LIST = [
     "analysis-icu",
@@ -191,9 +191,6 @@ DEFAULT_DEVELOP_PORT = 5678
 
 # Default bucket name of the s3 bucket used for local lambda development
 DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
-
-# user that starts the elasticsearch process if the current user is root
-OS_USER_ELASTICSEARCH = "localstack"
 
 # user that starts the opensearch process if the current user is root
 OS_USER_OPENSEARCH = "localstack"

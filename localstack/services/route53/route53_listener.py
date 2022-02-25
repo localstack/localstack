@@ -1,14 +1,19 @@
 import re
 from typing import Dict, List
+from urllib.parse import urlparse
 
 import xmltodict
+from moto.route53.models import route53_backend
 from requests import Response
-from six.moves.urllib.parse import urlparse
 
 from localstack import constants
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_responses import requests_response, set_response_content
+from localstack.utils.aws.aws_responses import (
+    requests_error_response_xml,
+    requests_response,
+    set_response_content,
+)
 from localstack.utils.common import (
     clone,
     parse_request_data,
@@ -63,21 +68,22 @@ class ProxyListenerRoute53(PersistingProxyListener):
     def return_response(self, method, path, data, headers, response):
         if response.status_code >= 500:
             return
-        if response.ok:
-            add_vpc_info_to_response(path, response)
-            return
 
         updated_response = None
+
+        match = not updated_response and re.match(PATH_DELEGATION_SETS, path)
+        if match:
+            updated_response = handle_delegation_sets_request(match, method, data)
+
+        if response.ok and updated_response is None:
+            add_vpc_info_to_response(path, response)
+            return
 
         if path.endswith("/associatevpc") or path.endswith("/disassociatevpc"):
             updated_response = handle_associate_vpc_request(method, path, data)
 
         if method == "GET" and "/hostedzonesbyvpc" in path:
             updated_response = handle_hosted_zones_by_vpc_request(method, path, data)
-
-        match = not updated_response and re.match(PATH_DELEGATION_SETS, path)
-        if match:
-            updated_response = handle_delegation_sets_request(match, method, data)
 
         if not isinstance(updated_response, dict):
             return updated_response
@@ -93,7 +99,9 @@ def handle_delegation_sets_request(match, method, data):
         if set_id:
             result = region_details.reusable_delegation_sets.get(set_id)
             if not result:
-                return 404
+                return requests_error_response_xml(
+                    "Delegation set not found", code_string="NoSuchDelegationSet"
+                )
             return {"GetReusableDelegationSetResponse": {"DelegationSet": result}}
         reusable_sets_list = list(region_details.reusable_delegation_sets.values())
         result = {
@@ -116,7 +124,9 @@ def handle_delegation_sets_request(match, method, data):
     if method == "DELETE":
         existing = region_details.reusable_delegation_sets.pop(set_id, None)
         if not existing:
-            return 404
+            return requests_error_response_xml(
+                "Delegation set not found", code_string="NoSuchDelegationSet"
+            )
         return {"DeleteReusableDelegationSetResponse": {}}
 
 
@@ -161,6 +171,12 @@ def handle_associate_vpc_request(method, path, data):
                 "SubmittedAt": timestamp_millis(),
             }
         }
+        # update VPC info in hosted zone moto object - fixes required after https://github.com/spulec/moto/pull/4786
+        hosted_zone = route53_backend.zones.get(zone_id)
+        if not getattr(hosted_zone, "vpcid", None):
+            hosted_zone.vpcid = zone_data["VPC"].get("VPCId")
+        if not getattr(hosted_zone, "vpcregion", None):
+            hosted_zone.vpcregion = aws_stack.get_region()
     else:
 
         def _match(z):

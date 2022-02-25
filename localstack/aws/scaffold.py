@@ -21,9 +21,9 @@ from typing_extensions import OrderedDict
 from localstack.aws.spec import load_service
 from localstack.utils.common import camel_to_snake_case, mkdir, snake_to_camel_case
 
-
-def is_keyword(name: str) -> bool:
-    return name in keyword.kwlist
+# Some minification packages might treat "type" as a keyword.
+KEYWORDS = list(keyword.kwlist) + ["type"]
+is_keyword = KEYWORDS.__contains__
 
 
 def is_bad_param_name(name: str) -> bool:
@@ -385,7 +385,8 @@ def generate(service: str, doc: bool, save: bool):
 
     # or find the file path and write the code to that location
     here = os.path.dirname(__file__)
-    path = os.path.join(here, "api", service)
+    service_name = service.replace("-", "_")
+    path = os.path.join(here, "api", service_name)
 
     if not os.path.exists(path):
         click.echo("creating directory %s" % path)

@@ -34,7 +34,7 @@ def start_kinesis(port=None, update_listener=None, asynchronous=None) -> Server:
 
     _server.start()
     log_startup_message("Kinesis")
-    port = port or config.PORT_KINESIS
+    port = port or config.service_port("kinesis")
     start_proxy_for_service(
         "kinesis",
         port,

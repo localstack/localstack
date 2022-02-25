@@ -72,7 +72,7 @@ from localstack.utils.common import (
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
 from localstack.utils.generic.singleton_utils import SubtypesInstanceManager
-from localstack.utils.http_utils import canonicalize_headers, parse_chunked_data
+from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.run import FuncThread
 
 # logger

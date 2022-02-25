@@ -12,7 +12,8 @@ import unittest
 import uuid
 from io import BytesIO
 from unittest.mock import patch
-from urllib.parse import parse_qs, quote
+from urllib.parse import parse_qs, quote, urlparse
+from urllib.request import Request, urlopen
 
 import boto3
 import pytest
@@ -21,8 +22,6 @@ from botocore import UNSIGNED
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from pytz import timezone
-from six.moves.urllib import parse as urlparse
-from six.moves.urllib.request import Request, urlopen
 
 from localstack import config, constants
 from localstack.constants import (
@@ -65,9 +64,11 @@ TEST_GET_OBJECT_RANGE = 17
 TEST_REGION_1 = "eu-west-1"
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "lambdas", "lambda_triggered_by_s3.py")
+TEST_LAMBDA_PYTHON_TRIGGERED_S3 = os.path.join(
+    THIS_FOLDER, "awslambda", "functions", "lambda_triggered_by_s3.py"
+)
 TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3 = os.path.join(
-    THIS_FOLDER, "lambdas", "lambda_triggered_by_sqs_download_s3_file.py"
+    THIS_FOLDER, "awslambda", "functions", "lambda_triggered_by_sqs_download_s3_file.py"
 )
 
 BATCH_DELETE_BODY = """
@@ -128,7 +129,7 @@ class TestS3(unittest.TestCase):
         headers = aws_stack.mock_aws_request_headers("s3")
         bucket_name = "test-%s" % short_uid()
         headers["Host"] = s3_utils.get_bucket_hostname(bucket_name)
-        response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
+        response = requests.put(config.service_url("s3"), data=body, headers=headers, verify=False)
         self.assertEqual(200, response.status_code)
         response = self.s3_client.get_bucket_location(Bucket=bucket_name)
         self.assertEqual(200, response["ResponseMetadata"]["HTTPStatusCode"])
@@ -176,7 +177,7 @@ class TestS3(unittest.TestCase):
         # put an object where the bucket_name is in the host
         headers = aws_stack.mock_aws_request_headers("s3")
         headers["Host"] = s3_utils.get_bucket_hostname(bucket_name)
-        url = "{}/{}".format(config.TEST_S3_URL, key_by_host)
+        url = f"{config.service_url('s3')}/{key_by_host}"
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data="something else", headers=headers, verify=False)
         self.assertTrue(response.ok)
@@ -747,7 +748,7 @@ class TestS3(unittest.TestCase):
             + "%s\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n"
         ) % body
         # put object
-        url = "%s/%s/%s" % (config.TEST_S3_URL, bucket_name, object_key)
+        url = f"{config.service_url('s3')}/{bucket_name}/{object_key}"
         req = PutRequest(url, to_bytes(data), headers)
         urlopen(req, context=ssl.SSLContext()).read()
         # get object and assert content length
@@ -911,7 +912,7 @@ class TestS3(unittest.TestCase):
         object_key = "test-key-tagging"
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body="something")
         # get object and assert response
-        url = "%s/%s/%s" % (config.TEST_S3_URL, bucket_name, object_key)
+        url = f"{config.service_url('s3')}/{bucket_name}/{object_key}"
         response = requests.get(url, verify=False)
         self.assertEqual(200, response.status_code)
         # delete object tagging
@@ -1211,7 +1212,7 @@ class TestS3(unittest.TestCase):
             expected_url = "%s://%s:%s/%s/%s" % (
                 get_service_protocol(),
                 config.HOSTNAME_EXTERNAL,
-                config.PORT_S3,
+                config.service_port("s3"),
                 bucket_name,
                 key,
             )
@@ -1604,7 +1605,7 @@ class TestS3(unittest.TestCase):
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            handler_file=TEST_LAMBDA_PYTHON_TRIGGERED_S3,
             func_name=function_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
@@ -1854,8 +1855,8 @@ class TestS3(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key_1, Body="This body document")
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key_2, Body="This body document")
 
-        base_url = "{}://{}:{}".format(
-            get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_S3
+        base_url = (
+            f"{get_service_protocol()}://{config.LOCALSTACK_HOSTNAME}:{config.service_port('s3')}"
         )
         url = "{}/{}?delete=".format(base_url, bucket_name)
         r = requests.post(url=url, data=BATCH_DELETE_BODY % (object_key_1, object_key_2))
@@ -1963,7 +1964,7 @@ class TestS3(unittest.TestCase):
         expires = 4
 
         def make_v2_url_invalid(url):
-            parsed = urlparse.urlparse(url)
+            parsed = urlparse(url)
             query_params = parse_qs(parsed.query)
             url = "{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}".format(
                 url_prefix,
@@ -1975,7 +1976,7 @@ class TestS3(unittest.TestCase):
             return url
 
         def make_v4_url_invalid(url):
-            parsed = urlparse.urlparse(url)
+            parsed = urlparse(url)
             query_params = parse_qs(parsed.query)
             url = (
                 "{}/{}?X-Amz-Algorithm=AWS4-HMAC-SHA256&"
@@ -2358,7 +2359,9 @@ class TestS3(unittest.TestCase):
         if not use_docker():
             return
         temp_folder = new_tmp_dir()
-        handler_file = os.path.join(THIS_FOLDER, "lambdas", "lambda_s3_integration.js")
+        handler_file = os.path.join(
+            THIS_FOLDER, "awslambda", "functions", "lambda_s3_integration.js"
+        )
         shutil.copy(handler_file, temp_folder)
         run("cd %s; npm i @aws-sdk/client-s3; npm i @aws-sdk/s3-request-presigner" % temp_folder)
 

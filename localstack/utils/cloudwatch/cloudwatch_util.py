@@ -1,6 +1,7 @@
 import logging
 import time
 from datetime import datetime
+from typing import Optional
 
 from flask import Response
 
@@ -60,28 +61,38 @@ def publish_lambda_result(time_before, result, kwargs):
     publish_lambda_metric("Invocations", 1, kwargs)
 
 
-def store_cloudwatch_logs(log_group_name, log_stream_name, log_output, start_time=None):
+def store_cloudwatch_logs(
+    log_group_name,
+    log_stream_name,
+    log_output,
+    start_time=None,
+    auto_create_group: Optional[bool] = True,
+):
     if not is_api_enabled("logs"):
         return
     start_time = start_time or int(time.time() * 1000)
     logs_client = aws_stack.connect_to_service("logs")
     log_output = to_str(log_output)
 
-    # make sure that the log group exists
-    log_groups = logs_client.describe_log_groups()["logGroups"]
-    log_groups = [lg["logGroupName"] for lg in log_groups]
-    if log_group_name not in log_groups:
-        try:
-            logs_client.create_log_group(logGroupName=log_group_name)
-        except Exception as e:
-            if "ResourceAlreadyExistsException" in str(e):
-                # this can happen in certain cases, possibly due to a race condition
-                pass
-            else:
-                raise e
+    if auto_create_group:
+        # make sure that the log group exists, create it if not
+        log_groups = logs_client.describe_log_groups()["logGroups"]
+        log_groups = [lg["logGroupName"] for lg in log_groups]
+        if log_group_name not in log_groups:
+            try:
+                logs_client.create_log_group(logGroupName=log_group_name)
+            except Exception as e:
+                if "ResourceAlreadyExistsException" in str(e):
+                    # this can happen in certain cases, possibly due to a race condition
+                    pass
+                else:
+                    raise e
 
     # create a new log stream for this lambda invocation
-    logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
+    try:
+        logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
+    except Exception:  # TODO: narrow down
+        pass
 
     # store new log events under the log stream
     finish_time = int(time.time() * 1000)

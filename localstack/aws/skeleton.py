@@ -163,6 +163,11 @@ class Skeleton:
 
         # Call the appropriate handler
         result = handler(context, instance) or {}
+
+        # if the service handler returned an HTTP request, forego serialization and return immediately
+        if isinstance(result, HttpResponse):
+            return result
+
         # Serialize result dict to an HTTPResponse and return it
         return self.serializer.serialize_to_response(result, operation)
 

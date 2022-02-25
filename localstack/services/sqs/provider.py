@@ -16,6 +16,7 @@ from typing import Dict, List, NamedTuple, Optional, Set
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
 from moto.sqs.models import Message as MotoMessage
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sqs import (
     ActionNameList,
@@ -62,6 +63,7 @@ from localstack.aws.api.sqs import (
     Token,
 )
 from localstack.aws.spec import load_service
+from localstack.config import external_service_url
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws.aws_stack import parse_arn
 from localstack.utils.common import long_uid, md5, now, start_thread
@@ -95,16 +97,6 @@ def generate_receipt_handle():
 class InvalidParameterValue(CommonServiceException):
     def __init__(self, message):
         super().__init__("InvalidParameterValues", message, 400, True)
-
-
-class NonExistentQueue(CommonServiceException):
-    def __init__(self):
-        # TODO: not sure if this is really how AWS behaves
-        super().__init__(
-            "AWS.SimpleQueueService.NonExistentQueue",
-            "The specified queue does not exist for this wsdl version.",
-            status_code=400,
-        )
 
 
 class InvalidAttributeValue(CommonServiceException):
@@ -227,11 +219,11 @@ class SqsQueue:
         super().__init__()
         self._assert_queue_name(key.name)
         self.key = key
-        self.tags = tags or dict()
+        self.tags = tags or {}
 
         self.visible = PriorityQueue()
         self.inflight = set()
-        self.receipts = dict()
+        self.receipts = {}
 
         self.attributes = self.default_attributes()
         if attributes:
@@ -275,8 +267,12 @@ class SqsQueue:
         return f"arn:aws:sqs:{self.key.region}:{self.key.account_id}:{self.key.name}"
 
     def url(self, context: RequestContext) -> str:
+        """Return queue URL using either SQS_PORT_EXTERNAL (if configured), or based on the 'Host' request header"""
+        host_url = context.request.host_url
+        if config.SQS_PORT_EXTERNAL:
+            host_url = external_service_url("sqs")
         return "{host}/{account_id}/{name}".format(
-            host=context.request.host_url.rstrip("/"),
+            host=host_url.rstrip("/"),
             account_id=self.key.account_id,
             name=self.key.name,
         )
@@ -464,7 +460,7 @@ class FifoQueue(SqsQueue):
 
     def __init__(self, key: QueueKey, attributes=None, tags=None) -> None:
         super().__init__(key, attributes, tags)
-        self.deduplication = dict()
+        self.deduplication = {}
 
     def put(
         self,
@@ -513,13 +509,14 @@ class FifoQueue(SqsQueue):
         else:
             self.visible.put_nowait(qm)
             if not original_message_group:
-                self.deduplication[message_group_id] = dict()
+                self.deduplication[message_group_id] = {}
             self.deduplication[message_group_id][message_deduplication_id] = qm
 
     def _assert_queue_name(self, name):
         if not name.endswith(".fifo"):
             raise InvalidParameterValue(
-                "Can only include alphanumeric characters, hyphens, or underscores. 1 to 80 in length"
+                "The name of a FIFO queue can only include alphanumeric characters, hyphens, or underscores, "
+                "must end with .fifo suffix and be 1 to 80 in length"
             )
         # The .fifo suffix counts towards the 80-character queue name quota.
         queue_name = name[:-5] + "_fifo"
@@ -653,7 +650,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def __init__(self) -> None:
         super().__init__()
-        self.queues = dict()
+        self.queues = {}
         self._mutex = threading.RLock()
         self._inflight_worker = InflightUpdateWorker(self.queues)
 
@@ -675,15 +672,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _require_queue(self, key: QueueKey) -> SqsQueue:
         """
-        Returns the queue for the given key, or raises NonExistentQueue if it does not exist.
+        Returns the queue for the given key, or raises QueueDoesNotExist if it does not exist.
 
         :param key: the QueueKey to look for
         :returns: the queue
-        :raises NonExistentQueue: if the queue does not exist
+        :raises QueueDoesNotExist: if the queue does not exist
         """
         with self._mutex:
             if key not in self.queues:
-                raise NonExistentQueue()
+                raise QueueDoesNotExist()
 
             return self.queues[key]
 
@@ -700,13 +697,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> SqsQueue:
         """
         Uses resolve_queue_key to determine the QueueKey from the given input, and returns the respective queue,
-        or raises NonExistentQueue if it does not exist.
+        or raises QueueDoesNotExist if it does not exist.
 
         :param context: the request context, used for getting region and account_id, and optionally the queue_url
         :param queue_name: the queue name (if this is set, then this will be used for the key)
         :param queue_url: the queue url (if name is not set, this will be used to determine the queue name)
         :returns: the queue
-        :raises NonExistentQueue: if the queue does not exist
+        :raises QueueDoesNotExist: if the queue does not exist
         """
         key = resolve_queue_key(context, queue_name, queue_url)
         return self._require_queue(key)
@@ -760,7 +757,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         next_token: Token = None,
         max_results: BoxedInteger = None,
     ) -> ListQueuesResult:
-        urls = list()
+        urls = []
 
         for queue in self.queues.values():
             if queue.key.region != context.region:
@@ -803,8 +800,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._assert_batch(entries)
 
-        successful = list()
-        failed = list()
+        successful = []
+        failed = []
 
         with queue.mutex:
             for entry in entries:
@@ -841,13 +838,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._assert_permission(context, queue)
 
         if not attribute_names:
-            return GetQueueAttributesResult(Attributes=dict())
+            return GetQueueAttributesResult(Attributes={})
 
         if QueueAttributeName.All in attribute_names:
             # return GetQueueAttributesResult(Attributes=queue.attributes)
             attribute_names = queue.attributes.keys()
 
-        result: Dict[QueueAttributeName, str] = dict()
+        result: Dict[QueueAttributeName, str] = {}
 
         for attr in attribute_names:
             try:
@@ -903,8 +900,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
         self._assert_batch(entries)
 
-        successful = list()
-        failed = list()
+        successful = []
+        failed = []
 
         with queue.mutex:
             for entry in entries:
@@ -1011,7 +1008,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         num = max_number_of_messages or 1
         block = wait_time_seconds is not None
         # collect messages
-        messages = list()
+        messages = []
         while num:
             try:
                 standard_message = queue.get(
@@ -1085,8 +1082,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self._assert_permission(context, queue)
         self._assert_batch(entries)
 
-        successful = list()
-        failed = list()
+        successful = []
+        failed = []
 
         with queue.mutex:
             for entry in entries:

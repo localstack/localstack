@@ -6,7 +6,8 @@ from localstack.services.awslambda.lambda_api import func_arn
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
-from tests.integration.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON3
+
+from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON3
 
 
 @pytest.fixture
