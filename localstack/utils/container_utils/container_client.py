@@ -289,7 +289,7 @@ class ContainerConfiguration:
     stdin: Optional[str] = None
     user: Optional[str] = None
     cap_add: Optional[List[str]] = None
-    cap_drop: Optional[List[str]] = (None,)
+    cap_drop: Optional[List[str]] = None
     network: Optional[str] = None
     dns: Optional[str] = None
     workdir: Optional[str] = None
