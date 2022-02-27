@@ -11,6 +11,8 @@ from typing import Dict, Optional
 from requests.models import Response
 
 from localstack import config
+from localstack.aws.mocking import get_mocking_skeleton
+from localstack.aws.proxy import AwsApiListener
 from localstack.constants import (
     HEADER_LOCALSTACK_EDGE_URL,
     HEADER_LOCALSTACK_REQUEST_URL,
@@ -166,6 +168,11 @@ class ProxyListenerEdge(ProxyListener):
             data = gzip.decompress(data)
 
         is_internal_call = is_internal_call_context(headers)
+
+        if not self.service_manager.exists(api):
+            return AwsApiListener(api, get_mocking_skeleton(api)).forward_request(
+                method, path, data, headers
+            )
 
         self._require_service(api)
 

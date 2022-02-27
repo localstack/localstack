@@ -35,7 +35,10 @@ class AwsApiListener(ProxyListenerAdapter):
 
     def __init__(self, api: str, delegate: Any):
         self.service = load_service(api)
-        self.skeleton = Skeleton(self.service, delegate)
+        if isinstance(delegate, Skeleton):
+            self.skeleton = delegate
+        else:
+            self.skeleton = Skeleton(self.service, delegate)
 
     def request(self, request: Request) -> Response:
         context = self.create_request_context(request)
