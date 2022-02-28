@@ -283,11 +283,13 @@ def stepfunctions():
 
 @aws_provider()
 def swf():
-    from localstack.services.swf import swf_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.swf.provider import SWFProvider
 
+    provider = SWFProvider()
     return Service(
         "swf",
-        start=swf_starter.start_swf,
+        listener=AwsApiListener("swf", MotoFallbackDispatcher(provider)),
     )
 
 
