@@ -1260,35 +1260,35 @@ def apply_integration_response_template(context: ApiInvocationContext):
 
     response_templates = int_responses[return_code].get("responseTemplates", {})
     template = response_templates.get(APPLICATION_JSON, {})
-    if template:
-        variables = {"context": {}}
-        input_ctx = {"body": response.content}
-        # little trick to flatten the input context so velocity templates
-        # work from the root.
-        # orig - { "body": '{"action": "$default","message":"foobar"}'
-        # after - {
-        #   "body": '{"action": "$default","message":"foobar"}',
-        #   "action": "$default",
-        #   "message": "foobar"
-        # }
-        if response.content:
-            dict_pack = try_json(response.content)
-            if isinstance(dict_pack, dict):
-                for k, v in dict_pack.items():
-                    input_ctx.update({k: v})
+    if not template:
+        return response
 
-        def _params(name=None):
-            # See https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#input-variable-reference
-            # Returns "request parameter from the path, query string, or header value (
-            # searched in that order)"
-            combined = {}
-            combined.update({"path": context.path_params} or {})
-            combined.update(query_string_params or {})
-            combined.update(context.headers or {})
-            return combined if not name else combined.get(name)
+    variables = {"context": {}}
+    input_ctx = {"body": response.content}
+    # little trick to flatten the input context so velocity templates
+    # work from the root.
+    # orig - { "body": '{"action": "$default","message":"foobar"}'
+    # after - {
+    #   "body": '{"action": "$default","message":"foobar"}',
+    #   "action": "$default",
+    #   "message": "foobar"
+    # }
+    if response.content:
+        dict_pack = try_json(response.content)
+        if isinstance(dict_pack, dict):
+            for k, v in dict_pack.items():
+                input_ctx.update({k: v})
 
-        input_ctx["params"] = _params
-        response._content = aws_stack.render_velocity_template(
-            template, input_ctx, variables=variables
-        )
+    def _params(name=None):
+        # See https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#input-variable-reference
+        # Returns "request parameter from the path, query string, or header value (
+        # searched in that order)"
+        combined = {}
+        combined.update({"path": context.path_params} or {})
+        combined.update(query_string_params or {})
+        combined.update(context.headers or {})
+        return combined if not name else combined.get(name)
+
+    input_ctx["params"] = _params
+    response._content = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
     return response
