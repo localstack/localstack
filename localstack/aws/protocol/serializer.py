@@ -76,14 +76,12 @@ not work out-of-the-box.
 """
 import abc
 import base64
-import calendar
-import copy
 import json
 import logging
 from abc import ABC
 from datetime import datetime
 from email.utils import formatdate
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 from boto.utils import ISO8601
@@ -96,6 +94,12 @@ from localstack.aws.api import CommonServiceException, HttpResponse, ServiceExce
 from localstack.utils.common import to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
+
+
+class ResponseSerializerError(Exception):
+    """Error which is thrown if the request serialization fails."""
+
+    pass
 
 
 class ResponseSerializer(abc.ABC):
@@ -155,15 +159,18 @@ class ResponseSerializer(abc.ABC):
             status_code = error.status_code
             shape = None
         else:
-            # It it's not a CommonServiceException, the exception is being serialized based on the specification
+            # It's not a CommonServiceException, the exception is being serialized based on the specification
 
             # The shape name is equal to the class name (since the classes are generated from the shape's name)
             error_shape_name = error.__class__.__name__
-
             # Lookup the corresponding error shape in the operation model
-            shape = next(
-                shape for shape in operation_model.error_shapes if shape.name == error_shape_name
-            )
+            shape = operation_model.service_model.shape_for(error_shape_name)
+            if shape is None or not shape.metadata.get("exception", False):
+                raise ResponseSerializerError(
+                    f"Error to serialize ({error_shape_name}) neither is a CommonServiceException, nor is its error "
+                    f"shape contained in the service's specification ({operation_model.service_model.service_name})."
+                )
+
             error_spec = shape.metadata.get("error", {})
             status_code = error_spec.get("httpStatusCode")
 
@@ -243,7 +250,7 @@ class ResponseSerializer(abc.ABC):
 
     @staticmethod
     def _timestamp_unixtimestamp(value: datetime) -> float:
-        return round(value.timestamp(), 3)
+        return value.timestamp()
 
     def _timestamp_rfc822(self, value: datetime) -> str:
         if isinstance(value, datetime):
@@ -289,23 +296,26 @@ class ResponseSerializer(abc.ABC):
     ):
         """Applies additional traits on the raw response for a given model or protocol."""
         if operation_model.http_checksum_required:
-            self.add_md5_header(response)
+            self._add_md5_header(response)
         return response
 
-    def has_header(self, header_name: str, headers: dict):
+    def _has_header(self, header_name: str, headers: dict):
         """Case-insensitive check for header key."""
         if header_name is None:
             return False
         else:
             return header_name.lower() in [key.lower() for key in headers.keys()]
 
-    def add_md5_header(self, response: HttpResponse):
+    def _add_md5_header(self, response: HttpResponse):
         """Add a Content-MD5 header if not yet there. Adapted from botocore.utils"""
         headers = response.headers
         body = response.data
         if body is not None and "Content-MD5" not in headers:
             md5_digest = calculate_md5(body)
             headers["Content-MD5"] = md5_digest
+
+    def _get_error_message(self, error: Exception) -> Optional[str]:
+        return str(error) if error is not None and str(error) != "None" else None
 
 
 class BaseXMLResponseSerializer(ResponseSerializer):
@@ -348,12 +358,12 @@ class BaseXMLResponseSerializer(ResponseSerializer):
     ) -> None:
         code_tag = ETree.SubElement(error_tag, "Code")
         code_tag.text = code
-        message = str(error)
-        if len(message) > 0:
+        message = self._get_error_message(error)
+        if message:
             self._default_serialize(error_tag, message, None, "Message")
         if sender_fault:
             # The sender fault is either not set or "Sender"
-            self._default_serialize(error_tag, "Sender", None, "Fault")
+            self._default_serialize(error_tag, "Sender", None, "Type")
 
     def _serialize_body_params(
         self, params: dict, shape: Shape, operation_model: OperationModel
@@ -551,12 +561,12 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         shape_members: dict,
         operation_model: OperationModel,
     ) -> None:
-        # use a deep copy of the dict result to avoid unwanted mutations in service backends
-        # this fix comes at the cost of performance, updating the processing to not mutate the dict might be better
-        copied_parameters = copy.deepcopy(parameters)
-
-        self._process_header_members(copied_parameters, response, shape)
-        self._serialize_payload(copied_parameters, response, shape, shape_members, operation_model)
+        header_params, payload_params = self._partition_members(parameters, shape)
+        self._process_header_members(header_params, response, shape)
+        # "HEAD" responeses are basically "GET" responses without the actual body.
+        # Do not process the body payload in this case (setting a body could also manipulate the headers)
+        if operation_model.http.get("method") != "HEAD":
+            self._serialize_payload(payload_params, response, shape, shape_members, operation_model)
         self._serialize_content_type(response, shape, shape_members)
         self._prepare_additional_traits_in_response(response, operation_model)
 
@@ -637,13 +647,15 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
                 continue
             key = member_shape.serialization.get("name", name)
             value = parameters[name]
+            if value is None:
+                continue
             if location == "header":
                 response.headers[key] = self._serialize_header_value(member_shape, value)
             elif location == "headers":
                 header_prefix = key
                 self._serialize_header_map(header_prefix, response, value)
-            # TODO: this mutates the original return value of the service handler response which makes a copy necessary
-            del parameters[name]
+            elif location == "statusCode":
+                response.status_code = int(value)
 
     def _serialize_header_map(self, prefix: str, response: HttpResponse, params: dict) -> None:
         """Serializes the header map for the location trait "headers"."""
@@ -655,22 +667,44 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         """Serializes a value for the location trait "header"."""
         if shape.type_name == "timestamp":
             datetime_obj = parse_to_aware_datetime(value)
-            timestamp = calendar.timegm(datetime_obj.utctimetuple())
             timestamp_format = shape.serialization.get(
                 "timestampFormat", self.HEADER_TIMESTAMP_FORMAT
             )
-            return self._convert_timestamp_to_str(timestamp, timestamp_format)
+            return self._convert_timestamp_to_str(datetime_obj, timestamp_format)
         elif shape.type_name == "list":
             converted_value = [
                 self._serialize_header_value(shape.member, v) for v in value if v is not None
             ]
             return ",".join(converted_value)
+        elif shape.type_name == "boolean":
+            # Set the header value to "true" if the given value is truthy, otherwise set the header value to "false".
+            return "true" if value else "false"
         elif is_json_value_header(shape):
             # Serialize with no spaces after separators to save space in
             # the header.
             return self._get_base64(json.dumps(value, separators=(",", ":")))
         else:
             return value
+
+    def _partition_members(self, parameters: dict, shape: Optional[Shape]) -> Tuple[dict, dict]:
+        """Separates the top-level keys in the given parameters dict into header- and payload-located params."""
+        if not isinstance(shape, StructureShape):
+            # If the shape isn't a structure, we default to the whole response being parsed in the body.
+            # Non-payload members are only loated in the top-level hierarchy and those are always structures.
+            return {}, parameters
+        header_params = {}
+        payload_params = {}
+        shape_members = shape.members
+        for name in shape_members:
+            member_shape = shape_members[name]
+            if name not in parameters:
+                continue
+            location = member_shape.serialization.get("location")
+            if location:
+                header_params[name] = parameters[name]
+            else:
+                payload_params[name] = parameters[name]
+        return header_params, payload_params
 
 
 class RestXMLResponseSerializer(BaseRestResponseSerializer, BaseXMLResponseSerializer):
@@ -818,10 +852,11 @@ class EC2ResponseSerializer(QueryResponseSerializer):
     def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element]):
         # The EC2 protocol does not use the root output shape, therefore we need to remove the hierarchy level
         # below the root level
-        output_node = root[0]
-        for child in output_node:
-            root.append(child)
-        root.remove(output_node)
+        if len(root) > 0:
+            output_node = root[0]
+            for child in output_node:
+                root.append(child)
+            root.remove(output_node)
 
         # Add the requestId here (it's not defined in the specs)
         # For the ec2 and the query protocol, the root cannot be None at this time.
@@ -851,7 +886,10 @@ class JSONResponseSerializer(ResponseSerializer):
         operation_model: OperationModel,
     ) -> None:
         # TODO handle error shapes with members
-        body = {"__type": code, "message": str(error)}
+        body = {"__type": code}
+        message = self._get_error_message(error)
+        if message is not None:
+            body["message"] = message
         response.set_json(body)
 
     def _serialize_response(
@@ -972,7 +1010,7 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
             return
 
         has_body = serialized.data != b""
-        has_content_type = self.has_header("Content-Type", serialized.headers)
+        has_content_type = self._has_header("Content-Type", serialized.headers)
         if has_body and not has_content_type:
             serialized.headers["Content-Type"] = "application/json"
 

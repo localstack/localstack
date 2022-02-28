@@ -354,6 +354,16 @@ def test_query_parser_cloudformation_with_botocore():
     )
 
 
+def test_query_parser_unflattened_list_of_maps():
+    _botocore_parser_integration_test(
+        service="rds",
+        action="CreateDBCluster",
+        DBClusterIdentifier="mydbcluster",
+        Engine="aurora",
+        Tags=[{"Key": "Hello", "Value": "There"}, {"Key": "Hello1", "Value": "There1"}],
+    )
+
+
 def test_restxml_parser_route53_with_botocore():
     _botocore_parser_integration_test(
         service="route53",
