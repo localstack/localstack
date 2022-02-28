@@ -397,7 +397,7 @@ class TestDockerClient:
             fd.write("foobared\n")
         with pytest.raises(NoSuchContainer):
             docker_client.copy_into_container(
-                "hopefully_non_existent_container_%s" % short_uid(), str(file_path), "test_file"
+                f"hopefully_non_existent_container_{short_uid()}", str(file_path), "test_file"
             )
 
     def test_copy_into_container_without_target_filename(
@@ -941,7 +941,7 @@ class TestDockerClient:
         assert "alpine" in docker_client.inspect_image("alpine")["RepoTags"][0]
 
     def test_inspect_network(self, docker_client: ContainerClient, create_network):
-        network_name = "ls_test_network_%s" % short_uid()
+        network_name = f"ls_test_network_{short_uid()}"
         network_id = create_network(network_name)
         assert network_name == docker_client.inspect_network(network_name)["Name"]
         assert network_id == docker_client.inspect_network(network_name)["Id"]
@@ -981,7 +981,7 @@ class TestDockerClient:
         local_path = tmpdir.mkdir("test_dir")
         with pytest.raises(NoSuchContainer):
             docker_client.copy_from_container(
-                "hopefully_non_existent_container_%s" % short_uid(), str(local_path), "test_file"
+                f"hopefully_non_existent_container_{short_uid()}", str(local_path), "test_file"
             )
 
     def _test_copy_from_container(
@@ -1034,7 +1034,7 @@ class TestDockerClient:
 
     def test_get_container_ip_non_existing_container(self, docker_client: ContainerClient):
         with pytest.raises(NoSuchContainer):
-            docker_client.get_container_ip("hopefully_non_existent_container_%s" % short_uid())
+            docker_client.get_container_ip(f"hopefully_non_existent_container_{short_uid()}")
 
     def test_get_container_ip(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
@@ -1076,7 +1076,7 @@ class TestDockerClient:
     def test_get_container_ip_with_network(
         self, docker_client: ContainerClient, create_container, create_network
     ):
-        network_name = "ls_test_network_%s" % short_uid()
+        network_name = f"ls_test_network_{short_uid()}"
         create_network(network_name)
         container = create_container(
             "alpine", network=network_name, command=["sh", "-c", "while true; do sleep 1; done"]
@@ -1096,7 +1096,7 @@ class TestDockerClient:
     def test_connect_container_to_network(
         self, docker_client: ContainerClient, create_network, create_container
     ):
-        network_name = "ls_test_network_%s" % short_uid()
+        network_name = f"ls_test_network_{short_uid()}"
         create_network(network_name)
         container = create_container("alpine", command=["sh", "-c", "while true; do sleep 1; done"])
         docker_client.start_container(container.container_id)
@@ -1131,7 +1131,7 @@ class TestDockerClient:
     def test_connect_nonexistent_container_to_network(
         self, docker_client: ContainerClient, create_network, create_container
     ):
-        network_name = "ls_test_network_%s" % short_uid()
+        network_name = f"ls_test_network_{short_uid()}"
         create_network(network_name)
         with pytest.raises(NoSuchContainer):
             docker_client.connect_container_to_network(
@@ -1141,7 +1141,7 @@ class TestDockerClient:
     def test_disconnect_nonexistent_container_from_network(
         self, docker_client: ContainerClient, create_network, create_container
     ):
-        network_name = "ls_test_network_%s" % short_uid()
+        network_name = f"ls_test_network_{short_uid()}"
         create_network(network_name)
         with pytest.raises(NoSuchContainer):
             docker_client.disconnect_container_from_network(
@@ -1151,7 +1151,7 @@ class TestDockerClient:
     def test_connect_container_to_network_with_alias_and_disconnect(
         self, docker_client: ContainerClient, create_network, create_container
     ):
-        network_name = "ls_test_network_%s" % short_uid()
+        network_name = f"ls_test_network_{short_uid()}"
         container_alias = f"test-container-{short_uid()}.localstack.cloud"
         create_network(network_name)
         container = create_container("alpine", command=["sh", "-c", "while true; do sleep 1; done"])
@@ -1167,4 +1167,45 @@ class TestDockerClient:
         with pytest.raises(ContainerException):
             docker_client.start_container(
                 container_name_or_id=container_2.container_id, attach=True
+            )
+
+    def test_container_with_cap_add(self, docker_client: ContainerClient, create_container):
+        container = create_container(
+            "alpine",
+            cap_add=["NET_ADMIN"],
+            command=[
+                "sh",
+                "-c",
+                "ip link add dummy0 type dummy && ip link delete dummy0 && echo test",
+            ],
+        )
+        stdout, _ = docker_client.start_container(
+            container_name_or_id=container.container_id, attach=True
+        )
+        assert "test" in to_str(stdout)
+        container = create_container(
+            "alpine",
+            command=[
+                "sh",
+                "-c",
+                "ip link add dummy0 type dummy && ip link delete dummy0 && echo test",
+            ],
+        )
+        with pytest.raises(ContainerException):
+            stdout, _ = docker_client.start_container(
+                container_name_or_id=container.container_id, attach=True
+            )
+
+    def test_container_with_cap_drop(self, docker_client: ContainerClient, create_container):
+        container = create_container("alpine", command=["sh", "-c", "chown nobody / && echo test"])
+        stdout, _ = docker_client.start_container(
+            container_name_or_id=container.container_id, attach=True
+        )
+        assert "test" in to_str(stdout)
+        container = create_container(
+            "alpine", cap_drop=["CHOWN"], command=["sh", "-c", "chown nobody / && echo test"]
+        )
+        with pytest.raises(ContainerException):
+            stdout, _ = docker_client.start_container(
+                container_name_or_id=container.container_id, attach=True
             )
