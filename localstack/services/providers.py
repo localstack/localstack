@@ -250,9 +250,14 @@ def sqs_asf():
 
 @aws_provider()
 def ssm():
-    from localstack.services.ssm import ssm_listener, ssm_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.ssm.provider import SsmProvider
 
-    return Service("ssm", listener=ssm_listener.UPDATE_SSM, start=ssm_starter.start_ssm)
+    provider = SsmProvider()
+    return Service(
+        "ssm",
+        listener=AwsApiListener("ssm", MotoFallbackDispatcher(provider)),
+    )
 
 
 @aws_provider()

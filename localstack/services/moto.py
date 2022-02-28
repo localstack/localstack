@@ -35,11 +35,12 @@ MotoDispatcher = Callable[[HttpRequest, str, dict], MotoResponse]
 user_agent = f"Localstack/{localstack_version} Python/{sys.version.split(' ')[0]}"
 
 
-def call_moto(context: RequestContext) -> ServiceResponse:
+def call_moto(context: RequestContext, include_response_metadata=False) -> ServiceResponse:
     """
     Call moto with the given request context and receive a parsed ServiceResponse.
 
     :param context: the request context
+    :param include_response_metadata: whether to include botocore's "ResponseMetadata" attribute
     :return: a serialized AWS ServiceResponse (same as boto3 would return)
     """
     status, headers, content = dispatch_to_moto(context)
@@ -64,6 +65,9 @@ def call_moto(context: RequestContext) -> ServiceResponse:
             status_code=status,
             message=error.get("Message", ""),
         )
+
+    if not include_response_metadata:
+        response.pop("ResponseMetadata", None)
 
     return response
 

@@ -294,6 +294,23 @@ class TestCloudwatch:
         results = cloudwatch_client.list_metrics(Namespace="AWS/EC2")["Metrics"]
         assert 2 == len(results)
 
+    def test_put_metric_alarm_escape_character(self, cloudwatch_client):
+        cloudwatch_client.put_metric_alarm(
+            AlarmName="cpu-mon",
+            AlarmDescription="<",
+            MetricName="CPUUtilization",
+            Namespace="AWS/EC2",
+            Statistic="Sum",
+            Period=180,
+            Threshold=1,
+            ComparisonOperator="GreaterThanThreshold",
+            EvaluationPeriods=1,
+            AlarmActions=["arn:aws:sns:us-east-1:111122223333:MyTopic"],
+        )
+
+        result = cloudwatch_client.describe_alarms()
+        assert result.get("MetricAlarms")[0]["AlarmDescription"] == "<"
+
     def test_set_alarm(
         self, sns_client, cloudwatch_client, sqs_client, sns_create_topic, sqs_create_queue
     ):

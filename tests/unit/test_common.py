@@ -15,7 +15,6 @@ from localstack import config
 from localstack.utils import common
 from localstack.utils.common import (
     ExternalServicePortsManager,
-    Mock,
     PaginatedList,
     PortNotAvailableException,
     fully_qualified_class_name,
@@ -28,6 +27,7 @@ from localstack.utils.common import (
     save_file,
     short_uid,
 )
+from localstack.utils.objects import Mock
 from localstack.utils.testutil import create_zip_file
 
 
@@ -229,26 +229,6 @@ class TestCommon:
         result = common.run(cmd)
         assert result.strip() == "foobar"
 
-    def test_run_with_cache(self):
-        cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
-        d1 = float(common.run(cmd))
-        d2 = float(common.run(cmd, cache_duration_secs=1))
-        d3 = float(common.run(cmd, cache_duration_secs=1))
-
-        assert d1 != d2
-        assert d2 == d3
-
-    def test_run_with_cache_expiry(self):
-        cmd = "python3 -c 'import time; print(int(time.time() * 1000))'"
-
-        d1 = float(common.run(cmd, cache_duration_secs=0.5))
-        d2 = float(common.run(cmd, cache_duration_secs=0.5))
-        time.sleep(0.8)
-        d3 = float(common.run(cmd, cache_duration_secs=0.5))
-
-        assert d1 == d2
-        assert d2 != d3
-
     def test_is_command_available(self):
         assert common.is_command_available("python3")
         assert not common.is_command_available("hopefullydoesntexist")
@@ -394,7 +374,7 @@ class TestCommon:
         config.OUTBOUND_HTTPS_PROXY = old_https_proxy
 
     def test_fully_qualified_class_name(self):
-        assert fully_qualified_class_name(Mock) == "localstack.utils.common.Mock"
+        assert fully_qualified_class_name(Mock) == "localstack.utils.objects.Mock"
 
 
 class TestCommonFileOperations:

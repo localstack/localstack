@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -10,7 +11,7 @@ from localstack.services.infra import (
     start_proxy_for_service,
 )
 from localstack.services.install import INSTALL_PATH_KMS_BINARY_PATTERN
-from localstack.utils.common import get_arch, get_free_tcp_port, platform, wait_for_port_open
+from localstack.utils.common import get_arch, get_free_tcp_port, wait_for_port_open
 
 LOG = logging.getLogger(__name__)
 
