@@ -5,9 +5,12 @@ from localstack.services.plugins import Service, aws_provider
 
 @aws_provider()
 def acm():
-    from localstack.services.acm import acm_starter
+    from localstack.services.acm.provider import AcmProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
-    return Service("acm", start=acm_starter.start_acm)
+    provider = AcmProvider()
+
+    return Service("acm", listener=AwsApiListener("acm", MotoFallbackDispatcher(provider)))
 
 
 @aws_provider()
