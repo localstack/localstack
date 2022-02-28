@@ -1648,11 +1648,14 @@ class OutputLog:
         return truncate(to_str(self._stdout).strip(), truncated_to)
 
     def output_file(self):
-        with tempfile.NamedTemporaryFile(
-            dir=TMP_FOLDER, delete=False, suffix=".log", prefix="lambda_"
-        ) as f:
-            LOG.info(f"writing log to file '{f.name}'")
-            f.write(self._stderr)
+        try:
+            with tempfile.NamedTemporaryFile(
+                dir=TMP_FOLDER, delete=False, suffix=".log", prefix="lambda_"
+            ) as f:
+                LOG.info(f"writing log to file '{f.name}'")
+                f.write(to_bytes(self._stderr))
+        except Exception as e:
+            LOG.warning("failed to write log to file, error %s", e)
 
 
 # --------------
