@@ -186,9 +186,7 @@ class TestSecretsManager:
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         # clean up
-        self.secretsmanager_client.delete_secret(
-            SecretId=secret_name, ForceDeleteWithoutRecovery=True
-        )
+        secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
         testutil.delete_lambda_function(function_name)
 
     def test_put_secret_value_with_version_stages(self, secretsmanager_client):
