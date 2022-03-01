@@ -617,6 +617,7 @@ class ContainerClient(metaclass=ABCMeta):
         env_vars: Optional[Dict[str, Optional[str]]] = None,
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
         """Execute a given command in a container
 

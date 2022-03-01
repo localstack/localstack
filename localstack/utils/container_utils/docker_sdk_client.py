@@ -592,6 +592,7 @@ class SdkDockerClient(ContainerClient):
         env_vars: Optional[Dict[str, Optional[str]]] = None,
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
         LOG.debug("Executing command in container %s: %s", container_name_or_id, command)
         try:
@@ -606,6 +607,7 @@ class SdkDockerClient(ContainerClient):
                 stdout=True,
                 stderr=True,
                 demux=True,
+                workdir=workdir,
             )
             tty = False
             if interactive and stdin:  # result is a socket
