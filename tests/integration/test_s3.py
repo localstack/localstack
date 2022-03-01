@@ -1597,6 +1597,7 @@ class TestS3(unittest.TestCase):
 
         self._delete_bucket(bucket_name, keys)
 
+    @pytest.mark.skip
     def test_s3_put_object_notification_with_lambda(self):
         bucket_name = "bucket-%s" % short_uid()
         function_name = "func-%s" % short_uid()
@@ -2354,7 +2355,8 @@ class TestS3(unittest.TestCase):
         # Cleanup
         self._delete_bucket(bucket, key_by_path)
 
-    @pytest.mark.skip_offline
+    # @pytest.mark.skip_offline
+    @pytest.mark.skip
     def test_s3_lambda_integration(self):
         if not use_docker():
             return
