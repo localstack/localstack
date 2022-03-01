@@ -240,7 +240,7 @@ RUN make init
 
 # Install the latest version of localstack-ext and generate the plugin entrypoints
 RUN (virtualenv .venv && source .venv/bin/activate && \
-      pip3 install --upgrade localstack-ext localstack-plugin-loader)
+      pip3 install --upgrade localstack-ext plux)
 RUN make entrypoints
 
 # Add the build date and git hash at last (changes everytime)
