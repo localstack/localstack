@@ -236,7 +236,10 @@ class SdkDockerClient(ContainerClient):
             context_path = context_path or os.path.dirname(dockerfile_path)
             LOG.debug("Building Docker image %s from %s", image_name, dockerfile_path)
             self.client().images.build(
-                path=context_path, dockerfile=dockerfile_path, tag=image_name
+                path=context_path,
+                dockerfile=dockerfile_path,
+                tag=image_name,
+                rm=True,
             )
         except APIError as e:
             raise ContainerException("Unable to build Docker image") from e
@@ -473,7 +476,8 @@ class SdkDockerClient(ContainerClient):
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
-        cap_add: Optional[str] = None,
+        cap_add: Optional[List[str]] = None,
+        cap_drop: Optional[List[str]] = None,
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
@@ -488,7 +492,9 @@ class SdkDockerClient(ContainerClient):
         try:
             kwargs = {}
             if cap_add:
-                kwargs["cap_add"] = [cap_add]
+                kwargs["cap_add"] = cap_add
+            if cap_drop:
+                kwargs["cap_drop"] = cap_drop
             if dns:
                 kwargs["dns"] = [dns]
             if ports:
@@ -544,7 +550,8 @@ class SdkDockerClient(ContainerClient):
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
-        cap_add: Optional[str] = None,
+        cap_add: Optional[List[str]] = None,
+        cap_drop: Optional[List[str]] = None,
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
@@ -567,6 +574,7 @@ class SdkDockerClient(ContainerClient):
                 env_vars=env_vars,
                 user=user,
                 cap_add=cap_add,
+                cap_drop=cap_drop,
                 network=network,
                 dns=dns,
                 additional_flags=additional_flags,

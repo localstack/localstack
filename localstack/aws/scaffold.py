@@ -371,10 +371,18 @@ def generate(service: str, doc: bool, save: bool):
     code = output.getvalue()
 
     try:
-        # try to format with black
+        import autoflake
+        import isort
         from black import FileMode, format_str
 
+        # try to format with black
         code = format_str(code, mode=FileMode())
+
+        # try to remove unused imports
+        code = autoflake.fix_code(code)
+
+        # try to sort imports
+        code = isort.code(code)
     except Exception:
         pass
 

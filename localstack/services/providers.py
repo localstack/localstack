@@ -5,9 +5,12 @@ from localstack.services.plugins import Service, aws_provider
 
 @aws_provider()
 def acm():
-    from localstack.services.acm import acm_starter
+    from localstack.services.acm.provider import AcmProvider
+    from localstack.services.moto import MotoFallbackDispatcher
 
-    return Service("acm", start=acm_starter.start_acm)
+    provider = AcmProvider()
+
+    return Service("acm", listener=AwsApiListener("acm", MotoFallbackDispatcher(provider)))
 
 
 @aws_provider()
@@ -282,11 +285,13 @@ def stepfunctions():
 
 @aws_provider()
 def swf():
-    from localstack.services.swf import swf_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.swf.provider import SWFProvider
 
+    provider = SWFProvider()
     return Service(
         "swf",
-        start=swf_starter.start_swf,
+        listener=AwsApiListener("swf", MotoFallbackDispatcher(provider)),
     )
 
 

@@ -1,3 +1,4 @@
+import itertools
 import json
 import logging
 import os
@@ -539,7 +540,8 @@ class CmdDockerClient(ContainerClient):
         ports: Optional[PortMappings] = None,
         env_vars: Optional[Dict[str, str]] = None,
         user: Optional[str] = None,
-        cap_add: Optional[str] = None,
+        cap_add: Optional[List[str]] = None,
+        cap_drop: Optional[List[str]] = None,
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
@@ -573,7 +575,9 @@ class CmdDockerClient(ContainerClient):
         if user:
             cmd += ["--user", user]
         if cap_add:
-            cmd += ["--cap-add", cap_add]
+            cmd += list(itertools.chain.from_iterable(["--cap-add", cap] for cap in cap_add))
+        if cap_drop:
+            cmd += list(itertools.chain.from_iterable(["--cap-drop", cap] for cap in cap_drop))
         if network:
             cmd += ["--network", network]
         if dns:

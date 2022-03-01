@@ -33,6 +33,7 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_RESPONSES,
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_VALIDATORS,
+    apply_integration_response_template,
     apply_template,
     extract_path_params,
     extract_query_string_params,
@@ -527,6 +528,7 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     uri = integration.get("uri") or integration.get("integrationUri") or ""
     try:
         path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
+        invocation_context.path_params = path_params
     except Exception:
         path_params = {}
 
@@ -853,7 +855,8 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
 
     elif integration_type == "MOCK":
         # return empty response - details filled in via responseParameters above...
-        return requests_response({})
+        invocation_context.response = requests_response({})
+        return apply_integration_response_template(invocation_context)
 
     if method == "OPTIONS":
         # fall back to returning CORS headers if this is an OPTIONS request

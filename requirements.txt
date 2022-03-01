@@ -80,3 +80,4 @@ pyproject-flake8
 isort==5.9.1
 pandoc
 pypandoc
+autoflake
