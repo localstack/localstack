@@ -26,7 +26,7 @@ usage:                    ## Show this help
 
 $(VENV_ACTIVATE): setup.py requirements.txt
 	test -d $(VENV_DIR) || $(VENV_BIN) $(VENV_DIR)
-	$(VENV_RUN); $(PIP_CMD) install --upgrade pip setuptools wheel localstack-plugin-loader
+	$(VENV_RUN); $(PIP_CMD) install --upgrade pip setuptools wheel plux
 	touch $(VENV_ACTIVATE)
 
 venv: $(VENV_ACTIVATE)    ## Create a new (empty) virtual environment
