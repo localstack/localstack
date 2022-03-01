@@ -18,7 +18,7 @@ from localstack.constants import (
     PATH_USER_REQUEST,
     TEST_AWS_ACCOUNT_ID,
 )
-from localstack.services.apigateway.context import InvocationPayload
+from localstack.services.apigateway.context import ApiInvocationContext, InvocationPayload
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
@@ -1241,3 +1241,54 @@ def apply_template(
             input_ctx["params"] = _params
             data = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
     return data
+
+
+def apply_integration_response_template(context: ApiInvocationContext):
+    response = context.response
+    integration = context.integration
+    _, query_string_params = extract_query_string_params(path=context.invocation_path)
+    int_responses = integration.get("integrationResponses") or {}
+    if not int_responses:
+        return response
+    entries = list(int_responses.keys())
+    return_code = str(response.status_code)
+    if return_code not in entries:
+        if len(entries) > 1:
+            LOG.info("Found multiple integration response status codes: %s", entries)
+            return response
+    return_code = entries[0]
+
+    response_templates = int_responses[return_code].get("responseTemplates", {})
+    template = response_templates.get(APPLICATION_JSON, {})
+    if not template:
+        return response
+
+    variables = {"context": {}}
+    input_ctx = {"body": response.content}
+    # little trick to flatten the input context so velocity templates
+    # work from the root.
+    # orig - { "body": '{"action": "$default","message":"foobar"}'
+    # after - {
+    #   "body": '{"action": "$default","message":"foobar"}',
+    #   "action": "$default",
+    #   "message": "foobar"
+    # }
+    if response.content:
+        dict_pack = try_json(response.content)
+        if isinstance(dict_pack, dict):
+            for k, v in dict_pack.items():
+                input_ctx.update({k: v})
+
+    def _params(name=None):
+        # See https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#input-variable-reference
+        # Returns "request parameter from the path, query string, or header value (
+        # searched in that order)"
+        combined = {}
+        combined.update({"path": context.path_params} or {})
+        combined.update(query_string_params or {})
+        combined.update(context.headers or {})
+        return combined if not name else combined.get(name)
+
+    input_ctx["params"] = _params
+    response._content = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
+    return response
