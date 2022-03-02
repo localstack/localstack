@@ -72,27 +72,6 @@ class Router(Generic[E]):
         self.dispatcher = dispatcher or call_endpoint
         self._mutex = threading.RLock()
 
-    def add_regex(
-        self,
-        regex: str,
-        endpoint: E,
-        host: Optional[str] = None,
-        methods: Optional[Iterable[str]] = None,
-        **kwargs,
-    ) -> Rule:
-        """
-        Adds a new rule based on a regex to the URL Map.
-        It forwards to the ``add`` method
-        """
-        regex = f"/<regex('{regex}'):path>/"
-        return self.add(
-            path=regex,
-            endpoint=endpoint,
-            host=host,
-            methods=methods,
-            **kwargs,
-        )
-
     def add(
         self,
         path: str,

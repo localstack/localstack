@@ -114,7 +114,8 @@ class TestRouter:
         router = Router()
         router.url_map.converters["regex"] = RegexConverter
         rgx = r"([^.]+)\.cloudfront.(net|localhost\.localstack\.cloud)(.*)"
-        router.add_regex(regex=rgx, endpoint=noop)
+        regex = f"/<regex('{rgx}'):path>/"
+        router.add(path="/test-endpoint", endpoint=noop, host=regex)
         assert router.dispatch(Request("GET", "8395d242.cloudfront.localhost.localstack.cloud"))
 
     def test_remove_rule(self):
