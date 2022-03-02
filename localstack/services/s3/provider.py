@@ -111,13 +111,28 @@ from localstack.aws.api.s3 import (
     UploadPartOutput,
     VersioningConfiguration,
     WebsiteConfiguration,
-    WebsiteRedirectLocation,
+    WebsiteRedirectLocation, GetBucketAccelerateConfigurationOutput, GetBucketAclOutput,
+    GetBucketAnalyticsConfigurationOutput, GetBucketCorsOutput, GetBucketEncryptionOutput,
+    GetBucketIntelligentTieringConfigurationOutput, GetBucketInventoryConfigurationOutput, GetBucketLifecycleOutput,
+    GetBucketLifecycleConfigurationOutput, GetBucketLocationOutput, GetBucketLoggingOutput,
+    GetBucketMetricsConfigurationOutput, GetBucketOwnershipControlsOutput, GetBucketPolicyOutput,
+    GetBucketPolicyStatusOutput, GetBucketReplicationOutput, GetBucketRequestPaymentOutput, GetBucketTaggingOutput,
+    GetBucketVersioningOutput, GetBucketWebsiteOutput, GetObjectOutput, ResponseExpires, ResponseContentType,
+    ResponseContentLanguage, ResponseContentEncoding, ResponseContentDisposition, ResponseCacheControl,
+    IfUnmodifiedSince, Range, IfNoneMatch, IfModifiedSince, IfMatch, GetObjectAclOutput, GetObjectLegalHoldOutput,
+    GetObjectLockConfigurationOutput, GetObjectRetentionOutput, GetObjectTaggingOutput, GetObjectTorrentOutput,
+    GetPublicAccessBlockOutput, Token, ListBucketAnalyticsConfigurationsOutput,
+    ListBucketIntelligentTieringConfigurationsOutput,
 )
+from localstack.services.awslambda.lambda_utils import ClientError
 from localstack.services.moto import call_moto
 from localstack.services.s3 import s3_listener, s3_utils
+from localstack.services.s3.s3_utils import is_static_website
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.generic.dict_utils import get_safe
 from localstack.utils.patch import patch
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -142,6 +157,8 @@ class S3Provider(S3Api, ABC):
         if not os.environ.get("MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"):
             os.environ["MOTO_S3_DEFAULT_KEY_BUFFER_SIZE"] = str(S3_MAX_FILE_SIZE_BYTES)
 
+        self.s3_client = aws_stack.connect_to_service("s3")
+
     @staticmethod
     def error_response(message, code, status_code=400):
         result = {"Error": {"Code": code, "Message": message}}
@@ -154,9 +171,17 @@ class S3Provider(S3Api, ABC):
         return requests_response(content, status_code=status_code, headers=headers)
 
     @staticmethod
+    def _path_hashes_key_names(context: RequestContext) -> str:
+        return context.request.path.replace("#", "%23")
+
+    @staticmethod
+    def _is_static_website(context: RequestContext) -> bool:
+        return is_static_website(context.request.headers)
+
+    @staticmethod
     def _raise_if_invalid_bucket_name(context: RequestContext, bucket_name: Optional[BucketName]):
         # Support key names containing hashes (e.g., required by Amplify).
-        path = context.request.path.replace("#", "%23")
+        path = S3Provider._path_hashes_key_names(context)
         parsed_path = urlparse(path)
         if bucket_name and not re.match(BUCKET_NAME_REGEX, bucket_name):
             if len(parsed_path.path) <= 1:
@@ -185,6 +210,66 @@ class S3Provider(S3Api, ABC):
             # TODO: there are no 'InvalidBucketName' exception type?
             # TODO: status code automatically set?
             raise NoSuchBucket("The specified bucket is not valid.", "InvalidBucketName")
+
+    @staticmethod
+    def _no_such_bucket(bucket_name: BucketName, request_id=None, status_code=404):
+        # TODO: fix the response to match AWS bucket response when the webconfig is not set and bucket not exists
+        result = {
+            "Error": {
+                "Code": "NoSuchBucket",
+                "Message": "The specified bucket does not exist",
+                "BucketName": bucket_name,
+                "RequestId": request_id,
+                "HostId": short_uid(),
+            }
+        }
+        content = xmltodict.unparse(result)
+        return S3Provider.xml_response(content, status_code=status_code)
+
+    def _serve_static_website(self, context: RequestContext, bucket_name: BucketName):
+        headers = context.request.headers
+        path = self._path_hashes_key_names(context)
+        # check if bucket exists
+        try:
+            self.s3_client.head_bucket(Bucket=bucket_name)
+        except ClientError:
+            return self._no_such_bucket(bucket_name, headers.get("x-amz-request-id"), 404)
+
+        def respond_with_key(status_code, key):
+            obj = self.s3_client.get_object(Bucket=bucket_name, Key=key)
+            response_headers = {}
+
+            if "if-none-match" in headers and "ETag" in obj and obj["ETag"] in headers["if-none-match"]:
+                return requests_response(status_code=304, content="", headers=response_headers)
+            if "WebsiteRedirectLocation" in obj:
+                response_headers["location"] = obj["WebsiteRedirectLocation"]
+                return requests_response(status_code=301, content="", headers=response_headers)
+            if "ContentType" in obj:
+                response_headers["content-type"] = obj["ContentType"]
+            if "ETag" in obj:
+                response_headers["etag"] = obj["ETag"]
+            return requests_response(
+                status_code=status_code, content=obj["Body"].read(), headers=response_headers
+            )
+
+        try:
+            if path != "/":
+                path = path.lstrip("/")
+                return respond_with_key(status_code=200, key=path)
+        except ClientError:
+            LOG.debug("No such key found. %s", path)
+
+        website_config = self.s3_client.get_bucket_website(Bucket=bucket_name)
+        path_suffix = website_config.get("IndexDocument", {}).get("Suffix", "").lstrip("/")
+        index_document = "%s/%s" % (path.rstrip("/"), path_suffix)
+        try:
+            return respond_with_key(status_code=200, key=index_document)
+        except ClientError:
+            error_document = website_config.get("ErrorDocument", {}).get("Key", "").lstrip("/")
+            try:
+                return respond_with_key(status_code=404, key=error_document)
+            except ClientError:
+                return requests_response(status_code=404, content="")
 
     # def abort_multipart_upload(
     #     self,
@@ -455,277 +540,337 @@ class S3Provider(S3Api, ABC):
     # ) -> None:
     #     raise NotImplementedError
 
-    # def get_bucket_accelerate_configuration(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketAccelerateConfigurationOutput:
-    #     raise NotImplementedError
+    def get_bucket_accelerate_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketAccelerateConfigurationOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketAccelerateConfigurationOutput(**call_moto(context))
 
-    # def get_bucket_acl(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketAclOutput:
-    #     raise NotImplementedError
+    def get_bucket_acl(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketAclOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketAclOutput(**call_moto(context))
 
-    # def get_bucket_analytics_configuration(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     id: AnalyticsId,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketAnalyticsConfigurationOutput:
-    #     raise NotImplementedError
+    def get_bucket_analytics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: AnalyticsId,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketAnalyticsConfigurationOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketAnalyticsConfigurationOutput(**call_moto(context))
 
-    # def get_bucket_cors(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketCorsOutput:
-    #     raise NotImplementedError
+    def get_bucket_cors(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketCorsOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketCorsOutput(**call_moto(context))
 
-    # def get_bucket_encryption(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketEncryptionOutput:
-    #     raise NotImplementedError
+    def get_bucket_encryption(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketEncryptionOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketEncryptionOutput(**call_moto(context))
 
-    # def get_bucket_intelligent_tiering_configuration(
-    #     self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
-    # ) -> GetBucketIntelligentTieringConfigurationOutput:
-    #     raise NotImplementedError
+    def get_bucket_intelligent_tiering_configuration(
+        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+    ) -> GetBucketIntelligentTieringConfigurationOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketIntelligentTieringConfigurationOutput(**call_moto(context))
 
-    # def get_bucket_inventory_configuration(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     id: InventoryId,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketInventoryConfigurationOutput:
-    #     raise NotImplementedError
+    def get_bucket_inventory_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: InventoryId,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketInventoryConfigurationOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketInventoryConfigurationOutput(**call_moto(context))
 
-    # def get_bucket_lifecycle(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketLifecycleOutput:
-    #     raise NotImplementedError
+    def get_bucket_lifecycle(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketLifecycleOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketLifecycleOutput(**call_moto(context))
 
-    # def get_bucket_lifecycle_configuration(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketLifecycleConfigurationOutput:
-    #     raise NotImplementedError
+    def get_bucket_lifecycle_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketLifecycleConfigurationOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketLifecycleConfigurationOutput(**call_moto(context))
 
-    # def get_bucket_location(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketLocationOutput:
-    #     raise NotImplementedError
+    def get_bucket_location(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketLocationOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketLocationOutput(**call_moto(context))
 
-    # def get_bucket_logging(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketLoggingOutput:
-    #     raise NotImplementedError
+    def get_bucket_logging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketLoggingOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketLoggingOutput(**call_moto(context))
 
-    # def get_bucket_metrics_configuration(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     id: MetricsId,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketMetricsConfigurationOutput:
-    #     raise NotImplementedError
+    def get_bucket_metrics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: MetricsId,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketMetricsConfigurationOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketMetricsConfigurationOutput(**call_moto(context))
 
-    # def get_bucket_notification(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> NotificationConfigurationDeprecated:
-    #     raise NotImplementedError
+    def get_bucket_notification(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> NotificationConfigurationDeprecated:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return NotificationConfigurationDeprecated(**call_moto(context))
 
-    # def get_bucket_notification_configuration(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> NotificationConfiguration:
-    #     raise NotImplementedError
+    def get_bucket_notification_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> NotificationConfiguration:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return NotificationConfiguration(**call_moto(context))
 
-    # def get_bucket_ownership_controls(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketOwnershipControlsOutput:
-    #     raise NotImplementedError
+    def get_bucket_ownership_controls(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketOwnershipControlsOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketOwnershipControlsOutput(**call_moto(context))
 
-    # def get_bucket_policy(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketPolicyOutput:
-    #     raise NotImplementedError
+    def get_bucket_policy(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketPolicyOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketPolicyOutput(**call_moto(context))
 
-    # def get_bucket_policy_status(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketPolicyStatusOutput:
-    #     raise NotImplementedError
+    def get_bucket_policy_status(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketPolicyStatusOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketPolicyStatusOutput(**call_moto(context))
 
-    # def get_bucket_replication(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketReplicationOutput:
-    #     raise NotImplementedError
+    def get_bucket_replication(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketReplicationOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketReplicationOutput(**call_moto(context))
 
-    # def get_bucket_request_payment(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketRequestPaymentOutput:
-    #     raise NotImplementedError
+    def get_bucket_request_payment(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketRequestPaymentOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketRequestPaymentOutput(**call_moto(context))
 
-    # def get_bucket_tagging(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketTaggingOutput:
-    #     raise NotImplementedError
+    def get_bucket_tagging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketTaggingOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketTaggingOutput(**call_moto(context))
 
-    # def get_bucket_versioning(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketVersioningOutput:
-    #     raise NotImplementedError
+    def get_bucket_versioning(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketVersioningOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketVersioningOutput(**call_moto(context))
 
-    # def get_bucket_website(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetBucketWebsiteOutput:
-    #     raise NotImplementedError
+    def get_bucket_website(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetBucketWebsiteOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetBucketWebsiteOutput(**call_moto(context))
 
-    # def get_object(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     key: ObjectKey,
-    #     if_match: IfMatch = None,
-    #     if_modified_since: IfModifiedSince = None,
-    #     if_none_match: IfNoneMatch = None,
-    #     if_unmodified_since: IfUnmodifiedSince = None,
-    #     range: Range = None,
-    #     response_cache_control: ResponseCacheControl = None,
-    #     response_content_disposition: ResponseContentDisposition = None,
-    #     response_content_encoding: ResponseContentEncoding = None,
-    #     response_content_language: ResponseContentLanguage = None,
-    #     response_content_type: ResponseContentType = None,
-    #     response_expires: ResponseExpires = None,
-    #     version_id: ObjectVersionId = None,
-    #     sse_customer_algorithm: SSECustomerAlgorithm = None,
-    #     sse_customer_key: SSECustomerKey = None,
-    #     sse_customer_key_md5: SSECustomerKeyMD5 = None,
-    #     request_payer: RequestPayer = None,
-    #     part_number: PartNumber = None,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetObjectOutput:
-    #     raise NotImplementedError
+    def get_object(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        if_match: IfMatch = None,
+        if_modified_since: IfModifiedSince = None,
+        if_none_match: IfNoneMatch = None,
+        if_unmodified_since: IfUnmodifiedSince = None,
+        range: Range = None,
+        response_cache_control: ResponseCacheControl = None,
+        response_content_disposition: ResponseContentDisposition = None,
+        response_content_encoding: ResponseContentEncoding = None,
+        response_content_language: ResponseContentLanguage = None,
+        response_content_type: ResponseContentType = None,
+        response_expires: ResponseExpires = None,
+        version_id: ObjectVersionId = None,
+        sse_customer_algorithm: SSECustomerAlgorithm = None,
+        sse_customer_key: SSECustomerKey = None,
+        sse_customer_key_md5: SSECustomerKeyMD5 = None,
+        request_payer: RequestPayer = None,
+        part_number: PartNumber = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetObjectOutput(**call_moto(context))
 
-    # def get_object_acl(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     key: ObjectKey,
-    #     version_id: ObjectVersionId = None,
-    #     request_payer: RequestPayer = None,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetObjectAclOutput:
-    #     raise NotImplementedError
+    def get_object_acl(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectAclOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetObjectAclOutput(**call_moto(context))
 
-    # def get_object_legal_hold(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     key: ObjectKey,
-    #     version_id: ObjectVersionId = None,
-    #     request_payer: RequestPayer = None,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetObjectLegalHoldOutput:
-    #     raise NotImplementedError
+    def get_object_legal_hold(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectLegalHoldOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetObjectLegalHoldOutput(**call_moto(context))
 
-    # def get_object_lock_configuration(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetObjectLockConfigurationOutput:
-    #     raise NotImplementedError
+    def get_object_lock_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectLockConfigurationOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetObjectLockConfigurationOutput(**call_moto(context))
 
-    # def get_object_retention(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     key: ObjectKey,
-    #     version_id: ObjectVersionId = None,
-    #     request_payer: RequestPayer = None,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetObjectRetentionOutput:
-    #     raise NotImplementedError
+    def get_object_retention(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectRetentionOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetObjectRetentionOutput(**call_moto(context))
 
-    # def get_object_tagging(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     key: ObjectKey,
-    #     version_id: ObjectVersionId = None,
-    #     expected_bucket_owner: AccountId = None,
-    #     request_payer: RequestPayer = None,
-    # ) -> GetObjectTaggingOutput:
-    #     raise NotImplementedError
+    def get_object_tagging(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        version_id: ObjectVersionId = None,
+        expected_bucket_owner: AccountId = None,
+        request_payer: RequestPayer = None,
+    ) -> GetObjectTaggingOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetObjectTaggingOutput(**call_moto(context))
 
-    # def get_object_torrent(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     key: ObjectKey,
-    #     request_payer: RequestPayer = None,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetObjectTorrentOutput:
-    #     raise NotImplementedError
+    def get_object_torrent(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        request_payer: RequestPayer = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetObjectTorrentOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetObjectTorrentOutput(**call_moto(context))
 
-    # def get_public_access_block(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> GetPublicAccessBlockOutput:
-    #     raise NotImplementedError
+    def get_public_access_block(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId = None,
+    ) -> GetPublicAccessBlockOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return GetPublicAccessBlockOutput(**call_moto(context))
 
     # def head_bucket(
     #     self,
@@ -755,22 +900,26 @@ class S3Provider(S3Api, ABC):
     # ) -> HeadObjectOutput:
     #     raise NotImplementedError
 
-    # def list_bucket_analytics_configurations(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     continuation_token: Token = None,
-    #     expected_bucket_owner: AccountId = None,
-    # ) -> ListBucketAnalyticsConfigurationsOutput:
-    #     raise NotImplementedError
+    def list_bucket_analytics_configurations(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+        expected_bucket_owner: AccountId = None,
+    ) -> ListBucketAnalyticsConfigurationsOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return ListBucketAnalyticsConfigurationsOutput(**call_moto(context))
 
-    # def list_bucket_intelligent_tiering_configurations(
-    #     self,
-    #     context: RequestContext,
-    #     bucket: BucketName,
-    #     continuation_token: Token = None,
-    # ) -> ListBucketIntelligentTieringConfigurationsOutput:
-    #     raise NotImplementedError
+    def list_bucket_intelligent_tiering_configurations(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+    ) -> ListBucketIntelligentTieringConfigurationsOutput:
+        if self._is_static_website(context):
+            return self._serve_static_website(context, bucket)
+        return ListBucketIntelligentTieringConfigurationsOutput(**call_moto(context))
 
     # def list_bucket_inventory_configurations(
     #     self,
