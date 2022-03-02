@@ -99,16 +99,6 @@ class InvalidParameterValue(CommonServiceException):
         super().__init__("InvalidParameterValues", message, 400, True)
 
 
-class NonExistentQueue(CommonServiceException):
-    def __init__(self):
-        # TODO: not sure if this is really how AWS behaves
-        super().__init__(
-            "AWS.SimpleQueueService.NonExistentQueue",
-            "The specified queue does not exist for this wsdl version.",
-            status_code=400,
-        )
-
-
 class InvalidAttributeValue(CommonServiceException):
     def __init__(self, message):
         super().__init__("InvalidAttributeValue", message, 400, True)
@@ -682,15 +672,15 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _require_queue(self, key: QueueKey) -> SqsQueue:
         """
-        Returns the queue for the given key, or raises NonExistentQueue if it does not exist.
+        Returns the queue for the given key, or raises QueueDoesNotExist if it does not exist.
 
         :param key: the QueueKey to look for
         :returns: the queue
-        :raises NonExistentQueue: if the queue does not exist
+        :raises QueueDoesNotExist: if the queue does not exist
         """
         with self._mutex:
             if key not in self.queues:
-                raise NonExistentQueue()
+                raise QueueDoesNotExist()
 
             return self.queues[key]
 
@@ -707,13 +697,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     ) -> SqsQueue:
         """
         Uses resolve_queue_key to determine the QueueKey from the given input, and returns the respective queue,
-        or raises NonExistentQueue if it does not exist.
+        or raises QueueDoesNotExist if it does not exist.
 
         :param context: the request context, used for getting region and account_id, and optionally the queue_url
         :param queue_name: the queue name (if this is set, then this will be used for the key)
         :param queue_url: the queue url (if name is not set, this will be used to determine the queue name)
         :returns: the queue
-        :raises NonExistentQueue: if the queue does not exist
+        :raises QueueDoesNotExist: if the queue does not exist
         """
         key = resolve_queue_key(context, queue_name, queue_url)
         return self._require_queue(key)

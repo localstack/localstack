@@ -1222,3 +1222,8 @@ def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None, regio
     return await_stack_status(
         stack_name, statuses, retries=retries, sleep=sleep, region_name=region_name
     )
+
+
+def get_ecr_repository_arn(name, account_id=None, region_name=None):
+    pattern = "arn:aws:ecr:%s:%s:repository/%s"
+    return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
