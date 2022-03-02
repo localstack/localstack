@@ -56,9 +56,6 @@ from localstack.utils.common import (
 )
 from localstack.utils.persistence import PersistingProxyListener
 
-# backend port (configured in s3_starter.py on startup)
-PORT_S3_BACKEND = None
-
 # mappings for S3 bucket notifications
 S3_NOTIFICATIONS = s3_backend.S3_NOTIFICATIONS = getattr(s3_backend, "S3_NOTIFICATIONS", {})
 

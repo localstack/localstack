@@ -7,7 +7,7 @@ from requests.models import Response
 
 from localstack.constants import LOCALHOST, S3_VIRTUAL_HOSTNAME
 from localstack.services.infra import patch_instance_tracker_meta
-from localstack.services.s3 import multipart_content, s3_listener, s3_starter, s3_utils
+from localstack.services.s3 import multipart_content, s3_listener, s3_utils
 from localstack.services.s3.s3_utils import get_key_from_s3_url
 
 
@@ -421,7 +421,6 @@ class TestS3Utils:
 class S3BackendTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        s3_starter.apply_patches()
         patch_instance_tracker_meta()
 
     def test_key_instances_before_removing(self):
