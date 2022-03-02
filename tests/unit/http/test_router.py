@@ -110,13 +110,34 @@ class TestRouter:
         assert endpoint == "users"
         assert args == {"id": 12}
 
-    def test_regex_dispatcher(self):
+    def test_regex_path_dispatcher(self):
         router = Router()
         router.url_map.converters["regex"] = RegexConverter
-        rgx = r"([^.]+)\.cloudfront.(net|localhost\.localstack\.cloud)(.*)"
-        regex = f"/<regex('{rgx}'):path>/"
-        router.add(path="/test-endpoint", endpoint=noop, host=regex)
-        assert router.dispatch(Request("GET", "8395d242.cloudfront.localhost.localstack.cloud"))
+        rgx = r"([^.]+)endpoint(.*)"
+        regex = f"/<regex('{rgx}'):dist>/"
+        router.add(path=regex, endpoint=noop)
+        assert router.dispatch(Request(method="GET", path="/test-endpoint"))
+        with pytest.raises(NotFound):
+            router.dispatch(Request(method="GET", path="/test-not-point"))
+
+    def test_regex_host_dispatcher(self):
+        router = Router()
+        router.url_map.converters["regex"] = RegexConverter
+        rgx = r"\.cloudfront.(net|localhost\.localstack\.cloud)"
+        router.add(path="/", endpoint=noop, host=f"<dist_id><regex('{rgx}'):host>:<port>")
+        assert router.dispatch(
+            Request(
+                method="GET",
+                headers={"Host": "ad91f538.cloudfront.localhost.localstack.cloud:5446"},
+            )
+        )
+        with pytest.raises(NotFound):
+            router.dispatch(
+                Request(
+                    method="GET",
+                    headers={"Host": "ad91f538.cloudfront.amazon.aws.com:5446"},
+                )
+            )
 
     def test_remove_rule(self):
         router = Router()
