@@ -56,7 +56,7 @@ from localstack.services.awslambda.invocation.lambda_service import FunctionVers
 from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.utils.strings import to_bytes
+from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.tagging import TaggingService
 
 LOG = logging.getLogger(__name__)
@@ -309,12 +309,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             payload=payload,
         )
         result = result.result()
+
+        response = InvocationResponse(StatusCode=200, Payload=result.payload)
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
         LOG.debug("Result: %s", result)
 
-        response = InvocationResponse(StatusCode=200, Payload=result.payload)
         if log_type == LogType.Tail:
-            response["LogResult"] = base64.b64encode(to_bytes(result.logs))
+            response["LogResult"] = to_str(base64.b64encode(to_bytes(result.logs)))
 
         return response
 

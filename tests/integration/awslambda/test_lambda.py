@@ -73,6 +73,9 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_integration.py")
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions", "lambda_echo.py")
 TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions", "lambda_python_version.py")
+TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
+    THIS_FOLDER, "functions", "lambda_unhandled_error.py"
+)
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "functions", "lambda_python3.py")
 TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_integration.js")
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_handler.js")
@@ -974,6 +977,33 @@ class TestPythonRuntimes:
         )
         result = json.loads(to_str(result["Payload"].read()))
         assert result["version"] == runtime
+
+    @pytest.mark.skipif(
+        not use_docker(), reason="Test for docker python runtimes not applicable if run locally"
+    )
+    @parametrize_python_runtimes
+    def test_python_runtime_unhandled_errors(self, lambda_client, create_lambda_function, runtime):
+        function_name = f"test_python_executor_{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_PYTHON_UNHANDLED_ERROR,
+            runtime=runtime,
+        )
+        result = lambda_client.invoke(
+            FunctionName=function_name,
+            Payload=b"{}",
+        )
+        assert result["StatusCode"] == 200
+        assert result["ExecutedVersion"] == "$LATEST"
+        assert result["FunctionError"] == "Unhandled"
+        payload = json.loads(to_str(result["Payload"].read()))
+        assert payload["errorMessage"] == "some error occurred"
+        assert payload["errorType"] == "Exception"
+        assert "stackTrace" in payload
+        if runtime == "python3.9":
+            assert "requestId" in payload
+        else:
+            assert "requestId" not in payload
 
 
 parametrize_node_runtimes = pytest.mark.parametrize(
