@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Callable, Generic, Iterable, Mapping, Optional, Protocol, TypeVar
 
-from werkzeug.routing import Map, Rule, RuleFactory
+from werkzeug.routing import BaseConverter, Map, Rule, RuleFactory
 
 from localstack.utils.common import to_str
 
@@ -65,8 +65,10 @@ class Router(Generic[E]):
     url_map: Map
     dispatcher: Dispatcher
 
-    def __init__(self, dispatcher: Dispatcher = None):
-        self.url_map = Map(host_matching=True, strict_slashes=False)
+    def __init__(
+        self, dispatcher: Dispatcher = None, converters: Mapping[str, BaseConverter] = None
+    ):
+        self.url_map = Map(host_matching=True, strict_slashes=False, converters=converters)
         self.dispatcher = dispatcher or call_endpoint
         self._mutex = threading.RLock()
 
@@ -145,3 +147,9 @@ class Router(Generic[E]):
         )
         args.pop("__host__", None)
         return self.dispatcher(request, handler, args)
+
+
+class RegexConverter(BaseConverter):
+    def __init__(self, map: "Map", *args: Any, **kwargs: Any) -> None:
+        super().__init__(map, *args, **kwargs)
+        self.regex = args[0]

@@ -23,6 +23,7 @@ from localstack.constants import (
 )
 from localstack.http import Router
 from localstack.http.dispatcher import Handler, handler_dispatcher
+from localstack.http.router import RegexConverter
 from localstack.services.generic_proxy import ProxyListener, modify_and_forward, start_proxy_server
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.services.plugins import SERVICE_PLUGINS
@@ -515,7 +516,9 @@ def get_service_port_for_account(service, headers):
 PROXY_LISTENER_EDGE = ProxyListenerEdge()
 # the ROUTER is part of the edge proxy. use the router to inject custom handlers that are handled before actual
 # service calls
-ROUTER: Router[Handler] = Router(dispatcher=handler_dispatcher())
+ROUTER: Router[Handler] = Router(
+    dispatcher=handler_dispatcher(), converters={"regex": RegexConverter}
+)
 
 
 def is_trace_logging_enabled(headers):
