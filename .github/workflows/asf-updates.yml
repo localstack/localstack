@@ -1,0 +1,86 @@
+name: Update ASF APIs
+on:
+  schedule:
+    - cron: 0 5 * * MON
+  workflow_dispatch:
+
+jobs:
+  update-asf:
+    name: Update ASF APIs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Open Source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up system wide dependencies
+        run: |
+          sudo apt-get install libsasl2-dev jq
+
+      - name: Set up Python 3.8
+        id: setup-python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Cache LocalStack community dependencies (venv)
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: make install-dev
+
+      - name: Update botocore (specs)
+        run: |
+          source .venv/bin/activate
+          python3 -m pip install --upgrade botocore
+
+      - name: Update ASF APIs
+        run: |
+          source .venv/bin/activate
+          python3 -m localstack.aws.scaffold upgrade
+
+      - name: Check for changes
+        id: check-for-changes
+        run: |
+          # Check if there are changed files and store the result in target/diff-check.log
+          # Check against the PR branch if it exists, otherwise against the master
+          # Store the result in target/diff-check.log and store the diff count in the GitHub Action output "diff-count"
+          mkdir -p target
+          (git diff --name-only origin/asf-auto-updates localstack/aws/api/ 2>/dev/null || git diff --name-only origin/master localstack/aws/api/ 2>/dev/null) | tee target/diff-check.log
+          echo "::set-output name=diff-count::$(cat target/diff-check.log | wc -l)"
+
+          # Store a (multiline-sanitized) list of changed services (compared to the master) in the GitHub Action output "changed-services"
+          echo "::set-output name=changed-services::$(git diff --name-only origin/master localstack/aws/api/ | sed 's#localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g' | sed -z 's/\n/%0A/g' | sed -z 's/\r/%0D/g')"
+
+      - name: Read PR markdown template
+        if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
+        id: template
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: .github/bot_templates/ASF_UPGRADE_PR.md
+
+      - name: Add changed services to template
+        if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
+        id: markdown
+        uses: mad9000/actions-find-and-replace-string@2
+        with:
+          source: ${{ steps.template.outputs.content }}
+          find: '{{ SERVICES }}'
+          replace: ${{ steps.check-for-changes.outputs.changed-services }}
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v3
+        if: ${{ success() && steps.check-for-changes.outputs.diff-count != '0' && steps.check-for-changes.outputs.diff-count != '' }}
+        with:
+          title: "Update ASF APIs"
+          body: "${{ steps.markdown.outputs.value }}"
+          branch: "asf-auto-updates"
+          author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
+          committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
+          commit-message: "update generated ASF APIs to latest version"
+          labels: asf
+          token: ${{ secrets.PRO_ACCESS_TOKEN }}

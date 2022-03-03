@@ -1,7 +1,7 @@
 import io
 import keyword
-import os
 import re
+from pathlib import Path
 from typing import Dict, List, Set
 
 import click
@@ -19,7 +19,7 @@ from botocore.model import (
 from typing_extensions import OrderedDict
 
 from localstack.aws.spec import load_service
-from localstack.utils.common import camel_to_snake_case, mkdir, snake_to_camel_case
+from localstack.utils.common import camel_to_snake_case, snake_to_camel_case
 
 # Some minification packages might treat "type" as a keyword.
 KEYWORDS = list(keyword.kwlist) + ["type"]
@@ -343,7 +343,12 @@ def generate_service_api(output, service: ServiceModel, doc=True):
         output.write("        raise NotImplementedError\n")
 
 
-@click.command()
+@click.group()
+def scaffold():
+    pass
+
+
+@scaffold.command(name="generate")
 @click.argument("service", type=str)
 @click.option("--doc/--no-doc", default=False, help="whether or not to generate docstrings")
 @click.option(
@@ -351,7 +356,10 @@ def generate_service_api(output, service: ServiceModel, doc=True):
     default=False,
     help="whether or not to save the result into the api directory",
 )
-def generate(service: str, doc: bool, save: bool):
+@click.option(
+    "--path", default="./localstack/aws/api", help="the path where the api should be saved"
+)
+def generate(service: str, doc: bool, save: bool, path: str):
     """
     Generate types and API stubs for a given AWS service.
 
@@ -360,10 +368,22 @@ def generate(service: str, doc: bool, save: bool):
     from click import ClickException
 
     try:
-        model = load_service(service)
+        code = generate_code(service, doc=doc)
     except UnknownServiceError:
-        raise ClickException("unknown service %s" % service)
+        raise ClickException(f"unknown service {service}")
 
+    if not save:
+        # either just print the code to stdout
+        click.echo(code)
+        return
+
+    # or find the file path and write the code to that location
+    create_code_directory(service, code, path)
+    click.echo("done!")
+
+
+def generate_code(service_name: str, doc: bool = False) -> str:
+    model = load_service(service_name)
     output = io.StringIO()
     generate_service_types(output, model, doc=doc)
     generate_service_api(output, model, doc=doc)
@@ -386,26 +406,47 @@ def generate(service: str, doc: bool, save: bool):
     except Exception:
         pass
 
-    if not save:
-        # either just print the code to stdout
-        click.echo(code)
-        return
+    return code
 
-    # or find the file path and write the code to that location
-    here = os.path.dirname(__file__)
-    service_name = service.replace("-", "_")
-    path = os.path.join(here, "api", service_name)
 
-    if not os.path.exists(path):
-        click.echo("creating directory %s" % path)
-        mkdir(path)
+def create_code_directory(service_name: str, code: str, base_path: str):
+    service_name = service_name.replace("-", "_")
+    path = Path(base_path, service_name)
 
-    file = os.path.join(path, "__init__.py")
-    click.echo("writing to file %s" % file)
-    with open(file, "w") as fd:
-        fd.write(code)
+    if not path.exists():
+        click.echo(f"creating directory {path}")
+        path.mkdir()
+
+    file = path / "__init__.py"
+    click.echo(f"writing to file {file}")
+    file.write_text(code)
+
+
+@scaffold.command()
+@click.option("--doc/--no-doc", default=False, help="whether or not to generate docstrings")
+@click.option(
+    "--path",
+    default="./localstack/aws/api",
+    help="the path in which to upgrade ASF APIs",
+)
+def upgrade(path: str, doc: bool = False):
+    """
+    Execute the code generation for all existing APIs.
+    """
+    services = [
+        d.name.replace("_", "-")
+        for d in Path(path).iterdir()
+        if d.is_dir() and not d.name.startswith("__")
+    ]
+    for service in services:
+        try:
+            code = generate_code(service, doc)
+        except UnknownServiceError:
+            click.echo(f"unknown service {service}! skipping...")
+            continue
+        create_code_directory(service, code, base_path=path)
     click.echo("done!")
 
 
 if __name__ == "__main__":
-    generate()
+    scaffold()
