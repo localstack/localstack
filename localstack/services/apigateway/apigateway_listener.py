@@ -11,7 +11,6 @@ import pytz
 import requests
 from flask import Response as FlaskResponse
 from jsonschema import ValidationError, validate
-from moto.apigateway.models import apigateway_backends
 from requests.models import Response
 
 from localstack import config
@@ -33,8 +32,6 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_RESPONSES,
     PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_VALIDATORS,
-    apply_integration_response_template,
-    apply_template,
     extract_path_params,
     extract_query_string_params,
     get_cors_response,
@@ -49,7 +46,11 @@ from localstack.services.apigateway.helpers import (
     handle_vpc_links,
     make_error_response,
 )
-from localstack.services.apigateway.integration import SnsIntegration
+from localstack.services.apigateway.integration import (
+    RequestTemplates,
+    ResponseTemplates,
+    SnsIntegration,
+)
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.kinesis import kinesis_listener
@@ -120,7 +121,7 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_PATH_MAPPINGS, path):
             return handle_base_path_mappings(method, path, data, headers)
 
-        if is_test_invoke_method(method, path):
+        if helpers.is_test_invoke_method(method, path):
             # if call is from test_invoke_api then use http_method to find the integration,
             #   as test_invoke_api makes a POST call to request the test invocation
             match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
@@ -497,6 +498,8 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
     try:
         response = invoke_rest_api_integration_backend(invocation_context)
+        # TODO remove this setter once all the integrations are migrated to the new response
+        #  handling
         invocation_context.response = response
         response = apply_response_parameters(invocation_context)
         return response
@@ -512,7 +515,6 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
     # define local aliases from invocation context
     invocation_path = invocation_context.path_with_query_string
     method = invocation_context.method
-    path = invocation_context.path
     data = invocation_context.data
     headers = invocation_context.headers
     api_id = invocation_context.api_id
@@ -542,50 +544,27 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                     uri.split(":lambda:path")[1].split("functions/")[1].split("/invocations")[0]
                 )
 
-            # apply custom request template
-            data_str = data
-            is_base64_encoded = False
-            try:
-                data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
-                data_str = apply_template(
-                    integration,
-                    "request",
-                    data_str,
-                    path_params=path_params,
-                    query_params=query_string_params,
-                    headers=headers,
-                )
-            except UnicodeDecodeError:
-                data_str = base64.b64encode(data_str)
-                is_base64_encoded = True
-            except Exception as e:
-                LOG.warning("Unable to convert API Gateway payload to str: %s", (e))
-                pass
+            invocation_context.context = get_event_request_context(invocation_context)
+            invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+            request_templates = RequestTemplates()
+            payload = request_templates.render(invocation_context)
 
-            # Sample request context:
-            # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
-            request_context = get_event_request_context(invocation_context)
-            stage_variables = (
-                get_stage_variables(api_id, stage)
-                if not is_test_invoke_method(method, path)
-                else None
-            )
             # TODO: change this signature to InvocationContext as well!
             result = lambda_api.process_apigateway_invocation(
                 func_arn,
                 relative_path,
-                data_str,
+                payload,
                 stage,
                 api_id,
                 headers,
-                is_base64_encoded=is_base64_encoded,
+                is_base64_encoded=invocation_context.is_data_base64_encoded,
                 path_params=path_params,
                 query_string_params=query_string_params,
                 method=method,
                 resource_path=resource_path,
-                request_context=request_context,
-                event_context=invocation_context.context,
-                stage_variables=stage_variables,
+                request_context=invocation_context.context,
+                event_context={},
+                stage_variables=invocation_context.stage_variables,
             )
 
             if isinstance(result, FlaskResponse):
@@ -619,14 +598,15 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 response.multi_value_headers = parsed_result.get("multiValueHeaders") or {}
 
             # apply custom response template
-            response._content = apply_template(integration, "response", response._content)
-            response.headers["Content-Length"] = str(len(response.content or ""))
+            invocation_context.response = response
 
-            return response
+            response_templates = ResponseTemplates()
+            response_templates.render(invocation_context)
+            invocation_context.response.headers["Content-Length"] = str(len(response.content or ""))
+            return invocation_context.response
 
         raise Exception(
-            'API Gateway integration type "%s", action "%s", method "%s" invalid or not yet implemented'
-            % (integration_type, uri, method)
+            f'API Gateway integration type "{integration_type}", action "{uri}", method "{method}"'
         )
 
     elif integration_type == "AWS":
@@ -644,15 +624,11 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 target = ""
 
             try:
-                data = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
-                payload = apply_template(
-                    integration,
-                    "request",
-                    data,
-                    path_params=path_params,
-                    query_params=query_string_params,
-                    headers=headers,
-                )
+                invocation_context.context = get_event_request_context(invocation_context)
+                invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+                request_templates = RequestTemplates()
+                payload = request_templates.render(invocation_context)
+
             except Exception as e:
                 LOG.warning("Unable to convert API Gateway payload to str", e)
                 raise
@@ -668,10 +644,10 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             )
 
             # apply response template
-            result = apply_request_response_templates(
-                result, response_templates, content_type=APPLICATION_JSON
-            )
-            return result
+            invocation_context.response = result
+            response_templates = ResponseTemplates()
+            response_templates.render(invocation_context)
+            return invocation_context.response
 
         elif "states:action/" in uri:
             action = uri.split("/")[-1]
@@ -784,7 +760,10 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 )
                 return result
             elif uri.startswith("arn:aws:apigateway:") and ":sns:path" in uri:
-                integration_response = SnsIntegration(invocation_context).invoke()
+                invocation_context.context = get_event_request_context(invocation_context)
+                invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+
+                integration_response = SnsIntegration().invoke(invocation_context)
                 return apply_request_response_templates(
                     integration_response, response_templates, content_type=APPLICATION_JSON
                 )
@@ -842,21 +821,33 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 uri = "http://%s/%s" % (instance["Id"], invocation_path.lstrip("/"))
 
         # apply custom request template
-        data = apply_template(integration, "request", data)
-        if isinstance(data, dict):
-            data = json.dumps(data)
+        invocation_context.context = get_event_request_context(invocation_context)
+        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
+        request_templates = RequestTemplates()
+        payload = request_templates.render(invocation_context)
+
+        if isinstance(payload, dict):
+            payload = json.dumps(payload)
         uri = apply_request_parameters(
             uri, integration=integration, path_params=path_params, query_params=query_string_params
         )
-        result = requests.request(method=method, url=uri, data=data, headers=headers)
+        result = requests.request(method=method, url=uri, data=payload, headers=headers)
         # apply custom response template
-        result = apply_template(integration, "response", result)
-        return result
+        invocation_context.response = result
+        response_templates = ResponseTemplates()
+        response_templates.render(invocation_context)
+        return invocation_context.response
 
     elif integration_type == "MOCK":
-        # return empty response - details filled in via responseParameters above...
+
+        # TODO: apply tell don't ask principle inside ResponseTemplates or InvocationContext
+        invocation_context.stage_variables = helpers.get_stage_variables(invocation_context)
         invocation_context.response = requests_response({})
-        return apply_integration_response_template(invocation_context)
+
+        response_templates = ResponseTemplates()
+        response_templates.render(invocation_context)
+
+        return invocation_context.response
 
     if method == "OPTIONS":
         # fall back to returning CORS headers if this is an OPTIONS request
@@ -893,19 +884,6 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
     return method_details
 
 
-def get_stage_variables(api_id: str, stage: str) -> Dict[str, str]:
-    if not stage:
-        return {}
-    region_name = [name for name, region in apigateway_backends.items() if api_id in region.apis][0]
-    api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
-    try:
-        response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
-        return response.get("variables")
-    except Exception:
-        LOG.info(f"Failed to get stage {stage} for api id {api_id}")
-        return {}
-
-
 def get_event_request_context(invocation_context: ApiInvocationContext):
     method = invocation_context.method
     path = invocation_context.path
@@ -927,11 +905,11 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
     account_id = account_id or TEST_AWS_ACCOUNT_ID
     domain_name = f"{api_id}.execute-api.{LOCALHOST_HOSTNAME}"
     request_context = {
-        "resourcePath": resource_path or relative_path,
+        "accountId": account_id,
         "apiId": api_id,
+        "resourcePath": resource_path or relative_path,
         "domainPrefix": api_id,
         "domainName": domain_name,
-        "accountId": account_id,
         "resourceId": resource_id,
         "requestId": long_uid(),
         "identity": {
@@ -945,6 +923,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
             REQUEST_TIME_DATE_FORMAT
         ),
         "requestTimeEpoch": int(time.time() * 1000),
+        "authorizer": {},
     }
 
     # set "authorizer" and "identity" event attributes from request context
@@ -953,7 +932,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         request_context["authorizer"] = auth_context
     request_context["identity"].update(invocation_context.auth_identity or {})
 
-    if not is_test_invoke_method(method, path):
+    if not helpers.is_test_invoke_method(method, path):
         request_context["path"] = (f"/{stage}" if stage else "") + relative_path
         request_context["stage"] = stage
     return request_context
@@ -980,10 +959,6 @@ def apply_request_response_templates(
         update_content_length(data)
         return data
     return result
-
-
-def is_test_invoke_method(method, path):
-    return method == "POST" and bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
 
 
 # instantiate listener

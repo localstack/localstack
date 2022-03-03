@@ -698,6 +698,31 @@ def handle_validators(method, path, data, headers):
     return make_error_response("Not implemented for API Gateway validators: %s" % method, code=404)
 
 
+def is_test_invoke_method(method, path):
+    return method == "POST" and bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
+
+
+def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str]]:
+    if is_test_invoke_method(context.method, context.path):
+        return None
+
+    if not context.stage:
+        return {}
+
+    region_name = [
+        name
+        for name, region in apigateway_models.apigateway_backends.items()
+        if context.api_id in region.apis
+    ][0]
+    api_gateway_client = aws_stack.connect_to_service("apigateway", region_name=region_name)
+    try:
+        response = api_gateway_client.get_stage(restApiId=context.api_id, stageName=context.stage)
+        return response.get("variables")
+    except Exception:
+        LOG.info(f"Failed to get stage {context.stage} for api id " f"{context.api_id}")
+        return {}
+
+
 # -----------------------
 # GATEWAY RESPONSES APIs
 # -----------------------
@@ -1241,54 +1266,3 @@ def apply_template(
             input_ctx["params"] = _params
             data = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
     return data
-
-
-def apply_integration_response_template(context: ApiInvocationContext):
-    response = context.response
-    integration = context.integration
-    _, query_string_params = extract_query_string_params(path=context.invocation_path)
-    int_responses = integration.get("integrationResponses") or {}
-    if not int_responses:
-        return response
-    entries = list(int_responses.keys())
-    return_code = str(response.status_code)
-    if return_code not in entries:
-        if len(entries) > 1:
-            LOG.info("Found multiple integration response status codes: %s", entries)
-            return response
-    return_code = entries[0]
-
-    response_templates = int_responses[return_code].get("responseTemplates", {})
-    template = response_templates.get(APPLICATION_JSON, {})
-    if not template:
-        return response
-
-    variables = {"context": {}}
-    input_ctx = {"body": response.content}
-    # little trick to flatten the input context so velocity templates
-    # work from the root.
-    # orig - { "body": '{"action": "$default","message":"foobar"}'
-    # after - {
-    #   "body": '{"action": "$default","message":"foobar"}',
-    #   "action": "$default",
-    #   "message": "foobar"
-    # }
-    if response.content:
-        dict_pack = try_json(response.content)
-        if isinstance(dict_pack, dict):
-            for k, v in dict_pack.items():
-                input_ctx.update({k: v})
-
-    def _params(name=None):
-        # See https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#input-variable-reference
-        # Returns "request parameter from the path, query string, or header value (
-        # searched in that order)"
-        combined = {}
-        combined.update({"path": context.path_params} or {})
-        combined.update(query_string_params or {})
-        combined.update(context.headers or {})
-        return combined if not name else combined.get(name)
-
-    input_ctx["params"] = _params
-    response._content = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
-    return response

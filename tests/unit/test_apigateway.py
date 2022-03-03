@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import Mock
 
 import boto3
+import pytest
 
 from localstack import config
 from localstack.constants import APPLICATION_JSON
@@ -10,10 +11,11 @@ from localstack.services.apigateway import apigateway_listener
 from localstack.services.apigateway.apigateway_listener import (
     ApiInvocationContext,
     RequestValidator,
-    apply_template,
 )
-from localstack.services.apigateway.helpers import apply_json_patch_safe
+from localstack.services.apigateway.helpers import apply_json_patch_safe, apply_template
+from localstack.services.apigateway.integration import RequestTemplates, ResponseTemplates
 from localstack.utils.aws import templating
+from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
 
 
@@ -188,7 +190,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
 
 
 def test_render_template_values():
-    util = templating.VelocityUtil()
+    util = templating.VtlTemplate().VelocityUtil()
 
     encoded = util.urlEncode("x=a+b")
     assert encoded == "x%3Da%2Bb"
@@ -268,3 +270,93 @@ class TestApplyTemplate(unittest.TestCase):
         rendered = apply_template(int_type, resp_type, inv_payload)
 
         self.assertEqual("[]", rendered)
+
+
+RESPONSE_TEMPLATE = """
+
+#set( $body = $input.json("$") )
+#define( $loop )
+{
+    #foreach($e in $map.keySet())
+       #set( $k = $e )
+       #set( $v = $map.get($k))
+       "$k": "$v"
+       #if( $foreach.hasNext ) , #end
+    #end
+}
+#end
+  {
+    "body": $body,
+    "method": "$context.httpMethod",
+    "principalId": "$context.authorizer.principalId",
+    "stage": "$context.stage",
+    "cognitoPoolClaims" : {
+       "sub": "$context.authorizer.claims.sub"
+    },
+    #set( $map = $context.authorizer )
+    "enhancedAuthContext": $loop,
+
+    #set( $map = $input.params().header )
+    "headers": $loop,
+
+    #set( $map = $input.params().querystring )
+    "query": $loop,
+
+    #set( $map = $input.params().path )
+    "path": $loop,
+
+    #set( $map = $context.identity )
+    "identity": $loop,
+
+    #set( $map = $stageVariables )
+    "stageVariables": $loop,
+
+    "requestPath": "$context.resourcePath"
+}
+"""
+
+
+class TestTemplates:
+    @pytest.mark.parametrize("template", [RequestTemplates(), ResponseTemplates()])
+    def test_render_custom_template(self, template):
+        api_context = ApiInvocationContext(
+            method="POST",
+            path="/foo/bar?baz=test",
+            data=b'{"spam": "eggs"}',
+            headers={"content-type": APPLICATION_JSON},
+            stage="local",
+        )
+        api_context.integration = {
+            "requestTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE},
+            "integrationResponses": {
+                "200": {"responseTemplates": {APPLICATION_JSON: RESPONSE_TEMPLATE}}
+            },
+        }
+        api_context.resource_path = "/{proxy+}"
+        api_context.path_params = {"id": "bar"}
+        api_context.response = requests_response({"spam": "eggs"})
+        api_context.context = {
+            "httpMethod": api_context.method,
+            "stage": api_context.stage,
+            "authorizer": {"principalId": "12233"},
+            "identity": {"accountId": "00000", "apiKey": "11111"},
+            "resourcePath": api_context.resource_path,
+        }
+        api_context.stage_variables = {"stageVariable1": "value1", "stageVariable2": "value2"}
+
+        rendered_request = template.render(api_context=api_context)
+        result_as_json = json.loads(rendered_request)
+
+        assert result_as_json.get("body") == {"spam": "eggs"}
+        assert result_as_json.get("method") == "POST"
+        assert result_as_json.get("principalId") == "12233"
+        assert result_as_json.get("stage") == "local"
+        assert result_as_json.get("enhancedAuthContext") == {"principalId": "12233"}
+        assert result_as_json.get("identity") == {"accountId": "00000", "apiKey": "11111"}
+        assert result_as_json.get("headers") == {"content-type": APPLICATION_JSON}
+        assert result_as_json.get("query") == {"baz": "test"}
+        assert result_as_json.get("path") == {"id": "bar"}
+        assert result_as_json.get("stageVariables") == {
+            "stageVariable1": "value1",
+            "stageVariable2": "value2",
+        }

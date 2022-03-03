@@ -381,7 +381,7 @@ def get_s3_hostname():
 
 # TODO remove from here in the future
 def render_velocity_template(*args, **kwargs):
-    return templating.render_velocity_template(*args, **kwargs)
+    return templating.VtlTemplate().render_velocity_template(*args, **kwargs)
 
 
 def generate_presigned_url(*args, **kwargs):
