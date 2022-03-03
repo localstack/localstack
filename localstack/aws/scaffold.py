@@ -343,12 +343,9 @@ def generate_service_api(output, service: ServiceModel, doc=True):
         output.write("        raise NotImplementedError\n")
 
 
-@click.group(name="scaffold", invoke_without_command=True)
-@click.pass_context
-def scaffold(ctx):
-    # FIXME: doesn't invoke subcommand properly
-    if ctx.invoked_subcommand is None:
-        ctx.invoke(scaffold.get_command(ctx, "generate"))
+@click.group()
+def scaffold():
+    pass
 
 
 @scaffold.command(name="generate")
@@ -433,6 +430,9 @@ def create_code_directory(service_name: str, code: str, base_path: str):
     help="the path in which to upgrade ASF APIs",
 )
 def upgrade(path: str, doc: bool = False):
+    """
+    Execute the code generation for all existing APIs.
+    """
     services = [
         d.name.replace("_", "-")
         for d in Path(path).iterdir()

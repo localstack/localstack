@@ -1,7 +1,7 @@
 name: Update ASF APIs
 on:
   schedule:
-    - cron: 0 0 * * *
+    - cron: 0 5 * * MON
   workflow_dispatch:
 
 jobs:

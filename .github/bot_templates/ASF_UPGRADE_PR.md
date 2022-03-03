@@ -6,8 +6,6 @@ It uses the latest code-generator from the _master_ branch ([scaffold.py](https:
 This PR updates the following services:
 {{ SERVICES }}
 
-![Update all the APIs!](http://www.quickmeme.com/img/6f/6fb000d22725df49fad779eae40a28e41745e30a99791889b6ea8db9fa5a32eb.jpg)
-
 ## 👷🏽 Handle this PR
 The following options describe how to interact with this PR / the auto-update:
 
