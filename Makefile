@@ -116,9 +116,8 @@ docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 SOURCE_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
 TARGET_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
 docker-push-master: 	  ## Push a single platform-specific Docker image to registry IF we are currently on the master branch
-	# TODO re-enable check that this make target can only be executed on the master branch!
-	# (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
-	# 	test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
+	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
+		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
 		echo "Skipping docker push as no credentials are provided.") || \
 	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
@@ -147,9 +146,8 @@ docker-push-master-all:		## Push Docker images of localstack, localstack-light, 
 
 MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
 docker-create-push-manifests:	## Create and push manifests for a docker image (default: full)
-	# TODO re-enable check that this make target can only be executed on the master branch!
-	# (CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
-	# 	test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
+	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
+		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
 		echo "Skipping docker manifest push as no credentials are provided.") || \
 	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
