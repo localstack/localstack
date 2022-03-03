@@ -34,6 +34,10 @@ LOG = logging.getLogger(__name__)
 
 
 class LogsProvider(LogsApi, ABC):
+    def __init__(self):
+        super().__init__()
+        self.cw_client = aws_stack.connect_to_service("cloudwatch")
+
     def put_log_events(
         self,
         context: RequestContext,
@@ -44,7 +48,6 @@ class LogsProvider(LogsApi, ABC):
     ) -> PutLogEventsResponse:
         logs_backend = logs_backends[aws_stack.get_region()]
         metric_filters = logs_backend.filters.metric_filters
-        client = aws_stack.connect_to_service("cloudwatch")
         for metric_filter in metric_filters:
             pattern = metric_filter.get("filterPattern", "")
             transformations = metric_filter.get("metricTransformations", [])
@@ -60,7 +63,9 @@ class LogsProvider(LogsApi, ABC):
                         value = float(value) if is_number(value) else 1
                         data = [{"MetricName": tf["metricName"], "Value": value}]
                         try:
-                            client.put_metric_data(Namespace=tf["metricNamespace"], MetricData=data)
+                            self.cw_client.put_metric_data(
+                                Namespace=tf["metricNamespace"], MetricData=data
+                            )
                         except Exception as e:
                             LOG.info(
                                 "Unable to put metric data for matching CloudWatch log events", e
@@ -140,8 +145,7 @@ def moto_put_subscription_filter(fn, self, *args, **kwargs):
     else:
         service = aws_stack.extract_service_from_arn(destination_arn)
         raise InvalidParameterException(
-            "PutSubscriptionFilter operation cannot work with destinationArn for vendor %s"
-            % service
+            f"PutSubscriptionFilter operation cannot work with destinationArn for vendor {service}"
         )
 
     log_group.put_subscription_filter(filter_name, filter_pattern, destination_arn, role_arn)
