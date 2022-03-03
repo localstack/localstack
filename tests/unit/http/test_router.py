@@ -7,7 +7,7 @@ import werkzeug
 from werkzeug.exceptions import NotFound
 
 from localstack.http import Request, Response, Router
-from localstack.http.router import E, RequestArguments
+from localstack.http.router import E, RegexConverter, RequestArguments
 from localstack.utils.common import get_free_tcp_port
 
 
@@ -109,6 +109,35 @@ class TestRouter:
         _, endpoint, args = collector.requests[1]
         assert endpoint == "users"
         assert args == {"id": 12}
+
+    def test_regex_path_dispatcher(self):
+        router = Router()
+        router.url_map.converters["regex"] = RegexConverter
+        rgx = r"([^.]+)endpoint(.*)"
+        regex = f"/<regex('{rgx}'):dist>/"
+        router.add(path=regex, endpoint=noop)
+        assert router.dispatch(Request(method="GET", path="/test-endpoint"))
+        with pytest.raises(NotFound):
+            router.dispatch(Request(method="GET", path="/test-not-point"))
+
+    def test_regex_host_dispatcher(self):
+        router = Router()
+        router.url_map.converters["regex"] = RegexConverter
+        rgx = r"\.cloudfront.(net|localhost\.localstack\.cloud)"
+        router.add(path="/", endpoint=noop, host=f"<dist_id><regex('{rgx}'):host>:<port>")
+        assert router.dispatch(
+            Request(
+                method="GET",
+                headers={"Host": "ad91f538.cloudfront.localhost.localstack.cloud:5446"},
+            )
+        )
+        with pytest.raises(NotFound):
+            router.dispatch(
+                Request(
+                    method="GET",
+                    headers={"Host": "ad91f538.cloudfront.amazon.aws.com:5446"},
+                )
+            )
 
     def test_remove_rule(self):
         router = Router()

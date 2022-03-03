@@ -452,6 +452,7 @@ class CmdDockerClient(ContainerClient):
         env_vars: Optional[Dict[str, Optional[str]]] = None,
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
+        workdir: Optional[str] = None,
     ) -> Tuple[bytes, bytes]:
         env_file = None
         cmd = self._docker_cmd()
@@ -462,6 +463,8 @@ class CmdDockerClient(ContainerClient):
             cmd.append("--detach")
         if user:
             cmd += ["--user", user]
+        if workdir:
+            cmd += ["--workdir", workdir]
         if env_vars:
             env_flag, env_file = Util.create_env_vars_file_flag(env_vars)
             cmd += env_flag

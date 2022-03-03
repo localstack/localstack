@@ -298,12 +298,15 @@ def swf():
 
 @aws_provider()
 def resourcegroupstaggingapi():
-    from localstack.services.resourcegroupstaggingapi import rgta_listener, rgta_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.resourcegroupstaggingapi.provider import (
+        ResourcegroupstaggingapiProvider,
+    )
 
+    provider = ResourcegroupstaggingapiProvider()
     return Service(
         "resourcegroupstaggingapi",
-        listener=rgta_listener.UPDATE_RGSA,
-        start=rgta_starter.start_rgsa,
+        listener=AwsApiListener("resourcegroupstaggingapi", MotoFallbackDispatcher(provider)),
     )
 
 
