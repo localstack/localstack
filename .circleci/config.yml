@@ -243,7 +243,9 @@ jobs:
           command: PLATFORM="<< parameters.platform >>" make docker-save-image
       - when:
           condition:
-            equal: [ master, << pipeline.git.branch >> ]
+            # TODO re-enable! Disabled condition to test ECR pushes!
+            # equal: [ master, << pipeline.git.branch >> ]
+            equal: [ master, master ]
           steps:
             - run:
                 name: Build light docker image
@@ -352,7 +354,8 @@ jobs:
           name: Push docker images - amd64
           command: |
             # Push to Docker Hub
-            PLATFORM="amd64" make docker-push-master-all
+            # TODO re-enable! Disabled docker hub push to test ECR pushes!
+            # PLATFORM="amd64" make docker-push-master-all
             # Push to Amazon Public ECR
             PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-light" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
       # Load and push per architecture (load overwrites the previous ones)
@@ -368,19 +371,22 @@ jobs:
           name: Push docker images - arm64
           command: |
             # Push to Docker Hub
-            PLATFORM="arm64" make docker-push-master-all
+            # TODO re-enable! Disabled docker hub push to test ECR pushes!
+            # PLATFORM="arm64" make docker-push-master-all
             # Push to Amazon Public ECR
             PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack-light" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
       - run:
           name: Create multi-platform manifests - full
           command: |
             # Push to Docker Hub
-            make docker-create-push-manifests
+            # TODO re-enable! Disabled docker hub push to test ECR pushes!
+            # make docker-create-push-manifests
       - run:
           name: Create multi-platform manifests - light
           command: |
             # Push to Docker Hub
-            make docker-create-push-manifests-light
+            # TODO re-enable! Disabled docker hub push to test ECR pushes!
+            # make docker-create-push-manifests-light
             # Push to Amazon Public ECR
             MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests
 
@@ -442,9 +448,10 @@ workflows:
             - docker-test-arm64
             - unit-tests
       - docker-push:
-          filters:
-            branches:
-              only: master
+          # TODO re-enable filter! Enabled push step and disabled push to docker hub to test ECR pushes
+          # filters:
+          #   branches:
+          #     only: master
           requires:
             - itest-lambda-docker
             - itest-sqs-provider
