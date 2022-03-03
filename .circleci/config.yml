@@ -337,29 +337,52 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load docker image - amd64/full
-          command: docker load -i target/localstack-docker-image-amd64.tar
+          command: |
+            # Load localstack/localstack-full:latest for AMD64
+            docker load -i target/localstack-docker-image-amd64.tar
       - run:
           name: Load docker image - amd64/light
-          command: docker load -i target/localstack-docker-image-light-amd64.tar
+          command: |
+            # Load localstack/localstack-light:latest
+            docker load -i target/localstack-docker-image-light-amd64.tar
+      - run:
+          name: Log in to ECR registry
+          command: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
       - run:
           name: Push docker images - amd64
-          command: PLATFORM="amd64" make docker-push-master
+          command: |
+            # Push to Docker Hub
+            PLATFORM="amd64" make docker-push-master-all
+            # Push to Amazon Public ECR
+            PLATFORM="amd64" SOURCE_IMAGE_NAME="localstack/localstack-light" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
       # Load and push per architecture (load overwrites the previous ones)
       - run:
           name: Load docker image - arm64/full
-          command: docker load -i target/localstack-docker-image-arm64.tar
+          command: |
+            # Load localstack/localstack-full:latest for ARM64
+            docker load -i target/localstack-docker-image-arm64.tar
       - run:
           name: Load docker image - arm64/light
           command: docker load -i target/localstack-docker-image-light-arm64.tar
       - run:
           name: Push docker images - arm64
-          command: PLATFORM="arm64" make docker-push-master
+          command: |
+            # Push to Docker Hub
+            PLATFORM="arm64" make docker-push-master-all
+            # Push to Amazon Public ECR
+            PLATFORM="arm64" SOURCE_IMAGE_NAME="localstack/localstack-light" TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-push-master
       - run:
           name: Create multi-platform manifests - full
-          command: make docker-create-push-manifests
+          command: |
+            # Push to Docker Hub
+            make docker-create-push-manifests
       - run:
           name: Create multi-platform manifests - light
-          command: make docker-create-push-manifests-light
+          command: |
+            # Push to Docker Hub
+            make docker-create-push-manifests-light
+            # Push to Amazon Public ECR
+            MANIFEST_IMAGE_NAME="public.ecr.aws/localstack/localstack" make docker-create-push-manifests
 
 workflows:
   main:
