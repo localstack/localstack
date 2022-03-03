@@ -7,7 +7,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
+from localstack.aws.api import (RequestContext, ServiceException,
+                                ServiceRequest, handler)
 
 ARN = str
 AccountId = str
@@ -182,12 +183,16 @@ class MessageType(str):
     ConfigurationItemChangeNotification = "ConfigurationItemChangeNotification"
     ConfigurationSnapshotDeliveryCompleted = "ConfigurationSnapshotDeliveryCompleted"
     ScheduledNotification = "ScheduledNotification"
-    OversizedConfigurationItemChangeNotification = "OversizedConfigurationItemChangeNotification"
+    OversizedConfigurationItemChangeNotification = (
+        "OversizedConfigurationItemChangeNotification"
+    )
 
 
 class OrganizationConfigRuleTriggerType(str):
     ConfigurationItemChangeNotification = "ConfigurationItemChangeNotification"
-    OversizedConfigurationItemChangeNotification = "OversizedConfigurationItemChangeNotification"
+    OversizedConfigurationItemChangeNotification = (
+        "OversizedConfigurationItemChangeNotification"
+    )
     ScheduledNotification = "ScheduledNotification"
 
 
@@ -289,7 +294,9 @@ class ResourceType(str):
     AWS_IAM_Policy = "AWS::IAM::Policy"
     AWS_IAM_Role = "AWS::IAM::Role"
     AWS_IAM_User = "AWS::IAM::User"
-    AWS_ElasticLoadBalancingV2_LoadBalancer = "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    AWS_ElasticLoadBalancingV2_LoadBalancer = (
+        "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    )
     AWS_ACM_Certificate = "AWS::ACM::Certificate"
     AWS_RDS_DBInstance = "AWS::RDS::DBInstance"
     AWS_RDS_DBSubnetGroup = "AWS::RDS::DBSubnetGroup"
@@ -331,7 +338,9 @@ class ResourceType(str):
     AWS_NetworkFirewall_FirewallPolicy = "AWS::NetworkFirewall::FirewallPolicy"
     AWS_NetworkFirewall_RuleGroup = "AWS::NetworkFirewall::RuleGroup"
     AWS_ElasticBeanstalk_Application = "AWS::ElasticBeanstalk::Application"
-    AWS_ElasticBeanstalk_ApplicationVersion = "AWS::ElasticBeanstalk::ApplicationVersion"
+    AWS_ElasticBeanstalk_ApplicationVersion = (
+        "AWS::ElasticBeanstalk::ApplicationVersion"
+    )
     AWS_ElasticBeanstalk_Environment = "AWS::ElasticBeanstalk::Environment"
     AWS_WAFv2_WebACL = "AWS::WAFv2::WebACL"
     AWS_WAFv2_RuleGroup = "AWS::WAFv2::RuleGroup"
@@ -353,7 +362,9 @@ class ResourceType(str):
     AWS_ServiceCatalog_CloudFormationProvisionedProduct = (
         "AWS::ServiceCatalog::CloudFormationProvisionedProduct"
     )
-    AWS_ServiceCatalog_CloudFormationProduct = "AWS::ServiceCatalog::CloudFormationProduct"
+    AWS_ServiceCatalog_CloudFormationProduct = (
+        "AWS::ServiceCatalog::CloudFormationProduct"
+    )
     AWS_ServiceCatalog_Portfolio = "AWS::ServiceCatalog::Portfolio"
     AWS_SQS_Queue = "AWS::SQS::Queue"
     AWS_KMS_Key = "AWS::KMS::Key"
@@ -684,7 +695,9 @@ class AggregateConformancePackComplianceSummaryFilters(TypedDict, total=False):
     AwsRegion: Optional[AwsRegion]
 
 
-AggregateConformancePackComplianceSummaryList = List[AggregateConformancePackComplianceSummary]
+AggregateConformancePackComplianceSummaryList = List[
+    AggregateConformancePackComplianceSummary
+]
 
 
 class EvaluationResultQualifier(TypedDict, total=False):
@@ -742,7 +755,9 @@ class AggregationAuthorization(TypedDict, total=False):
 
 AggregationAuthorizationList = List[AggregationAuthorization]
 AutoRemediationAttemptSeconds = int
-SupplementaryConfiguration = Dict[SupplementaryConfigurationName, SupplementaryConfigurationValue]
+SupplementaryConfiguration = Dict[
+    SupplementaryConfigurationName, SupplementaryConfigurationValue
+]
 ResourceCreationTime = datetime
 ConfigurationItemCaptureTime = datetime
 
@@ -1230,7 +1245,9 @@ class DescribeAggregateComplianceByConformancePacksRequest(ServiceRequest):
 
 
 class DescribeAggregateComplianceByConformancePacksResponse(TypedDict, total=False):
-    AggregateComplianceByConformancePacks: Optional[AggregateComplianceByConformancePackList]
+    AggregateComplianceByConformancePacks: Optional[
+        AggregateComplianceByConformancePackList
+    ]
     NextToken: Optional[NextToken]
 
 
@@ -1845,7 +1862,9 @@ class GetConformancePackComplianceDetailsRequest(ServiceRequest):
 
 class GetConformancePackComplianceDetailsResponse(TypedDict, total=False):
     ConformancePackName: ConformancePackName
-    ConformancePackRuleEvaluationResults: Optional[ConformancePackRuleEvaluationResultsList]
+    ConformancePackRuleEvaluationResults: Optional[
+        ConformancePackRuleEvaluationResultsList
+    ]
     NextToken: Optional[NextToken]
 
 
@@ -1930,7 +1949,9 @@ class OrganizationConformancePackDetailedStatus(TypedDict, total=False):
     LastUpdateTime: Optional[Date]
 
 
-OrganizationConformancePackDetailedStatuses = List[OrganizationConformancePackDetailedStatus]
+OrganizationConformancePackDetailedStatuses = List[
+    OrganizationConformancePackDetailedStatus
+]
 
 
 class GetOrganizationConformancePackDetailedStatusResponse(TypedDict, total=False):
@@ -2305,7 +2326,9 @@ class ConfigApi:
         raise NotImplementedError
 
     @handler("DeleteConfigRule")
-    def delete_config_rule(self, context: RequestContext, config_rule_name: ConfigRuleName) -> None:
+    def delete_config_rule(
+        self, context: RequestContext, config_rule_name: ConfigRuleName
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteConfigurationAggregator")

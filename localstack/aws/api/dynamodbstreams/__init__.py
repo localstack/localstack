@@ -7,7 +7,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
+from localstack.aws.api import (RequestContext, ServiceException,
+                                ServiceRequest, handler)
 
 AttributeName = str
 BooleanAttributeValue = bool

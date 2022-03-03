@@ -7,7 +7,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
+from localstack.aws.api import (RequestContext, ServiceException,
+                                ServiceRequest, handler)
 
 Account = str
 AccountId = str
@@ -2901,7 +2902,9 @@ InstanceAssociationStatusAggregatedCount = Dict[StatusName, InstanceCount]
 
 class InstanceAggregatedAssociationOverview(TypedDict, total=False):
     DetailedStatus: Optional[StatusName]
-    InstanceAssociationStatusAggregatedCount: Optional[InstanceAssociationStatusAggregatedCount]
+    InstanceAssociationStatusAggregatedCount: Optional[
+        InstanceAssociationStatusAggregatedCount
+    ]
 
 
 class InstanceInformation(TypedDict, total=False):
@@ -3119,7 +3122,9 @@ class MaintenanceWindowExecutionTaskIdentity(TypedDict, total=False):
     TaskType: Optional[MaintenanceWindowTaskType]
 
 
-MaintenanceWindowExecutionTaskIdentityList = List[MaintenanceWindowExecutionTaskIdentity]
+MaintenanceWindowExecutionTaskIdentityList = List[
+    MaintenanceWindowExecutionTaskIdentity
+]
 
 
 class DescribeMaintenanceWindowExecutionTasksResult(TypedDict, total=False):
@@ -4728,7 +4733,9 @@ class SendCommandResult(TypedDict, total=False):
 
 
 SessionManagerParameterValueList = List[SessionManagerParameterValue]
-SessionManagerParameters = Dict[SessionManagerParameterName, SessionManagerParameterValueList]
+SessionManagerParameters = Dict[
+    SessionManagerParameterName, SessionManagerParameterValueList
+]
 
 
 class StartAssociationsOnceRequest(ServiceRequest):
@@ -5063,6 +5070,7 @@ class UpdateServiceSettingResult(TypedDict, total=False):
 
 
 class SsmApi:
+
     service = "ssm"
     version = "2014-11-06"
 
@@ -5824,7 +5832,9 @@ class SsmApi:
         raise NotImplementedError
 
     @handler("GetOpsItem")
-    def get_ops_item(self, context: RequestContext, ops_item_id: OpsItemId) -> GetOpsItemResponse:
+    def get_ops_item(
+        self, context: RequestContext, ops_item_id: OpsItemId
+    ) -> GetOpsItemResponse:
         raise NotImplementedError
 
     @handler("GetOpsMetadata")

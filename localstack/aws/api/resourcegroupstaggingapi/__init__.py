@@ -6,7 +6,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
+from localstack.aws.api import (RequestContext, ServiceException,
+                                ServiceRequest, handler)
 
 AmazonResourceType = str
 ComplianceStatus = bool
@@ -235,6 +236,7 @@ class UntagResourcesOutput(TypedDict, total=False):
 
 
 class ResourcegroupstaggingapiApi:
+
     service = "resourcegroupstaggingapi"
     version = "2017-01-26"
 

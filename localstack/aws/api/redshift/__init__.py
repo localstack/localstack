@@ -7,7 +7,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
+from localstack.aws.api import (RequestContext, ServiceException,
+                                ServiceRequest, handler)
 
 AuthenticationProfileNameString = str
 Boolean = bool
@@ -181,6 +182,7 @@ class UsageLimitBreachAction(str):
 class UsageLimitFeatureType(str):
     spectrum = "spectrum"
     concurrency_scaling = "concurrency-scaling"
+    cross_region_datasharing = "cross-region-datasharing"
 
 
 class UsageLimitLimitType(str):
@@ -768,6 +770,7 @@ class AssociateDataShareConsumerMessage(ServiceRequest):
     DataShareArn: String
     AssociateEntireAccount: Optional[BooleanOptional]
     ConsumerArn: Optional[String]
+    ConsumerRegion: Optional[String]
 
 
 class ClusterAssociatedToSchedule(TypedDict, total=False):
@@ -1574,6 +1577,7 @@ class CustomerStorageMessage(TypedDict, total=False):
 class DataShareAssociation(TypedDict, total=False):
     ConsumerIdentifier: Optional[String]
     Status: Optional[DataShareStatus]
+    ConsumerRegion: Optional[String]
     CreatedDate: Optional[TStamp]
     StatusChangeDate: Optional[TStamp]
 
@@ -1586,6 +1590,7 @@ class DataShare(TypedDict, total=False):
     ProducerArn: Optional[String]
     AllowPubliclyAccessibleConsumers: Optional[Boolean]
     DataShareAssociations: Optional[DataShareAssociationList]
+    ManagedBy: Optional[String]
 
 
 DataShareList = List[DataShare]
@@ -2060,6 +2065,7 @@ class DisassociateDataShareConsumerMessage(ServiceRequest):
     DataShareArn: String
     DisassociateEntireAccount: Optional[BooleanOptional]
     ConsumerArn: Optional[String]
+    ConsumerRegion: Optional[String]
 
 
 class SupportedOperation(TypedDict, total=False):
@@ -2791,6 +2797,7 @@ class RedshiftApi:
         data_share_arn: String,
         associate_entire_account: BooleanOptional = None,
         consumer_arn: String = None,
+        consumer_region: String = None,
     ) -> DataShare:
         raise NotImplementedError
 
@@ -3048,7 +3055,9 @@ class RedshiftApi:
         raise NotImplementedError
 
     @handler("CreateTags")
-    def create_tags(self, context: RequestContext, resource_name: String, tags: TagList) -> None:
+    def create_tags(
+        self, context: RequestContext, resource_name: String, tags: TagList
+    ) -> None:
         raise NotImplementedError
 
     @handler("CreateUsageLimit")
@@ -3127,7 +3136,9 @@ class RedshiftApi:
         raise NotImplementedError
 
     @handler("DeleteEventSubscription")
-    def delete_event_subscription(self, context: RequestContext, subscription_name: String) -> None:
+    def delete_event_subscription(
+        self, context: RequestContext, subscription_name: String
+    ) -> None:
         raise NotImplementedError
 
     @handler("DeleteHsmClientCertificate")
@@ -3178,7 +3189,9 @@ class RedshiftApi:
         raise NotImplementedError
 
     @handler("DeleteUsageLimit")
-    def delete_usage_limit(self, context: RequestContext, usage_limit_id: String) -> None:
+    def delete_usage_limit(
+        self, context: RequestContext, usage_limit_id: String
+    ) -> None:
         raise NotImplementedError
 
     @handler("DescribeAccountAttributes")
@@ -3592,7 +3605,9 @@ class RedshiftApi:
         raise NotImplementedError
 
     @handler("DisableLogging")
-    def disable_logging(self, context: RequestContext, cluster_identifier: String) -> LoggingStatus:
+    def disable_logging(
+        self, context: RequestContext, cluster_identifier: String
+    ) -> LoggingStatus:
         raise NotImplementedError
 
     @handler("DisableSnapshotCopy")
@@ -3608,6 +3623,7 @@ class RedshiftApi:
         data_share_arn: String,
         disassociate_entire_account: BooleanOptional = None,
         consumer_arn: String = None,
+        consumer_region: String = None,
     ) -> DataShare:
         raise NotImplementedError
 
@@ -3879,7 +3895,9 @@ class RedshiftApi:
         raise NotImplementedError
 
     @handler("RejectDataShare")
-    def reject_data_share(self, context: RequestContext, data_share_arn: String) -> DataShare:
+    def reject_data_share(
+        self, context: RequestContext, data_share_arn: String
+    ) -> DataShare:
         raise NotImplementedError
 
     @handler("ResetClusterParameterGroup")

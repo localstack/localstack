@@ -7,7 +7,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
+from localstack.aws.api import (RequestContext, ServiceException,
+                                ServiceRequest, handler)
 
 Arn = str
 AvailabilityErrorMessage = str
@@ -228,7 +229,9 @@ CertificateChainBlob = bytes
 
 
 class CertificateOptions(TypedDict, total=False):
-    CertificateTransparencyLoggingPreference: Optional[CertificateTransparencyLoggingPreference]
+    CertificateTransparencyLoggingPreference: Optional[
+        CertificateTransparencyLoggingPreference
+    ]
 
 
 class ExtendedKeyUsage(TypedDict, total=False):

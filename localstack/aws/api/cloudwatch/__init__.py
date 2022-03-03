@@ -7,7 +7,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
+from localstack.aws.api import (RequestContext, ServiceException,
+                                ServiceRequest, handler)
 
 AccountId = str
 ActionPrefix = str
@@ -108,7 +109,9 @@ class ComparisonOperator(str):
     GreaterThanThreshold = "GreaterThanThreshold"
     LessThanThreshold = "LessThanThreshold"
     LessThanOrEqualToThreshold = "LessThanOrEqualToThreshold"
-    LessThanLowerOrGreaterThanUpperThreshold = "LessThanLowerOrGreaterThanUpperThreshold"
+    LessThanLowerOrGreaterThanUpperThreshold = (
+        "LessThanLowerOrGreaterThanUpperThreshold"
+    )
     LessThanLowerThreshold = "LessThanLowerThreshold"
     GreaterThanUpperThreshold = "GreaterThanUpperThreshold"
 
@@ -1084,7 +1087,9 @@ class CloudwatchApi:
         raise NotImplementedError
 
     @handler("DisableAlarmActions")
-    def disable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+    def disable_alarm_actions(
+        self, context: RequestContext, alarm_names: AlarmNames
+    ) -> None:
         raise NotImplementedError
 
     @handler("DisableInsightRules")
@@ -1094,7 +1099,9 @@ class CloudwatchApi:
         raise NotImplementedError
 
     @handler("EnableAlarmActions")
-    def enable_alarm_actions(self, context: RequestContext, alarm_names: AlarmNames) -> None:
+    def enable_alarm_actions(
+        self, context: RequestContext, alarm_names: AlarmNames
+    ) -> None:
         raise NotImplementedError
 
     @handler("EnableInsightRules")

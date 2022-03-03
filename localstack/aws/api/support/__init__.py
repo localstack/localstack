@@ -6,7 +6,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
+from localstack.aws.api import (RequestContext, ServiceException,
+                                ServiceRequest, handler)
 
 AfterTime = str
 AttachmentId = str
@@ -381,6 +382,7 @@ class ResolveCaseResponse(TypedDict, total=False):
 
 
 class SupportApi:
+
     service = "support"
     version = "2013-04-15"
 
@@ -500,5 +502,7 @@ class SupportApi:
         raise NotImplementedError
 
     @handler("ResolveCase")
-    def resolve_case(self, context: RequestContext, case_id: CaseId = None) -> ResolveCaseResponse:
+    def resolve_case(
+        self, context: RequestContext, case_id: CaseId = None
+    ) -> ResolveCaseResponse:
         raise NotImplementedError

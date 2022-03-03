@@ -7,7 +7,8 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import TypedDict
 
-from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
+from localstack.aws.api import (RequestContext, ServiceException,
+                                ServiceRequest, handler)
 
 ActivityId = str
 Arn = str
@@ -93,7 +94,9 @@ class ContinueAsNewWorkflowExecutionFailedCause(str):
     DEFAULT_EXECUTION_START_TO_CLOSE_TIMEOUT_UNDEFINED = (
         "DEFAULT_EXECUTION_START_TO_CLOSE_TIMEOUT_UNDEFINED"
     )
-    DEFAULT_TASK_START_TO_CLOSE_TIMEOUT_UNDEFINED = "DEFAULT_TASK_START_TO_CLOSE_TIMEOUT_UNDEFINED"
+    DEFAULT_TASK_START_TO_CLOSE_TIMEOUT_UNDEFINED = (
+        "DEFAULT_TASK_START_TO_CLOSE_TIMEOUT_UNDEFINED"
+    )
     DEFAULT_TASK_LIST_UNDEFINED = "DEFAULT_TASK_LIST_UNDEFINED"
     DEFAULT_CHILD_POLICY_UNDEFINED = "DEFAULT_CHILD_POLICY_UNDEFINED"
     CONTINUE_AS_NEW_WORKFLOW_EXECUTION_RATE_EXCEEDED = (
@@ -164,14 +167,20 @@ class EventType(str):
     ChildWorkflowExecutionTimedOut = "ChildWorkflowExecutionTimedOut"
     ChildWorkflowExecutionCanceled = "ChildWorkflowExecutionCanceled"
     ChildWorkflowExecutionTerminated = "ChildWorkflowExecutionTerminated"
-    SignalExternalWorkflowExecutionInitiated = "SignalExternalWorkflowExecutionInitiated"
+    SignalExternalWorkflowExecutionInitiated = (
+        "SignalExternalWorkflowExecutionInitiated"
+    )
     SignalExternalWorkflowExecutionFailed = "SignalExternalWorkflowExecutionFailed"
     ExternalWorkflowExecutionSignaled = "ExternalWorkflowExecutionSignaled"
     RequestCancelExternalWorkflowExecutionInitiated = (
         "RequestCancelExternalWorkflowExecutionInitiated"
     )
-    RequestCancelExternalWorkflowExecutionFailed = "RequestCancelExternalWorkflowExecutionFailed"
-    ExternalWorkflowExecutionCancelRequested = "ExternalWorkflowExecutionCancelRequested"
+    RequestCancelExternalWorkflowExecutionFailed = (
+        "RequestCancelExternalWorkflowExecutionFailed"
+    )
+    ExternalWorkflowExecutionCancelRequested = (
+        "ExternalWorkflowExecutionCancelRequested"
+    )
     LambdaFunctionScheduled = "LambdaFunctionScheduled"
     LambdaFunctionStarted = "LambdaFunctionStarted"
     LambdaFunctionCompleted = "LambdaFunctionCompleted"
@@ -223,10 +232,16 @@ class ScheduleActivityTaskFailedCause(str):
     ACTIVITY_ID_ALREADY_IN_USE = "ACTIVITY_ID_ALREADY_IN_USE"
     OPEN_ACTIVITIES_LIMIT_EXCEEDED = "OPEN_ACTIVITIES_LIMIT_EXCEEDED"
     ACTIVITY_CREATION_RATE_EXCEEDED = "ACTIVITY_CREATION_RATE_EXCEEDED"
-    DEFAULT_SCHEDULE_TO_CLOSE_TIMEOUT_UNDEFINED = "DEFAULT_SCHEDULE_TO_CLOSE_TIMEOUT_UNDEFINED"
+    DEFAULT_SCHEDULE_TO_CLOSE_TIMEOUT_UNDEFINED = (
+        "DEFAULT_SCHEDULE_TO_CLOSE_TIMEOUT_UNDEFINED"
+    )
     DEFAULT_TASK_LIST_UNDEFINED = "DEFAULT_TASK_LIST_UNDEFINED"
-    DEFAULT_SCHEDULE_TO_START_TIMEOUT_UNDEFINED = "DEFAULT_SCHEDULE_TO_START_TIMEOUT_UNDEFINED"
-    DEFAULT_START_TO_CLOSE_TIMEOUT_UNDEFINED = "DEFAULT_START_TO_CLOSE_TIMEOUT_UNDEFINED"
+    DEFAULT_SCHEDULE_TO_START_TIMEOUT_UNDEFINED = (
+        "DEFAULT_SCHEDULE_TO_START_TIMEOUT_UNDEFINED"
+    )
+    DEFAULT_START_TO_CLOSE_TIMEOUT_UNDEFINED = (
+        "DEFAULT_START_TO_CLOSE_TIMEOUT_UNDEFINED"
+    )
     DEFAULT_HEARTBEAT_TIMEOUT_UNDEFINED = "DEFAULT_HEARTBEAT_TIMEOUT_UNDEFINED"
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
@@ -257,7 +272,9 @@ class StartChildWorkflowExecutionFailedCause(str):
         "DEFAULT_EXECUTION_START_TO_CLOSE_TIMEOUT_UNDEFINED"
     )
     DEFAULT_TASK_LIST_UNDEFINED = "DEFAULT_TASK_LIST_UNDEFINED"
-    DEFAULT_TASK_START_TO_CLOSE_TIMEOUT_UNDEFINED = "DEFAULT_TASK_START_TO_CLOSE_TIMEOUT_UNDEFINED"
+    DEFAULT_TASK_START_TO_CLOSE_TIMEOUT_UNDEFINED = (
+        "DEFAULT_TASK_START_TO_CLOSE_TIMEOUT_UNDEFINED"
+    )
     DEFAULT_CHILD_POLICY_UNDEFINED = "DEFAULT_CHILD_POLICY_UNDEFINED"
     OPERATION_NOT_PERMITTED = "OPERATION_NOT_PERMITTED"
 
@@ -661,15 +678,21 @@ class ScheduleActivityTaskDecisionAttributes(TypedDict, total=False):
 
 class Decision(TypedDict, total=False):
     decisionType: DecisionType
-    scheduleActivityTaskDecisionAttributes: Optional[ScheduleActivityTaskDecisionAttributes]
+    scheduleActivityTaskDecisionAttributes: Optional[
+        ScheduleActivityTaskDecisionAttributes
+    ]
     requestCancelActivityTaskDecisionAttributes: Optional[
         RequestCancelActivityTaskDecisionAttributes
     ]
     completeWorkflowExecutionDecisionAttributes: Optional[
         CompleteWorkflowExecutionDecisionAttributes
     ]
-    failWorkflowExecutionDecisionAttributes: Optional[FailWorkflowExecutionDecisionAttributes]
-    cancelWorkflowExecutionDecisionAttributes: Optional[CancelWorkflowExecutionDecisionAttributes]
+    failWorkflowExecutionDecisionAttributes: Optional[
+        FailWorkflowExecutionDecisionAttributes
+    ]
+    cancelWorkflowExecutionDecisionAttributes: Optional[
+        CancelWorkflowExecutionDecisionAttributes
+    ]
     continueAsNewWorkflowExecutionDecisionAttributes: Optional[
         ContinueAsNewWorkflowExecutionDecisionAttributes
     ]
@@ -685,7 +708,9 @@ class Decision(TypedDict, total=False):
     startChildWorkflowExecutionDecisionAttributes: Optional[
         StartChildWorkflowExecutionDecisionAttributes
     ]
-    scheduleLambdaFunctionDecisionAttributes: Optional[ScheduleLambdaFunctionDecisionAttributes]
+    scheduleLambdaFunctionDecisionAttributes: Optional[
+        ScheduleLambdaFunctionDecisionAttributes
+    ]
 
 
 DecisionList = List[Decision]
@@ -764,7 +789,9 @@ class ScheduleActivityTaskFailedEventAttributes(TypedDict, total=False):
     decisionTaskCompletedEventId: EventId
 
 
-class RequestCancelExternalWorkflowExecutionFailedEventAttributes(TypedDict, total=False):
+class RequestCancelExternalWorkflowExecutionFailedEventAttributes(
+    TypedDict, total=False
+):
     workflowId: WorkflowId
     runId: Optional[WorkflowRunIdOptional]
     cause: RequestCancelExternalWorkflowExecutionFailedCause
@@ -773,7 +800,9 @@ class RequestCancelExternalWorkflowExecutionFailedEventAttributes(TypedDict, tot
     control: Optional[Data]
 
 
-class RequestCancelExternalWorkflowExecutionInitiatedEventAttributes(TypedDict, total=False):
+class RequestCancelExternalWorkflowExecutionInitiatedEventAttributes(
+    TypedDict, total=False
+):
     workflowId: WorkflowId
     runId: Optional[WorkflowRunIdOptional]
     decisionTaskCompletedEventId: EventId
@@ -955,15 +984,27 @@ class HistoryEvent(TypedDict, total=False):
     eventTimestamp: Timestamp
     eventType: EventType
     eventId: EventId
-    workflowExecutionStartedEventAttributes: Optional[WorkflowExecutionStartedEventAttributes]
-    workflowExecutionCompletedEventAttributes: Optional[WorkflowExecutionCompletedEventAttributes]
+    workflowExecutionStartedEventAttributes: Optional[
+        WorkflowExecutionStartedEventAttributes
+    ]
+    workflowExecutionCompletedEventAttributes: Optional[
+        WorkflowExecutionCompletedEventAttributes
+    ]
     completeWorkflowExecutionFailedEventAttributes: Optional[
         CompleteWorkflowExecutionFailedEventAttributes
     ]
-    workflowExecutionFailedEventAttributes: Optional[WorkflowExecutionFailedEventAttributes]
-    failWorkflowExecutionFailedEventAttributes: Optional[FailWorkflowExecutionFailedEventAttributes]
-    workflowExecutionTimedOutEventAttributes: Optional[WorkflowExecutionTimedOutEventAttributes]
-    workflowExecutionCanceledEventAttributes: Optional[WorkflowExecutionCanceledEventAttributes]
+    workflowExecutionFailedEventAttributes: Optional[
+        WorkflowExecutionFailedEventAttributes
+    ]
+    failWorkflowExecutionFailedEventAttributes: Optional[
+        FailWorkflowExecutionFailedEventAttributes
+    ]
+    workflowExecutionTimedOutEventAttributes: Optional[
+        WorkflowExecutionTimedOutEventAttributes
+    ]
+    workflowExecutionCanceledEventAttributes: Optional[
+        WorkflowExecutionCanceledEventAttributes
+    ]
     cancelWorkflowExecutionFailedEventAttributes: Optional[
         CancelWorkflowExecutionFailedEventAttributes
     ]
@@ -973,7 +1014,9 @@ class HistoryEvent(TypedDict, total=False):
     continueAsNewWorkflowExecutionFailedEventAttributes: Optional[
         ContinueAsNewWorkflowExecutionFailedEventAttributes
     ]
-    workflowExecutionTerminatedEventAttributes: Optional[WorkflowExecutionTerminatedEventAttributes]
+    workflowExecutionTerminatedEventAttributes: Optional[
+        WorkflowExecutionTerminatedEventAttributes
+    ]
     workflowExecutionCancelRequestedEventAttributes: Optional[
         WorkflowExecutionCancelRequestedEventAttributes
     ]
@@ -987,8 +1030,12 @@ class HistoryEvent(TypedDict, total=False):
     activityTaskFailedEventAttributes: Optional[ActivityTaskFailedEventAttributes]
     activityTaskTimedOutEventAttributes: Optional[ActivityTaskTimedOutEventAttributes]
     activityTaskCanceledEventAttributes: Optional[ActivityTaskCanceledEventAttributes]
-    activityTaskCancelRequestedEventAttributes: Optional[ActivityTaskCancelRequestedEventAttributes]
-    workflowExecutionSignaledEventAttributes: Optional[WorkflowExecutionSignaledEventAttributes]
+    activityTaskCancelRequestedEventAttributes: Optional[
+        ActivityTaskCancelRequestedEventAttributes
+    ]
+    workflowExecutionSignaledEventAttributes: Optional[
+        WorkflowExecutionSignaledEventAttributes
+    ]
     markerRecordedEventAttributes: Optional[MarkerRecordedEventAttributes]
     recordMarkerFailedEventAttributes: Optional[RecordMarkerFailedEventAttributes]
     timerStartedEventAttributes: Optional[TimerStartedEventAttributes]
@@ -1033,7 +1080,9 @@ class HistoryEvent(TypedDict, total=False):
     requestCancelExternalWorkflowExecutionFailedEventAttributes: Optional[
         RequestCancelExternalWorkflowExecutionFailedEventAttributes
     ]
-    scheduleActivityTaskFailedEventAttributes: Optional[ScheduleActivityTaskFailedEventAttributes]
+    scheduleActivityTaskFailedEventAttributes: Optional[
+        ScheduleActivityTaskFailedEventAttributes
+    ]
     requestCancelActivityTaskFailedEventAttributes: Optional[
         RequestCancelActivityTaskFailedEventAttributes
     ]
@@ -1042,15 +1091,23 @@ class HistoryEvent(TypedDict, total=False):
     startChildWorkflowExecutionFailedEventAttributes: Optional[
         StartChildWorkflowExecutionFailedEventAttributes
     ]
-    lambdaFunctionScheduledEventAttributes: Optional[LambdaFunctionScheduledEventAttributes]
+    lambdaFunctionScheduledEventAttributes: Optional[
+        LambdaFunctionScheduledEventAttributes
+    ]
     lambdaFunctionStartedEventAttributes: Optional[LambdaFunctionStartedEventAttributes]
-    lambdaFunctionCompletedEventAttributes: Optional[LambdaFunctionCompletedEventAttributes]
+    lambdaFunctionCompletedEventAttributes: Optional[
+        LambdaFunctionCompletedEventAttributes
+    ]
     lambdaFunctionFailedEventAttributes: Optional[LambdaFunctionFailedEventAttributes]
-    lambdaFunctionTimedOutEventAttributes: Optional[LambdaFunctionTimedOutEventAttributes]
+    lambdaFunctionTimedOutEventAttributes: Optional[
+        LambdaFunctionTimedOutEventAttributes
+    ]
     scheduleLambdaFunctionFailedEventAttributes: Optional[
         ScheduleLambdaFunctionFailedEventAttributes
     ]
-    startLambdaFunctionFailedEventAttributes: Optional[StartLambdaFunctionFailedEventAttributes]
+    startLambdaFunctionFailedEventAttributes: Optional[
+        StartLambdaFunctionFailedEventAttributes
+    ]
 
 
 HistoryEventList = List[HistoryEvent]
@@ -1430,6 +1487,7 @@ class WorkflowTypeInfos(TypedDict, total=False):
 
 
 class SwfApi:
+
     service = "swf"
     version = "2012-01-25"
 
@@ -1494,7 +1552,9 @@ class SwfApi:
         raise NotImplementedError
 
     @handler("DescribeDomain")
-    def describe_domain(self, context: RequestContext, name: DomainName) -> DomainDetail:
+    def describe_domain(
+        self, context: RequestContext, name: DomainName
+    ) -> DomainDetail:
         raise NotImplementedError
 
     @handler("DescribeWorkflowExecution")
