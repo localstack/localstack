@@ -21,8 +21,8 @@ from typing_extensions import OrderedDict
 from localstack.aws.spec import load_service
 from localstack.utils.common import camel_to_snake_case, snake_to_camel_case
 
-# Some minification packages might treat "type" as a keyword.
-KEYWORDS = list(keyword.kwlist) + ["type"]
+# Some minification packages might treat "type" as a keyword, some specs define shapes called like the type "Optional"
+KEYWORDS = list(keyword.kwlist) + ["type", "Optional"]
 is_keyword = KEYWORDS.__contains__
 
 
@@ -409,13 +409,13 @@ def generate_code(service_name: str, doc: bool = False) -> str:
         from black import FileMode, format_str
 
         # try to format with black
-        code = format_str(code, mode=FileMode())
+        code = format_str(code, mode=FileMode(line_length=100))
 
         # try to remove unused imports
-        code = autoflake.fix_code(code)
+        code = autoflake.fix_code(code, remove_all_unused_imports=True)
 
         # try to sort imports
-        code = isort.code(code)
+        code = isort.code(code, config=isort.Config(profile="black", line_length=100))
     except Exception:
         pass
 
