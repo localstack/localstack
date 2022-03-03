@@ -4,7 +4,7 @@ import json
 import logging
 from abc import ABC
 from gzip import GzipFile
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
@@ -22,7 +22,10 @@ from localstack.aws.api.logs import (
     PutLogEventsResponse,
     SequenceToken,
 )
-from localstack.services.moto import call_moto
+from localstack.aws.proxy import AwsApiListener
+from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.services.messages import Headers, MessagePayload, Response
+from localstack.services.moto import MotoFallbackDispatcher, call_moto
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
@@ -62,7 +65,26 @@ class LogsProvider(LogsApi, ABC):
                             LOG.info(
                                 "Unable to put metric data for matching CloudWatch log events", e
                             )
-        return PutLogEventsResponse(**call_moto(context))
+        return call_moto(context)
+
+
+class LogsAwsApiListener(AwsApiListener):
+    def __init__(self):
+        self.provider = LogsProvider()
+        super().__init__("logs", MotoFallbackDispatcher(self.provider))
+
+    def return_response(
+        self,
+        method: str,
+        path: str,
+        data: MessagePayload,
+        headers: Headers,
+        response: Response,
+    ) -> Optional[Response]:
+        # Fix Incorrect response content-type header from cloudwatch logs #1343.
+        # True for all logs api responses.
+        response.headers["content-type"] = APPLICATION_AMZ_JSON_1_1
+        return None
 
 
 def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:
