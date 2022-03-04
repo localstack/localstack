@@ -95,11 +95,8 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
 
     modules_dir = os.path.join(install_dir, "modules")
 
-    if data_root is None:
-        if config.dirs.data:
-            data_root = config.dirs.data
-        else:
-            data_root = config.dirs.tmp
+    if not data_root:
+        data_root = config.dirs.data or config.dirs.tmp
 
     if engine_type == EngineType.OpenSearch:
         data_path = os.path.join(data_root, "opensearch", cluster_path)
