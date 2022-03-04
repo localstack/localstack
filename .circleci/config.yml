@@ -8,7 +8,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: python-requirements-{{ checksum "requirements.txt" }}
+          key: python-requirements-{{ checksum "setup.cfg" }}
       - run:
           name: Install prerequisites
           command: |
@@ -23,7 +23,7 @@ jobs:
             mkdir -p target/reports
             mkdir -p target/coverage
       - save_cache:
-          key: python-requirements-{{ checksum "requirements.txt" }}
+          key: python-requirements-{{ checksum "setup.cfg" }}
           paths:
             - "~/.cache/pip"
       - persist_to_workspace:
