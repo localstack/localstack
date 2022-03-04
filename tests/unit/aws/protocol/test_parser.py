@@ -1,11 +1,18 @@
 from datetime import datetime, timezone
 from urllib.parse import urlencode, urlsplit
 
+import pytest
 from botocore.awsrequest import prepare_request_dict
 from botocore.serialize import create_serializer
 
 from localstack.aws.api import HttpRequest
-from localstack.aws.protocol.parser import QueryRequestParser, RestJSONRequestParser, create_parser
+from localstack.aws.protocol.parser import (
+    ProtocolParserError,
+    QueryRequestParser,
+    RestJSONRequestParser,
+    UnknownParserError,
+    create_parser,
+)
 from localstack.aws.spec import load_service
 from localstack.services.s3 import s3_utils
 from localstack.utils.common import to_bytes, to_str
@@ -831,3 +838,47 @@ def test_s3_virtual_host_addressing():
     assert parsed_operation_model.name == "CreateBucket"
     assert "Bucket" in parsed_request
     assert parsed_request["Bucket"] == "test-bucket"
+
+
+def test_parser_error_on_protocol_error():
+    """Test that the parser raises a ProtocolParserError in case of invalid data to parse."""
+    parser = QueryRequestParser(load_service("sqs"))
+    request = HttpRequest(
+        body=to_bytes(
+            "Action=UnknownOperation&Version=2012-11-05&"
+            "QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue&"
+            "MessageBody=%7B%22foo%22%3A+%22bared%22%7D&"
+            "DelaySeconds=2"
+        ),
+        method="POST",
+        headers={},
+        path="",
+    )
+    with pytest.raises(ProtocolParserError):
+        parser.parse(request)
+
+
+def test_parser_error_on_unknown_error():
+    """Test that the parser raises a UnknownParserError in case of an unknown exception."""
+    parser = QueryRequestParser(load_service("sqs"))
+
+    request = HttpRequest(
+        body=to_bytes(
+            "Action=SendMessage&Version=2012-11-05&"
+            "QueueUrl=http%3A%2F%2Flocalhost%3A4566%2F000000000000%2Ftf-acc-test-queue&"
+            "MessageBody=%7B%22foo%22%3A+%22bared%22%7D&"
+            "DelaySeconds=2"
+        ),
+        method="POST",
+        headers={},
+        path="",
+    )
+
+    # An unknown error is obviously hard to trigger (because we would fix it if we would know of a way to trigger it),
+    # therefore we patch a function to raise an unexpected error
+    def raise_error(*args, **kwargs):
+        raise NotImplementedError()
+
+    parser._process_member = raise_error
+    with pytest.raises(UnknownParserError):
+        parser.parse(request)
