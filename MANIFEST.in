@@ -1,4 +1,3 @@
-include requirements.txt
 include Makefile
 include LICENSE.txt
 recursive-include localstack/ext *.java

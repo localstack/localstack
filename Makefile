@@ -24,7 +24,7 @@ VENV_RUN = . $(VENV_ACTIVATE)
 usage:                    ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-25s %s\n", $$1, $$2 }'
 
-$(VENV_ACTIVATE): setup.py requirements.txt
+$(VENV_ACTIVATE): setup.py setup.cfg
 	test -d $(VENV_DIR) || $(VENV_BIN) $(VENV_DIR)
 	$(VENV_RUN); $(PIP_CMD) install --upgrade pip setuptools wheel plux
 	touch $(VENV_ACTIVATE)
@@ -46,11 +46,10 @@ install-test: venv        ## Install requirements to run tests into venv
 install-dev: venv         ## Install developer requirements into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
 
-install:                  ## Install full dependencies into venv, and download third-party services
-	(make install-dev && make entrypoints && make init-testlibs) || exit 1
+install: install-dev entrypoints init-testlibs  ## Install full dependencies into venv, and download third-party services
 
 entrypoints:              ## Run setup.py develop to build entry points
-	$(VENV_RUN); rm -f localstack.egg-info/entry_points.txt; python setup.py develop
+	$(VENV_RUN); python setup.py plugins egg_info
 
 init:                     ## Initialize the infrastructure, make sure all libs are downloaded
 	$(VENV_RUN); python -m localstack.services.install libs
@@ -58,7 +57,7 @@ init:                     ## Initialize the infrastructure, make sure all libs a
 init-testlibs:
 	$(VENV_RUN); python -m localstack.services.install testlibs
 
-dist:					  ## Build source and built (wheel) distributions of the current version
+dist: entrypoints        ## Build source and built (wheel) distributions of the current version
 	$(VENV_RUN); pip install --upgrade twine; python setup.py sdist bdist_wheel
 
 publish: clean-dist dist  ## Publish the library to the central PyPi repository
