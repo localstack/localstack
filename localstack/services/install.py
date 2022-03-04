@@ -661,10 +661,7 @@ def log_install_msg(component, verbatim=False):
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
 
-    if tmp_archive:
-        _, ext = os.path.splitext(tmp_archive)
-    else:
-        _, ext = os.path.splitext(archive_url)
+    _, ext = os.path.splitext(tmp_archive or archive_url)
 
     tmp_archive = tmp_archive or new_tmp_file()
     if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
@@ -679,10 +676,10 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
 
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
-    elif ext == ".gz" or ext == ".bz2":
+    elif ext in [".bz2", ".gz", ".tgz"]:
         untar(tmp_archive, target_dir)
     else:
-        raise Exception("Unsupported archive format: %s" % ext)
+        raise Exception(f"Unsupported archive format: {ext}")
 
 
 def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
