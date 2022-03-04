@@ -232,13 +232,17 @@ ci-pro-smoke-tests:
 	IMAGE_NAME=$(CI_SMOKE_IMAGE_NAME) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DNS_ADDRESS=0 DEBUG=1 localstack start -d
 	docker logs -f $(MAIN_CONTAINER_NAME) &
 	localstack wait -t 120
-	awslocal s3 mb s3://test-bucket
+	awslocal apigatewayv2 list-apis
+	awslocal appsync list-graphql-apis
+	awslocal cognito-idp list-user-pools --max-results 10
+	awslocal emr list-clusters
+	awslocal lambda list-layers
 	awslocal qldb list-ledgers
 	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup --db-cluster-parameter-group-name mydbclusterparametergroup
 	awslocal rds describe-db-instances
-	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
-	awslocal lambda list-layers
+	awslocal s3 mb s3://test-bucket
 	awslocal timestream-write create-database --database-name db1
+	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
 	localstack stop
 
 lint:              		  ## Run code linter to check code style

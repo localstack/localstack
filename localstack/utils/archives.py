@@ -57,7 +57,7 @@ def unzip(path, target_dir, overwrite=True):
         zip_ref.close()
 
 
-def untar(path, target_dir):
+def untar(path: str, target_dir: str):
     mode = "r:gz" if path.endswith("gz") else "r"
     with tarfile.open(path, mode) as tar:
         tar.extractall(path=target_dir)
