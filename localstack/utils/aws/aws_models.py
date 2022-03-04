@@ -3,7 +3,7 @@ import logging
 import time
 from datetime import datetime
 
-from localstack.utils.common import timestamp_millis
+from localstack.utils.time import timestamp_millis
 
 LOG = logging.getLogger(__name__)
 

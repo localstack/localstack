@@ -11,7 +11,6 @@ from docker.errors import APIError, ContainerError, DockerException, ImageNotFou
 from docker.models.containers import Container
 from docker.utils.socket import STDERR, STDOUT, frames_iter
 
-from localstack.utils.common import start_worker_thread, to_bytes
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
     ContainerClient,
@@ -25,7 +24,8 @@ from localstack.utils.container_utils.container_client import (
     SimpleVolumeBind,
     Util,
 )
-from localstack.utils.run import to_str
+from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
 SDK_ISDIR = 1 << 31

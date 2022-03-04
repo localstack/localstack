@@ -13,7 +13,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 from localstack import config
-from localstack.utils.common import TMP_FILES, HashableList, rm_rf, save_file, short_uid
+from localstack.utils.collections import HashableList
+from localstack.utils.files import TMP_FILES, rm_rf, save_file
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 

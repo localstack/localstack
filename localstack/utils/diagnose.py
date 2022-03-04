@@ -7,9 +7,9 @@ from typing import Dict, List, Union
 from localstack import config
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import get_main_container_name
-from localstack.utils.common import load_file
 from localstack.utils.container_utils.container_client import NoSuchImage
 from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.files import load_file
 
 DIAGNOSE_IMAGES = [
     "localstack/lambda:provided",

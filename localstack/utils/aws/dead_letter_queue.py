@@ -6,7 +6,7 @@ from typing import Dict, List
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.common import convert_to_printable_chars, first_char_to_upper
+from localstack.utils.strings import convert_to_printable_chars, first_char_to_upper
 
 LOG = logging.getLogger(__name__)
 

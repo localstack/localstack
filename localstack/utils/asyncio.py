@@ -4,10 +4,8 @@ import functools
 import time
 from contextvars import copy_context
 
-from localstack.utils import common
-
-from .common import TMP_THREADS, start_worker_thread
 from .run import FuncThread
+from .threads import TMP_THREADS, start_worker_thread
 
 # reference to named event loop instances
 EVENT_LOOPS = {}
@@ -122,6 +120,8 @@ def get_named_event_loop(name):
 
 
 async def receive_from_queue(queue):
+    from localstack.utils import common
+
     def get():
         # run in a retry loop (instead of blocking forever) to allow for graceful shutdown
         while True:

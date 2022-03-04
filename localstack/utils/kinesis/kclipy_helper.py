@@ -6,7 +6,7 @@ from glob import glob
 from amazon_kclpy import kcl
 
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import save_file
+from localstack.utils.files import save_file
 
 
 def get_dir_of_file(f):

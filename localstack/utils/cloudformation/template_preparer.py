@@ -14,7 +14,10 @@ from samtranslator.translator.transform import transform as transform_sam
 from localstack import config, constants
 from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import clone_safe, run_safe, safe_requests, to_str
+from localstack.utils.functions import run_safe
+from localstack.utils.http import safe_requests
+from localstack.utils.json import clone_safe
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 

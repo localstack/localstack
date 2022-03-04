@@ -6,7 +6,9 @@ import platform
 
 from localstack import config, constants
 from localstack.runtime import hooks
-from localstack.utils.common import FileMappedDocument, call_safe, long_uid, md5, short_uid
+from localstack.utils.functions import call_safe
+from localstack.utils.json import FileMappedDocument
+from localstack.utils.strings import long_uid, md5, short_uid
 
 LOG = logging.getLogger(__name__)
 

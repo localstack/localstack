@@ -16,7 +16,7 @@ def is_zip_file(content):
 
 
 def unzip(path, target_dir, overwrite=True):
-    from localstack.utils.common import is_debian
+    from localstack.utils.platform import is_debian
 
     is_in_debian = is_debian()
     if is_in_debian:
