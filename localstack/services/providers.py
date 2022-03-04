@@ -80,6 +80,7 @@ def dynamodbstreams():
     )
 
 
+# TODO@viren update the service registration
 @aws_provider()
 def ec2():
     from localstack.services.ec2 import ec2_listener, ec2_starter
