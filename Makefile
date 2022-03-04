@@ -232,7 +232,7 @@ ci-pro-smoke-tests:
 	IMAGE_NAME=$(CI_SMOKE_IMAGE_NAME) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DNS_ADDRESS=0 DEBUG=1 localstack start -d
 	docker logs -f $(MAIN_CONTAINER_NAME) &
 	localstack wait -t 120
-	awslocal apigatewayv2 list-apis
+	awslocal apigatewayv2 get-apis
 	awslocal appsync list-graphql-apis
 	awslocal cognito-idp list-user-pools --max-results 10
 	awslocal emr list-clusters
