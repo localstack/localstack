@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 import boto3
 
+from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway import apigateway_listener
 from localstack.services.apigateway.apigateway_listener import (
@@ -133,7 +134,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertTrue(validator.is_request_valid())
 
     def test_if_request_has_body_validator(self):
-        apigateway_client = Mock(boto3.client(service_name="apigateway"))
+        apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
         apigateway_client.get_model.return_value = {"schema": '{"type": "object"}'}
         ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
@@ -150,7 +151,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertTrue(validator.is_request_valid())
 
     def test_request_validate_body_with_no_request_model(self):
-        apigateway_client = Mock(boto3.client(service_name="apigateway"))
+        apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
         ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
         ctx.api_id = "deadbeef"
@@ -166,7 +167,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
         self.assertFalse(validator.is_request_valid())
 
     def test_request_validate_body_with_no_model_for_schema_name(self):
-        apigateway_client = Mock(boto3.client(service_name="apigateway"))
+        apigateway_client = self._mock_client()
         apigateway_client.get_request_validator.return_value = {"validateRequestBody": True}
         apigateway_client.get_model.return_value = None
         ctx = ApiInvocationContext("POST", "/", '{"id":"1"}', {})
@@ -181,6 +182,9 @@ class ApiGatewayPathsTest(unittest.TestCase):
         }
         validator = RequestValidator(ctx, apigateway_client)
         self.assertFalse(validator.is_request_valid())
+
+    def _mock_client(self):
+        return Mock(boto3.client("apigateway", region_name=config.DEFAULT_REGION))
 
 
 def test_render_template_values():
