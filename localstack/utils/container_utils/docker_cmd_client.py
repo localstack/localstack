@@ -22,7 +22,8 @@ from localstack.utils.container_utils.container_client import (
     SimpleVolumeBind,
     Util,
 )
-from localstack.utils.run import run, to_str
+from localstack.utils.run import run
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 
