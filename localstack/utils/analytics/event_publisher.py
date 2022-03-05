@@ -51,16 +51,13 @@ def fire_event(event_type, payload=None):
         return
 
     from localstack.utils.analytics import log
-    from localstack.utils.testutil import (  # leave here to avoid circular dependency
-        is_local_test_mode,
-    )
 
     if payload is None:
         payload = {}
     if isinstance(payload, dict):
         if is_travis():
             payload["travis"] = True
-        if is_local_test_mode():
+        if config.is_local_test_mode():
             payload["int"] = True
 
     log.event("legacy", {"event": event_type, "payload": payload})

@@ -15,11 +15,11 @@ from moto.core.models import InstanceTrackerMeta
 
 from localstack import config, constants
 from localstack.constants import ENV_DEV, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_VENV_FOLDER
-from localstack.runtime import hooks
+from localstack.runtime import events, hooks
 from localstack.services import generic_proxy, install, motoserver
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.plugins import SERVICE_PLUGINS, ServiceDisabled, wait_for_infra_shutdown
-from localstack.utils import analytics, common, config_listener, persistence
+from localstack.utils import analytics, config_listener, persistence
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.request_context import patch_moto_request_handling
 from localstack.utils.bootstrap import (
@@ -36,7 +36,6 @@ from localstack.utils.platform import in_docker, is_linux
 from localstack.utils.run import ShellCommandThread, run
 from localstack.utils.server import multiserver
 from localstack.utils.sync import poll_condition
-from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.threads import (
     TMP_THREADS,
     FuncThread,
@@ -59,8 +58,9 @@ PROXY_LISTENERS = {}
 # set up logger
 LOG = logging.getLogger(__name__)
 
-# event flag indicating the the infrastructure has been started and that the ready marker has been printed
-INFRA_READY = threading.Event()
+# event flag indicating the infrastructure has been started and that the ready marker has been printed
+# TODO: deprecated, use events.infra_ready
+INFRA_READY = events.infra_ready
 
 # event flag indicating that the infrastructure has been shut down
 SHUTDOWN_INFRA = threading.Event()
@@ -281,10 +281,10 @@ def start_local_api(name, port, api, method, asynchronous=False):
 
 
 def stop_infra():
-    if common.INFRA_STOPPED:
+    if events.infra_stopping.is_set():
         return
     # also used to signal shutdown for edge proxy so that any further requests will be rejected
-    common.INFRA_STOPPED = True  # TODO: should probably be STOPPING since it isn't stopped yet
+    events.infra_stopping.set()
 
     event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
     analytics.log.event("infra_stop")
@@ -304,7 +304,7 @@ def stop_infra():
         wait_for_infra_shutdown()
         LOG.debug("[shutdown] Infrastructure is shut down")
     finally:
-        SHUTDOWN_INFRA.set()
+        events.infra_stopped.set()
 
 
 def cleanup_resources():
@@ -380,6 +380,8 @@ def print_runtime_information(in_docker=False):
 
 
 def start_infra(asynchronous=False, apis=None):
+    events.infra_starting.set()
+
     try:
         os.environ[LOCALSTACK_INFRA_PROCESS] = "1"
 
@@ -459,7 +461,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         os.environ["AWS_REGION"] = config.DEFAULT_REGION
         os.environ["ENV"] = ENV_DEV
         # register signal handlers
-        if not is_local_test_mode():
+        if not config.is_local_test_mode():
             register_signal_handlers()
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
@@ -531,7 +533,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     print(READY_MARKER_OUTPUT)
     sys.stdout.flush()
 
-    INFRA_READY.set()
+    events.infra_ready.set()
     analytics.log.event("infra_ready")
 
     hooks.on_infra_ready.run()

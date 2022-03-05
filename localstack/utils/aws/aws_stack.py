@@ -6,6 +6,7 @@ import socket
 import sys
 import threading
 import time
+from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
@@ -77,6 +78,15 @@ CACHE_S3_HOSTNAME_DNS_STATUS = None
 
 # mutex used when creating boto clients (which isn't thread safe: https://github.com/boto/boto3/issues/801)
 BOTO_CLIENT_CREATE_LOCK = threading.RLock()
+
+
+@lru_cache()
+def get_valid_regions():
+    valid_regions = set()
+    for partition in set(boto3.Session().get_available_partitions()):
+        for region in boto3.Session().get_available_regions("sns", partition):
+            valid_regions.add(region)
+    return valid_regions
 
 
 class Environment(object):
@@ -399,8 +409,8 @@ def check_valid_region(headers):
     # See https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html
     parts = replaced.split("/")
     region = parts[2]
-    if region not in config.VALID_REGIONS:
-        raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
+    if region not in get_valid_regions():
+        raise Exception(f'Invalid region specified in "Authorization" header: "{region}"')
 
 
 def set_default_region_in_headers(headers, service=None, region=None):
@@ -697,7 +707,7 @@ def fix_arn(arn):
     resource names to ARNs, replacing incorrect regions, account IDs, etc."""
     if arn.startswith("arn:aws:lambda"):
         parts = arn.split(":")
-        region = parts[3] if parts[3] in config.VALID_REGIONS else get_region()
+        region = parts[3] if parts[3] in get_valid_regions() else get_region()
         return lambda_function_arn(lambda_function_name(arn), region_name=region)
     LOG.warning("Unable to fix/canonicalize ARN: %s", arn)
     return arn

@@ -53,7 +53,7 @@ def read_client_metadata() -> ClientMetadata:
         version=get_version_string(),
         is_ci=os.getenv("CI") is not None,
         is_docker=config.is_in_docker,
-        is_testing=config.is_env_true(constants.ENV_INTERNAL_TEST_RUN),
+        is_testing=config.is_local_test_mode(),
     )
 
 
