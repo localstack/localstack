@@ -17,6 +17,7 @@ from localstack.constants import (
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
     DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
+    ENV_INTERNAL_TEST_RUN,
     FALSE_STRINGS,
     INSTALL_DIR_INFRA,
     LOCALHOST,
@@ -694,6 +695,11 @@ CONFIG_ENV_VARS = [
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
 ]
+
+
+def is_local_test_mode() -> bool:
+    """Returns True if we are running in the context of our local integration tests."""
+    return is_env_true(ENV_INTERNAL_TEST_RUN)
 
 
 def collect_config_items() -> List[Tuple[str, Any]]:

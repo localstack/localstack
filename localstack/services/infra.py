@@ -36,7 +36,6 @@ from localstack.utils.platform import in_docker, is_linux
 from localstack.utils.run import ShellCommandThread, run
 from localstack.utils.server import multiserver
 from localstack.utils.sync import poll_condition
-from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.threads import (
     TMP_THREADS,
     FuncThread,
@@ -459,7 +458,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
         os.environ["AWS_REGION"] = config.DEFAULT_REGION
         os.environ["ENV"] = ENV_DEV
         # register signal handlers
-        if not is_local_test_mode():
+        if not config.is_local_test_mode():
             register_signal_handlers()
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()

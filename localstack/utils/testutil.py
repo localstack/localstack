@@ -16,7 +16,6 @@ import requests
 
 from localstack import config
 from localstack.constants import (
-    ENV_INTERNAL_TEST_RUN,
     LAMBDA_TEST_ROLE,
     LOCALSTACK_ROOT_FOLDER,
     LOCALSTACK_VENV_FOLDER,
@@ -54,8 +53,7 @@ MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 
 def is_local_test_mode():
-    """Whether we are running in the context of our local integration tests."""
-    return bool(os.environ.get(ENV_INTERNAL_TEST_RUN))
+    return config.is_local_test_mode()
 
 
 def copy_dir(source, target):
