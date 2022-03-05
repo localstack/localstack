@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import re
+import shutil
 import socket
 import subprocess
 import tempfile
@@ -190,9 +191,7 @@ def load_environment(profile: str = None):
 
 def has_docker():
     try:
-        with open(os.devnull, "w") as devnull:
-            subprocess.check_output("docker ps", stderr=devnull, shell=True)
-        return True
+        return True if shutil.which("docker") else False
     except Exception:
         return False
 
