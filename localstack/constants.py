@@ -89,6 +89,7 @@ APPLICATION_JSON = "application/json"
 APPLICATION_XML = "application/xml"
 APPLICATION_OCTET_STREAM = "application/octet-stream"
 APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded"
+BINARY_OCTET_STREAM = "binary/octet-stream"
 HEADER_ACCEPT_ENCODING = "Accept-Encoding"
 
 # strings to indicate truthy/falsy values
