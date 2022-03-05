@@ -105,6 +105,7 @@ class ResourceGraph:
 
 class CloudFormationUi:
     def on_get(self, request):
+        from localstack.utils.aws.aws_stack import get_valid_regions
 
         path = request.path
         data = request.data
@@ -119,7 +120,7 @@ class CloudFormationUi:
             "stackName": "stack1",
             "templateBody": "{}",
             "errorMessage": "''",
-            "regions": json.dumps(sorted(list(config.VALID_REGIONS))),
+            "regions": json.dumps(sorted(list(get_valid_regions()))),
         }
 
         download_url = req_params.get("templateURL")

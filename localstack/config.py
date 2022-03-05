@@ -8,8 +8,6 @@ import tempfile
 import time
 from typing import Any, Dict, List, Mapping, Tuple
 
-from boto3 import Session
-
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     DEFAULT_BUCKET_MARKER_LOCAL,
@@ -422,14 +420,6 @@ else:
 
 # additional CLI commands, can be set by plugins
 CLI_COMMANDS = {}
-
-# set of valid regions
-VALID_PARTITIONS = set(Session().get_available_partitions())
-VALID_REGIONS = set()
-for partition in VALID_PARTITIONS:
-    for region in Session().get_available_regions("sns", partition):
-        VALID_REGIONS.add(region)
-
 
 # determine IP of Docker bridge
 if not DOCKER_BRIDGE_IP:
