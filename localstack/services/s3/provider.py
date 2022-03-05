@@ -1,5 +1,8 @@
+import base64
+import codecs
 import logging
 import os
+import io
 import re
 from abc import ABC
 from datetime import datetime
@@ -16,7 +19,7 @@ from moto.s3.utils import undo_clean_key_name
 from moto.s3bucket_path import utils as s3bucket_path_utils
 
 from localstack import config, constants
-from localstack.aws.api import RequestContext
+from localstack.aws.api import RequestContext, ServiceException
 from localstack.aws.api.s3 import (
     MFA,
     AbortMultipartUploadOutput,
@@ -272,7 +275,7 @@ from localstack.utils.aws.aws_responses import (
 from localstack.utils.common import get_service_protocol
 from localstack.utils.generic.dict_utils import get_safe
 from localstack.utils.patch import patch
-from localstack.utils.strings import short_uid, to_bytes, to_str
+from localstack.utils.strings import short_uid, to_bytes, to_str, md5, is_base64
 
 LOG = logging.getLogger(__name__)
 
@@ -856,6 +859,101 @@ class S3Provider(S3Api, ABC):
         S3Provider._transform_path(context)
         S3Provider._transform_headers(context)
 
+    @staticmethod
+    def _strip_chunk_signatures(body, content_length):
+        # borrowed from https://github.com/spulec/moto/pull/4201
+        body_io = io.BytesIO(body)
+        new_body = bytearray(content_length)
+        pos = 0
+        line = body_io.readline()
+        while line:
+            # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html#sigv4-chunked-body-definition
+            # str(hex(chunk-size)) + ";chunk-signature=" + signature + \r\n + chunk-data + \r\n
+            chunk_size = int(line[: line.find(b";")].decode("utf8"), 16)
+            new_body[pos: pos + chunk_size] = body_io.read(chunk_size)
+            pos = pos + chunk_size
+            body_io.read(2)  # skip trailing \r\n
+            line = body_io.readline()
+        return bytes(new_body)
+
+    @staticmethod
+    def _raise_if_invalid_content_md5(context: RequestContext, content_md5: Optional[ContentMD5]):
+        if content_md5 is None:
+            return
+
+        headers = context.request.headers or {}
+        data = context.request.data
+
+        if headers.get("x-amz-content-sha256", None) == "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
+            content_length = headers.get("x-amz-decoded-content-length")
+            if not content_length:
+                # return S3Provider.error_response(
+                #     '"X-Amz-Decoded-Content-Length" header is missing',
+                #     "SignatureDoesNotMatch",
+                #     status_code=403,
+                # )
+                # TODO: check how to properly raise in providers.
+                # TODO: no exception type for SignatureDoesNotMatch
+                # TODO: status code?
+                raise ServiceException(
+                    '"X-Amz-Decoded-Content-Length" header is missing',
+                    "SignatureDoesNotMatch",
+                    # status_code=403,
+                )
+
+            try:
+                content_length = int(content_length)
+            except ValueError:
+                # return S3Provider.error_response(
+                #     'Wrong "X-Amz-Decoded-Content-Length" header',
+                #     "SignatureDoesNotMatch",
+                #     status_code=403,
+                # )
+                # TODO: check how to properly raise in providers.
+                # TODO: no exception type for SignatureDoesNotMatch
+                # TODO: status code?
+                raise ServiceException(
+                    'Wrong "X-Amz-Decoded-Content-Length" header',
+                    "SignatureDoesNotMatch",
+                    # status_code=403,
+                )
+
+            data = S3Provider._strip_chunk_signatures(data, content_length)
+
+        actual = md5(data)
+        try:
+            if not is_base64(content_md5):
+                raise Exception('Content-MD5 header is not in Base64 format: "%s"' % content_md5)
+            expected = to_str(codecs.encode(base64.b64decode(content_md5), "hex"))
+        except Exception:
+            # return S3Provider.error_response(
+            #     "The Content-MD5 you specified is not valid.",
+            #     "InvalidDigest",
+            #     status_code=400,
+            # )
+            # TODO: check how to properly raise in providers.
+            # TODO: no exception type for InvalidDigest
+            # TODO: status code?
+            raise ServiceException(
+                "The Content-MD5 you specified is not valid.",
+                "InvalidDigest",
+                # status_code=400,
+            )
+        if actual != expected:
+            # return S3Provider.error_response(
+            #     "The Content-MD5 you specified did not match what we received.",
+            #     "BadDigest",
+            #     status_code=400,
+            # )
+            # TODO: check how to properly raise in providers.
+            # TODO: no exception type for BadDigest
+            # TODO: status code?
+            raise ServiceException(
+                "The Content-MD5 you specified did not match what we received.",
+                "BadDigest",
+                # status_code=400,
+            )
+
     def _serve_static_website(self, context: RequestContext, bucket_name: BucketName):
         headers = context.request.headers
         path = context.request.path
@@ -905,30 +1003,30 @@ class S3Provider(S3Api, ABC):
             except ClientError:
                 return requests_response(status_code=404, content="")
 
-    def abort_multipart_upload(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        key: ObjectKey,
-        upload_id: MultipartUploadId,
-        request_payer: RequestPayer = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> AbortMultipartUploadOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def abort_multipart_upload(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     key: ObjectKey,
+    #     upload_id: MultipartUploadId,
+    #     request_payer: RequestPayer = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> AbortMultipartUploadOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def complete_multipart_upload(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        key: ObjectKey,
-        upload_id: MultipartUploadId,
-        multipart_upload: CompletedMultipartUpload = None,
-        request_payer: RequestPayer = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> CompleteMultipartUploadOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def complete_multipart_upload(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     key: ObjectKey,
+    #     upload_id: MultipartUploadId,
+    #     multipart_upload: CompletedMultipartUpload = None,
+    #     request_payer: RequestPayer = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> CompleteMultipartUploadOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
     def copy_object(
         self,
@@ -976,7 +1074,7 @@ class S3Provider(S3Api, ABC):
     ) -> CopyObjectOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         return call_moto(context)
 
     def create_bucket(
@@ -995,7 +1093,7 @@ class S3Provider(S3Api, ABC):
     ) -> CreateBucketOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
 
         # Moto doesn't allow to put a location constraint on 'us-east-1'.
         location_constraint = create_bucket_configuration.get("LocationConstraint", None)
@@ -1047,169 +1145,169 @@ class S3Provider(S3Api, ABC):
         self._transform_request_context(context)
         return call_moto(context)
 
-    def delete_bucket(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_analytics_configuration(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        id: AnalyticsId,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_analytics_configuration(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     id: AnalyticsId,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_cors(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_cors(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_encryption(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_encryption(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_intelligent_tiering_configuration(
+    #     self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_inventory_configuration(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        id: InventoryId,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_inventory_configuration(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     id: InventoryId,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_lifecycle(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_lifecycle(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_metrics_configuration(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        id: MetricsId,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_metrics_configuration(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     id: MetricsId,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_ownership_controls(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_ownership_controls(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_policy(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_policy(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_replication(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_replication(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_tagging(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_tagging(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_bucket_website(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_bucket_website(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def delete_object(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        key: ObjectKey,
-        mfa: MFA = None,
-        version_id: ObjectVersionId = None,
-        request_payer: RequestPayer = None,
-        bypass_governance_retention: BypassGovernanceRetention = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> DeleteObjectOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def delete_object(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     key: ObjectKey,
+    #     mfa: MFA = None,
+    #     version_id: ObjectVersionId = None,
+    #     request_payer: RequestPayer = None,
+    #     bypass_governance_retention: BypassGovernanceRetention = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> DeleteObjectOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def delete_object_tagging(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        key: ObjectKey,
-        version_id: ObjectVersionId = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> DeleteObjectTaggingOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def delete_object_tagging(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     key: ObjectKey,
+    #     version_id: ObjectVersionId = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> DeleteObjectTaggingOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def delete_objects(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        delete: Delete,
-        mfa: MFA = None,
-        request_payer: RequestPayer = None,
-        bypass_governance_retention: BypassGovernanceRetention = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> DeleteObjectsOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def delete_objects(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     delete: Delete,
+    #     mfa: MFA = None,
+    #     request_payer: RequestPayer = None,
+    #     bypass_governance_retention: BypassGovernanceRetention = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> DeleteObjectsOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def delete_public_access_block(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def delete_public_access_block(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
     def get_bucket_accelerate_configuration(
         self,
@@ -1580,7 +1678,7 @@ class S3Provider(S3Api, ABC):
     #     expected_bucket_owner: AccountId = None,
     # ) -> None:
     #     self._transform_request_context(context)
-    #     call_moto(context)
+    #     call_moto(context, include_response_metadata=True)
 
     # def head_object(
     #     self,
@@ -1601,87 +1699,87 @@ class S3Provider(S3Api, ABC):
     #     expected_bucket_owner: AccountId = None,
     # ) -> HeadObjectOutput:
     #     self._transform_request_context(context)
+    #     return call_moto(context, include_response_metadata=True)
+
+    # def list_bucket_analytics_configurations(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     continuation_token: Token = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> ListBucketAnalyticsConfigurationsOutput:
+    #     self._transform_request_context(context)
+    #     if self._is_static_website(context):
+    #         return self._serve_static_website(context, bucket)
     #     return call_moto(context)
 
-    def list_bucket_analytics_configurations(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        continuation_token: Token = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> ListBucketAnalyticsConfigurationsOutput:
-        self._transform_request_context(context)
-        if self._is_static_website(context):
-            return self._serve_static_website(context, bucket)
-        return call_moto(context)
+    # def list_bucket_intelligent_tiering_configurations(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     continuation_token: Token = None,
+    # ) -> ListBucketIntelligentTieringConfigurationsOutput:
+    #     self._transform_request_context(context)
+    #     if self._is_static_website(context):
+    #         return self._serve_static_website(context, bucket)
+    #     return call_moto(context)
 
-    def list_bucket_intelligent_tiering_configurations(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        continuation_token: Token = None,
-    ) -> ListBucketIntelligentTieringConfigurationsOutput:
-        self._transform_request_context(context)
-        if self._is_static_website(context):
-            return self._serve_static_website(context, bucket)
-        return call_moto(context)
+    # def list_bucket_inventory_configurations(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     continuation_token: Token = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> ListBucketInventoryConfigurationsOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def list_bucket_inventory_configurations(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        continuation_token: Token = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> ListBucketInventoryConfigurationsOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def list_bucket_metrics_configurations(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     continuation_token: Token = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> ListBucketMetricsConfigurationsOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def list_bucket_metrics_configurations(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        continuation_token: Token = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> ListBucketMetricsConfigurationsOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def list_buckets(
+    #     self,
+    #     context: RequestContext,
+    # ) -> ListBucketsOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def list_buckets(
-        self,
-        context: RequestContext,
-    ) -> ListBucketsOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def list_multipart_uploads(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     delimiter: Delimiter = None,
+    #     encoding_type: EncodingType = None,
+    #     key_marker: KeyMarker = None,
+    #     max_uploads: MaxUploads = None,
+    #     prefix: Prefix = None,
+    #     upload_id_marker: UploadIdMarker = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> ListMultipartUploadsOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def list_multipart_uploads(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        delimiter: Delimiter = None,
-        encoding_type: EncodingType = None,
-        key_marker: KeyMarker = None,
-        max_uploads: MaxUploads = None,
-        prefix: Prefix = None,
-        upload_id_marker: UploadIdMarker = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> ListMultipartUploadsOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
-
-    def list_object_versions(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        delimiter: Delimiter = None,
-        encoding_type: EncodingType = None,
-        key_marker: KeyMarker = None,
-        max_keys: MaxKeys = None,
-        prefix: Prefix = None,
-        version_id_marker: VersionIdMarker = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> ListObjectVersionsOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def list_object_versions(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     delimiter: Delimiter = None,
+    #     encoding_type: EncodingType = None,
+    #     key_marker: KeyMarker = None,
+    #     max_keys: MaxKeys = None,
+    #     prefix: Prefix = None,
+    #     version_id_marker: VersionIdMarker = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> ListObjectVersionsOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
     # def list_objects(
     #     self,
@@ -1713,7 +1811,7 @@ class S3Provider(S3Api, ABC):
     #     expected_bucket_owner: AccountId = None,
     # ) -> ListObjectsV2Output:
     #     self._transform_request_context(context)
-    #     return call_moto(context)
+    #     return call_moto(context, include_response_metadata=True)
 
     # def list_parts(
     #     self,
@@ -1738,7 +1836,7 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         call_moto(context)
 
     def put_bucket_acl(
@@ -1757,7 +1855,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_analytics_configuration(
@@ -1770,7 +1869,7 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         call_moto(context)
 
     def put_bucket_cors(
@@ -1783,7 +1882,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_encryption(
@@ -1796,7 +1896,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_intelligent_tiering_configuration(
@@ -1808,7 +1909,7 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         call_moto(context)
 
     def put_bucket_inventory_configuration(
@@ -1821,7 +1922,7 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         call_moto(context)
 
     def put_bucket_lifecycle(
@@ -1834,7 +1935,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_lifecycle_configuration(
@@ -1846,7 +1948,7 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         call_moto(context)
 
     def put_bucket_logging(
@@ -1859,7 +1961,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_metrics_configuration(
@@ -1872,7 +1975,7 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         call_moto(context)
 
     def put_bucket_notification(
@@ -1885,7 +1988,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_notification_configuration(
@@ -1898,7 +2002,7 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         call_moto(context)
 
     def put_bucket_ownership_controls(
@@ -1911,7 +2015,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_policy(
@@ -1925,7 +2030,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_replication(
@@ -1939,7 +2045,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_request_payment(
@@ -1952,7 +2059,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_tagging(
@@ -1965,7 +2073,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_versioning(
@@ -1979,7 +2088,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_bucket_website(
@@ -1992,7 +2102,8 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
     def put_object(
@@ -2033,7 +2144,8 @@ class S3Provider(S3Api, ABC):
     ) -> PutObjectOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         return call_moto(context)
 
     def put_object_acl(
@@ -2055,7 +2167,8 @@ class S3Provider(S3Api, ABC):
     ) -> PutObjectAclOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         return call_moto(context)
 
     def put_object_legal_hold(
@@ -2071,7 +2184,8 @@ class S3Provider(S3Api, ABC):
     ) -> PutObjectLegalHoldOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         return call_moto(context)
 
     def put_object_lock_configuration(
@@ -2086,7 +2200,8 @@ class S3Provider(S3Api, ABC):
     ) -> PutObjectLockConfigurationOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         return call_moto(context)
 
     def put_object_retention(
@@ -2103,7 +2218,8 @@ class S3Provider(S3Api, ABC):
     ) -> PutObjectRetentionOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         return call_moto(context)
 
     def put_object_tagging(
@@ -2119,7 +2235,8 @@ class S3Provider(S3Api, ABC):
     ) -> PutObjectTaggingOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         return call_moto(context)
 
     def put_public_access_block(
@@ -2132,40 +2249,41 @@ class S3Provider(S3Api, ABC):
     ) -> None:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_content_md5(context, content_md5)
         call_moto(context)
 
-    def restore_object(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        key: ObjectKey,
-        version_id: ObjectVersionId = None,
-        restore_request: RestoreRequest = None,
-        request_payer: RequestPayer = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> RestoreObjectOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def restore_object(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     key: ObjectKey,
+    #     version_id: ObjectVersionId = None,
+    #     restore_request: RestoreRequest = None,
+    #     request_payer: RequestPayer = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> RestoreObjectOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def select_object_content(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        key: ObjectKey,
-        expression: Expression,
-        expression_type: ExpressionType,
-        input_serialization: InputSerialization,
-        output_serialization: OutputSerialization,
-        sse_customer_algorithm: SSECustomerAlgorithm = None,
-        sse_customer_key: SSECustomerKey = None,
-        sse_customer_key_md5: SSECustomerKeyMD5 = None,
-        request_progress: RequestProgress = None,
-        scan_range: ScanRange = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> SelectObjectContentOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def select_object_content(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     key: ObjectKey,
+    #     expression: Expression,
+    #     expression_type: ExpressionType,
+    #     input_serialization: InputSerialization,
+    #     output_serialization: OutputSerialization,
+    #     sse_customer_algorithm: SSECustomerAlgorithm = None,
+    #     sse_customer_key: SSECustomerKey = None,
+    #     sse_customer_key_md5: SSECustomerKeyMD5 = None,
+    #     request_progress: RequestProgress = None,
+    #     scan_range: ScanRange = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> SelectObjectContentOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
     def upload_part(
         self,
@@ -2185,7 +2303,7 @@ class S3Provider(S3Api, ABC):
     ) -> UploadPartOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         return call_moto(context)
 
     def upload_part_copy(
@@ -2213,51 +2331,51 @@ class S3Provider(S3Api, ABC):
     ) -> UploadPartCopyOutput:
         self._transform_request_context(context)
         self._transform_content_types(context)
-        S3Provider._raise_if_invalid_bucket_name(context, bucket_name=bucket)
+        self._raise_if_invalid_bucket_name(context, bucket_name=bucket)
         return call_moto(context)
 
-    def write_get_object_response(
-        self,
-        context: RequestContext,
-        request_route: RequestRoute,
-        request_token: RequestToken,
-        body: Body = None,
-        status_code: GetObjectResponseStatusCode = None,
-        error_code: ErrorCode = None,
-        error_message: ErrorMessage = None,
-        accept_ranges: AcceptRanges = None,
-        cache_control: CacheControl = None,
-        content_disposition: ContentDisposition = None,
-        content_encoding: ContentEncoding = None,
-        content_language: ContentLanguage = None,
-        content_length: ContentLength = None,
-        content_range: ContentRange = None,
-        content_type: ContentType = None,
-        delete_marker: DeleteMarker = None,
-        e_tag: ETag = None,
-        expires: Expires = None,
-        expiration: Expiration = None,
-        last_modified: LastModified = None,
-        missing_meta: MissingMeta = None,
-        metadata: Metadata = None,
-        object_lock_mode: ObjectLockMode = None,
-        object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
-        object_lock_retain_until_date: ObjectLockRetainUntilDate = None,
-        parts_count: PartsCount = None,
-        replication_status: ReplicationStatus = None,
-        request_charged: RequestCharged = None,
-        restore: Restore = None,
-        server_side_encryption: ServerSideEncryption = None,
-        sse_customer_algorithm: SSECustomerAlgorithm = None,
-        ssekms_key_id: SSEKMSKeyId = None,
-        sse_customer_key_md5: SSECustomerKeyMD5 = None,
-        storage_class: StorageClass = None,
-        tag_count: TagCount = None,
-        version_id: ObjectVersionId = None,
-        bucket_key_enabled: BucketKeyEnabled = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def write_get_object_response(
+    #     self,
+    #     context: RequestContext,
+    #     request_route: RequestRoute,
+    #     request_token: RequestToken,
+    #     body: Body = None,
+    #     status_code: GetObjectResponseStatusCode = None,
+    #     error_code: ErrorCode = None,
+    #     error_message: ErrorMessage = None,
+    #     accept_ranges: AcceptRanges = None,
+    #     cache_control: CacheControl = None,
+    #     content_disposition: ContentDisposition = None,
+    #     content_encoding: ContentEncoding = None,
+    #     content_language: ContentLanguage = None,
+    #     content_length: ContentLength = None,
+    #     content_range: ContentRange = None,
+    #     content_type: ContentType = None,
+    #     delete_marker: DeleteMarker = None,
+    #     e_tag: ETag = None,
+    #     expires: Expires = None,
+    #     expiration: Expiration = None,
+    #     last_modified: LastModified = None,
+    #     missing_meta: MissingMeta = None,
+    #     metadata: Metadata = None,
+    #     object_lock_mode: ObjectLockMode = None,
+    #     object_lock_legal_hold_status: ObjectLockLegalHoldStatus = None,
+    #     object_lock_retain_until_date: ObjectLockRetainUntilDate = None,
+    #     parts_count: PartsCount = None,
+    #     replication_status: ReplicationStatus = None,
+    #     request_charged: RequestCharged = None,
+    #     restore: Restore = None,
+    #     server_side_encryption: ServerSideEncryption = None,
+    #     sse_customer_algorithm: SSECustomerAlgorithm = None,
+    #     ssekms_key_id: SSEKMSKeyId = None,
+    #     sse_customer_key_md5: SSECustomerKeyMD5 = None,
+    #     storage_class: StorageClass = None,
+    #     tag_count: TagCount = None,
+    #     version_id: ObjectVersionId = None,
+    #     bucket_key_enabled: BucketKeyEnabled = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
 
 def s3_update_acls(self, request, query, bucket_name, key_name):
