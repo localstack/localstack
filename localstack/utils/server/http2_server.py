@@ -5,7 +5,7 @@ import os
 import ssl
 import threading
 import traceback
-from typing import Callable
+from typing import Callable, Tuple
 
 import h11
 from hypercorn import utils as hypercorn_utils
@@ -154,16 +154,26 @@ def run_server(
     bind_address: str,
     handler: Callable = None,
     asynchronous: bool = True,
-    ssl_creds=None,
+    ssl_creds: Tuple[str, str] = None,
     max_content_length: int = None,
-    timeout: int = None,
+    send_timeout: int = None,
 ):
+    """
+    Run an HTTP2-capable Web server on the given port, processing incoming requests via a `handler` function.
+    :param port: port to bind to
+    :param bind_address: address to bind to
+    :param handler: callable that receives the request and returns a response
+    :param asynchronous: whether to start the server asynchronously in the background
+    :param ssl_creds: optional tuple with SSL cert file names (cert file, key file)
+    :param max_content_length: maximum content length of uploaded payload
+    :param send_timeout: timeout (in seconds) for sending the request payload over the wire
+    """
 
     ensure_event_loop()
     app = Quart(__name__)
     app.config["MAX_CONTENT_LENGTH"] = max_content_length or DEFAULT_MAX_CONTENT_LENGTH
-    if timeout:
-        app.config["BODY_TIMEOUT"] = timeout
+    if send_timeout:
+        app.config["BODY_TIMEOUT"] = send_timeout
 
     @app.route("/", methods=HTTP_METHODS, defaults={"path": ""})
     @app.route("/<path:path>", methods=HTTP_METHODS)
@@ -232,7 +242,7 @@ def run_server(
             kwargs["keyfile"] = key_file_name
             config.keyfile = key_file_name
         setup_quart_logging()
-        config.bind = ["%s:%s" % (bind_address, port)]
+        config.bind = [f"{bind_address}:{port}"]
         loop = loop or ensure_event_loop()
         run_kwargs = {}
         if shutdown_event:

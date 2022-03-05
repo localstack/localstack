@@ -944,7 +944,7 @@ def start_proxy_server(
     asynchronous=True,
     check_port=True,
     max_content_length: int = None,
-    timeout: int = None,
+    send_timeout: int = None,
 ):
     bind_address = bind_address if bind_address else BIND_HOST
 
@@ -988,7 +988,7 @@ def start_proxy_server(
         asynchronous=asynchronous,
         ssl_creds=ssl_creds,
         max_content_length=max_content_length,
-        timeout=timeout,
+        send_timeout=send_timeout,
     )
     if asynchronous and check_port:
         wait_for_port_open(port, sleep_time=0.2, retries=12)
