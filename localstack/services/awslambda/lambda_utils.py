@@ -4,6 +4,7 @@ import os
 import re
 import time
 from collections import defaultdict
+from functools import lru_cache
 from io import BytesIO
 from typing import Any, Dict, List, Union
 
@@ -71,6 +72,30 @@ class ClientError(Exception):
         if isinstance(self.msg, Response):
             return self.msg
         return error_response(self.msg, self.code)
+
+
+@lru_cache()
+def get_default_executor_mode() -> str:
+    """
+    Returns the default docker executor mode, which is "docker" if the docker socket is available via the docker
+    client, or "local"  otherwise.
+
+    :return:
+    """
+    try:
+        return "docker" if DOCKER_CLIENT.has_docker() else "local"
+    except Exception:
+        return "local"
+
+
+def get_executor_mode() -> str:
+    """
+    Returns the currently active lambda executor mode. If config.LAMBDA_EXECUTOR is set, then it returns that,
+    otherwise it falls back to get_default_executor_mode().
+
+    :return: the lambda executor mode (e.g., 'local', 'docker', or 'docker-reuse')
+    """
+    return config.LAMBDA_EXECUTOR or get_default_executor_mode()
 
 
 def multi_value_dict_for_list(elements: Union[List, Dict]) -> Dict:

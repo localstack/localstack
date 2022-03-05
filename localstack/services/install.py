@@ -18,7 +18,7 @@ import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
-from localstack.config import dirs, has_docker
+from localstack.config import dirs
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
@@ -417,7 +417,7 @@ def install_local_kms():
 def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
         # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
-        if not has_docker():
+        if not DOCKER_CLIENT.has_docker():
             # TODO: works only when a docker socket is available -> add a fallback if running without Docker?
             LOG.warning("Docker not available - skipping installation of StepFunctions dependency")
             return

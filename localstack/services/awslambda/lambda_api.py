@@ -33,6 +33,7 @@ from localstack.services.awslambda.lambda_utils import (
     ClientError,
     error_response,
     event_source_arn_matches,
+    get_executor_mode,
     get_handler_file_from_name,
     get_lambda_runtime,
     get_zip_bytes,
@@ -129,7 +130,7 @@ JSON_START_CHARS = tuple(set(functools.reduce(lambda x, y: x + y, JSON_START_CHA
 
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(
-    config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR
+    get_executor_mode(), lambda_executors.DEFAULT_EXECUTOR
 )
 
 # IAM policy constants
@@ -502,7 +503,7 @@ def use_docker():
     global DO_USE_DOCKER
     if DO_USE_DOCKER is None:
         DO_USE_DOCKER = False
-        if "docker" in config.LAMBDA_EXECUTOR:
+        if "docker" in get_executor_mode():
             has_docker = DOCKER_CLIENT.has_docker()
             if not has_docker:
                 LOG.warning(
@@ -511,7 +512,7 @@ def use_docker():
                         "is not accessible. Please make sure to mount the Docker socket "
                         "/var/run/docker.sock into the container."
                     ),
-                    config.LAMBDA_EXECUTOR,
+                    get_executor_mode(),
                 )
             DO_USE_DOCKER = has_docker
     return DO_USE_DOCKER
@@ -2393,7 +2394,7 @@ def on_config_change(config_key: str, config_newvalue: str) -> None:
     )
     LAMBDA_EXECUTOR.cleanup()
     LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(
-        config_newvalue, lambda_executors.DEFAULT_EXECUTOR
+        get_executor_mode(), lambda_executors.DEFAULT_EXECUTOR
     )
     LAMBDA_EXECUTOR.startup()
 

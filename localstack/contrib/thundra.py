@@ -23,6 +23,7 @@ from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_PYTHON37,
     LAMBDA_RUNTIME_PYTHON38,
+    get_executor_mode,
     is_python_runtime,
 )
 from localstack.utils import common
@@ -406,11 +407,11 @@ def _prepare_invocation_for_python_lambda(
 class LambdaExecutorPluginThundra(LambdaExecutorPlugin):
     def should_apply(self, context: InvocationContext) -> bool:
         # Local executor is not supported yet
-        if "local" in config.LAMBDA_EXECUTOR:
+        if "local" in get_executor_mode():
             return False
 
-        # Plugin can only applied if LAMBDA_REMOTE_DOCKER=0
-        if "docker" in config.LAMBDA_EXECUTOR and config.LAMBDA_REMOTE_DOCKER:
+        # Plugin can only be applied if LAMBDA_REMOTE_DOCKER=0
+        if "docker" in get_executor_mode() and config.LAMBDA_REMOTE_DOCKER:
             return False
 
         # Plugin can only applied if API key is configured

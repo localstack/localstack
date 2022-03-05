@@ -32,7 +32,7 @@ from localstack.utils.bootstrap import (
 from localstack.utils.files import cleanup_tmp_files
 from localstack.utils.net import get_free_tcp_port, is_port_open
 from localstack.utils.patch import patch
-from localstack.utils.platform import in_docker, is_linux
+from localstack.utils.platform import in_docker
 from localstack.utils.run import ShellCommandThread, run
 from localstack.utils.server import multiserver
 from localstack.utils.sync import poll_condition
@@ -386,22 +386,6 @@ def start_infra(asynchronous=False, apis=None):
         os.environ[LOCALSTACK_INFRA_PROCESS] = "1"
 
         is_in_docker = in_docker()
-        # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
-        if not is_in_docker and "docker" in config.LAMBDA_EXECUTOR and not is_linux():
-            print(
-                (
-                    "!WARNING! - Running outside of Docker with $LAMBDA_EXECUTOR=%s can lead to "
-                    "problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not "
-                    "be properly set in your Lambdas."
-                )
-                % config.LAMBDA_EXECUTOR
-            )
-
-        if is_in_docker and not config.LAMBDA_REMOTE_DOCKER and not config.dirs.functions:
-            print(
-                "!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=0 - "
-                "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR"
-            )
 
         print_runtime_information(is_in_docker)
 

@@ -138,18 +138,6 @@ ANALYTICS_API = os.environ.get("ANALYTICS_API") or "https://analytics.localstack
 LOCALSTACK_WEB_PROCESS = "LOCALSTACK_WEB_PROCESS"
 LOCALSTACK_INFRA_PROCESS = "LOCALSTACK_INFRA_PROCESS"
 
-# hardcoded AWS account ID used by moto
-MOTO_ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
-# fix moto account ID - note: keep this at the top level here
-try:
-    from moto import core as moto_core
-    from moto.core import models as moto_core_models
-
-    moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = MOTO_ACCOUNT_ID
-except Exception:
-    # ignore import errors
-    pass
-
 # default AWS region us-east-1
 AWS_REGION_US_EAST_1 = "us-east-1"
 
@@ -197,3 +185,23 @@ OS_USER_OPENSEARCH = "localstack"
 
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."
+
+# hardcoded AWS account ID used by moto
+MOTO_ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
+
+
+def patch_moto_account_id():
+    # fix moto account ID - note: this needs to be executed before any other moto imports
+    try:
+        from moto import core as moto_core
+        from moto.core import models as moto_core_models
+
+        moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = MOTO_ACCOUNT_ID
+    except Exception:
+        # ignore import errors
+        pass
+
+
+if not os.environ.get("SKIP_PATCH_MOTO_ACCOUNT_ID"):
+    # allow skipping this (importing moto takes a long time, and it's not necessary for the CLI)
+    patch_moto_account_id()
