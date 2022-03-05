@@ -5,6 +5,7 @@ import os
 import ssl
 import threading
 import traceback
+from typing import Callable, Tuple
 
 import h11
 from hypercorn import utils as hypercorn_utils
@@ -33,6 +34,9 @@ HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"]
 
 # flag to avoid lowercasing all header names (e.g., some AWS S3 SDKs depend on "ETag" response header)
 RETURN_CASE_SENSITIVE_HEADERS = True
+
+# default max content length for HTTP server requests (256 MB)
+DEFAULT_MAX_CONTENT_LENGTH = 256 * 1024 * 1024
 
 # cache of SSL contexts (indexed by cert file names)
 SSL_CONTEXTS = {}
@@ -145,11 +149,31 @@ def get_async_generator_result(result):
     return gen, headers
 
 
-def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=None):
+def run_server(
+    port: int,
+    bind_address: str,
+    handler: Callable = None,
+    asynchronous: bool = True,
+    ssl_creds: Tuple[str, str] = None,
+    max_content_length: int = None,
+    send_timeout: int = None,
+):
+    """
+    Run an HTTP2-capable Web server on the given port, processing incoming requests via a `handler` function.
+    :param port: port to bind to
+    :param bind_address: address to bind to
+    :param handler: callable that receives the request and returns a response
+    :param asynchronous: whether to start the server asynchronously in the background
+    :param ssl_creds: optional tuple with SSL cert file names (cert file, key file)
+    :param max_content_length: maximum content length of uploaded payload
+    :param send_timeout: timeout (in seconds) for sending the request payload over the wire
+    """
 
     ensure_event_loop()
     app = Quart(__name__)
-    app.config["MAX_CONTENT_LENGTH"] = 256 * 1024 * 1024  # 256 MB request payload limit
+    app.config["MAX_CONTENT_LENGTH"] = max_content_length or DEFAULT_MAX_CONTENT_LENGTH
+    if send_timeout:
+        app.config["BODY_TIMEOUT"] = send_timeout
 
     @app.route("/", methods=HTTP_METHODS, defaults={"path": ""})
     @app.route("/<path:path>", methods=HTTP_METHODS)
@@ -218,7 +242,7 @@ def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=No
             kwargs["keyfile"] = key_file_name
             config.keyfile = key_file_name
         setup_quart_logging()
-        config.bind = ["%s:%s" % (bind_address, port)]
+        config.bind = [f"{bind_address}:{port}"]
         loop = loop or ensure_event_loop()
         run_kwargs = {}
         if shutdown_event:

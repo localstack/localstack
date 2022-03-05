@@ -943,6 +943,8 @@ def start_proxy_server(
     params=None,  # TODO: not being used - should be investigated/removed
     asynchronous=True,
     check_port=True,
+    max_content_length: int = None,
+    send_timeout: int = None,
 ):
     bind_address = bind_address if bind_address else BIND_HOST
 
@@ -980,7 +982,13 @@ def start_proxy_server(
         ssl_creds = (cert_file_name, key_file_name)
 
     result = http2_server.run_server(
-        port, bind_address, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds
+        port,
+        bind_address,
+        handler=handler,
+        asynchronous=asynchronous,
+        ssl_creds=ssl_creds,
+        max_content_length=max_content_length,
+        send_timeout=send_timeout,
     )
     if asynchronous and check_port:
         wait_for_port_open(port, sleep_time=0.2, retries=12)
