@@ -2,7 +2,6 @@ import logging
 import os
 import platform
 import re
-import shutil
 import socket
 import subprocess
 import tempfile
@@ -187,13 +186,6 @@ def load_environment(profile: str = None):
     import dotenv
 
     dotenv.load_dotenv(path, override=False)
-
-
-def has_docker():
-    try:
-        return True if shutil.which("docker") else False
-    except Exception:
-        return False
 
 
 def is_linux():
