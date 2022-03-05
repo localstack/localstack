@@ -2,10 +2,11 @@ import json
 import logging
 
 from localstack import config
-from localstack.services.apigateway.apigateway_listener import apply_template
 from localstack.services.apigateway.context import ApiInvocationContext
+from localstack.services.apigateway.helpers import apply_template
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import make_http_request, to_str
+from localstack.utils.http import make_http_request
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 

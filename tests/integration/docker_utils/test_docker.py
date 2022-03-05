@@ -171,6 +171,15 @@ class TestDockerClient:
                 dummy_container.container_id, command=["echo", "foobar"]
             )
 
+    def test_exec_in_container_with_workdir(self, docker_client: ContainerClient, dummy_container):
+        docker_client.start_container(dummy_container.container_id)
+        workdir = "/proc/sys"
+
+        output, _ = docker_client.exec_in_container(
+            dummy_container.container_id, command=["pwd"], workdir=workdir
+        )
+        assert to_str(output).strip() == workdir
+
     def test_exec_in_container_with_env(self, docker_client: ContainerClient, dummy_container):
         docker_client.start_container(dummy_container.container_id)
 

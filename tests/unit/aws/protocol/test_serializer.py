@@ -3,11 +3,17 @@ import re
 from datetime import datetime
 from typing import Optional
 
+import pytest
 from botocore.parsers import ResponseParser, create_parser
 from dateutil.tz import tzlocal, tzutc
 
 from localstack.aws.api import CommonServiceException, ServiceException
-from localstack.aws.protocol.serializer import create_serializer
+from localstack.aws.protocol.serializer import (
+    ProtocolSerializerError,
+    QueryResponseSerializer,
+    UnknownSerializerError,
+    create_serializer,
+)
 from localstack.aws.spec import load_service
 from localstack.utils.common import to_str
 
@@ -1129,3 +1135,30 @@ def test_no_mutation_of_parameters():
         parameters, service.operation_model("CreateHostedConfigurationVersion")
     )
     assert parameters == expected
+
+
+def test_serializer_error_on_protocol_error():
+    """Test that the serializer raises a ProtocolSerializerError in case of invalid data to serialize."""
+    service = load_service("sqs")
+    operation_model = service.operation_model("SendMessage")
+    serializer = QueryResponseSerializer()
+    with pytest.raises(ProtocolSerializerError):
+        # a known protocol error would be if we try to serialize an exception which is not a CommonServiceException and
+        # also not a generated exception
+        serializer.serialize_error_to_response(NotImplementedError(), operation_model)
+
+
+def test_serializer_error_on_unknown_error():
+    """Test that the serializer raises a UnknownSerializerError in case of an unknown exception."""
+    service = load_service("sqs")
+    operation_model = service.operation_model("SendMessage")
+    serializer = QueryResponseSerializer()
+
+    # An unknown error is obviously hard to trigger (because we would fix it if we would know of a way to trigger it),
+    # therefore we patch a function to raise an unexpected error
+    def raise_error(*args, **kwargs):
+        raise NotImplementedError()
+
+    serializer._serialize_response = raise_error
+    with pytest.raises(UnknownSerializerError):
+        serializer.serialize_to_response({}, operation_model)

@@ -10,10 +10,6 @@ from localstack.utils.patch import patch
 LOG = logging.getLogger(__name__)
 
 
-# temporary state
-TMP_STATE = {}
-TMP_TAG = {}
-
 # Key for tracking patch applience
 PATCHES_APPLIED = "LAMBDA_PATCHED"
 
@@ -21,8 +17,6 @@ PATCHES_APPLIED = "LAMBDA_PATCHED"
 def start_lambda(port=None, asynchronous=False):
     from localstack.services.awslambda import lambda_api
     from localstack.services.infra import start_local_api
-
-    apply_patches()
 
     port = port or config.service_port("lambda")
     return start_local_api(
@@ -65,31 +59,26 @@ def check_lambda(expect_shutdown=False, print_error=False):
         assert out and isinstance(out.get("Functions"), list)
 
 
-def apply_patches():
-    if TMP_STATE.get(PATCHES_APPLIED, False):
-        return
+@patch(moto_awslambda_models.LambdaBackend.get_function)
+def get_function(fn, self, *args, **kwargs):
+    result = fn(self, *args, **kwargs)
+    if result:
+        return result
 
-    TMP_STATE[PATCHES_APPLIED] = True
+    client = aws_stack.connect_to_service("lambda")
+    lambda_name = aws_stack.lambda_function_name(args[0])
+    response = client.get_function(FunctionName=lambda_name)
 
-    @patch(moto_awslambda_models.LambdaBackend.get_function)
-    def get_function(fn, self, *args, **kwargs):
-        result = fn(self, *args, **kwargs)
-        if result:
-            return result
+    spec = response["Configuration"]
+    spec["Code"] = {"ZipFile": "ZW1wdHkgc3RyaW5n"}
+    region = aws_stack.extract_region_from_arn(spec["FunctionArn"])
+    new_function = moto_awslambda_models.LambdaFunction(spec, region)
 
-        client = aws_stack.connect_to_service("lambda")
-        lambda_name = aws_stack.lambda_function_name(args[0])
-        response = client.get_function(FunctionName=lambda_name)
+    return new_function
 
-        spec = response["Configuration"]
-        spec["Code"] = {"ZipFile": "ZW1wdHkgc3RyaW5n"}
-        region = aws_stack.extract_region_from_arn(spec["FunctionArn"])
-        new_function = moto_awslambda_models.LambdaFunction(spec, region)
 
-        return new_function
-
-    @patch(moto_awslambda_models.LambdaFunction.invoke)
-    def invoke(fn, self, *args, **kwargs):
-        payload = to_bytes(args[0])
-        client = aws_stack.connect_to_service("lambda")
-        return client.invoke(FunctionName=self.function_name, Payload=payload)
+@patch(moto_awslambda_models.LambdaFunction.invoke)
+def invoke(fn, self, *args, **kwargs):
+    payload = to_bytes(args[0])
+    client = aws_stack.connect_to_service("lambda")
+    return client.invoke(FunctionName=self.function_name, Payload=payload)

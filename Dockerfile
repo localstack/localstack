@@ -141,7 +141,7 @@ RUN mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
 RUN (virtualenv .venv && source .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
 
 # add files necessary to install all dependencies
-ADD Makefile setup.py requirements.txt pyproject.toml ./
+ADD Makefile setup.py setup.cfg pyproject.toml ./
 # add the root package init to invalidate docker layers with version bumps
 ADD localstack/__init__.py localstack/
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)

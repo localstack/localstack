@@ -73,8 +73,7 @@ class AsfWithFallbackListener(AwsApiListener):
     def forward_request(self, method, path, data, headers):
         try:
             return super().forward_request(method, path, data, headers)
-        except (NotImplementedError, KeyError):
-            # FIXME: KeyError may be an ASF parser error, that indicates that the request cannot be parsed
+        except (NotImplementedError):
             LOG.debug("no ASF handler for %s %s, using fallback listener", method, path)
             return self.fallback.forward_request(method, path, data, headers)
 
