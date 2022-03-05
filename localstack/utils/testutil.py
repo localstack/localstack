@@ -29,24 +29,22 @@ from localstack.services.awslambda.lambda_utils import (
     get_handler_file_from_name,
 )
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (
+from localstack.utils.collections import ensure_list
+from localstack.utils.files import (
     TMP_FILES,
     chmod_r,
-    ensure_list,
-    get_free_tcp_port,
-    is_debian,
     is_empty_dir,
-    is_port_open,
     load_file,
     mkdir,
-    poll_condition,
     rm_rf,
-    run,
     save_file,
-    short_uid,
-    to_str,
 )
-from localstack.utils.run import FuncThread
+from localstack.utils.net import get_free_tcp_port, is_port_open
+from localstack.utils.platform import is_debian
+from localstack.utils.run import run
+from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import poll_condition
+from localstack.utils.threads import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3

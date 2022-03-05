@@ -41,18 +41,15 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.aws.request_context import RequestContextManager, get_proxy_request_for_thread
-from localstack.utils.common import (
-    empty_context_manager,
-    generate_ssl_cert,
-    json_safe,
-    path_from_url,
-    start_thread,
-    to_bytes,
-    to_str,
-    wait_for_port_open,
-)
+from localstack.utils.crypto import generate_ssl_cert
+from localstack.utils.functions import empty_context_manager
+from localstack.utils.json import json_safe
+from localstack.utils.net import wait_for_port_open
 from localstack.utils.server import http2_server
 from localstack.utils.serving import Server
+from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.threads import start_thread
+from localstack.utils.urls import path_from_url
 
 # set up logger
 LOG = logging.getLogger(__name__)

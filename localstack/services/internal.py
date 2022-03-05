@@ -13,14 +13,12 @@ from localstack.http import Router
 from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import resource_dispatcher
 from localstack.services.infra import terminate_all_processes_in_docker
-from localstack.utils.common import (
-    call_safe,
-    load_file,
-    merge_recursive,
-    parse_json_or_yaml,
-    parse_request_data,
-    to_str,
-)
+from localstack.utils.collections import merge_recursive
+from localstack.utils.files import load_file
+from localstack.utils.functions import call_safe
+from localstack.utils.http import parse_request_data
+from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 

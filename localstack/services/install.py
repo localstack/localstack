@@ -33,26 +33,23 @@ from localstack.constants import (
     STS_JAR_URL,
 )
 from localstack.runtime import hooks
-from localstack.utils.common import (
+from localstack.utils.archives import untar, unzip
+from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.files import (
     chmod_r,
-    download,
     file_exists_not_empty,
-    get_arch,
-    is_windows,
     load_file,
     mkdir,
     new_tmp_file,
-    parallelize,
     replace_in_file,
-    retry,
     rm_rf,
-    run,
-    safe_run,
     save_file,
-    untar,
-    unzip,
 )
-from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.http import download
+from localstack.utils.platform import get_arch, is_windows
+from localstack.utils.run import run
+from localstack.utils.sync import retry
+from localstack.utils.threads import parallelize
 
 LOG = logging.getLogger(__name__)
 
@@ -201,7 +198,7 @@ def install_elasticsearch(version=None):
                 LOG.info("Installing Elasticsearch plugin %s", plugin)
 
                 def try_install():
-                    output = safe_run([plugin_binary, "install", "-b", plugin])
+                    output = run([plugin_binary, "install", "-b", plugin])
                     LOG.debug("Plugin installation output: %s", output)
 
                 # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries

@@ -15,7 +15,8 @@ from localstack.config import is_env_not_false, is_env_true
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.common import chmod_r, to_bytes, to_str
+from localstack.utils.files import chmod_r
+from localstack.utils.strings import to_bytes, to_str
 
 USE_SINGLE_DUMP_FILE = is_env_not_false("PERSISTENCE_SINGLE_FILE")
 

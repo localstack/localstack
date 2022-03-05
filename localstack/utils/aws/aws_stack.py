@@ -37,16 +37,11 @@ from localstack.constants import (
 )
 from localstack.utils.aws import templating
 from localstack.utils.aws.aws_models import KinesisStream
-from localstack.utils.common import (
-    get_service_protocol,
-    is_string,
-    is_string_or_bytes,
-    make_http_request,
-    retry,
-    run_safe,
-    to_str,
-)
-from localstack.utils.generic import dict_utils
+from localstack.utils.collections import pick_attributes
+from localstack.utils.functions import run_safe
+from localstack.utils.http import make_http_request
+from localstack.utils.strings import is_string, is_string_or_bytes, to_str
+from localstack.utils.sync import retry
 
 # AWS environment variable names
 ENV_ACCESS_KEY = "AWS_ACCESS_KEY_ID"
@@ -239,7 +234,7 @@ def set_internal_auth(headers):
 def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
     """Return the local service URL for the given service name or port."""
     if isinstance(service_name_or_port, int):
-        return f"{get_service_protocol()}://{LOCALHOST}:{service_name_or_port}"
+        return f"{config.get_protocol()}://{LOCALHOST}:{service_name_or_port}"
     service_name = service_name_or_port
     if service_name == "s3api":
         service_name = "s3"
@@ -769,7 +764,7 @@ def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: 
 
 
 def get_events_target_attributes(target):
-    return dict_utils.pick_attributes(target, EVENT_TARGET_PARAMETERS)
+    return pick_attributes(target, EVENT_TARGET_PARAMETERS)
 
 
 def get_or_create_bucket(bucket_name, s3_client=None):

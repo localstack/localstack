@@ -209,7 +209,7 @@ def select_attributes(obj: Dict, attributes: List[str]) -> Dict:
 
 def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False) -> Dict:
     """Remove a set of attributes from the given dict (in-place)"""
-    from localstack.utils.common import recurse_object
+    from localstack.utils.objects import recurse_object
 
     if recursive:
 

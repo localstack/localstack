@@ -7,7 +7,7 @@ from queue import Full, Queue
 from typing import List, Optional
 
 from localstack import config, constants
-from localstack.utils.common import start_thread, start_worker_thread
+from localstack.utils.threads import start_thread, start_worker_thread
 
 from .client import AnalyticsClient
 from .events import Event, EventHandler
