@@ -29,23 +29,20 @@ from localstack.utils.bootstrap import (
     log_duration,
     setup_logging,
 )
-from localstack.utils.common import (
+from localstack.utils.files import cleanup_tmp_files
+from localstack.utils.net import get_free_tcp_port, is_port_open
+from localstack.utils.patch import patch
+from localstack.utils.platform import in_docker, is_linux
+from localstack.utils.run import ShellCommandThread, run
+from localstack.utils.server import multiserver
+from localstack.utils.sync import poll_condition
+from localstack.utils.testutil import is_local_test_mode
+from localstack.utils.threads import (
     TMP_THREADS,
-    ShellCommandThread,
-    get_free_tcp_port,
-    in_docker,
-    is_linux,
-    is_port_open,
-    poll_condition,
-    run,
+    FuncThread,
+    cleanup_threads_and_processes,
     start_thread,
 )
-from localstack.utils.files import cleanup_tmp_files
-from localstack.utils.patch import patch
-from localstack.utils.run import FuncThread
-from localstack.utils.server import multiserver
-from localstack.utils.testutil import is_local_test_mode
-from localstack.utils.threads import cleanup_threads_and_processes
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
@@ -437,7 +434,6 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
-
     event_publisher.fire_event(
         event_publisher.EVENT_START_INFRA,
         {"d": is_in_docker and 1 or 0, "c": in_ci() and 1 or 0},

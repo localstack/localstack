@@ -33,18 +33,15 @@ from localstack.utils import common, persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_stack import is_internal_call_context, set_default_region_in_headers
 from localstack.utils.aws.request_routing import extract_version_and_action, matches_service_action
-from localstack.utils.common import (
-    TMP_THREADS,
-    empty_context_manager,
-    get_service_protocol,
-    is_port_open,
-    is_root,
-    parse_request_data,
-    run,
-)
-from localstack.utils.common import safe_requests as requests
-from localstack.utils.common import sleep_forever, start_thread, to_bytes, to_str, truncate
+from localstack.utils.functions import empty_context_manager
+from localstack.utils.http import parse_request_data
+from localstack.utils.http import safe_requests as requests
+from localstack.utils.net import is_port_open
+from localstack.utils.run import is_root, run
 from localstack.utils.server.http2_server import HTTPErrorResponse
+from localstack.utils.strings import to_bytes, to_str, truncate
+from localstack.utils.sync import sleep_forever
+from localstack.utils.threads import TMP_THREADS, start_thread
 
 LOG = logging.getLogger(__name__)
 
@@ -269,7 +266,7 @@ def do_forward_request_inmem(api, method, path, data, headers, port=None):
 
 def do_forward_request_network(port, method, path, data, headers, target_url=None):
     # TODO: enable per-service endpoints, to allow deploying in distributed settings
-    target_url = target_url or "%s://%s:%s" % (get_service_protocol(), LOCALHOST, port)
+    target_url = target_url or "%s://%s:%s" % (config.get_protocol(), LOCALHOST, port)
     url = "%s%s" % (target_url, path)
     response = requests.request(
         method, url, data=data, headers=headers, verify=False, stream=True, allow_redirects=False

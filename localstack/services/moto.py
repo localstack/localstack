@@ -27,7 +27,7 @@ from localstack.aws.api.core import ServiceRequest, ServiceRequestHandler
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
 from localstack.aws.spec import load_service
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_bytes, to_str
+from localstack.utils.strings import to_bytes, to_str
 
 MotoResponse = Tuple[int, dict, Union[str, bytes]]
 MotoDispatcher = Callable[[HttpRequest, str, dict], MotoResponse]
