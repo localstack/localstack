@@ -5,6 +5,7 @@ import os
 import ssl
 import threading
 import traceback
+from typing import Callable
 
 import h11
 from hypercorn import utils as hypercorn_utils
@@ -33,6 +34,9 @@ HTTP_METHODS = ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"]
 
 # flag to avoid lowercasing all header names (e.g., some AWS S3 SDKs depend on "ETag" response header)
 RETURN_CASE_SENSITIVE_HEADERS = True
+
+# default max content length for HTTP server requests (256 MB)
+DEFAULT_MAX_CONTENT_LENGTH = 256 * 1024 * 1024
 
 # cache of SSL contexts (indexed by cert file names)
 SSL_CONTEXTS = {}
@@ -145,11 +149,21 @@ def get_async_generator_result(result):
     return gen, headers
 
 
-def run_server(port, bind_address, handler=None, asynchronous=True, ssl_creds=None):
+def run_server(
+    port: int,
+    bind_address: str,
+    handler: Callable = None,
+    asynchronous: bool = True,
+    ssl_creds=None,
+    max_content_length: int = None,
+    timeout: int = None,
+):
 
     ensure_event_loop()
     app = Quart(__name__)
-    app.config["MAX_CONTENT_LENGTH"] = 256 * 1024 * 1024  # 256 MB request payload limit
+    app.config["MAX_CONTENT_LENGTH"] = max_content_length or DEFAULT_MAX_CONTENT_LENGTH
+    if timeout:
+        app.config["BODY_TIMEOUT"] = timeout
 
     @app.route("/", methods=HTTP_METHODS, defaults={"path": ""})
     @app.route("/<path:path>", methods=HTTP_METHODS)
