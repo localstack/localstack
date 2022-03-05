@@ -549,12 +549,8 @@ S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
 TEST_IAM_USER_ID = str(os.environ.get("TEST_IAM_USER_ID") or "").strip()
 TEST_IAM_USER_NAME = str(os.environ.get("TEST_IAM_USER_NAME") or "").strip()
 
-# whether to use Lambda functions in a Docker container
+# user-defined lambda executor mode
 LAMBDA_EXECUTOR = os.environ.get("LAMBDA_EXECUTOR", "").strip()
-if not LAMBDA_EXECUTOR:
-    LAMBDA_EXECUTOR = "docker"
-    if not has_docker():
-        LAMBDA_EXECUTOR = "local"
 
 # Fallback URL to use when a non-existing Lambda is invoked. If this matches
 # `dynamodb://<table_name>`, then the invocation is recorded in the corresponding

@@ -4,8 +4,9 @@ from moto.awslambda import models as moto_awslambda_models
 
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_bytes
 from localstack.utils.patch import patch
+from localstack.utils.platform import is_linux
+from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
 
@@ -15,8 +16,25 @@ PATCHES_APPLIED = "LAMBDA_PATCHED"
 
 
 def start_lambda(port=None, asynchronous=False):
-    from localstack.services.awslambda import lambda_api
+    from localstack.services.awslambda import lambda_api, lambda_utils
     from localstack.services.infra import start_local_api
+
+    # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
+    if "docker" in lambda_utils.get_executor_mode() and not config.is_in_docker and not is_linux():
+        LOG.warning(
+            (
+                "!WARNING! - Running outside of Docker with $LAMBDA_EXECUTOR=%s can lead to "
+                "problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not "
+                "be properly set in your Lambdas."
+            ),
+            lambda_utils.get_executor_mode(),
+        )
+
+    if config.is_in_docker and not config.LAMBDA_REMOTE_DOCKER and not config.dirs.functions:
+        LOG.warning(
+            "!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=0 - "
+            "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR"
+        )
 
     port = port or config.service_port("lambda")
     return start_local_api(
