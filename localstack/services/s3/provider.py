@@ -1573,35 +1573,35 @@ class S3Provider(S3Api, ABC):
             return self._serve_static_website(context, bucket)
         return call_moto(context)
 
-    def head_bucket(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        expected_bucket_owner: AccountId = None,
-    ) -> None:
-        self._transform_request_context(context)
-        call_moto(context)
+    # def head_bucket(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> None:
+    #     self._transform_request_context(context)
+    #     call_moto(context)
 
-    def head_object(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        key: ObjectKey,
-        if_match: IfMatch = None,
-        if_modified_since: IfModifiedSince = None,
-        if_none_match: IfNoneMatch = None,
-        if_unmodified_since: IfUnmodifiedSince = None,
-        range: Range = None,
-        version_id: ObjectVersionId = None,
-        sse_customer_algorithm: SSECustomerAlgorithm = None,
-        sse_customer_key: SSECustomerKey = None,
-        sse_customer_key_md5: SSECustomerKeyMD5 = None,
-        request_payer: RequestPayer = None,
-        part_number: PartNumber = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> HeadObjectOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def head_object(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     key: ObjectKey,
+    #     if_match: IfMatch = None,
+    #     if_modified_since: IfModifiedSince = None,
+    #     if_none_match: IfNoneMatch = None,
+    #     if_unmodified_since: IfUnmodifiedSince = None,
+    #     range: Range = None,
+    #     version_id: ObjectVersionId = None,
+    #     sse_customer_algorithm: SSECustomerAlgorithm = None,
+    #     sse_customer_key: SSECustomerKey = None,
+    #     sse_customer_key_md5: SSECustomerKeyMD5 = None,
+    #     request_payer: RequestPayer = None,
+    #     part_number: PartNumber = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> HeadObjectOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
     def list_bucket_analytics_configurations(
         self,
@@ -1683,51 +1683,51 @@ class S3Provider(S3Api, ABC):
         self._transform_request_context(context)
         return call_moto(context)
 
-    def list_objects(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        delimiter: Delimiter = None,
-        encoding_type: EncodingType = None,
-        marker: Marker = None,
-        max_keys: MaxKeys = None,
-        prefix: Prefix = None,
-        request_payer: RequestPayer = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> ListObjectsOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def list_objects(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     delimiter: Delimiter = None,
+    #     encoding_type: EncodingType = None,
+    #     marker: Marker = None,
+    #     max_keys: MaxKeys = None,
+    #     prefix: Prefix = None,
+    #     request_payer: RequestPayer = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> ListObjectsOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def list_objects_v2(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        delimiter: Delimiter = None,
-        encoding_type: EncodingType = None,
-        max_keys: MaxKeys = None,
-        prefix: Prefix = None,
-        continuation_token: Token = None,
-        fetch_owner: FetchOwner = None,
-        start_after: StartAfter = None,
-        request_payer: RequestPayer = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> ListObjectsV2Output:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def list_objects_v2(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     delimiter: Delimiter = None,
+    #     encoding_type: EncodingType = None,
+    #     max_keys: MaxKeys = None,
+    #     prefix: Prefix = None,
+    #     continuation_token: Token = None,
+    #     fetch_owner: FetchOwner = None,
+    #     start_after: StartAfter = None,
+    #     request_payer: RequestPayer = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> ListObjectsV2Output:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
-    def list_parts(
-        self,
-        context: RequestContext,
-        bucket: BucketName,
-        key: ObjectKey,
-        upload_id: MultipartUploadId,
-        max_parts: MaxParts = None,
-        part_number_marker: PartNumberMarker = None,
-        request_payer: RequestPayer = None,
-        expected_bucket_owner: AccountId = None,
-    ) -> ListPartsOutput:
-        self._transform_request_context(context)
-        return call_moto(context)
+    # def list_parts(
+    #     self,
+    #     context: RequestContext,
+    #     bucket: BucketName,
+    #     key: ObjectKey,
+    #     upload_id: MultipartUploadId,
+    #     max_parts: MaxParts = None,
+    #     part_number_marker: PartNumberMarker = None,
+    #     request_payer: RequestPayer = None,
+    #     expected_bucket_owner: AccountId = None,
+    # ) -> ListPartsOutput:
+    #     self._transform_request_context(context)
+    #     return call_moto(context)
 
     def put_bucket_accelerate_configuration(
         self,
