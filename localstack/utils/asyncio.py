@@ -120,13 +120,13 @@ def get_named_event_loop(name):
 
 
 async def receive_from_queue(queue):
-    from localstack.utils import common
+    from localstack.runtime import events
 
     def get():
         # run in a retry loop (instead of blocking forever) to allow for graceful shutdown
         while True:
             try:
-                if common.INFRA_STOPPED:
+                if events.infra_stopping.is_set():
                     return
                 return queue.get(timeout=1)
             except Exception:
