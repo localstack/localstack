@@ -1,8 +1,8 @@
 import base64
 import codecs
+import io
 import logging
 import os
-import io
 import re
 from abc import ABC
 from datetime import datetime
@@ -19,7 +19,7 @@ from moto.s3.utils import undo_clean_key_name
 from moto.s3bucket_path import utils as s3bucket_path_utils
 
 from localstack import config, constants
-from localstack.aws.api import RequestContext, ServiceException
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.s3 import (
     MFA,
     AbortMultipartUploadOutput,
@@ -275,7 +275,7 @@ from localstack.utils.aws.aws_responses import (
 from localstack.utils.common import get_service_protocol
 from localstack.utils.generic.dict_utils import get_safe
 from localstack.utils.patch import patch
-from localstack.utils.strings import short_uid, to_bytes, to_str, md5, is_base64
+from localstack.utils.strings import is_base64, md5, short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -764,31 +764,17 @@ class S3Provider(S3Api, ABC):
         parsed_path = urlparse(path)
         if bucket_name and not re.match(BUCKET_NAME_REGEX, bucket_name):
             if len(parsed_path.path) <= 1:
-                # return S3Provider.error_response(
-                #     "Unable to extract valid bucket name. Please ensure that your AWS SDK is "
-                #     + "configured to use path style addressing, or send a valid "
-                #     + '<Bucket>.s3.localhost.localstack.cloud "Host" header',
-                #     "InvalidBucketName",
-                #     status_code=400,
-                # )
-                # TODO: check how to properly raise in providers.
-                # TODO: there are no 'InvalidBucketName' exception type?
-                raise NoSuchBucket(
+                raise CommonServiceException(
+                    "InvalidBucketName",
                     "Unable to extract valid bucket name. Please ensure that your AWS SDK is "
                     + "configured to use path style addressing, or send a valid "
                     + '<Bucket>.s3.localhost.localstack.cloud "Host" header',
-                    "InvalidBucketName",
+                    status_code=400,
                 )
 
-            # return S3Provider.error_response(
-            #     "The specified bucket is not valid.",
-            #     "InvalidBucketName",
-            #     status_code=400,
-            # )
-            # TODO: check how to properly raise in providers.
-            # TODO: there are no 'InvalidBucketName' exception type?
-            # TODO: status code automatically set?
-            raise NoSuchBucket("The specified bucket is not valid.", "InvalidBucketName")
+            raise CommonServiceException(
+                "InvalidBucketName", "The specified bucket is not valid.", status_code=400
+            )
 
     @staticmethod
     def _no_such_bucket(bucket_name: BucketName, request_id=None, status_code=404):
@@ -870,7 +856,7 @@ class S3Provider(S3Api, ABC):
             # https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-streaming.html#sigv4-chunked-body-definition
             # str(hex(chunk-size)) + ";chunk-signature=" + signature + \r\n + chunk-data + \r\n
             chunk_size = int(line[: line.find(b";")].decode("utf8"), 16)
-            new_body[pos: pos + chunk_size] = body_io.read(chunk_size)
+            new_body[pos : pos + chunk_size] = body_io.read(chunk_size)
             pos = pos + chunk_size
             body_io.read(2)  # skip trailing \r\n
             line = body_io.readline()
@@ -887,35 +873,18 @@ class S3Provider(S3Api, ABC):
         if headers.get("x-amz-content-sha256", None) == "STREAMING-AWS4-HMAC-SHA256-PAYLOAD":
             content_length = headers.get("x-amz-decoded-content-length")
             if not content_length:
-                # return S3Provider.error_response(
-                #     '"X-Amz-Decoded-Content-Length" header is missing',
-                #     "SignatureDoesNotMatch",
-                #     status_code=403,
-                # )
-                # TODO: check how to properly raise in providers.
-                # TODO: no exception type for SignatureDoesNotMatch
-                # TODO: status code?
-                raise ServiceException(
-                    '"X-Amz-Decoded-Content-Length" header is missing',
+                raise CommonServiceException(
                     "SignatureDoesNotMatch",
-                    # status_code=403,
+                    '"X-Amz-Decoded-Content-Length" header is missing',
+                    status_code=403,
                 )
-
             try:
                 content_length = int(content_length)
             except ValueError:
-                # return S3Provider.error_response(
-                #     'Wrong "X-Amz-Decoded-Content-Length" header',
-                #     "SignatureDoesNotMatch",
-                #     status_code=403,
-                # )
-                # TODO: check how to properly raise in providers.
-                # TODO: no exception type for SignatureDoesNotMatch
-                # TODO: status code?
-                raise ServiceException(
-                    'Wrong "X-Amz-Decoded-Content-Length" header',
+                raise CommonServiceException(
                     "SignatureDoesNotMatch",
-                    # status_code=403,
+                    'Wrong "X-Amz-Decoded-Content-Length" header',
+                    status_code=403,
                 )
 
             data = S3Provider._strip_chunk_signatures(data, content_length)
@@ -926,32 +895,16 @@ class S3Provider(S3Api, ABC):
                 raise Exception('Content-MD5 header is not in Base64 format: "%s"' % content_md5)
             expected = to_str(codecs.encode(base64.b64decode(content_md5), "hex"))
         except Exception:
-            # return S3Provider.error_response(
-            #     "The Content-MD5 you specified is not valid.",
-            #     "InvalidDigest",
-            #     status_code=400,
-            # )
-            # TODO: check how to properly raise in providers.
-            # TODO: no exception type for InvalidDigest
-            # TODO: status code?
-            raise ServiceException(
-                "The Content-MD5 you specified is not valid.",
+            raise CommonServiceException(
                 "InvalidDigest",
-                # status_code=400,
+                "The Content-MD5 you specified is not valid.",
+                status_code=400,
             )
         if actual != expected:
-            # return S3Provider.error_response(
-            #     "The Content-MD5 you specified did not match what we received.",
-            #     "BadDigest",
-            #     status_code=400,
-            # )
-            # TODO: check how to properly raise in providers.
-            # TODO: no exception type for BadDigest
-            # TODO: status code?
-            raise ServiceException(
-                "The Content-MD5 you specified did not match what we received.",
+            raise CommonServiceException(
                 "BadDigest",
-                # status_code=400,
+                "The Content-MD5 you specified did not match what we received.",
+                status_code=400,
             )
 
     def _serve_static_website(self, context: RequestContext, bucket_name: BucketName):
