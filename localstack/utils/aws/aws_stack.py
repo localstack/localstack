@@ -36,7 +36,6 @@ from localstack.constants import (
     TEST_AWS_ACCOUNT_ID,
     TEST_AWS_SECRET_ACCESS_KEY,
 )
-from localstack.utils.aws import templating
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.collections import pick_attributes
 from localstack.utils.functions import run_safe
@@ -377,11 +376,6 @@ def get_s3_hostname():
     if CACHE_S3_HOSTNAME_DNS_STATUS:
         return S3_VIRTUAL_HOSTNAME
     return LOCALHOST
-
-
-# TODO remove from here in the future
-def render_velocity_template(*args, **kwargs):
-    return templating.VtlTemplate().render_velocity_template(*args, **kwargs)
 
 
 def generate_presigned_url(*args, **kwargs):

@@ -87,6 +87,7 @@ class ApiInvocationContext:
         self.response_templates = {}
         self.stage_variables = {}
         self.is_data_base64_encoded = False
+        self.path_params = {}
 
     @property
     def resource_id(self) -> Optional[str]:
@@ -122,8 +123,7 @@ class ApiInvocationContext:
     def auth_context(self) -> Optional[Dict]:
         if isinstance(self.auth_info, dict):
             context = self.auth_info.setdefault("context", {})
-            principal = self.auth_info.get("principalId")
-            if principal:
+            if principal := self.auth_info.get("principalId"):
                 context["principalId"] = principal
             return context
 

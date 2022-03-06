@@ -50,6 +50,7 @@ from localstack.services.apigateway.integration import (
     RequestTemplates,
     ResponseTemplates,
     SnsIntegration,
+    VtlTemplate,
 )
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -653,13 +654,11 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
             action = uri.split("/")[-1]
 
             if APPLICATION_JSON in integration.get("requestTemplates", {}):
-                payload = apply_request_response_templates(
-                    data,
-                    integration.get("requestTemplates"),
-                    content_type=APPLICATION_JSON,
-                    as_json=True,
-                )
+                request_templates = RequestTemplates()
+                payload = request_templates.render(invocation_context)
+                payload = json.loads(payload)
             else:
+                # XXX decoding in py3 sounds wrong, this actually might break
                 payload = json.loads(data.decode("utf-8"))
             client = aws_stack.connect_to_service("stepfunctions")
 
@@ -699,9 +698,12 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 response = requests_response(content=result)
 
             # apply response templates
-            response = apply_request_response_templates(
-                response, response_templates, content_type=APPLICATION_JSON
-            )
+            invocation_context.response = response
+            response_templates = ResponseTemplates()
+            response_templates.render(invocation_context)
+            # response = apply_request_response_templates(
+            #     response, response_templates, content_type=APPLICATION_JSON
+            # )
             return response
         # https://docs.aws.amazon.com/apigateway/api-reference/resource/integration/
         elif ("s3:path/" in uri or "s3:action/" in uri) and method == "GET":
@@ -744,14 +746,14 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 account_id, queue = uri.split("/")[-2:]
                 region_name = uri.split(":")[3]
                 if "GetQueueUrl" in template or "CreateQueue" in template:
-                    new_request = (
-                        f"{aws_stack.render_velocity_template(template, data)}&QueueName={queue}"
-                    )
+                    request_templates = RequestTemplates()
+                    payload = request_templates.render(invocation_context)
+                    new_request = f"{payload}&QueueName={queue}"
                 else:
+                    request_templates = RequestTemplates()
+                    payload = request_templates.render(invocation_context)
                     queue_url = f"{config.get_edge_url()}/{account_id}/{queue}"
-                    new_request = (
-                        f"{aws_stack.render_velocity_template(template, data)}&QueueUrl={queue_url}"
-                    )
+                    new_request = f"{payload}&QueueUrl={queue_url}"
                 headers = aws_stack.mock_aws_request_headers(service="sqs", region_name=region_name)
 
                 url = urljoin(config.service_url("sqs"), f"{TEST_AWS_ACCOUNT_ID}/{queue}")
@@ -880,8 +882,7 @@ def get_target_resource_method(invocation_context: ApiInvocationContext) -> Opti
         return None
     methods = resource.get("resourceMethods") or {}
     method_name = invocation_context.method.upper()
-    method_details = methods.get(method_name) or methods.get("ANY")
-    return method_details
+    return methods.get(method_name) or methods.get("ANY")
 
 
 def get_event_request_context(invocation_context: ApiInvocationContext):
@@ -953,7 +954,7 @@ def apply_request_response_templates(
     if not template:
         return data
     content = (data.content if is_response else data) or ""
-    result = aws_stack.render_velocity_template(template, content, as_json=as_json)
+    result = VtlTemplate().render_vtl(template, content, as_json=as_json)
     if is_response:
         data._content = result
         update_content_length(data)

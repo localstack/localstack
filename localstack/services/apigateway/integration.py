@@ -139,7 +139,7 @@ class VtlTemplate:
                 value = recurse_object(value, _fix)
             return value
 
-    def render_vtl(self, template, variables=None, as_json=False):
+    def render_vtl(self, template, variables: dict, as_json=False):
         if variables is None:
             variables = {}
 
@@ -195,6 +195,14 @@ class VtlTemplate:
             "context": context_var,
             "stageVariables": stage_var,
         }
+
+        # this steps prepares the namespace for object traversal,
+        # e.g, foo.bar.trim().toLowerCase().replace
+        dict_pack = input_var.get("body")
+        if isinstance(dict_pack, dict):
+            for k, v in dict_pack.items():
+                namespace.update({k: v})
+
         rendered_template = t.merge(namespace)
 
         # revert temporary changes from the fixes above
@@ -232,6 +240,7 @@ class RequestTemplates(Templates):
         if not template:
             return api_context.data_as_string()
 
+        # TODO: make this (dict) an object so usages of "render_vtl" variables are defined
         variables = {
             "context": api_context.context or {},
             "stage_variables": api_context.stage_variables or {},
@@ -262,6 +271,10 @@ class ResponseTemplates(Templates):
         )
         response = api_context.response
         integration = api_context.integration
+        # we set context data with the response content because later on we use context data as
+        # the body field in the template. We need to improve this by using the right source
+        # depending on the type of templates.
+        api_context.data = response._content
         int_responses = integration.get("integrationResponses") or {}
         if not int_responses:
             return response._content

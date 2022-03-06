@@ -18,13 +18,12 @@ from localstack.constants import (
     PATH_USER_REQUEST,
     TEST_AWS_ACCOUNT_ID,
 )
-from localstack.services.apigateway.context import ApiInvocationContext, InvocationPayload
+from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_error_response_json, requests_response
 from localstack.utils.aws.aws_stack import parse_arn
-from localstack.utils.common import try_json
 
 LOG = logging.getLogger(__name__)
 
@@ -1211,58 +1210,3 @@ def import_api_from_openapi_spec(
         rest_api.endpoint_configuration = endpoint_config
 
     return rest_api
-
-
-def apply_template(
-    integration: Dict[str, Any],
-    req_res_type: str,
-    data: InvocationPayload,
-    path_params=None,
-    query_params=None,
-    headers=None,
-    context=None,
-):
-    if path_params is None:
-        path_params = {}
-    if query_params is None:
-        query_params = {}
-    if headers is None:
-        headers = {}
-    if context is None:
-        context = {}
-    integration_type = integration.get("type") or integration.get("integrationType")
-    if integration_type in ["HTTP", "AWS"]:
-        # apply custom request template
-        content_type = APPLICATION_JSON  # TODO: make configurable!
-        template = integration.get("%sTemplates" % req_res_type, {}).get(content_type)
-        if template:
-            variables = {"context": context or {}}
-            input_ctx = {"body": data}
-            # little trick to flatten the input context so velocity templates
-            # work from the root.
-            # orig - { "body": '{"action": "$default","message":"foobar"}'
-            # after - {
-            #   "body": '{"action": "$default","message":"foobar"}',
-            #   "action": "$default",
-            #   "message": "foobar"
-            # }
-            if data:
-                dict_pack = try_json(data)
-                if isinstance(dict_pack, dict):
-                    for k, v in dict_pack.items():
-                        input_ctx.update({k: v})
-
-            def _params(name=None):
-                # See https://docs.aws.amazon.com/apigateway/latest/developerguide/
-                #    api-gateway-mapping-template-reference.html#input-variable-reference
-                # Returns "request parameter from the path, query string, or header value (
-                # searched in that order)"
-                combined = {}
-                combined.update(path_params or {})
-                combined.update(query_params or {})
-                combined.update(headers or {})
-                return combined if not name else combined.get(name)
-
-            input_ctx["params"] = _params
-            data = aws_stack.render_velocity_template(template, input_ctx, variables=variables)
-    return data

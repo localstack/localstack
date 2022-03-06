@@ -12,9 +12,12 @@ from localstack.services.apigateway.apigateway_listener import (
     ApiInvocationContext,
     RequestValidator,
 )
-from localstack.services.apigateway.helpers import apply_json_patch_safe, apply_template
-from localstack.services.apigateway.integration import RequestTemplates, ResponseTemplates
-from localstack.utils.aws import templating
+from localstack.services.apigateway.helpers import apply_json_patch_safe
+from localstack.services.apigateway.integration import (
+    RequestTemplates,
+    ResponseTemplates,
+    VtlTemplate,
+)
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.common import clone
 
@@ -190,7 +193,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
 
 
 def test_render_template_values():
-    util = templating.VtlTemplate().VelocityUtil()
+    util = VtlTemplate().VelocityUtil()
 
     encoded = util.urlEncode("x=a+b")
     assert encoded == "x%3Da%2Bb"
@@ -246,30 +249,41 @@ class TestJSONPatch(unittest.TestCase):
 
 class TestApplyTemplate(unittest.TestCase):
     def test_apply_template(self):
-        int_type = {
-            "type": "HTTP",
+        api_context = ApiInvocationContext(
+            method="POST",
+            path="/foo/bar?baz=test",
+            data='{"action":"$default","message":"foobar"}',
+            headers={"content-type": APPLICATION_JSON},
+            stage="local",
+        )
+        api_context.response = requests_response({})
+        api_context.integration = {
             "requestTemplates": {
                 APPLICATION_JSON: "$util.escapeJavaScript($input.json('$.message'))"
             },
         }
-        resp_type = "request"
-        inv_payload = '{"action":"$default","message":"foobar"}'
-        rendered = apply_template(int_type, resp_type, inv_payload)
 
-        self.assertEqual('"foobar"', rendered)
+        rendered_request = RequestTemplates().render(api_context=api_context)
+
+        self.assertEqual('"foobar"', rendered_request)
 
     def test_apply_template_no_json_payload(self):
-        int_type = {
-            "type": "HTTP",
+        api_context = ApiInvocationContext(
+            method="POST",
+            path="/foo/bar?baz=test",
+            data=b'"#foobar123"',
+            headers={"content-type": APPLICATION_JSON},
+            stage="local",
+        )
+        api_context.integration = {
             "requestTemplates": {
                 APPLICATION_JSON: "$util.escapeJavaScript($input.json('$.message'))"
             },
         }
-        resp_type = "request"
-        inv_payload = "#foobar123"
-        rendered = apply_template(int_type, resp_type, inv_payload)
 
-        self.assertEqual("[]", rendered)
+        rendered_request = RequestTemplates().render(api_context=api_context)
+
+        self.assertEqual("[]", rendered_request)
 
 
 RESPONSE_TEMPLATE = """
