@@ -22,12 +22,14 @@ from localstack.aws.api.awslambda import (
     FunctionCode,
     FunctionConfiguration,
     FunctionName,
+    GetFunctionResponse,
     Handler,
     ImageConfig,
     InvocationResponse,
     InvocationType,
     KMSKeyArn,
     LambdaApi,
+    LastUpdateStatus,
     LayerList,
     ListFunctionsResponse,
     LogType,
@@ -45,6 +47,7 @@ from localstack.aws.api.awslambda import (
     S3Key,
     S3ObjectVersion,
     ServiceException,
+    State,
     String,
     Tags,
     Timeout,
@@ -218,13 +221,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             PackageType=package_type,
             Architectures=architectures,
             # TODO: implement proper status tracking
-            # LastModified=,
-            # LastUpdateStatus=,
-            # LastUpdateStatusReasonCode=,
-            # LastUpdateStatusReason=,
-            # StateReason=,
-            # StateReasonCode=,
-            # State=,
+            LastModified="?",  # TODO
+            LastUpdateStatus=LastUpdateStatus.Successful,  # TODO
+            # LastUpdateStatusReasonCode=, # TODO
+            # LastUpdateStatusReason=, # TODO
+            StateReason="?",  # TODO
+            # StateReasonCode=StateReasonCode., # TODO
+            State=State.Active,  # TODO
         )
 
         # "State": "Pending",
@@ -284,6 +287,21 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = LambdaServiceBackend.get()
         return ListFunctionsResponse(Functions=[f.latest.config for f in state.functions.values()])
 
+    def get_function(
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        qualifier: Qualifier = None,  # TODO
+    ) -> GetFunctionResponse:
+        state = LambdaServiceBackend.get()
+        latest = state.functions.get(function_name).latest
+        return GetFunctionResponse(
+            Configuration=latest.config,
+            # Code=FunctionCodeLocation(),
+            Tags=state.TAGS.list_tags_for_resource(function_name),
+            Concurrency={},  # TODO
+        )
+
     def invoke(
         self,
         context: RequestContext,
@@ -310,7 +328,16 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         )
         result = result.result()
 
-        response = InvocationResponse(StatusCode=200, Payload=result.payload)
+        function_error = None
+        if "error" in str(result.payload):
+            function_error = "Unhandled"
+
+        response = InvocationResponse(
+            StatusCode=200,
+            Payload=result.payload,
+            ExecutedVersion="$LATEST",  # TODO: should be resolved version from qualifier
+            FunctionError=function_error,  # TODO: should be conditional. Might ahve to get this from the invoke result as well
+        )
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
         LOG.debug("Result: %s", result)
 

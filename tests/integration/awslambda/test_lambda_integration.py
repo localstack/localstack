@@ -37,7 +37,9 @@ TEST_LAMBDA_PARALLEL_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_paral
 
 
 class TestLambdaEventSourceMappings:
-    def test_event_source_mapping_default_batch_size(self):
+    def test_event_source_mapping_default_batch_size(self, create_lambda_function, lambda_client):
+        create_lambda_function()
+
         function_name = f"lambda_func-{short_uid()}"
         queue_name_1 = f"queue-{short_uid()}-1"
         queue_name_2 = f"queue-{short_uid()}-2"
