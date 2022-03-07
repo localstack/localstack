@@ -87,8 +87,7 @@ class DictWrapper(dict):
 class VelocityInput(object):
     """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration
     velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template
-    -reference.html"""
+    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
 
     def __init__(self, value):
         self.value = self._attach_missing_functions(value)
@@ -127,8 +126,7 @@ class VelocityInput(object):
 class VelocityUtil(object):
     """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration
     velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template
-    -reference.html"""
+    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
 
     def base64Encode(self, s):
         if not isinstance(s, str):
