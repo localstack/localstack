@@ -131,3 +131,7 @@ class ApiInvocationContext:
     def is_v1(self):
         """Whether this is an API Gateway v1 request"""
         return self.apigw_version == ApiGatewayVersion.V1
+
+    def cookies(self):
+        cookies = self.headers.get("cookie") or ""
+        return [cookie for cookie in cookies.split(";")]
