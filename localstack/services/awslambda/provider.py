@@ -124,7 +124,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service = LambdaService()
         self.lock = threading.RLock()
 
-    def on_before_stop(self):
+    def on_before_stop(self) -> None:
         self.lambda_service.stop()
 
     def create_function(
@@ -322,27 +322,27 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         result = self.lambda_service.invoke(
             function_arn_qualified=qualified_arn,
             invocation_type=invocation_type,
-            log_type=log_type,
             client_context=client_context,
             payload=payload,
         )
-        result = result.result()
+        invocation_result = result.result()
+        LOG.debug("Type of result: %s", type(invocation_result))
 
         function_error = None
-        if "error" in str(result.payload):
+        if "error" in str(invocation_result.payload):
             function_error = "Unhandled"
 
         response = InvocationResponse(
             StatusCode=200,
-            Payload=result.payload,
+            Payload=invocation_result.payload,
             ExecutedVersion="$LATEST",  # TODO: should be resolved version from qualifier
             FunctionError=function_error,  # TODO: should be conditional. Might ahve to get this from the invoke result as well
         )
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
-        LOG.debug("Result: %s", result)
+        LOG.debug("Result: %s", invocation_result)
 
         if log_type == LogType.Tail:
-            response["LogResult"] = to_str(base64.b64encode(to_bytes(result.logs)))
+            response["LogResult"] = to_str(base64.b64encode(to_bytes(invocation_result.logs)))
 
         return response
 

@@ -3,6 +3,7 @@ from concurrent.futures import Future
 from threading import RLock
 from typing import Dict, Optional
 
+from localstack.services.awslambda.invocation.executor_endpoint import InvocationResult
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 
 
@@ -24,7 +25,7 @@ class FunctionVersion:
 
 @dataclasses.dataclass
 class Invocation:
-    payload: Optional[bytes]
+    payload: bytes
     client_context: Optional[str]
     invocation_type: str
 
@@ -75,11 +76,10 @@ class LambdaService:
     def invoke(
         self,
         function_arn_qualified: str,
-        invocation_type: Optional[str],
-        log_type: Optional[str],
+        invocation_type: str,
         client_context: Optional[str],
-        payload: Optional[bytes],
-    ) -> Future:
+        payload: bytes,
+    ) -> Future[InvocationResult]:
         version_manager = self.get_lambda_version_manager(function_arn_qualified)
         return version_manager.invoke(
             invocation=Invocation(

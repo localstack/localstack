@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 INVOCATION_PORT = 9563
 STARTUP_TIMEOUT_SEC = 20.0
-HEX_CHARS = list(range(10)) + ["a", "b", "c", "d", "e", "f"]
+HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
 
 LOG = logging.getLogger(__name__)
 
@@ -45,8 +45,8 @@ class InvocationError(Exception):
         super().__init__(message)
 
 
-def generate_runtime_id():
-    return "".join([str(random.choice(HEX_CHARS)) for _ in range(32)])
+def generate_runtime_id() -> str:
+    return "".join([random.choice(HEX_CHARS) for _ in range(32)])
 
 
 class RuntimeEnvironment:
@@ -74,10 +74,10 @@ class RuntimeEnvironment:
         self.last_returned = datetime.min
         self.startup_timer = None
 
-    def get_log_group_name(self):
+    def get_log_group_name(self) -> str:
         return f"/aws/lambda/{self.function_version.name}"
 
-    def get_log_stream_name(self):
+    def get_log_stream_name(self) -> str:
         return f"{date.today():%Y/%m/%d}/[{self.function_version.version}]{self.id}"
 
     def get_environment_variables(self) -> Dict[str, str]:
@@ -89,11 +89,9 @@ class RuntimeEnvironment:
             # Runtime API specifics
             "LOCALSTACK_RUNTIME_ID": self.id,
             "LOCALSTACK_RUNTIME_ENDPOINT": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{self.executor_endpoint.port}",
-            "_HANDLER": self.function_version.handler,
             # General Lambda Environment Variables
             "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
             "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),
-            "AWS_EXECUTION_ENV": f"Aws_Lambda_{self.function_version.runtime}",
             "AWS_LAMBDA_FUNCTION_NAME": self.function_version.qualified_arn,  # TODO use name instead of arn
             "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "128",  # TODO use correct memory size
             "AWS_LAMBDA_FUNCTION_VERSION": self.function_version.qualified_arn,  # TODO use name instead of arn
@@ -113,6 +111,10 @@ class RuntimeEnvironment:
             "EDGE_PORT": str(config.EDGE_PORT),
             "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.EDGE_PORT}",
         }
+        if self.function_version.handler:
+            env_vars["_HANDLER"] = self.function_version.handler
+        if self.function_version.runtime:
+            env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.runtime}"
         env_vars.update(self.function_version.environment)
         return env_vars
 
@@ -153,7 +155,7 @@ class RuntimeEnvironment:
                 self.startup_timer.cancel()
                 self.startup_timer = None
 
-    def invocation_done(self):
+    def invocation_done(self) -> None:
         self.last_returned = datetime.now()
         with self.status_lock:
             if self.status != RuntimeStatus.RUNNING:

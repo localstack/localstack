@@ -1,7 +1,7 @@
 import abc
 import dataclasses
 import logging
-from typing import Optional
+from typing import Dict, Optional
 
 from flask import Flask, request
 from flask.typing import ResponseReturnValue
@@ -27,7 +27,7 @@ class InvocationError:
 @dataclasses.dataclass
 class InvocationLogs:
     invocation_id: str
-    logs: Optional[str]
+    logs: str
 
 
 class ServiceEndpoint(abc.ABC):
@@ -56,9 +56,17 @@ class ServiceEndpoint(abc.ABC):
         raise NotImplementedError()
 
     def status_ready(self, executor_id: str) -> None:
+        """
+        Processes a status ready report by RAPID
+        :param executor_id: Executor ID this ready report is for
+        """
         raise NotImplementedError()
 
     def status_error(self, executor_id: str) -> None:
+        """
+        Processes a status error report by RAPID
+        :param executor_id: Executor ID this error report is for
+        """
         raise NotImplementedError()
 
 
@@ -91,9 +99,15 @@ class ExecutorEndpoint(Server):
         @executor_endpoint.route("/invocations/<invoke_id>/logs", methods=["POST"])
         def invocation_logs(invoke_id: str) -> ResponseReturnValue:
             logs = request.json
-            logs["invocation_id"] = invoke_id
-            logs = InvocationLogs(**logs)
-            self.service_endpoint.invocation_logs(invoke_id=invoke_id, invocation_logs=logs)
+            if isinstance(logs, Dict):
+                logs["invocation_id"] = invoke_id
+                invocation_logs = InvocationLogs(**logs)
+                self.service_endpoint.invocation_logs(
+                    invoke_id=invoke_id, invocation_logs=invocation_logs
+                )
+            else:
+                LOG.error("Invalid status report from RAPID! Status report: %s", logs)
+                # TODO handle error in some way?
             return ""
 
         @executor_endpoint.route("/status/<executor_id>/ready", methods=["POST"])

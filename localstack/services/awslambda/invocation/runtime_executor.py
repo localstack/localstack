@@ -60,7 +60,7 @@ def get_code_path_for_function(function_version: "FunctionVersion") -> Path:
     return get_path_for_function(function_version) / "code"
 
 
-def get_image_name_for_function(function_version: "FunctionVersion"):
+def get_image_name_for_function(function_version: "FunctionVersion") -> str:
     return f"localstack/lambda-{function_version.qualified_arn.replace(':', '_').replace('$', '_').lower()}"
 
 
@@ -73,7 +73,10 @@ def get_runtime_client_path() -> Path:
     return Path(f"{config.dirs.tmp}/aws-lambda-rie")
 
 
-def prepare_image(target_path: Path, function_version: "FunctionVersion"):
+def prepare_image(target_path: Path, function_version: "FunctionVersion") -> None:
+    if not function_version.runtime:
+        LOG.error("Images without runtime are currently not supported")
+        raise Exception("Custom images are currently not supported")
     src_init = get_runtime_client_path()
     # copy init file
     target_init = target_path / "aws-lambda-rie"
@@ -98,6 +101,9 @@ def prepare_image(target_path: Path, function_version: "FunctionVersion"):
 
 
 def prepare_version(function_version: "FunctionVersion") -> None:
+    if not function_version.zip_file:
+        LOG.error("Images without zip_file are currently not supported")
+        raise Exception("Custom images are currently not supported")
     time_before = time.perf_counter()
     target_path = get_path_for_function(function_version)
     target_path.mkdir(parents=True, exist_ok=True)
@@ -106,7 +112,7 @@ def prepare_version(function_version: "FunctionVersion") -> None:
     with NamedTemporaryFile() as file:
         file.write(function_version.zip_file)
         file.flush()
-        unzip(file.name, target_code)
+        unzip(file.name, str(target_code))
     if config.LAMBDA_PREBUILD_IMAGES:
         prepare_image(target_path, function_version)
     LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
@@ -143,6 +149,9 @@ class RuntimeExecutor:
         self.ip = None
 
     def get_image(self) -> str:
+        if not self.function_version.runtime:
+            LOG.error("Images without runtime are currently not supported")
+            raise Exception("Custom images are currently not supported")
         return (
             get_image_name_for_function(self.function_version)
             if config.LAMBDA_PREBUILD_IMAGES
@@ -176,7 +185,7 @@ class RuntimeExecutor:
         CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
         CONTAINER_CLIENT.remove_container(container_name=self.id)
 
-    def get_address(self):
+    def get_address(self) -> str:
         if not self.ip:
             raise LambdaRuntimeException(f"IP address of executor '{self.id}' unknown")
         LOG.debug("LS endpoint: %s", self.ip)

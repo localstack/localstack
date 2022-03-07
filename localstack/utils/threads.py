@@ -58,7 +58,7 @@ class FuncThread(threading.Thread):
     def running(self):
         return not self._stop_event.is_set()
 
-    def stop(self, quiet=False):
+    def stop(self, quiet: bool = False) -> None:
         self._stop_event.set()
 
         if self.on_stop:

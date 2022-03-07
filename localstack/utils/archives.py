@@ -3,6 +3,8 @@ import logging
 import os
 import tarfile
 import zipfile
+from subprocess import Popen
+from typing import Optional, Union
 
 from .run import run
 from .strings import truncate
@@ -15,7 +17,7 @@ def is_zip_file(content):
     return zipfile.is_zipfile(stream)
 
 
-def unzip(path, target_dir, overwrite=True):
+def unzip(path: str, target_dir: str, overwrite: bool = True) -> Optional[Union[str, Popen]]:
     from localstack.utils.platform import is_debian
 
     is_in_debian = is_debian()
