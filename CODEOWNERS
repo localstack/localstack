@@ -8,6 +8,8 @@
 # ASF
 /localstack/aws/ @thrau
 /tests/unit/aws/ @thrau
+# ASF parsers and serializers
+/localstack/aws/protocol @alexrashed
 # left empty (without owner) because the generated APIs belong to the specific service owners
 # you can overwrite this for single services afterwards
 /localstack/aws/api/
@@ -77,3 +79,12 @@
 /localstack/services/s3/ @thrau
 /tests/integration/test_s3.py @thrau
 /tests/unit/test_s3.py @thrau
+
+# ElasticSearch
+/localstack/services/es/ @alexrashed
+/tests/integration/test_es.py @alexrashed
+
+# OpenSearch
+/localstack/services/opensearch/ @alexrashed
+/tests/integration/test_opensearch.py @alexrashed
+/tests/unit/services/opensearch/test_s3.py @alexrashed
