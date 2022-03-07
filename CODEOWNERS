@@ -37,6 +37,7 @@
 # left empty (without owner) because the models belong to the specific service owners
 # you can overwrite this for single services afterwards
 /localstack/services/cloudformation/models/
+/localstack/services/cloudformation/models/cloudformation.py @dominikschubert
 
 # Lambda
 /localstack/services/awslambda/ @dominikschubert
