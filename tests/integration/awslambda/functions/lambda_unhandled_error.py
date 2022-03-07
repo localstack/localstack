@@ -1,2 +1,5 @@
+class CustomException(Exception):
+    pass
+
 def handler(event, context):
-    raise Exception("some error occurred")
+    raise CustomException("some error occurred")

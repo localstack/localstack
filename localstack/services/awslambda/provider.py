@@ -1,5 +1,6 @@
 import base64
 import dataclasses
+import hashlib
 import logging
 import threading
 import time
@@ -53,14 +54,18 @@ from localstack.aws.api.awslambda import (
     Timeout,
     TracingConfig,
     TracingMode,
-    VpcConfig,
+    VpcConfig, AliasConfiguration, AliasRoutingConfiguration, Version, Alias, ListAliasesResponse,
 )
 from localstack.services.awslambda.invocation.lambda_service import FunctionVersion, LambdaService
 from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
+from localstack.services.awslambda.lambda_utils import generate_lambda_arn
 from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.tagging import TaggingService
+
+LAMBDA_DEFAULT_TIMEOUT_SECONDS = 3
+LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 LOG = logging.getLogger(__name__)
 
@@ -97,7 +102,7 @@ class LambdaFunctionVersion:
 class LambdaFunction:
     latest: LambdaFunctionVersion  # points to the '$LATEST' version
     versions: Dict[str, LambdaFunctionVersion] = dataclasses.field(default_factory=dict)
-    aliases: Dict[str, str] = dataclasses.field(default_factory=dict)
+    aliases: Dict[str, AliasConfiguration] = dataclasses.field(default_factory=dict)
     next_version: int = 1
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
 
@@ -173,29 +178,33 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         env_vars = environment["Variables"] if environment and environment.get("Variables") else {}
 
         # --- code related parameter handling ---
-
         # memory_size
         # architectures
         # timeout
         # environment
         # vpc_config
-
         # TODO: refactor this later since we'll need most of the code again in updates
-
+        code_size = 0  # default
+        code_sha_256 = ""  # TODO: verify there's a default
         if package_type == PackageType.Image and code.get("ImageUri") and ImageConfig:
             # container image
             # image_config
             raise ServiceException("PRO feature")  # TODO implement PRO
         else:
+            # managed runtime or provided runtime
+
             # package_type
             # runtime
             # handler
             # layers
-            # managed runtime or provided runtime
+            # TODO: handle S3 bucket
+            zip_file_content = code.get("ZipFile")
+            code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest()).decode("utf-8")
+            code_size = len(zip_file_content)
+
             if runtime in [Runtime.provided, Runtime.provided_al2]:
                 # provided runtime
                 raise ServiceException("Not implemented")  # TODO
-                pass
             else:
                 # some managed runtime
                 pass
@@ -210,12 +219,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             Role=role,
             Handler=handler,
             Environment=environment,
-            Description=description or "Lambda ASF baby!",  # for now we'll just use this
+            Description=description or "",
             RevisionId=str(uuid.uuid4()),
-            MemorySize=memory_size,
-            Timeout=timeout,
-            CodeSize=5,  # TODO
-            CodeSha256="asdf",  # TODO
+            MemorySize=memory_size or LAMBDA_DEFAULT_MEMORY_SIZE,
+            Timeout=timeout or LAMBDA_DEFAULT_TIMEOUT_SECONDS,
+            CodeSize=code_size,
+            CodeSha256=code_sha_256, # TODO: sure this has a default?
             Version="$LATEST",
             TracingConfig=TracingConfig(Mode=TracingMode.PassThrough),  # TODO
             PackageType=package_type,
@@ -225,14 +234,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             LastUpdateStatus=LastUpdateStatus.Successful,  # TODO
             # LastUpdateStatusReasonCode=, # TODO
             # LastUpdateStatusReason=, # TODO
-            StateReason="?",  # TODO
+            # StateReason="?",  # TODO
             # StateReasonCode=StateReasonCode., # TODO
             State=State.Active,  # TODO
         )
-
-        # "State": "Pending",
-        # "StateReason": "The funcation is being created.",
-        # "StateReasonCode": "Creating",
 
         new_version = LambdaFunctionVersion(f_config, code)
         new_fn = LambdaFunction(latest=new_version)
@@ -274,10 +279,17 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # yes it does, still needs some test coverage
         return f_config
 
+    def _map_to_list_response(self, config: FunctionConfiguration) -> FunctionConfiguration:
+        shallow_copy = config.copy()
+        for k in ['State', 'StateReason', 'StateReasonCode', 'LastUpdateStatus', 'LastUpdateStatusReason', 'LastUpdateStatusReasonCode']:
+            if shallow_copy.get(k):
+                del shallow_copy[k]
+        return shallow_copy
+
     def list_functions(
         self,
         context: RequestContext,
-        master_region: MasterRegion = None,  # TODO (only relevant vo
+        master_region: MasterRegion = None,  # TODO (only relevant for lambda@edge)
         function_version: FunctionVersion = None,  # TODO
         marker: String = None,  # TODO
         max_items: MaxListItems = None,  # TODO
@@ -285,7 +297,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: limit fields returned
         # TODO: implement paging
         state = LambdaServiceBackend.get()
-        return ListFunctionsResponse(Functions=[f.latest.config for f in state.functions.values()])
+        return ListFunctionsResponse(Functions=[self._map_to_list_response(f.latest.config) for f in state.functions.values()])
 
     def get_function(
         self,
@@ -297,7 +309,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         latest = state.functions.get(function_name).latest
         return GetFunctionResponse(
             Configuration=latest.config,
-            # Code=FunctionCodeLocation(),
             Tags=state.TAGS.list_tags_for_resource(function_name),
             Concurrency={},  # TODO
         )
@@ -410,11 +421,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     ) -> FunctionConfiguration:
         state = LambdaServiceBackend.get()
         fn = state.functions[function_name]
-        if fn.latest.config["RevisionId"] != revision_id:
-            raise PreconditionFailedException()  # TODO: test
-
         with fn.lock:
-            if fn.latest.config["RevisionId"] != revision_id:
+            if revision_id and revision_id != fn.latest.config.get("RevisionId"):
                 raise PreconditionFailedException()  # TODO: test
             new_version = self._publish_version(fn=fn, description=description)
             return new_version.config
@@ -433,3 +441,85 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         fn.versions[version_qualifier] = new_version
         fn.next_version = fn.next_version + 1
         return new_version
+
+    def create_alias(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        name: Alias,
+        function_version: Version,
+        description: Description = None,
+        routing_config: AliasRoutingConfiguration = None,
+    ) -> AliasConfiguration:
+        state = LambdaServiceBackend.get(context.region)
+        # TODO: check for existence & conflict (and write test to check if this would lead to an exception on AWS?)
+        fn = state.functions[function_name]
+        alias_config = AliasConfiguration(
+            AliasArn=generate_lambda_arn(account_id=int(context.account_id), region=context.region, fn_name=function_name, qualifier=name),
+            Name=name,
+            Description=description or "",
+            RevisionId=fn.latest.config['RevisionId'],
+            FunctionVersion=function_version,
+            RoutingConfig=routing_config,
+        )
+        fn.aliases[alias_config['Name']] = alias_config
+        return alias_config
+
+    def delete_alias(
+        self, context: RequestContext, function_name: FunctionName, name: Alias
+    ) -> None:
+        # TODO: error handling
+        state = LambdaServiceBackend.get(context.region)
+        del state.functions[function_name].aliases[name]
+
+    def update_alias(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        name: Alias,
+        function_version: Version = None,
+        description: Description = None,
+        routing_config: AliasRoutingConfiguration = None,
+        revision_id: String = None,
+    ) -> AliasConfiguration:
+        state = LambdaServiceBackend.get(context.region)
+        fn = state.functions[function_name]
+        alias_config = AliasConfiguration(
+            AliasArn="asdfasf", # TODO : generate
+            Name=name,
+            Description=description or "",
+            RevisionId=fn.latest.config['RevisionId'],
+            FunctionVersion=function_version,
+            RoutingConfig=routing_config,
+        )
+        fn.aliases[alias_config['Name']] = alias_config
+        return alias_config
+
+    def list_aliases(
+        self,
+        context: RequestContext,
+        function_name: FunctionName,
+        function_version: Version = None,
+        marker: String = None,
+        max_items: MaxListItems = None,
+    ) -> ListAliasesResponse:
+        state = LambdaServiceBackend.get(context.region)
+        fn = state.functions[function_name]
+        return ListAliasesResponse(Aliases=[a for a in fn.aliases.values()])
+
+    def get_function_configuration(
+            self,
+            context: RequestContext,
+            function_name: NamespacedFunctionName,
+            qualifier: Qualifier = None, # TODO
+    ) -> FunctionConfiguration:
+        state = LambdaServiceBackend.get(context.region)
+        fn = state.functions[function_name]
+        return fn.latest.config
+
+    def get_alias(
+        self, context: RequestContext, function_name: FunctionName, name: Alias
+    ) -> AliasConfiguration:
+        state = LambdaServiceBackend.get(context.region)
+        fn = state.functions[function_name]
+        return fn.aliases[name]

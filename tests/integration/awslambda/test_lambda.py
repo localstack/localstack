@@ -70,24 +70,24 @@ from .functions import lambda_integration
 from .lambda_test_util import concurrency_update_done, get_invoke_init_type, update_done
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions", "lambda_integration.py")
-TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions", "lambda_echo.py")
-TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions", "lambda_python_version.py")
+TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_integration.py")
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, "functions/lambda_echo.py")
+TEST_LAMBDA_PYTHON_VERSION = os.path.join(THIS_FOLDER, "functions/lambda_python_version.py")
 TEST_LAMBDA_PYTHON_UNHANDLED_ERROR = os.path.join(
-    THIS_FOLDER, "functions", "lambda_unhandled_error.py"
+    THIS_FOLDER, "functions/lambda_unhandled_error.py"
 )
-TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "functions", "lambda_python3.py")
-TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_integration.js")
-TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions", "lambda_handler.js")
-TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions", "golang", "handler.zip")
-TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions", "lambda_integration.rb")
-TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "functions", "dotnetcore2", "dotnetcore2.zip")
+TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, "functions/lambda_python3.py")
+TEST_LAMBDA_INTEGRATION_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_integration.js")
+TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_handler.js")
+TEST_LAMBDA_GOLANG_ZIP = os.path.join(THIS_FOLDER, "functions/golang/handler.zip")
+TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, "functions/lambda_integration.rb")
+TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, "functions/dotnetcore2/dotnetcore2.zip")
 TEST_LAMBDA_DOTNETCORE31 = os.path.join(
-    THIS_FOLDER, "functions", "dotnetcore31", "dotnetcore31.zip"
+    THIS_FOLDER, "functions/dotnetcore31/dotnetcore31.zip"
 )
-TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions", "custom-runtime")
+TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, "functions/custom-runtime")
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(
-    THIS_FOLDER, "functions", "java", "lambda_echo", "lambda-function-with-lib-0.0.1.jar"
+    THIS_FOLDER, "functions/java/lambda_echo/lambda-function-with-lib-0.0.1.jar"
 )
 TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
     THIS_FOLDER,
@@ -98,12 +98,12 @@ TEST_LAMBDA_JAVA_MULTIPLE_HANDLERS = os.path.join(
     "distributions",
     "lambda-function-with-multiple-handlers.zip",
 )
-TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions", "lambda_environment.py")
+TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, "functions/lambda_environment.py")
 
-TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_send_message.py")
-TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions", "lambda_put_item.py")
+TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, "functions/lambda_send_message.py")
+TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, "functions/lambda_put_item.py")
 TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(
-    THIS_FOLDER, "functions", "lambda_start_execution.py"
+    THIS_FOLDER, "functions/lambda_start_execution.py"
 )
 
 TEST_LAMBDA_FUNCTION_PREFIX = "lambda-function"
@@ -997,8 +997,8 @@ class TestPythonRuntimes:
         assert result["ExecutedVersion"] == "$LATEST"
         assert result["FunctionError"] == "Unhandled"
         payload = json.loads(to_str(result["Payload"].read()))
+        assert payload["errorType"] == "CustomException"
         assert payload["errorMessage"] == "some error occurred"
-        assert payload["errorType"] == "Exception"
         assert "stackTrace" in payload
         if runtime == "python3.9":
             assert "requestId" in payload
