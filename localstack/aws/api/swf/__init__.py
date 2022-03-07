@@ -1430,6 +1430,7 @@ class WorkflowTypeInfos(TypedDict, total=False):
 
 
 class SwfApi:
+
     service = "swf"
     version = "2012-01-25"
 
@@ -1621,10 +1622,7 @@ class SwfApi:
 
     @handler("RecordActivityTaskHeartbeat")
     def record_activity_task_heartbeat(
-        self,
-        context: RequestContext,
-        task_token: TaskToken,
-        details: LimitedData = None,
+        self, context: RequestContext, task_token: TaskToken, details: LimitedData = None
     ) -> ActivityTaskStatus:
         raise NotImplementedError
 
