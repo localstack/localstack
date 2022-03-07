@@ -133,5 +133,6 @@ class ApiInvocationContext:
         return self.apigw_version == ApiGatewayVersion.V1
 
     def cookies(self):
-        cookies = self.headers.get("cookie") or ""
-        return [cookie for cookie in cookies.split(";")]
+        if cookies := self.headers.get("cookie") or "":
+            return list(cookies.split(";"))
+        return []
