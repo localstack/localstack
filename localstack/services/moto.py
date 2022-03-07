@@ -10,7 +10,7 @@ from botocore.awsrequest import AWSPreparedRequest
 from botocore.parsers import create_parser
 from moto.backends import get_backend as get_moto_backend
 from moto.core.utils import BackendDict
-from moto.server import RegexConverter
+from moto.moto_server.utilities import RegexConverter
 from werkzeug.datastructures import Headers
 from werkzeug.routing import Map, Rule
 
