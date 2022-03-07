@@ -80,12 +80,24 @@ def dynamodbstreams():
     )
 
 
-# TODO@viren update the service registration
 @aws_provider()
 def ec2():
-    from localstack.services.ec2 import ec2_listener, ec2_starter
+    USE_LEGACY = 1
 
-    return Service("ec2", listener=ec2_listener.UPDATE_EC2, start=ec2_starter.start_ec2)
+    if USE_LEGACY:
+        from localstack.services.ec2 import ec2_listener, ec2_starter
+
+        return Service("ec2", listener=ec2_listener.UPDATE_EC2, start=ec2_starter.start_ec2)
+
+    else:
+        from localstack.services.ec2.provider import Ec2Provider
+        from localstack.services.moto import MotoFallbackDispatcher
+
+        provider = Ec2Provider()
+        return Service(
+            "ec2",
+            listener=AwsApiListener("ec2", MotoFallbackDispatcher(provider)),
+        )
 
 
 @aws_provider()
