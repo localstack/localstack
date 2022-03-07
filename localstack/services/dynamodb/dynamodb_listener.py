@@ -33,6 +33,7 @@ from localstack.utils.common import (
     to_bytes,
     to_str,
 )
+from localstack.utils.threads import start_worker_thread
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -77,14 +78,21 @@ class DynamoDBRegion(RegionBackend):
 
 class EventForwarder:
     @classmethod
-    def forward_to_targets(cls, records):
-        # forward to kinesis stream
-        records_to_kinesis = copy.deepcopy(records)
-        cls.forward_to_kinesis_stream(records_to_kinesis)
-        # forward to lambda and ddb_streams
-        records = cls.prepare_records_to_forward_to_ddb_stream(records)
-        cls.forward_to_ddb_stream(records)
-        cls.forward_to_lambda(records)  # lambda receives the same records as the ddb streams
+    def forward_to_targets(cls, records: List[Dict], background: bool = True):
+        def _forward(*args):
+            # forward to kinesis stream
+            records_to_kinesis = copy.deepcopy(records)
+            cls.forward_to_kinesis_stream(records_to_kinesis)
+
+            # forward to lambda and ddb_streams
+            forward_records = cls.prepare_records_to_forward_to_ddb_stream(records)
+            cls.forward_to_ddb_stream(forward_records)
+            # lambda receives the same records as the ddb streams
+            cls.forward_to_lambda(forward_records)
+
+        if background:
+            return start_worker_thread(_forward)
+        _forward()
 
     @staticmethod
     def forward_to_lambda(records):
@@ -716,7 +724,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             if table_name:
                 for record in records:
                     record["eventSourceARN"] = aws_stack.dynamodb_table_arn(table_name)
-            EventForwarder.forward_to_targets(records)
+            EventForwarder.forward_to_targets(records, background=True)
 
     # -------------
     # UTIL METHODS
