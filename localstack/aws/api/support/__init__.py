@@ -381,6 +381,7 @@ class ResolveCaseResponse(TypedDict, total=False):
 
 
 class SupportApi:
+
     service = "support"
     version = "2013-04-15"
 

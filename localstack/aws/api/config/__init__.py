@@ -2310,9 +2310,7 @@ class ConfigApi:
 
     @handler("DeleteConfigurationAggregator")
     def delete_configuration_aggregator(
-        self,
-        context: RequestContext,
-        configuration_aggregator_name: ConfigurationAggregatorName,
+        self, context: RequestContext, configuration_aggregator_name: ConfigurationAggregatorName
     ) -> None:
         raise NotImplementedError
 
@@ -2342,9 +2340,7 @@ class ConfigApi:
 
     @handler("DeleteOrganizationConfigRule")
     def delete_organization_config_rule(
-        self,
-        context: RequestContext,
-        organization_config_rule_name: OrganizationConfigRuleName,
+        self, context: RequestContext, organization_config_rule_name: OrganizationConfigRuleName
     ) -> None:
         raise NotImplementedError
 
@@ -2385,18 +2381,13 @@ class ConfigApi:
 
     @handler("DeleteResourceConfig")
     def delete_resource_config(
-        self,
-        context: RequestContext,
-        resource_type: ResourceTypeString,
-        resource_id: ResourceId,
+        self, context: RequestContext, resource_type: ResourceTypeString, resource_id: ResourceId
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteRetentionConfiguration")
     def delete_retention_configuration(
-        self,
-        context: RequestContext,
-        retention_configuration_name: RetentionConfigurationName,
+        self, context: RequestContext, retention_configuration_name: RetentionConfigurationName
     ) -> None:
         raise NotImplementedError
 
@@ -2551,17 +2542,13 @@ class ConfigApi:
 
     @handler("DescribeDeliveryChannelStatus")
     def describe_delivery_channel_status(
-        self,
-        context: RequestContext,
-        delivery_channel_names: DeliveryChannelNameList = None,
+        self, context: RequestContext, delivery_channel_names: DeliveryChannelNameList = None
     ) -> DescribeDeliveryChannelStatusResponse:
         raise NotImplementedError
 
     @handler("DescribeDeliveryChannels")
     def describe_delivery_channels(
-        self,
-        context: RequestContext,
-        delivery_channel_names: DeliveryChannelNameList = None,
+        self, context: RequestContext, delivery_channel_names: DeliveryChannelNameList = None
     ) -> DescribeDeliveryChannelsResponse:
         raise NotImplementedError
 
@@ -2845,10 +2832,7 @@ class ConfigApi:
 
     @handler("ListStoredQueries")
     def list_stored_queries(
-        self,
-        context: RequestContext,
-        next_token: String = None,
-        max_results: Limit = None,
+        self, context: RequestContext, next_token: String = None, max_results: Limit = None
     ) -> ListStoredQueriesResponse:
         raise NotImplementedError
 
@@ -2960,9 +2944,7 @@ class ConfigApi:
 
     @handler("PutRemediationConfigurations")
     def put_remediation_configurations(
-        self,
-        context: RequestContext,
-        remediation_configurations: RemediationConfigurations,
+        self, context: RequestContext, remediation_configurations: RemediationConfigurations
     ) -> PutRemediationConfigurationsResponse:
         raise NotImplementedError
 
@@ -3026,9 +3008,7 @@ class ConfigApi:
 
     @handler("StartConfigRulesEvaluation")
     def start_config_rules_evaluation(
-        self,
-        context: RequestContext,
-        config_rule_names: ReevaluateConfigRuleNames = None,
+        self, context: RequestContext, config_rule_names: ReevaluateConfigRuleNames = None
     ) -> StartConfigRulesEvaluationResponse:
         raise NotImplementedError
 
@@ -3040,10 +3020,7 @@ class ConfigApi:
 
     @handler("StartRemediationExecution")
     def start_remediation_execution(
-        self,
-        context: RequestContext,
-        config_rule_name: ConfigRuleName,
-        resource_keys: ResourceKeys,
+        self, context: RequestContext, config_rule_name: ConfigRuleName, resource_keys: ResourceKeys
     ) -> StartRemediationExecutionResponse:
         raise NotImplementedError
 
@@ -3061,9 +3038,6 @@ class ConfigApi:
 
     @handler("UntagResource")
     def untag_resource(
-        self,
-        context: RequestContext,
-        resource_arn: AmazonResourceName,
-        tag_keys: TagKeyList,
+        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
     ) -> None:
         raise NotImplementedError
