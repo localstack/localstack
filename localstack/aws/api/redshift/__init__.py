@@ -181,6 +181,7 @@ class UsageLimitBreachAction(str):
 class UsageLimitFeatureType(str):
     spectrum = "spectrum"
     concurrency_scaling = "concurrency-scaling"
+    cross_region_datasharing = "cross-region-datasharing"
 
 
 class UsageLimitLimitType(str):
@@ -768,6 +769,7 @@ class AssociateDataShareConsumerMessage(ServiceRequest):
     DataShareArn: String
     AssociateEntireAccount: Optional[BooleanOptional]
     ConsumerArn: Optional[String]
+    ConsumerRegion: Optional[String]
 
 
 class ClusterAssociatedToSchedule(TypedDict, total=False):
@@ -1574,6 +1576,7 @@ class CustomerStorageMessage(TypedDict, total=False):
 class DataShareAssociation(TypedDict, total=False):
     ConsumerIdentifier: Optional[String]
     Status: Optional[DataShareStatus]
+    ConsumerRegion: Optional[String]
     CreatedDate: Optional[TStamp]
     StatusChangeDate: Optional[TStamp]
 
@@ -1586,6 +1589,7 @@ class DataShare(TypedDict, total=False):
     ProducerArn: Optional[String]
     AllowPubliclyAccessibleConsumers: Optional[Boolean]
     DataShareAssociations: Optional[DataShareAssociationList]
+    ManagedBy: Optional[String]
 
 
 DataShareList = List[DataShare]
@@ -2060,6 +2064,7 @@ class DisassociateDataShareConsumerMessage(ServiceRequest):
     DataShareArn: String
     DisassociateEntireAccount: Optional[BooleanOptional]
     ConsumerArn: Optional[String]
+    ConsumerRegion: Optional[String]
 
 
 class SupportedOperation(TypedDict, total=False):
@@ -2791,6 +2796,7 @@ class RedshiftApi:
         data_share_arn: String,
         associate_entire_account: BooleanOptional = None,
         consumer_arn: String = None,
+        consumer_region: String = None,
     ) -> DataShare:
         raise NotImplementedError
 
@@ -2807,10 +2813,7 @@ class RedshiftApi:
 
     @handler("AuthorizeDataShare")
     def authorize_data_share(
-        self,
-        context: RequestContext,
-        data_share_arn: String,
-        consumer_identifier: String,
+        self, context: RequestContext, data_share_arn: String, consumer_identifier: String
     ) -> DataShare:
         raise NotImplementedError
 
@@ -3067,18 +3070,13 @@ class RedshiftApi:
 
     @handler("DeauthorizeDataShare")
     def deauthorize_data_share(
-        self,
-        context: RequestContext,
-        data_share_arn: String,
-        consumer_identifier: String,
+        self, context: RequestContext, data_share_arn: String, consumer_identifier: String
     ) -> DataShare:
         raise NotImplementedError
 
     @handler("DeleteAuthenticationProfile")
     def delete_authentication_profile(
-        self,
-        context: RequestContext,
-        authentication_profile_name: AuthenticationProfileNameString,
+        self, context: RequestContext, authentication_profile_name: AuthenticationProfileNameString
     ) -> DeleteAuthenticationProfileResult:
         raise NotImplementedError
 
@@ -3608,6 +3606,7 @@ class RedshiftApi:
         data_share_arn: String,
         disassociate_entire_account: BooleanOptional = None,
         consumer_arn: String = None,
+        consumer_region: String = None,
     ) -> DataShare:
         raise NotImplementedError
 
@@ -3720,10 +3719,7 @@ class RedshiftApi:
 
     @handler("ModifyClusterDbRevision")
     def modify_cluster_db_revision(
-        self,
-        context: RequestContext,
-        cluster_identifier: String,
-        revision_target: String,
+        self, context: RequestContext, cluster_identifier: String, revision_target: String
     ) -> ModifyClusterDbRevisionResult:
         raise NotImplementedError
 
@@ -3753,10 +3749,7 @@ class RedshiftApi:
 
     @handler("ModifyClusterParameterGroup")
     def modify_cluster_parameter_group(
-        self,
-        context: RequestContext,
-        parameter_group_name: String,
-        parameters: ParametersList,
+        self, context: RequestContext, parameter_group_name: String, parameters: ParametersList
     ) -> ClusterParameterGroupNameMessage:
         raise NotImplementedError
 

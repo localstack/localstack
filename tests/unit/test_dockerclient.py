@@ -23,7 +23,7 @@ class TestDockerClient(unittest.TestCase):
         """Return the string to be used for running Docker commands."""
         return config.DOCKER_CMD.split()
 
-    @patch("localstack.utils.container_utils.docker_cmd_client.safe_run")
+    @patch("localstack.utils.container_utils.docker_cmd_client.run")
     def test_list_containers(self, run_mock):
         mock_container = {
             "ID": "00000000a1",
@@ -49,7 +49,7 @@ class TestDockerClient(unittest.TestCase):
         self.assertIn("-a", call_arguments)
         self.assertIn("--format", call_arguments)
 
-    @patch("localstack.utils.container_utils.docker_cmd_client.safe_run")
+    @patch("localstack.utils.container_utils.docker_cmd_client.run")
     def test_container_status(self, run_mock):
         test_output = "Up 2 minutes - localstack_main"
         run_mock.return_value = test_output

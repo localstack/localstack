@@ -1,7 +1,8 @@
 import datetime
 import hashlib
 
-from ..common import to_bytes
+from localstack.utils.strings import to_bytes
+
 from .events import Event, EventHandler, EventMetadata, EventPayload
 from .metadata import get_session_id
 

@@ -3,8 +3,9 @@ import logging
 import threading
 from typing import Optional
 
-from localstack.utils.common import is_port_open, poll_condition, start_thread
-from localstack.utils.run import FuncThread
+from localstack.utils.net import is_port_open
+from localstack.utils.sync import poll_condition
+from localstack.utils.threads import FuncThread, start_thread
 
 LOG = logging.getLogger(__name__)
 

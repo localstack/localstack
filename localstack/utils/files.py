@@ -36,7 +36,7 @@ def parse_config_file(file_or_str: str, single_section: bool = True) -> Dict:
 
 
 def cache_dir() -> Path:
-    from localstack.utils.common import is_linux, is_mac_os, is_windows
+    from localstack.utils.platform import is_linux, is_mac_os, is_windows
 
     if is_windows():
         return Path("%LOCALAPPDATA%", "cache", "localstack")
@@ -154,7 +154,8 @@ def rm_rf(path: str):
     """
     Recursively removes a file or directory
     """
-    from localstack.utils.common import is_debian, run
+    from localstack.utils.platform import is_debian
+    from localstack.utils.run import run
 
     if not path or not os.path.exists(path):
         return

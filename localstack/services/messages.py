@@ -2,7 +2,7 @@ import dataclasses
 import json
 from typing import Dict, Optional, Union
 
-from localstack.utils.common import to_str
+from localstack.utils.strings import to_str
 
 MessagePayload = Union[str, bytes]
 Headers = Dict[str, str]

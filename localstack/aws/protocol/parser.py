@@ -68,6 +68,7 @@ not work out-of-the-box.
 import abc
 import base64
 import datetime
+import functools
 import re
 from abc import ABC
 from collections import OrderedDict, defaultdict
@@ -126,9 +127,52 @@ def _text_content(func):
 
 
 class RequestParserError(Exception):
-    """Error which is thrown if the request parsing fails."""
+    """
+    Error which is thrown if the request parsing fails.
+    Super class of all exceptions raised by the parser.
+    """
 
     pass
+
+
+class UnknownParserError(RequestParserError):
+    """
+    Error which indicates that the raised exception of the parser could be caused by invalid data or by any other
+    (unknown) issue. Errors like this should be reported and indicate an issue in the parser itself.
+    """
+
+    pass
+
+
+class ProtocolParserError(RequestParserError):
+    """
+    Error which indicates that the given data is not compliant with the service's specification and cannot be parsed.
+    This usually results in a response with an HTTP 4xx status code (client error).
+    """
+
+    pass
+
+
+def _handle_exceptions(func):
+    """
+    Decorator which handles the exceptions raised by the parser. It ensures that all exceptions raised by the public
+    methods of the parser are instances of RequestParserError.
+    :param func: to wrap in order to add the exception handling
+    :return: wrapped function
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except RequestParserError:
+            raise
+        except Exception as e:
+            raise UnknownParserError(
+                "An unknown error occurred when trying to parse the request."
+            ) from e
+
+    return wrapper
 
 
 class RequestParser(abc.ABC):
@@ -150,6 +194,7 @@ class RequestParser(abc.ABC):
         super().__init__()
         self.service = service
 
+    @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         """
         Determines which operation the request was aiming for and parses the incoming request such that the resulting
@@ -158,6 +203,7 @@ class RequestParser(abc.ABC):
         :param request: to parse
         :return: a tuple with the operation model (defining the action / operation which the request aims for),
                  and the parsed service parameters
+        :raises: RequestParserError (either a ProtocolParserError or an UnknownParserError)
         """
         raise NotImplementedError
 
@@ -196,7 +242,7 @@ class RequestParser(abc.ABC):
                 match = path_regex.match(url)
                 payload = unquote(match.group(regex_group_name)) if match is not None else None
             else:
-                raise RequestParserError("Unknown shape location '%s'." % location)
+                raise UnknownParserError("Unknown shape location '%s'." % location)
         else:
             # If we don't have to use a specific location, we use the node
             payload = node
@@ -350,6 +396,7 @@ class QueryRequestParser(RequestParser):
     When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
+    @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         body = request.get_data(as_text=True)
         instance = parse_qs(body, keep_blank_values=True)
@@ -361,7 +408,7 @@ class QueryRequestParser(RequestParser):
         # Therefore we take the first element of each entry in the dict.
         instance = {k: self._get_first(v) for k, v in instance.items()}
         if "Action" not in instance:
-            raise RequestParserError(
+            raise ProtocolParserError(
                 f"Operation detection failed. "
                 f"Missing Action in request for query-protocol service {self.service}."
             )
@@ -369,7 +416,7 @@ class QueryRequestParser(RequestParser):
         try:
             operation: OperationModel = self.service.operation_model(action)
         except OperationNotFoundError as e:
-            raise RequestParserError(
+            raise ProtocolParserError(
                 f"Operation detection failed."
                 f"Operation {action} could not be found for service {self.service}."
             ) from e
@@ -593,6 +640,7 @@ class BaseRestRequestParser(RequestParser):
         # Make sure that all path parameter placeholders have the same name and length
         return re.sub(r"{(.*?)}", " param", request_uri)
 
+    @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         operation, path_regex = self._detect_operation(request)
         shape: StructureShape = operation.input_shape
@@ -609,7 +657,7 @@ class BaseRestRequestParser(RequestParser):
         :param request: to detect the operation for
         :return: Tuple containing the detected operation the request is targeting and the URI
                     pattern it was detected with
-        :raises: RequestParserError if the operation could not be detected
+        :raises: ProtocolParserError if the operation could not be detected
         """
         # Use the path and the query string for the matching
         url = request.full_path if request.query_string else request.path
@@ -622,14 +670,14 @@ class BaseRestRequestParser(RequestParser):
                 )
             )
             if len(operations) > 1:
-                raise RequestParserError(
+                raise ProtocolParserError(
                     f"Unable to find operation for request to service "
                     f"{self.service.service_name}: {request.method} {request.path} "
                     f"(ambiguous results)"
                 )
             return operations[0], path_regex
         except StopIteration:
-            raise RequestParserError(
+            raise ProtocolParserError(
                 f"Unable to find operation for request to service "
                 f"{self.service.service_name}: {request.method} {request.path}"
             )
@@ -768,7 +816,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
                 elif tag_name == value_location_name:
                     val_name = self._parse_shape(request, value_shape, single_pair, path_regex)
                 else:
-                    raise RequestParserError("Unknown tag: %s" % tag_name)
+                    raise ProtocolParserError("Unknown tag: %s" % tag_name)
             parsed[key_name] = val_name
         return parsed
 
@@ -808,7 +856,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
             parser.feed(xml_string)
             root = parser.close()
         except ETree.ParseError as e:
-            raise RequestParserError(
+            raise ProtocolParserError(
                 "Unable to parse request (%s), invalid XML received:\n%s" % (e, xml_string)
             ) from e
         return root
@@ -900,12 +948,12 @@ class BaseJSONRequestParser(RequestParser, ABC):
             try:
                 return cbor2.loads(body_contents)
             except ValueError as e:
-                raise RequestParserError("HTTP body could not be parsed as CBOR.") from e
+                raise ProtocolParserError("HTTP body could not be parsed as CBOR.") from e
         else:
             try:
                 return request.get_json(force=True)
             except ValueError as e:
-                raise RequestParserError("HTTP body could not be parsed as JSON.") from e
+                raise ProtocolParserError("HTTP body could not be parsed as JSON.") from e
 
     def _parse_boolean(
         self, request: HttpRequest, shape: Shape, node: bool, path_regex: Pattern[str] = None
@@ -924,6 +972,7 @@ class JSONRequestParser(BaseJSONRequestParser):
     When implementing services with this parser, some edge cases might not work out-of-the-box.
     """
 
+    @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         target = request.headers["X-Amz-Target"]
         # assuming that the last part of the target string (e.g., "x.y.z.MyAction") contains the operation name
@@ -1004,6 +1053,7 @@ class EC2RequestParser(QueryRequestParser):
 
 
 class S3RequestParser(RestXMLRequestParser):
+    @_handle_exceptions
     def parse(self, request: HttpRequest) -> Tuple[OperationModel, Any]:
         """Handle virtual-host-addressing for S3."""
         if (
@@ -1046,7 +1096,7 @@ class S3RequestParser(RestXMLRequestParser):
         )
         if not regex_operation_list_tuples:
             # couldn't find a single operation
-            raise RequestParserError(
+            raise ProtocolParserError(
                 f"Unable to find operation for request to service "
                 f"{self.service.service_name}: {request.method} {request.path}"
             )
@@ -1103,7 +1153,7 @@ class S3RequestParser(RestXMLRequestParser):
                             # methods which define required members which are matched by the request should win
                             # over methods without any required members
                             score -= 10
-                    except RequestParserError:
+                    except ProtocolParserError:
                         # the required member is not present, this operation most likely isn't the right one
                         score += 10
         return score

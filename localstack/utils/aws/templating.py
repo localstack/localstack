@@ -6,15 +6,11 @@ from urllib.parse import quote_plus, unquote_plus
 import airspeed
 
 from localstack import config
-from localstack.utils.common import (
-    extract_jsonpath,
-    is_number,
-    json_safe,
-    recurse_object,
-    short_uid,
-)
-from localstack.utils.generic.number_utils import to_number
+from localstack.utils.json import extract_jsonpath, json_safe
+from localstack.utils.numbers import is_number, to_number
+from localstack.utils.objects import recurse_object
 from localstack.utils.patch import patch
+from localstack.utils.strings import short_uid
 
 
 # TODO: potentially replace with generic proxy wrapper class

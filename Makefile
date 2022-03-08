@@ -1,6 +1,6 @@
 IMAGE_NAME ?= localstack/localstack
-IMAGE_NAME_LIGHT ?= localstack/localstack-light
-IMAGE_NAME_FULL ?= localstack/localstack-full
+IMAGE_NAME_LIGHT ?= $(IMAGE_NAME)-light
+IMAGE_NAME_FULL ?= $(IMAGE_NAME)-full
 IMAGE_TAG ?= $(shell cat localstack/__init__.py | grep '^__version__ =' | sed "s/__version__ = ['\"]\(.*\)['\"].*/\1/")
 VENV_BIN ?= python3 -m venv
 VENV_DIR ?= .venv
@@ -24,7 +24,7 @@ VENV_RUN = . $(VENV_ACTIVATE)
 usage:                    ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/:.*##\s*/##/g' | awk -F'##' '{ printf "%-25s %s\n", $$1, $$2 }'
 
-$(VENV_ACTIVATE): setup.py requirements.txt
+$(VENV_ACTIVATE): setup.py setup.cfg
 	test -d $(VENV_DIR) || $(VENV_BIN) $(VENV_DIR)
 	$(VENV_RUN); $(PIP_CMD) install --upgrade pip setuptools wheel plux
 	touch $(VENV_ACTIVATE)
@@ -46,11 +46,10 @@ install-test: venv        ## Install requirements to run tests into venv
 install-dev: venv         ## Install developer requirements into venv
 	$(VENV_RUN); $(PIP_CMD) install $(PIP_OPTS) -e ".[cli,runtime,test,dev]"
 
-install:                  ## Install full dependencies into venv, and download third-party services
-	(make install-dev && make entrypoints && make init-testlibs) || exit 1
+install: install-dev entrypoints init-testlibs  ## Install full dependencies into venv, and download third-party services
 
 entrypoints:              ## Run setup.py develop to build entry points
-	$(VENV_RUN); rm -f localstack.egg-info/entry_points.txt; python setup.py develop
+	$(VENV_RUN); python setup.py plugins egg_info
 
 init:                     ## Initialize the infrastructure, make sure all libs are downloaded
 	$(VENV_RUN); python -m localstack.services.install libs
@@ -58,7 +57,7 @@ init:                     ## Initialize the infrastructure, make sure all libs a
 init-testlibs:
 	$(VENV_RUN); python -m localstack.services.install testlibs
 
-dist:					  ## Build source and built (wheel) distributions of the current version
+dist: entrypoints        ## Build source and built (wheel) distributions of the current version
 	$(VENV_RUN); pip install --upgrade twine; python setup.py sdist bdist_wheel
 
 publish: clean-dist dist  ## Publish the library to the central PyPi repository
@@ -113,7 +112,9 @@ docker-build-multiarch:   ## Build the Multi-Arch Full Docker Image
 	# Multi-Platform builds cannot be loaded to the docker daemon from buildx, so we can't add "--load".
 	make DOCKER_BUILD_FLAGS="--platform linux/amd64,linux/arm64" docker-build
 
-docker-push-master: 	  ## Push Docker image to registry IF we are currently on the master branch
+SOURCE_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
+TARGET_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
+docker-push-master: 	  ## Push a single platform-specific Docker image to registry IF we are currently on the master branch
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
@@ -124,35 +125,23 @@ docker-push-master: 	  ## Push Docker image to registry IF we are currently on t
 		echo "This is a fork and not the main repo.") || \
 	( \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-			docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME):latest-$(PLATFORM) && \
-			docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) && \
-			docker tag $(IMAGE_NAME_FULL):latest $(IMAGE_NAME_FULL):latest-$(PLATFORM) && \
+			docker tag $(SOURCE_IMAGE_NAME):latest $(TARGET_IMAGE_NAME):latest-$(PLATFORM) && \
 		((! (git diff HEAD~1 localstack/__init__.py | grep '^+__version__ =') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
-			(docker tag $(IMAGE_NAME):latest-$(PLATFORM) $(IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME):latest-$(PLATFORM) $(IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME):latest-$(PLATFORM) $(IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) $(IMAGE_NAME_LIGHT):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) $(IMAGE_NAME_LIGHT):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME_FULL):latest-$(PLATFORM) $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME_FULL):latest-$(PLATFORM) $(IMAGE_NAME_FULL):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
-				docker tag $(IMAGE_NAME_FULL):latest-$(PLATFORM) $(IMAGE_NAME_FULL):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME_LIGHT):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME_LIGHT):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME_FULL):$(IMAGE_TAG)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME_FULL):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
-				docker push $(IMAGE_NAME_FULL):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) \
+			(docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker tag $(TARGET_IMAGE_NAME):latest-$(PLATFORM) $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) && \
+				docker push $(TARGET_IMAGE_NAME):$(IMAGE_TAG)-$(PLATFORM) && \
+				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION)-$(PLATFORM) && \
+				docker push $(TARGET_IMAGE_NAME):$(MAJOR_VERSION).$(MINOR_VERSION).$(PATCH_VERSION)-$(PLATFORM) \
 				)) && \
-				  docker push $(IMAGE_NAME):latest-$(PLATFORM) && \
-				  docker push $(IMAGE_NAME_LIGHT):latest-$(PLATFORM) && \
-				  docker push $(IMAGE_NAME_FULL):latest-$(PLATFORM) \
+				  docker push $(TARGET_IMAGE_NAME):latest-$(PLATFORM) \
 	)
 
+docker-push-master-all:		## Push Docker images of localstack, localstack-light, and localstack-full
+	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME) docker-push-master
+	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_LIGHT) TARGET_IMAGE_NAME=$(IMAGE_NAME_LIGHT) docker-push-master
+	make SOURCE_IMAGE_NAME=$(IMAGE_NAME_FULL) TARGET_IMAGE_NAME=$(IMAGE_NAME_FULL) docker-push-master
 
 MANIFEST_IMAGE_NAME ?= $(IMAGE_NAME_FULL)
 docker-create-push-manifests:	## Create and push manifests for a docker image (default: full)
@@ -243,13 +232,17 @@ ci-pro-smoke-tests:
 	IMAGE_NAME=$(CI_SMOKE_IMAGE_NAME) LOCALSTACK_API_KEY=$(TEST_LOCALSTACK_API_KEY) DNS_ADDRESS=0 DEBUG=1 localstack start -d
 	docker logs -f $(MAIN_CONTAINER_NAME) &
 	localstack wait -t 120
-	awslocal s3 mb s3://test-bucket
+	awslocal apigatewayv2 get-apis
+	awslocal appsync list-graphql-apis
+	awslocal cognito-idp list-user-pools --max-results 10
+	awslocal emr list-clusters
+	awslocal lambda list-layers
 	awslocal qldb list-ledgers
 	awslocal rds create-db-cluster --db-cluster-identifier test-cluster --engine aurora-postgresql --database-name test --master-username master --master-user-password secret99 --db-subnet-group-name mysubnetgroup --db-cluster-parameter-group-name mydbclusterparametergroup
 	awslocal rds describe-db-instances
-	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
-	awslocal lambda list-layers
+	awslocal s3 mb s3://test-bucket
 	awslocal timestream-write create-database --database-name db1
+	awslocal xray get-trace-summaries --start-time 2020-01-01 --end-time 2030-12-31
 	localstack stop
 
 lint:              		  ## Run code linter to check code style
@@ -284,4 +277,4 @@ clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf *.egg-info
 
-.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints init init-testlibs dist publish coveralls start docker-save-image docker-save-image-light docker-build docker-build-light docker-build-multi-platform docker-push-master docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra
+.PHONY: usage venv freeze install-basic install-runtime install-test install-dev install entrypoints init init-testlibs dist publish coveralls start docker-save-image docker-save-image-light docker-build docker-build-light docker-build-multi-platform docker-push-master docker-push-master-all docker-create-push-manifests docker-create-push-manifests-light docker-run-tests docker-run docker-mount-run docker-build-lambdas docker-cp-coverage test test-coverage test-docker test-docker-mount test-docker-mount-code ci-pro-smoke-tests lint lint-modified format format-modified init-precommit clean clean-dist vagrant-start vagrant-stop infra

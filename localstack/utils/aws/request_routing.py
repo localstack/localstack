@@ -5,7 +5,8 @@ from typing import Dict, Set, Tuple
 
 import botocore
 
-from localstack.utils.common import load_file, to_bytes, to_str
+from localstack.utils.files import load_file
+from localstack.utils.strings import to_bytes, to_str
 
 # maps service names/versions to list of action names
 SERVICE_ACTIONS_CACHE: Dict[str, Set[str]] = {}

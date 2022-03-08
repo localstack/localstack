@@ -9,7 +9,8 @@ from localstack import config
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.common import now_utc, to_str
+from localstack.utils.strings import to_str
+from localstack.utils.time import now_utc
 
 LOG = logging.getLogger(__name__)
 

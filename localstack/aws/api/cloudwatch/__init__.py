@@ -1235,10 +1235,7 @@ class CloudwatchApi:
 
     @handler("PutDashboard")
     def put_dashboard(
-        self,
-        context: RequestContext,
-        dashboard_name: DashboardName,
-        dashboard_body: DashboardBody,
+        self, context: RequestContext, dashboard_name: DashboardName, dashboard_body: DashboardBody
     ) -> PutDashboardOutput:
         raise NotImplementedError
 
@@ -1333,9 +1330,6 @@ class CloudwatchApi:
 
     @handler("UntagResource")
     def untag_resource(
-        self,
-        context: RequestContext,
-        resource_arn: AmazonResourceName,
-        tag_keys: TagKeyList,
+        self, context: RequestContext, resource_arn: AmazonResourceName, tag_keys: TagKeyList
     ) -> UntagResourceOutput:
         raise NotImplementedError

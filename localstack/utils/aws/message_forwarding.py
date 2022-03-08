@@ -14,11 +14,11 @@ from localstack.utils.aws.aws_stack import (
     firehose_name,
     get_sqs_queue_url,
 )
-from localstack.utils.common import long_uid, now_utc
-from localstack.utils.common import safe_requests as requests
-from localstack.utils.common import timestamp_millis, to_bytes
 from localstack.utils.generic import dict_utils
 from localstack.utils.http import add_query_params_to_url
+from localstack.utils.http import safe_requests as requests
+from localstack.utils.strings import long_uid, to_bytes
+from localstack.utils.time import now_utc, timestamp_millis
 
 LOG = logging.getLogger(__name__)
 

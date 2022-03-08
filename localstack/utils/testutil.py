@@ -16,7 +16,6 @@ import requests
 
 from localstack import config
 from localstack.constants import (
-    ENV_INTERNAL_TEST_RUN,
     LAMBDA_TEST_ROLE,
     LOCALSTACK_ROOT_FOLDER,
     LOCALSTACK_VENV_FOLDER,
@@ -29,24 +28,22 @@ from localstack.services.awslambda.lambda_utils import (
     get_handler_file_from_name,
 )
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (
+from localstack.utils.collections import ensure_list
+from localstack.utils.files import (
     TMP_FILES,
     chmod_r,
-    ensure_list,
-    get_free_tcp_port,
-    is_debian,
     is_empty_dir,
-    is_port_open,
     load_file,
     mkdir,
-    poll_condition,
     rm_rf,
-    run,
     save_file,
-    short_uid,
-    to_str,
 )
-from localstack.utils.run import FuncThread
+from localstack.utils.net import get_free_tcp_port, is_port_open
+from localstack.utils.platform import is_debian
+from localstack.utils.run import run
+from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import poll_condition
+from localstack.utils.threads import FuncThread
 
 ARCHIVE_DIR_PREFIX = "lambda.archive."
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
@@ -56,8 +53,7 @@ MAX_LAMBDA_ARCHIVE_UPLOAD_SIZE = 50_000_000
 
 
 def is_local_test_mode():
-    """Whether we are running in the context of our local integration tests."""
-    return bool(os.environ.get(ENV_INTERNAL_TEST_RUN))
+    return config.is_local_test_mode()
 
 
 def copy_dir(source, target):

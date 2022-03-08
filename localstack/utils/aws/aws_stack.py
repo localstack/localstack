@@ -6,6 +6,7 @@ import socket
 import sys
 import threading
 import time
+from functools import lru_cache
 from typing import Dict, Optional, Union
 from urllib.parse import urlparse
 
@@ -37,16 +38,11 @@ from localstack.constants import (
 )
 from localstack.utils.aws import templating
 from localstack.utils.aws.aws_models import KinesisStream
-from localstack.utils.common import (
-    get_service_protocol,
-    is_string,
-    is_string_or_bytes,
-    make_http_request,
-    retry,
-    run_safe,
-    to_str,
-)
-from localstack.utils.generic import dict_utils
+from localstack.utils.collections import pick_attributes
+from localstack.utils.functions import run_safe
+from localstack.utils.http import make_http_request
+from localstack.utils.strings import is_string, is_string_or_bytes, to_str
+from localstack.utils.sync import retry
 
 # AWS environment variable names
 ENV_ACCESS_KEY = "AWS_ACCESS_KEY_ID"
@@ -82,6 +78,15 @@ CACHE_S3_HOSTNAME_DNS_STATUS = None
 
 # mutex used when creating boto clients (which isn't thread safe: https://github.com/boto/boto3/issues/801)
 BOTO_CLIENT_CREATE_LOCK = threading.RLock()
+
+
+@lru_cache()
+def get_valid_regions():
+    valid_regions = set()
+    for partition in set(boto3.Session().get_available_partitions()):
+        for region in boto3.Session().get_available_regions("sns", partition):
+            valid_regions.add(region)
+    return valid_regions
 
 
 class Environment(object):
@@ -239,7 +244,7 @@ def set_internal_auth(headers):
 def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
     """Return the local service URL for the given service name or port."""
     if isinstance(service_name_or_port, int):
-        return f"{get_service_protocol()}://{LOCALHOST}:{service_name_or_port}"
+        return f"{config.get_protocol()}://{LOCALHOST}:{service_name_or_port}"
     service_name = service_name_or_port
     if service_name == "s3api":
         service_name = "s3"
@@ -404,8 +409,8 @@ def check_valid_region(headers):
     # See https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html
     parts = replaced.split("/")
     region = parts[2]
-    if region not in config.VALID_REGIONS:
-        raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
+    if region not in get_valid_regions():
+        raise Exception(f'Invalid region specified in "Authorization" header: "{region}"')
 
 
 def set_default_region_in_headers(headers, service=None, region=None):
@@ -704,7 +709,7 @@ def fix_arn(arn):
     resource names to ARNs, replacing incorrect regions, account IDs, etc."""
     if arn.startswith("arn:aws:lambda"):
         parts = arn.split(":")
-        region = parts[3] if parts[3] in config.VALID_REGIONS else get_region()
+        region = parts[3] if parts[3] in get_valid_regions() else get_region()
         return lambda_function_arn(lambda_function_name(arn), region_name=region)
     LOG.warning("Unable to fix/canonicalize ARN: %s", arn)
     return arn
@@ -771,7 +776,7 @@ def _resource_arn(name: str, pattern: str, account_id: str = None, region_name: 
 
 
 def get_events_target_attributes(target):
-    return dict_utils.pick_attributes(target, EVENT_TARGET_PARAMETERS)
+    return pick_attributes(target, EVENT_TARGET_PARAMETERS)
 
 
 def get_or_create_bucket(bucket_name, s3_client=None):

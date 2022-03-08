@@ -1,0 +1,78 @@
+######################
+###  CODE OWNERS   ###
+######################
+
+# CODEOWNERS
+/CODEOWNERS @thrau @dominikschubert
+
+# ASF
+/localstack/aws/ @thrau
+/tests/unit/aws/ @thrau
+# left empty (without owner) because the generated APIs belong to the specific service owners
+# you can overwrite this for single services afterwards
+/localstack/aws/api/
+
+# CLI/plugins
+/localstack/cli/ @thrau
+/localstack/plugins.py @thrau
+/localstack/config.py @thrau
+/tests/unit/cli/ @thrau
+/tests/unit/services/test_internal.py @thrau
+
+# Container utils
+/localstack/utils/container_utils/ @dominikschubert
+/localstack/utils/docker_utils.py @dominikschubert
+/tests/integration/docker_utils/ @dominikschubert
+/tests/unit/test_dockerclient.py @dominikschubert
+
+######################
+### SERVICE OWNERS ###
+######################
+
+# Cloudformation
+/localstack/services/cloudformation/ @dominikschubert
+/localstack/utils/cloudformation/ @dominikschubert
+/tests/integration/cloudformation/ @dominikschubert
+/tests/unit/test_cloudformation.py @dominikschubert
+# left empty (without owner) because the models belong to the specific service owners
+# you can overwrite this for single services afterwards
+/localstack/services/cloudformation/models/
+
+# Lambda
+/localstack/services/awslambda/ @dominikschubert
+/tests/integration/awslambda/ @dominikschubert
+
+# IAM
+/localstack/services/iam/ @dominikschubert
+/tests/integration/test_iam.py @dominikschubert
+
+# Stepfunctions
+/localstack/services/stepfunctions/ @dominikschubert
+/tests/integration/test_stepfunctions.py @dominikschubert
+
+# Secretsmanager
+/localstack/services/secretsmanager/ @dominikschubert
+/tests/integration/test_secretsmanager.py @dominikschubert
+
+# SSM
+/localstack/services/ssm/ @dominikschubert
+/tests/integration/test_ssm.py @dominikschubert
+
+# Events / EventBridge
+/localstack/services/events/ @dominikschubert
+/tests/integration/test_events.py @dominikschubert
+
+# SQS
+/localstack/services/sqs/ @thrau
+/tests/integration/test_sqs.py @thrau
+/tests/unit/test_sqs.py @thrau
+
+# SNS
+/localstack/services/sns/ @thrau
+/tests/integration/test_sns.py @thrau
+/tests/unit/test_sns.py @thrau
+
+# S3
+/localstack/services/s3/ @thrau
+/tests/integration/test_s3.py @thrau
+/tests/unit/test_s3.py @thrau

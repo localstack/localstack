@@ -9,17 +9,12 @@ import requests
 
 from localstack.constants import BIND_HOST, HEADER_ACCEPT_ENCODING, LOCALHOST_IP
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
-from localstack.utils.async_utils import ensure_event_loop
-from localstack.utils.common import (
-    TMP_THREADS,
-    is_number,
-    new_tmp_file,
-    run_safe,
-    save_file,
-    start_worker_thread,
-    to_bytes,
-)
-from localstack.utils.run import FuncThread
+from localstack.utils.asyncio import ensure_event_loop
+from localstack.utils.files import new_tmp_file, save_file
+from localstack.utils.functions import run_safe
+from localstack.utils.numbers import is_number
+from localstack.utils.strings import to_bytes
+from localstack.utils.threads import TMP_THREADS, FuncThread, start_worker_thread
 
 LOG = logging.getLogger(__name__)
 
