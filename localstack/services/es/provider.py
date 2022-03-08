@@ -312,6 +312,9 @@ class EsProvider(EsApi):
         opensearch_payload = dict(payload)
         if "ElasticsearchClusterConfig" in payload:
             opensearch_payload["ClusterConfig"] = payload["ElasticsearchClusterConfig"]
+            opensearch_payload["ClusterConfig"]["InstanceType"] = _instancetype_to_opensearch(
+                opensearch_payload["ClusterConfig"]["InstanceType"]
+            )
             opensearch_payload.pop("ElasticsearchClusterConfig")
 
         with exception_mapper():
