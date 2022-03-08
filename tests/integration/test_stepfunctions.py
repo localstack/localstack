@@ -86,7 +86,7 @@ STATE_MACHINE_CATCH = {
             "Catch": [
                 {
                     "ErrorEquals": [
-                        "InvocationException",
+                        "Exception",
                         "Lambda.Unknown",
                         "ValueError",
                     ],
