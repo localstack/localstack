@@ -1,17 +1,14 @@
 import json
-import unittest
 
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
-class TestResourceGroups(unittest.TestCase):
-    def setUp(self):
-        self.resource_group_client = aws_stack.create_external_boto_client("resource-groups")
-
+class TestResourceGroups:
     def test_create_group(self):
+        resource_group_client = aws_stack.create_external_boto_client("resource-groups")
         name = "resource_group-{}".format(short_uid())
-        response = self.resource_group_client.create_group(
+        response = resource_group_client.create_group(
             Name=name,
             Description="description",
             ResourceQuery={
@@ -30,20 +27,20 @@ class TestResourceGroups(unittest.TestCase):
             },
             Tags={"resource_group_tag_key": "resource_group_tag_value"},
         )
-        self.assertEqual(name, response["Group"]["Name"])
-        self.assertEqual("TAG_FILTERS_1_0", response["ResourceQuery"]["Type"])
-        self.assertEqual("resource_group_tag_value", response["Tags"]["resource_group_tag_key"])
+        assert name == response["Group"]["Name"]
+        assert "TAG_FILTERS_1_0" == response["ResourceQuery"]["Type"]
+        assert "resource_group_tag_value" == response["Tags"]["resource_group_tag_key"]
 
-        response = self.resource_group_client.get_group(GroupName=name)
-        self.assertEqual("description", response["Group"]["Description"])
+        response = resource_group_client.get_group(GroupName=name)
+        assert "description" == response["Group"]["Description"]
 
-        response = self.resource_group_client.list_groups()
-        self.assertEqual(1, len(response["GroupIdentifiers"]))
-        self.assertEqual(1, len(response["Groups"]))
+        response = resource_group_client.list_groups()
+        assert 1 == len(response["GroupIdentifiers"])
+        assert 1 == len(response["Groups"])
 
-        response = self.resource_group_client.delete_group(GroupName=name)
-        self.assertEqual(name, response["Group"]["Name"])
+        response = resource_group_client.delete_group(GroupName=name)
+        assert name == response["Group"]["Name"]
 
-        response = self.resource_group_client.list_groups()
-        self.assertEqual(0, len(response["GroupIdentifiers"]))
-        self.assertEqual(0, len(response["Groups"]))
+        response = resource_group_client.list_groups()
+        assert 0 == len(response["GroupIdentifiers"])
+        assert 0 == len(response["Groups"])
