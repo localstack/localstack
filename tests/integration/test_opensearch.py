@@ -306,6 +306,26 @@ class TestOpensearchProvider:
         assert "EngineVersion" in status
         assert status["EngineVersion"] == "OpenSearch_1.0"
 
+    def test_update_domain_config(self, opensearch_client, opensearch_domain):
+        initial_response = opensearch_client.describe_domain_config(DomainName=opensearch_domain)
+        update_response = opensearch_client.update_domain_config(
+            DomainName=opensearch_domain, ClusterConfig={"InstanceType": "r4.16xlarge.search"}
+        )
+        final_response = opensearch_client.describe_domain_config(DomainName=opensearch_domain)
+
+        assert (
+            initial_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+            != update_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+        )
+        assert (
+            update_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+            == "r4.16xlarge.search"
+        )
+        assert (
+            update_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+            == final_response["DomainConfig"]["ClusterConfig"]["Options"]["InstanceType"]
+        )
+
     def test_create_indices(self, opensearch_endpoint):
         indices = ["index1", "index2"]
         for index_name in indices:

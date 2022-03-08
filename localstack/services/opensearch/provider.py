@@ -185,6 +185,10 @@ class OpenSearchServiceBackend(RegionBackend):
 
 def get_domain_config(domain_key) -> DomainConfig:
     status = get_domain_status(domain_key)
+    return _status_to_config(status)
+
+
+def _status_to_config(status: DomainStatus) -> DomainConfig:
     cluster_cfg = status.get("ClusterConfig") or {}
     default_cfg = DEFAULT_OPENSEARCH_CLUSTER_CONFIG
     config_status = get_domain_config_status()
@@ -372,8 +376,8 @@ def _ensure_domain_exists(arn: ARN) -> None:
 
 
 def _transform_domain_config_request_to_status(request: Dict) -> Dict:
-    request.pop("DryRun")
-    request.pop("DomainName")
+    request.pop("DryRun", None)
+    request.pop("DomainName", None)
     return request
 
 
@@ -489,7 +493,7 @@ class OpensearchProvider(OpensearchApi):
             status_update = _transform_domain_config_request_to_status(payload)
             domain_status.update(status_update)
 
-        return UpdateDomainConfigResponse(DomainConfig={})
+        return UpdateDomainConfigResponse(DomainConfig=_status_to_config(domain_status))
 
     def describe_domains(
         self, context: RequestContext, domain_names: DomainNameList

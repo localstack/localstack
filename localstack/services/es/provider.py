@@ -303,7 +303,7 @@ class EsProvider(EsApi):
         status = _domainstatus_from_opensearch(opensearch_status)
         return DescribeElasticsearchDomainResponse(DomainStatus=status)
 
-    @handler("UpdateDomainConfig", expand=False)
+    @handler("UpdateElasticsearchDomainConfig", expand=False)
     def update_elasticsearch_domain_config(
         self, context: RequestContext, payload: UpdateElasticsearchDomainConfigRequest
     ) -> UpdateElasticsearchDomainConfigResponse:
