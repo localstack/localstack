@@ -16,7 +16,7 @@ def is_zip_file(content):
 
 
 def unzip(path, target_dir, overwrite=True):
-    from localstack.utils.common import is_debian
+    from localstack.utils.platform import is_debian
 
     is_in_debian = is_debian()
     if is_in_debian:
@@ -57,7 +57,7 @@ def unzip(path, target_dir, overwrite=True):
         zip_ref.close()
 
 
-def untar(path, target_dir):
+def untar(path: str, target_dir: str):
     mode = "r:gz" if path.endswith("gz") else "r"
     with tarfile.open(path, mode) as tar:
         tar.extractall(path=target_dir)

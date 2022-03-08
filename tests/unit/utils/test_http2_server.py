@@ -1,15 +1,18 @@
 import logging
 import threading
 import time
-import unittest
+
+import pytest
+import requests
 
 from localstack.utils.common import get_free_tcp_port, is_port_open, poll_condition
+from localstack.utils.net import wait_for_port_closed
 from localstack.utils.server.http2_server import run_server
 
 LOG = logging.getLogger(__name__)
 
 
-class TestHttp2Server(unittest.TestCase):
+class TestHttp2Server:
     def test_run_and_stop_server(self):
         port = get_free_tcp_port()
         host = "127.0.0.1"
@@ -18,17 +21,16 @@ class TestHttp2Server(unittest.TestCase):
         thread = run_server(port=port, bind_address=host, asynchronous=True)
         try:
             url = f"http://{host}:{port}"
-            self.assertTrue(
-                poll_condition(lambda: is_port_open(url, http_path="/"), timeout=15),
-                "gave up waiting for port %d " % port,
-            )
+            assert poll_condition(
+                lambda: is_port_open(url, http_path="/"), timeout=15
+            ), f"gave up waiting for port {port}"
         finally:
             LOG.info("%.2f stopping server on port %d", time.time(), port)
             thread.stop()
 
         LOG.info("%.2f waiting on server to shut down", time.time())
         thread.join(timeout=15)
-        self.assertFalse(is_port_open(port), "port is still open after stop")
+        assert not is_port_open(port), "port is still open after stop"
         LOG.info("%.2f port stopped %d", time.time(), port)
 
     def test_run_and_stop_server_from_different_threads(self):
@@ -40,15 +42,38 @@ class TestHttp2Server(unittest.TestCase):
 
         try:
             url = f"http://{host}:{port}"
-            self.assertTrue(
-                poll_condition(lambda: is_port_open(url, http_path="/"), timeout=15),
-                "gave up waiting for port %d " % port,
-            )
+            assert poll_condition(
+                lambda: is_port_open(url, http_path="/"), timeout=15
+            ), f"gave up waiting for port {port}"
         finally:
             LOG.info("%.2f stopping server on port %d", time.time(), port)
             threading.Thread(target=thread.stop).start()
 
         LOG.info("%.2f waiting on server to shut down", time.time())
         thread.join(timeout=15)
-        self.assertFalse(is_port_open(port), "port is still open after stop")
+        assert not is_port_open(port), "port is still open after stop"
         LOG.info("%.2f port stopped %d", time.time(), port)
+
+    @pytest.mark.parametrize("max_length", [1024 * 1024, 50 * 1024 * 1024])
+    def test_max_content_length(self, max_length):
+        # start server
+        port = get_free_tcp_port()
+        host = "127.0.0.1"
+        thread = run_server(
+            port=port,
+            bind_address=host,
+            asynchronous=True,
+            max_content_length=max_length,
+            handler=lambda *args: None,
+        )
+
+        # test successful request
+        result = requests.post(f"http://localhost:{port}", data="0" * max_length)
+        assert result.status_code == 200
+        # test unsuccessful request
+        result = requests.post(f"http://localhost:{port}", data="0" * (max_length + 1))
+        assert result.status_code == 413  # payload too large
+
+        # clean up
+        thread.stop()
+        wait_for_port_closed(port)

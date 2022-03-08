@@ -10,7 +10,7 @@ from botocore.awsrequest import AWSPreparedRequest
 from botocore.parsers import create_parser
 from moto.backends import get_backend as get_moto_backend
 from moto.core.utils import BackendDict
-from moto.server import RegexConverter
+from moto.moto_server.utilities import RegexConverter
 from werkzeug.datastructures import Headers
 from werkzeug.routing import Map, Rule
 
@@ -27,7 +27,7 @@ from localstack.aws.api.core import ServiceRequest, ServiceRequestHandler
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
 from localstack.aws.spec import load_service
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_bytes, to_str
+from localstack.utils.strings import to_bytes, to_str
 
 MotoResponse = Tuple[int, dict, Union[str, bytes]]
 MotoDispatcher = Callable[[HttpRequest, str, dict], MotoResponse]

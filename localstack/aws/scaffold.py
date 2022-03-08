@@ -1,7 +1,7 @@
 import io
 import keyword
-import os
 import re
+from pathlib import Path
 from typing import Dict, List, Set
 
 import click
@@ -19,10 +19,10 @@ from botocore.model import (
 from typing_extensions import OrderedDict
 
 from localstack.aws.spec import load_service
-from localstack.utils.common import camel_to_snake_case, mkdir, snake_to_camel_case
+from localstack.utils.common import camel_to_snake_case, snake_to_camel_case
 
-# Some minification packages might treat "type" as a keyword.
-KEYWORDS = list(keyword.kwlist) + ["type"]
+# Some minification packages might treat "type" as a keyword, some specs define shapes called like the type "Optional"
+KEYWORDS = list(keyword.kwlist) + ["type", "Optional"]
 is_keyword = KEYWORDS.__contains__
 
 
@@ -45,6 +45,9 @@ def to_valid_python_name(spec_name: str) -> str:
     if is_keyword(sanitized):
         sanitized += "_"
 
+    if sanitized.startswith("__"):
+        sanitized = sanitized[1:]
+
     return sanitized
 
 
@@ -63,14 +66,16 @@ class ShapeNode:
             operation = self.service.operation_model(operation_name)
             if operation.input_shape is None:
                 continue
-            if self.shape.name == operation.input_shape.name:
+            if to_valid_python_name(self.shape.name) == to_valid_python_name(
+                operation.input_shape.name
+            ):
                 return True
 
         return False
 
     @property
     def name(self) -> str:
-        return self.shape.name
+        return to_valid_python_name(self.shape.name)
 
     @property
     def is_exception(self):
@@ -90,11 +95,11 @@ class ShapeNode:
         shape = self.shape
 
         if isinstance(shape, StructureShape):
-            return [v.name for v in shape.members.values()]
+            return [to_valid_python_name(v.name) for v in shape.members.values()]
         if isinstance(shape, ListShape):
-            return [shape.member.name]
+            return [to_valid_python_name(shape.member.name)]
         if isinstance(shape, MapShape):
-            return [shape.key.name, shape.value.name]
+            return [to_valid_python_name(shape.key.name), to_valid_python_name(shape.value.name)]
 
         return []
 
@@ -115,7 +120,7 @@ class ShapeNode:
         self._print_as_class(output, base, doc, quote_types)
 
     def _print_as_class(self, output, base: str, doc=True, quote_types=False):
-        output.write(f"class {self.shape.name}({base}):\n")
+        output.write(f"class {to_valid_python_name(self.shape.name)}({base}):\n")
 
         q = '"' if quote_types else ""
 
@@ -127,19 +132,19 @@ class ShapeNode:
 
         for k, v in self.shape.members.items():
             if k in self.shape.required_members:
-                output.write(f"    {k}: {q}{v.name}{q}\n")
+                output.write(f"    {k}: {q}{to_valid_python_name(v.name)}{q}\n")
             else:
-                output.write(f"    {k}: Optional[{q}{v.name}{q}]\n")
+                output.write(f"    {k}: Optional[{q}{to_valid_python_name(v.name)}{q}]\n")
 
     def _print_as_typed_dict(self, output, doc=True, quote_types=False):
-        name = self.shape.name
+        name = to_valid_python_name(self.shape.name)
         q = '"' if quote_types else ""
         output.write('%s = TypedDict("%s", {\n' % (name, name))
         for k, v in self.shape.members.items():
             if k in self.shape.required_members:
-                output.write(f'    "{k}": {q}{v.name}{q},\n')
+                output.write(f'    "{k}": {q}{to_valid_python_name(v.name)}{q},\n')
             else:
-                output.write(f'    "{k}": Optional[{q}{v.name}{q}],\n')
+                output.write(f'    "{k}": Optional[{q}{to_valid_python_name(v.name)}{q}],\n')
         output.write("}, total=False)")
 
     def print_shape_doc(self, output, shape):
@@ -161,35 +166,43 @@ class ShapeNode:
         if isinstance(shape, StructureShape):
             self._print_structure_declaration(output, doc, quote_types)
         elif isinstance(shape, ListShape):
-            output.write(f"{shape.name} = List[{q}{shape.member.name}{q}]")
+            output.write(
+                f"{to_valid_python_name(shape.name)} = List[{q}{to_valid_python_name(shape.member.name)}{q}]"
+            )
         elif isinstance(shape, MapShape):
-            output.write(f"{shape.name} = Dict[{q}{shape.key.name}{q}, {q}{shape.value.name}{q}]")
+            output.write(
+                f"{to_valid_python_name(shape.name)} = Dict[{q}{to_valid_python_name(shape.key.name)}{q}, {q}{to_valid_python_name(shape.value.name)}{q}]"
+            )
         elif isinstance(shape, StringShape):
             if shape.enum:
-                output.write(f"class {shape.name}(str):\n")
+                output.write(f"class {to_valid_python_name(shape.name)}(str):\n")
                 for value in shape.enum:
                     name = to_valid_python_name(value)
                     output.write(f'    {name} = "{value}"\n')
             else:
-                output.write(f"{shape.name} = str")
+                output.write(f"{to_valid_python_name(shape.name)} = str")
         elif shape.type_name == "string":
-            output.write(f"{shape.name} = str")
+            output.write(f"{to_valid_python_name(shape.name)} = str")
         elif shape.type_name == "integer":
-            output.write(f"{shape.name} = int")
+            output.write(f"{to_valid_python_name(shape.name)} = int")
         elif shape.type_name == "long":
-            output.write(f"{shape.name} = int")
+            output.write(f"{to_valid_python_name(shape.name)} = int")
         elif shape.type_name == "double":
-            output.write(f"{shape.name} = float")
+            output.write(f"{to_valid_python_name(shape.name)} = float")
         elif shape.type_name == "float":
-            output.write(f"{shape.name} = float")
+            output.write(f"{to_valid_python_name(shape.name)} = float")
         elif shape.type_name == "boolean":
-            output.write(f"{shape.name} = bool")
+            output.write(f"{to_valid_python_name(shape.name)} = bool")
         elif shape.type_name == "blob":
-            output.write(f"{shape.name} = bytes")  # FIXME check what type blob really is
+            output.write(
+                f"{to_valid_python_name(shape.name)} = bytes"
+            )  # FIXME check what type blob really is
         elif shape.type_name == "timestamp":
-            output.write(f"{shape.name} = datetime")
+            output.write(f"{to_valid_python_name(shape.name)} = datetime")
         else:
-            output.write(f"# unknown shape type for {shape.name}: {shape.type_name}")
+            output.write(
+                f"# unknown shape type for {to_valid_python_name(shape.name)}: {shape.type_name}"
+            )
         # TODO: BoxedInteger?
 
         output.write("\n")
@@ -230,7 +243,7 @@ def generate_service_types(output, service: ServiceModel, doc=True):
 
     for shape_name in service.shape_names:
         shape = service.shape_for(shape_name)
-        nodes[shape_name] = ShapeNode(service, shape)
+        nodes[to_valid_python_name(shape_name)] = ShapeNode(service, shape)
 
     # output.write("__all__ = [\n")
     # for name in nodes.keys():
@@ -280,7 +293,7 @@ def generate_service_api(output, service: ServiceModel, doc=True):
         fn_name = camel_to_snake_case(op_name)
 
         if operation.output_shape:
-            output_shape = operation.output_shape.name
+            output_shape = to_valid_python_name(operation.output_shape.name)
         else:
             output_shape = "None"
 
@@ -294,16 +307,16 @@ def generate_service_api(output, service: ServiceModel, doc=True):
             for m in input_shape.required_members:
                 members.remove(m)
                 m_shape = input_shape.members[m]
-                parameters[xform_name(m)] = m_shape.name
+                parameters[xform_name(m)] = to_valid_python_name(m_shape.name)
                 param_shapes[xform_name(m)] = m_shape
             for m in members:
                 m_shape = input_shape.members[m]
                 param_shapes[xform_name(m)] = m_shape
-                parameters[xform_name(m)] = f"{m_shape.name} = None"
+                parameters[xform_name(m)] = f"{to_valid_python_name(m_shape.name)} = None"
 
         if any(map(is_bad_param_name, parameters.keys())):
             # if we cannot render the parameter name, don't expand the parameters in the handler
-            param_list = f"request: {input_shape.name}" if input_shape else ""
+            param_list = f"request: {to_valid_python_name(input_shape.name)}" if input_shape else ""
             output.write(f'    @handler("{operation.name}", expand=False)\n')
         else:
             param_list = ", ".join([f"{k}: {v}" for k, v in parameters.items()])
@@ -332,18 +345,23 @@ def generate_service_api(output, service: ServiceModel, doc=True):
 
             # return value
             if operation.output_shape:
-                output.write(f":returns: {operation.output_shape.name}\n")
+                output.write(f":returns: {to_valid_python_name(operation.output_shape.name)}\n")
 
             # errors
             for error in operation.error_shapes:
-                output.write(f":raises {error.name}:\n")
+                output.write(f":raises {to_valid_python_name(error.name)}:\n")
 
             output.write('        """\n')
 
         output.write("        raise NotImplementedError\n")
 
 
-@click.command()
+@click.group()
+def scaffold():
+    pass
+
+
+@scaffold.command(name="generate")
 @click.argument("service", type=str)
 @click.option("--doc/--no-doc", default=False, help="whether or not to generate docstrings")
 @click.option(
@@ -351,7 +369,10 @@ def generate_service_api(output, service: ServiceModel, doc=True):
     default=False,
     help="whether or not to save the result into the api directory",
 )
-def generate(service: str, doc: bool, save: bool):
+@click.option(
+    "--path", default="./localstack/aws/api", help="the path where the api should be saved"
+)
+def generate(service: str, doc: bool, save: bool, path: str):
     """
     Generate types and API stubs for a given AWS service.
 
@@ -360,10 +381,22 @@ def generate(service: str, doc: bool, save: bool):
     from click import ClickException
 
     try:
-        model = load_service(service)
+        code = generate_code(service, doc=doc)
     except UnknownServiceError:
-        raise ClickException("unknown service %s" % service)
+        raise ClickException(f"unknown service {service}")
 
+    if not save:
+        # either just print the code to stdout
+        click.echo(code)
+        return
+
+    # or find the file path and write the code to that location
+    create_code_directory(service, code, path)
+    click.echo("done!")
+
+
+def generate_code(service_name: str, doc: bool = False) -> str:
+    model = load_service(service_name)
     output = io.StringIO()
     generate_service_types(output, model, doc=doc)
     generate_service_api(output, model, doc=doc)
@@ -376,36 +409,57 @@ def generate(service: str, doc: bool, save: bool):
         from black import FileMode, format_str
 
         # try to format with black
-        code = format_str(code, mode=FileMode())
+        code = format_str(code, mode=FileMode(line_length=100))
 
         # try to remove unused imports
-        code = autoflake.fix_code(code)
+        code = autoflake.fix_code(code, remove_all_unused_imports=True)
 
         # try to sort imports
-        code = isort.code(code)
+        code = isort.code(code, config=isort.Config(profile="black", line_length=100))
     except Exception:
         pass
 
-    if not save:
-        # either just print the code to stdout
-        click.echo(code)
-        return
+    return code
 
-    # or find the file path and write the code to that location
-    here = os.path.dirname(__file__)
-    service_name = service.replace("-", "_")
-    path = os.path.join(here, "api", service_name)
 
-    if not os.path.exists(path):
-        click.echo("creating directory %s" % path)
-        mkdir(path)
+def create_code_directory(service_name: str, code: str, base_path: str):
+    service_name = service_name.replace("-", "_")
+    path = Path(base_path, service_name)
 
-    file = os.path.join(path, "__init__.py")
-    click.echo("writing to file %s" % file)
-    with open(file, "w") as fd:
-        fd.write(code)
+    if not path.exists():
+        click.echo(f"creating directory {path}")
+        path.mkdir()
+
+    file = path / "__init__.py"
+    click.echo(f"writing to file {file}")
+    file.write_text(code)
+
+
+@scaffold.command()
+@click.option("--doc/--no-doc", default=False, help="whether or not to generate docstrings")
+@click.option(
+    "--path",
+    default="./localstack/aws/api",
+    help="the path in which to upgrade ASF APIs",
+)
+def upgrade(path: str, doc: bool = False):
+    """
+    Execute the code generation for all existing APIs.
+    """
+    services = [
+        d.name.replace("_", "-")
+        for d in Path(path).iterdir()
+        if d.is_dir() and not d.name.startswith("__")
+    ]
+    for service in services:
+        try:
+            code = generate_code(service, doc)
+        except UnknownServiceError:
+            click.echo(f"unknown service {service}! skipping...")
+            continue
+        create_code_directory(service, code, base_path=path)
     click.echo("done!")
 
 
 if __name__ == "__main__":
-    generate()
+    scaffold()

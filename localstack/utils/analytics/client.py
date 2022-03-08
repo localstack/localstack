@@ -7,7 +7,8 @@ from typing import Any, Dict, List
 import requests
 
 from localstack import config, constants
-from localstack.utils.common import get_proxies, now
+from localstack.utils.http import get_proxies
+from localstack.utils.time import now
 
 from .events import Event, EventMetadata
 from .metadata import ClientMetadata, get_session_id

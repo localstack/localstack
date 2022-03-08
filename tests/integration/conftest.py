@@ -14,6 +14,7 @@ import pytest
 from localstack import config
 from localstack.config import is_env_true
 from localstack.constants import ENV_INTERNAL_TEST_RUN
+from localstack.runtime import events
 from localstack.services import infra
 from localstack.utils.common import safe_requests
 from tests.integration.test_es import install_async as es_install_async
@@ -140,7 +141,7 @@ def run_localstack():
             logger.exception("exception while running init function for test")
 
     logger.info("waiting for infra to be ready")
-    infra.INFRA_READY.wait()  # wait for infra to start (threading event)
+    events.infra_ready.wait()  # wait for infra to start (threading event)
     localstack_started.set()  # set conftest inter-process Event
 
     logger.info("waiting for shutdown")

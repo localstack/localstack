@@ -235,6 +235,7 @@ class UntagResourcesOutput(TypedDict, total=False):
 
 
 class ResourcegroupstaggingapiApi:
+
     service = "resourcegroupstaggingapi"
     version = "2017-01-26"
 
@@ -282,10 +283,7 @@ class ResourcegroupstaggingapiApi:
 
     @handler("GetTagValues")
     def get_tag_values(
-        self,
-        context: RequestContext,
-        key: TagKey,
-        pagination_token: PaginationToken = None,
+        self, context: RequestContext, key: TagKey, pagination_token: PaginationToken = None
     ) -> GetTagValuesOutput:
         raise NotImplementedError
 
@@ -297,10 +295,7 @@ class ResourcegroupstaggingapiApi:
 
     @handler("TagResources")
     def tag_resources(
-        self,
-        context: RequestContext,
-        resource_arn_list: ResourceARNListForTagUntag,
-        tags: TagMap,
+        self, context: RequestContext, resource_arn_list: ResourceARNListForTagUntag, tags: TagMap
     ) -> TagResourcesOutput:
         raise NotImplementedError
 

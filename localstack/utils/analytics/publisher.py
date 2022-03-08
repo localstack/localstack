@@ -6,8 +6,8 @@ import time
 from queue import Full, Queue
 from typing import List, Optional
 
-from localstack import config, constants
-from localstack.utils.common import start_thread, start_worker_thread
+from localstack import config
+from localstack.utils.threads import start_thread, start_worker_thread
 
 from .client import AnalyticsClient
 from .events import Event, EventHandler
@@ -185,7 +185,7 @@ class GlobalAnalyticsBus(PublisherBuffer):
         if config.DISABLE_EVENTS:
             return True
         # don't track for internal test runs (like integration tests)
-        if config.is_env_true(constants.ENV_INTERNAL_TEST_RUN):
+        if config.is_local_test_mode():
             return True
         if self.tracking_disabled:
             return True

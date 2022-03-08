@@ -41,18 +41,15 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import LambdaResponse
 from localstack.utils.aws.aws_stack import is_internal_call_context
 from localstack.utils.aws.request_context import RequestContextManager, get_proxy_request_for_thread
-from localstack.utils.common import (
-    empty_context_manager,
-    generate_ssl_cert,
-    json_safe,
-    path_from_url,
-    start_thread,
-    to_bytes,
-    to_str,
-    wait_for_port_open,
-)
+from localstack.utils.crypto import generate_ssl_cert
+from localstack.utils.functions import empty_context_manager
+from localstack.utils.json import json_safe
+from localstack.utils.net import wait_for_port_open
 from localstack.utils.server import http2_server
 from localstack.utils.serving import Server
+from localstack.utils.strings import to_bytes, to_str
+from localstack.utils.threads import start_thread
+from localstack.utils.urls import path_from_url
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -946,6 +943,8 @@ def start_proxy_server(
     params=None,  # TODO: not being used - should be investigated/removed
     asynchronous=True,
     check_port=True,
+    max_content_length: int = None,
+    send_timeout: int = None,
 ):
     bind_address = bind_address if bind_address else BIND_HOST
 
@@ -983,7 +982,13 @@ def start_proxy_server(
         ssl_creds = (cert_file_name, key_file_name)
 
     result = http2_server.run_server(
-        port, bind_address, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds
+        port,
+        bind_address,
+        handler=handler,
+        asynchronous=asynchronous,
+        ssl_creds=ssl_creds,
+        max_content_length=max_content_length,
+        send_timeout=send_timeout,
     )
     if asynchronous and check_port:
         wait_for_port_open(port, sleep_time=0.2, retries=12)

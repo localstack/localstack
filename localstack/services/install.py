@@ -18,7 +18,7 @@ import requests
 from plugin import Plugin, PluginManager
 
 from localstack import config
-from localstack.config import dirs, has_docker
+from localstack.config import dirs
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS,
     DYNAMODB_JAR_URL,
@@ -33,26 +33,23 @@ from localstack.constants import (
     STS_JAR_URL,
 )
 from localstack.runtime import hooks
-from localstack.utils.common import (
+from localstack.utils.archives import untar, unzip
+from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.files import (
     chmod_r,
-    download,
     file_exists_not_empty,
-    get_arch,
-    is_windows,
     load_file,
     mkdir,
     new_tmp_file,
-    parallelize,
     replace_in_file,
-    retry,
     rm_rf,
-    run,
-    safe_run,
     save_file,
-    untar,
-    unzip,
 )
-from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.http import download
+from localstack.utils.platform import get_arch, is_windows
+from localstack.utils.run import run
+from localstack.utils.sync import retry
+from localstack.utils.threads import parallelize
 
 LOG = logging.getLogger(__name__)
 
@@ -201,7 +198,7 @@ def install_elasticsearch(version=None):
                 LOG.info("Installing Elasticsearch plugin %s", plugin)
 
                 def try_install():
-                    output = safe_run([plugin_binary, "install", "-b", plugin])
+                    output = run([plugin_binary, "install", "-b", plugin])
                     LOG.debug("Plugin installation output: %s", output)
 
                 # We're occasionally seeing javax.net.ssl.SSLHandshakeException -> add download retries
@@ -420,7 +417,7 @@ def install_local_kms():
 def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
         # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
-        if not has_docker():
+        if not DOCKER_CLIENT.has_docker():
             # TODO: works only when a docker socket is available -> add a fallback if running without Docker?
             LOG.warning("Docker not available - skipping installation of StepFunctions dependency")
             return
@@ -661,10 +658,7 @@ def log_install_msg(component, verbatim=False):
 def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archive=None):
     mkdir(target_dir)
 
-    if tmp_archive:
-        _, ext = os.path.splitext(tmp_archive)
-    else:
-        _, ext = os.path.splitext(archive_url)
+    _, ext = os.path.splitext(tmp_archive or archive_url)
 
     tmp_archive = tmp_archive or new_tmp_file()
     if not os.path.exists(tmp_archive) or os.path.getsize(tmp_archive) <= 0:
@@ -679,10 +673,10 @@ def download_and_extract(archive_url, target_dir, retries=0, sleep=3, tmp_archiv
 
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
-    elif ext == ".gz" or ext == ".bz2":
+    elif ext in [".bz2", ".gz", ".tgz"]:
         untar(tmp_archive, target_dir)
     else:
-        raise Exception("Unsupported archive format: %s" % ext)
+        raise Exception(f"Unsupported archive format: {ext}")
 
 
 def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):

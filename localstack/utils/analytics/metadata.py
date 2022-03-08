@@ -6,7 +6,9 @@ import platform
 
 from localstack import config, constants
 from localstack.runtime import hooks
-from localstack.utils.common import FileMappedDocument, call_safe, long_uid, md5, short_uid
+from localstack.utils.functions import call_safe
+from localstack.utils.json import FileMappedDocument
+from localstack.utils.strings import long_uid, md5, short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ def read_client_metadata() -> ClientMetadata:
         version=get_version_string(),
         is_ci=os.getenv("CI") is not None,
         is_docker=config.is_in_docker,
-        is_testing=config.is_env_true(constants.ENV_INTERNAL_TEST_RUN),
+        is_testing=config.is_local_test_mode(),
     )
 
 

@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import cachetools
 import dns.resolver
 
+from .numbers import is_number
 from .sync import retry
 
 LOG = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ def is_port_open(
     protocols: Optional[List[str]] = None,
     quiet: bool = True,
 ):
-    from localstack.utils.common import is_number, safe_requests
+    from localstack.utils.http import safe_requests
 
     protocols = protocols or ["tcp"]
     port = port_or_url

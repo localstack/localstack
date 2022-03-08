@@ -81,7 +81,7 @@ def canonicalize_bool_to_str(val: bool) -> str:
 
 def convert_to_printable_chars(value: Union[List, Dict, str]) -> str:
     """Removes all unprintable characters from the given string."""
-    from localstack.utils.common import recurse_object
+    from localstack.utils.objects import recurse_object
 
     if isinstance(value, (dict, list)):
 

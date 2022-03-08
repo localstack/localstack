@@ -22,18 +22,14 @@ from localstack.services.cloudformation.service_models import (
     DependencyNotYetSatisfied,
     GenericBaseModel,
 )
-from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_preparer
-from localstack.utils.common import (
-    get_all_subclasses,
-    json_safe,
-    prevent_stack_overflow,
-    run_safe,
-    start_worker_thread,
-    to_bytes,
-    to_str,
-)
+from localstack.utils.collections import merge_recursive
+from localstack.utils.functions import prevent_stack_overflow, run_safe
+from localstack.utils.json import clone_safe, json_safe
+from localstack.utils.objects import get_all_subclasses, recurse_object
+from localstack.utils.strings import first_char_to_lower, is_string, to_bytes, to_str
+from localstack.utils.threads import start_worker_thread
 
 from localstack.services.cloudformation.models import *  # noqa: F401, isort:skip
 
@@ -375,7 +371,7 @@ def extract_resource_attribute(
             if attribute == "Arn" and resource_state.get("QueueArn"):
                 return resolve_refs_recursively(stack, resource_state.get("QueueArn"))
             return aws_stack.get_sqs_queue_url(resource_props.get("QueueName"))
-    attribute_lower = common.first_char_to_lower(attribute)
+    attribute_lower = first_char_to_lower(attribute)
     result = resource_state.get(attribute) or resource_state.get(attribute_lower)
     if result is None and isinstance(resource, dict):
         result = resource_props.get(attribute) or resource_props.get(attribute_lower)
@@ -788,13 +784,13 @@ def fix_account_id_in_arns(params):
     def fix_ids(o, **kwargs):
         if isinstance(o, dict):
             for k, v in o.items():
-                if common.is_string(v, exclude_binary=True):
+                if is_string(v, exclude_binary=True):
                     o[k] = aws_stack.fix_account_id_in_arns(v)
-        elif common.is_string(o, exclude_binary=True):
+        elif is_string(o, exclude_binary=True):
             o = aws_stack.fix_account_id_in_arns(o)
         return o
 
-    result = common.recurse_object(params, fix_ids)
+    result = recurse_object(params, fix_ids)
     return result
 
 
@@ -822,7 +818,7 @@ def convert_data_types(func_details, params):
                     o[k] = cast(v, types[k])
         return o
 
-    result = common.recurse_object(params, fix_types)
+    result = recurse_object(params, fix_types)
     return result
 
 
@@ -968,10 +964,10 @@ def configure_resource_via_sdk(stack, resource_id, resource_type, func_details, 
                     o[k] = resource_name_holder["value"]
         return o
 
-    common.recurse_object(params, fix_placeholders)
+    recurse_object(params, fix_placeholders)
 
     # assign default values if empty
-    params = common.merge_recursive(defaults, params)
+    params = merge_recursive(defaults, params)
 
     # this is an indicator that we should skip this resource deployment, and return
     if params is None:
@@ -1242,9 +1238,9 @@ class TemplateDeployer(object):
             return
         self.stack.set_stack_status("DELETE_IN_PROGRESS")
         stack_resources = list(self.stack.resources.values())
-        resources = {r["LogicalResourceId"]: common.clone_safe(r) for r in stack_resources}
+        resources = {r["LogicalResourceId"]: clone_safe(r) for r in stack_resources}
         for key, resource in resources.items():
-            resource["Properties"] = resource.get("Properties", common.clone_safe(resource))
+            resource["Properties"] = resource.get("Properties", clone_safe(resource))
             resource["ResourceType"] = resource.get("ResourceType") or resource.get("Type")
         for resource_id, resource in resources.items():
             # TODO: cache condition value in resource details on deployment and use cached value here
@@ -1310,7 +1306,7 @@ class TemplateDeployer(object):
         # Note: using the original, unmodified template here to preserve Ref's ...
         raw_resources = self.stack.template_original["Resources"]
         raw_resource = raw_resources[resource["LogicalResourceId"]]
-        dumped = json.dumps(common.json_safe(raw_resource))
+        dumped = json.dumps(json_safe(raw_resource))
         for other_id, other in raw_resources.items():
             if resource != other:
                 # TODO: traverse dict instead of doing string search!

@@ -28,6 +28,7 @@ from localstack.services.dynamodbstreams.dynamodbstreams_api import (
 )
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
+from localstack.utils.collections import select_attributes
 from localstack.utils.common import to_str
 
 LOG = logging.getLogger(__name__)
@@ -113,4 +114,6 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         exclusive_start_stream_arn: StreamArn = None,
     ) -> ListStreamsOutput:
         region = DynamoDBStreamsBackend.get()
-        return ListStreamsOutput(Streams=list(region.ddb_streams.values()))
+        attributes = ["StreamArn", "TableName", "StreamLabel"]
+        result = [select_attributes(res, attributes) for res in region.ddb_streams.values()]
+        return ListStreamsOutput(Streams=result)

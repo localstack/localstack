@@ -12,7 +12,6 @@ from typing import Dict, Iterable, List, Optional, Set
 from localstack import config, constants
 from localstack.config import Directories
 from localstack.runtime import hooks
-from localstack.utils.common import FileListener, chmod_r, mkdir, poll_condition
 from localstack.utils.container_utils.container_client import (
     ContainerException,
     PortMappings,
@@ -22,12 +21,13 @@ from localstack.utils.container_utils.container_client import (
 )
 from localstack.utils.container_utils.docker_cmd_client import CmdDockerClient
 from localstack.utils.docker_utils import DOCKER_CLIENT
-
-# set up logger
-from localstack.utils.generic.file_utils import cache_dir
+from localstack.utils.files import cache_dir, chmod_r, mkdir
 from localstack.utils.run import run, to_str
 from localstack.utils.serving import Server
+from localstack.utils.sync import poll_condition
+from localstack.utils.tail import FileListener
 
+# set up logger
 LOG = logging.getLogger(os.path.basename(__file__))
 
 

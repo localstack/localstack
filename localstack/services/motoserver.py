@@ -6,7 +6,7 @@ from moto.server import DomainDispatcherApplication, create_backend_app
 from werkzeug.serving import make_server
 
 from localstack import constants
-from localstack.utils.common import get_free_tcp_port
+from localstack.utils.net import get_free_tcp_port
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)

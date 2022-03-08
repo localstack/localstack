@@ -1,8 +1,6 @@
 import platform
 from functools import lru_cache
 
-from localstack import config
-
 
 def is_mac_os() -> bool:
     return "darwin" == platform.system().lower()
@@ -54,4 +52,6 @@ def get_os() -> str:
 
 
 def in_docker() -> bool:
+    from localstack import config
+
     return config.in_docker()

@@ -6,7 +6,7 @@ import time
 from typing import Dict
 
 from localstack import config
-from localstack.constants import ENV_INTERNAL_TEST_RUN, MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
+from localstack.constants import MOTO_ACCOUNT_ID, TEST_AWS_ACCOUNT_ID
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.generic_proxy import ProxyListener, RegionBackend
 from localstack.utils.aws import aws_stack
@@ -176,7 +176,7 @@ class ProxyListenerEvents(ProxyListener):
 
             elif action == "PutEvents":
                 # keep track of events for local integration testing
-                if os.environ.get(ENV_INTERNAL_TEST_RUN):
+                if config.is_local_test_mode():
                     TEST_EVENTS_CACHE.extend(parsed_data.get("Entries", []))
 
         return True
