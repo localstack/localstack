@@ -38,7 +38,7 @@ jobs:
         id: setup-python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: '3.10'
       - name: Set up Node 14.x
         uses: actions/setup-node@v2
         with:
