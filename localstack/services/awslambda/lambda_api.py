@@ -815,7 +815,8 @@ def run_lambda(
         }
         LOG.info("Error executing Lambda function %s: %s %s", func_arn, e, traceback.format_exc())
         if isinstance(e, lambda_executors.InvocationException):
-            response = run_safe(lambda: json.loads(e.result)) or response
+            exc_result = e.result
+            response = run_safe(lambda: json.loads(exc_result)) or response
         log_output = e.log_output if isinstance(e, lambda_executors.InvocationException) else ""
         return InvocationResult(Response(json.dumps(response), status=500), log_output)
     finally:
