@@ -225,6 +225,22 @@ class Templates:
     def render_vtl(self, template, variables):
         return self.vtl.render_vtl(template, variables=variables)
 
+    @staticmethod
+    def build_variables_mapping(api_context: ApiInvocationContext):
+        # TODO: make this (dict) an object so usages of "render_vtl" variables are defined
+        return {
+            "context": api_context.context or {},
+            "stage_variables": api_context.stage_variables or {},
+            "input": {
+                "body": api_context.data_as_string(),
+                "params": {
+                    "path": api_context.path_params,
+                    "querystring": api_context.query_params(),
+                    "header": api_context.headers,
+                },
+            },
+        }
+
 
 class RequestTemplates(Templates):
     """
@@ -240,20 +256,7 @@ class RequestTemplates(Templates):
         if not template:
             return api_context.data_as_string()
 
-        # TODO: make this (dict) an object so usages of "render_vtl" variables are defined
-        variables = {
-            "context": api_context.context or {},
-            "stage_variables": api_context.stage_variables or {},
-            "input": {
-                "body": api_context.data_as_string(),
-                "params": {
-                    "path": api_context.path_params,
-                    "querystring": api_context.query_params(),
-                    "header": api_context.headers,
-                },
-            },
-        }
-
+        variables = self.build_variables_mapping(api_context)
         result = self.render_vtl(template, variables=variables)
         LOG.info(f"Endpoint request body after transformations:\n{result}")
         return result
@@ -290,19 +293,7 @@ class ResponseTemplates(Templates):
         if not template:
             return response
 
-        variables = {
-            "context": api_context.context or {},
-            "stage_variables": api_context.stage_variables or {},
-            "input": {
-                "body": api_context.data_as_string(),
-                "params": {
-                    "path": api_context.path_params,
-                    "querystring": api_context.query_params(),
-                    "header": api_context.headers,
-                },
-            },
-        }
-
+        variables = self.build_variables_mapping(api_context)
         response._content = self.render_vtl(template, variables=variables)
         LOG.info("Endpoint response body after transformations:\n%s", response._content)
         return response._content
