@@ -28,7 +28,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .venv
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('setup.cfg') }}
 
       - name: Install dependencies
         run: make install-dev

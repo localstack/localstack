@@ -212,9 +212,6 @@ from localstack.utils.urls import path_from_url  # noqa
 # TODO: remove imports from here (need to update any client code that imports these from utils.common)
 from localstack.utils.xml import obj_to_xml, strip_xmlns  # noqa
 
-# flag to indicate whether we've received and processed the stop signal
-INFRA_STOPPED = False
-
 
 # TODO: move somewhere sensible (probably localstack.runtime)
 class ExternalServicePortsManager(PortRange):

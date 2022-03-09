@@ -22,9 +22,9 @@ from localstack.constants import (
     TEST_AWS_ACCOUNT_ID,
 )
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (
-    json_safe,
-    replace_response_content,
+from localstack.utils.http import replace_response_content
+from localstack.utils.json import json_safe
+from localstack.utils.strings import (
     short_uid,
     str_startswith_ignore_case,
     to_bytes,

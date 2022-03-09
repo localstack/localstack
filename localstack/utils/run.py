@@ -224,10 +224,10 @@ class ShellCommandThread(FuncThread):
     def run_cmd(self, params):
         while True:
             self.do_run_cmd()
-            from localstack.utils import common
+            from localstack.runtime import events
 
             if (
-                common.INFRA_STOPPED  # FIXME: this is the wrong level of abstraction
+                events.infra_stopping.is_set()  # FIXME: this is the wrong level of abstraction
                 or not self.auto_restart
                 or not self.process
                 or self.process.returncode == 0
@@ -300,11 +300,11 @@ class ShellCommandThread(FuncThread):
             LOG.warning('Shell command exit code "%s": %s', self.process.returncode, self.cmd)
 
     def is_killed(self):
-        from localstack.utils import common
+        from localstack.runtime import events
 
         if not self.process:
             return True
-        if common.INFRA_STOPPED:  # FIXME
+        if events.infra_stopping.is_set():  # FIXME
             return True
         # Note: Do NOT import "psutil" at the root scope, as this leads
         # to problems when importing this file from our test Lambdas in Docker

@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=full
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.8.12-slim-buster@sha256:0ac2a12df86b01d6a482fd07b62b6ca2afe3355cd520260c7d561c4e5c966cdb as java-builder
+FROM python:3.8.12-slim-buster@sha256:269c3acfc900bbe8deea8dd646af354c0950839298b9e84f553c9d0d74a7c5e8 as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -34,7 +34,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.8.12-slim-buster@sha256:0ac2a12df86b01d6a482fd07b62b6ca2afe3355cd520260c7d561c4e5c966cdb as base
+FROM python:3.8.12-slim-buster@sha256:269c3acfc900bbe8deea8dd646af354c0950839298b9e84f553c9d0d74a7c5e8 as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -141,7 +141,7 @@ RUN mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
 RUN (virtualenv .venv && source .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
 
 # add files necessary to install all dependencies
-ADD Makefile setup.py requirements.txt pyproject.toml ./
+ADD Makefile setup.py setup.cfg pyproject.toml ./
 # add the root package init to invalidate docker layers with version bumps
 ADD localstack/__init__.py localstack/
 # add the localstack start scripts (necessary for the installation of the runtime dependencies, i.e. `pip install -e .`)

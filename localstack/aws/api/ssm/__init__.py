@@ -5063,6 +5063,7 @@ class UpdateServiceSettingResult(TypedDict, total=False):
 
 
 class SsmApi:
+
     service = "ssm"
     version = "2014-11-06"
 
@@ -5089,10 +5090,7 @@ class SsmApi:
 
     @handler("CancelCommand")
     def cancel_command(
-        self,
-        context: RequestContext,
-        command_id: CommandId,
-        instance_ids: InstanceIdList = None,
+        self, context: RequestContext, command_id: CommandId, instance_ids: InstanceIdList = None
     ) -> CancelCommandResult:
         raise NotImplementedError
 
@@ -5852,10 +5850,7 @@ class SsmApi:
 
     @handler("GetParameter")
     def get_parameter(
-        self,
-        context: RequestContext,
-        name: PSParameterName,
-        with_decryption: Boolean = None,
+        self, context: RequestContext, name: PSParameterName, with_decryption: Boolean = None
     ) -> GetParameterResult:
         raise NotImplementedError
 
@@ -5872,10 +5867,7 @@ class SsmApi:
 
     @handler("GetParameters")
     def get_parameters(
-        self,
-        context: RequestContext,
-        names: ParameterNameList,
-        with_decryption: Boolean = None,
+        self, context: RequestContext, names: ParameterNameList, with_decryption: Boolean = None
     ) -> GetParametersResult:
         raise NotImplementedError
 
@@ -6364,10 +6356,7 @@ class SsmApi:
 
     @handler("UpdateDocumentDefaultVersion")
     def update_document_default_version(
-        self,
-        context: RequestContext,
-        name: DocumentName,
-        document_version: DocumentVersionNumber,
+        self, context: RequestContext, name: DocumentName, document_version: DocumentVersionNumber
     ) -> UpdateDocumentDefaultVersionResult:
         raise NotImplementedError
 

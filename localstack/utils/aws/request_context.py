@@ -16,9 +16,9 @@ from localstack.utils.aws.aws_responses import (
     requests_response,
     requests_to_flask_response,
 )
-from localstack.utils.common import snake_to_camel_case
 from localstack.utils.patch import patch
-from localstack.utils.run import FuncThread
+from localstack.utils.strings import snake_to_camel_case
+from localstack.utils.threads import FuncThread
 
 LOG = logging.getLogger(__name__)
 

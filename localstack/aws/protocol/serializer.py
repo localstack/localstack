@@ -76,6 +76,7 @@ not work out-of-the-box.
 """
 import abc
 import base64
+import functools
 import json
 import logging
 from abc import ABC
@@ -85,7 +86,15 @@ from typing import Optional, Tuple, Union
 from xml.etree import ElementTree as ETree
 
 from boto.utils import ISO8601
-from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
+from botocore.model import (
+    ListShape,
+    MapShape,
+    NoShapeFoundError,
+    OperationModel,
+    ServiceModel,
+    Shape,
+    StructureShape,
+)
 from botocore.serialize import ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 from moto.core.utils import gen_amzn_requestid_long
@@ -97,9 +106,52 @@ LOG = logging.getLogger(__name__)
 
 
 class ResponseSerializerError(Exception):
-    """Error which is thrown if the request serialization fails."""
+    """
+    Error which is thrown if the request serialization fails.
+    Super class of all exceptions raised by the serializer.
+    """
 
     pass
+
+
+class UnknownSerializerError(ResponseSerializerError):
+    """
+    Error which indicates that the raised exception of the serializer could be caused by invalid data or by any other
+    (unknown) issue. Errors like this should be reported and indicate an issue in the serializer itself.
+    """
+
+    pass
+
+
+class ProtocolSerializerError(ResponseSerializerError):
+    """
+    Error which indicates that the given data is not compliant with the service's specification and cannot be serialized.
+    This usually results in a response to the client with an HTTP 5xx status code (internal server error).
+    """
+
+    pass
+
+
+def _handle_exceptions(func):
+    """
+    Decorator which handles the exceptions raised by the serializer. It ensures that all exceptions raised by the public
+    methods of the parser are instances of ResponseSerializerError.
+    :param func: to wrap in order to add the exception handling
+    :return: wrapped function
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ResponseSerializerError:
+            raise
+        except Exception as e:
+            raise UnknownSerializerError(
+                "An unknown error occurred when trying to serialize the response."
+            ) from e
+
+    return wrapper
 
 
 class ResponseSerializer(abc.ABC):
@@ -113,6 +165,7 @@ class ResponseSerializer(abc.ABC):
     # The default timestamp format is ISO8601, but this can be overwritten by subclasses.
     TIMESTAMP_FORMAT = "iso8601"
 
+    @_handle_exceptions
     def serialize_to_response(
         self, response: dict, operation_model: OperationModel
     ) -> HttpResponse:
@@ -123,6 +176,7 @@ class ResponseSerializer(abc.ABC):
         :param operation_model: specification of the service & operation containing information about the shape of the
                                 service's output / response
         :return: HttpResponse which can be sent to the calling client
+        :raises: ResponseSerializerError (either a ProtocolSerializerError or an UnknownSerializerError)
         """
         serialized_response = self._create_default_response(operation_model)
         shape = operation_model.output_shape
@@ -136,6 +190,7 @@ class ResponseSerializer(abc.ABC):
         )
         return serialized_response
 
+    @_handle_exceptions
     def serialize_error_to_response(
         self, error: ServiceException, operation_model: OperationModel
     ) -> HttpResponse:
@@ -147,6 +202,7 @@ class ResponseSerializer(abc.ABC):
         :param operation_model: specification of the service & operation containing information about the shape of the
                                 service's output / response
         :return: HttpResponse which can be sent to the calling client
+        :raises: ResponseSerializerError (either a ProtocolSerializerError or an UnknownSerializerError)
         """
         serialized_response = self._create_default_response(operation_model)
         if isinstance(error, CommonServiceException):
@@ -164,12 +220,18 @@ class ResponseSerializer(abc.ABC):
             # The shape name is equal to the class name (since the classes are generated from the shape's name)
             error_shape_name = error.__class__.__name__
             # Lookup the corresponding error shape in the operation model
-            shape = operation_model.service_model.shape_for(error_shape_name)
-            if shape is None or not shape.metadata.get("exception", False):
-                raise ResponseSerializerError(
+            try:
+                shape = operation_model.service_model.shape_for(error_shape_name)
+                if not shape.metadata.get("exception", False):
+                    raise ProtocolSerializerError(
+                        f"The given error ({error_shape_name}) corresponds to a non-exception"
+                        f"shape."
+                    )
+            except NoShapeFoundError as e:
+                raise ProtocolSerializerError(
                     f"Error to serialize ({error_shape_name}) neither is a CommonServiceException, nor is its error "
                     f"shape contained in the service's specification ({operation_model.service_model.service_name})."
-                )
+                ) from e
 
             error_spec = shape.metadata.get("error", {})
             status_code = error_spec.get("httpStatusCode")

@@ -12,27 +12,17 @@ from urllib.parse import urlparse
 from amazon_kclpy import kcl
 
 from localstack import config
-from localstack.config import USE_SSL
 from localstack.constants import LOCALHOST, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
-from localstack.utils.common import (
-    TMP_FILES,
-    TMP_THREADS,
-    ShellCommandThread,
-    chmod_r,
-    get_service_protocol,
-    now,
-    retry,
-    rm_rf,
-    run,
-    save_file,
-    short_uid,
-    to_str,
-)
+from localstack.utils.files import TMP_FILES, chmod_r, rm_rf, save_file
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
-from localstack.utils.run import FuncThread
+from localstack.utils.run import FuncThread, ShellCommandThread, run
+from localstack.utils.strings import short_uid, to_str
+from localstack.utils.sync import retry
+from localstack.utils.threads import TMP_THREADS
+from localstack.utils.time import now
 
 EVENTS_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.fifo")
 LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), "kclipy.*.log")
@@ -204,7 +194,7 @@ class OutputReaderThread(FuncThread):
                 LOGGER.warning("Unable to notify log subscriber: %s", e)
 
     def start_reading(self, params):
-        # FIXME: consider using common.FileListener
+        # FIXME: consider using localstack.utils.tail.FileListener
 
         for line in self._tail(params["file"]):
             # notify subscribers
@@ -304,7 +294,7 @@ def get_stream_info(
         stream_info["conn_kwargs"] = {
             "host": LOCALHOST,
             "port": config.service_port("kinesis"),
-            "is_secure": bool(USE_SSL),
+            "is_secure": bool(config.USE_SSL),
         }
     if endpoint_url:
         if "conn_kwargs" not in stream_info:
@@ -392,8 +382,8 @@ def start_kcl_client_process(
     if aws_stack.is_local_env(env):
         kwargs["kinesisEndpoint"] = f"{LOCALHOST}:{config.service_port('kinesis')}"
         kwargs["dynamodbEndpoint"] = f"{LOCALHOST}:{config.service_port('dynamodb')}"
-        kwargs["kinesisProtocol"] = get_service_protocol()
-        kwargs["dynamodbProtocol"] = get_service_protocol()
+        kwargs["kinesisProtocol"] = config.get_protocol()
+        kwargs["dynamodbProtocol"] = config.get_protocol()
         kwargs["disableCertChecking"] = "true"
     kwargs.update(configs)
     # create config file
@@ -428,7 +418,7 @@ for path in glob.glob('%s/lib/python*/site-packages'):
 sys.path.insert(0, '%s')
 from localstack.config import DEFAULT_ENCODING
 from localstack.utils.kinesis import kinesis_connector
-from localstack.utils.common import timestamp
+from localstack.utils.time import timestamp
 events_file = '%s'
 log_file = %s
 error_log = os.path.join(tempfile.gettempdir(), 'kclipy.error.log')

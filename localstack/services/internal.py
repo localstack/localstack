@@ -13,14 +13,12 @@ from localstack.http import Router
 from localstack.http.adapters import RouterListener
 from localstack.http.dispatcher import resource_dispatcher
 from localstack.services.infra import terminate_all_processes_in_docker
-from localstack.utils.common import (
-    call_safe,
-    load_file,
-    merge_recursive,
-    parse_json_or_yaml,
-    parse_request_data,
-    to_str,
-)
+from localstack.utils.collections import merge_recursive
+from localstack.utils.files import load_file
+from localstack.utils.functions import call_safe
+from localstack.utils.http import parse_request_data
+from localstack.utils.json import parse_json_or_yaml
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -107,6 +105,7 @@ class ResourceGraph:
 
 class CloudFormationUi:
     def on_get(self, request):
+        from localstack.utils.aws.aws_stack import get_valid_regions
 
         path = request.path
         data = request.data
@@ -121,7 +120,7 @@ class CloudFormationUi:
             "stackName": "stack1",
             "templateBody": "{}",
             "errorMessage": "''",
-            "regions": json.dumps(sorted(list(config.VALID_REGIONS))),
+            "regions": json.dumps(sorted(list(get_valid_regions()))),
         }
 
         download_url = req_params.get("templateURL")

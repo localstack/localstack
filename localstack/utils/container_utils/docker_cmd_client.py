@@ -8,7 +8,6 @@ import subprocess
 from typing import Dict, List, Optional, Tuple, Union
 
 from localstack import config
-from localstack.utils.common import safe_run
 from localstack.utils.container_utils.container_client import (
     AccessDenied,
     ContainerClient,
@@ -23,7 +22,8 @@ from localstack.utils.container_utils.container_client import (
     SimpleVolumeBind,
     Util,
 )
-from localstack.utils.run import to_str
+from localstack.utils.run import run
+from localstack.utils.strings import to_str
 
 LOG = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class CmdDockerClient(ContainerClient):
             "--format",
             "{{ .Status }} - {{ .Names }}",
         ]
-        cmd_result = safe_run(cmd)
+        cmd_result = run(cmd)
 
         # filter empty / invalid lines from docker ps output
         cmd_result = next((line for line in cmd_result.splitlines() if container_name in line), "")
@@ -68,7 +68,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["stop", "--time", str(timeout), container_name]
         LOG.debug("Stopping container with cmd %s", cmd)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
@@ -82,7 +82,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["pause", container_name]
         LOG.debug("Pausing container with cmd %s", cmd)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
@@ -96,7 +96,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["unpause", container_name]
         LOG.debug("Unpausing container with cmd %s", cmd)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
@@ -112,7 +112,7 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--force"]
         LOG.debug("Removing image %s %s", image, "(forced)" if force else "")
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such image" in to_str(e.stdout):
                 raise NoSuchImage(image, stdout=e.stdout, stderr=e.stderr)
@@ -133,7 +133,7 @@ class CmdDockerClient(ContainerClient):
             "Creating image from container %s as %s:%s", container_name_or_id, image_name, image_tag
         )
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
@@ -151,7 +151,7 @@ class CmdDockerClient(ContainerClient):
         cmd.append(container_name)
         LOG.debug("Removing container with cmd %s", cmd)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
@@ -173,7 +173,7 @@ class CmdDockerClient(ContainerClient):
         cmd.append("--format")
         cmd.append("{{json . }}")
         try:
-            cmd_result = safe_run(cmd).strip()
+            cmd_result = run(cmd).strip()
         except subprocess.CalledProcessError as e:
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
@@ -201,7 +201,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["cp", local_path, f"{container_name}:{container_path}"]
         LOG.debug("Copying into container with cmd: %s", cmd)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name)
@@ -216,7 +216,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["cp", f"{container_name}:{container_path}", local_path]
         LOG.debug("Copying from container with cmd: %s", cmd)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such container" in to_str(e.stdout):
                 raise NoSuchContainer(container_name)
@@ -229,7 +229,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["pull", docker_image]
         LOG.debug("Pulling image with cmd: %s", cmd)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "pull access denied" in to_str(e.stdout):
                 raise NoSuchImage(docker_image)
@@ -242,7 +242,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["push", docker_image]
         LOG.debug("Pushing image with cmd: %s", cmd)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "is denied" in to_str(e.stdout):
                 raise AccessDenied(docker_image)
@@ -261,7 +261,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["build", "-t", image_name, "-f", dockerfile_path, context_path]
         LOG.debug("Building Docker image: %s", cmd)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             raise ContainerException(
                 f"Docker build process returned with error code {e.returncode}", e.stdout, e.stderr
@@ -272,7 +272,7 @@ class CmdDockerClient(ContainerClient):
         cmd += ["tag", source_ref, target_name]
         LOG.debug("Tagging Docker image %s as %s", source_ref, target_name)
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such image" in to_str(e.stdout):
                 raise NoSuchImage(source_ref)
@@ -285,7 +285,7 @@ class CmdDockerClient(ContainerClient):
         cmd = self._docker_cmd()
         cmd += ["images", "--format", format_string]
         try:
-            output = safe_run(cmd)
+            output = run(cmd)
 
             image_names = output.splitlines()
             if strip_latest:
@@ -299,7 +299,7 @@ class CmdDockerClient(ContainerClient):
         cmd = self._docker_cmd()
         cmd += ["logs", container_name_or_id]
         try:
-            return safe_run(cmd)
+            return run(cmd)
         except subprocess.CalledProcessError as e:
             if safe:
                 return ""
@@ -314,7 +314,7 @@ class CmdDockerClient(ContainerClient):
         cmd = self._docker_cmd()
         cmd += ["inspect", "--format", "{{json .}}", object_name_or_id]
         try:
-            cmd_result = safe_run(cmd)
+            cmd_result = run(cmd)
         except subprocess.CalledProcessError as e:
             if "No such object" in to_str(e.stdout):
                 raise NoSuchObject(object_name_or_id, stdout=e.stdout, stderr=e.stderr)
@@ -361,7 +361,7 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--alias", ",".join(aliases)]
         cmd += [network_name, container_name_or_id]
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             stdout_str = to_str(e.stdout)
             if re.match(r".*network (.*) not found.*", stdout_str):
@@ -381,7 +381,7 @@ class CmdDockerClient(ContainerClient):
         )
         cmd = self._docker_cmd() + ["network", "disconnect", network_name, container_name_or_id]
         try:
-            safe_run(cmd)
+            run(cmd)
         except subprocess.CalledProcessError as e:
             stdout_str = to_str(e.stdout)
             if re.match(r".*network (.*) not found.*", stdout_str):
@@ -402,7 +402,7 @@ class CmdDockerClient(ContainerClient):
             container_name_or_id,
         ]
         try:
-            result = safe_run(cmd).strip()
+            result = run(cmd).strip()
             return result.split(" ")[0] if result else ""
         except subprocess.CalledProcessError as e:
             if "No such object" in to_str(e.stdout):
@@ -414,7 +414,7 @@ class CmdDockerClient(ContainerClient):
 
     def has_docker(self) -> bool:
         try:
-            safe_run(self._docker_cmd() + ["ps"])
+            run(self._docker_cmd() + ["ps"])
             return True
         except subprocess.CalledProcessError:
             return False
@@ -423,7 +423,7 @@ class CmdDockerClient(ContainerClient):
         cmd, env_file = self._build_run_create_cmd("create", image_name, **kwargs)
         LOG.debug("Create container with cmd: %s", cmd)
         try:
-            container_id = safe_run(cmd)
+            container_id = run(cmd)
             # Note: strip off Docker warning messages like "DNS setting (--dns=127.0.0.1) may fail in containers"
             container_id = container_id.strip().split("\n")[-1]
             return container_id.strip()
@@ -506,7 +506,7 @@ class CmdDockerClient(ContainerClient):
         if stdin:
             kwargs["stdin"] = True
         try:
-            process = safe_run(cmd, **kwargs)
+            process = run(cmd, **kwargs)
             stdout, stderr = process.communicate(input=stdin)
             if process.returncode != 0:
                 raise subprocess.CalledProcessError(

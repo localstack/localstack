@@ -8,8 +8,6 @@ import tempfile
 import time
 from typing import Any, Dict, List, Mapping, Tuple
 
-from boto3 import Session
-
 from localstack.constants import (
     AWS_REGION_US_EAST_1,
     DEFAULT_BUCKET_MARKER_LOCAL,
@@ -17,6 +15,7 @@ from localstack.constants import (
     DEFAULT_LAMBDA_CONTAINER_REGISTRY,
     DEFAULT_PORT_EDGE,
     DEFAULT_SERVICE_PORTS,
+    ENV_INTERNAL_TEST_RUN,
     FALSE_STRINGS,
     INSTALL_DIR_INFRA,
     LOCALHOST,
@@ -187,15 +186,6 @@ def load_environment(profile: str = None):
     import dotenv
 
     dotenv.load_dotenv(path, override=False)
-
-
-def has_docker():
-    try:
-        with open(os.devnull, "w") as devnull:
-            subprocess.check_output("docker ps", stderr=devnull, shell=True)
-        return True
-    except Exception:
-        return False
 
 
 def is_linux():
@@ -422,14 +412,6 @@ else:
 # additional CLI commands, can be set by plugins
 CLI_COMMANDS = {}
 
-# set of valid regions
-VALID_PARTITIONS = set(Session().get_available_partitions())
-VALID_REGIONS = set()
-for partition in VALID_PARTITIONS:
-    for region in Session().get_available_regions("sns", partition):
-        VALID_REGIONS.add(region)
-
-
 # determine IP of Docker bridge
 if not DOCKER_BRIDGE_IP:
     DOCKER_BRIDGE_IP = "172.17.0.1"
@@ -559,12 +541,8 @@ S3_SKIP_SIGNATURE_VALIDATION = is_env_not_false("S3_SKIP_SIGNATURE_VALIDATION")
 TEST_IAM_USER_ID = str(os.environ.get("TEST_IAM_USER_ID") or "").strip()
 TEST_IAM_USER_NAME = str(os.environ.get("TEST_IAM_USER_NAME") or "").strip()
 
-# whether to use Lambda functions in a Docker container
+# user-defined lambda executor mode
 LAMBDA_EXECUTOR = os.environ.get("LAMBDA_EXECUTOR", "").strip()
-if not LAMBDA_EXECUTOR:
-    LAMBDA_EXECUTOR = "docker"
-    if not has_docker():
-        LAMBDA_EXECUTOR = "local"
 
 # Fallback URL to use when a non-existing Lambda is invoked. If this matches
 # `dynamodb://<table_name>`, then the invocation is recorded in the corresponding
@@ -694,6 +672,11 @@ CONFIG_ENV_VARS = [
     "WAIT_FOR_DEBUGGER",
     "WINDOWS_DOCKER_MOUNT_PREFIX",
 ]
+
+
+def is_local_test_mode() -> bool:
+    """Returns True if we are running in the context of our local integration tests."""
+    return is_env_true(ENV_INTERNAL_TEST_RUN)
 
 
 def collect_config_items() -> List[Tuple[str, Any]]:
