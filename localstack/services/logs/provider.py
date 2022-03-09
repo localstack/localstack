@@ -2,9 +2,8 @@ import base64
 import io
 import json
 import logging
-from abc import ABC
 from gzip import GzipFile
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict
 
 from moto.core.utils import unix_time_millis
 from moto.logs import models as logs_models
@@ -24,7 +23,7 @@ from localstack.aws.api.logs import (
 )
 from localstack.aws.proxy import AwsApiListener
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
-from localstack.services.messages import Headers, MessagePayload, Response
+from localstack.services.messages import Request, Response
 from localstack.services.moto import MotoFallbackDispatcher, call_moto
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import is_number
@@ -33,7 +32,7 @@ from localstack.utils.patch import patch
 LOG = logging.getLogger(__name__)
 
 
-class LogsProvider(LogsApi, ABC):
+class LogsProvider(LogsApi):
     def __init__(self):
         super().__init__()
         self.cw_client = aws_stack.connect_to_service("cloudwatch")
@@ -78,18 +77,12 @@ class LogsAwsApiListener(AwsApiListener):
         self.provider = LogsProvider()
         super().__init__("logs", MotoFallbackDispatcher(self.provider))
 
-    def return_response(
-        self,
-        method: str,
-        path: str,
-        data: MessagePayload,
-        headers: Headers,
-        response: Response,
-    ) -> Optional[Response]:
+    def request(self, request: Request) -> Response:
+        response = super().request(request)
         # Fix Incorrect response content-type header from cloudwatch logs #1343.
         # True for all logs api responses.
         response.headers["content-type"] = APPLICATION_AMZ_JSON_1_1
-        return None
+        return response
 
 
 def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:
