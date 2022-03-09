@@ -27,6 +27,19 @@
 /tests/integration/docker_utils/ @dfangl @dominikschubert
 /tests/unit/test_dockerclient.py @dfangl @dominikschubert
 
+# HTTP framework
+/localstack/http/ @thrau
+
+# Dockerfile
+/Dockerfile @alexrashed
+/Dockerfile.rh @alexrashed
+
+# Circle CI pipeline
+/.circleci/config.yml @thrau @alexrashed @dfangl
+
+# Analytics client
+/localstack/utils/analytics/ @thrau
+
 ######################
 ### SERVICE OWNERS ###
 ######################
@@ -41,35 +54,57 @@
 /localstack/services/cloudformation/models/
 /localstack/services/cloudformation/models/cloudformation.py @dominikschubert
 
-# Lambda
-/localstack/services/awslambda/ @dfangl @dominikschubert
-/localstack/services/cloudformation/models/awslambda.py @dfangl @dominikschubert
-/tests/integration/awslambda/ @dfangl @dominikschubert
+# Cloudwatch
+/localstack/services/cloudwatch/ @silv-io
+/tests/integration/test_cloudwatch.py @silv-io
+
+# EC2
+/localstack/services/ec2/ @viren-nadkarni
+/tests/integration/test_ec2.py @viren-nadkarni
+
+# ElasticSearch
+/localstack/services/es/ @alexrashed
+/localstack/services/cloudformation/models/elasticsearch.py @alexrashed
+/tests/integration/test_es.py @alexrashed
+
+# Events / EventBridge
+/localstack/services/events/ @dominikschubert @dfangl
+/localstack/services/cloudformation/models/events.py @dominikschubert @dfangl
+/tests/integration/test_events.py @dominikschubert @dfangl
+
+# OpenSearch
+/localstack/services/opensearch/ @alexrashed
+/tests/integration/test_opensearch.py @alexrashed
+/tests/unit/services/opensearch/test_s3.py @alexrashed
 
 # IAM
 /localstack/services/iam/ @dominikschubert
 /localstack/services/cloudformation/models/iam.py @dominikschubert
 /tests/integration/test_iam.py @dominikschubert
 
-# Stepfunctions
-/localstack/services/stepfunctions/ @dominikschubert
-/localstack/services/cloudformation/models/stepfunctions.py @dominikschubert
-/tests/integration/test_stepfunctions.py @dominikschubert
+# Lambda
+/localstack/services/awslambda/ @dfangl @dominikschubert
+/localstack/services/cloudformation/models/awslambda.py @dfangl @dominikschubert
+/tests/integration/awslambda/ @dfangl @dominikschubert
 
 # Secretsmanager
 /localstack/services/secretsmanager/ @dominikschubert
 /localstack/services/cloudformation/models/secretsmanager.py @dominikschubert
 /tests/integration/test_secretsmanager.py @dominikschubert
 
+# Stepfunctions
+/localstack/services/stepfunctions/ @dominikschubert
+/localstack/services/cloudformation/models/stepfunctions.py @dominikschubert
+/tests/integration/test_stepfunctions.py @dominikschubert
+
+# SES
+/localstack/services/ses/ @viren-nadkarni
+/tests/integration/test_ses.py @viren-nadkarni
+
 # SSM
 /localstack/services/ssm/ @dominikschubert
 /localstack/services/cloudformation/models/ssm.py @dominikschubert
 /tests/integration/test_ssm.py @dominikschubert
-
-# Events / EventBridge
-/localstack/services/events/ @dominikschubert @dfangl
-/localstack/services/cloudformation/models/events.py @dominikschubert @dfangl
-/tests/integration/test_events.py @dominikschubert @dfangl
 
 # SQS
 /localstack/services/sqs/ @thrau
@@ -88,13 +123,3 @@
 /localstack/services/cloudformation/models/s3.py @thrau
 /tests/integration/test_s3.py @thrau
 /tests/unit/test_s3.py @thrau
-
-# ElasticSearch
-/localstack/services/es/ @alexrashed
-/localstack/services/cloudformation/models/elasticsearch.py @alexrashed
-/tests/integration/test_es.py @alexrashed
-
-# OpenSearch
-/localstack/services/opensearch/ @alexrashed
-/tests/integration/test_opensearch.py @alexrashed
-/tests/unit/services/opensearch/test_s3.py @alexrashed
