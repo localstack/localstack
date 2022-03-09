@@ -2,12 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List
 
-from localstack.aws.api.route53 import (
-    VPC,
-    ChangeStatus,
-    DelegationSet,
-    ResourceId,
-)
+from localstack.aws.api.route53 import VPC, ChangeStatus, DelegationSet, ResourceId
 from localstack.services.generic_proxy import RegionBackend
 
 

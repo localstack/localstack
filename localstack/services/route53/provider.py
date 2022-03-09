@@ -13,18 +13,9 @@ from localstack.aws.api.route53 import (
     AssociateVPCWithHostedZoneResponse,
     ChangeInfo,
     ChangeStatus,
-    CreateReusableDelegationSetResponse,
-    DelegationSet,
-    DeleteReusableDelegationSetResponse,
     DisassociateVPCComment,
     DisassociateVPCFromHostedZoneResponse,
     GetChangeResponse,
-    GetReusableDelegationSetResponse,
-    ListReusableDelegationSetsResponse,
-    Nonce,
-    NoSuchDelegationSet,
-    PageMarker,
-    PageMaxItems,
     ResourceId,
     Route53Api,
     VPCAssociationNotFound,
@@ -113,40 +104,6 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
                 SubmittedAt=matching_hosted_zones[0].submitted_at,
             )
         )
-
-    def create_reusable_delegation_set(
-        self, context: RequestContext, caller_reference: Nonce, hosted_zone_id: ResourceId = None
-    ) -> CreateReusableDelegationSetResponse:
-        region_details = Route53Backend.get()
-        delegation_id = short_uid()
-        delegation_set = DelegationSet(Id=delegation_id, CallerReference=caller_reference)
-        region_details.reusable_delegation_sets[delegation_id] = delegation_set
-        return CreateReusableDelegationSetResponse(DelegationSet=delegation_set)
-
-    def delete_reusable_delegation_set(
-        self, context: RequestContext, id: ResourceId
-    ) -> DeleteReusableDelegationSetResponse:
-        region_details = Route53Backend.get()
-        delegation_set = region_details.reusable_delegation_sets.pop(id, None)
-        if not delegation_set:
-            raise NoSuchDelegationSet(f"Delegation set {id} not found")
-        return DeleteReusableDelegationSetResponse()
-
-    def list_reusable_delegation_sets(
-        self, context: RequestContext, marker: PageMarker = None, max_items: PageMaxItems = None
-    ) -> ListReusableDelegationSetsResponse:
-        region_details = Route53Backend.get()
-        reusable_sets = list(region_details.reusable_delegation_sets.values())
-        return ListReusableDelegationSetsResponse(DelegationSets=reusable_sets, IsTruncated=False)
-
-    def get_reusable_delegation_set(
-        self, context: RequestContext, id: ResourceId
-    ) -> GetReusableDelegationSetResponse:
-        region_details = Route53Backend.get()
-        if id not in region_details.reusable_delegation_sets:
-            raise NoSuchDelegationSet(f"Delegation set {id} not found")
-        reusable_set = region_details.reusable_delegation_sets.get(id)
-        return GetReusableDelegationSetResponse(DelegationSet=reusable_set)
 
 
 def get_or_delete_health_check(request, full_url, headers):
