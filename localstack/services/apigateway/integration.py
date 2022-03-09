@@ -233,7 +233,7 @@ class RequestTemplates(Templates):
 
     def render(self, api_context: ApiInvocationContext):
         LOG.info(
-            f"Method request body before transformations: {to_str(api_context.data_as_string())}"
+            "Method request body before transformations: %s", to_str(api_context.data_as_string())
         )
         request_templates = api_context.integration.get("requestTemplates", {})
         template = request_templates.get(APPLICATION_JSON, {})
