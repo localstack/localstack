@@ -304,5 +304,5 @@ class ResponseTemplates(Templates):
         }
 
         response._content = self.render_vtl(template, variables=variables)
-        LOG.info(f"Endpoint response body after transformations:\n{response._content}")
+        LOG.info("Endpoint response body after transformations:\n%s", response._content)
         return response._content
