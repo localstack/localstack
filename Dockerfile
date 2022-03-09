@@ -1,7 +1,7 @@
 ARG IMAGE_TYPE=full
 
 # java-builder: Stage to build a custom JRE (with jlink)
-FROM python:3.8.12-slim-buster@sha256:269c3acfc900bbe8deea8dd646af354c0950839298b9e84f553c9d0d74a7c5e8 as java-builder
+FROM python:3.9.10-slim-buster@sha256:7d0884a75438f45b87fd0c0be832399471bc7319ebeaa2820a69da0e9e7db54d as java-builder
 ARG TARGETARCH
 
 # install OpenJDK 11
@@ -34,7 +34,7 @@ jdk.localedata --include-locales en,th \
 
 
 # base: Stage which installs necessary runtime dependencies (OS packages, java, maven,...)
-FROM python:3.8.12-slim-buster@sha256:269c3acfc900bbe8deea8dd646af354c0950839298b9e84f553c9d0d74a7c5e8 as base
+FROM python:3.9.10-slim-buster@sha256:7d0884a75438f45b87fd0c0be832399471bc7319ebeaa2820a69da0e9e7db54d as base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -138,7 +138,9 @@ RUN mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
         https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-1.1.0.jar
 
 # upgrade python build tools
-RUN (virtualenv .venv && source .venv/bin/activate && pip3 install --upgrade pip wheel setuptools)
+RUN virtualenv .venv && \
+    source .venv/bin/activate && \
+    pip3 install --upgrade pip wheel setuptools
 
 # add files necessary to install all dependencies
 ADD Makefile setup.py setup.cfg pyproject.toml ./
@@ -148,11 +150,11 @@ ADD localstack/__init__.py localstack/
 ADD bin/localstack bin/localstack.bat bin/
 
 # install dependencies to run the localstack runtime and save which ones were installed
-RUN make install-runtime
-RUN make freeze > requirements-runtime.txt
-
 # remove localstack (added as a transitive dependency of localstack-ext)
-RUN (virtualenv .venv && source .venv/bin/activate && pip3 uninstall -y localstack)
+RUN make install-runtime && \
+    make freeze > requirements-runtime.txt && \
+    source .venv/bin/activate && \
+    pip3 uninstall -y localstack
 
 
 
@@ -214,19 +216,15 @@ COPY --from=builder /usr/share/postgresql/11/extension /usr/share/postgresql/11/
 COPY --from=builder /usr/lib/postgresql/11/lib /usr/lib/postgresql/11/lib
 
 RUN mkdir -p /tmp/localstack && \
-    if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
-
-# fix some permissions and create local user
-RUN mkdir -p /.npm && \
+    if [ -e /usr/bin/aws ]; then mv /usr/bin/aws /usr/bin/aws.bk; fi; ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws && \
+    mkdir -p /.npm && \
     chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm && \
     chmod -R 777 /tmp/localstack && \
     useradd -ms /bin/bash localstack && \
-    ln -s `pwd` /tmp/localstack_install_dir
-
-# Install the latest version of awslocal globally
-RUN pip3 install --upgrade awscli awscli-local requests
+    ln -s `pwd` /tmp/localstack_install_dir && \
+    pip3 install --upgrade awscli awscli-local requests
 
 # Add the code in the last step
 # Also adds the results of `make init` to the container.
@@ -236,12 +234,11 @@ ADD localstack/ localstack/
 # Download some more dependencies (make init needs the LocalStack code)
 # FIXME the init python code should be independent (i.e. not depend on the localstack code), idempotent/reproducible,
 #       modify only folders outside of the localstack package folder, and executed in the builder stage.
-RUN make init
-
 # Install the latest version of localstack-ext and generate the plugin entrypoints
-RUN (virtualenv .venv && source .venv/bin/activate && \
-      pip3 install --upgrade localstack-ext plux)
-RUN make entrypoints
+RUN make init && \
+    virtualenv .venv && source .venv/bin/activate && \
+    pip3 install --upgrade localstack-ext plux && \
+    make entrypoints
 
 # Add the build date and git hash at last (changes everytime)
 ARG LOCALSTACK_BUILD_DATE

@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   install:
     machine:
-      image: ubuntu-2004:202107-02
+      image: cimg/python:3.9.10
     working_directory: /tmp/workspace/repo
     steps:
       - checkout
@@ -13,11 +13,11 @@ jobs:
           name: Install prerequisites
           command: |
             sudo apt-get update
-            sudo apt-get install -y libsasl2-dev python3.8-venv python3.8-dev
+            sudo apt-get install -y libsasl2-dev python3.9-venv python3.9-dev
       - run:
           name: Setup environment
           environment:
-            VENV_BIN: "/usr/bin/python3.8 -m venv"
+            VENV_BIN: "/usr/bin/python3.9 -m venv"
           command: |
             make install
             mkdir -p target/reports
@@ -34,7 +34,7 @@ jobs:
 
   preflight:
     docker:
-      - image: buildpack-deps:focal
+      - image: buildpack-deps:impish
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -45,7 +45,7 @@ jobs:
 
   unit-tests:
     docker:
-      - image: buildpack-deps:focal
+      - image: buildpack-deps:impish
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -70,7 +70,7 @@ jobs:
 
   itest-lambda-docker:
     machine:
-      image: ubuntu-2004:202107-02
+      image: cimg/python:3.9.10
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -133,7 +133,7 @@ jobs:
 
   itest-sqs-provider:
     machine:
-      image: ubuntu-2004:202107-02
+      image: cimg/python:3.9.10
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -169,7 +169,7 @@ jobs:
 
   itest-bootstrap:
     machine:
-      image: ubuntu-2004:202107-02
+      image: cimg/python:3.9.10
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -201,7 +201,7 @@ jobs:
         type: string
       machine_image:
         description: "CircleCI machine type to run at"
-        default: "ubuntu-2004:202107-02"
+        default: "cimg/python:3.9.10"
         type: string
       resource_class:
         description: "CircleCI machine type to run at"
@@ -272,7 +272,7 @@ jobs:
         type: string
       machine_image:
         description: "CircleCI machine type to run at"
-        default: "ubuntu-2004:202107-02"
+        default: "cimg/python:3.9.10"
         type: string
     machine:
       image: << parameters.machine_image >>
@@ -305,7 +305,7 @@ jobs:
 
   report:
     docker:
-      - image: buildpack-deps:focal
+      - image: buildpack-deps:impish
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -330,7 +330,7 @@ jobs:
 
   docker-push:
     machine:
-      image: ubuntu-2004:202107-02
+      image: cimg/python:3.9.10
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -406,7 +406,7 @@ workflows:
       - docker-build:
           name: docker-build-amd64
           platform: amd64
-          machine_image: ubuntu-2004:202107-02
+          machine_image: cimg/python:3.9.10
           resource_class: medium
           requires:
             - preflight
@@ -430,7 +430,7 @@ workflows:
           name: docker-test-amd64
           platform: amd64
           resource_class: medium
-          machine_image: ubuntu-2004:202107-02
+          machine_image: cimg/python:3.9.10
           requires:
             - docker-build-amd64
       - report:
