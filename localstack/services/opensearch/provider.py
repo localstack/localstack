@@ -375,7 +375,8 @@ def _ensure_domain_exists(arn: ARN) -> None:
         raise ValidationException("Invalid ARN. Domain not found.")
 
 
-def _transform_domain_config_request_to_status(request: Dict) -> Dict:
+def _update_domain_config_request_to_status(request: UpdateDomainConfigRequest) -> DomainStatus:
+    request: Dict
     request.pop("DryRun", None)
     request.pop("DomainName", None)
     return request
@@ -490,7 +491,7 @@ class OpensearchProvider(OpensearchApi):
             if domain_status is None:
                 raise ResourceNotFoundException(f"Domain not found: {domain_key.domain_name}")
 
-            status_update = _transform_domain_config_request_to_status(payload)
+            status_update: Dict = _update_domain_config_request_to_status(payload)
             domain_status.update(status_update)
 
         return UpdateDomainConfigResponse(DomainConfig=_status_to_config(domain_status))

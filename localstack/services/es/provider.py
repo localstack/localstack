@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Optional, cast
+from typing import Dict, Optional, cast
 
 from botocore.exceptions import ClientError
 
@@ -309,18 +309,16 @@ class EsProvider(EsApi):
     ) -> UpdateElasticsearchDomainConfigResponse:
         opensearch_client = aws_stack.connect_to_service("opensearch", region_name=context.region)
 
-        opensearch_payload = dict(payload)
+        payload: Dict
         if "ElasticsearchClusterConfig" in payload:
-            opensearch_payload["ClusterConfig"] = payload["ElasticsearchClusterConfig"]
-            opensearch_payload["ClusterConfig"]["InstanceType"] = _instancetype_to_opensearch(
-                opensearch_payload["ClusterConfig"]["InstanceType"]
+            payload["ClusterConfig"] = payload["ElasticsearchClusterConfig"]
+            payload["ClusterConfig"]["InstanceType"] = _instancetype_to_opensearch(
+                payload["ClusterConfig"]["InstanceType"]
             )
-            opensearch_payload.pop("ElasticsearchClusterConfig")
+            payload.pop("ElasticsearchClusterConfig")
 
         with exception_mapper():
-            opensearch_config = opensearch_client.update_domain_config(**opensearch_payload)[
-                "DomainConfig"
-            ]
+            opensearch_config = opensearch_client.update_domain_config(**payload)["DomainConfig"]
 
         config = _domainconfig_from_opensearch(opensearch_config)
         return UpdateElasticsearchDomainConfigResponse(DomainConfig=config)
