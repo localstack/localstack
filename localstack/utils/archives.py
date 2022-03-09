@@ -15,6 +15,12 @@ def is_zip_file(content):
     return zipfile.is_zipfile(stream)
 
 
+def get_unzipped_size(path: str):
+    """Returns the size of the unzipped file."""
+    with zipfile.ZipFile(path, "r") as zip_ref:
+        return sum(f.file_size for f in zip_ref.infolist())
+
+
 def unzip(path, target_dir, overwrite=True):
     from localstack.utils.platform import is_debian
 
