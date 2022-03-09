@@ -72,7 +72,7 @@ class SecretsmanagerProvider(SecretsmanagerApi, ABC):
         # If secret ARN ends with "-<randomId>" this is removed from the request for upstream compatibility.
         data = json.loads(to_str(context.request.data or "{}"))
         secret_id = data.get("SecretId", None)
-        if secret_id and ":" in secret_id:
+        if secret_id and re.match(r"^arn:", secret_id):
             arn = aws_stack.parse_arn(secret_id)
             aws_region = aws_stack.get_region()
             if arn["region"] != aws_region:
@@ -92,11 +92,16 @@ class SecretsmanagerProvider(SecretsmanagerApi, ABC):
 
     @staticmethod
     def _raise_if_invalid_secret_id(secret_id: SecretIdType):
-        if not SecretsmanagerProvider._validate_secret_id(secret_id):
-            raise ValidationException(
-                "Invalid name. Must be a valid name containing alphanumeric "
-                "characters, or any of the following: -/_+=.@!"
-            )
+        # Patches moto's implementation for which secret_ids are not validated, by raising a ValidationException.
+        # Skips this check if the secret_id provided appears to be an arn (starting with 'arn:').
+        if not re.match(
+            r"^arn:", secret_id
+        ):  # Check if it appears to be an arn: so to skip secret_id check: delegate parsing of arn to handlers.
+            if not SecretsmanagerProvider._validate_secret_id(secret_id):
+                raise ValidationException(
+                    "Invalid name. Must be a valid name containing alphanumeric "
+                    "characters, or any of the following: -/_+=.@!"
+                )
 
     @staticmethod
     def _call_moto_with_request_secret_id(context: RequestContext) -> ServiceResponse:
