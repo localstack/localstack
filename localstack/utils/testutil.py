@@ -590,7 +590,10 @@ def check_expected_lambda_log_events_length(expected_length, function_name, rege
 
 
 def list_all_log_events(log_group_name: str) -> List[Dict]:
-    logs = aws_stack.connect_to_service("logs")
+    if os.environ.get("TEST_TARGET") == "AWS_CLOUD":
+        logs = boto3.client("logs")
+    else:
+        logs = aws_stack.connect_to_service("logs")
     return list_all_resources(
         lambda kwargs: logs.filter_log_events(logGroupName=log_group_name, **kwargs),
         last_token_attr_name="nextToken",
@@ -599,11 +602,14 @@ def list_all_log_events(log_group_name: str) -> List[Dict]:
 
 
 def get_lambda_log_events(
-    function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY, regex_filter: Optional[str] = None
+    function_name,
+    delay_time=DEFAULT_GET_LOG_EVENTS_DELAY,
+    regex_filter: Optional[str] = None,
+    log_group=None,
 ):
     def get_log_events(func_name, delay):
         time.sleep(delay)
-        log_group_name = get_lambda_log_group_name(func_name)
+        log_group_name = log_group or get_lambda_log_group_name(func_name)
         return list_all_log_events(log_group_name)
 
     try:

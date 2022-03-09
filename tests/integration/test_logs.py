@@ -1,13 +1,60 @@
 # -*- coding: utf-8 -*-
+import gzip
+import json
+
 import pytest
 
+from localstack import config
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
-from localstack.services.awslambda.lambda_api import func_arn
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc, poll_condition, retry, short_uid
 
 from .awslambda.test_lambda import TEST_LAMBDA_LIBS, TEST_LAMBDA_PYTHON3
+
+logs_role = {
+    "Statement": {
+        "Effect": "Allow",
+        "Principal": {"Service": f"logs.{config.DEFAULT_REGION}.amazonaws.com"},
+        "Action": "sts:AssumeRole",
+    }
+}
+kinesis_permission = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {"Effect": "Allow", "Action": "kinesis:PutRecord", "Resource": "{resource_name}"}
+    ],
+}
+s3_firehose_role = {
+    "Statement": {
+        "Sid": "",
+        "Effect": "Allow",
+        "Principal": {"Service": "firehose.amazonaws.com"},
+        "Action": "sts:AssumeRole",
+    }
+}
+s3_firehose_permission = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:AbortMultipartUpload",
+                "s3:GetBucketLocation",
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads",
+                "s3:PutObject",
+            ],
+        }
+    ],
+}
+
+firehose_permission = {
+    "Version": "2012-10-17",
+    "Statement": [{"Effect": "Allow", "Action": ["firehose:*"]}],
+}
 
 
 @pytest.fixture
@@ -24,6 +71,33 @@ def logs_log_stream(logs_client, logs_log_group):
     logs_client.create_log_stream(logGroupName=logs_log_group, logStreamName=name)
     yield name
     logs_client.delete_log_stream(logStreamName=name, logGroupName=logs_log_group)
+
+
+@pytest.fixture
+def iam_create_role_and_policy(iam_client):
+    roles = {}
+
+    def _create_role_and_policy(**kwargs):
+        role = kwargs["RoleName"]
+        policy = kwargs["PolicyName"]
+        role_policy = json.dumps(kwargs["RoleDefinition"])
+
+        result = iam_client.create_role(RoleName=role, AssumeRolePolicyDocument=role_policy)
+        role_arn = result["Role"]["Arn"]
+        policy_document = kwargs["PolicyDefinition"]
+
+        # add the resource name to the policy
+        policy_document["Statement"][0]["Resource"] = kwargs["ResourceName"]
+        policy_document = json.dumps(policy_document)
+        iam_client.put_role_policy(RoleName=role, PolicyName=policy, PolicyDocument=policy_document)
+        roles[role] = policy
+        return role_arn
+
+    yield _create_role_and_policy
+
+    for role_name, policy_name in roles.items():
+        iam_client.delete_role_policy(RoleName=role_name, PolicyName=policy_name)
+        iam_client.delete_role(RoleName=role_name)
 
 
 class TestCloudWatchLogs:
@@ -124,10 +198,15 @@ class TestCloudWatchLogs:
         )
 
     def test_put_subscription_filter_lambda(
-        self, lambda_client, logs_client, create_lambda_function
+        self,
+        lambda_client,
+        logs_client,
+        logs_log_group,
+        logs_log_stream,
+        create_lambda_function,
+        sts_client,
     ):
         test_lambda_name = f"test-lambda-function-{short_uid()}"
-        # TODO add as fixture
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON3,
             libs=TEST_LAMBDA_LIBS,
@@ -136,103 +215,106 @@ class TestCloudWatchLogs:
         )
 
         lambda_client.invoke(FunctionName=test_lambda_name, Payload=b"{}")
-
-        log_group_name = f"/aws/lambda/{test_lambda_name}"
-
+        # get account-id to set the correct policy
+        account_id = sts_client.get_caller_identity()["Account"]
+        lambda_client.add_permission(
+            FunctionName=test_lambda_name,
+            StatementId=test_lambda_name,
+            Principal=f"logs.{config.DEFAULT_REGION}.amazonaws.com",
+            Action="lambda:InvokeFunction",
+            SourceArn=f"arn:aws:logs:{config.DEFAULT_REGION}:{account_id}:log-group:{logs_log_group}:*",
+            SourceAccount=account_id,
+        )
         logs_client.put_subscription_filter(
-            logGroupName=log_group_name,
+            logGroupName=logs_log_group,
             filterName="test",
             filterPattern="",
-            destinationArn=func_arn(test_lambda_name),
+            destinationArn=aws_stack.lambda_function_arn(
+                test_lambda_name, account_id=account_id, region_name=config.DEFAULT_REGION
+            ),
         )
-        log_stream_name = f"test-log-stream-{short_uid()}"
-        logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
 
         logs_client.put_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream_name,
+            logGroupName=logs_log_group,
+            logStreamName=logs_log_stream,
             logEvents=[
                 {"timestamp": now_utc(millis=True), "message": "test"},
                 {"timestamp": now_utc(millis=True), "message": "test 2"},
             ],
         )
 
-        response = logs_client.describe_subscription_filters(logGroupName=log_group_name)
+        response = logs_client.describe_subscription_filters(logGroupName=logs_log_group)
         assert len(response["subscriptionFilters"]) == 1
 
         def check_invocation():
-            events = testutil.get_lambda_log_events(test_lambda_name)
+            events = testutil.get_lambda_log_events(test_lambda_name, log_group=logs_log_group)
             assert len(events) == 2
+            assert "test" in events
+            assert "test 2" in events
 
         retry(check_invocation, retries=6, sleep=3.0)
 
     def test_put_subscription_filter_firehose(
-        self, logs_client, logs_log_group, logs_log_stream, s3_bucket, s3_client, firehose_client
+        self,
+        logs_client,
+        logs_log_group,
+        logs_log_stream,
+        s3_bucket,
+        s3_client,
+        firehose_client,
+        iam_create_role_and_policy,
     ):
-        firehose_name = f"test-firehose-{short_uid()}"
-        s3_bucket_arn = f"arn:aws:s3:::{s3_bucket}"
+        try:
+            firehose_name = f"test-firehose-{short_uid()}"
+            s3_bucket_arn = f"arn:aws:s3:::{s3_bucket}"
 
-        response = firehose_client.create_delivery_stream(
-            DeliveryStreamName=firehose_name,
-            S3DestinationConfiguration={
-                "BucketARN": s3_bucket_arn,
-                "RoleARN": "arn:aws:iam::000000000000:role/FirehoseToS3Role",
-            },
-        )
-        firehose_arn = response["DeliveryStreamARN"]
+            role = f"test-firehose-s3-role-{short_uid()}"
+            policy_name = f"test-firehose-s3-role-policy-{short_uid()}"
+            resource = [s3_bucket_arn, f"{s3_bucket_arn}/"]
+            role_arn = iam_create_role_and_policy(
+                ResourceName=resource,
+                RoleName=role,
+                PolicyName=policy_name,
+                RoleDefinition=s3_firehose_role,
+                PolicyDefinition=s3_firehose_permission,
+            )
 
-        logs_client.put_subscription_filter(
-            logGroupName=logs_log_group,
-            filterName="Destination",
-            filterPattern="",
-            destinationArn=firehose_arn,
-        )
+            response = firehose_client.create_delivery_stream(
+                DeliveryStreamName=firehose_name,
+                S3DestinationConfiguration={
+                    "BucketARN": s3_bucket_arn,
+                    "RoleARN": role_arn,
+                },
+            )
+            firehose_arn = response["DeliveryStreamARN"]
 
-        logs_client.put_log_events(
-            logGroupName=logs_log_group,
-            logStreamName=logs_log_stream,
-            logEvents=[
-                {"timestamp": now_utc(millis=True), "message": "test"},
-                {"timestamp": now_utc(millis=True), "message": "test 2"},
-            ],
-        )
+            role = f"test-firehose-role-{short_uid()}"
+            policy_name = f"test-firehose-role-policy-{short_uid()}"
+            role_arn_logs = iam_create_role_and_policy(
+                ResourceName=[firehose_arn],
+                RoleName=role,
+                PolicyName=policy_name,
+                RoleDefinition=logs_role,
+                PolicyDefinition=firehose_permission,
+            )
 
-        logs_client.put_log_events(
-            logGroupName=logs_log_group,
-            logStreamName=logs_log_stream,
-            logEvents=[
-                {"timestamp": now_utc(millis=True), "message": "test"},
-                {"timestamp": now_utc(millis=True), "message": "test 2"},
-            ],
-        )
+            def check_stream_active():
+                state = firehose_client.describe_delivery_stream(DeliveryStreamName=firehose_name)[
+                    "DeliveryStreamDescription"
+                ]["DeliveryStreamStatus"]
+                if state != "ACTIVE":
+                    raise Exception(f"DeliveryStreamStatus is {state}")
 
-        response = s3_client.list_objects(Bucket=s3_bucket)
-        assert len(response["Contents"]) == 2
+            retry(check_stream_active, retries=60, sleep=30.0, sleep_before=10.0)
 
-        # clean up
-        firehose_client.delete_delivery_stream(
-            DeliveryStreamName=firehose_name, AllowForceDelete=True
-        )
+            logs_client.put_subscription_filter(
+                logGroupName=logs_log_group,
+                filterName="Destination",
+                filterPattern="",
+                destinationArn=firehose_arn,
+                roleArn=role_arn_logs,
+            )
 
-    def test_put_subscription_filter_kinesis(
-        self, logs_client, logs_log_group, logs_log_stream, kinesis_client
-    ):
-        kinesis_name = f"test-kinesis-{short_uid()}"
-
-        kinesis_client.create_stream(StreamName=kinesis_name, ShardCount=1)
-
-        kinesis_arn = kinesis_client.describe_stream(StreamName=kinesis_name)["StreamDescription"][
-            "StreamARN"
-        ]
-
-        logs_client.put_subscription_filter(
-            logGroupName=logs_log_group,
-            filterName="Destination",
-            filterPattern="",
-            destinationArn=kinesis_arn,
-        )
-
-        def put_event():
             logs_client.put_log_events(
                 logGroupName=logs_log_group,
                 logStreamName=logs_log_stream,
@@ -242,19 +324,119 @@ class TestCloudWatchLogs:
                 ],
             )
 
-        retry(put_event, retries=6, sleep=3.0)
+            # TODO doesnt work with AWS
+            logs_client.put_log_events(
+                logGroupName=logs_log_group,
+                logStreamName=logs_log_stream,
+                logEvents=[
+                    {"timestamp": now_utc(millis=True) - 2, "message": "test"},
+                    {"timestamp": now_utc(millis=True) - 2, "message": "test 2"},
+                ],
+            )
 
-        shard_iterator = kinesis_client.get_shard_iterator(
-            StreamName=kinesis_name,
-            ShardId="shardId-000000000000",
-            ShardIteratorType="TRIM_HORIZON",
-        )["ShardIterator"]
+            response = s3_client.list_objects(Bucket=s3_bucket)
+            assert len(response["Contents"]) == 2
+        finally:
+            # clean up
+            firehose_client.delete_delivery_stream(
+                DeliveryStreamName=firehose_name, AllowForceDelete=True
+            )
 
-        response = kinesis_client.get_records(ShardIterator=shard_iterator)
-        assert len(response["Records"]) == 1
+    def test_put_subscription_filter_kinesis(
+        self,
+        logs_client,
+        logs_log_group,
+        logs_log_stream,
+        kinesis_client,
+        iam_client,
+        iam_create_role_and_policy,
+    ):
 
+        kinesis_name = f"test-kinesis-{short_uid()}"
+        filter_name = "Destination"
+        kinesis_client.create_stream(StreamName=kinesis_name, ShardCount=1)
+
+        try:
+            result = kinesis_client.describe_stream(StreamName=kinesis_name)["StreamDescription"]
+            kinesis_arn = result["StreamARN"]
+            role = f"test-kinesis-role-{short_uid()}"
+            policy_name = f"test-kinesis-role-policy-{short_uid()}"
+            role_arn = iam_create_role_and_policy(
+                ResourceName=kinesis_arn,
+                RoleName=role,
+                PolicyName=policy_name,
+                RoleDefinition=logs_role,
+                PolicyDefinition=kinesis_permission,
+            )
+
+            # wait for stream-status "ACTIVE"
+            status = result["StreamStatus"]
+            if status != "ACTIVE":
+
+                def check_stream_active():
+                    state = kinesis_client.describe_stream(StreamName=kinesis_name)[
+                        "StreamDescription"
+                    ]["StreamStatus"]
+                    if state != "ACTIVE":
+                        raise Exception(f"StreamStatus is {state}")
+
+                retry(check_stream_active, retries=6, sleep=1.0, sleep_before=2.0)
+
+            def put_subscription_filter():
+                logs_client.put_subscription_filter(
+                    logGroupName=logs_log_group,
+                    filterName=filter_name,
+                    filterPattern="",
+                    destinationArn=kinesis_arn,
+                    roleArn=role_arn,
+                )
+
+            # for a weird reason the put_subscription_filter fails on AWS the first time,
+            # even-though we check for ACTIVE state...
+            retry(put_subscription_filter, retries=6, sleep=3.0)
+
+            def put_event():
+                logs_client.put_log_events(
+                    logGroupName=logs_log_group,
+                    logStreamName=logs_log_stream,
+                    logEvents=[
+                        {"timestamp": now_utc(millis=True), "message": "test"},
+                        {"timestamp": now_utc(millis=True), "message": "test 2"},
+                    ],
+                )
+
+            retry(put_event, retries=6, sleep=3.0)
+
+            shard_iterator = kinesis_client.get_shard_iterator(
+                StreamName=kinesis_name,
+                ShardId="shardId-000000000000",
+                ShardIteratorType="TRIM_HORIZON",
+            )["ShardIterator"]
+
+            response = kinesis_client.get_records(ShardIterator=shard_iterator)
+            # AWS sends messages as health checks
+            assert len(response["Records"]) >= 1
+            found = False
+            for record in response["Records"]:
+                data = record["Data"]
+                # data is base64-encoded gzip
+                # decoded_data = base64.b64decode(data)
+                # unzipped_data = gzip.decompress(decoded_data)
+                unzipped_data = gzip.decompress(data)
+                json_data = json.loads(unzipped_data)
+                if "test" in json.dumps(json_data["logEvents"]):
+                    assert len(json_data["logEvents"]) == 2
+                    assert json_data["logEvents"][0]["message"] == "test"
+                    assert json_data["logEvents"][1]["message"] == "test 2"
+                    found = True
+
+            assert found
         # clean up
-        kinesis_client.delete_stream(StreamName=kinesis_name, EnforceConsumerDeletion=True)
+        finally:
+            kinesis_client.delete_stream(StreamName=kinesis_name, EnforceConsumerDeletion=True)
+            logs_client.delete_subscription_filter(
+                logGroupName=logs_log_group, filterName=filter_name
+            )
 
     @pytest.mark.skip("TODO: failing against pro")
     def test_metric_filters(self, logs_client, logs_log_group, logs_log_stream, cloudwatch_client):
