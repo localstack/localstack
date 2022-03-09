@@ -12,7 +12,6 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 Action = str
 AdditionalVersion = str
 Alias = str
-AllowCredentials = bool
 Arn = str
 BatchSize = int
 BisectBatchOnFunctionError = bool
@@ -29,10 +28,7 @@ EventSourceToken = str
 FileSystemArn = str
 FunctionArn = str
 FunctionName = str
-FunctionUrl = str
-FunctionUrlQualifier = str
 Handler = str
-Header = str
 HttpStatus = int
 Integer = int
 KMSKeyArn = str
@@ -45,9 +41,7 @@ LayerVersionArn = str
 LicenseInfo = str
 LocalMountPath = str
 MasterRegion = str
-MaxAge = int
 MaxFunctionEventInvokeConfigListItems = int
-MaxItems = int
 MaxLayerListItems = int
 MaxListItems = int
 MaxProvisionedConcurrencyConfigListItems = int
@@ -57,14 +51,13 @@ MaximumRecordAgeInSeconds = int
 MaximumRetryAttempts = int
 MaximumRetryAttemptsEventSourceMapping = int
 MemorySize = int
-Method = str
 NameSpacedFunctionArn = str
 NamespacedFunctionName = str
 NamespacedStatementId = str
 NonNegativeInteger = int
 OrganizationId = str
-Origin = str
 ParallelizationFactor = int
+Pattern = str
 PositiveInteger = int
 Principal = str
 Qualifier = str
@@ -99,11 +92,6 @@ WorkingDirectory = str
 class Architecture(str):
     x86_64 = "x86_64"
     arm64 = "arm64"
-
-
-class AuthorizationType(str):
-    NONE = "NONE"
-    AWS_IAM = "AWS_IAM"
 
 
 class CodeSigningPolicy(str):
@@ -190,6 +178,7 @@ class Runtime(str):
     dotnetcore2_0 = "dotnetcore2.0"
     dotnetcore2_1 = "dotnetcore2.1"
     dotnetcore3_1 = "dotnetcore3.1"
+    dotnet6 = "dotnet6"
     nodejs4_3_edge = "nodejs4.3-edge"
     go1_x = "go1.x"
     ruby2_5 = "ruby2.5"
@@ -621,8 +610,6 @@ class AliasConfiguration(TypedDict, total=False):
 
 
 AliasList = List[AliasConfiguration]
-AllowMethodsList = List[Method]
-AllowOriginsList = List[Origin]
 SigningProfileVersionArns = List[Arn]
 
 
@@ -666,18 +653,6 @@ CompatibleRuntimes = List[Runtime]
 
 class Concurrency(TypedDict, total=False):
     ReservedConcurrentExecutions: Optional[ReservedConcurrentExecutions]
-
-
-HeadersList = List[Header]
-
-
-class Cors(TypedDict, total=False):
-    AllowCredentials: Optional[AllowCredentials]
-    AllowHeaders: Optional[HeadersList]
-    AllowMethods: Optional[AllowMethodsList]
-    AllowOrigins: Optional[AllowOriginsList]
-    ExposeHeaders: Optional[HeadersList]
-    MaxAge: Optional[MaxAge]
 
 
 class CreateAliasRequest(ServiceRequest):
@@ -747,11 +722,29 @@ class DestinationConfig(TypedDict, total=False):
 Date = datetime
 
 
+class Filter(TypedDict, total=False):
+    """A structure within a ``FilterCriteria`` object that defines an event
+    filtering pattern.
+    """
+
+    Pattern: Optional[Pattern]
+
+
+FilterList = List[Filter]
+
+
+class FilterCriteria(TypedDict, total=False):
+    """An object that contains the filters for an event source."""
+
+    Filters: Optional[FilterList]
+
+
 class CreateEventSourceMappingRequest(ServiceRequest):
     EventSourceArn: Optional[Arn]
     FunctionName: FunctionName
     Enabled: Optional[Enabled]
     BatchSize: Optional[BatchSize]
+    FilterCriteria: Optional[FilterCriteria]
     MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
     ParallelizationFactor: Optional[ParallelizationFactor]
     StartingPosition: Optional[EventSourcePosition]
@@ -880,21 +873,6 @@ class CreateFunctionRequest(ServiceRequest):
     Architectures: Optional[ArchitecturesList]
 
 
-class CreateFunctionUrlConfigRequest(ServiceRequest):
-    FunctionName: FunctionName
-    Qualifier: Optional[FunctionUrlQualifier]
-    AuthorizationType: AuthorizationType
-    Cors: Optional[Cors]
-
-
-class CreateFunctionUrlConfigResponse(TypedDict, total=False):
-    FunctionUrl: FunctionUrl
-    FunctionArn: FunctionArn
-    AuthorizationType: AuthorizationType
-    Cors: Optional[Cors]
-    CreationTime: Timestamp
-
-
 class DeleteAliasRequest(ServiceRequest):
     FunctionName: FunctionName
     Name: Alias
@@ -928,11 +906,6 @@ class DeleteFunctionEventInvokeConfigRequest(ServiceRequest):
 class DeleteFunctionRequest(ServiceRequest):
     FunctionName: FunctionName
     Qualifier: Optional[Qualifier]
-
-
-class DeleteFunctionUrlConfigRequest(ServiceRequest):
-    FunctionName: FunctionName
-    Qualifier: Optional[FunctionUrlQualifier]
 
 
 class DeleteLayerVersionRequest(ServiceRequest):
@@ -974,6 +947,7 @@ class EventSourceMappingConfiguration(TypedDict, total=False):
     MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
     ParallelizationFactor: Optional[ParallelizationFactor]
     EventSourceArn: Optional[Arn]
+    FilterCriteria: Optional[FilterCriteria]
     FunctionArn: Optional[FunctionArn]
     LastModified: Optional[Date]
     LastProcessingResult: Optional[String]
@@ -1097,18 +1071,6 @@ FunctionEventInvokeConfigList = List[FunctionEventInvokeConfig]
 FunctionList = List[FunctionConfiguration]
 
 
-class FunctionUrlConfig(TypedDict, total=False):
-    FunctionUrl: FunctionUrl
-    FunctionArn: FunctionArn
-    CreationTime: Timestamp
-    LastModifiedTime: Timestamp
-    Cors: Optional[Cors]
-    AuthorizationType: AuthorizationType
-
-
-FunctionUrlConfigList = List[FunctionUrlConfig]
-
-
 class GetAccountSettingsRequest(ServiceRequest):
     pass
 
@@ -1172,20 +1134,6 @@ class GetFunctionResponse(TypedDict, total=False):
     Code: Optional[FunctionCodeLocation]
     Tags: Optional[Tags]
     Concurrency: Optional[Concurrency]
-
-
-class GetFunctionUrlConfigRequest(ServiceRequest):
-    FunctionName: FunctionName
-    Qualifier: Optional[FunctionUrlQualifier]
-
-
-class GetFunctionUrlConfigResponse(TypedDict, total=False):
-    FunctionUrl: FunctionUrl
-    FunctionArn: FunctionArn
-    AuthorizationType: AuthorizationType
-    Cors: Optional[Cors]
-    CreationTime: Timestamp
-    LastModifiedTime: Timestamp
 
 
 class GetLayerVersionByArnRequest(ServiceRequest):
@@ -1370,17 +1318,6 @@ class ListFunctionEventInvokeConfigsRequest(ServiceRequest):
 
 class ListFunctionEventInvokeConfigsResponse(TypedDict, total=False):
     FunctionEventInvokeConfigs: Optional[FunctionEventInvokeConfigList]
-    NextMarker: Optional[String]
-
-
-class ListFunctionUrlConfigsRequest(ServiceRequest):
-    FunctionName: FunctionName
-    Marker: Optional[String]
-    MaxItems: Optional[MaxItems]
-
-
-class ListFunctionUrlConfigsResponse(TypedDict, total=False):
-    FunctionUrlConfigs: FunctionUrlConfigList
     NextMarker: Optional[String]
 
 
@@ -1599,6 +1536,7 @@ class UpdateEventSourceMappingRequest(ServiceRequest):
     FunctionName: Optional[FunctionName]
     Enabled: Optional[Enabled]
     BatchSize: Optional[BatchSize]
+    FilterCriteria: Optional[FilterCriteria]
     MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
     DestinationConfig: Optional[DestinationConfig]
     MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
@@ -1648,22 +1586,6 @@ class UpdateFunctionEventInvokeConfigRequest(ServiceRequest):
     MaximumRetryAttempts: Optional[MaximumRetryAttempts]
     MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
     DestinationConfig: Optional[DestinationConfig]
-
-
-class UpdateFunctionUrlConfigRequest(ServiceRequest):
-    FunctionName: FunctionName
-    Qualifier: Optional[FunctionUrlQualifier]
-    AuthorizationType: Optional[AuthorizationType]
-    Cors: Optional[Cors]
-
-
-class UpdateFunctionUrlConfigResponse(TypedDict, total=False):
-    FunctionUrl: FunctionUrl
-    FunctionArn: FunctionArn
-    AuthorizationType: AuthorizationType
-    Cors: Optional[Cors]
-    CreationTime: Timestamp
-    LastModifiedTime: Timestamp
 
 
 class LambdaApi:
@@ -1840,6 +1762,7 @@ class LambdaApi:
         event_source_arn: Arn = None,
         enabled: Enabled = None,
         batch_size: BatchSize = None,
+        filter_criteria: FilterCriteria = None,
         maximum_batching_window_in_seconds: MaximumBatchingWindowInSeconds = None,
         parallelization_factor: ParallelizationFactor = None,
         starting_position: EventSourcePosition = None,
@@ -1925,6 +1848,8 @@ class LambdaApi:
         :param enabled: When true, the event source mapping is active.
         :param batch_size: The maximum number of records in each batch that Lambda pulls from your
         stream or queue and sends to your function.
+        :param filter_criteria: (Streams and Amazon SQS) An object that defines the filter criteria that
+        determine whether Lambda should process an event.
         :param maximum_batching_window_in_seconds: (Streams and Amazon SQS standard queues) The maximum amount of time, in
         seconds, that Lambda spends gathering records before invoking the
         function.
@@ -1945,8 +1870,8 @@ class LambdaApi:
         :param source_access_configurations: An array of authentication protocols or VPC components required to
         secure your event source.
         :param self_managed_event_source: The Self-Managed Apache Kafka cluster to send records.
-        :param function_response_types: (Streams only) A list of current response type enums applied to the
-        event source mapping.
+        :param function_response_types: (Streams and Amazon SQS) A list of current response type enums applied
+        to the event source mapping.
         :returns: EventSourceMappingConfiguration
         :raises ServiceException:
         :raises InvalidParameterValueException:
@@ -2099,30 +2024,6 @@ class LambdaApi:
         """
         raise NotImplementedError
 
-    @handler("CreateFunctionUrlConfig")
-    def create_function_url_config(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        authorization_type: AuthorizationType,
-        qualifier: FunctionUrlQualifier = None,
-        cors: Cors = None,
-    ) -> CreateFunctionUrlConfigResponse:
-        """
-
-        :param function_name: .
-        :param authorization_type: .
-        :param qualifier: .
-        :param cors: .
-        :returns: CreateFunctionUrlConfigResponse
-        :raises ResourceConflictException:
-        :raises ResourceNotFoundException:
-        :raises InvalidParameterValueException:
-        :raises ServiceException:
-        :raises TooManyRequestsException:
-        """
-        raise NotImplementedError
-
     @handler("DeleteAlias")
     def delete_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias
@@ -2179,10 +2080,7 @@ class LambdaApi:
 
     @handler("DeleteFunction")
     def delete_function(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        qualifier: Qualifier = None,
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
     ) -> None:
         """Deletes a Lambda function. To delete a specific function version, use
         the ``Qualifier`` parameter. Otherwise, all versions and aliases are
@@ -2236,10 +2134,7 @@ class LambdaApi:
 
     @handler("DeleteFunctionEventInvokeConfig")
     def delete_function_event_invoke_config(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        qualifier: Qualifier = None,
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
     ) -> None:
         """Deletes the configuration for asynchronous invocation for a function,
         version, or alias.
@@ -2257,30 +2152,9 @@ class LambdaApi:
         """
         raise NotImplementedError
 
-    @handler("DeleteFunctionUrlConfig")
-    def delete_function_url_config(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        qualifier: FunctionUrlQualifier = None,
-    ) -> None:
-        """
-
-        :param function_name: .
-        :param qualifier: .
-        :raises ResourceConflictException:
-        :raises ResourceNotFoundException:
-        :raises ServiceException:
-        :raises TooManyRequestsException:
-        """
-        raise NotImplementedError
-
     @handler("DeleteLayerVersion")
     def delete_layer_version(
-        self,
-        context: RequestContext,
-        layer_name: LayerName,
-        version_number: LayerVersionNumber,
+        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> None:
         """Deletes a version of an `Lambda
         layer <https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html>`__.
@@ -2455,10 +2329,7 @@ class LambdaApi:
 
     @handler("GetFunctionEventInvokeConfig")
     def get_function_event_invoke_config(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        qualifier: Qualifier = None,
+        self, context: RequestContext, function_name: FunctionName, qualifier: Qualifier = None
     ) -> FunctionEventInvokeConfig:
         """Retrieves the configuration for asynchronous invocation for a function,
         version, or alias.
@@ -2476,31 +2347,9 @@ class LambdaApi:
         """
         raise NotImplementedError
 
-    @handler("GetFunctionUrlConfig")
-    def get_function_url_config(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        qualifier: FunctionUrlQualifier = None,
-    ) -> GetFunctionUrlConfigResponse:
-        """
-
-        :param function_name: .
-        :param qualifier: .
-        :returns: GetFunctionUrlConfigResponse
-        :raises InvalidParameterValueException:
-        :raises ServiceException:
-        :raises ResourceNotFoundException:
-        :raises TooManyRequestsException:
-        """
-        raise NotImplementedError
-
     @handler("GetLayerVersion")
     def get_layer_version(
-        self,
-        context: RequestContext,
-        layer_name: LayerName,
-        version_number: LayerVersionNumber,
+        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> GetLayerVersionResponse:
         """Returns information about a version of an `Lambda
         layer <https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html>`__,
@@ -2535,10 +2384,7 @@ class LambdaApi:
 
     @handler("GetLayerVersionPolicy")
     def get_layer_version_policy(
-        self,
-        context: RequestContext,
-        layer_name: LayerName,
-        version_number: LayerVersionNumber,
+        self, context: RequestContext, layer_name: LayerName, version_number: LayerVersionNumber
     ) -> GetLayerVersionPolicyResponse:
         """Returns the permission policy for a version of an `Lambda
         layer <https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html>`__.
@@ -2741,10 +2587,7 @@ class LambdaApi:
 
     @handler("ListCodeSigningConfigs")
     def list_code_signing_configs(
-        self,
-        context: RequestContext,
-        marker: String = None,
-        max_items: MaxListItems = None,
+        self, context: RequestContext, marker: String = None, max_items: MaxListItems = None
     ) -> ListCodeSigningConfigsResponse:
         """Returns a list of `code signing
         configurations <https://docs.aws.amazon.com/lambda/latest/dg/configuring-codesigning.html>`__.
@@ -2807,27 +2650,6 @@ class LambdaApi:
         :raises ResourceNotFoundException:
         :raises TooManyRequestsException:
         :raises ServiceException:
-        """
-        raise NotImplementedError
-
-    @handler("ListFunctionUrlConfigs")
-    def list_function_url_configs(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        marker: String = None,
-        max_items: MaxItems = None,
-    ) -> ListFunctionUrlConfigsResponse:
-        """
-
-        :param function_name: .
-        :param marker: .
-        :param max_items: .
-        :returns: ListFunctionUrlConfigsResponse
-        :raises InvalidParameterValueException:
-        :raises ServiceException:
-        :raises ResourceNotFoundException:
-        :raises TooManyRequestsException:
         """
         raise NotImplementedError
 
@@ -3372,6 +3194,7 @@ class LambdaApi:
         function_name: FunctionName = None,
         enabled: Enabled = None,
         batch_size: BatchSize = None,
+        filter_criteria: FilterCriteria = None,
         maximum_batching_window_in_seconds: MaximumBatchingWindowInSeconds = None,
         destination_config: DestinationConfig = None,
         maximum_record_age_in_seconds: MaximumRecordAgeInSeconds = None,
@@ -3452,6 +3275,8 @@ class LambdaApi:
         :param enabled: When true, the event source mapping is active.
         :param batch_size: The maximum number of records in each batch that Lambda pulls from your
         stream or queue and sends to your function.
+        :param filter_criteria: (Streams and Amazon SQS) An object that defines the filter criteria that
+        determine whether Lambda should process an event.
         :param maximum_batching_window_in_seconds: (Streams and Amazon SQS standard queues) The maximum amount of time, in
         seconds, that Lambda spends gathering records before invoking the
         function.
@@ -3466,8 +3291,8 @@ class LambdaApi:
         :param source_access_configurations: An array of authentication protocols or VPC components required to
         secure your event source.
         :param tumbling_window_in_seconds: (Streams only) The duration in seconds of a processing window.
-        :param function_response_types: (Streams only) A list of current response type enums applied to the
-        event source mapping.
+        :param function_response_types: (Streams and Amazon SQS) A list of current response type enums applied
+        to the event source mapping.
         :returns: EventSourceMappingConfiguration
         :raises ServiceException:
         :raises ResourceNotFoundException:
@@ -3497,6 +3322,20 @@ class LambdaApi:
         function, the code package must be signed by a trusted publisher. For
         more information, see `Configuring code
         signing <https://docs.aws.amazon.com/lambda/latest/dg/configuration-trustedcode.html>`__.
+
+        If the function's package type is ``Image``, you must specify the code
+        package in ``ImageUri`` as the URI of a `container
+        image <https://docs.aws.amazon.com/lambda/latest/dg/lambda-images.html>`__
+        in the Amazon ECR registry.
+
+        If the function's package type is ``Zip``, you must specify the
+        deployment package as a `.zip file
+        archive <https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-package.html#gettingstarted-package-zip>`__.
+        Enter the Amazon S3 bucket and key of the code .zip file location. You
+        can also provide the function code inline using the ``ZipFile`` field.
+
+        The code in the deployment package must be compatible with the target
+        instruction set architecture of the function (``x86-64`` or ``arm64``).
 
         The function's code is locked when you publish a version. You can't
         modify the code of a published version, only the unpublished version.
@@ -3646,29 +3485,5 @@ class LambdaApi:
         :raises InvalidParameterValueException:
         :raises TooManyRequestsException:
         :raises ResourceConflictException:
-        """
-        raise NotImplementedError
-
-    @handler("UpdateFunctionUrlConfig")
-    def update_function_url_config(
-        self,
-        context: RequestContext,
-        function_name: FunctionName,
-        qualifier: FunctionUrlQualifier = None,
-        authorization_type: AuthorizationType = None,
-        cors: Cors = None,
-    ) -> UpdateFunctionUrlConfigResponse:
-        """
-
-        :param function_name: .
-        :param qualifier: .
-        :param authorization_type: .
-        :param cors: .
-        :returns: UpdateFunctionUrlConfigResponse
-        :raises ResourceConflictException:
-        :raises ResourceNotFoundException:
-        :raises InvalidParameterValueException:
-        :raises ServiceException:
-        :raises TooManyRequestsException:
         """
         raise NotImplementedError
