@@ -114,7 +114,7 @@ class TestRoute53:
 
         with pytest.raises(Exception) as ctx:
             client.get_reusable_delegation_set(Id=set_id_1)
-        assert ctx.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+        assert "NoSuchDelegationSet" in str(ctx.value)
 
 
 class TestRoute53Resolver:
