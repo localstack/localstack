@@ -57,8 +57,6 @@ class ApiInvocationContext:
 
     stage_variables: Dict
 
-    is_data_base64_encoded: bool
-
     def __init__(
         self,
         method,
@@ -86,7 +84,6 @@ class ApiInvocationContext:
         self.path_with_query_string = None
         self.response_templates = {}
         self.stage_variables = {}
-        self.is_data_base64_encoded = False
         self.path_params = {}
 
     @property
@@ -147,11 +144,18 @@ class ApiInvocationContext:
             return list(cookies.split(";"))
         return []
 
+    @property
+    def is_data_base64_encoded(self):
+        try:
+            json.dumps(self.data) if isinstance(self.data, (dict, list)) else to_str(self.data)
+            return False
+        except UnicodeDecodeError:
+            return True
+
     def data_as_string(self) -> Union[str, bytes]:
         try:
             return (
                 json.dumps(self.data) if isinstance(self.data, (dict, list)) else to_str(self.data)
             )
         except UnicodeDecodeError:
-            self.is_data_base64_encoded = True
             return base64.b64encode(self.data)

@@ -4,11 +4,11 @@ import re
 from urllib.parse import quote_plus, unquote_plus
 
 import airspeed
-from localstack.utils.objects import recurse_object
 
 from localstack import config
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
+from localstack.utils.objects import recurse_object
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
@@ -81,7 +81,7 @@ def block_parse(self, *args, **kwargs):
 
 class DictWrapper(dict):
     def keySet(self):
-        return self.keys()
+        return list(self.keys())
 
 
 class VelocityInput(object):
@@ -113,8 +113,10 @@ class VelocityInput(object):
 
     def _attach_missing_functions(self, value):
         if value:
+
             def _fix(obj, **kwargs):
                 return DictWrapper(obj) if isinstance(obj, dict) else obj
+
             value = recurse_object(value, _fix)
         return value
 

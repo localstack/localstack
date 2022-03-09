@@ -49,7 +49,7 @@ class SnsIntegration(BackendIntegration):
 class VtlTemplate:
     class VelocityUtil(object):
         """
-        Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration
+        Simple class to mimic the behavior of variable '$util' in AWS API Gateway integration
         velocity templates.
         See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
         """
@@ -175,8 +175,7 @@ class VtlTemplate:
                 for k, v in obj.items():
                     if isinstance(v, str):
                         obj[k] = ExtendedString(v)
-                    if isinstance(v, dict):
-                        obj[k] = DictWrapper(v)
+                return DictWrapper(obj)
             return obj
 
         # loop through the variables and enable certain additional util functions (e.g.,
@@ -268,10 +267,6 @@ class ResponseTemplates(Templates):
     """
 
     def render(self, api_context: ApiInvocationContext):
-        LOG.info(
-            f"Method response body after transformations: "
-            f"{to_str(api_context.response._content) if not api_context.is_data_base64_encoded else ''}"
-        )
         response = api_context.response
         integration = api_context.integration
         # we set context data with the response content because later on we use context data as
