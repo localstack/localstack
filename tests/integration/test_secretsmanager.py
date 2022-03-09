@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 
 import pytest
 import requests
+from moto.secretsmanager.exceptions import ResourceNotFoundException
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
@@ -31,16 +32,28 @@ class TestSecretsManager:
     def secretsmanager_client(self):
         return aws_stack.create_external_boto_client("secretsmanager")
 
-    def test_create_and_update_secret(self, secretsmanager_client):
-        secret_name = "s-%s" % short_uid()
+    @pytest.mark.parametrize(
+        "secret_name, is_valid_partial_arn",
+        [
+            ("s-%s" % short_uid(), True),
+            ("Valid/_+=.@-Name", True),
+            ("Valid/_+=.@-Name-a1b2", True),
+            ("Valid/_+=.@-Name-a1b2c3", False),
+            ("Valid/_+=.@-Name-a1b2c3-", False),
+        ],
+    )
+    def test_create_and_update_secret(
+        self, secretsmanager_client, secret_name: str, is_valid_partial_arn: bool
+    ):
+        description = "testing creation of secrets"
         rs = secretsmanager_client.create_secret(
             Name=secret_name,
             SecretString="my_secret",
-            Description="testing creation of secrets",
+            Description=description,
         )
         secret_arn = rs["ARN"]
 
-        assert len(secret_arn.rpartition("-")[2]) == 6
+        assert len(secret_arn.rpartition("-")[-1]) == 6
 
         rs = secretsmanager_client.get_secret_value(SecretId=secret_name)
         assert rs["Name"] == secret_name
@@ -48,20 +61,31 @@ class TestSecretsManager:
         assert rs["ARN"] == secret_arn
         assert isinstance(rs["CreatedDate"], datetime)
 
+        rs = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert rs["Name"] == secret_name
+        assert rs["ARN"] == secret_arn
+        assert isinstance(rs["CreatedDate"], datetime)
+        assert rs["Description"] == description
+
         rs = secretsmanager_client.get_secret_value(SecretId=secret_arn)
         assert rs["Name"] == secret_name
         assert rs["SecretString"] == "my_secret"
         assert rs["ARN"] == secret_arn
 
-        rs = secretsmanager_client.get_secret_value(SecretId=secret_arn[: len(secret_arn) - 6])
+        rs = secretsmanager_client.get_secret_value(SecretId=secret_arn[:-6])
         assert rs["Name"] == secret_name
         assert rs["SecretString"] == "my_secret"
         assert rs["ARN"] == secret_arn
 
-        rs = secretsmanager_client.get_secret_value(SecretId=secret_arn[: len(secret_arn) - 7])
-        assert rs["Name"] == secret_name
-        assert rs["SecretString"] == "my_secret"
-        assert rs["ARN"] == secret_arn
+        if is_valid_partial_arn:
+            rs = secretsmanager_client.get_secret_value(SecretId=secret_arn[:-7])
+            assert rs["Name"] == secret_name
+            assert rs["SecretString"] == "my_secret"
+            assert rs["ARN"] == secret_arn
+        else:
+            with pytest.raises(Exception) as resource_not_found:
+                secretsmanager_client.get_secret_value(SecretId=secret_arn[:-7])
+            assert resource_not_found.typename == "ResourceNotFoundException"
 
         secretsmanager_client.put_secret_value(SecretId=secret_name, SecretString="new_secret")
 
@@ -267,6 +291,64 @@ class TestSecretsManager:
         assert rs_get_curr["VersionStages"] == ["AWSCURRENT"]
 
         secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
+
+    @pytest.mark.parametrize(
+        "secret_name", ["Inv Name", " Inv Name", " Inv*Name? ", " Inv *?!]Name\\-"]
+    )
+    def test_invalid_secret_name(self, secretsmanager_client, secret_name: str):
+        # The secret name can contain ASCII letters, numbers, and the following characters: /_+=.@-
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.create_secret(Name=secret_name, SecretString="MySecretString")
+        assert validation_exception.typename == "ValidationException"
+
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
+            )
+        assert validation_exception.typename == "ValidationException"
+
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert validation_exception.typename == "ValidationException"
+
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert validation_exception.typename == "ValidationException"
+
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.list_secret_version_ids(
+                SecretId=secret_name, IncludeDeprecated=True
+            )
+        assert validation_exception.typename == "ValidationException"
+
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.put_secret_value(
+                SecretId=secret_name, SecretString="MySecretString"
+            )
+        assert validation_exception.typename == "ValidationException"
+
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.tag_resource(
+                SecretId=secret_name, Tags=[{"Key": "FirstTag", "Value": "SomeValue"}]
+            )
+        assert validation_exception.typename == "ValidationException"
+
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.untag_resource(SecretId=secret_name, Tags=["FirstTag"])
+        assert validation_exception.typename == "ValidationException"
+
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.update_secret(
+                SecretId=secret_name, Description="MyNewDescription"
+            )
+        assert validation_exception.typename == "ValidationException"
+
+        with pytest.raises(Exception) as validation_exception:
+            secretsmanager_client.validate_resource_policy(
+                SecretId=secret_name,
+                ResourcePolicy='{\n"Version":"2012-10-17",\n"Statement":[{\n"Effect":"Allow",\n"Principal":{\n"AWS":"arn:aws:iam::123456789012:root"\n},\n"Action":"secretsmanager:GetSecretValue",\n"Resource":"*"\n}]\n}',
+            )
+        assert validation_exception.typename == "ValidationException"
 
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> Dict:
