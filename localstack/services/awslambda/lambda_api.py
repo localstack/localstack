@@ -807,13 +807,14 @@ def run_lambda(
 
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        # TODO: wrong mapping
         response = {
             "errorType": str(exc_type.__name__),
             "errorMessage": str(e),
             "stackTrace": traceback.format_tb(exc_traceback),
         }
         LOG.info("Error executing Lambda function %s: %s %s", func_arn, e, traceback.format_exc())
+        if isinstance(e, lambda_executors.InvocationException):
+            response = json.loads(e.result)
         log_output = e.log_output if isinstance(e, lambda_executors.InvocationException) else ""
         return InvocationResult(Response(json.dumps(response), status=500), log_output)
     finally:
