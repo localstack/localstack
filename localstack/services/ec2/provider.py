@@ -5,7 +5,7 @@ from typing import Dict
 from moto.ec2 import ec2_backends
 from moto.ec2.exceptions import InvalidVpcEndPointIdError
 
-from localstack.aws.api import RequestContext, ServiceException, handler
+from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.ec2 import (
     Boolean,
     CreateVpcEndpointServiceConfigurationResult,
@@ -16,14 +16,12 @@ from localstack.aws.api.ec2 import (
     DescribeReservedInstancesOfferingsResult,
     DescribeReservedInstancesRequest,
     DescribeReservedInstancesResult,
-    DescribeVpcEndpointServicesResult,
     Ec2Api,
-    FilterList,
     InstanceType,
-    Integer,
     ModifyVpcEndpointResult,
     OfferingClassType,
     OfferingTypeValues,
+    PrefixList,
     PricingDetail,
     PurchaseReservedInstancesOfferingRequest,
     PurchaseReservedInstancesOfferingResult,
@@ -38,7 +36,6 @@ from localstack.aws.api.ec2 import (
     TagSpecificationList,
     Tenancy,
     ValueStringList,
-    VpcEndpoint,
     VpcEndpointId,
     VpcEndpointRouteTableIdList,
     VpcEndpointSecurityGroupIdList,
@@ -48,22 +45,15 @@ from localstack.aws.api.ec2 import (
 from localstack.services import moto
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.strings import long_uid, short_uid
-from localstack.utils.tagging import TaggingService
+
+GATEWAY_SERVICES = ["s3", "dynamodb"]
 
 
 class Ec2Backend(RegionBackend):
-    vpc_endpoints: Dict[str, VpcEndpoint]
-    vpc_endpoint_service_configurations: Dict[str, ServiceConfiguration]
-
-    TAGS = TaggingService()
+    prefix_lists: Dict[str, PrefixList]
 
     def __init__(self):
-        self.vpc_endpoints = {}
-        self.vpc_endpoint_service_configurations = {}
-
-
-class InvalidVpcEndpointIdException(ServiceException):
-    pass
+        self.prefix_lists = {}
 
 
 class Ec2Provider(Ec2Api, ABC):
@@ -171,7 +161,6 @@ class Ec2Provider(Ec2Api, ABC):
             ServiceConfiguration=service_config,
         )
 
-    # ModifyVpcEndpoint is not implemented in moto
     @handler("ModifyVpcEndpoint")
     def modify_vpc_endpoint(
         self,
@@ -217,16 +206,3 @@ class Ec2Provider(Ec2Api, ABC):
             vpc_endpoint.private_dns_enabled = private_dns_enabled
 
         return ModifyVpcEndpointResult(Return=True)
-
-    @handler("DescribeVpcEndpointServices")
-    def describe_vpc_endpoint_services(
-        self,
-        context: RequestContext,
-        dry_run: Boolean = None,
-        service_names: ValueStringList = None,
-        filters: FilterList = None,
-        max_results: Integer = None,
-        next_token: String = None,
-    ) -> DescribeVpcEndpointServicesResult:
-        # TODO@viren
-        pass
