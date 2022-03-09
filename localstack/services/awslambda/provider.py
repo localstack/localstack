@@ -1,13 +1,9 @@
 import base64
-import dataclasses
 import hashlib
 import logging
 import threading
 import time
 import uuid
-from typing import Dict
-
-import regex
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.awslambda import (
@@ -61,68 +57,22 @@ from localstack.aws.api.awslambda import (
     Version,
     VpcConfig,
 )
-from localstack.services.awslambda.invocation.lambda_service import FunctionVersion, LambdaService
+from localstack.services.awslambda.invocation.lambda_service import (
+    FunctionVersion,
+    LambdaFunction,
+    LambdaFunctionVersion,
+    LambdaService,
+    LambdaServiceBackend,
+)
 from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
 from localstack.services.awslambda.lambda_utils import generate_lambda_arn
-from localstack.services.generic_proxy import RegionBackend
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
-from localstack.utils.tagging import TaggingService
 
 LAMBDA_DEFAULT_TIMEOUT_SECONDS = 3
 LAMBDA_DEFAULT_MEMORY_SIZE = 128
 
 LOG = logging.getLogger(__name__)
-
-# some regexes to use (not used atm)
-function_arn_regex = regex.compile(
-    r"arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}(-gov)?-[a-z]+-\d{1}:\d{12}:function:[a-zA-Z0-9-_\.]+(:(\$LATEST|[a-zA-Z0-9-_]+))?"
-)
-function_name_regex = regex.compile(
-    r" (arn:(aws[a-zA-Z-]*)?:lambda:)?([a-z]{2}(-gov)?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_\.]+)(:(\$LATEST|[a-zA-Z0-9-_]+))?"
-)  # also length 1-170 incl.
-handler_regex = regex.compile(r"[^\s]+")
-kms_key_arn_regex = regex.compile(r"(arn:(aws[a-zA-Z-]*)?:[a-z0-9-.]+:.*)|()")
-role_regex = regex.compile(r"arn:(aws[a-zA-Z-]*)?:iam::\d{12}:role/?[a-zA-Z_0-9+=,.@\-_/]+")
-master_arn_regex = regex.compile(
-    r"arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}(-gov)?-[a-z]+-\d{1}:\d{12}:function:[a-zA-Z0-9-_]+(:(\$LATEST|[a-zA-Z0-9-_]+))?"
-)
-signing_job_arn_regex = regex.compile(
-    r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
-)
-signing_profile_version_arn_regex = regex.compile(
-    r"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-])+:([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"
-)
-
-
-@dataclasses.dataclass
-class LambdaFunctionVersion:
-    # TODO: would prefer to use frozen dataclasses here
-    # TODO: how to handle revision IDs?  => Don't necessarily need to "track" old versions, but used to verify latest state
-    config: FunctionConfiguration
-    code: FunctionCode
-
-
-@dataclasses.dataclass
-class LambdaFunction:
-    latest: LambdaFunctionVersion  # points to the '$LATEST' version
-    versions: Dict[str, LambdaFunctionVersion] = dataclasses.field(default_factory=dict)
-    aliases: Dict[str, AliasConfiguration] = dataclasses.field(default_factory=dict)
-    next_version: int = 1
-    lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
-
-    # TODO: implement later
-    # provisioned_concurrency_configs: Dict[str, ProvisionedConcurrencyConfig]
-    # code_signing_config: Dict[str, CodeSigningConfig]
-    # function_event_invoke_config: Dict[str, EventInvokeConfig]
-    # function_concurrency: Dict[str, FunctionConcurrency]
-
-
-class LambdaServiceBackend(RegionBackend):
-    # name => Function; Account/region are implicit through the Backend
-    functions: Dict[str, LambdaFunction] = {}
-    # static tagging service instance
-    TAGS = TaggingService()
 
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):

@@ -1,10 +1,14 @@
 import dataclasses
+import threading
 from concurrent.futures import Future
 from threading import RLock
 from typing import Dict, Optional
 
+from localstack.aws.api.awslambda import AliasConfiguration, FunctionCode, FunctionConfiguration
 from localstack.services.awslambda.invocation.executor_endpoint import InvocationResult
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
+from localstack.services.generic_proxy import RegionBackend
+from localstack.utils.tagging import TaggingService
 
 
 @dataclasses.dataclass(frozen=True)
@@ -28,6 +32,34 @@ class Invocation:
     payload: bytes
     client_context: Optional[str]
     invocation_type: str
+
+
+@dataclasses.dataclass
+class LambdaFunctionVersion:  # TODO: reconcile with FunctionVersion above
+    config: FunctionConfiguration
+    code: FunctionCode
+
+
+@dataclasses.dataclass
+class LambdaFunction:
+    latest: LambdaFunctionVersion  # points to the '$LATEST' version
+    versions: Dict[str, LambdaFunctionVersion] = dataclasses.field(default_factory=dict)
+    aliases: Dict[str, AliasConfiguration] = dataclasses.field(default_factory=dict)
+    next_version: int = 1
+    lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
+
+    # TODO: implement later
+    # provisioned_concurrency_configs: Dict[str, ProvisionedConcurrencyConfig]
+    # code_signing_config: Dict[str, CodeSigningConfig]
+    # function_event_invoke_config: Dict[str, EventInvokeConfig]
+    # function_concurrency: Dict[str, FunctionConcurrency]
+
+
+class LambdaServiceBackend(RegionBackend):
+    # name => Function; Account/region are implicit through the Backend
+    functions: Dict[str, LambdaFunction] = {}
+    # static tagging service instance
+    TAGS = TaggingService()
 
 
 class LambdaService:
