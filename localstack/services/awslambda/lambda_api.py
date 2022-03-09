@@ -51,6 +51,7 @@ from localstack.utils.common import (
     empty_context_manager,
     ensure_readable,
     first_char_to_lower,
+    get_unzipped_size,
     is_zip_file,
     isoformat_milliseconds,
     json_safe,
@@ -96,6 +97,7 @@ LAMBDA_DEFAULT_TIMEOUT = 3
 INVALID_PARAMETER_VALUE_EXCEPTION = "InvalidParameterValueException"
 VERSION_LATEST = LambdaFunction.QUALIFIER_LATEST
 FUNCTION_MAX_SIZE = 69905067
+FUNCTION_MAX_UNZIPPED_SIZE = 262144000
 
 BATCH_SIZE_RANGES = {
     "kafka": (100, 10000),
@@ -1063,8 +1065,13 @@ def do_set_function_code(lambda_function: LambdaFunction):
         if not is_zip_file(zip_file_content):
             raise ClientError(f"Uploaded Lambda code for runtime ({runtime}) is not in Zip format")
         # Unzip the Lambda archive contents
-        unzip(archive_file, lambda_cwd)
 
+        if get_unzipped_size(archive_file) >= FUNCTION_MAX_UNZIPPED_SIZE:
+            raise Exception(
+                f"An error occurred (InvalidParameterValueException) when calling the CreateFunction operation: Unzipped size must be smaller than {FUNCTION_MAX_UNZIPPED_SIZE} bytes"
+            )
+
+        unzip(archive_file, lambda_cwd)
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
