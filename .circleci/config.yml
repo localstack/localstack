@@ -13,11 +13,16 @@ jobs:
           name: Install prerequisites
           command: |
             sudo apt-get update
-            sudo apt-get install -y libsasl2-dev python3.8-venv python3.8-dev
+            sudo apt-get install -y libsasl2-dev
+      - run:
+          name: Install python 3.10
+          command: |
+            pyenv install 3.10.2
+            pyenv global 3.10.2
       - run:
           name: Setup environment
           environment:
-            VENV_BIN: "/usr/bin/python3.8 -m venv"
+            VENV_CMD: "python3.10 -m venv"
           command: |
             make install
             mkdir -p target/reports
@@ -34,7 +39,7 @@ jobs:
 
   preflight:
     docker:
-      - image: buildpack-deps:focal
+      - image: cimg/python:3.10.2
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -45,7 +50,7 @@ jobs:
 
   unit-tests:
     docker:
-      - image: buildpack-deps:focal
+      - image: cimg/python:3.10.2
     working_directory: /tmp/workspace/repo
     steps:
       - attach_workspace:
@@ -76,6 +81,11 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - run:
+          name: Install python 3.10
+          command: |
+            pyenv install 3.10.2
+            pyenv global 3.10.2
       - run:
           name: Pull Lambda runtimes
           command: |
@@ -141,7 +151,16 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - run:
+<<<<<<< HEAD
           name: Test ElasticMQ SQS provider
+=======
+          name: Install python 3.10
+          command: |
+            pyenv install 3.10.2
+            pyenv global 3.10.2
+      - run:
+          name: Test elasticmq SQS provider
+>>>>>>> 3fa6b680 (try updating circleci to python3.10)
           environment:
             DEBUG: 1
             SQS_PROVIDER: "elasticmq"
