@@ -193,7 +193,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
 
 
 def test_render_template_values():
-    util = VtlTemplate().VelocityUtil()
+    util = VtlTemplate.VelocityUtil()
 
     encoded = util.urlEncode("x=a+b")
     assert encoded == "x%3Da%2Bb"
