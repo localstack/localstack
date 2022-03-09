@@ -11,6 +11,9 @@ import regex
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.awslambda import (
+    Alias,
+    AliasConfiguration,
+    AliasRoutingConfiguration,
     Architecture,
     ArchitecturesList,
     Blob,
@@ -32,6 +35,7 @@ from localstack.aws.api.awslambda import (
     LambdaApi,
     LastUpdateStatus,
     LayerList,
+    ListAliasesResponse,
     ListFunctionsResponse,
     LogType,
     MasterRegion,
@@ -54,7 +58,8 @@ from localstack.aws.api.awslambda import (
     Timeout,
     TracingConfig,
     TracingMode,
-    VpcConfig, AliasConfiguration, AliasRoutingConfiguration, Version, Alias, ListAliasesResponse,
+    Version,
+    VpcConfig,
 )
 from localstack.services.awslambda.invocation.lambda_service import FunctionVersion, LambdaService
 from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
@@ -199,7 +204,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             # layers
             # TODO: handle S3 bucket
             zip_file_content = code.get("ZipFile")
-            code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest()).decode("utf-8")
+            code_sha_256 = base64.standard_b64encode(
+                hashlib.sha256(zip_file_content).digest()
+            ).decode("utf-8")
             code_size = len(zip_file_content)
 
             if runtime in [Runtime.provided, Runtime.provided_al2]:
@@ -224,7 +231,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             MemorySize=memory_size or LAMBDA_DEFAULT_MEMORY_SIZE,
             Timeout=timeout or LAMBDA_DEFAULT_TIMEOUT_SECONDS,
             CodeSize=code_size,
-            CodeSha256=code_sha_256, # TODO: sure this has a default?
+            CodeSha256=code_sha_256,  # TODO: sure this has a default?
             Version="$LATEST",
             TracingConfig=TracingConfig(Mode=TracingMode.PassThrough),  # TODO
             PackageType=package_type,
@@ -281,7 +288,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def _map_to_list_response(self, config: FunctionConfiguration) -> FunctionConfiguration:
         shallow_copy = config.copy()
-        for k in ['State', 'StateReason', 'StateReasonCode', 'LastUpdateStatus', 'LastUpdateStatusReason', 'LastUpdateStatusReasonCode']:
+        for k in [
+            "State",
+            "StateReason",
+            "StateReasonCode",
+            "LastUpdateStatus",
+            "LastUpdateStatusReason",
+            "LastUpdateStatusReasonCode",
+        ]:
             if shallow_copy.get(k):
                 del shallow_copy[k]
         return shallow_copy
@@ -297,7 +311,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: limit fields returned
         # TODO: implement paging
         state = LambdaServiceBackend.get()
-        return ListFunctionsResponse(Functions=[self._map_to_list_response(f.latest.config) for f in state.functions.values()])
+        return ListFunctionsResponse(
+            Functions=[
+                self._map_to_list_response(f.latest.config) for f in state.functions.values()
+            ]
+        )
 
     def get_function(
         self,
@@ -455,14 +473,19 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         # TODO: check for existence & conflict (and write test to check if this would lead to an exception on AWS?)
         fn = state.functions[function_name]
         alias_config = AliasConfiguration(
-            AliasArn=generate_lambda_arn(account_id=int(context.account_id), region=context.region, fn_name=function_name, qualifier=name),
+            AliasArn=generate_lambda_arn(
+                account_id=int(context.account_id),
+                region=context.region,
+                fn_name=function_name,
+                qualifier=name,
+            ),
             Name=name,
             Description=description or "",
-            RevisionId=fn.latest.config['RevisionId'],
+            RevisionId=fn.latest.config["RevisionId"],
             FunctionVersion=function_version,
             RoutingConfig=routing_config,
         )
-        fn.aliases[alias_config['Name']] = alias_config
+        fn.aliases[alias_config["Name"]] = alias_config
         return alias_config
 
     def delete_alias(
@@ -485,14 +508,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         state = LambdaServiceBackend.get(context.region)
         fn = state.functions[function_name]
         alias_config = AliasConfiguration(
-            AliasArn="asdfasf", # TODO : generate
+            AliasArn="asdfasf",  # TODO : generate
             Name=name,
             Description=description or "",
-            RevisionId=fn.latest.config['RevisionId'],
+            RevisionId=fn.latest.config["RevisionId"],
             FunctionVersion=function_version,
             RoutingConfig=routing_config,
         )
-        fn.aliases[alias_config['Name']] = alias_config
+        fn.aliases[alias_config["Name"]] = alias_config
         return alias_config
 
     def list_aliases(
@@ -508,10 +531,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         return ListAliasesResponse(Aliases=[a for a in fn.aliases.values()])
 
     def get_function_configuration(
-            self,
-            context: RequestContext,
-            function_name: NamespacedFunctionName,
-            qualifier: Qualifier = None, # TODO
+        self,
+        context: RequestContext,
+        function_name: NamespacedFunctionName,
+        qualifier: Qualifier = None,  # TODO
     ) -> FunctionConfiguration:
         state = LambdaServiceBackend.get(context.region)
         fn = state.functions[function_name]
