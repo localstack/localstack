@@ -25,6 +25,7 @@ from localstack.aws.proxy import AwsApiListener
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.messages import Request, Response
 from localstack.services.moto import MotoFallbackDispatcher, call_moto
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import is_number
 from localstack.utils.patch import patch
@@ -32,7 +33,7 @@ from localstack.utils.patch import patch
 LOG = logging.getLogger(__name__)
 
 
-class LogsProvider(LogsApi):
+class LogsProvider(LogsApi, ServiceLifecycleHook):
     def __init__(self):
         super().__init__()
         self.cw_client = aws_stack.connect_to_service("cloudwatch")
