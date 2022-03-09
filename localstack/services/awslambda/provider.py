@@ -64,7 +64,11 @@ from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
     LambdaServiceBackend,
 )
-from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
+from localstack.services.awslambda.invocation.lambda_util import (
+    function_name_from_arn,
+    is_qualified_lambda_arn,
+    qualified_lambda_arn,
+)
 from localstack.services.awslambda.lambda_utils import generate_lambda_arn
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
@@ -333,13 +337,29 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         qualifier: Qualifier = None,
     ) -> None:
         state = LambdaServiceBackend.get()
+        qualified_arn = (
+            function_name
+            if is_qualified_lambda_arn(function_name)
+            else qualified_lambda_arn(
+                function_name,
+                region=context.region,
+                account=context.account_id,
+                qualifier=qualifier,
+            )
+        )
         if qualifier and qualifier != "$LATEST":
             # only delete this version
             pass  # TODO
         else:
             # TODO: this actually first needs to set the state and handle this in the lambda service and all downstream services!
             # TODO: delete all related resources (Aliases, Versions)
-            del state.functions[function_name]
+            self.lambda_service.stop_version(qualified_arn)
+            name = (
+                function_name
+                if not is_qualified_lambda_arn(function_name)
+                else function_name_from_arn(function_name)
+            )
+            del state.functions[name]
 
     def update_function_code(
         self,

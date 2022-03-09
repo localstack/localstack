@@ -7,27 +7,25 @@ from concurrent.futures import Future
 from datetime import datetime
 from queue import Queue
 from threading import Thread
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from localstack.aws.api.awslambda import State
 from localstack.services.awslambda.invocation.executor_endpoint import (
-    ExecutorEndpoint,
     InvocationError,
     InvocationLogs,
     InvocationResult,
     ServiceEndpoint,
 )
-from localstack.services.awslambda.invocation.runtime_executor import (
-    cleanup_version,
-    prepare_version,
-)
-from localstack.services.awslambda.invocation.runtime_handler import (
+from localstack.services.awslambda.invocation.runtime_environment import (
     InvalidStatusException,
     RuntimeEnvironment,
     RuntimeStatus,
 )
+from localstack.services.awslambda.invocation.runtime_executor import (
+    cleanup_version,
+    prepare_version,
+)
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
-from localstack.utils.net import get_free_tcp_port
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_service import FunctionVersion, Invocation
@@ -36,7 +34,7 @@ LOG = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass(frozen=True)
-class InvocationStorage:
+class QueuedInvocation:
     invocation_id: str
     result_future: Future[InvocationResult]
     retries: int
@@ -45,7 +43,7 @@ class InvocationStorage:
 
 @dataclasses.dataclass
 class RunningInvocation:
-    invocation: InvocationStorage
+    invocation: QueuedInvocation
     start_time: datetime
     executor: RuntimeEnvironment
     logs: Optional[str] = None
@@ -58,8 +56,12 @@ class LogItem:
     logs: str
 
 
+class ShutdownPill:
+    pass
+
+
 class LogHandler:
-    log_queue: Queue[LogItem]
+    log_queue: Queue[Union[LogItem, ShutdownPill]]
     _thread: Optional[Thread]
     _shutdown_event: threading.Event
 
@@ -70,10 +72,9 @@ class LogHandler:
 
     def run_log_loop(self) -> None:
         while not self._shutdown_event.is_set():
-            try:
-                log_item = self.log_queue.get(timeout=1)
-            except queue.Empty:
-                continue
+            log_item = self.log_queue.get()
+            if isinstance(log_item, ShutdownPill):
+                return
             store_cloudwatch_logs(log_item.log_group, log_item.log_stream, log_item.logs)
 
     def start_subscriber(self) -> None:
@@ -99,12 +100,11 @@ class LambdaVersionManager(ServiceEndpoint):
     # mapping from invocation id to invocation storage
     running_invocations: Dict[str, RunningInvocation]
     # stack of available environments
-    available_environments: queue.LifoQueue[RuntimeEnvironment]
+    available_environments: queue.LifoQueue[Union[RuntimeEnvironment, ShutdownPill]]
     # mapping environment id -> environment
     all_environments: Dict[str, RuntimeEnvironment]
-    queued_invocations: Queue[InvocationStorage]
+    queued_invocations: Queue[Union[QueuedInvocation, ShutdownPill]]
     provisioned_concurrent_executions: int
-    executor_endpoint: Optional[ExecutorEndpoint]
     invocation_thread: Optional[Thread]
     shutdown_event: threading.Event
     state: str
@@ -122,20 +122,12 @@ class LambdaVersionManager(ServiceEndpoint):
         self.all_environments = {}
         self.queued_invocations = Queue()
         self.provisioned_concurrent_executions = 0
-        self.executor_endpoint = None
         self.invocation_thread = None
         self.shutdown_event = threading.Event()
-        self.state = State.Inactive
+        self.state = State.Pending
         self.log_handler = LogHandler()
 
-    def _build_executor_endpoint(self) -> ExecutorEndpoint:
-        port = get_free_tcp_port()
-        executor_endpoint = ExecutorEndpoint(port, service_endpoint=self)
-        executor_endpoint.start()
-        return executor_endpoint
-
     def start(self) -> None:
-        self.executor_endpoint = self._build_executor_endpoint()
         invocation_thread = Thread(target=self.invocation_loop)
         invocation_thread.start()
         self.invocation_thread = invocation_thread
@@ -148,27 +140,20 @@ class LambdaVersionManager(ServiceEndpoint):
 
     def stop(self) -> None:
         LOG.debug("Stopping lambda version '%s'", self.function_arn)
-        cleanup_version(self.function_version)
+        self.state = State.Inactive
         self.shutdown_event.set()
+        self.queued_invocations.put(ShutdownPill())
+        self.available_environments.put(ShutdownPill())
         if self.invocation_thread:
             try:
                 self.invocation_thread.join(timeout=5.0)
                 LOG.debug("Thread stopped '%s'", self.function_arn)
             except TimeoutError:
                 LOG.debug("Thread did not stop after 5s '%s'", self.function_arn)
-
-        if self.executor_endpoint:
-            try:
-                self.executor_endpoint.shutdown()
-            except Exception as e:
-                LOG.debug(
-                    "Error while stopping executor endpoint for lambda %s, error: %s",
-                    self.function_arn,
-                    e,
-                )
-        self.log_handler.stop()
         for environment in list(self.all_environments.values()):
             self.stop_environment(environment)
+        self.log_handler.stop()
+        cleanup_version(self.function_version)
 
     def update_provisioned_concurrency_config(self, provisioned_concurrent_executions: int) -> None:
         self.provisioned_concurrent_executions = provisioned_concurrent_executions
@@ -176,13 +161,10 @@ class LambdaVersionManager(ServiceEndpoint):
 
     def start_environment(self) -> RuntimeEnvironment:
         LOG.debug("Starting new environment")
-        if not self.executor_endpoint:
-            LOG.error("Executor endpoint not started but environment supposed to start.")
-            raise Exception("Unable to start runtime environment without executor endpoint")
         runtime_environment = RuntimeEnvironment(
             function_version=self.function_version,
-            executor_endpoint=self.executor_endpoint,
             initialization_type="on-demand",
+            service_endpoint=self,
         )
         self.all_environments[runtime_environment.id] = runtime_environment
         # TODO async?
@@ -216,20 +198,15 @@ class LambdaVersionManager(ServiceEndpoint):
         )
 
     def invocation_loop(self) -> None:
-        # TODO cleanup shutdown logic
-        while True:
-            invocation_storage = None
-            while not invocation_storage:
-                try:
-                    invocation_storage = self.queued_invocations.get(timeout=0.5)
-                    LOG.debug("Got invocation event %s in loop", invocation_storage.invocation_id)
-                except queue.Empty:
-                    if self.shutdown_event.is_set():
-                        LOG.debug(
-                            "Invocation loop for lambda %s stopped while waiting for invocations",
-                            self.function_arn,
-                        )
-                        return
+        while not self.shutdown_event.is_set():
+            queued_invocation = self.queued_invocations.get()
+            if self.shutdown_event.is_set() or isinstance(queued_invocation, ShutdownPill):
+                LOG.debug(
+                    "Invocation loop for lambda %s stopped while waiting for invocations",
+                    self.function_arn,
+                )
+                return
+            LOG.debug("Got invocation event %s in loop", queued_invocation.invocation_id)
             # TODO refine environment startup logic
             if self.available_environments.empty() or self.active_environment_count() == 0:
                 self.start_environment()
@@ -237,33 +214,34 @@ class LambdaVersionManager(ServiceEndpoint):
             while not environment:
                 try:
                     environment = self.available_environments.get(timeout=1)
-                    self.running_invocations[invocation_storage.invocation_id] = RunningInvocation(
-                        invocation_storage, datetime.now(), executor=environment
-                    )
-                    environment.invoke(invocation_event=invocation_storage)
-                    LOG.debug("Invoke for request %s done", invocation_storage.invocation_id)
-                except queue.Empty:
-                    if self.active_environment_count() == 0:
-                        self.start_environment()
-                    # TODO what to do with too much timeouts?
-                    if self.shutdown_event.is_set():
-                        # TODO what to do with current event?
+                    if isinstance(environment, ShutdownPill) or self.shutdown_event.is_set():
                         LOG.debug(
                             "Invocation loop for lambda %s stopped while waiting for environments",
                             self.function_arn,
                         )
                         return
+                    self.running_invocations[queued_invocation.invocation_id] = RunningInvocation(
+                        queued_invocation, datetime.now(), executor=environment
+                    )
+                    environment.invoke(invocation_event=queued_invocation)
+                    LOG.debug("Invoke for request %s done", queued_invocation.invocation_id)
+                except queue.Empty:
+                    if self.active_environment_count() == 0:
+                        LOG.debug(
+                            "Detected no active environments for version %s. Starting one...",
+                            self.function_arn,
+                        )
+                        self.start_environment()
+                    # TODO what to do with too much timeouts?
                 except InvalidStatusException:
                     LOG.debug(
                         "Retrieved environment %s in invalid state from queue. Trying the next...",
                         environment.id,
                     )
-                    environment = None
-                    self.running_invocations.pop(invocation_storage.invocation_id, None)
-                    continue
+                    self.running_invocations.pop(queued_invocation.invocation_id, None)
 
     def invoke(self, *, invocation: "Invocation") -> Future[InvocationResult]:
-        invocation_storage = InvocationStorage(
+        invocation_storage = QueuedInvocation(
             invocation_id=str(uuid.uuid4()),
             result_future=Future(),
             retries=1,

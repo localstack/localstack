@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 import threading
 from concurrent.futures import Future
 from threading import RLock
@@ -9,6 +10,8 @@ from localstack.services.awslambda.invocation.executor_endpoint import Invocatio
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.tagging import TaggingService
+
+LOG = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -74,6 +77,17 @@ class LambdaService:
     def stop(self) -> None:
         for version_manager in self.lambda_version_managers.values():
             version_manager.stop()
+
+    def stop_version(self, qualified_arn: str) -> None:
+        """
+        Stops a specific lambda service version
+        :param qualified_arn: Qualified arn for the version to stop
+        """
+        LOG.debug("Stopping version %s", qualified_arn)
+        version_manager = self.lambda_version_managers.get(qualified_arn)
+        if not version_manager:
+            LOG.error("Could not find version manager for %s", qualified_arn)
+        version_manager.stop()
 
     def get_lambda_version_manager(self, function_arn: str) -> LambdaVersionManager:
         """

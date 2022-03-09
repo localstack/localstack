@@ -3,12 +3,14 @@ import dataclasses
 import logging
 from typing import Dict, Optional
 
+import requests
 from flask import Flask, request
 from flask.typing import ResponseReturnValue
 
 from localstack.utils.serving import Server
 
 LOG = logging.getLogger(__name__)
+INVOCATION_PORT = 9563
 
 
 @dataclasses.dataclass
@@ -18,10 +20,10 @@ class InvocationResult:
     logs: Optional[str] = None
 
 
-@dataclasses.dataclass
-class InvocationError:
-    invocation_id: str
-    payload: Optional[bytes]
+class InvocationError(Exception):
+    def __init__(self, invocation_id: str, payload: Optional[bytes]):
+        message = f"Error while trying to send invocation to RAPID for id {invocation_id}. Response: {payload}"
+        super().__init__(message)
 
 
 @dataclasses.dataclass
@@ -130,3 +132,11 @@ class ExecutorEndpoint(Server):
     def do_shutdown(self) -> None:
         if self._thread:
             self._thread.stop()
+
+    def invoke(self, payload: Dict[str, str], invocation_address: str) -> None:
+        invocation_url = f"http://{invocation_address}:{INVOCATION_PORT}/invoke"
+        response = requests.post(url=invocation_url, json=payload)
+        if not response.ok:
+            raise InvocationError(
+                f"Error while sending invocation {payload} to {invocation_url}. Error Code: {response.status_code}"
+            )

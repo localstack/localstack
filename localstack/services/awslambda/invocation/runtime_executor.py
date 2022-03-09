@@ -7,11 +7,16 @@ from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Dict, Literal, Optional, Tuple
 
 from localstack import config
+from localstack.services.awslambda.invocation.executor_endpoint import (
+    ExecutorEndpoint,
+    ServiceEndpoint,
+)
 from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
 )
 from localstack.utils.archives import unzip
+from localstack.utils.net import get_free_tcp_port
 
 if TYPE_CHECKING:
     from localstack.services.awslambda.invocation.lambda_service import FunctionVersion
@@ -142,11 +147,15 @@ class RuntimeExecutor:
     id: str
     function_version: "FunctionVersion"
     ip: Optional[str]
+    executor_endpoint: Optional[ExecutorEndpoint]
 
-    def __init__(self, id: str, function_version: "FunctionVersion") -> None:
+    def __init__(
+        self, id: str, function_version: "FunctionVersion", service_endpoint: ServiceEndpoint
+    ) -> None:
         self.id = id
         self.function_version = function_version
         self.ip = None
+        self.executor_endpoint = self._build_executor_endpoint(service_endpoint)
 
     def get_image(self) -> str:
         if not self.function_version.runtime:
@@ -158,7 +167,23 @@ class RuntimeExecutor:
             else get_image_for_runtime(self.function_version.runtime)
         )
 
+    def _build_executor_endpoint(self, service_endpoint: ServiceEndpoint) -> ExecutorEndpoint:
+        port = get_free_tcp_port()
+        LOG.debug(
+            "Creating service endpoint for function %s executor %s",
+            self.function_version.qualified_arn,
+            self.id,
+        )
+        executor_endpoint = ExecutorEndpoint(port, service_endpoint=service_endpoint)
+        LOG.debug(
+            "Finished creating service endpoint for function %s executor %s",
+            self.function_version.qualified_arn,
+            self.id,
+        )
+        return executor_endpoint
+
     def start(self, env_vars: Dict[str, str]) -> None:
+        self.executor_endpoint.start()
         network = self.get_network_for_executor()
         container_config = ContainerConfiguration(
             image_name=self.get_image(),
@@ -184,6 +209,14 @@ class RuntimeExecutor:
     def stop(self) -> None:
         CONTAINER_CLIENT.stop_container(container_name=self.id, timeout=5)
         CONTAINER_CLIENT.remove_container(container_name=self.id)
+        try:
+            self.executor_endpoint.shutdown()
+        except Exception as e:
+            LOG.debug(
+                "Error while stopping executor endpoint for lambda %s, error: %s",
+                self.function_version.qualified_arn,
+                e,
+            )
 
     def get_address(self) -> str:
         if not self.ip:
@@ -196,3 +229,7 @@ class RuntimeExecutor:
 
     def get_network_for_executor(self) -> str:
         return get_container_network_for_lambda()
+
+    def invoke(self, payload: Dict[str, str]):
+        LOG.debug("Sending invoke-payload '%s' to executor '%s'", payload, self.id)
+        self.executor_endpoint.invoke(payload, self.get_address())

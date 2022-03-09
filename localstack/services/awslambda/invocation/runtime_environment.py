@@ -5,18 +5,15 @@ from enum import Enum, auto
 from threading import RLock, Timer
 from typing import TYPE_CHECKING, Dict, Literal, Optional
 
-import requests
-
 from localstack import config
+from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
 from localstack.utils.strings import to_str
 
 if TYPE_CHECKING:
-    from localstack.services.awslambda.invocation.executor_endpoint import ExecutorEndpoint
     from localstack.services.awslambda.invocation.lambda_service import FunctionVersion
-    from localstack.services.awslambda.invocation.version_manager import InvocationStorage
+    from localstack.services.awslambda.invocation.version_manager import QueuedInvocation
 
-INVOCATION_PORT = 9563
 STARTUP_TIMEOUT_SEC = 20.0
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
 
@@ -53,7 +50,6 @@ class RuntimeEnvironment:
     runtime_executor: RuntimeExecutor
     status_lock: RLock
     status: RuntimeStatus
-    executor_endpoint: "ExecutorEndpoint"
     initialization_type: InitializationType
     last_returned: datetime
     startup_timer: Optional[Timer]
@@ -61,16 +57,19 @@ class RuntimeEnvironment:
     def __init__(
         self,
         function_version: "FunctionVersion",
-        executor_endpoint: "ExecutorEndpoint",
         initialization_type: InitializationType,
+        service_endpoint: ServiceEndpoint,
     ):
         self.id = generate_runtime_id()
         self.status = RuntimeStatus.INACTIVE
         self.status_lock = RLock()
         self.function_version = function_version
-        self.executor_endpoint = executor_endpoint
         self.initialization_type = initialization_type
-        self.runtime_executor = RuntimeExecutor(self.id, function_version)
+        LOG.debug("Creating new executor")
+        self.runtime_executor = RuntimeExecutor(
+            self.id, function_version, service_endpoint=service_endpoint
+        )
+        LOG.debug("Finished new executor")
         self.last_returned = datetime.min
         self.startup_timer = None
 
@@ -88,7 +87,7 @@ class RuntimeEnvironment:
         env_vars = {
             # Runtime API specifics
             "LOCALSTACK_RUNTIME_ID": self.id,
-            "LOCALSTACK_RUNTIME_ENDPOINT": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{self.executor_endpoint.port}",
+            "LOCALSTACK_RUNTIME_ENDPOINT": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{self.runtime_executor.executor_endpoint.port}",
             # General Lambda Environment Variables
             "AWS_LAMBDA_LOG_GROUP_NAME": self.get_log_group_name(),
             "AWS_LAMBDA_LOG_STREAM_NAME": self.get_log_stream_name(),
@@ -183,10 +182,7 @@ class RuntimeEnvironment:
         except Exception:
             LOG.debug("Unable to shutdown runtime handler '%s'", self.id)
 
-    def _invocation_url(self) -> str:
-        return f"http://{self.runtime_executor.get_address()}:{INVOCATION_PORT}/invoke"
-
-    def invoke(self, invocation_event: "InvocationStorage") -> None:
+    def invoke(self, invocation_event: "QueuedInvocation") -> None:
         with self.status_lock:
             if self.status != RuntimeStatus.READY:
                 raise InvalidStatusException("Invoke can only happen if status is ready")
@@ -195,9 +191,4 @@ class RuntimeEnvironment:
             "invoke-id": invocation_event.invocation_id,
             "payload": to_str(invocation_event.invocation.payload),
         }
-        LOG.debug("Sending invoke-payload '%s' to executor '%s'", invoke_payload, self.id)
-        response = requests.post(url=self._invocation_url(), json=invoke_payload)
-        if not response.ok:
-            raise InvocationError(
-                f"Error while sending invocation {invoke_payload} to {self._invocation_url()}. Error Code: {response.status_code}"
-            )
+        self.runtime_executor.invoke(payload=invoke_payload)
