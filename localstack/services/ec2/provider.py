@@ -188,29 +188,33 @@ class Ec2Provider(Ec2Api, ABC):
         remove_security_group_ids: VpcEndpointSecurityGroupIdList = None,
         private_dns_enabled: Boolean = None,
     ) -> ModifyVpcEndpointResult:
-        backend = ec2_backends.get()
-        vpc_endpoint = backend.vpc_end_points.get(vpc_endpoint_id)
+        backend = ec2_backends.get(context.region)
 
+        vpc_endpoint = backend.vpc_end_points.get(vpc_endpoint_id)
         if not vpc_endpoint:
             raise InvalidVpcEndPointIdError(vpc_endpoint_id)
 
-        vpc_endpoint["PolicyDocument"] = policy_document or vpc_endpoint["PolicyDocument"]
+        if policy_document is not None:
+            vpc_endpoint.policy_document = policy_document
 
-        vpc_endpoint["RouteTableIds"].extend(add_route_table_ids)
-        vpc_endpoint["RouteTableIds"] = [
-            id_ for id_ in vpc_endpoint["RouteTableIds"] if id_ not in remove_route_table_ids
-        ]
+        if add_route_table_ids is not None:
+            vpc_endpoint.route_table_ids.extend(add_route_table_ids)
 
-        vpc_endpoint["SubnetIds"].extend(add_subnet_ids)
-        vpc_endpoint["SubnetIds"] = [
-            id_ for id_ in vpc_endpoint["SubnetIds"] if id_ not in remove_subnet_ids
-        ]
+        if remove_route_table_ids is not None:
+            vpc_endpoint.route_table_ids = [
+                id_ for id_ in vpc_endpoint.route_table_ids if id_ not in remove_route_table_ids
+            ]
 
-        vpc_endpoint["PrivateDnsEnabled"] = (
-            vpc_endpoint["PrivateDnsEnabled"]
-            if private_dns_enabled is None
-            else private_dns_enabled
-        )
+        if add_subnet_ids is not None:
+            vpc_endpoint.subnet_ids.extend(add_subnet_ids)
+
+        if remove_subnet_ids is not None:
+            vpc_endpoint.subnet_ids = [
+                id_ for id_ in vpc_endpoint.subnet_ids if id_ not in remove_subnet_ids
+            ]
+
+        if private_dns_enabled is not None:
+            vpc_endpoint.private_dns_enabled = private_dns_enabled
 
         return ModifyVpcEndpointResult(Return=True)
 

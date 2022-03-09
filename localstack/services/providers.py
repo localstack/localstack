@@ -82,7 +82,7 @@ def dynamodbstreams():
 
 @aws_provider()
 def ec2():
-    USE_LEGACY = 1
+    USE_LEGACY = 0
 
     if USE_LEGACY:
         from localstack.services.ec2 import ec2_listener, ec2_starter
