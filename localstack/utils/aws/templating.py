@@ -4,9 +4,9 @@ import re
 from urllib.parse import quote_plus, unquote_plus
 
 import airspeed
+from localstack.utils.objects import recurse_object
 
 from localstack import config
-from localstack.utils.common import recurse_object
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
 from localstack.utils.patch import patch
@@ -113,12 +113,8 @@ class VelocityInput(object):
 
     def _attach_missing_functions(self, value):
         if value:
-
             def _fix(obj, **kwargs):
-                if isinstance(obj, dict):
-                    return DictWrapper(obj)
-                return obj
-
+                return DictWrapper(obj) if isinstance(obj, dict) else obj
             value = recurse_object(value, _fix)
         return value
 
