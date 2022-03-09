@@ -1,5 +1,15 @@
 version: 2.1
 
+commands:
+  install-python:
+    steps:
+      - run:
+          name: Install python 3.10
+          command: |
+            (cd $(pyenv root) && git checkout master && git pull)
+            pyenv install 3.10.2
+            pyenv global 3.10.2
+
 jobs:
   install:
     machine:
@@ -14,12 +24,7 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y libsasl2-dev
-      - run:
-          name: Install python 3.10
-          command: |
-            (cd $(pyenv root) && git checkout master && git pull)
-            pyenv install 3.10.2
-            pyenv global 3.10.2
+      - install-python
       - run:
           name: Setup environment
           environment:
@@ -82,12 +87,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
-      - run:
-          name: Install python 3.10
-          command: |
-            (cd $(pyenv root) && git checkout master && git pull)
-            pyenv install 3.10.2
-            pyenv global 3.10.2
+      - install-python
       - run:
           name: Pull Lambda runtimes
           command: |
@@ -152,18 +152,9 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - install-python
       - run:
-<<<<<<< HEAD
           name: Test ElasticMQ SQS provider
-=======
-          name: Install python 3.10
-          command: |
-            (cd $(pyenv root) && git checkout master && git pull)
-            pyenv install 3.10.2
-            pyenv global 3.10.2
-      - run:
-          name: Test elasticmq SQS provider
->>>>>>> 3fa6b680 (try updating circleci to python3.10)
           environment:
             DEBUG: 1
             SQS_PROVIDER: "elasticmq"
@@ -225,6 +216,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /tmp/workspace
+      - install-python
       - run:
           name: Run bootstrap tests
           environment:
