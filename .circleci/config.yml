@@ -17,6 +17,7 @@ jobs:
       - run:
           name: Install python 3.10
           command: |
+            (cd $(pyenv root) && git checkout master && git pull)
             pyenv install 3.10.2
             pyenv global 3.10.2
       - run:
@@ -84,6 +85,7 @@ jobs:
       - run:
           name: Install python 3.10
           command: |
+            (cd $(pyenv root) && git checkout master && git pull)
             pyenv install 3.10.2
             pyenv global 3.10.2
       - run:
@@ -156,6 +158,7 @@ jobs:
 =======
           name: Install python 3.10
           command: |
+            (cd $(pyenv root) && git checkout master && git pull)
             pyenv install 3.10.2
             pyenv global 3.10.2
       - run:
