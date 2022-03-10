@@ -178,6 +178,8 @@ jobs:
           name: Run bootstrap tests
           environment:
             DEBUG: 1
+            # disable rich's color output
+            NO_COLOR: 1
             TEST_PATH: "tests/bootstrap"
             PYTEST_ARGS: "--junitxml=target/reports/bootstrap.xml -o junit_suite_name='bootstrap'"
             COVERAGE_ARGS: "-p"
