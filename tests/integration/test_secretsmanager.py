@@ -360,6 +360,29 @@ class TestSecretsManager:
             )
         check_validation_exception(validation_exception)
 
+    def test_last_accessed_date(self, secretsmanager_client):
+        secret_name: str = "s-%s" % short_uid()
+
+        secretsmanager_client.create_secret(Name=secret_name, SecretString="MySecretValue")
+
+        des = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert "LastAccessedDate" not in des
+
+        secretsmanager_client.get_secret_value(SecretId=secret_name)
+        des = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert "LastAccessedDate" in des
+        lad_v0 = des["LastAccessedDate"]
+        assert isinstance(lad_v0, datetime)
+
+        secretsmanager_client.get_secret_value(SecretId=secret_name)
+        des = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert "LastAccessedDate" in des
+        lad_v1 = des["LastAccessedDate"]
+        assert isinstance(lad_v1, datetime)
+
+        assert lad_v0 == lad_v1
+        # TODO fix if this is run around midnight it's flaky!
+
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> Dict:
         headers = aws_stack.mock_aws_request_headers("secretsmanager")

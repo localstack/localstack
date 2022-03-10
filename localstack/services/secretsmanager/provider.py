@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import datetime
 import json
 import logging
 import re
@@ -7,7 +10,7 @@ from typing import Dict, Optional
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.exceptions import SecretNotFoundException, ValidationException
-from moto.secretsmanager.models import SecretsManagerBackend, secretsmanager_backends
+from moto.secretsmanager.models import SecretsManagerBackend, secretsmanager_backends, FakeSecret
 from moto.secretsmanager.responses import SecretsManagerResponse
 
 from localstack.aws.api import RequestContext, ServiceResponse
@@ -51,13 +54,15 @@ from localstack.aws.api.secretsmanager import (
     TagListType,
     UpdateSecretResponse,
     UpdateSecretVersionStageResponse,
-    ValidateResourcePolicyResponse,
+    ValidateResourcePolicyResponse, LastAccessedDateType,
 )
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
+from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
+from localstack.utils.time import now, today_no_time
 
 LOG = logging.getLogger(__name__)
 
@@ -289,6 +294,38 @@ class SecretsmanagerProvider(SecretsmanagerApi, ABC):
     ) -> ValidateResourcePolicyResponse:
         self._raise_if_invalid_secret_id(secret_id)
         return self._call_moto_with_request_secret_id(context)
+
+
+@patch(FakeSecret.__init__)
+def fake_secret__init__(fn, self, **kwargs):
+    fn(self, **kwargs)
+
+    # The last date that the secret value was retrieved.
+    # This value does not include the time.
+    # This field is omitted if the secret has never been retrieved.
+    # Type: Timestamp
+    self.last_accessed_date = None
+
+
+@patch(SecretsManagerBackend.get_secret_value)
+def moto_smb_get_secret_value(fn, self, secret_id, version_id, version_stage):
+    res = fn(self, secret_id, version_id, version_stage)
+
+    secret_id = self.secrets[secret_id]
+    if secret_id:  # Redundant, we know from the response it exists: no exceptions.
+        secret_id.last_accessed_date = today_no_time()
+    else:
+        LOG.warning(f'Expected Secret to exist on non failing GetSecretValue request for SecretId "{secret_id}"')
+
+    return res
+
+
+@patch(FakeSecret.to_dict)
+def fake_secret_to_dict(fn, self):
+    res_dict = fn(self)
+    if self.last_accessed_date:
+        res_dict["LastAccessedDate"] = self.last_accessed_date
+    return res_dict
 
 
 # maps key names to ARNs
