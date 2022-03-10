@@ -564,7 +564,6 @@ def invoke_rest_api_integration_backend(invocation_context: ApiInvocationContext
                 method=method,
                 resource_path=resource_path,
                 request_context=invocation_context.context,
-                event_context={},
                 stage_variables=invocation_context.stage_variables,
             )
 
