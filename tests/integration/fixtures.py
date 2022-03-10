@@ -17,6 +17,7 @@ from localstack.utils.common import short_uid
 from localstack.utils.generic.wait_utils import wait_until
 from localstack.utils.testutil import start_http_server
 from tests.integration.cloudformation.utils import render_template, template_path
+from tests.integration.util import is_aws_cloud
 
 if TYPE_CHECKING:
     from mypy_boto3_acm import ACMClient
@@ -238,7 +239,14 @@ def s3_create_bucket(s3_client):
     # cleanup
     for bucket in buckets:
         try:
-            s3_client.delete_bucket(Bucket=bucket)
+            if is_aws_cloud():
+                # bucket might not be empty -> try to delete everything
+                # there is currently no way to do this with s3_client
+                bucket = boto3.resource("s3").Bucket(bucket)
+                bucket.objects.all().delete()
+                bucket.delete()
+            else:
+                s3_client.delete_bucket(Bucket=bucket)
         except Exception as e:
             LOG.debug("error cleaning up bucket %s: %s", bucket, e)
 

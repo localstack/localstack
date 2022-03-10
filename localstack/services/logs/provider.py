@@ -175,9 +175,7 @@ def moto_put_log_events(_, self, log_group_name, log_stream_name, log_events, se
     output = io.BytesIO()
     with GzipFile(fileobj=output, mode="w") as f:
         f.write(json.dumps(data, separators=(",", ":")).encode("utf-8"))
-    # payload_gz_encoded = base64.b64encode(output.getvalue()).decode("utf-8")
     payload_gz_encoded = output.getvalue()
-    # event = {"awslogs": {"data": payload_gz_encoded}}
     event = {"awslogs": {"data": base64.b64encode(output.getvalue()).decode("utf-8")}}
 
     if self.destination_arn:
@@ -196,10 +194,8 @@ def moto_put_log_events(_, self, log_group_name, log_stream_name, log_events, se
         if ":firehose:" in self.destination_arn:
             client = aws_stack.connect_to_service("firehose")
             firehose_name = aws_stack.firehose_name(self.destination_arn)
-            # payload_gz_encoded = base64.b64encode(output.getvalue()).decode("utf-8")
             client.put_record(
                 DeliveryStreamName=firehose_name,
-                # Record={"Data": json.dumps(payload_gz_encoded)},
                 Record={"Data": payload_gz_encoded},
             )
 

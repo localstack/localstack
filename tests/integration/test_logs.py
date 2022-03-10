@@ -22,9 +22,7 @@ logs_role = {
 }
 kinesis_permission = {
     "Version": "2012-10-17",
-    "Statement": [
-        {"Effect": "Allow", "Action": "kinesis:PutRecord", "Resource": "{resource_name}"}
-    ],
+    "Statement": [{"Effect": "Allow", "Action": "kinesis:PutRecord", "Resource": "*"}],
 }
 s3_firehose_role = {
     "Statement": {
@@ -36,24 +34,12 @@ s3_firehose_role = {
 }
 s3_firehose_permission = {
     "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:AbortMultipartUpload",
-                "s3:GetBucketLocation",
-                "s3:GetObject",
-                "s3:ListBucket",
-                "s3:ListBucketMultipartUploads",
-                "s3:PutObject",
-            ],
-        }
-    ],
+    "Statement": [{"Effect": "Allow", "Action": ["s3:*", "s3-object-lambda:*"], "Resource": "*"}],
 }
 
 firehose_permission = {
     "Version": "2012-10-17",
-    "Statement": [{"Effect": "Allow", "Action": ["firehose:*"]}],
+    "Statement": [{"Effect": "Allow", "Action": ["firehose:*"], "Resource": "*"}],
 }
 
 
@@ -84,11 +70,7 @@ def iam_create_role_and_policy(iam_client):
 
         result = iam_client.create_role(RoleName=role, AssumeRolePolicyDocument=role_policy)
         role_arn = result["Role"]["Arn"]
-        policy_document = kwargs["PolicyDefinition"]
-
-        # add the resource name to the policy
-        policy_document["Statement"][0]["Resource"] = kwargs["ResourceName"]
-        policy_document = json.dumps(policy_document)
+        policy_document = json.dumps(kwargs["PolicyDefinition"])
         iam_client.put_role_policy(RoleName=role, PolicyName=policy, PolicyDocument=policy_document)
         roles[role] = policy
         return role_arn
@@ -213,46 +195,50 @@ class TestCloudWatchLogs:
             func_name=test_lambda_name,
             runtime=LAMBDA_RUNTIME_PYTHON36,
         )
+        try:
+            lambda_client.invoke(FunctionName=test_lambda_name, Payload=b"{}")
+            # get account-id to set the correct policy
+            account_id = sts_client.get_caller_identity()["Account"]
+            lambda_client.add_permission(
+                FunctionName=test_lambda_name,
+                StatementId=test_lambda_name,
+                Principal=f"logs.{config.DEFAULT_REGION}.amazonaws.com",
+                Action="lambda:InvokeFunction",
+                SourceArn=f"arn:aws:logs:{config.DEFAULT_REGION}:{account_id}:log-group:{logs_log_group}:*",
+                SourceAccount=account_id,
+            )
+            logs_client.put_subscription_filter(
+                logGroupName=logs_log_group,
+                filterName="test",
+                filterPattern="",
+                destinationArn=aws_stack.lambda_function_arn(
+                    test_lambda_name, account_id=account_id, region_name=config.DEFAULT_REGION
+                ),
+            )
 
-        lambda_client.invoke(FunctionName=test_lambda_name, Payload=b"{}")
-        # get account-id to set the correct policy
-        account_id = sts_client.get_caller_identity()["Account"]
-        lambda_client.add_permission(
-            FunctionName=test_lambda_name,
-            StatementId=test_lambda_name,
-            Principal=f"logs.{config.DEFAULT_REGION}.amazonaws.com",
-            Action="lambda:InvokeFunction",
-            SourceArn=f"arn:aws:logs:{config.DEFAULT_REGION}:{account_id}:log-group:{logs_log_group}:*",
-            SourceAccount=account_id,
-        )
-        logs_client.put_subscription_filter(
-            logGroupName=logs_log_group,
-            filterName="test",
-            filterPattern="",
-            destinationArn=aws_stack.lambda_function_arn(
-                test_lambda_name, account_id=account_id, region_name=config.DEFAULT_REGION
-            ),
-        )
+            logs_client.put_log_events(
+                logGroupName=logs_log_group,
+                logStreamName=logs_log_stream,
+                logEvents=[
+                    {"timestamp": now_utc(millis=True), "message": "test"},
+                    {"timestamp": now_utc(millis=True), "message": "test 2"},
+                ],
+            )
 
-        logs_client.put_log_events(
-            logGroupName=logs_log_group,
-            logStreamName=logs_log_stream,
-            logEvents=[
-                {"timestamp": now_utc(millis=True), "message": "test"},
-                {"timestamp": now_utc(millis=True), "message": "test 2"},
-            ],
-        )
+            response = logs_client.describe_subscription_filters(logGroupName=logs_log_group)
+            assert len(response["subscriptionFilters"]) == 1
 
-        response = logs_client.describe_subscription_filters(logGroupName=logs_log_group)
-        assert len(response["subscriptionFilters"]) == 1
+            def check_invocation():
+                events = testutil.get_lambda_log_events(test_lambda_name, log_group=logs_log_group)
+                assert len(events) == 2
+                assert "test" in events
+                assert "test 2" in events
 
-        def check_invocation():
-            events = testutil.get_lambda_log_events(test_lambda_name, log_group=logs_log_group)
-            assert len(events) == 2
-            assert "test" in events
-            assert "test 2" in events
-
-        retry(check_invocation, retries=6, sleep=3.0)
+            retry(check_invocation, retries=6, sleep=3.0)
+        finally:
+            # clean up lambda log group
+            log_group_name = f"/aws/lambda/{test_lambda_name}"
+            logs_client.delete_log_group(logGroupName=log_group_name)
 
     def test_put_subscription_filter_firehose(
         self,
@@ -262,6 +248,7 @@ class TestCloudWatchLogs:
         s3_bucket,
         s3_client,
         firehose_client,
+        iam_client,
         iam_create_role_and_policy,
     ):
         try:
@@ -270,28 +257,33 @@ class TestCloudWatchLogs:
 
             role = f"test-firehose-s3-role-{short_uid()}"
             policy_name = f"test-firehose-s3-role-policy-{short_uid()}"
-            resource = [s3_bucket_arn, f"{s3_bucket_arn}/"]
             role_arn = iam_create_role_and_policy(
-                ResourceName=resource,
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=s3_firehose_role,
                 PolicyDefinition=s3_firehose_permission,
             )
 
-            response = firehose_client.create_delivery_stream(
-                DeliveryStreamName=firehose_name,
-                S3DestinationConfiguration={
-                    "BucketARN": s3_bucket_arn,
-                    "RoleARN": role_arn,
-                },
-            )
-            firehose_arn = response["DeliveryStreamARN"]
+            # TODO AWS has troubles creating the delivery stream the first time
+            # policy is not accepted at first, so we try again
+            def create_delivery_stream():
+                firehose_client.create_delivery_stream(
+                    DeliveryStreamName=firehose_name,
+                    S3DestinationConfiguration={
+                        "BucketARN": s3_bucket_arn,
+                        "RoleARN": role_arn,
+                        "BufferingHints": {"SizeInMBs": 1, "IntervalInSeconds": 60},
+                    },
+                )
+
+            retry(create_delivery_stream, retries=5, sleep=10.0)
+
+            response = firehose_client.describe_delivery_stream(DeliveryStreamName=firehose_name)
+            firehose_arn = response["DeliveryStreamDescription"]["DeliveryStreamARN"]
 
             role = f"test-firehose-role-{short_uid()}"
             policy_name = f"test-firehose-role-policy-{short_uid()}"
             role_arn_logs = iam_create_role_and_policy(
-                ResourceName=[firehose_arn],
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=logs_role,
@@ -305,7 +297,7 @@ class TestCloudWatchLogs:
                 if state != "ACTIVE":
                     raise Exception(f"DeliveryStreamStatus is {state}")
 
-            retry(check_stream_active, retries=60, sleep=30.0, sleep_before=10.0)
+            retry(check_stream_active, retries=60, sleep=30.0)
 
             logs_client.put_subscription_filter(
                 logGroupName=logs_log_group,
@@ -324,18 +316,19 @@ class TestCloudWatchLogs:
                 ],
             )
 
-            # TODO doesnt work with AWS
-            logs_client.put_log_events(
-                logGroupName=logs_log_group,
-                logStreamName=logs_log_stream,
-                logEvents=[
-                    {"timestamp": now_utc(millis=True) - 2, "message": "test"},
-                    {"timestamp": now_utc(millis=True) - 2, "message": "test 2"},
-                ],
-            )
+            def list_objects():
+                response = s3_client.list_objects(Bucket=s3_bucket)
+                assert len(response["Contents"]) >= 1
 
+            retry(list_objects, retries=60, sleep=30.0)
             response = s3_client.list_objects(Bucket=s3_bucket)
-            assert len(response["Contents"]) == 2
+            key = response["Contents"][-1]["Key"]
+            response = s3_client.get_object(Bucket=s3_bucket, Key=key)
+            content = gzip.decompress(response["Body"].read()).decode("utf-8")
+            assert "DATA_MESSAGE" in content
+            assert "test" in content
+            assert "test 2" in content
+
         finally:
             # clean up
             firehose_client.delete_delivery_stream(
@@ -362,7 +355,6 @@ class TestCloudWatchLogs:
             role = f"test-kinesis-role-{short_uid()}"
             policy_name = f"test-kinesis-role-policy-{short_uid()}"
             role_arn = iam_create_role_and_policy(
-                ResourceName=kinesis_arn,
                 RoleName=role,
                 PolicyName=policy_name,
                 RoleDefinition=logs_role,
