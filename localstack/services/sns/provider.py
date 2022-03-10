@@ -90,6 +90,35 @@ class SNSBackend(RegionBackend):
         self.sms_messages = []
 
 
+def publish_message(topic_arn, req_data, headers, subscription_arn=None, skip_checks=False):
+    sns_backend = SNSBackend.get()
+    message = req_data["Message"][0]
+    message_id = str(uuid.uuid4())
+
+    if topic_arn and ":endpoint/" in topic_arn:
+        # cache messages published to platform endpoints
+        cache = sns_backend.platform_endpoint_messages[topic_arn] = (
+            sns_backend.platform_endpoint_messages.get(topic_arn) or []
+        )
+        # TODO: check this in the old provider
+        cache.append(req_data)
+
+    LOG.debug("Publishing message to TopicArn: %s | Message: %s", topic_arn, message)
+    start_thread(
+        lambda _: message_to_subscribers(
+            message_id,
+            message,
+            topic_arn,
+            # TODO: check
+            req_data,
+            headers,
+            subscription_arn,
+            skip_checks,
+        )
+    )
+    return message_id
+
+
 class SnsProvider(SnsApi, ServiceLifecycleHook):
     def publish(
         self,
@@ -104,35 +133,30 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         message_deduplication_id: String = None,
         message_group_id: String = None,
     ) -> PublishResponse:
-        moto_response = call_moto(context)
-        # TODO: Check
-        subscription_arn = moto_response.get("SubscriptionArn")
-        skip_checks = moto_response.get("Policy")
+        # We do not want the request to be forwarded to SNS backend
+        if subject == [""]:
+            # TODO: check against AWS
+            raise InvalidParameterException("Subject")
+        if not message or all(not m for m in message):
+            raise InvalidParameterException("Empty message")
+
+        if topic_arn and ".fifo" in topic_arn and not message_group_id:
+            raise InvalidParameterException(
+                "The MessageGroupId parameter is required for FIFO topics",
+            )
+
         sns_backend = SNSBackend.get()
-        message_id = str(uuid.uuid4())
-
-        if topic_arn and ":endpoint/" in topic_arn:
-            # cache messages published to platform endpoints
-            cache = sns_backend.platform_endpoint_messages[topic_arn] = (
-                sns_backend.platform_endpoint_messages.get(topic_arn) or []
-            )
-            # TODO: check this in the old provider
-            cache.append(context)
-
-        LOG.debug("Publishing message to TopicArn: %s | Message: %s", topic_arn, message)
-        start_thread(
-            lambda _: message_to_subscribers(
-                message_id,
-                message,
-                topic_arn,
-                # TODO: check
-                context,
-                context.request.headers,
-                subscription_arn,
-                skip_checks,
-            )
-        )
-        return message_id
+        # No need to create a topic to send SMS or single push notifications with SNS
+        # but we can't mock a sending so we only return that it went well
+        if not phone_number and not target_arn:
+            if topic_arn not in sns_backend.sns_subscriptions:
+                raise NotFoundException(
+                    "Topic does not exist",
+                )
+        # Legacy format to easily leverage existing publishing code
+        req_data = {"Action": ["Publish"], "TopicArn": [topic_arn], "Message": [message]}
+        message_id = publish_message(topic_arn, req_data, context.request.headers)
+        return PublishResponse(MessageId=message_id)
 
     def subscribe(
         self,
@@ -177,7 +201,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             "SubscriptionArn": subscription_arn,
             "FilterPolicy": filter_policy,
         }
-        subscription.update(attributes)
+        if attributes:
+            subscription.update(attributes)
         topic_subs.append(subscription)
 
         if subscription_arn not in sns_backend.subscription_status:
@@ -206,9 +231,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                     % (external_url, topic_arn, token)
                 ],
             }
-            self.publish(
-                context, topic_arn, confirmation, {}, subscription_arn
-            )  # , skip_checks=True)
+            publish_message(topic_arn, confirmation, {}, subscription_arn, skip_checks=True)
 
     def tag_resource(
         self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList
@@ -252,13 +275,18 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         attributes: TopicAttributesMap = None,
         tags: TagList = None,
     ) -> CreateTopicResponse:
-        call_moto(context)
+        moto_response = call_moto(context)
         sns_backend = SNSBackend.get()
-        topic_arn = aws_stack.sns_topic_arn(name)
+        topic_arn = moto_response["TopicArn"]
         if tags:
             self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
         sns_backend.sns_subscriptions[topic_arn] = (
             sns_backend.sns_subscriptions.get(topic_arn) or []
+        )
+        # publish event
+        event_publisher.fire_event(
+            event_publisher.EVENT_SNS_CREATE_TOPIC,
+            payload={"t": event_publisher.get_hash(topic_arn)},
         )
         return CreateTopicResponse(TopicArn=topic_arn)
 
