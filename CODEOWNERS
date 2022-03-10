@@ -8,6 +8,8 @@
 # ASF
 /localstack/aws/ @thrau
 /tests/unit/aws/ @thrau
+# ASF parsers and serializers
+/localstack/aws/protocol @alexrashed
 # left empty (without owner) because the generated APIs belong to the specific service owners
 # you can overwrite this for single services afterwards
 /localstack/aws/api/
@@ -20,10 +22,23 @@
 /tests/unit/services/test_internal.py @thrau
 
 # Container utils
-/localstack/utils/container_utils/ @dominikschubert
-/localstack/utils/docker_utils.py @dominikschubert
-/tests/integration/docker_utils/ @dominikschubert
-/tests/unit/test_dockerclient.py @dominikschubert
+/localstack/utils/container_utils/ @dfangl @dominikschubert
+/localstack/utils/docker_utils.py @dfangl @dominikschubert
+/tests/integration/docker_utils/ @dfangl @dominikschubert
+/tests/unit/test_dockerclient.py @dfangl @dominikschubert
+
+# HTTP framework
+/localstack/http/ @thrau
+
+# Dockerfile
+/Dockerfile @alexrashed
+/Dockerfile.rh @alexrashed
+
+# Circle CI pipeline
+/.circleci/config.yml @thrau @alexrashed @dfangl
+
+# Analytics client
+/localstack/utils/analytics/ @thrau
 
 ######################
 ### SERVICE OWNERS ###
@@ -37,42 +52,74 @@
 # left empty (without owner) because the models belong to the specific service owners
 # you can overwrite this for single services afterwards
 /localstack/services/cloudformation/models/
+/localstack/services/cloudformation/models/cloudformation.py @dominikschubert
 
-# Lambda
-/localstack/services/awslambda/ @dominikschubert
-/tests/integration/awslambda/ @dominikschubert
+# Cloudwatch
+/localstack/services/cloudwatch/ @silv-io
+/tests/integration/test_cloudwatch.py @silv-io
+
+# EC2
+/localstack/services/ec2/ @viren-nadkarni
+/tests/integration/test_ec2.py @viren-nadkarni
+
+# ElasticSearch
+/localstack/services/es/ @alexrashed
+/localstack/services/cloudformation/models/elasticsearch.py @alexrashed
+/tests/integration/test_es.py @alexrashed
+
+# Events / EventBridge
+/localstack/services/events/ @dominikschubert @dfangl
+/localstack/services/cloudformation/models/events.py @dominikschubert @dfangl
+/tests/integration/test_events.py @dominikschubert @dfangl
+
+# OpenSearch
+/localstack/services/opensearch/ @alexrashed
+/tests/integration/test_opensearch.py @alexrashed
+/tests/unit/services/opensearch/test_s3.py @alexrashed
 
 # IAM
 /localstack/services/iam/ @dominikschubert
+/localstack/services/cloudformation/models/iam.py @dominikschubert
 /tests/integration/test_iam.py @dominikschubert
 
-# Stepfunctions
-/localstack/services/stepfunctions/ @dominikschubert
-/tests/integration/test_stepfunctions.py @dominikschubert
+# Lambda
+/localstack/services/awslambda/ @dfangl @dominikschubert
+/localstack/services/cloudformation/models/awslambda.py @dfangl @dominikschubert
+/tests/integration/awslambda/ @dfangl @dominikschubert
 
 # Secretsmanager
 /localstack/services/secretsmanager/ @dominikschubert
+/localstack/services/cloudformation/models/secretsmanager.py @dominikschubert
 /tests/integration/test_secretsmanager.py @dominikschubert
+
+# Stepfunctions
+/localstack/services/stepfunctions/ @dominikschubert
+/localstack/services/cloudformation/models/stepfunctions.py @dominikschubert
+/tests/integration/test_stepfunctions.py @dominikschubert
+
+# SES
+/localstack/services/ses/ @viren-nadkarni
+/tests/integration/test_ses.py @viren-nadkarni
 
 # SSM
 /localstack/services/ssm/ @dominikschubert
+/localstack/services/cloudformation/models/ssm.py @dominikschubert
 /tests/integration/test_ssm.py @dominikschubert
-
-# Events / EventBridge
-/localstack/services/events/ @dominikschubert
-/tests/integration/test_events.py @dominikschubert
 
 # SQS
 /localstack/services/sqs/ @thrau
+/localstack/services/cloudformation/models/sqs.py @thrau
 /tests/integration/test_sqs.py @thrau
 /tests/unit/test_sqs.py @thrau
 
 # SNS
 /localstack/services/sns/ @thrau
+/localstack/services/cloudformation/models/sns.py @thrau
 /tests/integration/test_sns.py @thrau
 /tests/unit/test_sns.py @thrau
 
 # S3
 /localstack/services/s3/ @thrau
+/localstack/services/cloudformation/models/s3.py @thrau
 /tests/integration/test_s3.py @thrau
 /tests/unit/test_s3.py @thrau

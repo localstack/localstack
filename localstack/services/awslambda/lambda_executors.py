@@ -1422,7 +1422,14 @@ class LambdaExecutorLocal(LambdaExecutor):
                 error,
                 "".join(traceback.format_tb(error.__traceback__)),
             )
-            raise InvocationException(result, log_output)
+            result = json.dumps(
+                {
+                    "errorType": error.__class__.__name__,
+                    "errorMessage": error.args[0],
+                    "stackTrace": traceback.format_tb(error.__traceback__),
+                }
+            )
+            raise InvocationException(result, log_output=log_output, result=result)
 
         # construct final invocation result
         invocation_result = InvocationResult(result, log_output=log_output)

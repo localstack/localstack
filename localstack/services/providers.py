@@ -152,11 +152,10 @@ def awslambda():
 
 @aws_provider()
 def logs():
-    from localstack.services.logs import logs_listener, logs_starter
+    from localstack.services.logs.provider import LogsAwsApiListener
 
-    return Service(
-        "logs", listener=logs_listener.UPDATE_LOGS, start=logs_starter.start_cloudwatch_logs
-    )
+    listener = LogsAwsApiListener()
+    return Service("logs", listener=listener)
 
 
 @aws_provider()
@@ -312,9 +311,14 @@ def resourcegroupstaggingapi():
 
 @aws_provider(api="resource-groups")
 def resource_groups():
-    from localstack.services.resourcegroups import rg_listener, rg_starter
+    from localstack.services.moto import MotoFallbackDispatcher
+    from localstack.services.resourcegroups.provider import ResourceGroupsProvider
 
-    return Service("resource-groups", listener=rg_listener.UPDATE_RG, start=rg_starter.start_rg)
+    provider = ResourceGroupsProvider()
+    return Service(
+        "resource-groups",
+        listener=AwsApiListener("resource-groups", MotoFallbackDispatcher(provider)),
+    )
 
 
 @aws_provider()

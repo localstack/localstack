@@ -6,7 +6,7 @@ import pytest
 import requests
 
 from localstack.utils.common import get_free_tcp_port, is_port_open, poll_condition
-from localstack.utils.net import wait_for_port_closed
+from localstack.utils.net import wait_for_port_closed, wait_for_port_open
 from localstack.utils.server.http2_server import run_server
 
 LOG = logging.getLogger(__name__)
@@ -66,6 +66,7 @@ class TestHttp2Server:
             max_content_length=max_length,
             handler=lambda *args: None,
         )
+        wait_for_port_open(port)
 
         # test successful request
         result = requests.post(f"http://localhost:{port}", data="0" * max_length)
