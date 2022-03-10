@@ -47,7 +47,7 @@ def call_moto(context: RequestContext, include_response_metadata=False) -> Servi
 
     operation_model = context.operation
     response_dict = {  # this is what botocore.endpoint.convert_to_response_dict normally does
-        "headers": headers,
+        "headers": dict(headers.items()),  # boto doesn't like werkzeug headers
         "status_code": status,
         "body": to_bytes(content),
         "context": {
