@@ -12,6 +12,7 @@ from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.strings import short_uid
+from localstack.utils.time import today_no_time
 from tests.integration.awslambda.test_lambda import TEST_LAMBDA_PYTHON_VERSION
 
 RESOURCE_POLICY = {
@@ -361,27 +362,40 @@ class TestSecretsManager:
         check_validation_exception(validation_exception)
 
     def test_last_accessed_date(self, secretsmanager_client):
-        secret_name: str = "s-%s" % short_uid()
+        def last_accessed_scenario_1(fail_if_days_overlap: bool) -> bool:
+            secret_name: str = "s-%s" % short_uid()
 
-        secretsmanager_client.create_secret(Name=secret_name, SecretString="MySecretValue")
+            secretsmanager_client.create_secret(Name=secret_name, SecretString="MySecretValue")
 
-        des = secretsmanager_client.describe_secret(SecretId=secret_name)
-        assert "LastAccessedDate" not in des
+            des = secretsmanager_client.describe_secret(SecretId=secret_name)
+            assert "LastAccessedDate" not in des
 
-        secretsmanager_client.get_secret_value(SecretId=secret_name)
-        des = secretsmanager_client.describe_secret(SecretId=secret_name)
-        assert "LastAccessedDate" in des
-        lad_v0 = des["LastAccessedDate"]
-        assert isinstance(lad_v0, datetime)
+            t0 = today_no_time()
 
-        secretsmanager_client.get_secret_value(SecretId=secret_name)
-        des = secretsmanager_client.describe_secret(SecretId=secret_name)
-        assert "LastAccessedDate" in des
-        lad_v1 = des["LastAccessedDate"]
-        assert isinstance(lad_v1, datetime)
+            secretsmanager_client.get_secret_value(SecretId=secret_name)
+            des = secretsmanager_client.describe_secret(SecretId=secret_name)
+            assert "LastAccessedDate" in des
+            lad_v0 = des["LastAccessedDate"]
+            assert isinstance(lad_v0, datetime)
 
-        assert lad_v0 == lad_v1
-        # TODO fix if this is run around midnight it's flaky!
+            secretsmanager_client.get_secret_value(SecretId=secret_name)
+            des = secretsmanager_client.describe_secret(SecretId=secret_name)
+            assert "LastAccessedDate" in des
+            lad_v1 = des["LastAccessedDate"]
+            assert isinstance(lad_v1, datetime)
+
+            if t0 == today_no_time() or fail_if_days_overlap:
+                assert lad_v0 == lad_v1
+                return True
+            else:
+                return False
+
+        if not last_accessed_scenario_1(
+            False
+        ):  # Test started yesterday and ended today (where relevant).
+            last_accessed_scenario_1(
+                True
+            )  # Replay today or allow failure (this should never take longer than a day).
 
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> Dict:

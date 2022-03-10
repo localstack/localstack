@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 import json
 import logging
 import re
@@ -10,7 +9,7 @@ from typing import Dict, Optional
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from moto.secretsmanager import models as secretsmanager_models
 from moto.secretsmanager.exceptions import SecretNotFoundException, ValidationException
-from moto.secretsmanager.models import SecretsManagerBackend, secretsmanager_backends, FakeSecret
+from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
 from moto.secretsmanager.responses import SecretsManagerResponse
 
 from localstack.aws.api import RequestContext, ServiceResponse
@@ -54,7 +53,7 @@ from localstack.aws.api.secretsmanager import (
     TagListType,
     UpdateSecretResponse,
     UpdateSecretVersionStageResponse,
-    ValidateResourcePolicyResponse, LastAccessedDateType,
+    ValidateResourcePolicyResponse,
 )
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.moto import call_moto, call_moto_with_request
@@ -62,7 +61,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
-from localstack.utils.time import now, today_no_time
+from localstack.utils.time import today_no_time
 
 LOG = logging.getLogger(__name__)
 
@@ -315,7 +314,9 @@ def moto_smb_get_secret_value(fn, self, secret_id, version_id, version_stage):
     if secret_id:  # Redundant, we know from the response it exists: no exceptions.
         secret_id.last_accessed_date = today_no_time()
     else:
-        LOG.warning(f'Expected Secret to exist on non failing GetSecretValue request for SecretId "{secret_id}"')
+        LOG.warning(
+            f'Expected Secret to exist on non failing GetSecretValue request for SecretId "{secret_id}"'
+        )
 
     return res
 
