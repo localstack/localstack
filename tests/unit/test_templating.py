@@ -161,8 +161,8 @@ class TestMessageTransformation:
         assert result == {"p0": True, **data}
 
     def test_keyset_functions(self, velocity_template):
-        template = "#set($list = $input.path('$..var1[1]').keySet()) $list.size()"
-        body = {"var1": [{"d": 1}, {"d": 2}]}
+        template = "#set($list = $input.path('$..var1[1]').keySet()) #foreach($e in $list)$e#end"
+        body = {"var1": [{"a": 1}, {"b": 2}]}
         variables = {"input": {"body": body}}
         result = velocity_template.render_vtl(template, variables)
-        assert result == " 1"
+        assert result == " b"

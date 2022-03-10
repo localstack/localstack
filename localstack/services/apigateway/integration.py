@@ -175,6 +175,8 @@ class VtlTemplate:
                 for k, v in obj.items():
                     if isinstance(v, str):
                         obj[k] = ExtendedString(v)
+                    if isinstance(v, dict):
+                        obj[k] = DictWrapper(v)
                 return DictWrapper(obj)
             return obj
 

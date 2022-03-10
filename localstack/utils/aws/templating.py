@@ -81,7 +81,7 @@ def block_parse(self, *args, **kwargs):
 
 class DictWrapper(dict):
     def keySet(self):
-        return list(self.keys())
+        return self.keys()
 
 
 class VelocityInput(object):
