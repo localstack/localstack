@@ -222,3 +222,39 @@ def test_moto_fallback_dispatcher():
     response = _dispatch("ListQueues", None)
     assert len(provider.calls) == 1
     assert len([url for url in response["QueueUrls"] if qname in url])
+
+
+def test_call_route53_creates_hosted_zone_and_record_sets():
+
+    zone_name = f"zone-{short_uid()}.com"
+    response = moto.call_moto(
+        moto.create_aws_request_context(
+            "route53", "CreateHostedZone", {"Name": zone_name, "CallerReference": "test"}
+        )
+    )
+    zone_id = response["HostedZone"]["Id"]
+
+    response = moto.call_moto(
+        moto.create_aws_request_context(
+            "route53",
+            "ChangeResourceRecordSets",
+            {
+                "HostedZoneId": zone_id,
+                "ChangeBatch": {
+                    "Comment": "test 123",
+                    "Changes": [
+                        {
+                            "Action": "CREATE",
+                            "ResourceRecordSet": {
+                                "Name": zone_name,
+                                "Type": "CNAME",
+                            },
+                        }
+                    ],
+                },
+            },
+        ),
+        include_response_metadata=True,
+    )
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+    assert response["ChangeInfo"]["Status"] == "INSYNC"
