@@ -195,7 +195,7 @@ def load_moto_routing_table(service: str) -> Map:
 
     for url_path, handler in backend.flask_paths.items():
         # endpoints are annotated as string in werkzeug, but don't have to be
-        url_map.add(Rule(url_path, endpoint=handler))
+        url_map.add(Rule(url_path, endpoint=handler, strict_slashes=False))
 
     return url_map
 

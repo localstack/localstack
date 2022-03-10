@@ -3,7 +3,7 @@ import pytest
 from localstack import config
 from localstack.aws.api import ServiceException, handler
 from localstack.services import moto
-from localstack.services.moto import MotoFallbackDispatcher
+from localstack.services.moto import MotoFallbackDispatcher, load_moto_routing_table
 from localstack.utils.common import short_uid, to_str
 
 
@@ -224,7 +224,38 @@ def test_moto_fallback_dispatcher():
     assert len([url for url in response["QueueUrls"] if qname in url])
 
 
+def test_route_matching_with_optional_slashes():
+    # some URLs patterns in moto have optional trailing slashes, for example:
+    # r"{0}/(?P<api_version>[\d_-]+)/hostedzone/(?P<zone_id>[^/]+)/rrset/?$": Route53().rrset_response
+    # however, they don't actually seem to work. it only works because moto disables strict_slashes check for the URL
+    # Map. We previously had strict slashes enabled (it's the default), which is why this test wasn't working.
+
+    url_map = load_moto_routing_table("route53")
+    matcher = url_map.bind("localhost:4566")
+    assert matcher.match("/2013-04-01/hostedzone/BOR36Z3H458JKS9/rrset/")
+    assert matcher.match("/2013-04-01/hostedzone/BOR36Z3H458JKS9/rrset")
+
+
+def test_request_with_response_header_location_fields():
+    # CreateHostedZoneResponse has a member "Location" that's located in the headers
+    zone_name = f"zone-{short_uid()}.com"
+    request = moto.create_aws_request_context(
+        "route53", "CreateHostedZone", {"Name": zone_name, "CallerReference": "test"}
+    )
+    response = moto.call_moto(request, include_response_metadata=True)
+    # assert response["Location"]  # FIXME: this is required according to the spec, but not returned by moto
+    assert response["HostedZone"]["Id"]
+
+    # clean up
+    moto.call_moto(
+        moto.create_aws_request_context(
+            "route53", "DeleteHostedZone", {"Id": response["HostedZone"]["Id"]}
+        )
+    )
+
+
 def test_call_route53_creates_hosted_zone_and_record_sets():
+    # TODO: move this to a regular route53 integration test once route53 has been migrated to ASF
     zone_name = f"zone-{short_uid()}.com"
     request = moto.create_aws_request_context(
         "route53", "CreateHostedZone", {"Name": zone_name, "CallerReference": "test"}
