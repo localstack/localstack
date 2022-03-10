@@ -316,8 +316,10 @@ class EdgeProxiedOpensearchCluster(Server):
         self.cluster_port = get_free_tcp_port()
         self.cluster = self._backend_cluster()
         self.cluster.start()
-
-        self.proxy = EndpointProxy(self.url, self.cluster.url)
+        # Disable the host matching (by stripping the url) to match incoming requests which resolve here but have a
+        # different host header than the host field in the base url. f.e. when using docker-compose service resolution.
+        url_path = self._url.path
+        self.proxy = EndpointProxy(base_url=url_path, forward_url=self.cluster.url)
         LOG.info("registering an endpoint proxy for %s => %s", self.url, self.cluster.url)
         self.proxy.register()
 

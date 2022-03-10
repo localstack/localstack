@@ -375,7 +375,9 @@ class TestEdgeProxiedOpensearchCluster:
             cluster.start()
             assert cluster.wait_is_up(240), "gave up waiting for server"
 
-            response = requests.get(cluster_url)
+            # The host header has to be ignored (to match requests which resolve from somewhere else than localhost),
+            # therefore it's explicitly set to something else here.
+            response = requests.get(cluster_url, headers={"Host": "example.com"})
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
             assert response.json()["version"]["number"] == "1.1.0"
 
