@@ -1,3 +1,5 @@
+import json
+
 import pytest
 import requests
 from click.testing import CliRunner
@@ -96,6 +98,41 @@ class TestCliContainerLifecycle:
         for line in result.output.splitlines():
             if "dynamodb" in line:
                 assert "available" in line
+
+    def test_status(self, runner):
+        result = runner.invoke(cli, ["status"])
+        assert result.exit_code == 0
+        output = result.output
+        assert "stopped" in output
+        assert config.MAIN_CONTAINER_NAME not in output
+
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "60"])
+
+        result = runner.invoke(cli, ["status"])
+        assert result.exit_code == 0
+        output = result.output
+        assert "running" in output
+        assert config.MAIN_CONTAINER_NAME in output
+
+    def test_status_docker_json_format(self, runner):
+        result = runner.invoke(cli, ["status", "docker", "--format=json"])
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc["running"] is False
+        assert doc["runtime_version"]
+        assert doc["image_tag"]
+        assert not doc.get("container_ip")
+
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "60"])
+
+        result = runner.invoke(cli, ["status", "docker", "--format=json"])
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc["running"] is True
+        assert doc["container_ip"]
+        assert doc["container_name"] == config.MAIN_CONTAINER_NAME
 
     def test_custom_docker_flags(self, runner, tmp_path, monkeypatch, container_client):
         volume = tmp_path / "volume"
