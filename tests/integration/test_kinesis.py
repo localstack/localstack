@@ -1,6 +1,5 @@
 import logging
 import re
-import unittest
 from datetime import datetime
 from time import sleep
 
@@ -14,76 +13,82 @@ from localstack.utils.common import poll_condition, retry, select_attributes, sh
 from localstack.utils.kinesis import kinesis_connector
 
 
-class TestKinesis(unittest.TestCase):
-    def test_stream_consumers(self):
-        client = aws_stack.create_external_boto_client("kinesis")
+class TestKinesis:
+    def test_stream_consumers(self, kinesis_client, kinesis_create_stream, wait_for_stream_ready):
         stream_name = "test-%s" % short_uid()
-        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
 
-        def assert_consumers(count):
-            consumers = client.list_stream_consumers(StreamARN=stream_arn).get("Consumers")
-            self.assertEqual(count, len(consumers))
-            return consumers
+        def assert_consumers(**kwargs):
+            consumer_list = kinesis_client.list_stream_consumers(StreamARN=stream_arn).get(
+                "Consumers"
+            )
+            assert kwargs["count"] == len(consumer_list)
+            return consumer_list
 
         # create stream and assert 0 consumers
-        client.create_stream(StreamName=stream_name, ShardCount=1)
-        sleep(1)
-        assert_consumers(0)
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
+            "StreamARN"
+        ]
+        wait_for_stream_ready(stream_name)
+
+        assert_consumers(count=0)
 
         # create consumer and assert 1 consumer
         consumer_name = "cons1"
-        response = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        response = kinesis_client.register_stream_consumer(
+            StreamARN=stream_arn, ConsumerName=consumer_name
+        )
         sleep(1)
-        self.assertEqual(consumer_name, response["Consumer"]["ConsumerName"])
+        assert consumer_name == response["Consumer"]["ConsumerName"]
         # boto3 converts the timestamp to datetime
-        self.assertTrue(isinstance(response["Consumer"]["ConsumerCreationTimestamp"], datetime))
-        consumers = assert_consumers(1)
+        assert isinstance(response["Consumer"]["ConsumerCreationTimestamp"], datetime)
+        consumers = assert_consumers(count=1)
         consumer_arn = consumers[0]["ConsumerARN"]
-        self.assertEqual(consumer_name, consumers[0]["ConsumerName"])
-        self.assertIn("/%s" % consumer_name, consumer_arn)
-        self.assertTrue(isinstance(consumers[0]["ConsumerCreationTimestamp"], datetime))
+        assert consumer_name == consumers[0]["ConsumerName"]
+        assert "/%s" % consumer_name in consumer_arn
+        assert isinstance(consumers[0]["ConsumerCreationTimestamp"], datetime)
 
         # lookup stream consumer by describe calls, assert response
-        consumer_description_by_arn = client.describe_stream_consumer(
+        consumer_description_by_arn = kinesis_client.describe_stream_consumer(
             StreamARN=stream_arn, ConsumerARN=consumer_arn
         )["ConsumerDescription"]
-        self.assertEqual(consumer_name, consumer_description_by_arn["ConsumerName"])
-        self.assertEqual(consumer_arn, consumer_description_by_arn["ConsumerARN"])
-        self.assertEqual(stream_arn, consumer_description_by_arn["StreamARN"])
-        self.assertEqual("ACTIVE", consumer_description_by_arn["ConsumerStatus"])
-        self.assertTrue(
-            isinstance(consumer_description_by_arn["ConsumerCreationTimestamp"], datetime)
-        )
-        consumer_description_by_name = client.describe_stream_consumer(
+        assert consumer_name == consumer_description_by_arn["ConsumerName"]
+        assert consumer_arn == consumer_description_by_arn["ConsumerARN"]
+        assert stream_arn == consumer_description_by_arn["StreamARN"]
+        assert "ACTIVE", consumer_description_by_arn["ConsumerStatus"]
+        assert isinstance(consumer_description_by_arn["ConsumerCreationTimestamp"], datetime)
+
+        consumer_description_by_name = kinesis_client.describe_stream_consumer(
             StreamARN=stream_arn, ConsumerName=consumer_name
         )["ConsumerDescription"]
-        self.assertEqual(consumer_description_by_arn, consumer_description_by_name)
+        assert consumer_description_by_arn == consumer_description_by_name
 
         # delete existing consumer and assert 0 remaining consumers
-        client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
-        sleep(1)
-        assert_consumers(0)
+        kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
 
-        # clean up
-        client.delete_stream(StreamName=stream_name)
+        retry(assert_consumers, count=0, retries=6, sleep=3.0)
 
-    def test_subscribe_to_shard(self):
-        client = aws_stack.create_external_boto_client("kinesis")
+    def test_subscribe_to_shard(self, kinesis_client, kinesis_create_stream, wait_for_stream_ready):
         stream_name = "test-%s" % short_uid()
-        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
 
         # create stream and consumer
-        result = client.create_stream(StreamName=stream_name, ShardCount=1)
-        sleep(1)
-        result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")[
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
+            "StreamARN"
+        ]
+        wait_for_stream_ready(stream_name)
+
+        result = kinesis_client.register_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")[
             "Consumer"
         ]
+        # test fails if we do not wait here
         sleep(1)
 
         # subscribe to shard
-        response = client.describe_stream(StreamName=stream_name)
+        response = kinesis_client.describe_stream(StreamName=stream_name)
+
         shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
-        result = client.subscribe_to_shard(
+        result = kinesis_client.subscribe_to_shard(
             ConsumerARN=result["ConsumerARN"],
             ShardId=shard_id,
             StartingPosition={"Type": "TRIM_HORIZON"},
@@ -94,7 +99,9 @@ class TestKinesis(unittest.TestCase):
         num_records = 5
         msg = b"Hello world"
         for i in range(num_records):
-            client.put_records(StreamName=stream_name, Records=[{"Data": msg, "PartitionKey": "1"}])
+            kinesis_client.put_records(
+                StreamName=stream_name, Records=[{"Data": msg, "PartitionKey": "1"}]
+            )
 
         # assert results
         results = []
@@ -104,37 +111,39 @@ class TestKinesis(unittest.TestCase):
                 "ContinuationSequenceNumber"
             ]
             # https://docs.aws.amazon.com/kinesis/latest/APIReference/API_SubscribeToShardEvent.html
-            self.assertIsNotNone(
-                re.fullmatch("^0|([1-9][0-9]{0,128})$", continuation_sequence_number)
-            )
+            assert re.fullmatch("^0|([1-9][0-9]{0,128})$", continuation_sequence_number)
             results.extend(records)
             if len(results) >= num_records:
                 break
 
         # assert results
-        self.assertEqual(num_records, len(results))
+        assert num_records == len(results)
         for record in results:
-            self.assertEqual(msg, record["Data"])
+            assert msg == record["Data"]
 
         # clean up
-        client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
-        client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
+        kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
-    def test_subscribe_to_shard_with_sequence_number_as_iterator(self):
-        client = aws_stack.create_external_boto_client("kinesis")
+    def test_subscribe_to_shard_with_sequence_number_as_iterator(
+        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+    ):
         stream_name = "test-%s" % short_uid()
-        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
         record_data = "Hello world"
 
         # create stream and consumer
-        result = client.create_stream(StreamName=stream_name, ShardCount=1)
-        sleep(1)
-        result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")[
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        stream_arn = kinesis_client.describe_stream(StreamName=stream_name)["StreamDescription"][
+            "StreamARN"
+        ]
+        wait_for_stream_ready(stream_name)
+
+        result = kinesis_client.register_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")[
             "Consumer"
         ]
+        # TODO wait_for_consumer_ready
         sleep(1)
         # get starting sequence number
-        response = client.describe_stream(StreamName=stream_name)
+        response = kinesis_client.describe_stream(StreamName=stream_name)
         sequence_number = (
             response.get("StreamDescription")
             .get("Shards")[0]
@@ -142,9 +151,9 @@ class TestKinesis(unittest.TestCase):
             .get("StartingSequenceNumber")
         )
         # subscribe to shard with iterator type as AT_SEQUENCE_NUMBER
-        response = client.describe_stream(StreamName=stream_name)
+        response = kinesis_client.describe_stream(StreamName=stream_name)
         shard_id = response.get("StreamDescription").get("Shards")[0].get("ShardId")
-        result = client.subscribe_to_shard(
+        result = kinesis_client.subscribe_to_shard(
             ConsumerARN=result["ConsumerARN"],
             ShardId=shard_id,
             StartingPosition={
@@ -156,7 +165,7 @@ class TestKinesis(unittest.TestCase):
         # put records
         num_records = 5
         for i in range(num_records):
-            client.put_records(
+            kinesis_client.put_records(
                 StreamName=stream_name,
                 Records=[{"Data": record_data, "PartitionKey": "1"}],
             )
@@ -169,31 +178,30 @@ class TestKinesis(unittest.TestCase):
                 break
 
         # assert results
-        self.assertEqual(num_records, len(results))
+        assert num_records == len(results)
         for record in results:
-            self.assertEqual(str.encode(record_data), record["Data"])
+            assert str.encode(record_data) == record["Data"]
 
         # clean up
-        client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
-        client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
+        kinesis_client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName="c1")
 
-    def test_get_records(self):
-        client = aws_stack.create_external_boto_client("kinesis")
+    def test_get_records(self, kinesis_client, kinesis_create_stream, wait_for_stream_ready):
         stream_name = "test-%s" % short_uid()
 
-        client.create_stream(StreamName=stream_name, ShardCount=1)
-        sleep(1.5)
-        client.put_records(
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name)
+
+        kinesis_client.put_records(
             StreamName=stream_name,
             Records=[{"Data": "SGVsbG8gd29ybGQ=", "PartitionKey": "1"}],
         )
 
         # get records with JSON encoding
         iterator = self._get_shard_iterator(stream_name)
-        response = client.get_records(ShardIterator=iterator)
+        response = kinesis_client.get_records(ShardIterator=iterator)
         json_records = response.get("Records")
-        self.assertEqual(1, len(json_records))
-        self.assertIn("Data", json_records[0])
+        assert 1 == len(json_records)
+        assert "Data" in json_records[0]
 
         # get records with CBOR encoding
         iterator = self._get_shard_iterator(stream_name)
@@ -203,41 +211,38 @@ class TestKinesis(unittest.TestCase):
         headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
         data = cbor2.dumps({"ShardIterator": iterator})
         result = requests.post(url, data, headers=headers)
-        self.assertEqual(200, result.status_code)
+        assert 200 == result.status_code
         result = cbor2.loads(result.content)
         attrs = ("Data", "EncryptionType", "PartitionKey", "SequenceNumber")
-        self.assertEqual(
-            select_attributes(json_records[0], attrs),
-            select_attributes(result["Records"][0], attrs),
+        assert select_attributes(json_records[0], attrs) == select_attributes(
+            result["Records"][0], attrs
         )
 
-        # clean up
-        client.delete_stream(StreamName=stream_name)
-
-    def test_record_lifecycle_data_integrity(self):
+    def test_record_lifecycle_data_integrity(
+        self, kinesis_client, kinesis_create_stream, wait_for_stream_ready
+    ):
         """
         kinesis records should contain the same data from when they are sent to when they are received
         """
-        client = aws_stack.create_external_boto_client("kinesis")
         stream_name = "test-%s" % short_uid()
         records_data = {"test", "ünicödé 统一码 💣💻🔥", "a" * 1000, ""}
+        kinesis_create_stream(StreamName=stream_name, ShardCount=1)
+        wait_for_stream_ready(stream_name)
 
-        client.create_stream(StreamName=stream_name, ShardCount=1)
-        sleep(1.5)
         iterator = self._get_shard_iterator(stream_name)
 
         for record_data in records_data:
-            client.put_record(
+            kinesis_client.put_record(
                 StreamName=stream_name,
                 Data=record_data,
                 PartitionKey="1",
             )
 
-        response = client.get_records(ShardIterator=iterator)
+        response = kinesis_client.get_records(ShardIterator=iterator)
         response_records = response.get("Records")
-        self.assertEqual(len(records_data), len(response_records))
+        assert len(records_data) == len(response_records)
         for response_record in response_records:
-            self.assertIn(response_record.get("Data").decode("utf-8"), records_data)
+            assert response_record.get("Data").decode("utf-8") in records_data
 
     def _get_shard_iterator(self, stream_name):
         client = aws_stack.create_external_boto_client("kinesis")
@@ -296,7 +301,7 @@ def test_get_records_next_shard_iterator(
     assert new_shard_iterator != get_records_response["NextShardIterator"]
 
 
-class TestKinesisPythonClient(unittest.TestCase):
+class TestKinesisPythonClient:
     @pytest.mark.skip_offline
     def test_run_kcl(self):
         result = []
@@ -317,7 +322,7 @@ class TestKinesisPythonClient(unittest.TestCase):
         kinesis = aws_stack.create_external_boto_client("kinesis")
 
         stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
-        self.assertEqual(1, stream_summary["StreamDescriptionSummary"]["OpenShardCount"])
+        assert 1 == stream_summary["StreamDescriptionSummary"]["OpenShardCount"]
 
         num_events_kinesis = 10
         kinesis.put_records(
@@ -328,6 +333,6 @@ class TestKinesisPythonClient(unittest.TestCase):
         )
 
         def check_events():
-            self.assertEqual(num_events_kinesis, len(result))
+            assert num_events_kinesis == len(result)
 
         retry(check_events, retries=4, sleep=2)
