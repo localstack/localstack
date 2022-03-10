@@ -553,7 +553,6 @@ def process_apigateway_invocation(
     query_string_params=None,
     stage_variables=None,
     request_context=None,
-    event_context=None,
 ):
     if path_params is None:
         path_params = {}
@@ -561,8 +560,6 @@ def process_apigateway_invocation(
         stage_variables = {}
     if request_context is None:
         request_context = {}
-    if event_context is None:
-        event_context = {}
     try:
         resource_path = resource_path or path
         event = construct_invocation_event(
@@ -585,7 +582,7 @@ def process_apigateway_invocation(
         inv_result = run_lambda(
             func_arn=func_arn,
             event=event,
-            context=event_context,
+            context=request_context,
             asynchronous=asynchronous,
         )
         return inv_result.result
