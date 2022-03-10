@@ -1,18 +1,13 @@
 import base64
-import hashlib
 import logging
 import threading
 import time
-import uuid
-from enum import Enum, auto
-from typing import Dict
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.awslambda import (
     Alias,
     AliasConfiguration,
     AliasRoutingConfiguration,
-    Architecture,
     ArchitecturesList,
     Blob,
     Boolean,
@@ -24,6 +19,7 @@ from localstack.aws.api.awslambda import (
     FunctionCode,
     FunctionConfiguration,
     FunctionName,
+    FunctionVersion,
     GetFunctionResponse,
     Handler,
     ImageConfig,
@@ -31,7 +27,6 @@ from localstack.aws.api.awslambda import (
     InvocationType,
     KMSKeyArn,
     LambdaApi,
-    LastUpdateStatus,
     LayerList,
     ListAliasesResponse,
     ListFunctionsResponse,
@@ -43,26 +38,21 @@ from localstack.aws.api.awslambda import (
     PackageType,
     PreconditionFailedException,
     Qualifier,
-    ResourceConflictException,
     RoleArn,
     Runtime,
     S3Bucket,
     S3Key,
     S3ObjectVersion,
     ServiceException,
-    State,
     String,
     Tags,
     Timeout,
     TracingConfig,
-    TracingMode,
     Version,
     VpcConfig,
 )
+from localstack.services.awslambda.invocation.lambda_models import InvocationError
 from localstack.services.awslambda.invocation.lambda_service import (
-    FunctionVersion,
-    LambdaFunction,
-    LambdaFunctionVersion,
     LambdaService,
     LambdaServiceBackend,
 )
@@ -75,9 +65,8 @@ from localstack.services.awslambda.lambda_utils import generate_lambda_arn
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
 
-
-
 LOG = logging.getLogger(__name__)
+
 
 class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
@@ -125,14 +114,12 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         elif package_type == PackageType.Image:
             LOG.warning("Container Image support not available in Community Edition")
 
-
-        version = self.lambda_service.create_function(
+        self.lambda_service.create_function(
             context.region,
         )
 
         if publish:
-            version = self.lambda_service.create_function_version(context.region, function_name)
-
+            self.lambda_service.create_function_version(context.region, function_name)
 
         return FunctionConfiguration(
             # map
@@ -333,24 +320,32 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             client_context=client_context,
             payload=payload,
         )
-        invocation_result = result.result()
+        try:
+            invocation_result = result.result()
+        except Exception as e:
+            LOG.error("Error while invoking lambda: %s", e)
+            # TODO map to correct exception
+            raise ServiceException()
+
         LOG.debug("Type of result: %s", type(invocation_result))
 
         function_error = None
-        if "error" in str(invocation_result.payload):
+        if isinstance(invocation_result, InvocationError):
             function_error = "Unhandled"
 
         response = InvocationResponse(
             StatusCode=200,
             Payload=invocation_result.payload,
             ExecutedVersion="$LATEST",  # TODO: should be resolved version from qualifier
-            FunctionError=function_error,  # TODO: should be conditional. Might ahve to get this from the invoke result as well
+            FunctionError=function_error,  # TODO: should be conditional. Might have to get this from the invoke result as well
         )
         LOG.debug("Lambda invocation duration: %0.2fms", (time.perf_counter() - time_before) * 1000)
         LOG.debug("Result: %s", invocation_result)
 
         if log_type == LogType.Tail:
-            response["LogResult"] = to_str(base64.b64encode(to_bytes(invocation_result.logs)))
+            response["LogResult"] = to_str(
+                base64.b64encode(to_bytes(invocation_result.logs)[-4096:])
+            )
 
         return response
 
@@ -443,20 +438,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             new_version = self._publish_version(fn=fn, description=description)
             return new_version.config
 
-    def _publish_version(self, fn: LambdaFunction, description: str) -> LambdaFunctionVersion:
-        version_qualifier = str(fn.next_version)
-
-        # TODO: only publish a new version when code or config has actually changed
-        # TODO: does change mean between last *published* version or anything in between?
-        new_config: FunctionConfiguration = fn.latest.config.copy()
-        # TODO: test if this overwrites the description in the function config
-        # fn.latest.config['Description'] = description
-        new_config["Version"] = version_qualifier
-        new_code = fn.latest.code.copy()
-        new_version = LambdaFunctionVersion(config=new_config, code=new_code)
-        fn.versions[version_qualifier] = new_version
-        fn.next_version = fn.next_version + 1
-        return new_version
+    #     def _publish_version(self, fn: LambdaFunction, description: str) -> LambdaFunctionVersion:
+    #         version_qualifier = str(fn.next_version)
+    #
+    #         # TODO: only publish a new version when code or config has actually changed
+    #         # TODO: does change mean between last *published* version or anything in between?
+    #         new_config: FunctionConfiguration = fn.latest.config.copy()
+    #         # TODO: test if this overwrites the description in the function config
+    #         # fn.latest.config['Description'] = description
+    #         new_config["Version"] = version_qualifier
+    #         new_code = fn.latest.code.copy()
+    #         new_version = LambdaFunctionVersion(config=new_config, code=new_code)
+    #         fn.versions[version_qualifier] = new_version
+    #         fn.next_version = fn.next_version + 1
+    #         return new_version
 
     def create_alias(
         self,

@@ -4,25 +4,22 @@ import shutil
 import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Dict, Literal, Optional, Tuple
+from typing import Dict, Literal, Optional, Tuple
 
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
     ServiceEndpoint,
 )
+from localstack.services.awslambda.invocation.lambda_models import Version
 from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
 )
 from localstack.utils.archives import unzip
-from localstack.utils.net import get_free_tcp_port
-
-if TYPE_CHECKING:
-    from localstack.services.awslambda.invocation.lambda_service import FunctionVersion
-
 from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
+from localstack.utils.net import get_free_tcp_port
 
 LOG = logging.getLogger(__name__)
 
@@ -55,17 +52,17 @@ def get_runtime_split(runtime: str) -> Tuple[str, str]:
     raise Exception("Cannot process runtime '%s'" % runtime)
 
 
-def get_path_for_function(function_version: "FunctionVersion") -> Path:
+def get_path_for_function(function_version: Version) -> Path:
     return Path(
         f"{config.dirs.tmp}/lambda/{function_version.qualified_arn.replace(':', '_').replace('$', '_')}/"
     )
 
 
-def get_code_path_for_function(function_version: "FunctionVersion") -> Path:
+def get_code_path_for_function(function_version: Version) -> Path:
     return get_path_for_function(function_version) / "code"
 
 
-def get_image_name_for_function(function_version: "FunctionVersion") -> str:
+def get_image_name_for_function(function_version: Version) -> str:
     return f"localstack/lambda-{function_version.qualified_arn.replace(':', '_').replace('$', '_').lower()}"
 
 
@@ -78,8 +75,8 @@ def get_runtime_client_path() -> Path:
     return Path(f"{config.dirs.tmp}/aws-lambda-rie")
 
 
-def prepare_image(target_path: Path, function_version: "FunctionVersion") -> None:
-    if not function_version.runtime:
+def prepare_image(target_path: Path, function_version: Version) -> None:
+    if not function_version.config.runtime:
         LOG.error("Images without runtime are currently not supported")
         raise Exception("Custom images are currently not supported")
     src_init = get_runtime_client_path()
@@ -91,7 +88,7 @@ def prepare_image(target_path: Path, function_version: "FunctionVersion") -> Non
     # create dockerfile
     docker_file_path = target_path / "Dockerfile"
     docker_file = LAMBDA_DOCKERFILE.format(
-        base_img=get_image_for_runtime(function_version.runtime),
+        base_img=get_image_for_runtime(function_version.config.runtime),
         rapid_entrypoint=RAPID_ENTRYPOINT,
     )
     with docker_file_path.open(mode="w") as f:
@@ -105,8 +102,8 @@ def prepare_image(target_path: Path, function_version: "FunctionVersion") -> Non
         LOG.error("Exception: %s", e)
 
 
-def prepare_version(function_version: "FunctionVersion") -> None:
-    if not function_version.zip_file:
+def prepare_version(function_version: Version) -> None:
+    if not function_version.code.zip_file:
         LOG.error("Images without zip_file are currently not supported")
         raise Exception("Custom images are currently not supported")
     time_before = time.perf_counter()
@@ -115,7 +112,7 @@ def prepare_version(function_version: "FunctionVersion") -> None:
     # write code to disk
     target_code = get_code_path_for_function(function_version)
     with NamedTemporaryFile() as file:
-        file.write(function_version.zip_file)
+        file.write(function_version.code.zip_file)
         file.flush()
         unzip(file.name, str(target_code))
     if config.LAMBDA_PREBUILD_IMAGES:
@@ -123,7 +120,7 @@ def prepare_version(function_version: "FunctionVersion") -> None:
     LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
 
 
-def cleanup_version(function_version: "FunctionVersion") -> None:
+def cleanup_version(function_version: Version) -> None:
     function_path = get_path_for_function(function_version)
     try:
         shutil.rmtree(function_path)
@@ -145,12 +142,12 @@ class LambdaRuntimeException(Exception):
 
 class RuntimeExecutor:
     id: str
-    function_version: "FunctionVersion"
+    function_version: Version
     ip: Optional[str]
     executor_endpoint: Optional[ExecutorEndpoint]
 
     def __init__(
-        self, id: str, function_version: "FunctionVersion", service_endpoint: ServiceEndpoint
+        self, id: str, function_version: Version, service_endpoint: ServiceEndpoint
     ) -> None:
         self.id = id
         self.function_version = function_version
@@ -158,13 +155,13 @@ class RuntimeExecutor:
         self.executor_endpoint = self._build_executor_endpoint(service_endpoint)
 
     def get_image(self) -> str:
-        if not self.function_version.runtime:
+        if not self.function_version.config.runtime:
             LOG.error("Images without runtime are currently not supported")
             raise Exception("Custom images are currently not supported")
         return (
             get_image_name_for_function(self.function_version)
             if config.LAMBDA_PREBUILD_IMAGES
-            else get_image_for_runtime(self.function_version.runtime)
+            else get_image_for_runtime(self.function_version.config.runtime)
         )
 
     def _build_executor_endpoint(self, service_endpoint: ServiceEndpoint) -> ExecutorEndpoint:

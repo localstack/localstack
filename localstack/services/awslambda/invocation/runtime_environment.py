@@ -7,14 +7,14 @@ from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
+from localstack.services.awslambda.invocation.lambda_models import Version
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
 from localstack.utils.strings import to_str
 
 if TYPE_CHECKING:
-    from localstack.services.awslambda.invocation.lambda_service import FunctionVersion
     from localstack.services.awslambda.invocation.version_manager import QueuedInvocation
 
-STARTUP_TIMEOUT_SEC = 20.0
+STARTUP_TIMEOUT_SEC = 10.0
 HEX_CHARS = [str(num) for num in range(10)] + ["a", "b", "c", "d", "e", "f"]
 
 LOG = logging.getLogger(__name__)
@@ -37,11 +37,6 @@ class InvalidStatusException(Exception):
         super().__init__(message)
 
 
-class InvocationError(Exception):
-    def __init__(self, message: str):
-        super().__init__(message)
-
-
 def generate_runtime_id() -> str:
     return "".join([random.choice(HEX_CHARS) for _ in range(32)])
 
@@ -56,7 +51,7 @@ class RuntimeEnvironment:
 
     def __init__(
         self,
-        function_version: "FunctionVersion",
+        function_version: Version,
         initialization_type: InitializationType,
         service_endpoint: ServiceEndpoint,
     ):
@@ -74,10 +69,10 @@ class RuntimeEnvironment:
         self.startup_timer = None
 
     def get_log_group_name(self) -> str:
-        return f"/aws/lambda/{self.function_version.name}"
+        return f"/aws/lambda/{self.function_version.config.name}"
 
     def get_log_stream_name(self) -> str:
-        return f"{date.today():%Y/%m/%d}/[{self.function_version.version}]{self.id}"
+        return f"{date.today():%Y/%m/%d}/[{self.function_version.qualifier}]{self.id}"
 
     def get_environment_variables(self) -> Dict[str, str]:
         """
@@ -110,11 +105,11 @@ class RuntimeEnvironment:
             "EDGE_PORT": str(config.EDGE_PORT),
             "AWS_ENDPOINT_URL": f"http://{self.runtime_executor.get_endpoint_from_executor()}:{config.EDGE_PORT}",
         }
-        if self.function_version.handler:
-            env_vars["_HANDLER"] = self.function_version.handler
-        if self.function_version.runtime:
-            env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.runtime}"
-        env_vars.update(self.function_version.environment)
+        if self.function_version.config.handler:
+            env_vars["_HANDLER"] = self.function_version.config.handler
+        if self.function_version.config.runtime:
+            env_vars["AWS_EXECUTION_ENV"] = f"Aws_Lambda_{self.function_version.config.runtime}"
+        env_vars.update(self.function_version.config.environment.variables)
         return env_vars
 
     # Lifecycle methods
@@ -129,8 +124,6 @@ class RuntimeEnvironment:
             self.runtime_executor.start(self.get_environment_variables())
             self.startup_timer = Timer(STARTUP_TIMEOUT_SEC, self.timed_out)
             self.startup_timer.start()
-
-            # TODO start startup-timer to set timeout on starting phase
 
     def stop(self) -> None:
         """

@@ -1,6 +1,9 @@
+import abc
 import dataclasses
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
+
+from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
 
 
 @dataclasses.dataclass
@@ -62,7 +65,8 @@ class UpdateStatus:
 
 
 class FunctionConfigurationParameter:
-    """ configurable parts of FunctionConfiguration """
+    """configurable parts of FunctionConfiguration"""
+
     pass
 
 
@@ -77,6 +81,7 @@ class FunctionConfiguration:
     function_arn: str
 
     # fields
+    name: str
     description: str
     role: str
     timeout: int
@@ -124,11 +129,29 @@ class Alias:
 
 @dataclasses.dataclass(frozen=True)
 class Version:
+    qualified_arn: str
     qualifier: str
     description: str
     code: Code  # TODO: code might make more sense in the functionconfiguration?
     config: FunctionConfiguration
     # provisioned_concurrency_config: Optional[ProvisionedConcurrencyConfiguration]
+
+
+@dataclasses.dataclass
+class VersionIdentifier:
+    function_name: str
+    qualifier: str
+    region: str
+    account: str
+
+    def qualified_arn(self):
+        return qualified_lambda_arn(
+            function_name=self.function_name,
+            qualifier=self.qualifier,
+            region=self.region,
+            account=self.account,
+        )
+
 
 @dataclasses.dataclass
 class Function:
@@ -137,6 +160,67 @@ class Function:
     next_version: int = 1
     versions: Dict[str, Version] = dataclasses.field(default_factory=dict)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
+
+
+# Result Models
+@dataclasses.dataclass
+class InvocationResult:
+    invocation_id: str
+    payload: Optional[bytes]
+    logs: Optional[str] = None
+
+
+@dataclasses.dataclass
+class InvocationError:
+    invocation_id: str
+    payload: Optional[bytes]
+    logs: Optional[str] = None
+
+
+@dataclasses.dataclass
+class InvocationLogs:
+    invocation_id: str
+    logs: str
+
+
+class ServiceEndpoint(abc.ABC):
+    def invocation_result(self, invoke_id: str, invocation_result: InvocationResult) -> None:
+        """
+        Processes the result of an invocation
+        :param invoke_id: Invocation Id
+        :param invocation_result: Invocation Result
+        """
+        raise NotImplementedError()
+
+    def invocation_error(self, invoke_id: str, invocation_error: InvocationError) -> None:
+        """
+        Processes an error during an invocation
+        :param invoke_id: Invocation Id
+        :param invocation_error: Invocation Error
+        """
+        raise NotImplementedError()
+
+    def invocation_logs(self, invoke_id: str, invocation_logs: InvocationLogs) -> None:
+        """
+        Processes the logs of an invocation
+        :param invoke_id: Invocation Id
+        :param invocation_logs: Invocation logs
+        """
+        raise NotImplementedError()
+
+    def status_ready(self, executor_id: str) -> None:
+        """
+        Processes a status ready report by RAPID
+        :param executor_id: Executor ID this ready report is for
+        """
+        raise NotImplementedError()
+
+    def status_error(self, executor_id: str) -> None:
+        """
+        Processes a status error report by RAPID
+        :param executor_id: Executor ID this error report is for
+        """
+        raise NotImplementedError()
 
 
 # ASYNC
@@ -163,4 +247,3 @@ class Function:
 #     maximum_retry_attemps: int
 #     maximum_event_age_in_seconds: int
 #     destination_config: DestinationConfig
-
