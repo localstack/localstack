@@ -322,7 +322,7 @@ class TestCloudWatchLogs:
         assert json_filter_name not in filter_names
 
     def test_delivery_logs_for_sns(self, logs_client, sns_client):
-        topic_name = "test-logs-{}".format(short_uid())
+        topic_name = f"test-logs-{short_uid()}"
         contact = "+10123456789"
 
         topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
