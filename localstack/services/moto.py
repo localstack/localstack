@@ -47,7 +47,7 @@ def call_moto(context: RequestContext, include_response_metadata=False) -> Servi
 
     operation_model = context.operation
     response_dict = {  # this is what botocore.endpoint.convert_to_response_dict normally does
-        "headers": headers,
+        "headers": dict(headers.items()),  # boto doesn't like werkzeug headers
         "status_code": status,
         "body": to_bytes(content),
         "context": {
@@ -183,7 +183,7 @@ def load_moto_routing_table(service: str) -> Map:
     :param service: the service to get the map for.
     :return: a new Map object
     """
-    # code from moto.server.create_backend_app
+    # code from moto.moto_server.werkzeug_app.create_backend_app
     backend_dict: BackendDict = get_moto_backend(service)
     if "us-east-1" in backend_dict:
         backend = backend_dict["us-east-1"]
@@ -194,8 +194,16 @@ def load_moto_routing_table(service: str) -> Map:
     url_map.converters["regex"] = RegexConverter
 
     for url_path, handler in backend.flask_paths.items():
-        # endpoints are annotated as string in werkzeug, but don't have to be
-        url_map.add(Rule(url_path, endpoint=handler))
+        # Some URL patterns in moto have optional trailing slashes, for example the route53 pattern:
+        # r"{0}/(?P<api_version>[\d_-]+)/hostedzone/(?P<zone_id>[^/]+)/rrset/?$".
+        # However, they don't actually seem to work. Routing only works because moto disables strict_slashes check
+        # for the URL Map. So we also disable it here explicitly.
+        strict_slashes = False
+
+        # Rule endpoints are annotated as string types in werkzeug, but they don't have to be.
+        endpoint = handler
+
+        url_map.add(Rule(url_path, endpoint=endpoint, strict_slashes=strict_slashes))
 
     return url_map
 
