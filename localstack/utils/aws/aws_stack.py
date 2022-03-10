@@ -587,12 +587,14 @@ def get_iam_role(resource, env=None):
     return "role-%s" % resource
 
 
-# TODO: remove this (can't statically define secret ARN because it includes a random suffix)
-def secretsmanager_secret_arn(secret_id, account_id=None, region_name=None):
+def secretsmanager_secret_arn(secret_id, account_id=None, region_name=None, random_suffix=None):
     if ":" in (secret_id or ""):
         return secret_id
     pattern = "arn:aws:secretsmanager:%s:%s:secret:%s"
-    return _resource_arn(secret_id, pattern, account_id=account_id, region_name=region_name)
+    arn = _resource_arn(secret_id, pattern, account_id=account_id, region_name=region_name)
+    if random_suffix:
+        arn += f"-{random_suffix}"
+    return arn
 
 
 def cloudformation_stack_arn(stack_name, stack_id=None, account_id=None, region_name=None):
