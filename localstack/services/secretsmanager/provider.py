@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import re
-from abc import ABC
 from typing import Dict, Optional
 
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
@@ -65,8 +64,11 @@ from localstack.utils.time import today_no_time
 
 LOG = logging.getLogger(__name__)
 
+# maps key names to ARNs
+SECRET_ARN_STORAGE = {}
 
-class SecretsmanagerProvider(SecretsmanagerApi, ABC):
+
+class SecretsmanagerProvider(SecretsmanagerApi):
     def __init__(self):
         super().__init__()
         apply_patches()
@@ -327,10 +329,6 @@ def fake_secret_to_dict(fn, self):
     if self.last_accessed_date:
         res_dict["LastAccessedDate"] = self.last_accessed_date
     return res_dict
-
-
-# maps key names to ARNs
-SECRET_ARN_STORAGE = {}
 
 
 def secretsmanager_models_secret_arn(region, secret_id):
