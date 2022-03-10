@@ -13,91 +13,6 @@ from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
 
-# TODO: potentially replace with generic proxy wrapper class
-class DictWrapper(dict):
-    def keySet(self):
-        return self.keys()
-
-
-class VelocityInput(object):
-    """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
-
-    def __init__(self, value):
-        self.value = self._attach_missing_functions(value)
-
-    def path(self, path):
-        if not self.value:
-            return {}
-        value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-        return extract_jsonpath(value, path)
-
-    def json(self, path):
-        path = path or "$"
-        matching = self.path(path)
-        if isinstance(matching, (list, dict)):
-            matching = json_safe(matching)
-        return json.dumps(matching)
-
-    def __getattr__(self, name):
-        return self.value.get(name)
-
-    def __repr__(self):
-        return "$input"
-
-    def _attach_missing_functions(self, value):
-        if value:
-
-            def _fix(obj, **kwargs):
-                if isinstance(obj, dict):
-                    return DictWrapper(obj)
-                return obj
-
-            value = recurse_object(value, _fix)
-        return value
-
-
-class VelocityUtil(object):
-    """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
-
-    def base64Encode(self, s):
-        if not isinstance(s, str):
-            s = json.dumps(s)
-        encoded_str = s.encode(config.DEFAULT_ENCODING)
-        encoded_b64_str = base64.b64encode(encoded_str)
-        return encoded_b64_str.decode(config.DEFAULT_ENCODING)
-
-    def base64Decode(self, s):
-        if not isinstance(s, str):
-            s = json.dumps(s)
-        return base64.b64decode(s)
-
-    def toJson(self, obj):
-        return obj and json.dumps(obj)
-
-    def urlEncode(self, s):
-        return quote_plus(s)
-
-    def urlDecode(self, s):
-        return unquote_plus(s)
-
-    def escapeJavaScript(self, s):
-        try:
-            return json.dumps(json.loads(s))
-        except Exception:
-            primitive_types = (str, int, bool, float, type(None))
-            s = s if isinstance(s, primitive_types) else str(s)
-        if str(s).strip() in ["true", "false"]:
-            s = bool(s)
-        elif s not in [True, False] and is_number(s):
-            s = to_number(s)
-        return json.dumps(s)
-
-
-# TODO: remove code below once this PR is merged/released: https://github.com/purcell/airspeed/pull/56
-
-
 class DefineDefinition(airspeed.MacroDefinition):
     START = re.compile(r"#define\b(.*)", re.S + re.I)
     NAME = re.compile(r"\s*(\$[a-z][a-z_0-9]*)\b(.*)", re.S + re.I)
@@ -157,6 +72,92 @@ def block_parse(self, *args, **kwargs):
             )
         except airspeed.NoMatch:
             break
+
+
+# remove all the code below after removing references in:
+# - invocations.py
+# - graphql_executor.py
+
+
+class DictWrapper(dict):
+    def keySet(self):
+        return self.keys()
+
+
+class VelocityInput(object):
+    """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration
+    velocity templates.
+    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
+
+    def __init__(self, value):
+        self.value = self._attach_missing_functions(value)
+
+    def path(self, path):
+        if not self.value:
+            return {}
+        value = self.value if isinstance(self.value, dict) else json.loads(self.value)
+        return extract_jsonpath(value, path)
+
+    def json(self, path):
+        path = path or "$"
+        matching = self.path(path)
+        if isinstance(matching, (list, dict)):
+            matching = json_safe(matching)
+        return json.dumps(matching)
+
+    def __getattr__(self, name):
+        return self.value.get(name)
+
+    def __repr__(self):
+        return "$input"
+
+    def _attach_missing_functions(self, value):
+        if value:
+
+            def _fix(obj, **kwargs):
+                return DictWrapper(obj) if isinstance(obj, dict) else obj
+
+            value = recurse_object(value, _fix)
+        return value
+
+
+class VelocityUtil(object):
+    """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration
+    velocity templates.
+    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
+
+    def base64Encode(self, s):
+        if not isinstance(s, str):
+            s = json.dumps(s)
+        encoded_str = s.encode(config.DEFAULT_ENCODING)
+        encoded_b64_str = base64.b64encode(encoded_str)
+        return encoded_b64_str.decode(config.DEFAULT_ENCODING)
+
+    def base64Decode(self, s):
+        if not isinstance(s, str):
+            s = json.dumps(s)
+        return base64.b64decode(s)
+
+    def toJson(self, obj):
+        return obj and json.dumps(obj)
+
+    def urlEncode(self, s):
+        return quote_plus(s)
+
+    def urlDecode(self, s):
+        return unquote_plus(s)
+
+    def escapeJavaScript(self, s):
+        try:
+            return json.dumps(json.loads(s))
+        except Exception:
+            primitive_types = (str, int, bool, float, type(None))
+            s = s if isinstance(s, primitive_types) else str(s)
+        if str(s).strip() in ["true", "false"]:
+            s = bool(s)
+        elif s not in [True, False] and is_number(s):
+            s = to_number(s)
+        return json.dumps(s)
 
 
 def render_velocity_template(template, context, variables=None, as_json=False):

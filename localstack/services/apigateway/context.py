@@ -1,10 +1,14 @@
+import base64
+import json
 from enum import Enum
 from typing import Any, Dict, Optional, Union
 
-# type definition for data parameters (i.e., invocation payloads)
 from responses import Response
 
 from localstack.utils.aws.aws_responses import parse_query_string
+
+# type definition for data parameters (i.e., invocation payloads)
+from localstack.utils.strings import short_uid, to_str
 
 InvocationPayload = Union[Dict, str, bytes]
 
@@ -51,6 +55,8 @@ class ApiInvocationContext:
     # response object
     response: Response
 
+    stage_variables: Dict
+
     def __init__(
         self,
         method,
@@ -66,7 +72,7 @@ class ApiInvocationContext:
         self.path = path
         self.data = data
         self.headers = headers
-        self.context = {} if context is None else context
+        self.context = {"requestId", short_uid()} if context is None else context
         self.auth_info = {} if auth_info is None else auth_info
         self.apigw_version = None
         self.api_id = api_id
@@ -77,6 +83,8 @@ class ApiInvocationContext:
         self.resource_path = None
         self.path_with_query_string = None
         self.response_templates = {}
+        self.stage_variables = {}
+        self.path_params = {}
 
     @property
     def resource_id(self) -> Optional[str]:
@@ -112,8 +120,7 @@ class ApiInvocationContext:
     def auth_context(self) -> Optional[Dict]:
         if isinstance(self.auth_info, dict):
             context = self.auth_info.setdefault("context", {})
-            principal = self.auth_info.get("principalId")
-            if principal:
+            if principal := self.auth_info.get("principalId"):
                 context["principalId"] = principal
             return context
 
@@ -136,3 +143,19 @@ class ApiInvocationContext:
         if cookies := self.headers.get("cookie") or "":
             return list(cookies.split(";"))
         return []
+
+    @property
+    def is_data_base64_encoded(self):
+        try:
+            json.dumps(self.data) if isinstance(self.data, (dict, list)) else to_str(self.data)
+            return False
+        except UnicodeDecodeError:
+            return True
+
+    def data_as_string(self) -> Union[str, bytes]:
+        try:
+            return (
+                json.dumps(self.data) if isinstance(self.data, (dict, list)) else to_str(self.data)
+            )
+        except UnicodeDecodeError:
+            return base64.b64encode(self.data)
