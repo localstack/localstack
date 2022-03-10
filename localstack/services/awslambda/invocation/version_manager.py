@@ -32,6 +32,11 @@ if TYPE_CHECKING:
 
 LOG = logging.getLogger(__name__)
 
+@dataclasses.dataclass(frozen=True)
+class State:
+    state: str  #  TODO: enum/literal
+    code: Optional[str] = None
+    reason: Optional[str] = None
 
 @dataclasses.dataclass(frozen=True)
 class QueuedInvocation:
@@ -107,7 +112,7 @@ class LambdaVersionManager(ServiceEndpoint):
     provisioned_concurrent_executions: int
     invocation_thread: Optional[Thread]
     shutdown_event: threading.Event
-    state: str
+    state: State
     log_handler: LogHandler
 
     def __init__(
