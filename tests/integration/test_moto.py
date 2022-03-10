@@ -225,35 +225,34 @@ def test_moto_fallback_dispatcher():
 
 
 def test_call_route53_creates_hosted_zone_and_record_sets():
-
     zone_name = f"zone-{short_uid()}.com"
-    response = moto.call_moto(
-        moto.create_aws_request_context(
-            "route53", "CreateHostedZone", {"Name": zone_name, "CallerReference": "test"}
-        )
+    request = moto.create_aws_request_context(
+        "route53", "CreateHostedZone", {"Name": zone_name, "CallerReference": "test"}
     )
+    response = moto.call_moto(request)
     zone_id = response["HostedZone"]["Id"]
 
-    response = moto.call_moto(
-        moto.create_aws_request_context(
-            "route53",
-            "ChangeResourceRecordSets",
-            {
-                "HostedZoneId": zone_id,
-                "ChangeBatch": {
-                    "Comment": "test 123",
-                    "Changes": [
-                        {
-                            "Action": "CREATE",
-                            "ResourceRecordSet": {
-                                "Name": zone_name,
-                                "Type": "CNAME",
-                            },
-                        }
-                    ],
-                },
+    request = moto.create_aws_request_context(
+        "route53",
+        "ChangeResourceRecordSets",
+        {
+            "HostedZoneId": zone_id,
+            "ChangeBatch": {
+                "Comment": "test 123",
+                "Changes": [
+                    {
+                        "Action": "CREATE",
+                        "ResourceRecordSet": {
+                            "Name": zone_name,
+                            "Type": "CNAME",
+                        },
+                    }
+                ],
             },
-        ),
+        },
+    )
+    response = moto.call_moto(
+        request,
         include_response_metadata=True,
     )
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
