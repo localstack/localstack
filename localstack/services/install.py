@@ -136,6 +136,9 @@ TEST_LAMBDA_JAR_URL = "{url}/cloud/localstack/{name}/{version}/{name}-{version}-
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name="localstack-utils"
 )
 
+LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/v0.1-pre/aws-lambda-rie-{arch}"
+LAMBDA_RUNTIME_INIT_PATH = os.path.join(config.dirs.static_libs, "aws-lambda-rie")
+
 OS_INSTALL_LOCKS = {}
 
 
@@ -581,6 +584,18 @@ def install_go_lambda_runtime():
     os.chmod(GO_LAMBDA_MOCKSERVER, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
+def install_lambda_runtime():
+    if os.path.isfile(LAMBDA_RUNTIME_INIT_PATH):
+        return
+    log_install_msg("Installing lambda runtime")
+    arch = get_arch()
+    arch = "x86_64" if arch == "amd64" else arch
+    download_url = LAMBDA_RUNTIME_INIT_URL.format(arch=arch)
+    download(download_url, LAMBDA_RUNTIME_INIT_PATH)
+    st = os.stat(LAMBDA_RUNTIME_INIT_PATH)
+    os.chmod(LAMBDA_RUNTIME_INIT_PATH, mode=st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
 def install_cloudformation_libs():
     from localstack.services.cloudformation import deployment_utils
 
@@ -695,6 +710,7 @@ installers = {
     "dynamodb": install_dynamodb_local,
     "kinesis": install_kinesis,
     "kms": install_local_kms,
+    "lambda": install_lambda_runtime,
     "sqs": install_sqs_provider,
     "stepfunctions": install_stepfunctions_local,
 }
@@ -715,6 +731,7 @@ class CommunityInstallerRepository(InstallerRepository):
     def get_installer(self) -> List[Installer]:
         return [
             ("awslamba-go-runtime", install_go_lambda_runtime),
+            ("awslambda-runtime", install_lambda_runtime),
             ("cloudformation-libs", install_cloudformation_libs),
             ("dynamodb-local", install_dynamodb_local),
             ("elasticmq", install_elasticmq),

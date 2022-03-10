@@ -16,6 +16,7 @@ from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
 )
+from localstack.services.install import LAMBDA_RUNTIME_INIT_PATH
 from localstack.utils.archives import unzip
 from localstack.utils.container_utils.container_client import ContainerConfiguration
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
@@ -72,7 +73,7 @@ def get_image_for_runtime(runtime: str) -> str:
 
 
 def get_runtime_client_path() -> Path:
-    return Path(f"{config.dirs.tmp}/aws-lambda-rie")
+    return Path(LAMBDA_RUNTIME_INIT_PATH)
 
 
 def prepare_image(target_path: Path, function_version: Version) -> None:
