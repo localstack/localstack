@@ -72,6 +72,7 @@ from localstack.utils.common import (
     unzip,
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT
+from localstack.utils.functions import run_safe
 from localstack.utils.generic.singleton_utils import SubtypesInstanceManager
 from localstack.utils.http import canonicalize_headers, parse_chunked_data
 from localstack.utils.run import FuncThread
@@ -814,7 +815,8 @@ def run_lambda(
         }
         LOG.info("Error executing Lambda function %s: %s %s", func_arn, e, traceback.format_exc())
         if isinstance(e, lambda_executors.InvocationException):
-            response = json.loads(e.result)
+            exc_result = e.result
+            response = run_safe(lambda: json.loads(exc_result)) or response
         log_output = e.log_output if isinstance(e, lambda_executors.InvocationException) else ""
         return InvocationResult(Response(json.dumps(response), status=500), log_output)
     finally:
