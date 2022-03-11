@@ -1,10 +1,15 @@
 import pytest
 from botocore.exceptions import ClientError
 
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.config import EDGE_PORT
+from localstack.constants import LOCALHOST_HOSTNAME, TEST_AWS_ACCOUNT_ID
+from localstack.utils.aws.aws_stack import create_external_boto_client
+
+remote_endpoint = "https://%s:%s" % (LOCALHOST_HOSTNAME, EDGE_PORT)
+s3control_client = create_external_boto_client("s3control", endpoint_url=remote_endpoint)
 
 
-def test_lifecycle_public_access_block(s3control_client):
+def test_lifecycle_public_access_block():
     with pytest.raises(ClientError) as ce:
         s3control_client.get_public_access_block(AccountId=TEST_AWS_ACCOUNT_ID)
     assert ce.value.response["Error"]["Code"] == "NoSuchPublicAccessBlockConfiguration"
@@ -28,7 +33,7 @@ def test_lifecycle_public_access_block(s3control_client):
     s3control_client.delete_public_access_block(AccountId=TEST_AWS_ACCOUNT_ID)
 
 
-def test_public_access_block_validations(s3control_client):
+def test_public_access_block_validations():
     with pytest.raises(ClientError) as error:
         s3control_client.get_public_access_block(AccountId="111111111111")
     assert error.value.response["Error"]["Code"] == "AccessDenied"
