@@ -6,10 +6,15 @@ from threading import RLock
 from typing import Dict, Optional
 
 from localstack.services.awslambda.invocation.lambda_models import (
+    Code,
     Function,
+    FunctionConfigurationMeta,
+    FunctionVersion,
     Invocation,
     InvocationResult,
-    Version,
+    UpdateStatus,
+    VersionFunctionConfiguration,
+    VersionIdentifier,
 )
 from localstack.services.awslambda.invocation.version_manager import LambdaVersionManager
 from localstack.services.generic_proxy import RegionBackend
@@ -32,11 +37,13 @@ class LambdaService:
     # mapping from qualified ARN to version manager
     lambda_version_managers: Dict[str, LambdaVersionManager]
     lambda_version_manager_lock: RLock
+    create_fn_lock: RLock
     task_executor: Executor
 
     def __init__(self) -> None:
         self.lambda_version_managers = {}
         self.lambda_version_manager_lock = RLock()
+        self.create_fn_lock = RLock()
         self.task_executor = ThreadPoolExecutor()
 
     def stop(self) -> None:
@@ -70,31 +77,53 @@ class LambdaService:
         return version_manager
 
     # CRUD
-    def _create_version(self, region_name: str, function_name: str, qualifier: str) -> Version:
+    def _create_version(
+        self, region_name: str, function_name: str, qualifier: str
+    ) -> FunctionVersion:
         return
 
     def create_function(
         self,
         region_name: str,
         function_name: str,
-    ) -> Version:
+        function_config: VersionFunctionConfiguration,
+        code: Code,
+    ) -> FunctionVersion:
         state = LambdaServiceBackend.get(region_name)
-
         fn = Function(function_name=function_name)
-        # TODO: create initial version
-        version = self._create_version(region_name, function_name, "$LATEST")
-        fn.versions["$LATEST"] = version
-        state.functions[function_name] = fn
+
+        with self.create_fn_lock:
+            # TODO: create initial version
+            arn = VersionIdentifier(function_name, "$LATEST", region_name, "?")
+            version = FunctionVersion(
+                id=arn,
+                qualified_arn=arn.qualified_arn(),
+                qualifier="$LATEST",
+                code=code,
+                config_meta=FunctionConfigurationMeta(
+                    function_arn=arn.qualified_arn(),
+                    revision_id="?",
+                    code_size=0,
+                    coda_sha256="bla",
+                    last_modified="asdf",
+                    last_update=UpdateStatus(status="?"),
+                ),
+                config=function_config,
+            )
+            fn.versions["$LATEST"] = version
+            state.functions[function_name] = fn
 
         return version
 
-    def create_version(self, region_name: str, function_name: str, description: str) -> Version:
+    def create_version(
+        self, region_name: str, function_name: str, description: str
+    ) -> FunctionVersion:
         state = LambdaServiceBackend.get(region_name)
         fn = state.functions[function_name]
         with fn.lock:
             latest = fn.versions["$LATEST"]
             qualifier = str(fn.next_version)
-            new_version = replace(latest, qualifier=qualifier, description=description)
+            new_version = replace(latest, qualifier=qualifier)
             fn.versions[qualifier] = new_version
             fn.next_version += 1
             return new_version
@@ -113,7 +142,7 @@ class LambdaService:
     # def update_function(self, region_name: str, function_args):
     #     ...
 
-    def get_function_version(self, region_name: str, function_name, version) -> Version:
+    def get_function_version(self, region_name: str, function_name, version) -> FunctionVersion:
         ...
 
     def list_function_versions(self):
@@ -138,7 +167,7 @@ class LambdaService:
         fn = state.functions[function_name]
         del fn.aliases[alias_name]
 
-    def create_function_version(self, function_version: Version) -> None:
+    def create_function_version(self, function_version: FunctionVersion) -> None:
         with self.lambda_version_manager_lock:
             version_manager = self.lambda_version_managers.get(function_version.qualified_arn)
             if version_manager:
@@ -158,7 +187,7 @@ class LambdaService:
         invocation_type: str,
         client_context: Optional[str],
         payload: bytes,
-    ) -> Future[InvocationResult]:
+    ) -> "Future[InvocationResult]":
         version_manager = self.get_lambda_version_manager(function_arn_qualified)
         return version_manager.invoke(
             invocation=Invocation(

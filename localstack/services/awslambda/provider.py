@@ -8,6 +8,7 @@ from localstack.aws.api.awslambda import (
     Alias,
     AliasConfiguration,
     AliasRoutingConfiguration,
+    Architecture,
     ArchitecturesList,
     Blob,
     Boolean,
@@ -15,11 +16,12 @@ from localstack.aws.api.awslambda import (
     DeadLetterConfig,
     Description,
     Environment,
+    EnvironmentResponse,
     FileSystemConfigList,
     FunctionCode,
+    FunctionCodeLocation,
     FunctionConfiguration,
     FunctionName,
-    FunctionVersion,
     GetFunctionResponse,
     Handler,
     ImageConfig,
@@ -27,6 +29,7 @@ from localstack.aws.api.awslambda import (
     InvocationType,
     KMSKeyArn,
     LambdaApi,
+    LastUpdateStatus,
     LayerList,
     ListAliasesResponse,
     ListFunctionsResponse,
@@ -44,14 +47,21 @@ from localstack.aws.api.awslambda import (
     S3Key,
     S3ObjectVersion,
     ServiceException,
+    State,
     String,
     Tags,
     Timeout,
     TracingConfig,
+    TracingMode,
     Version,
     VpcConfig,
 )
-from localstack.services.awslambda.invocation.lambda_models import InvocationError
+from localstack.services.awslambda.invocation.lambda_models import (
+    Code,
+    FunctionVersion,
+    InvocationError,
+    VersionFunctionConfiguration,
+)
 from localstack.services.awslambda.invocation.lambda_service import (
     LambdaService,
     LambdaServiceBackend,
@@ -80,6 +90,29 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def on_before_stop(self) -> None:
         self.lambda_service.stop()
 
+    def _map_config_out(self, version: FunctionVersion) -> FunctionConfiguration:
+        return FunctionConfiguration(
+            RevisionId=version.config_meta.revision_id,
+            FunctionName=version.id.function_name,
+            FunctionArn=version.id.qualified_arn(),
+            LastModified=version.config_meta.last_modified,
+            LastUpdateStatus=LastUpdateStatus.Successful,
+            State=State.Active,
+            Version=version.id.qualifier,
+            Description=version.config.description,
+            Role=version.config.role,
+            Timeout=version.config.timeout,
+            Runtime=version.config.runtime,
+            Handler=version.config.handler,
+            Environment=EnvironmentResponse(Variables=version.config.environment, Error={}),
+            CodeSize=version.config_meta.code_size,
+            CodeSha256=version.config_meta.coda_sha256,
+            MemorySize=version.config.memory_size,
+            PackageType=version.config.package_type,
+            TracingConfig=TracingConfig(Mode=version.config.tracing_config_mode),
+            Architectures=version.config.architectures,
+        )
+
     def create_function(
         self,
         context: RequestContext,
@@ -106,24 +139,36 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         architectures: ArchitecturesList = None,
     ) -> FunctionConfiguration:
 
-        # TODO: who is responsible for *which* errors/validations?
-        # initial checks
-        if package_type == PackageType.Zip:
-            # TODO
-            pass
-        elif package_type == PackageType.Image:
-            LOG.warning("Container Image support not available in Community Edition")
-
-        self.lambda_service.create_function(
+        # # TODO: initial validations
+        version = self.lambda_service.create_function(
             context.region,
+            function_name=function_name,
+            function_config=VersionFunctionConfiguration(
+                description=description or "",
+                role=role,
+                timeout=timeout,
+                runtime=runtime,
+                memory_size=memory_size,
+                handler=handler,
+                package_type=PackageType.Zip,
+                reserved_concurrent_executions=0,
+                environment={},
+                # environment={k: v for k,v in environment['Variables'].items()},
+                architectures=[Architecture.x86_64],
+                tracing_config_mode=TracingMode.PassThrough,
+                image_config=None,
+                layers=[],
+            ),
+            code=Code(zip_file=code["ZipFile"]),
         )
 
-        if publish:
-            self.lambda_service.create_function_version(context.region, function_name)
+        return self._map_config_out(version)
 
-        return FunctionConfiguration(
-            # map
-        )
+        # if publish:
+        #     self.lambda_service.create_function_version(context.region, function_name)
+        # return FunctionConfiguration(
+        #     # map
+        # )
 
         # TODO: setup proper logging structure
         # LOG.debug("Creating lambda function with params: %s", dict(locals()))
@@ -289,11 +334,13 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,  # TODO
     ) -> GetFunctionResponse:
-        state = LambdaServiceBackend.get()
-        latest = state.functions.get(function_name).latest
+        version = self.lambda_service.get_function_version(context.region, function_name, qualifier)
+
         return GetFunctionResponse(
-            Configuration=latest.config,
-            Tags=state.TAGS.list_tags_for_resource(function_name),
+            Configuration=self._map_config_out(version),
+            Code=FunctionCodeLocation(Location=""),  # TODO
+            Tags={},
+            # Tags=self.lambda_service.get_tags(version.id),
             Concurrency={},  # TODO
         )
 

@@ -11,12 +11,12 @@ from threading import Thread
 from typing import Dict, List, Optional, Union
 
 from localstack.services.awslambda.invocation.lambda_models import (
+    FunctionVersion,
     Invocation,
     InvocationError,
     InvocationLogs,
     InvocationResult,
     ServiceEndpoint,
-    Version,
 )
 from localstack.services.awslambda.invocation.runtime_environment import (
     InvalidStatusException,
@@ -64,10 +64,16 @@ class VersionState:
     reason: Optional[str] = None
 
 
+# InvocationResultFuture = Future[InvocationResult]
+# InvocationResultFuture = Future[InvocationResult]
+#
+# from typing_extensions import Futur
+
+
 @dataclasses.dataclass(frozen=True)
 class QueuedInvocation:
     invocation_id: str
-    result_future: Future[InvocationResult]
+    result_future: "Future[InvocationResult]"
     retries: int
     invocation: Invocation
 
@@ -92,7 +98,7 @@ class ShutdownPill:
 
 
 class LogHandler:
-    log_queue: Queue[Union[LogItem, ShutdownPill]]
+    log_queue: "Queue[Union[LogItem, ShutdownPill]]"
     _thread: Optional[Thread]
     _shutdown_event: threading.Event
 
@@ -127,15 +133,15 @@ class LogHandler:
 class LambdaVersionManager(ServiceEndpoint):
     # arn this Lambda Version manager manages
     function_arn: str
-    function_version: Version
+    function_version: FunctionVersion
     # mapping from invocation id to invocation storage
     running_invocations: Dict[str, RunningInvocation]
     # stack of available (ready to get invoked) environments
-    available_environments: queue.LifoQueue[Union[RuntimeEnvironment, ShutdownPill]]
+    available_environments: "queue.LifoQueue[Union[RuntimeEnvironment, ShutdownPill]]"
     # mapping environment id -> environment
     all_environments: Dict[str, RuntimeEnvironment]
     # queue of invocations to be executed
-    queued_invocations: Queue[Union[QueuedInvocation, ShutdownPill]]
+    queued_invocations: "Queue[Union[QueuedInvocation, ShutdownPill]]"
     provisioned_concurrent_executions: int
     invocation_thread: Optional[Thread]
     shutdown_event: threading.Event
@@ -145,7 +151,7 @@ class LambdaVersionManager(ServiceEndpoint):
     def __init__(
         self,
         function_arn: str,
-        function_version: Version,
+        function_version: FunctionVersion,
     ):
         self.function_arn = function_arn
         self.function_version = function_version
@@ -288,7 +294,7 @@ class LambdaVersionManager(ServiceEndpoint):
             except Exception as e:
                 queued_invocation.result_future.set_exception(e)
 
-    def invoke(self, *, invocation: Invocation) -> Future[InvocationResult]:
+    def invoke(self, *, invocation: Invocation) -> "Future[InvocationResult]":
         invocation_storage = QueuedInvocation(
             invocation_id=str(uuid.uuid4()),
             result_future=Future(),

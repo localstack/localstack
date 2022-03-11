@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from localstack import config
 from localstack.services.awslambda.invocation.executor_endpoint import ServiceEndpoint
-from localstack.services.awslambda.invocation.lambda_models import Version
+from localstack.services.awslambda.invocation.lambda_models import FunctionVersion
 from localstack.services.awslambda.invocation.runtime_executor import RuntimeExecutor
 from localstack.utils.strings import to_str
 
@@ -51,7 +51,7 @@ class RuntimeEnvironment:
 
     def __init__(
         self,
-        function_version: Version,
+        function_version: FunctionVersion,
         initialization_type: InitializationType,
         service_endpoint: ServiceEndpoint,
     ):

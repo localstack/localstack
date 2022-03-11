@@ -15,23 +15,18 @@ class Invocation:
 
 @dataclasses.dataclass
 class Code:
-    image_uri: Optional[str]
+    image_uri: Optional[str] = None
 
-    s3_bucket: Optional[str]
-    s3_key: Optional[str]
-    s3_object_version: Optional[str]
+    s3_bucket: Optional[str] = None
+    s3_key: Optional[str] = None
+    s3_object_version: Optional[str] = None
 
-    zip_file: Optional[str]
+    zip_file: Optional[str] = None
 
 
 @dataclasses.dataclass
 class DeadLetterConfig:
     target_arn: str
-
-
-@dataclasses.dataclass
-class Environment:
-    variables: Dict[str, str]
 
 
 @dataclasses.dataclass
@@ -48,40 +43,32 @@ class ImageConfig:
 
 
 @dataclasses.dataclass
-class TracingConfig:
-    mode: str  # TODO: enum or literal union
-
-
-@dataclasses.dataclass
 class VpcConfig:
     security_group_ids: List[str] = dataclasses.field(default_factory=list)
     subnet_ids: List[str] = dataclasses.field(default_factory=list)
 
 
+@dataclasses.dataclass(frozen=True)
 class UpdateStatus:
     status: str
     code: Optional[str] = None  # TODO: probably not a string
     reason: Optional[str] = None
 
 
-class FunctionConfigurationParameter:
-    """configurable parts of FunctionConfiguration"""
-
-    pass
+@dataclasses.dataclass(frozen=True)
+class FunctionConfigurationMeta:
+    function_arn: str
+    revision_id: str  # UUID, new one on each change
+    code_size: int
+    coda_sha256: str
+    last_modified: str  # ISO string
+    last_update: UpdateStatus
 
 
 @dataclasses.dataclass(frozen=True)
-class FunctionConfiguration:
-    # calculated / derived
-    revision_id: str  # UUID, new one on each change
-    last_modified: str  # ISO string
-    last_update: UpdateStatus
-    code_size: int
-    coda_sha256: str
-    function_arn: str
-
+class VersionFunctionConfiguration:
     # fields
-    name: str
+    # name: str
     description: str
     role: str
     timeout: int
@@ -90,14 +77,14 @@ class FunctionConfiguration:
     handler: str
     package_type: str  # TODO: enum or literal union
     reserved_concurrent_executions: int
-    image_config: ImageConfig
-    environment: Environment
+    environment: Dict[str, str]
     architectures: List[str]
 
-    # layers: List[str]
-    # dead_letter_config: DeadLetterConfig
-    # tracing_config: TracingConfig
+    tracing_config_mode: str
+    image_config: Optional[ImageConfig] = None
+    layers: List[str] = dataclasses.field(default_factory=list)
     # kms_key_arn: str
+    # dead_letter_config: DeadLetterConfig
     # file_system_configs: FileSystemConfig
     # vpc_config: VpcConfig
 
@@ -118,25 +105,6 @@ class AliasRoutingConfiguration:
     version_weights: List[VersionWeight]
 
 
-@dataclasses.dataclass(frozen=True)
-class Alias:
-    function_version: int
-    name: str
-    description: str
-    routing_configuration: AliasRoutingConfiguration
-    # provisioned_concurrency_configuration: Optional[ProvisionedConcurrencyConfiguration]
-
-
-@dataclasses.dataclass(frozen=True)
-class Version:
-    qualified_arn: str
-    qualifier: str
-    description: str
-    code: Code  # TODO: code might make more sense in the functionconfiguration?
-    config: FunctionConfiguration
-    # provisioned_concurrency_config: Optional[ProvisionedConcurrencyConfiguration]
-
-
 @dataclasses.dataclass
 class VersionIdentifier:
     function_name: str
@@ -153,13 +121,36 @@ class VersionIdentifier:
         )
 
 
+@dataclasses.dataclass(frozen=True)
+class Alias:
+    function_version: int
+    name: str
+    description: str
+    routing_configuration: AliasRoutingConfiguration
+    provisioned_concurrency_configuration: Optional[ProvisionedConcurrencyConfiguration] = None
+
+
+@dataclasses.dataclass(frozen=True)
+class FunctionVersion:
+    id: VersionIdentifier
+    qualified_arn: str
+    qualifier: str
+    code: Code  # TODO: code might make more sense in the functionconfiguration?
+    config_meta: FunctionConfigurationMeta
+    config: VersionFunctionConfiguration
+    provisioned_concurrency_config: Optional[ProvisionedConcurrencyConfiguration] = None
+
+
 @dataclasses.dataclass
 class Function:
     function_name: str
     aliases: Dict[str, Alias] = dataclasses.field(default_factory=dict)
     next_version: int = 1
-    versions: Dict[str, Version] = dataclasses.field(default_factory=dict)
+    versions: Dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)
+
+    def latest(self) -> FunctionVersion:
+        return self.versions["$LATEST"]
 
 
 # Result Models

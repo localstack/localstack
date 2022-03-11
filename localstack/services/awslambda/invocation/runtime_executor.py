@@ -11,7 +11,7 @@ from localstack.services.awslambda.invocation.executor_endpoint import (
     ExecutorEndpoint,
     ServiceEndpoint,
 )
-from localstack.services.awslambda.invocation.lambda_models import Version
+from localstack.services.awslambda.invocation.lambda_models import FunctionVersion
 from localstack.services.awslambda.lambda_utils import (
     get_container_network_for_lambda,
     get_main_endpoint_from_container,
@@ -53,17 +53,17 @@ def get_runtime_split(runtime: str) -> Tuple[str, str]:
     raise Exception("Cannot process runtime '%s'" % runtime)
 
 
-def get_path_for_function(function_version: Version) -> Path:
+def get_path_for_function(function_version: FunctionVersion) -> Path:
     return Path(
         f"{config.dirs.tmp}/lambda/{function_version.qualified_arn.replace(':', '_').replace('$', '_')}/"
     )
 
 
-def get_code_path_for_function(function_version: Version) -> Path:
+def get_code_path_for_function(function_version: FunctionVersion) -> Path:
     return get_path_for_function(function_version) / "code"
 
 
-def get_image_name_for_function(function_version: Version) -> str:
+def get_image_name_for_function(function_version: FunctionVersion) -> str:
     return f"localstack/lambda-{function_version.qualified_arn.replace(':', '_').replace('$', '_').lower()}"
 
 
@@ -76,7 +76,7 @@ def get_runtime_client_path() -> Path:
     return Path(LAMBDA_RUNTIME_INIT_PATH)
 
 
-def prepare_image(target_path: Path, function_version: Version) -> None:
+def prepare_image(target_path: Path, function_version: FunctionVersion) -> None:
     if not function_version.config.runtime:
         LOG.error("Images without runtime are currently not supported")
         raise Exception("Custom images are currently not supported")
@@ -103,7 +103,7 @@ def prepare_image(target_path: Path, function_version: Version) -> None:
         LOG.error("Exception: %s", e)
 
 
-def prepare_version(function_version: Version) -> None:
+def prepare_version(function_version: FunctionVersion) -> None:
     if not function_version.code.zip_file:
         LOG.error("Images without zip_file are currently not supported")
         raise Exception("Custom images are currently not supported")
@@ -121,7 +121,7 @@ def prepare_version(function_version: Version) -> None:
     LOG.debug("Version preparation took %0.2fms", (time.perf_counter() - time_before) * 1000)
 
 
-def cleanup_version(function_version: Version) -> None:
+def cleanup_version(function_version: FunctionVersion) -> None:
     function_path = get_path_for_function(function_version)
     try:
         shutil.rmtree(function_path)
@@ -143,12 +143,12 @@ class LambdaRuntimeException(Exception):
 
 class RuntimeExecutor:
     id: str
-    function_version: Version
+    function_version: FunctionVersion
     ip: Optional[str]
     executor_endpoint: Optional[ExecutorEndpoint]
 
     def __init__(
-        self, id: str, function_version: Version, service_endpoint: ServiceEndpoint
+        self, id: str, function_version: FunctionVersion, service_endpoint: ServiceEndpoint
     ) -> None:
         self.id = id
         self.function_version = function_version
