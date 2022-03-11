@@ -1622,7 +1622,7 @@ def serve_static_website(headers, path, bucket_name):
 
     website_config = s3_client.get_bucket_website(Bucket=bucket_name)
     path_suffix = website_config.get("IndexDocument", {}).get("Suffix", "").lstrip("/")
-    index_document = "%s/%s" % (path.rstrip("/"), path_suffix)
+    index_document = ("%s/%s" % (path.rstrip("/"), path_suffix)).lstrip("/")
     try:
         return respond_with_key(status_code=200, key=index_document)
     except ClientError:
