@@ -411,9 +411,6 @@ class TestCloudWatchLogs:
             found = False
             for record in response["Records"]:
                 data = record["Data"]
-                # data is base64-encoded gzip
-                # decoded_data = base64.b64decode(data)
-                # unzipped_data = gzip.decompress(decoded_data)
                 unzipped_data = gzip.decompress(data)
                 json_data = json.loads(unzipped_data)
                 if "test" in json.dumps(json_data["logEvents"]):
@@ -495,11 +492,11 @@ class TestCloudWatchLogs:
         assert basic_filter_name not in filter_names
         assert json_filter_name not in filter_names
 
-    def test_delivery_logs_for_sns(self, logs_client, sns_client):
+    def test_delivery_logs_for_sns(self, logs_client, sns_client, sns_create_topic):
         topic_name = f"test-logs-{short_uid()}"
         contact = "+10123456789"
 
-        topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
         sns_client.subscribe(TopicArn=topic_arn, Protocol="sms", Endpoint=contact)
 
         message = "Good news everyone!"

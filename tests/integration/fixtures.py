@@ -338,7 +338,7 @@ def kinesis_create_stream(kinesis_client):
 
     for stream_name in stream_names:
         try:
-            kinesis_client.delete_stream(StreamName=stream_name)
+            kinesis_client.delete_stream(StreamName=stream_name, EnforceConsumerDeletion=True)
         except Exception as e:
             LOG.debug("error cleaning up kinesis stream %s: %s", stream_name, e)
 
