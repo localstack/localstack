@@ -1346,6 +1346,31 @@ class TestS3(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(actual_key_obj["ETag"], response.headers["etag"])
 
+    def test_s3_static_website_index(self):
+        bucket_name = "test-%s" % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(
+            Bucket=bucket_name, Key="index.html", Body="index", ContentType="text/html"
+        )
+
+        self.s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={
+                "IndexDocument": {"Suffix": "index.html"},
+            },
+        )
+
+        url = "https://{}.{}:{}".format(
+            bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT
+        )
+
+        headers = aws_stack.mock_aws_request_headers("s3")
+        headers["Host"] = s3_utils.get_bucket_website_hostname(bucket_name)
+        response = requests.get(url, headers=headers, verify=False)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("index", response.text)
+
     def test_s3_event_notification_with_sqs(self):
         key_by_path = "aws/bucket=2020/test1.txt"
         bucket_name = "notif-sqs-%s" % short_uid()
