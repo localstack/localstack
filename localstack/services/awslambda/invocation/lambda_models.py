@@ -122,18 +122,17 @@ class VersionIdentifier:
 
 
 @dataclasses.dataclass(frozen=True)
-class Alias:
+class VersionAlias:
     function_version: int
     name: str
     description: str
-    routing_configuration: AliasRoutingConfiguration
+    routing_configuration: Optional[AliasRoutingConfiguration]
     provisioned_concurrency_configuration: Optional[ProvisionedConcurrencyConfiguration] = None
 
 
 @dataclasses.dataclass(frozen=True)
 class FunctionVersion:
     id: VersionIdentifier
-    qualified_arn: str
     qualifier: str
     code: Code  # TODO: code might make more sense in the functionconfiguration?
     config_meta: FunctionConfigurationMeta
@@ -144,7 +143,7 @@ class FunctionVersion:
 @dataclasses.dataclass
 class Function:
     function_name: str
-    aliases: Dict[str, Alias] = dataclasses.field(default_factory=dict)
+    aliases: Dict[str, VersionAlias] = dataclasses.field(default_factory=dict)
     next_version: int = 1
     versions: Dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
     lock: threading.RLock = dataclasses.field(default_factory=threading.RLock)

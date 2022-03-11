@@ -1,9 +1,11 @@
+import base64
 import concurrent.futures
+import hashlib
 import logging
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from dataclasses import replace
 from threading import RLock
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from localstack.services.awslambda.invocation.lambda_models import (
     Code,
@@ -13,6 +15,7 @@ from localstack.services.awslambda.invocation.lambda_models import (
     Invocation,
     InvocationResult,
     UpdateStatus,
+    VersionAlias,
     VersionFunctionConfiguration,
     VersionIdentifier,
 )
@@ -51,7 +54,8 @@ class LambdaService:
         for version_manager in self.lambda_version_managers.values():
             shutdown_futures.append(self.task_executor.submit(version_manager.stop))
         concurrent.futures.wait(shutdown_futures, timeout=5)
-        self.task_executor.shutdown(cancel_futures=True)
+        self.task_executor.shutdown()
+        # self.task_executor.shutdown(cancel_futures=True)  # TODO: python 3.9+
 
     def stop_version(self, qualified_arn: str) -> None:
         """
@@ -84,6 +88,7 @@ class LambdaService:
 
     def create_function(
         self,
+        account_id: str,
         region_name: str,
         function_name: str,
         function_config: VersionFunctionConfiguration,
@@ -93,26 +98,29 @@ class LambdaService:
         fn = Function(function_name=function_name)
 
         with self.create_fn_lock:
-            # TODO: create initial version
-            arn = VersionIdentifier(function_name, "$LATEST", region_name, "?")
+            arn = VersionIdentifier(function_name, "$LATEST", region_name, account_id)
+            zip_file_content = code.zip_file
+            code_sha_256 = base64.standard_b64encode(
+                hashlib.sha256(zip_file_content).digest()
+            ).decode("utf-8")
             version = FunctionVersion(
                 id=arn,
-                qualified_arn=arn.qualified_arn(),
                 qualifier="$LATEST",
                 code=code,
                 config_meta=FunctionConfigurationMeta(
                     function_arn=arn.qualified_arn(),
                     revision_id="?",
-                    code_size=0,
-                    coda_sha256="bla",
+                    code_size=len(code.zip_file),
+                    coda_sha256=code_sha_256,
                     last_modified="asdf",
-                    last_update=UpdateStatus(status="?"),
+                    last_update=UpdateStatus(status="Successful"),
                 ),
                 config=function_config,
             )
             fn.versions["$LATEST"] = version
             state.functions[function_name] = fn
 
+        self.create_function_version(version)
         return version
 
     def create_version(
@@ -123,33 +131,52 @@ class LambdaService:
         with fn.lock:
             latest = fn.versions["$LATEST"]
             qualifier = str(fn.next_version)
-            new_version = replace(latest, qualifier=qualifier)
+            new_version = replace(
+                latest, qualifier=qualifier, id=replace(latest.id, qualifier=qualifier)
+            )
             fn.versions[qualifier] = new_version
             fn.next_version += 1
+            self.create_function_version(new_version)
             return new_version
 
     # TODO: is this sync?
     def delete_function(self, region_name: str, function_name: str):
         state = LambdaServiceBackend.get(region_name)
-
         function = state.functions.pop(function_name)
         for version in function.versions.values():
-            self.stop_version(qualified_arn=version.qualified_arn)
+            self.stop_version(qualified_arn=version.id.qualified_arn())
 
     def delete_version(self, region_name: str, function_name: str, version_qualifier: str):
-        ...
+        state = LambdaServiceBackend.get(region_name)
+        version = state.functions[function_name].versions[version_qualifier]
+        self.stop_version(qualified_arn=version.id.qualified_arn())
 
-    # def update_function(self, region_name: str, function_args):
-    #     ...
+    def get_function_version(
+        self, region_name: str, function_name: str, qualifier: Optional[str] = "$LATEST"
+    ) -> FunctionVersion:
+        state = LambdaServiceBackend.get(region_name)
+        return state.functions[function_name].versions[qualifier]
 
-    def get_function_version(self, region_name: str, function_name, version) -> FunctionVersion:
-        ...
+    def list_function_versions(self, region_name: str) -> List[FunctionVersion]:
+        state = LambdaServiceBackend.get(region_name)
+        return [f.latest() for f in state.functions.values()]  # TODO: qualifier
 
-    def list_function_versions(self):
-        ...
+    def create_alias(
+        self,
+        region_name: str,
+        function_name: str,
+        qualifier: str,
+        alias_name: str,
+        description: str,
+    ) -> FunctionVersion:
+        state = LambdaServiceBackend.get(region_name)
+        fn = state.functions[function_name]
+        fn.aliases[alias_name] = VersionAlias(int(qualifier), alias_name, description, None, None)
+        return fn.versions[qualifier]
 
-    def create_alias(self):
-        ...
+    def list_aliases(self, region_name: str, function_name: str) -> List[VersionAlias]:
+        state = LambdaServiceBackend.get(region_name)
+        return state.functions[function_name].aliases.values()
 
     def get_alias(self, region_name: str, function_name: str, alias_name: str):
         state = LambdaServiceBackend.get(region_name)
@@ -169,14 +196,15 @@ class LambdaService:
 
     def create_function_version(self, function_version: FunctionVersion) -> None:
         with self.lambda_version_manager_lock:
-            version_manager = self.lambda_version_managers.get(function_version.qualified_arn)
+            qualified_arn = function_version.id.qualified_arn()
+            version_manager = self.lambda_version_managers.get(qualified_arn)
             if version_manager:
-                raise Exception("Version '%s' already created", function_version.qualified_arn)
+                raise Exception("Version '%s' already created", qualified_arn)
             version_manager = LambdaVersionManager(
-                function_arn=function_version.qualified_arn,
+                function_arn=qualified_arn,
                 function_version=function_version,
             )
-            self.lambda_version_managers[function_version.qualified_arn] = version_manager
+            self.lambda_version_managers[qualified_arn] = version_manager
             self.task_executor.submit(version_manager.start)
 
     # Commands

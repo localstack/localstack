@@ -2,6 +2,7 @@ import base64
 import logging
 import threading
 import time
+from dataclasses import replace
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.awslambda import (
@@ -39,7 +40,6 @@ from localstack.aws.api.awslambda import (
     MemorySize,
     NamespacedFunctionName,
     PackageType,
-    PreconditionFailedException,
     Qualifier,
     RoleArn,
     Runtime,
@@ -60,17 +60,11 @@ from localstack.services.awslambda.invocation.lambda_models import (
     Code,
     FunctionVersion,
     InvocationError,
+    VersionAlias,
     VersionFunctionConfiguration,
 )
-from localstack.services.awslambda.invocation.lambda_service import (
-    LambdaService,
-    LambdaServiceBackend,
-)
-from localstack.services.awslambda.invocation.lambda_util import (
-    function_name_from_arn,
-    is_qualified_lambda_arn,
-    qualified_lambda_arn,
-)
+from localstack.services.awslambda.invocation.lambda_service import LambdaService
+from localstack.services.awslambda.invocation.lambda_util import qualified_lambda_arn
 from localstack.services.awslambda.lambda_utils import generate_lambda_arn
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.strings import to_bytes, to_str
@@ -138,17 +132,20 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         code_signing_config_arn: CodeSigningConfigArn = None,  # TODO: ignored
         architectures: ArchitecturesList = None,
     ) -> FunctionConfiguration:
+        # TODO: initial validations
+        if architectures and Architecture.arm64 in architectures:
+            raise ServiceException("ARM64 is currently not supported by this provider")
 
-        # # TODO: initial validations
         version = self.lambda_service.create_function(
+            context.account_id,
             context.region,
             function_name=function_name,
             function_config=VersionFunctionConfiguration(
                 description=description or "",
                 role=role,
-                timeout=timeout,
+                timeout=timeout or 3,
                 runtime=runtime,
-                memory_size=memory_size,
+                memory_size=memory_size or 128,
                 handler=handler,
                 package_type=PackageType.Zip,
                 reserved_concurrent_executions=0,
@@ -161,138 +158,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             ),
             code=Code(zip_file=code["ZipFile"]),
         )
-
         return self._map_config_out(version)
-
-        # if publish:
-        #     self.lambda_service.create_function_version(context.region, function_name)
-        # return FunctionConfiguration(
-        #     # map
-        # )
-
-        # TODO: setup proper logging structure
-        # LOG.debug("Creating lambda function with params: %s", dict(locals()))
-        #
-        # if architectures and Architecture.arm64 in architectures:
-        #     raise ServiceException("ARM64 is currently not supported by this provider")
-        #
-        # if not architectures:
-        #     architectures = [Architecture.x86_64]
-        #
-        # if not package_type:
-        #     package_type = PackageType.Zip
-        #
-        # state = LambdaServiceBackend.get()  # TODO: move
-        #
-        # # defaults
-        # qualified_arn = qualified_lambda_arn(
-        #     function_name, "$LATEST", context.account_id, context.region
-        # )  # TODO
-        # env_vars = environment["Variables"] if environment and environment.get("Variables") else {}
-        #
-        # # --- code related parameter handling ---
-        # # memory_size
-        # # architectures
-        # # timeout
-        # # environment
-        # # vpc_config
-        # # TODO: refactor this later since we'll need most of the code again in updates
-        # code_size = 0  # default
-        # code_sha_256 = ""  # TODO: verify there's a default
-        # if package_type == PackageType.Image and code.get("ImageUri") and ImageConfig:
-        #     # container image
-        #     # image_config
-        #     raise ServiceException("PRO feature")  # TODO implement PRO
-        # else:
-        #     # managed runtime or provided runtime
-        #
-        #     # package_type
-        #     # runtime
-        #     # handler
-        #     # layers
-        #     # TODO: handle S3 bucket
-        #     zip_file_content = code.get("ZipFile")
-        #     code_sha_256 = base64.standard_b64encode(
-        #         hashlib.sha256(zip_file_content).digest()
-        #     ).decode("utf-8")
-        #     code_size = len(zip_file_content)
-        #
-        #     if runtime in [Runtime.provided, Runtime.provided_al2]:
-        #         # provided runtime
-        #         raise ServiceException("Not implemented")  # TODO
-        #     else:
-        #         # some managed runtime
-        #         pass
-        #     pass
-        #
-        # # creating entities
-        # # TODO: handle publish option
-        # f_config = FunctionConfiguration(
-        #     FunctionName=function_name,
-        #     FunctionArn=qualified_arn,
-        #     Runtime=runtime,
-        #     Role=role,
-        #     Handler=handler,
-        #     Environment=environment,
-        #     Description=description or "",
-        #     RevisionId=str(uuid.uuid4()),
-        #     MemorySize=memory_size or LAMBDA_DEFAULT_MEMORY_SIZE,
-        #     Timeout=timeout or LAMBDA_DEFAULT_TIMEOUT_SECONDS,
-        #     CodeSize=code_size,
-        #     CodeSha256=code_sha_256,  # TODO: sure this has a default?
-        #     Version="$LATEST",
-        #     TracingConfig=TracingConfig(Mode=TracingMode.PassThrough),  # TODO
-        #     PackageType=package_type,
-        #     Architectures=architectures,
-        #     # TODO: implement proper status tracking
-        #     LastModified="?",  # TODO
-        #     LastUpdateStatus=LastUpdateStatus.Successful,  # TODO
-        #     # LastUpdateStatusReasonCode=, # TODO
-        #     # LastUpdateStatusReason=, # TODO
-        #     # StateReason="?",  # TODO
-        #     # StateReasonCode=StateReasonCode., # TODO
-        #     State=State.Active,  # TODO
-        # )
-        #
-        # new_version = LambdaFunctionVersion(f_config, code)
-        # new_fn = LambdaFunction(latest=new_version)
-        #
-        # # TODO: verify behavior with AWS when creating two functions concurrently (also with publish =true)
-        # # preventing concurrent "double" setting here
-        # # due to the GIL this might actually be atomic anyway
-        # with self.lock:
-        #     if state.functions.get(function_name):
-        #         raise ResourceConflictException(f"Function already exist: {function_name}")
-        #
-        #     state.functions[function_name] = new_fn
-        #     if tags:
-        #         state.TAGS.tag_resource(
-        #             new_fn.latest.config["FunctionArn"], tags=[tags]
-        #         )  # TODO: test
-        # # TODO: this might have to come after the downstream setup
-        # if publish:
-        #     with new_fn.lock:
-        #         new_version = self._publish_version(
-        #             new_fn, description=description
-        #         )  # TODO: not sure if thats the same description
-        #
-        # # TODO: downstream setup (actual lambda provisioning)
-        # version = FunctionVersion(
-        #     qualified_arn=qualified_arn,
-        #     name=function_name,
-        #     version="$LATEST",
-        #     region=context.region,
-        #     zip_file=code.get("ZipFile"),
-        #     runtime=runtime,
-        #     architecture=Architecture.x86_64,
-        #     role=role,
-        #     environment=env_vars,
-        #     handler=handler,
-        # )
-        # self.lambda_service.create_function_version(function_version_definition=version)
-        # # TODO: when publish=true, should this then be the published version or still $LATEST?
-        # # yes it does, still needs some test coverage
-        # return f_config
 
     def _map_to_list_response(self, config: FunctionConfiguration) -> FunctionConfiguration:
         shallow_copy = config.copy()
@@ -311,22 +177,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def list_functions(
         self,
         context: RequestContext,
-        master_region: MasterRegion = None,  # TODO (only relevant for lambda@edge)
+        master_region: MasterRegion = None,  # (only relevant for lambda@edge)
         function_version: FunctionVersion = None,  # TODO
         marker: String = None,  # TODO
         max_items: MaxListItems = None,  # TODO
     ) -> ListFunctionsResponse:
-        return self.lambda_service.list_function_versions()  # TODO: mapping
-
-        #
-        # # TODO: limit fields returned
-        # # TODO: implement paging
-        # state = LambdaServiceBackend.get()
-        # return ListFunctionsResponse(
-        #     Functions=[
-        #         self._map_to_list_response(f.latest.config) for f in state.functions.values()
-        #     ]
-        # )
+        versions = self.lambda_service.list_function_versions(context.region)
+        return ListFunctionsResponse(
+            Functions=[self._map_to_list_response(self._map_config_out(fc)) for fc in versions]
+        )
 
     def get_function(
         self,
@@ -334,13 +193,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,  # TODO
     ) -> GetFunctionResponse:
-        version = self.lambda_service.get_function_version(context.region, function_name, qualifier)
+        version = self.lambda_service.get_function_version(
+            context.region, function_name, qualifier or "$LATEST"
+        )
 
         return GetFunctionResponse(
             Configuration=self._map_config_out(version),
             Code=FunctionCodeLocation(Location=""),  # TODO
-            Tags={},
-            # Tags=self.lambda_service.get_tags(version.id),
+            Tags={},  # TODO
             Concurrency={},  # TODO
         )
 
@@ -403,33 +263,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: FunctionName,
         qualifier: Qualifier = None,
     ) -> None:
-        # self.lambda_service.delete_function()
-
-        # self.lambda_service.resolve_
-        state = LambdaServiceBackend.get()
-        qualified_arn = (
-            function_name
-            if is_qualified_lambda_arn(function_name)
-            else qualified_lambda_arn(
-                function_name,
-                region=context.region,
-                account=context.account_id,
-                qualifier=qualifier,
-            )
-        )
-        if qualifier and qualifier != "$LATEST":
-            # only delete this version
-            pass  # TODO
-        else:
-            # TODO: this actually first needs to set the state and handle this in the lambda service and all downstream services!
-            # TODO: delete all related resources (Aliases, Versions)
-            self.lambda_service.stop_version(qualified_arn)
-            name = (
-                function_name
-                if not is_qualified_lambda_arn(function_name)
-                else function_name_from_arn(function_name)
-            )
-            del state.functions[name]
+        self.lambda_service.delete_function(context.region, function_name)
 
     def update_function_code(
         self,
@@ -445,7 +279,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         revision_id: String = None,
         architectures: ArchitecturesList = None,
     ) -> FunctionConfiguration:
-        raise ServiceException("Not implemented (yet). Stay tuned!")
+        raise ServiceException("Not implemented (yet). Stay tuned!")  # TODO
 
     def update_function_configuration(
         self,
@@ -467,7 +301,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         file_system_configs: FileSystemConfigList = None,
         image_config: ImageConfig = None,
     ) -> FunctionConfiguration:
-        raise ServiceException("Not implemented (yet). Stay tuned!")
+        raise ServiceException("Not implemented (yet). Stay tuned!")  # TODO
 
     def publish_version(
         self,
@@ -477,28 +311,25 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,  # TODO
         revision_id: String = None,
     ) -> FunctionConfiguration:
-        state = LambdaServiceBackend.get()
-        fn = state.functions[function_name]
-        with fn.lock:
-            if revision_id and revision_id != fn.latest.config.get("RevisionId"):
-                raise PreconditionFailedException()  # TODO: test
-            new_version = self._publish_version(fn=fn, description=description)
-            return new_version.config
+        version = self.lambda_service.create_version(
+            region_name=context.region, function_name=function_name, description=description
+        )
+        return self._map_config_out(version)
 
-    #     def _publish_version(self, fn: LambdaFunction, description: str) -> LambdaFunctionVersion:
-    #         version_qualifier = str(fn.next_version)
-    #
-    #         # TODO: only publish a new version when code or config has actually changed
-    #         # TODO: does change mean between last *published* version or anything in between?
-    #         new_config: FunctionConfiguration = fn.latest.config.copy()
-    #         # TODO: test if this overwrites the description in the function config
-    #         # fn.latest.config['Description'] = description
-    #         new_config["Version"] = version_qualifier
-    #         new_code = fn.latest.code.copy()
-    #         new_version = LambdaFunctionVersion(config=new_config, code=new_code)
-    #         fn.versions[version_qualifier] = new_version
-    #         fn.next_version = fn.next_version + 1
-    #         return new_version
+    def _map_alias_to_aliasconfig(
+        self, region: str, function_name: str, alias: VersionAlias
+    ) -> AliasConfiguration:
+        version = self.lambda_service.get_function_version(
+            region_name=region, function_name=function_name, qualifier=str(alias.function_version)
+        )
+        return AliasConfiguration(
+            AliasArn=replace(version.id, qualifier=alias.name).qualified_arn(),
+            Name=alias.name,
+            FunctionVersion=str(alias.function_version),
+            Description=alias.description,
+            # RoutingConfig=None, # TODO
+            RevisionId=version.config_meta.revision_id,
+        )
 
     def create_alias(
         self,
@@ -509,10 +340,11 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         description: Description = None,
         routing_config: AliasRoutingConfiguration = None,
     ) -> AliasConfiguration:
-        state = LambdaServiceBackend.get(context.region)
-        # TODO: check for existence & conflict (and write test to check if this would lead to an exception on AWS?)
-        fn = state.functions[function_name]
-        alias_config = AliasConfiguration(
+        version = self.lambda_service.create_alias(
+            context.region, function_name, function_version, name, description or ""
+        )  # TODO: routing config
+
+        return AliasConfiguration(
             AliasArn=generate_lambda_arn(
                 account_id=int(context.account_id),
                 region=context.region,
@@ -521,19 +353,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             ),
             Name=name,
             Description=description or "",
-            RevisionId=fn.latest.config["RevisionId"],
+            RevisionId=version.config_meta.revision_id,
             FunctionVersion=function_version,
             RoutingConfig=routing_config,
         )
-        fn.aliases[alias_config["Name"]] = alias_config
-        return alias_config
 
     def delete_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias
     ) -> None:
-        # TODO: error handling
-        state = LambdaServiceBackend.get(context.region)
-        del state.functions[function_name].aliases[name]
+        self.lambda_service.delete_alias(context.region, function_name, name)
 
     def update_alias(
         self,
@@ -545,18 +373,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         routing_config: AliasRoutingConfiguration = None,
         revision_id: String = None,
     ) -> AliasConfiguration:
-        state = LambdaServiceBackend.get(context.region)
-        fn = state.functions[function_name]
-        alias_config = AliasConfiguration(
-            AliasArn="asdfasf",  # TODO : generate
-            Name=name,
-            Description=description or "",
-            RevisionId=fn.latest.config["RevisionId"],
-            FunctionVersion=function_version,
-            RoutingConfig=routing_config,
-        )
-        fn.aliases[alias_config["Name"]] = alias_config
-        return alias_config
+        ...  # TODO
 
     def list_aliases(
         self,
@@ -566,9 +383,14 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         marker: String = None,
         max_items: MaxListItems = None,
     ) -> ListAliasesResponse:
-        state = LambdaServiceBackend.get(context.region)
-        fn = state.functions[function_name]
-        return ListAliasesResponse(Aliases=[a for a in fn.aliases.values()])
+        aliases = self.lambda_service.list_aliases(
+            region_name=context.region, function_name=function_name
+        )
+        return ListAliasesResponse(
+            Aliases=[
+                self._map_alias_to_aliasconfig(context.region, function_name, a) for a in aliases
+            ]
+        )
 
     def get_function_configuration(
         self,
@@ -576,13 +398,15 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         function_name: NamespacedFunctionName,
         qualifier: Qualifier = None,  # TODO
     ) -> FunctionConfiguration:
-        state = LambdaServiceBackend.get(context.region)
-        fn = state.functions[function_name]
-        return fn.latest.config
+        ...  # TODO
 
     def get_alias(
         self, context: RequestContext, function_name: FunctionName, name: Alias
     ) -> AliasConfiguration:
-        state = LambdaServiceBackend.get(context.region)
-        fn = state.functions[function_name]
-        return fn.aliases[name]
+        return self._map_alias_to_aliasconfig(
+            context.region,
+            function_name,
+            self.lambda_service.get_alias(
+                region_name=context.region, function_name=function_name, alias_name=name
+            ),
+        )
