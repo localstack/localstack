@@ -1,10 +1,10 @@
 from datetime import datetime
+from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
+import moto.route53.models as route53_models
 from moto.route53 import responses as route53_responses
 from moto.route53.models import route53_backend
-from moto.route53.responses import DELETE_HEALTH_CHECK_RESPONSE
-from moto.route53.urls import url_paths as route53_url_paths
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.route53 import (
@@ -13,9 +13,14 @@ from localstack.aws.api.route53 import (
     AssociateVPCWithHostedZoneResponse,
     ChangeInfo,
     ChangeStatus,
+    DeleteHealthCheckResponse,
     DisassociateVPCComment,
     DisassociateVPCFromHostedZoneResponse,
     GetChangeResponse,
+    GetHealthCheckResponse,
+    HealthCheck,
+    HealthCheckId,
+    NoSuchHealthCheck,
     ResourceId,
     Route53Api,
     VPCAssociationNotFound,
@@ -27,17 +32,12 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
-XMLNS_ROUTE53 = "https://route53.amazonaws.com/doc/2013-04-01/"
-
 
 class Route53ResolverProvider(Route53ResolverApi):
     pass
 
 
 class Route53Provider(Route53Api, ServiceLifecycleHook):
-    def __init__(self):
-        apply_patches()
-
     def get_change(self, context: RequestContext, id: ResourceId) -> GetChangeResponse:
         change_info = ChangeInfo(Id=id, Status=ChangeStatus.INSYNC, SubmittedAt=datetime.now())
         return GetChangeResponse(ChangeInfo=change_info)
@@ -105,21 +105,31 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
             )
         )
 
-
-def get_or_delete_health_check(request, full_url, headers):
-    parsed_url = urlparse(full_url)
-    parts = parsed_url.path.strip("/").split("/")
-    health_check_id = parts[-1]
-    if request.method == "GET":
-        health_check = route53_backend.health_checks.get(health_check_id)
+    def get_health_check(
+        self, context: RequestContext, health_check_id: HealthCheckId
+    ) -> GetHealthCheckResponse:
+        health_check: Optional[route53_models.HealthCheck] = route53_backend.health_checks.get(
+            health_check_id, None
+        )
         if not health_check:
-            return 404, {}, ""
-        result = """<GetHealthCheckResponse xmlns="{}">{}</GetHealthCheckResponse>"""
-        result = result.format(XMLNS_ROUTE53, health_check.to_xml()).strip()
-        return result
-    if request.method == "DELETE":
-        route53_backend.delete_health_check(health_check_id)
-        return 200, headers, DELETE_HEALTH_CHECK_RESPONSE
+            raise NoSuchHealthCheck(
+                f"No health check exists with the specified ID {health_check_id}"
+            )
+        return GetHealthCheckResponse(
+            HealthCheck=HealthCheck(
+                Id=health_check.id, CallerReference=health_check.caller_reference
+            )
+        )
+
+    def delete_health_check(
+        self, context: RequestContext, health_check_id: HealthCheckId
+    ) -> DeleteHealthCheckResponse:
+        health_check = route53_backend.delete_health_check(health_check_id)
+        if not health_check:
+            raise NoSuchHealthCheck(
+                f"No health check exists with the specified ID {health_check_id}"
+            )
+        return {}
 
 
 @patch(route53_responses.Route53.list_hosted_zones_by_name_response)
@@ -135,11 +145,3 @@ def list_hosted_zones_by_name_response(fn, self, request, full_url, headers):
     if not zones1 and zones2:
         full_url = full_url.replace("dnsname=%s" % dns_name, "dnsname=%s." % dns_name)
     return fn(self, request, full_url, headers)
-
-
-def apply_patches():
-    if not hasattr(route53_responses.Route53, "get_or_delete_health_check"):
-        route53_responses.Route53.get_or_delete_health_check = get_or_delete_health_check
-    # update URL path mappings to enable the patch
-    path_regex = r"{0}/(?P<api_version>[\d_-]+)/healthcheck/(?P<health_check_id>[^/]+)/?$"
-    route53_url_paths[path_regex] = route53_responses.Route53().get_or_delete_health_check
