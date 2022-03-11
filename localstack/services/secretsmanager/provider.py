@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import json
 import logging
 import re
@@ -11,61 +12,56 @@ from moto.secretsmanager.exceptions import SecretNotFoundException, ValidationEx
 from moto.secretsmanager.models import FakeSecret, SecretsManagerBackend, secretsmanager_backends
 from moto.secretsmanager.responses import SecretsManagerResponse
 
-from localstack.aws.api import RequestContext, ServiceResponse, ServiceRequest, handler
+from localstack.aws.api import RequestContext, ServiceResponse, handler
 from localstack.aws.api.secretsmanager import (
-    AddReplicaRegionListType,
-    BooleanType,
+    CancelRotateSecretRequest,
     CancelRotateSecretResponse,
-    ClientRequestTokenType,
+    CreateSecretRequest,
     CreateSecretResponse,
+    DeleteResourcePolicyRequest,
     DeleteResourcePolicyResponse,
+    DeleteSecretRequest,
     DeleteSecretResponse,
+    DescribeSecretRequest,
     DescribeSecretResponse,
-    DescriptionType,
+    GetResourcePolicyRequest,
     GetResourcePolicyResponse,
+    GetSecretValueRequest,
     GetSecretValueResponse,
-    KmsKeyIdType,
+    ListSecretVersionIdsRequest,
     ListSecretVersionIdsResponse,
-    MaxResultsType,
     NameType,
-    NextTokenType,
-    NonEmptyResourcePolicyType,
+    PutResourcePolicyRequest,
     PutResourcePolicyResponse,
+    PutSecretValueRequest,
     PutSecretValueResponse,
-    RecoveryWindowInDaysType,
+    RemoveRegionsFromReplicationRequest,
     RemoveRegionsFromReplicationResponse,
-    RemoveReplicaRegionListType,
+    ReplicateSecretToRegionsRequest,
     ReplicateSecretToRegionsResponse,
+    RestoreSecretRequest,
     RestoreSecretResponse,
+    RotateSecretRequest,
     RotateSecretResponse,
-    RotationLambdaARNType,
-    RotationRulesType,
-    SecretBinaryType,
     SecretIdType,
     SecretsmanagerApi,
-    SecretStringType,
-    SecretVersionIdType,
-    SecretVersionStagesType,
-    SecretVersionStageType,
+    StopReplicationToReplicaRequest,
     StopReplicationToReplicaResponse,
-    TagKeyListType,
-    TagListType,
+    TagResourceRequest,
+    UntagResourceRequest,
+    UpdateSecretRequest,
     UpdateSecretResponse,
+    UpdateSecretVersionStageRequest,
     UpdateSecretVersionStageResponse,
-    ValidateResourcePolicyResponse, CreateSecretRequest, CancelRotateSecretRequest, DeleteResourcePolicyRequest,
-    DeleteSecretRequest, DescribeSecretRequest, GetResourcePolicyRequest, GetSecretValueRequest,
-    ListSecretVersionIdsRequest, PutResourcePolicyRequest, PutSecretValueRequest, RemoveRegionsFromReplicationRequest,
-    ReplicateSecretToRegionsRequest, RestoreSecretRequest, RotateSecretRequest, StopReplicationToReplicaRequest,
-    TagResourceRequest, UntagResourceRequest, UpdateSecretRequest, UpdateSecretVersionStageRequest,
     ValidateResourcePolicyRequest,
+    ValidateResourcePolicyResponse,
 )
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
-from localstack.utils.time import today_no_time
+from localstack.utils.time import mktime, now, now_utc, today_no_time
 
 LOG = logging.getLogger(__name__)
 
@@ -113,8 +109,12 @@ class SecretsmanagerProvider(SecretsmanagerApi):
                 )
 
     @staticmethod
-    def _call_moto_with_request_secret_id(context: RequestContext, request: Dict) -> ServiceResponse:
-        t_secret_id = SecretsmanagerProvider._transform_context_secret_id(request.get("SecretId", None))
+    def _call_moto_with_request_secret_id(
+        context: RequestContext, request: Dict
+    ) -> ServiceResponse:
+        t_secret_id = SecretsmanagerProvider._transform_context_secret_id(
+            request.get("SecretId", None)
+        )
         if t_secret_id:
             request.update({"SecretId": t_secret_id})
             return call_moto_with_request(context, request)
@@ -143,9 +143,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
 
     @handler("DeleteSecret", expand=False)
     def delete_secret(
-        self,
-        context: RequestContext,
-        request: DeleteSecretRequest
+        self, context: RequestContext, request: DeleteSecretRequest
     ) -> DeleteSecretResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
@@ -155,7 +153,8 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         self, context: RequestContext, request: DescribeSecretRequest
     ) -> DescribeSecretResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
-        return self._call_moto_with_request_secret_id(context, request)
+        res = self._call_moto_with_request_secret_id(context, request)
+        return res
 
     @handler("GetResourcePolicy", expand=False)
     def get_resource_policy(
@@ -166,54 +165,42 @@ class SecretsmanagerProvider(SecretsmanagerApi):
 
     @handler("GetSecretValue", expand=False)
     def get_secret_value(
-        self,
-        context: RequestContext,
-        request: GetSecretValueRequest
+        self, context: RequestContext, request: GetSecretValueRequest
     ) -> GetSecretValueResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("ListSecretVersionIds", expand=False)
     def list_secret_version_ids(
-        self,
-        context: RequestContext,
-        request: ListSecretVersionIdsRequest
+        self, context: RequestContext, request: ListSecretVersionIdsRequest
     ) -> ListSecretVersionIdsResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("PutResourcePolicy", expand=False)
     def put_resource_policy(
-        self,
-        context: RequestContext,
-        request: PutResourcePolicyRequest
+        self, context: RequestContext, request: PutResourcePolicyRequest
     ) -> PutResourcePolicyResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("PutSecretValue", expand=False)
     def put_secret_value(
-        self,
-        context: RequestContext,
-        request: PutSecretValueRequest
+        self, context: RequestContext, request: PutSecretValueRequest
     ) -> PutSecretValueResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("RemoveRegionsFromReplication", expand=False)
     def remove_regions_from_replication(
-        self,
-        context: RequestContext,
-        request: RemoveRegionsFromReplicationRequest
+        self, context: RequestContext, request: RemoveRegionsFromReplicationRequest
     ) -> RemoveRegionsFromReplicationResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("ReplicateSecretToRegions", expand=False)
     def replicate_secret_to_regions(
-        self,
-        context: RequestContext,
-        request: ReplicateSecretToRegionsRequest
+        self, context: RequestContext, request: ReplicateSecretToRegionsRequest
     ) -> ReplicateSecretToRegionsResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
@@ -227,9 +214,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
 
     @handler("RotateSecret", expand=False)
     def rotate_secret(
-        self,
-        context: RequestContext,
-        request: RotateSecretRequest
+        self, context: RequestContext, request: RotateSecretRequest
     ) -> RotateSecretResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
@@ -242,42 +227,32 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("TagResource", expand=False)
-    def tag_resource(
-        self, context: RequestContext, request: TagResourceRequest
-    ) -> None:
+    def tag_resource(self, context: RequestContext, request: TagResourceRequest) -> None:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("UntagResource", expand=False)
-    def untag_resource(
-        self, context: RequestContext, request: UntagResourceRequest
-    ) -> None:
+    def untag_resource(self, context: RequestContext, request: UntagResourceRequest) -> None:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("UpdateSecret", expand=False)
     def update_secret(
-        self,
-        context: RequestContext,
-        request: UpdateSecretRequest
+        self, context: RequestContext, request: UpdateSecretRequest
     ) -> UpdateSecretResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("UpdateSecretVersionStage", expand=False)
     def update_secret_version_stage(
-        self,
-        context: RequestContext,
-        request: UpdateSecretVersionStageRequest
+        self, context: RequestContext, request: UpdateSecretVersionStageRequest
     ) -> UpdateSecretVersionStageResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
 
     @handler("ValidateResourcePolicy", expand=False)
     def validate_resource_policy(
-        self,
-        context: RequestContext,
-        request: ValidateResourcePolicyRequest
+        self, context: RequestContext, request: ValidateResourcePolicyRequest
     ) -> ValidateResourcePolicyResponse:
         self._raise_if_invalid_secret_id(request["SecretId"])
         return self._call_moto_with_request_secret_id(context, request)
@@ -287,11 +262,28 @@ class SecretsmanagerProvider(SecretsmanagerApi):
 def fake_secret__init__(fn, self, **kwargs):
     fn(self, **kwargs)
 
+    # Fix time not including millis.
+    if kwargs.get("last_changed_date", None) is not None:
+        self.last_changed_date = now(
+            millis=True
+        )  # TODO: millis are not accepted but aws returns millis!
+
     # The last date that the secret value was retrieved.
     # This value does not include the time.
     # This field is omitted if the secret has never been retrieved.
     # Type: Timestamp
     self.last_accessed_date = None
+
+
+@patch(FakeSecret.update)
+def fake_secret_update(
+    fn, self, description=None, tags=None, kms_key_id=None, last_changed_date=None
+):
+    fn(self, description, tags, kms_key_id, last_changed_date)
+    if last_changed_date is not None:
+        self.last_changed_date = now(
+            millis=True
+        )  # TODO: millis are not accepted but aws returns millis!
 
 
 @patch(SecretsManagerBackend.get_secret_value)

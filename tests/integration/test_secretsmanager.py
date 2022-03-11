@@ -397,6 +397,43 @@ class TestSecretsManager:
                 True
             )  # Replay today or allow failure (this should never take longer than a day).
 
+    def test_last_updated_date(self, secretsmanager_client):
+        secret_name: str = "s-%s" % short_uid()
+        secretsmanager_client.create_secret(Name=secret_name, SecretString="MySecretValue")
+
+        res = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert "LastChangedDate" in res
+        create_date = res["LastChangedDate"]
+        assert isinstance(create_date, datetime)
+
+        res = secretsmanager_client.get_secret_value(SecretId=secret_name)
+        assert create_date == res["CreatedDate"]
+
+        res = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert "LastChangedDate" in res
+        assert create_date == res["LastChangedDate"]
+
+        secretsmanager_client.update_secret(SecretId=secret_name, SecretString="MyNewSecretValue")
+
+        res = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert "LastChangedDate" in res
+        assert create_date < res["LastChangedDate"]
+        last_changed = res["LastChangedDate"]
+
+        secretsmanager_client.update_secret(SecretId=secret_name, SecretString="MyNewSecretValue")
+
+        res = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert "LastChangedDate" in res
+        assert last_changed < res["LastChangedDate"]
+
+        secretsmanager_client.update_secret(
+            SecretId=secret_name, SecretString="MyVeryNewSecretValue"
+        )
+
+        res = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert "LastChangedDate" in res
+        assert create_date < res["LastChangedDate"]
+
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> Dict:
         headers = aws_stack.mock_aws_request_headers("secretsmanager")
