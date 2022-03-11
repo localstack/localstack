@@ -1,9 +1,7 @@
 from datetime import datetime
 from typing import Optional
-from urllib.parse import parse_qs, urlparse
 
 import moto.route53.models as route53_models
-from moto.route53 import responses as route53_responses
 from moto.route53.models import route53_backend
 
 from localstack.aws.api import RequestContext
@@ -29,7 +27,6 @@ from localstack.aws.api.route53resolver import Route53ResolverApi
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.route53.models import HostedZoneAssociation, Route53Backend
 from localstack.utils.aws import aws_stack
-from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
 
 
@@ -130,18 +127,3 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
                 f"No health check exists with the specified ID {health_check_id}"
             )
         return {}
-
-
-@patch(route53_responses.Route53.list_hosted_zones_by_name_response)
-def list_hosted_zones_by_name_response(fn, self, request, full_url, headers):
-    """Patch function to match hosted zone if zone name ends with a dot"""
-    parsed_url = urlparse(full_url)
-    query_params = parse_qs(parsed_url.query)
-    dns_name = query_params.get("dnsname")
-    dns_name = dns_name and dns_name[0]
-    all_zones = route53_backend.get_all_hosted_zones()
-    zones1 = [zone for zone in all_zones if zone.name == dns_name]
-    zones2 = [zone for zone in all_zones if zone.name == "%s." % dns_name]
-    if not zones1 and zones2:
-        full_url = full_url.replace("dnsname=%s" % dns_name, "dnsname=%s." % dns_name)
-    return fn(self, request, full_url, headers)
