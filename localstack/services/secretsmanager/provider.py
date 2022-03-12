@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import datetime
 import json
 import logging
 import re
+import time
 from typing import Dict, Optional, Union
 
 from moto.iam.policy_validation import IAMPolicyDocumentValidator
@@ -61,7 +61,7 @@ from localstack.services.moto import call_moto, call_moto_with_request
 from localstack.utils.aws import aws_stack
 from localstack.utils.patch import patch
 from localstack.utils.strings import short_uid
-from localstack.utils.time import mktime, now, now_utc, today_no_time
+from localstack.utils.time import today_no_time
 
 LOG = logging.getLogger(__name__)
 
@@ -263,15 +263,15 @@ def fake_secret__init__(fn, self, **kwargs):
     fn(self, **kwargs)
 
     # Fix time not including millis.
-    if kwargs.get("last_changed_date", None) is not None:
-        self.last_changed_date = now(
-            millis=True
-        )  # TODO: millis are not accepted but aws returns millis!
+    time_now = time.time()
+    if kwargs.get("last_changed_date", None):
+        self.last_changed_date = time_now
+    if kwargs.get("created_date", None):
+        self.created_date = time_now
 
     # The last date that the secret value was retrieved.
     # This value does not include the time.
     # This field is omitted if the secret has never been retrieved.
-    # Type: Timestamp
     self.last_accessed_date = None
 
 
@@ -281,9 +281,24 @@ def fake_secret_update(
 ):
     fn(self, description, tags, kms_key_id, last_changed_date)
     if last_changed_date is not None:
-        self.last_changed_date = now(
-            millis=True
-        )  # TODO: millis are not accepted but aws returns millis!
+        self.last_changed_date = time.time()
+
+
+class FakeSecretVersionStore(dict):
+    def __setitem__(self, key, value):
+        self.put_version(key, value, time.time())
+
+    def put_version(self, version_id: str, version: Dict, create_date: Optional[float] = None):
+        if create_date and "createdate" in version:
+            version["createdate"] = create_date
+        super().__setitem__(version_id, version)
+
+
+@patch(FakeSecret.set_versions)
+def fake_secret_set_versions(_, self, versions):
+    self.versions = FakeSecretVersionStore()
+    for version_id, version in versions.items():
+        self.versions.put_version(version_id, version, self.created_date)
 
 
 @patch(SecretsManagerBackend.get_secret_value)
