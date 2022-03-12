@@ -270,10 +270,6 @@ class Stack(object):
     def outputs_list(self) -> List[Dict]:
         """Returns a copy of the outputs of this stack."""
         result = []
-        # first, fetch the outputs of nested child stacks
-        for stack in self.nested_stacks:
-            result.extend(stack.outputs_list())
-        # now, fetch the outputs of this stack
         for k, details in self.outputs.items():
             value = None
             try:
