@@ -10,7 +10,6 @@ from localstack import config
 from localstack.constants import APPLICATION_JSON
 from localstack.services.apigateway.context import ApiInvocationContext
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.templating import DictWrapper
 from localstack.utils.common import make_http_request, to_str
 from localstack.utils.json import extract_jsonpath, json_safe
 from localstack.utils.numbers import is_number, to_number
@@ -95,8 +94,8 @@ class VtlTemplate:
         """
 
         def __init__(self, body, params):
-            self.parameters = self._attach_missing_functions(params or {})
-            self.value = self._attach_missing_functions(body)
+            self.parameters = params or {}
+            self.value = body
 
         def path(self, path):
             if not self.value:
@@ -128,16 +127,6 @@ class VtlTemplate:
 
         def __repr__(self):
             return "$input"
-
-        @staticmethod
-        def _attach_missing_functions(value):
-            if value:
-
-                def _fix(obj, **kwargs):
-                    return DictWrapper(obj) if isinstance(obj, dict) else obj
-
-                value = recurse_object(value, _fix)
-            return value
 
     def render_vtl(self, template, variables: dict, as_json=False):
         if variables is None:
@@ -175,9 +164,6 @@ class VtlTemplate:
                 for k, v in obj.items():
                     if isinstance(v, str):
                         obj[k] = ExtendedString(v)
-                    if isinstance(v, dict):
-                        obj[k] = DictWrapper(v)
-                return DictWrapper(obj)
             return obj
 
         # loop through the variables and enable certain additional util functions (e.g.,
