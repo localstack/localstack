@@ -434,6 +434,30 @@ class TestSecretsManager:
         assert "LastChangedDate" in res
         assert create_date < res["LastChangedDate"]
 
+    def test_update_secret_description(self, secretsmanager_client):
+        secret_name: str = "s-%s" % short_uid()
+        secret_string_v0 = "MySecretString"
+        description_v0 = ""
+        secretsmanager_client.create_secret(Name=secret_name, SecretString=secret_string_v0)
+
+        des = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert des["Description"] == description_v0
+
+        description_v1 = "MyDescription"
+        secretsmanager_client.update_secret(SecretId=secret_name, Description=description_v1)
+
+        des = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert des["Description"] == description_v1
+
+        description_v2 = "MyNewDescription"
+        secret_string_v1 = "MyNewSecretString"
+        secretsmanager_client.update_secret(
+            SecretId=secret_name, SecretString=secret_string_v1, Description=description_v2
+        )
+
+        des = secretsmanager_client.describe_secret(SecretId=secret_name)
+        assert des["Description"] == description_v2
+
     @staticmethod
     def secretsmanager_http_json_headers(amz_target: str) -> Dict:
         headers = aws_stack.mock_aws_request_headers("secretsmanager")

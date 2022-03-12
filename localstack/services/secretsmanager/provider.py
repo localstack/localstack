@@ -324,6 +324,41 @@ def fake_secret_to_dict(fn, self):
     return res_dict
 
 
+@patch(SecretsManagerBackend.update_secret)
+def backend_update_secret(
+    fn,
+    self,
+    secret_id,
+    **kwargs,
+):
+    fn(self, secret_id, **kwargs)
+
+    # Fix missing update of secret description.
+    # Secret exists if this point is reached.
+    secret = self.secrets[secret_id]
+    secret.description = kwargs.get("description", None)
+
+    return secret.to_short_dict()
+
+
+@patch(SecretsManagerResponse.update_secret)
+def response_update_secret(_, self):
+    secret_id = self._get_param("SecretId")
+    description = self._get_param("Description")
+    secret_string = self._get_param("SecretString")
+    secret_binary = self._get_param("SecretBinary")
+    client_request_token = self._get_param("ClientRequestToken")
+    kms_key_id = self._get_param("KmsKeyId", if_none=None)
+    return secretsmanager_backends[self.region].update_secret(
+        secret_id=secret_id,
+        description=description,
+        secret_string=secret_string,
+        secret_binary=secret_binary,
+        client_request_token=client_request_token,
+        kms_key_id=kms_key_id,
+    )
+
+
 def secretsmanager_models_secret_arn(region, secret_id):
     k = f"{region}_{secret_id}"
     if k not in SECRET_ARN_STORAGE:
