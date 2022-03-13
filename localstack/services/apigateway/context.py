@@ -72,7 +72,7 @@ class ApiInvocationContext:
         self.path = path
         self.data = data
         self.headers = headers
-        self.context = {"requestId", short_uid()} if context is None else context
+        self.context = {"requestId": short_uid()} if context is None else context
         self.auth_info = {} if auth_info is None else auth_info
         self.apigw_version = None
         self.api_id = api_id
