@@ -723,12 +723,14 @@ def tmp_http_server():
     proxy.stop()
 
 
-@pytest.fixture(autouse=True)
-def check_vpc_delete():
-    ec2_client = _client("ec2")
-    before = ec2_client.describe_vpcs().get("Vpcs")
+@pytest.fixture
+def cleanups(ec2_client):
+    cleanup_fns = []
 
-    yield
+    yield cleanup_fns
 
-    after = ec2_client.describe_vpcs().get("Vpcs")
-    assert before == after
+    for cleanup_callback in cleanup_fns[::-1]:
+        try:
+            cleanup_callback()
+        except Exception as e:
+            LOG.warning("Failed to execute cleanup", exc_info=e)

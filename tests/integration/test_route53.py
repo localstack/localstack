@@ -18,7 +18,7 @@ class TestRoute53:
         response = route53.get_change(Id="string")
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    def test_associate_vpc_with_hosted_zone(self, ec2_client, route53_client):
+    def test_associate_vpc_with_hosted_zone(self, ec2_client, route53_client, cleanups):
         name = "zone123"
         response = route53_client.create_hosted_zone(
             Name=name,
@@ -30,12 +30,18 @@ class TestRoute53:
 
         # associate zone with VPC
         vpc = ec2_client.create_vpc(CidrBlock="10.0.0.0/24")
+        cleanups.append(lambda: ec2_client.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
         vpc_id = vpc["Vpc"]["VpcId"]
         vpc_region = aws_stack.get_region()
         result = route53_client.associate_vpc_with_hosted_zone(
             HostedZoneId=zone_id,
             VPC={"VPCRegion": vpc_region, "VPCId": vpc_id},
             Comment="test 123",
+        )
+        cleanups.append(
+            lambda: route53_client.disassociate_vpc_from_hosted_zone(
+                HostedZoneId=zone_id, VPC={"VPCRegion": vpc_region, "VPCId": vpc_id}
+            )
         )
         assert result["ChangeInfo"].get("Id")
 
