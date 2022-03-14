@@ -781,15 +781,13 @@ class UntagLogGroupRequest(ServiceRequest):
 
 
 class LogsApi:
+
     service = "logs"
     version = "2014-03-28"
 
     @handler("AssociateKmsKey")
     def associate_kms_key(
-        self,
-        context: RequestContext,
-        log_group_name: LogGroupName,
-        kms_key_id: KmsKeyId,
+        self, context: RequestContext, log_group_name: LogGroupName, kms_key_id: KmsKeyId
     ) -> None:
         raise NotImplementedError
 
@@ -815,10 +813,7 @@ class LogsApi:
 
     @handler("CreateLogStream")
     def create_log_stream(
-        self,
-        context: RequestContext,
-        log_group_name: LogGroupName,
-        log_stream_name: LogStreamName,
+        self, context: RequestContext, log_group_name: LogGroupName, log_stream_name: LogStreamName
     ) -> None:
         raise NotImplementedError
 
@@ -834,19 +829,13 @@ class LogsApi:
 
     @handler("DeleteLogStream")
     def delete_log_stream(
-        self,
-        context: RequestContext,
-        log_group_name: LogGroupName,
-        log_stream_name: LogStreamName,
+        self, context: RequestContext, log_group_name: LogGroupName, log_stream_name: LogStreamName
     ) -> None:
         raise NotImplementedError
 
     @handler("DeleteMetricFilter")
     def delete_metric_filter(
-        self,
-        context: RequestContext,
-        log_group_name: LogGroupName,
-        filter_name: FilterName,
+        self, context: RequestContext, log_group_name: LogGroupName, filter_name: FilterName
     ) -> None:
         raise NotImplementedError
 
@@ -870,10 +859,7 @@ class LogsApi:
 
     @handler("DeleteSubscriptionFilter")
     def delete_subscription_filter(
-        self,
-        context: RequestContext,
-        log_group_name: LogGroupName,
-        filter_name: FilterName,
+        self, context: RequestContext, log_group_name: LogGroupName, filter_name: FilterName
     ) -> None:
         raise NotImplementedError
 
@@ -957,10 +943,7 @@ class LogsApi:
 
     @handler("DescribeResourcePolicies")
     def describe_resource_policies(
-        self,
-        context: RequestContext,
-        next_token: NextToken = None,
-        limit: DescribeLimit = None,
+        self, context: RequestContext, next_token: NextToken = None, limit: DescribeLimit = None
     ) -> DescribeResourcePoliciesResponse:
         raise NotImplementedError
 
@@ -1011,10 +994,7 @@ class LogsApi:
 
     @handler("GetLogGroupFields")
     def get_log_group_fields(
-        self,
-        context: RequestContext,
-        log_group_name: LogGroupName,
-        time: Timestamp = None,
+        self, context: RequestContext, log_group_name: LogGroupName, time: Timestamp = None
     ) -> GetLogGroupFieldsResponse:
         raise NotImplementedError
 
@@ -1100,10 +1080,7 @@ class LogsApi:
 
     @handler("PutRetentionPolicy")
     def put_retention_policy(
-        self,
-        context: RequestContext,
-        log_group_name: LogGroupName,
-        retention_in_days: Days,
+        self, context: RequestContext, log_group_name: LogGroupName, retention_in_days: Days
     ) -> None:
         raise NotImplementedError
 
