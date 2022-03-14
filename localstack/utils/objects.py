@@ -59,10 +59,14 @@ class SubtypesInstanceManager:
     def get(cls, subtype_name: str, raise_if_missing: bool = True):
         instances = cls.instances()
         base_type = cls.get_base_type()
-        if not instances:
-            for clazz in get_all_subclasses(base_type):
-                instances[clazz.impl_name()] = clazz()
         instance = instances.get(subtype_name)
+        if instance is None:
+            # lazily load subtype instance (required if new plugins are dynamically loaded at runtime)
+            for clazz in get_all_subclasses(base_type):
+                impl_name = clazz.impl_name()
+                if impl_name not in instances:
+                    instances[impl_name] = clazz()
+            instance = instances.get(subtype_name)
         if not instance and raise_if_missing:
             raise NotImplementedError(
                 f"Unable to find implementation named '{subtype_name}' for base type {base_type}"
