@@ -2,15 +2,23 @@ from localstack.utils.aws import aws_stack
 
 
 class TestEc2Integrations:
-    def test_create_route_table_association(self, ec2_client):
+    def test_create_route_table_association(self, ec2_client, cleanups):
         vpc = ec2_client.create_vpc(CidrBlock="10.0.0.0/16")
+        cleanups.append(lambda: ec2_client.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
         subnet = ec2_client.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
+        cleanups.append(lambda: ec2_client.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
 
         route_table = ec2_client.create_route_table(VpcId=vpc["Vpc"]["VpcId"])
+        cleanups.append(
+            lambda: ec2_client.delete_route_table(
+                RouteTableId=route_table["RouteTable"]["RouteTableId"]
+            )
+        )
         association_id = ec2_client.associate_route_table(
             RouteTableId=route_table["RouteTable"]["RouteTableId"],
             SubnetId=subnet["Subnet"]["SubnetId"],
         )["AssociationId"]
+        cleanups.append(lambda: ec2_client.disassociate_route_table(AssociationId=association_id))
 
         for route_tables in ec2_client.describe_route_tables()["RouteTables"]:
             for association in route_tables["Associations"]:
@@ -25,17 +33,28 @@ class TestEc2Integrations:
             associations = [a for a in route_tables["Associations"] if not a.get("Main")]
             assert associations == []
 
-    def test_create_vpc_end_point(self, ec2_client):
+    def test_create_vpc_end_point(self, ec2_client, cleanups):
         vpc = ec2_client.create_vpc(CidrBlock="10.0.0.0/16")
+        cleanups.append(lambda: ec2_client.delete_vpc(VpcId=vpc["Vpc"]["VpcId"]))
         subnet = ec2_client.create_subnet(VpcId=vpc["Vpc"]["VpcId"], CidrBlock="10.0.0.0/24")
-
+        cleanups.append(lambda: ec2_client.delete_subnet(SubnetId=subnet["Subnet"]["SubnetId"]))
         route_table = ec2_client.create_route_table(VpcId=vpc["Vpc"]["VpcId"])
+        cleanups.append(
+            lambda: ec2_client.delete_route_table(
+                RouteTableId=route_table["RouteTable"]["RouteTableId"]
+            )
+        )
 
         # test without any end point type specified
         vpc_end_point = ec2_client.create_vpc_endpoint(
             VpcId=vpc["Vpc"]["VpcId"],
             ServiceName="com.amazonaws.us-east-1.s3",
             RouteTableIds=[route_table["RouteTable"]["RouteTableId"]],
+        )
+        cleanups.append(
+            lambda: ec2_client.delete_vpc_endpoints(
+                VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
+            )
         )
 
         assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
@@ -53,6 +72,11 @@ class TestEc2Integrations:
             RouteTableIds=[route_table["RouteTable"]["RouteTableId"]],
             VpcEndpointType="gateway",
         )
+        cleanups.append(
+            lambda: ec2_client.delete_vpc_endpoints(
+                VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
+            )
+        )
 
         assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
         assert (
@@ -68,6 +92,11 @@ class TestEc2Integrations:
             ServiceName="com.amazonaws.us-east-1.s3",
             SubnetIds=[subnet["Subnet"]["SubnetId"]],
             VpcEndpointType="interface",
+        )
+        cleanups.append(
+            lambda: ec2_client.delete_vpc_endpoints(
+                VpcEndpointIds=[vpc_end_point["VpcEndpoint"]["VpcEndpointId"]]
+            )
         )
 
         assert "com.amazonaws.us-east-1.s3" == vpc_end_point["VpcEndpoint"]["ServiceName"]
